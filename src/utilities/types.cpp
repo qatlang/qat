@@ -1,4 +1,7 @@
-// Type aliases and definitions for simplicity and
+#ifndef TYPES_CPP
+#define TYPES_CPP
+
+// Type aliases and definitions for simplicity and readability
 
 namespace my
 {
@@ -14,3 +17,5 @@ namespace my
     /// A reference to an array of character arrays can be treated as a list of string
     using StringList = char **;
 }
+
+#endif

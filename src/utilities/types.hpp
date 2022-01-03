@@ -1,5 +1,5 @@
-#ifndef TYPES_CPP
-#define TYPES_CPP
+#ifndef MY_TYPES_HPP
+#define MY_TYPES_HPP
 
 // Type aliases and definitions for simplicity and readability
 

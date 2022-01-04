@@ -20,7 +20,7 @@ namespace qat {
             Public,
             Private,
             stop,
-            none,
+            Void,
             file,
             bring,
             From,

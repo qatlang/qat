@@ -359,8 +359,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
                 return Token::normal(TokenType::Public);
             else if (ambiguousValue == "pvt")
                 return Token::normal(TokenType::Private);
-            else if (ambiguousValue == "none")
-                return Token::normal(TokenType::none);
+            else if (ambiguousValue == "void")
+                return Token::normal(TokenType::Void);
             else if (ambiguousValue == "object")
                 return Token::normal(TokenType::Object);
             else if (ambiguousValue == "class")
@@ -536,8 +536,8 @@ void qat::lexer::Lexer::printStatus()
             case TokenType::Library:
                 std::cout << " lib ";
                 break;
-            case TokenType::none:
-                std::cout << " none ";
+            case TokenType::Void:
+                std::cout << " void ";
                 break;
             case TokenType::null:
                 std::cout << " null ";

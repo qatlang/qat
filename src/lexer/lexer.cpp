@@ -81,11 +81,15 @@ void qat::lexer::Lexer::readNext(std::string lexerContext)
     // }
 }
 
+qat::utilities::FilePosition qat::lexer::Lexer::getPosition() {
+    return qat::utilities::FilePosition(fsexp::path(filePath), lineNumber, characterNumber);
+}
+
 std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse()
 {
     file.open(filePath, std::ios::in);
     auto lexerStartTime = std::chrono::high_resolution_clock::now();
-    tokens.push_back(Token::valued(TokenType::startOfFile, filePath, this));
+    tokens.push_back(Token::valued(TokenType::startOfFile, filePath, this->getPosition()));
     readNext("start");
     while (!file.eof())
     {
@@ -94,7 +98,7 @@ std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse()
     file.close();
     if (tokens.back().type != TokenType::endOfFile)
     {
-        tokens.push_back(Token::valued(TokenType::endOfFile, filePath, this));
+        tokens.push_back(Token::valued(TokenType::endOfFile, filePath, this->getPosition()));
     }
     std::chrono::nanoseconds lexerElapsed = std::chrono::high_resolution_clock::now() - lexerStartTime;
     lexerTimeInNS = lexerElapsed.count();
@@ -124,7 +128,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
     }
     if (file.eof())
     {
-        return Token::valued(TokenType::endOfFile, filePath, this);
+        return Token::valued(TokenType::endOfFile, filePath, this->getPosition());
     }
     if (previous == '\r')
     {
@@ -147,67 +151,67 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
     {
         previousContext = "stop";
         readNext(previousContext);
-        return Token::normal(TokenType::stop, this);
+        return Token::normal(TokenType::stop, this->getPosition());
     }
     case ',':
     {
         previousContext = "separator";
         readNext(previousContext);
-        return Token::normal(TokenType::separator, this);
+        return Token::normal(TokenType::separator, this->getPosition());
     }
     case '(':
     {
         previousContext = "paranthesisOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::paranthesisOpen, this);
+        return Token::normal(TokenType::paranthesisOpen, this->getPosition());
     }
     case ')':
     {
         previousContext = "paranthesisClose";
         readNext(previousContext);
-        return Token::normal(TokenType::paranthesisClose, this);
+        return Token::normal(TokenType::paranthesisClose, this->getPosition());
     }
     case '[':
     {
         previousContext = "bracketOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::bracketOpen, this);
+        return Token::normal(TokenType::bracketOpen, this->getPosition());
     }
     case ']':
     {
         previousContext = "bracketClose";
         readNext(previousContext);
-        return Token::normal(TokenType::bracketClose, this);
+        return Token::normal(TokenType::bracketClose, this->getPosition());
     }
     case '{':
     {
         previousContext = "curlybraceOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::curlybraceOpen, this);
+        return Token::normal(TokenType::curlybraceOpen, this->getPosition());
     }
     case '}':
     {
         previousContext = "curlybraceClose";
         readNext(previousContext);
-        return Token::normal(TokenType::curlybraceClose, this);
+        return Token::normal(TokenType::curlybraceClose, this->getPosition());
     }
     case '<':
     {
         previousContext = "lesserThan";
         readNext(previousContext);
-        return Token::normal(TokenType::lesserThan, this);
+        return Token::normal(TokenType::lesserThan, this->getPosition());
     }
     case '>':
     {
         previousContext = "greaterThan";
         readNext(previousContext);
-        return Token::normal(TokenType::greatherThan, this);
+        return Token::normal(TokenType::greatherThan, this->getPosition());
     }
     case '@':
     {
         previousContext = "at";
         readNext(previousContext);
-        return Token::normal(TokenType::at, this);
+        return Token::normal(TokenType::at, this->getPosition());
     }
     case ':':
     {
@@ -215,20 +219,20 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         if (current != '=')
         {
             previousContext = "colon";
-            return Token::normal(TokenType::colon, this);
+            return Token::normal(TokenType::colon, this->getPosition());
         }
         else
         {
             previousContext = "assignedDeclaration";
             readNext(previousContext);
-            return Token::normal(TokenType::assignedDeclaration, this);
+            return Token::normal(TokenType::assignedDeclaration, this->getPosition());
         }
     }
     case '#':
     {
         previousContext = "hashtag";
         readNext(previousContext);
-        return Token::normal(TokenType::hashtag, this);
+        return Token::normal(TokenType::hashtag, this->getPosition());
     }
     case '=':
     {
@@ -236,13 +240,13 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         if (current != '?')
         {
             previousContext = "equal";
-            return Token::normal(TokenType::equal, this);
+            return Token::normal(TokenType::equal, this->getPosition());
         }
         else
         {
             previousContext = "isEqual";
             readNext(previousContext);
-            return Token::normal(TokenType::isEqual, this);
+            return Token::normal(TokenType::isEqual, this->getPosition());
         }
     }
     case '\'':
@@ -255,7 +259,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         {
             previousContext = "child";
             readNext(previousContext);
-            return Token::normal(TokenType::child, this);
+            return Token::normal(TokenType::child, this->getPosition());
         }
         else
         {
@@ -292,7 +296,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
             }
             previousContext = "literal";
             readNext(previousContext);
-            return Token::valued(TokenType::StringLiteral, stringValue, this);
+            return Token::valued(TokenType::StringLiteral, stringValue, this->getPosition());
         }
     }
     case '"':
@@ -330,7 +334,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         }
         previousContext = "literal";
         readNext(previousContext);
-        return Token::valued(TokenType::StringLiteral, stringValue, this);
+        return Token::valued(TokenType::StringLiteral, stringValue, this->getPosition());
     }
     case '0':
     case '1':
@@ -360,8 +364,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
                 }
                 else
                 {
-                    buffer.push_back(Token::normal(TokenType::stop, this));
-                    buffer.push_back(Token::valued(TokenType::DoubleLiteral, numberValue, this));
+                    buffer.push_back(Token::normal(TokenType::stop, this->getPosition()));
+                    buffer.push_back(Token::valued(TokenType::DoubleLiteral, numberValue, this->getPosition()));
                     return tokeniser();
                 }
             }
@@ -371,12 +375,12 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         previousContext = "literal";
         return Token::valued(
             isDouble ? TokenType::DoubleLiteral : TokenType::IntegerLiteral,
-            numberValue, this //
+            numberValue, this->getPosition() //
         );
     }
     case -1:
     {
-        return Token::valued(TokenType::endOfFile, filePath, this);
+        return Token::valued(TokenType::endOfFile, filePath, this->getPosition());
     }
     default:
     {
@@ -394,64 +398,65 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
             }
             previousContext = "keyword";
             if (ambiguousValue == "null")
-                return Token::normal(TokenType::null, this);
+                return Token::normal(TokenType::null, this->getPosition());
             else if (ambiguousValue == "bring")
-                return Token::normal(TokenType::bring, this);
+                return Token::normal(TokenType::bring, this->getPosition());
             else if (ambiguousValue == "pub")
-                return Token::normal(TokenType::Public, this);
+                return Token::normal(TokenType::Public, this->getPosition());
             else if (ambiguousValue == "pvt")
-                return Token::normal(TokenType::Private, this);
+                return Token::normal(TokenType::Private, this->getPosition());
             else if (ambiguousValue == "void")
-                return Token::normal(TokenType::Void, this);
+                return Token::normal(TokenType::Void, this->getPosition());
             else if (ambiguousValue == "object")
-                return Token::normal(TokenType::Object, this);
+                return Token::normal(TokenType::Object, this->getPosition());
             else if (ambiguousValue == "box")
-                return Token::normal(TokenType::box, this);
+                return Token::normal(TokenType::box, this->getPosition());
             else if (ambiguousValue == "const")
-                return Token::normal(TokenType::constant, this);
+                return Token::normal(TokenType::constant, this->getPosition());
             else if (ambiguousValue == "space")
-                return Token::normal(TokenType::space, this);
+                return Token::normal(TokenType::space, this->getPosition());
             else if (ambiguousValue == "from")
-                return Token::normal(TokenType::From, this);
+                return Token::normal(TokenType::From, this->getPosition());
             else if (ambiguousValue == "true")
-                return Token::normal(TokenType::TRUE, this);
+                return Token::normal(TokenType::TRUE, this->getPosition());
             else if (ambiguousValue == "false")
-                return Token::normal(TokenType::FALSE, this);
+                return Token::normal(TokenType::FALSE, this->getPosition());
             else if (ambiguousValue == "say")
-                return Token::normal(TokenType::say, this);
+                return Token::normal(TokenType::say, this->getPosition());
             else if (ambiguousValue == "as")
-                return Token::normal(TokenType::as, this);
+                return Token::normal(TokenType::as, this->getPosition());
             else if (ambiguousValue == "file")
-                return Token::normal(TokenType::file, this);
+                return Token::normal(TokenType::file, this->getPosition());
             else if (ambiguousValue == "lib")
-                return Token::normal(TokenType::Library, this);
+                return Token::normal(TokenType::Library, this->getPosition());
             else if (ambiguousValue == "ptr")
-                return Token::normal(TokenType::pointer, this);
+                return Token::normal(TokenType::pointer, this->getPosition());
             else if (ambiguousValue == "this")
-                return Token::normal(TokenType::This, this);
+                return Token::normal(TokenType::This, this->getPosition());
             else if (ambiguousValue == "int")
-                return Token::normal(TokenType::Integer, this);
+                return Token::normal(TokenType::Integer, this->getPosition());
             else if (ambiguousValue == "double")
-                return Token::normal(TokenType::Double, this);
+                return Token::normal(TokenType::Double, this->getPosition());
             else if (ambiguousValue == "string")
-                return Token::normal(TokenType::String, this);
+                return Token::normal(TokenType::String, this->getPosition());
             else if (ambiguousValue == "alias")
-                return Token::normal(TokenType::Alias, this);
+                return Token::normal(TokenType::Alias, this->getPosition());
             else if (ambiguousValue == "for")
-                return Token::normal(TokenType::For, this);
+                return Token::normal(TokenType::For, this->getPosition());
             else if (ambiguousValue == "give")
-                return Token::normal(TokenType::give, this);
+                return Token::normal(TokenType::give, this->getPosition());
             else if (ambiguousValue == "expose")
-                return Token::normal(TokenType::expose, this);
+                return Token::normal(TokenType::expose, this->getPosition());
             else
             {
                 previousContext = "identifier";
-                return Token::valued(TokenType::identifier, ambiguousValue, this);
+                return Token::valued(TokenType::identifier, ambiguousValue, this->getPosition());
             }
         }
         else
         {
             logError("Unrecognised character found: " + std::string(1, current));
+            return Token::normal(TokenType::endOfFile, this->getPosition());
         }
     }
     }
@@ -657,5 +662,5 @@ void qat::lexer::Lexer::logError(std::string message)
               << filePath << "\n";
     std::cout << _RED "   " << message << _NORMALCOLOR << "\n";
     llvm::llvm_shutdown();
-    exit;
+    exit(0);
 }

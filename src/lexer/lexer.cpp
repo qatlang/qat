@@ -1,3 +1,45 @@
+/**
+ * Qat Programming Language : Copyright 2022 : Aldrin Mathew
+ * 
+ * AAF INSPECTABLE LICENSE - 1.0
+ * 
+ * This project is licensed under the AAF Inspectable License 1.0. 
+ * You are allowed to inspect the source of this project(s) free of 
+ * cost, and also to verify the authenticity of the product.
+ * 
+ * Unless required by applicable law, this project is provided 
+ * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either 
+ * expressed or implied. The author(s) of this project is not 
+ * liable for any harms, errors or troubles caused by using the 
+ * source or the product, unless implied by law. By using this 
+ * project, or part of it, you are acknowledging the complete terms 
+ * and conditions of licensing of this project as specified in AAF 
+ * Inspectable License 1.0 available at this URL: 
+ * 
+ * https://github.com/aldrinsartfactory/InspectableLicense/
+ * 
+ * This project may contain parts that are not licensed under the 
+ * same license. If so, the licenses of those parts should be 
+ * appropriately mentioned in those parts of the project. The 
+ * Author MAY provide a notice about the parts of the project that 
+ * are not licensed under the same license in a publicly visible 
+ * manner.
+ * 
+ * You are NOT ALLOWED to sell, or distribute THIS project, it's 
+ * contents, the source or the product or the build result of the 
+ * source under commercial or non-commercial purposes. You are NOT 
+ * ALLOWED to revamp, rebrand, refactor, modify, the source, product 
+ * or the contents of this project.
+ * 
+ * You are NOT ALLOWED to use the name, branding and identity of this 
+ * project to identify or brand any other project. You ARE however 
+ * allowed to use the name and branding to pinpoint/show the source 
+ * of the contents/code/logic of any other project. You are not 
+ * allowed to use the identification of the Authors of this project 
+ * to associate them to other projects, in a way that is deceiving 
+ * or misleading or gives out false information.
+ */
+
 #include "lexer.hpp"
 
 bool qat::lexer::Lexer::emitTokens = false;
@@ -43,7 +85,7 @@ std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse()
 {
     file.open(filePath, std::ios::in);
     auto lexerStartTime = std::chrono::high_resolution_clock::now();
-    tokens.push_back(Token::valued(TokenType::startOfFile, filePath));
+    tokens.push_back(Token::valued(TokenType::startOfFile, filePath, this));
     readNext("start");
     while (!file.eof())
     {
@@ -52,7 +94,7 @@ std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse()
     file.close();
     if (tokens.back().type != TokenType::endOfFile)
     {
-        tokens.push_back(Token::valued(TokenType::endOfFile, filePath));
+        tokens.push_back(Token::valued(TokenType::endOfFile, filePath, this));
     }
     std::chrono::nanoseconds lexerElapsed = std::chrono::high_resolution_clock::now() - lexerStartTime;
     lexerTimeInNS = lexerElapsed.count();
@@ -82,7 +124,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
     }
     if (file.eof())
     {
-        return Token::valued(TokenType::endOfFile, filePath);
+        return Token::valued(TokenType::endOfFile, filePath, this);
     }
     if (previous == '\r')
     {
@@ -105,67 +147,67 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
     {
         previousContext = "stop";
         readNext(previousContext);
-        return Token::normal(TokenType::stop);
+        return Token::normal(TokenType::stop, this);
     }
     case ',':
     {
         previousContext = "separator";
         readNext(previousContext);
-        return Token::normal(TokenType::separator);
+        return Token::normal(TokenType::separator, this);
     }
     case '(':
     {
         previousContext = "paranthesisOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::paranthesisOpen);
+        return Token::normal(TokenType::paranthesisOpen, this);
     }
     case ')':
     {
         previousContext = "paranthesisClose";
         readNext(previousContext);
-        return Token::normal(TokenType::paranthesisClose);
+        return Token::normal(TokenType::paranthesisClose, this);
     }
     case '[':
     {
         previousContext = "bracketOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::bracketOpen);
+        return Token::normal(TokenType::bracketOpen, this);
     }
     case ']':
     {
         previousContext = "bracketClose";
         readNext(previousContext);
-        return Token::normal(TokenType::bracketClose);
+        return Token::normal(TokenType::bracketClose, this);
     }
     case '{':
     {
         previousContext = "curlybraceOpen";
         readNext(previousContext);
-        return Token::normal(TokenType::curlybraceOpen);
+        return Token::normal(TokenType::curlybraceOpen, this);
     }
     case '}':
     {
         previousContext = "curlybraceClose";
         readNext(previousContext);
-        return Token::normal(TokenType::curlybraceClose);
+        return Token::normal(TokenType::curlybraceClose, this);
     }
     case '<':
     {
         previousContext = "lesserThan";
         readNext(previousContext);
-        return Token::normal(TokenType::lesserThan);
+        return Token::normal(TokenType::lesserThan, this);
     }
     case '>':
     {
         previousContext = "greaterThan";
         readNext(previousContext);
-        return Token::normal(TokenType::greatherThan);
+        return Token::normal(TokenType::greatherThan, this);
     }
     case '@':
     {
         previousContext = "at";
         readNext(previousContext);
-        return Token::normal(TokenType::at);
+        return Token::normal(TokenType::at, this);
     }
     case ':':
     {
@@ -173,34 +215,34 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         if (current != '=')
         {
             previousContext = "colon";
-            return Token::normal(TokenType::colon);
+            return Token::normal(TokenType::colon, this);
         }
         else
         {
             previousContext = "assignedDeclaration";
             readNext(previousContext);
-            return Token::normal(TokenType::assignedDeclaration);
+            return Token::normal(TokenType::assignedDeclaration, this);
         }
     }
     case '#':
     {
         previousContext = "hashtag";
         readNext(previousContext);
-        return Token::normal(TokenType::hashtag);
+        return Token::normal(TokenType::hashtag, this);
     }
     case '=':
     {
         readNext("equal");
-        if (current != '=')
+        if (current != '?')
         {
             previousContext = "equal";
-            return Token::normal(TokenType::equal);
+            return Token::normal(TokenType::equal, this);
         }
         else
         {
             previousContext = "isEqual";
             readNext(previousContext);
-            return Token::normal(TokenType::isEqual);
+            return Token::normal(TokenType::isEqual, this);
         }
     }
     case '\'':
@@ -213,7 +255,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         {
             previousContext = "child";
             readNext(previousContext);
-            return Token::normal(TokenType::child);
+            return Token::normal(TokenType::child, this);
         }
         else
         {
@@ -250,7 +292,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
             }
             previousContext = "literal";
             readNext(previousContext);
-            return Token::valued(TokenType::StringLiteral, stringValue);
+            return Token::valued(TokenType::StringLiteral, stringValue, this);
         }
     }
     case '"':
@@ -288,7 +330,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         }
         previousContext = "literal";
         readNext(previousContext);
-        return Token::valued(TokenType::StringLiteral, stringValue);
+        return Token::valued(TokenType::StringLiteral, stringValue, this);
     }
     case '0':
     case '1':
@@ -318,8 +360,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
                 }
                 else
                 {
-                    buffer.push_back(Token::normal(TokenType::stop));
-                    buffer.push_back(Token::valued(TokenType::DoubleLiteral, numberValue));
+                    buffer.push_back(Token::normal(TokenType::stop, this));
+                    buffer.push_back(Token::valued(TokenType::DoubleLiteral, numberValue, this));
                     return tokeniser();
                 }
             }
@@ -329,12 +371,12 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         previousContext = "literal";
         return Token::valued(
             isDouble ? TokenType::DoubleLiteral : TokenType::IntegerLiteral,
-            numberValue //
+            numberValue, this //
         );
     }
     case -1:
     {
-        return Token::valued(TokenType::endOfFile, filePath);
+        return Token::valued(TokenType::endOfFile, filePath, this);
     }
     default:
     {
@@ -352,59 +394,64 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
             }
             previousContext = "keyword";
             if (ambiguousValue == "null")
-                return Token::normal(TokenType::null);
+                return Token::normal(TokenType::null, this);
             else if (ambiguousValue == "bring")
-                return Token::normal(TokenType::bring);
+                return Token::normal(TokenType::bring, this);
             else if (ambiguousValue == "pub")
-                return Token::normal(TokenType::Public);
+                return Token::normal(TokenType::Public, this);
             else if (ambiguousValue == "pvt")
-                return Token::normal(TokenType::Private);
+                return Token::normal(TokenType::Private, this);
             else if (ambiguousValue == "void")
-                return Token::normal(TokenType::Void);
+                return Token::normal(TokenType::Void, this);
             else if (ambiguousValue == "object")
-                return Token::normal(TokenType::Object);
-            else if (ambiguousValue == "class")
-                return Token::normal(TokenType::Class);
+                return Token::normal(TokenType::Object, this);
+            else if (ambiguousValue == "box")
+                return Token::normal(TokenType::box, this);
             else if (ambiguousValue == "const")
-                return Token::normal(TokenType::constant);
+                return Token::normal(TokenType::constant, this);
             else if (ambiguousValue == "space")
-                return Token::normal(TokenType::space);
+                return Token::normal(TokenType::space, this);
             else if (ambiguousValue == "from")
-                return Token::normal(TokenType::From);
+                return Token::normal(TokenType::From, this);
             else if (ambiguousValue == "true")
-                return Token::normal(TokenType::TRUE);
+                return Token::normal(TokenType::TRUE, this);
             else if (ambiguousValue == "false")
-                return Token::normal(TokenType::FALSE);
+                return Token::normal(TokenType::FALSE, this);
             else if (ambiguousValue == "say")
-                return Token::normal(TokenType::say);
+                return Token::normal(TokenType::say, this);
             else if (ambiguousValue == "as")
-                return Token::normal(TokenType::as);
+                return Token::normal(TokenType::as, this);
             else if (ambiguousValue == "file")
-                return Token::normal(TokenType::file);
+                return Token::normal(TokenType::file, this);
             else if (ambiguousValue == "lib")
-                return Token::normal(TokenType::Library);
+                return Token::normal(TokenType::Library, this);
+            else if (ambiguousValue == "ptr")
+                return Token::normal(TokenType::pointer, this);
+            else if (ambiguousValue == "this")
+                return Token::normal(TokenType::This, this);
             else if (ambiguousValue == "int")
-                return Token::normal(TokenType::Integer);
+                return Token::normal(TokenType::Integer, this);
             else if (ambiguousValue == "double")
-                return Token::normal(TokenType::Double);
+                return Token::normal(TokenType::Double, this);
             else if (ambiguousValue == "string")
-                return Token::normal(TokenType::String);
+                return Token::normal(TokenType::String, this);
             else if (ambiguousValue == "alias")
-                return Token::normal(TokenType::Alias);
+                return Token::normal(TokenType::Alias, this);
             else if (ambiguousValue == "for")
-                return Token::normal(TokenType::For);
+                return Token::normal(TokenType::For, this);
             else if (ambiguousValue == "give")
-                return Token::normal(TokenType::give);
+                return Token::normal(TokenType::give, this);
+            else if (ambiguousValue == "expose")
+                return Token::normal(TokenType::expose, this);
             else
             {
                 previousContext = "identifier";
-                return Token::valued(TokenType::identifier, ambiguousValue);
+                return Token::valued(TokenType::identifier, ambiguousValue, this);
             }
         }
         else
         {
             logError("Unrecognised character found: " + std::string(1, current));
-            exit(0);
         }
     }
     }
@@ -454,6 +501,9 @@ void qat::lexer::Lexer::printStatus()
                 break;
             case TokenType::at:
                 std::cout << " @ ";
+                break;
+            case TokenType::box:
+                std::cout << " box ";
                 break;
             case TokenType::bracketClose:
                 std::cout << " ] ";
@@ -536,23 +586,20 @@ void qat::lexer::Lexer::printStatus()
             case TokenType::Library:
                 std::cout << " lib ";
                 break;
-            case TokenType::Void:
-                std::cout << " void ";
-                break;
             case TokenType::null:
                 std::cout << " null ";
                 break;
             case TokenType::Object:
-                std::cout << " obj ";
-                break;
-            case TokenType::Class:
-                std::cout <<" class ";
+                std::cout << " object ";
                 break;
             case TokenType::paranthesisClose:
                 std::cout << " ) ";
                 break;
             case TokenType::paranthesisOpen:
                 std::cout << " ( ";
+                break;
+            case TokenType::pointer:
+                std::cout << " ptr ";
                 break;
             case TokenType::Private:
                 std::cout << " pvt ";
@@ -579,10 +626,19 @@ void qat::lexer::Lexer::printStatus()
                 std::cout << " string ";
                 break;
             case TokenType::StringLiteral:
-                std::cout << " \"" << tokens[i].value << "\" ";
+                std::cout << " \"" << tokens.at(i).value << "\" ";
+                break;
+            case TokenType::This:
+                std::cout << " this ";
                 break;
             case TokenType::TRUE:
                 std::cout << " true ";
+                break;
+            case TokenType::Void:
+                std::cout << " void ";
+                break;
+            case TokenType::expose:
+                std::cout << " expose ";
                 break;
             default:
                 std::cout << " UNKNOWN ";
@@ -599,5 +655,7 @@ void qat::lexer::Lexer::logError(std::string message)
     std::cout << "[LEXER ERROR] in line " << lineNumber
               << " at " << characterNumber << " of "
               << filePath << "\n";
-    std::cout << _RED "   " << message << _NORMALCOLOR;
+    std::cout << _RED "   " << message << _NORMALCOLOR << "\n";
+    llvm::llvm_shutdown();
+    exit;
 }

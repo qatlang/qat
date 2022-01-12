@@ -1,6 +1,49 @@
+/**
+ * Qat Programming Language : Copyright 2022 : Aldrin Mathew
+ * 
+ * AAF INSPECTABLE LICENSE - 1.0
+ * 
+ * This project is licensed under the AAF Inspectable License 1.0. 
+ * You are allowed to inspect the source of this project(s) free of 
+ * cost, and also to verify the authenticity of the product.
+ * 
+ * Unless required by applicable law, this project is provided 
+ * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either 
+ * expressed or implied. The author(s) of this project is not 
+ * liable for any harms, errors or troubles caused by using the 
+ * source or the product, unless implied by law. By using this 
+ * project, or part of it, you are acknowledging the complete terms 
+ * and conditions of licensing of this project as specified in AAF 
+ * Inspectable License 1.0 available at this URL: 
+ * 
+ * https://github.com/aldrinsartfactory/InspectableLicense/
+ * 
+ * This project may contain parts that are not licensed under the 
+ * same license. If so, the licenses of those parts should be 
+ * appropriately mentioned in those parts of the project. The 
+ * Author MAY provide a notice about the parts of the project that 
+ * are not licensed under the same license in a publicly visible 
+ * manner.
+ * 
+ * You are NOT ALLOWED to sell, or distribute THIS project, it's 
+ * contents, the source or the product or the build result of the 
+ * source under commercial or non-commercial purposes. You are NOT 
+ * ALLOWED to revamp, rebrand, refactor, modify, the source, product 
+ * or the contents of this project.
+ * 
+ * You are NOT ALLOWED to use the name, branding and identity of this 
+ * project to identify or brand any other project. You ARE however 
+ * allowed to use the name and branding to pinpoint/show the source 
+ * of the contents/code/logic of any other project. You are not 
+ * allowed to use the identification of the Authors of this project 
+ * to associate them to other projects, in a way that is deceiving 
+ * or misleading or gives out false information.
+ */
+
 #ifndef QAT_LEXER_LEXER_HPP
 #define QAT_LEXER_LEXER_HPP
 
+#include "llvm/Support/ManagedStatic.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -59,28 +102,7 @@ namespace qat
              */
             char current;
 
-            /**
-             * @brief The current line of the lexer. This is incremented everytime
-             * the End of Line is encountered
-             * 
-             */
-            long long lineNumber = 1;
 
-            /**
-             * @brief The number pertaining to the current character read by the
-             * lexer. This is incremented by the `readNext` function everytime a
-             * character is read in the file. This is reset to zero after the End
-             * of Line is encountered
-             * 
-             */
-            long long characterNumber = 0;
-
-            /**
-             * @brief Total number of characters found in the file. This is for
-             * reporting purposes
-             * 
-             */
-            long long totalCharacterCount = 0;
             
             /**
              * @brief Vector of all tokens found during lexical analysis. This is
@@ -95,6 +117,13 @@ namespace qat
              * 
              */
             std::vector<Token> buffer;
+
+            /**
+             * @brief Total number of characters found in the file. This is for
+             * reporting purposes
+             * 
+             */
+            long long totalCharacterCount = 0;
 
             /**
              * @brief Time taken by the lexer to analyse the entire file, in
@@ -164,6 +193,23 @@ namespace qat
              * @return Token The latest token obtained during lexical analysis
              */
             Token tokeniser();
+
+            /**
+             * @brief The current line of the lexer. This is incremented everytime
+             * the End of Line is encountered
+             * 
+             */
+            long long lineNumber = 1;
+            
+            /**
+             * @brief The number pertaining to the current character read by the
+             * lexer. This is incremented by the `readNext` function everytime a
+             * character is read in the file. This is reset to zero after the End
+             * of Line is encountered
+             * 
+             */
+            long long characterNumber = 0;
+
 
             /**
              * @brief Prints all status about the lexical analysis to the standard

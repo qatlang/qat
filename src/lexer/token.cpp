@@ -45,14 +45,14 @@
 qat::lexer::Token qat::lexer::Token::valued(
     qat::lexer::TokenType _type,
     std::string _value,
-    qat::lexer::Lexer *lexer //
+    qat::utilities::FilePosition _filePosition //
 )
 {
-    return Token(_type, _value, lexer->lineNumber, lexer->characterNumber);
+    return Token(_type, _value, _filePosition);
 }
 
 qat::lexer::Token qat::lexer::Token::normal(
-    qat::lexer::TokenType _type, qat::lexer::Lexer *lexer)
+    qat::lexer::TokenType _type, qat::utilities::FilePosition _filePosition)
 {
-    return Token(_type, lexer->lineNumber, lexer->characterNumber);
+    return Token(_type, _filePosition);
 }

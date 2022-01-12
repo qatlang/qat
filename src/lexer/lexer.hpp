@@ -43,6 +43,7 @@
 #ifndef QAT_LEXER_LEXER_HPP
 #define QAT_LEXER_LEXER_HPP
 
+#include <experimental/filesystem>
 #include "llvm/Support/ManagedStatic.h"
 #include <iostream>
 #include <fstream>
@@ -52,6 +53,9 @@
 #include "./token.hpp"
 #include "./token_type.hpp"
 #include "../CLI/color.hpp"
+#include "../utilities/file_position.hpp"
+
+namespace fsexp = std::experimental::filesystem;
 
 namespace qat
 {
@@ -210,6 +214,12 @@ namespace qat
              */
             long long characterNumber = 0;
 
+            /**
+             * @brief Get the FilePosition object for a token
+             * 
+             * @return utilities::FilePosition 
+             */
+            utilities::FilePosition getPosition();
 
             /**
              * @brief Prints all status about the lexical analysis to the standard

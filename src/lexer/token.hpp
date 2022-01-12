@@ -45,12 +45,13 @@
 
 #include <string>
 #include "./token_type.hpp"
-#include "./lexer.hpp"
+#include "../utilities/file_position.hpp"
 
 namespace qat
 {
     namespace lexer
     {
+
         /**
          * @brief Token constitutes of a symbol encountered by the Lexer
          * during file analysis. All tokens are later parsed through, by
@@ -59,11 +60,11 @@ namespace qat
         class Token
         {
         private:
-            explicit Token(TokenType _type, long long _line, long long _character)
-                : type(_type), value(""), hasValue(false), line(_line), character(_character) {}
+            explicit Token(TokenType _type, utilities::FilePosition _filePosition)
+                : type(_type), value(""), hasValue(false), filePosition(_filePosition) {}
 
-            explicit Token(TokenType _type, std::string _value, long long _line, long long _character)
-                : type(_type), value(_value), hasValue(true), line(_line), character(_character) {}
+            explicit Token(TokenType _type, std::string _value, utilities::FilePosition _filePosition)
+                : type(_type), value(_value), hasValue(true), filePosition(_filePosition) {}
 
         public:
             /**
@@ -77,7 +78,7 @@ namespace qat
              * @param lexer Pointer to the Lexer instance to get the line and character numbers
              * @return Token 
              */
-            static Token valued(TokenType _type, std::string _value, Lexer *lexer);
+            static Token valued(TokenType _type, std::string _value, utilities::FilePosition filePosition);
 
             /**
              * @brief Tokens that are by default, recognised by the language. These tokens
@@ -88,7 +89,7 @@ namespace qat
              * @param lexer Pointer to the Lexer instance to get the line and character numbers
              * @return Token 
              */
-            static Token normal(TokenType _type, Lexer *lexer);
+            static Token normal(TokenType _type, utilities::FilePosition filePosition);
 
             /**
              * @brief Type of the token. Can mostly refer to symbols that
@@ -108,17 +109,7 @@ namespace qat
              */
             bool hasValue = false;
 
-            /**
-             * @brief Line number of the token
-             * 
-             */
-            long long line;
-
-            /**
-             * @brief Character in the line the token corresponds to
-             * 
-             */
-            long long character;
+            utilities::FilePosition filePosition;
         };
     }
 }

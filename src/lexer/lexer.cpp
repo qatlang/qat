@@ -81,7 +81,8 @@ void qat::lexer::Lexer::readNext(std::string lexerContext)
     // }
 }
 
-qat::utilities::FilePosition qat::lexer::Lexer::getPosition() {
+qat::utilities::FilePosition qat::lexer::Lexer::getPosition()
+{
     return qat::utilities::FilePosition(fsexp::path(filePath), lineNumber, characterNumber);
 }
 
@@ -266,23 +267,34 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
             bool escape = false;
             readNext("string");
             std::string stringValue = "";
-            while (escape ? (!file.eof()) : (current != '\'' && !file.eof()))
+            while (escape ? !file.eof() : (current != '\'' && !file.eof()))
             {
                 if (escape)
                 {
                     escape = false;
-                    readNext("string");
                     if (current == '\'')
                         stringValue += '\'';
                     else if (current == '"')
                         stringValue += '"';
                     else if (current == '\\')
                         stringValue += "\\\\";
-                    else
-                    {
-                        stringValue += "\\";
-                        stringValue += current;
-                    }
+                    else if (current == 'n')
+                        stringValue += "\n";
+                    else if (current == '?')
+                        stringValue += "\?";
+                    else if (current == 'b')
+                        stringValue += "\b";
+                    else if (current == 'a')
+                        stringValue += "\a";
+                    else if (current == 'f')
+                        stringValue += "\f";
+                    else if (current == 'r')
+                        stringValue += "\r";
+                    else if (current == 't')
+                        stringValue += "\t";
+                    else if (current == 'v')
+                        stringValue += "\v";
+                    readNext("string");
                 }
                 if (current == '\\' && previous != '\\')
                 {
@@ -304,23 +316,34 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser()
         bool escape = false;
         readNext("string");
         std::string stringValue = "";
-        while (escape ? (!file.eof()) : (current != '"' && !file.eof()))
+        while (escape ? !file.eof() : (current != '"' && !file.eof()))
         {
             if (escape)
             {
                 escape = false;
-                readNext("string");
                 if (current == '\'')
                     stringValue += '\'';
                 else if (current == '"')
                     stringValue += '"';
                 else if (current == '\\')
                     stringValue += "\\\\";
-                else
-                {
-                    stringValue += "\\";
-                    stringValue += current;
-                }
+                else if (current == 'n')
+                    stringValue += "\n";
+                else if (current == '?')
+                    stringValue += "\?";
+                else if (current == 'b')
+                    stringValue += "\b";
+                else if (current == 'a')
+                    stringValue += "\a";
+                else if (current == 'f')
+                    stringValue += "\f";
+                else if (current == 'r')
+                    stringValue += "\r";
+                else if (current == 't')
+                    stringValue += "\t";
+                else if (current == 'v')
+                    stringValue += "\v";
+                readNext("string");
             }
             if (current == '\\' && previous != '\\')
             {

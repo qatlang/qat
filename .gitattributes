@@ -6,4 +6,4 @@
 *.{bat,[bB][aA][tT]} text eol=crlf
 *.{ps1,[pP][sS]} text eol=crlf
 *.{sh,[sS][hH]} text eol=lf
-*.{zsh,[zZ][sS][hH]} text eol=lf
+*.{zsh,[zZ][sS][hH]} text eol=lf  

@@ -54,6 +54,7 @@
 #include "./token_type.hpp"
 #include "../CLI/color.hpp"
 #include "../utilities/file_position.hpp"
+#include "../utilities/is_integer.hpp"
 
 namespace fsexp = std::experimental::filesystem;
 
@@ -224,7 +225,7 @@ namespace qat
             /**
              * @brief Prints all status about the lexical analysis to the standard
              * output. This function's output is dependent on the CLI arguments
-             * `--emit-tokens` and `--show-report` provided to the compiler
+             * `--emit-tokens` and `--report` provided to the compiler
              * 
              */
             void printStatus();

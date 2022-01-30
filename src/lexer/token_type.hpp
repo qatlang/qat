@@ -43,9 +43,6 @@
 #ifndef QAT_LEXER_TOKENS_HPP
 #define QAT_LEXER_TOKENS_HPP
 
-#include <map>
-#include <string>
-
 namespace qat {
     namespace lexer {
         /**
@@ -63,9 +60,11 @@ namespace qat {
             Private,
             stop,
             Void,
+            Bool,
             file,
             bring,
             From,
+            to,
             child,
             external,
             function,
@@ -78,23 +77,20 @@ namespace qat {
             curlybraceClose,
             bracketOpen,
             bracketClose,
-            lesserThan,
-            greatherThan,
             colon,
             at,
             Alias,
             For,
             constant,
-            assignedDeclaration,
-            equal,
-            isEqual,
+            inferredDeclaration,
+            assignment,
             hashtag,
             separator,
-            pointer,
+            reference,
             Integer,
             IntegerLiteral,
-            Double,
-            DoubleLiteral,
+            Float,
+            FloatLiteral,
             String,
             StringLiteral,
             say,
@@ -105,6 +101,18 @@ namespace qat {
             endOfFile,
             expose,
             packed,
+            mod,
+            pointerAccess,
+            obtainPointer,
+            givenTypeSeparator,
+            binaryOperator,
+            assignedBinaryOperator,
+            If,
+            Else,
+            lesserThan,
+            greaterThan,
+            heap,
+            size,
         };
     }
 }

@@ -4,9 +4,9 @@
 #include <string>
 
 namespace qat {
-    namespace utilities {
-        bool isInteger(std::string value);
-    }
+namespace utilities {
+bool isInteger(std::string value);
 }
+} // namespace qat
 
 #endif

@@ -5,21 +5,19 @@
 
 namespace fsexp = std::experimental::filesystem;
 
-namespace qat
-{
-    namespace utilities
-    {
-        class FilePosition
-        {
-        public:
-            FilePosition(fsexp::path _file, long long _line, long long _character)
-                : file(_file), line(_line), character(_character) {}
+namespace qat {
+namespace utilities {
+class FilePosition {
+public:
+  FilePosition(fsexp::path _file, unsigned long long _line,
+               unsigned long long _character)
+      : file(_file), line(_line), character(_character) {}
 
-            fsexp::path file;
-            long long line;
-            long long character;
-        };
-    }
-}
+  fsexp::path file;
+  unsigned long long line;
+  unsigned long long character;
+};
+} // namespace utilities
+} // namespace qat
 
 #endif

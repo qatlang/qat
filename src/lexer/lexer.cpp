@@ -79,7 +79,7 @@ qat::utilities::FilePosition qat::lexer::Lexer::getPosition() {
                                       characterNumber);
 }
 
-std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse() {
+std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
   file.open(filePath, std::ios::in);
   auto lexerStartTime = std::chrono::high_resolution_clock::now();
   tokens.push_back(
@@ -95,8 +95,8 @@ std::vector<qat::lexer::Token> qat::lexer::Lexer::analyse() {
   }
   std::chrono::nanoseconds lexerElapsed =
       std::chrono::high_resolution_clock::now() - lexerStartTime;
-  lexerTimeInNS = lexerElapsed.count();
-  return tokens;
+  timeInNS = lexerElapsed.count();
+  return &tokens;
 }
 
 void qat::lexer::Lexer::changeFile(std::string newFilePath) {
@@ -107,7 +107,7 @@ void qat::lexer::Lexer::changeFile(std::string newFilePath) {
   current = -1;
   lineNumber = 1;
   characterNumber = 0;
-  lexerTimeInNS = 0;
+  timeInNS = 0;
   totalCharacterCount = 0;
 }
 
@@ -184,6 +184,12 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     if (current == '>') {
       previousContext = "pointerAccess";
       readNext(previousContext);
+      if (current == '>') {
+        previousContext = "lambdaGivenTypeSeparator";
+        readNext(previousContext);
+        return Token::normal(TokenType::lambdaGivenTypeSeparator,
+                             this->getPosition());
+      }
       return Token::normal(TokenType::pointerAccess, this->getPosition());
     } else if (current == '=') {
       previousContext = "inferredAssignment";
@@ -203,9 +209,62 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     readNext(previousContext);
     return Token::normal(TokenType::hashtag, this->getPosition());
   }
+  case '/': {
+    previousContext = "operator";
+    std::string value = "/";
+    readNext(previousContext);
+    if (current == '*') {
+      bool star = false;
+      previousContext = "multiLineComment";
+      readNext(previousContext);
+      while ((star ? (current != '/') : true) && !file.eof()) {
+        if (star) {
+          star = false;
+        }
+        if (current == '*') {
+          star = true;
+        }
+        readNext(previousContext);
+      }
+      if (file.eof()) {
+        return Token::valued(TokenType::endOfFile, filePath,
+                             this->getPosition());
+      } else {
+        readNext(previousContext);
+        return tokeniser();
+      }
+    } else if (current == '/') {
+      previousContext = "singleLineComment";
+      while ((current != '\n' && previous != '\r') && !file.eof()) {
+        readNext(previousContext);
+      }
+      if (file.eof()) {
+        return Token::valued(TokenType::endOfFile, filePath,
+                             this->getPosition());
+      } else {
+        readNext(previousContext);
+        return tokeniser();
+      }
+    } else {
+      return Token::valued(TokenType::binaryOperator, value,
+                           this->getPosition());
+    }
+  }
+  case '!': {
+    previousContext = "operator";
+    std::string value = "!";
+    readNext(previousContext);
+    if (current == '=') {
+      value += current;
+      readNext(previousContext);
+      return Token::valued(TokenType::binaryOperator, value,
+                           this->getPosition());
+    }
+    return Token::valued(TokenType::unaryOperatorLeft, value,
+                         this->getPosition());
+  }
   case '+':
   case '-':
-  case '/':
   case '%':
   case '*':
   case '<':
@@ -214,7 +273,17 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     std::string opValue = "";
     opValue += current;
     readNext(previousContext);
-    if (current == '=' && opValue != "<" && opValue != ">") {
+    if ((current == '+' && opValue == "+") ||
+        (current == '-' && opValue == "-")) {
+      opValue += current;
+      readNext(previousContext);
+      const std::string identifier =
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+      return Token::valued((identifier.find(current) != std::string::npos
+                                ? TokenType::unaryOperatorRight
+                                : TokenType::unaryOperatorRight),
+                           opValue, this->getPosition());
+    } else if (current == '=' && opValue != "<" && opValue != ">") {
       opValue += current;
       readNext(previousContext);
       return Token::valued(TokenType::assignedBinaryOperator, opValue,
@@ -479,7 +548,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
                              this->getPosition());
       }
     } else {
-      logError("Unrecognised character found: " + std::string(1, current));
+      throwError("Unrecognised character found: " + std::string(1, current));
       return Token::normal(TokenType::endOfFile, this->getPosition());
     }
   }
@@ -491,14 +560,14 @@ void qat::lexer::Lexer::printStatus() {
     double timeValue = 0;
     std::string timeUnit = "";
 
-    if (lexerTimeInNS < 1000000) {
-      timeValue = ((double)lexerTimeInNS) / 1000;
+    if (timeInNS < 1000000) {
+      timeValue = ((double)timeInNS) / 1000;
       timeUnit = " microseconds \n";
-    } else if (lexerTimeInNS < 1000000) {
-      timeValue = ((double)lexerTimeInNS) / 1000000;
+    } else if (timeInNS < 1000000) {
+      timeValue = ((double)timeInNS) / 1000000;
       timeUnit = " milliseconds \n";
     } else {
-      timeValue = ((double)lexerTimeInNS) / 1000000000;
+      timeValue = ((double)timeInNS) / 1000000000;
       timeUnit = " seconds \n";
     }
     std::cout << _CYAN "[ LEXER ] " _GREEN _BOLD << filePath
@@ -663,6 +732,12 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::TRUE:
         std::cout << " true ";
         break;
+      case TokenType::unaryOperatorLeft:
+        std::cout << " " << tokens.at(i).value;
+        break;
+      case TokenType::unaryOperatorRight:
+        std::cout << tokens.at(i).value << " ";
+        break;
       case TokenType::Void:
         std::cout << " void ";
         break;
@@ -678,11 +753,10 @@ void qat::lexer::Lexer::printStatus() {
   }
 }
 
-void qat::lexer::Lexer::logError(std::string message) {
+void qat::lexer::Lexer::throwError(std::string message) {
   std::cout << _RED "[ LEXER ERROR ] " _GREEN _BOLD << filePath << ":"
             << lineNumber << ":" << characterNumber
             << _NORMALCOLOR _NOBOLD "\n";
   std::cout << "   " << message << "\n";
-  // llvm::llvm_shutdown();
   exit(0);
 }

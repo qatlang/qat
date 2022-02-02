@@ -29,6 +29,7 @@ enum class NodeType {
   memberFunctionCall,
   memberVariableExpression,
   sizeOf,
+  memberIndexAccess
 };
 }
 } // namespace qat

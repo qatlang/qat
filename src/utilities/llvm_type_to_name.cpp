@@ -2,7 +2,12 @@
 
 std::string qat::utilities::llvmTypeToName(llvm::Type *type) {
   if (type->isStructTy()) {
-    return type->getStructName().str();
+    auto structType = llvm::dyn_cast<llvm::StructType>(type);
+    if (structType->isLiteral()) {
+      return "";
+    } else {
+      return structType->getName().str();
+    }
   } else {
     if (type->isIntegerTy()) {
       llvm::IntegerType *integerType = llvm::dyn_cast<llvm::IntegerType>(type);

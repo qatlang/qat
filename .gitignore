@@ -3,3 +3,4 @@ build/
 build.sh
 run.sh
 test/
+.cache/

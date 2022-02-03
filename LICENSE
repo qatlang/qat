@@ -1,8 +1,8 @@
 Qat Programming Language : Copyright 2022 : Aldrin Mathew
 
-AAF INSPECTABLE LICENSE - 1.0
+AAF INSPECTABLE LICENCE - 1.0
 
-This project is licensed under the AAF Inspectable License 1.0. 
+This project is licensed under the AAF Inspectable Licence 1.0. 
 You are allowed to inspect the source of this project(s) free of 
 cost, and also to verify the authenticity of the product.
 
@@ -13,18 +13,18 @@ liable for any harms, errors or troubles caused by using the
 source or the product, unless implied by law. By using this 
 project, or part of it, you are acknowledging the complete terms 
 and conditions of licensing of this project as specified in AAF 
-Inspectable License 1.0 available at this URL: 
+Inspectable Licence 1.0 available at this URL: 
 
-https://github.com/aldrinsartfactory/InspectableLicense/
+https://github.com/aldrinsartfactory/InspectableLicence/
 
 This project may contain parts that are not licensed under the 
-same license. If so, the licenses of those parts should be 
+same licence. If so, the licences of those parts should be 
 appropriately mentioned in those parts of the project. The 
 Author MAY provide a notice about the parts of the project that 
-are not licensed under the same license in a publicly visible 
+are not licensed under the same licence in a publicly visible 
 manner.
 
-You are NOT ALLOWED to sell, or distribute THIS project, it's 
+You are NOT ALLOWED to sell, or distribute THIS project, its 
 contents, the source or the product or the build result of the 
 source under commercial or non-commercial purposes. You are NOT 
 ALLOWED to revamp, rebrand, refactor, modify, the source, product 
@@ -40,14 +40,14 @@ or misleading or gives out false information.
 
 DEFINITIONS
 
-1. "This license", "license", "the license", "same license" all 
-refers to the AAF Inspectable License 1.0
+1. "This licence", "licence", "the licence", "same licence" all 
+refers to the AAF Inspectable Licence 1.0
 
 2. "The source", "source", refers to the source/source code that 
-is subject to this license, and from which the product is derived.
+is subject to this licence, and from which the product is derived.
 
 3. "The product", "product" refers to the result of the build of 
-the source/source code that is subject to this license. That is, 
+the source/source code that is subject to this licence. That is, 
 the product is obtained or derived from the source.
 
 4. "The author", "author" refers to the owner/creator/author or 
@@ -57,7 +57,7 @@ whoever represents the project, or is identified as its guardian.
 collective of the Source and the Product. The project is usually 
 represented with an easily identifiable name. This however does 
 not make the distribution and usage of the product as being 
-subject of this license. The author can still choose how to 
+subject of this licence. The author can still choose how to 
 distribute and make the product available, and whether is should 
 be free-of-cost or not.
 
@@ -70,11 +70,11 @@ COMMENTS
 
 The traditional definition of open source is flawed, as it is 
 often meant to be "Free and Open Source" instead of just "Open 
-Source". And because of that, this license is not compatible 
+Source". And because of that, this licence is not compatible 
 with the definition of Open Source by the Open Source Initiative 
-(OSI). Instead this license follows the true meaning of open 
+(OSI). Instead this licence follows the true meaning of open 
 source, allowing the source to be inspected and verified by the 
-public free of cost. However, advertising that this license is 
-an Open Source license can lead to ambiguity and confusion. 
-Hence we choose to identify this license as belonging to the 
-"Shared Source" family of licenses.
+public free of cost. However, advertising that this licence is 
+an Open Source licence can lead to ambiguity and confusion. 
+Hence we choose to identify this licence as belonging to the 
+"Shared Source" family of licences.

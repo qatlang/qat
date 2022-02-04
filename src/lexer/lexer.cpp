@@ -180,6 +180,11 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     readNext(previousContext);
     return Token::normal(TokenType::at, this->getPosition());
   }
+  case '^': {
+    previousContext = "staticChild";
+    readNext(previousContext);
+    return Token::normal(TokenType::staticChild, this->getPosition());
+  }
   case ':': {
     readNext("colon");
     if (current == '>') {
@@ -431,7 +436,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
           isFloat = true;
           numberValue += '.';
         } else {
-          /// This is in the reverse order since the last element is returned first
+          /// This is in the reverse order since the last element is returned
+          /// first
           buffer.push_back(Token::normal(TokenType::stop, this->getPosition()));
           buffer.push_back(Token::valued(TokenType::IntegerLiteral, numberValue,
                                          this->getPosition()));
@@ -715,6 +721,9 @@ void qat::lexer::Lexer::printStatus() {
         break;
       case TokenType::startOfFile:
         std::cout << "STARTOFFILE  -  " << filePath << "\n";
+        break;
+      case TokenType::staticChild:
+        std::cout << " ^ ";
         break;
       case TokenType::stop:
         std::cout << " .\n";

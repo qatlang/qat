@@ -116,7 +116,8 @@ enum class TokenType {
   unaryOperatorLeft,
   unaryOperatorRight,
   lambdaGivenTypeSeparator,
-  comment
+  comment,
+  staticChild
 };
 } // namespace lexer
 } // namespace qat

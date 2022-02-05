@@ -1,3 +1,5 @@
+[![wakatime](https://wakatime.com/badge/user/af510812-c60b-4a16-bb6e-fada8313362b/project/e1c4e435-cfac-41ac-9ba3-59d61be2f357.svg)](https://qat.dev)
+
 ![Qat cover image](./media/cover_wide.png)
 
 <div><center>
@@ -6,7 +8,6 @@
 <a href="https://discord.gg/GbmfprHK" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white"/></a>
 <a href="https://reddit.com/r/qatlang" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white"/></a>
 <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Profile-000000?style=for-the-badge&logo=github&logoColor=white"/></a>
-</center>
 <hr>
 </div>
 

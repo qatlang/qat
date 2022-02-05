@@ -11,7 +11,7 @@
 <hr>
 </div>
 
-**qat** is closer to your machine's heart. It is envisioned to be a super-fast, low-level, efficient systems language for maintainable code...
+**qat** is closer to your machine's heart. It is envisioned to be a super-fast, legible systems language for maintainable code...
 
 This project is published under a **Shared Source** [license](https://github.com/qatlang/qat/blob/main/LICENSE) and is solely maintained by <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer">Aldrin Mathew</a>. The project is not open to public contributions when it comes to development. But if you are facing issues with the language, you are always welcome to [open an issue](https://github.com/qatlang/qat/issues/new/choose).
 
@@ -21,6 +21,14 @@ Besides that, you can contribute to the project via the following links:
 <a href="https://ko-fi.com/aldrinmathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white"/></a>
 <a href="https://paypal.me/aldrinsartfactory" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white"/></a>
 </center></div>
+
+## Code Sample
+
+```qat
+void :: main() [
+  say "Hello, World!".
+]
+```
 
 ## Warning!!
 The project is under heavy development and is not suitable for production use (that is if you can even compile the whole language). Updates will be provided appropriately via the social channels and via Github.

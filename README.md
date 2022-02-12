@@ -24,9 +24,33 @@ Besides that, you can contribute to the project via the following links:
 
 ## Code Sample
 
+#### Hello, World!
 ```qat
 void :: main() [
   say "Hello, World!".
+]
+```
+#### Square
+```qat
+i64 :: square(i32 a, i32 b) [
+  return (a to i64) * (b to i64).
+]
+```
+#### Fibonacci Sequence
+```qat
+/**
+ *  Changing default values of a and b can generate a custom sequence
+ */
+vec<i32> :: fibonacci(
+  count := 10,
+  a := 1,
+  b := 1,
+) [
+  vec<i32> result = [a, b].
+  loop count times [
+    result'push(result'last() + result'at(result'length() - 2)).
+  ]
+  give result.
 ]
 ```
 

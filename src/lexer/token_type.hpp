@@ -63,7 +63,7 @@ enum class TokenType {
   Bool,
   file,
   bring,
-  From,
+  from,
   to,
   child,
   external,
@@ -115,7 +115,7 @@ enum class TokenType {
   size,
   unaryOperatorLeft,
   unaryOperatorRight,
-  lambdaGivenTypeSeparator,
+  lambda,
   comment,
   staticChild
 };

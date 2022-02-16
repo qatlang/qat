@@ -46,32 +46,29 @@ bool qat::lexer::Lexer::emitTokens = false;
 bool qat::lexer::Lexer::showReport = false;
 
 void qat::lexer::Lexer::readNext(std::string lexerContext) {
-  // try
-  // {
-  if (file.eof()) {
-    previous = current;
-    current = -1;
-  } else {
-    previous = current;
-    file.get(current);
-    characterNumber++;
-    totalCharacterCount++;
+  try {
+    if (file.eof()) {
+      previous = current;
+      current = -1;
+    } else {
+      previous = current;
+      file.get(current);
+      characterNumber++;
+      totalCharacterCount++;
+    }
+    if (current == '\n') {
+      lineNumber++;
+      characterNumber = 0;
+    } else if (current == '\r') {
+      lineNumber++;
+      previous = current;
+      file.get(current);
+      totalCharacterCount++;
+      characterNumber = (current == '\n') ? 0 : 1;
+    }
+  } catch (...) {
+    throwError("Analysis failed while reading the file");
   }
-  if (current == '\n') {
-    lineNumber++;
-    characterNumber = 0;
-  } else if (current == '\r') {
-    lineNumber++;
-    previous = current;
-    file.get(current);
-    totalCharacterCount++;
-    characterNumber = (current == '\n') ? 0 : 1;
-  }
-  // }
-  // catch (...)
-  // {
-  //     logError("Analysis failed while reading the file");
-  // }
 }
 
 qat::utilities::FilePosition qat::lexer::Lexer::getPosition() {
@@ -190,12 +187,6 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     if (current == '>') {
       previousContext = "pointerAccess";
       readNext(previousContext);
-      if (current == '>') {
-        previousContext = "lambdaGivenTypeSeparator";
-        readNext(previousContext);
-        return Token::normal(TokenType::lambdaGivenTypeSeparator,
-                             this->getPosition());
-      }
       return Token::normal(TokenType::pointerAccess, this->getPosition());
     } else if (current == '=') {
       previousContext = "inferredAssignment";
@@ -298,6 +289,11 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
                (current == '>' && opValue == ">")) {
       opValue += current;
       readNext(previousContext);
+      if (current == '=' && opValue == ">>") {
+        previousContext = "lambda";
+        readNext(previousContext);
+        return Token::normal(TokenType::lambda, this->getPosition());
+      }
       return Token::valued(TokenType::binaryOperator, opValue,
                            this->getPosition());
     } else if (opValue == "<") {
@@ -488,7 +484,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
       else if (ambiguousValue == "space")
         return Token::normal(TokenType::space, this->getPosition());
       else if (ambiguousValue == "from")
-        return Token::normal(TokenType::From, this->getPosition());
+        return Token::normal(TokenType::from, this->getPosition());
       else if (ambiguousValue == "to")
         return Token::normal(TokenType::to, this->getPosition());
       else if (ambiguousValue == "true")
@@ -650,7 +646,7 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::For:
         std::cout << " for ";
         break;
-      case TokenType::From:
+      case TokenType::from:
         std::cout << " from ";
         break;
       case TokenType::give:

@@ -101,7 +101,7 @@ enum class TokenType {
   endOfFile,
   expose,
   packed,
-  mod,
+  var,
   pointerAccess,
   obtainPointer,
   givenTypeSeparator,

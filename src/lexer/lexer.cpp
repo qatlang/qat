@@ -540,8 +540,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
         return Token::normal(TokenType::give, this->getPosition());
       else if (ambiguousValue == "expose")
         return Token::normal(TokenType::expose, this->getPosition());
-      else if (ambiguousValue == "mod")
-        return Token::normal(TokenType::mod, this->getPosition());
+      else if (ambiguousValue == "var")
+        return Token::normal(TokenType::var, this->getPosition());
       else if (ambiguousValue == "if")
         return Token::normal(TokenType::If, this->getPosition());
       else if (ambiguousValue == "else")
@@ -682,8 +682,8 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::Library:
         std::cout << " lib ";
         break;
-      case TokenType::mod:
-        std::cout << " mod ";
+      case TokenType::var:
+        std::cout << " var ";
         break;
       case TokenType::Object:
         std::cout << " obj ";

@@ -1,0 +1,8 @@
+add_library(QAT_UTILITIES
+            is_integer.cpp
+            llvm_type_to_name.cpp
+            parse_spaces_identifier.cpp
+            space_possibilities.cpp
+            string_to_callingconv.cpp
+            version_number.cpp
+            directory_contents.cpp)

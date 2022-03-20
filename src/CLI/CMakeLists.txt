@@ -1,0 +1,1 @@
+add_library(QAT_CLI error.cpp)

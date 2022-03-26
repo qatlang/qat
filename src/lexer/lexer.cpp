@@ -289,16 +289,16 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
                (current == '>' && opValue == ">")) {
       opValue += current;
       readNext(previousContext);
-      if (current == '=' && opValue == ">>") {
-        previousContext = "lambda";
-        readNext(previousContext);
-        return Token::normal(TokenType::lambda, this->getPosition());
-      }
       return Token::valued(TokenType::binaryOperator, opValue,
                            this->getPosition());
     } else if (opValue == "<") {
       return Token::normal(TokenType::lesserThan, this->getPosition());
     } else if (opValue == ">") {
+      if (current == '-') {
+        previousContext = "lambda";
+        readNext(previousContext);
+        return Token::normal(TokenType::lambda, this->getPosition());
+      }
       return Token::normal(TokenType::greaterThan, this->getPosition());
     }
     return Token::valued(TokenType::binaryOperator, opValue,
@@ -311,6 +311,11 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
       readNext(previousContext);
       return Token::valued(TokenType::binaryOperator,
                            "==", this->getPosition());
+    } else if (current == '>') {
+      previousContext = "singleStatementMarker";
+      readNext(previousContext);
+      return Token::normal(TokenType::singleStatementMarker,
+                           this->getPosition());
     } else {
       previousContext = "assignment";
       return Token::normal(TokenType::assignment, this->getPosition());
@@ -574,10 +579,10 @@ void qat::lexer::Lexer::printStatus() {
       timeValue = ((double)timeInNS) / 1000000000;
       timeUnit = " seconds \n";
     }
-    std::cout << _CYAN "[ LEXER ] " _GREEN _BOLD << filePath
-              << _NOBOLD _NORMALCOLOR << "\n   " << --lineNumber << " lines & "
-              << --totalCharacterCount << " characters in " _BOLD << timeValue
-              << timeUnit << _NOBOLD;
+    std::cout << colors::cyan << "[ LEXER ] " << colors::bold::green << filePath
+              << colors::reset << "\n   " << --lineNumber << " lines & "
+              << --totalCharacterCount << " characters in " << colors::bold_
+              << timeValue << timeUnit << colors::reset;
   }
   if (Lexer::emitTokens) {
     std::cout << "\nAnalysed Tokens \n\n";
@@ -712,6 +717,9 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::separator:
         std::cout << " , ";
         break;
+      case TokenType::singleStatementMarker:
+        std::cout << " >- ";
+        break;
       case TokenType::space:
         std::cout << " space ";
         break;
@@ -761,9 +769,9 @@ void qat::lexer::Lexer::printStatus() {
 }
 
 void qat::lexer::Lexer::throwError(std::string message) {
-  std::cout << _RED "[ LEXER ERROR ] " _GREEN _BOLD << filePath << ":"
-            << lineNumber << ":" << characterNumber
-            << _NORMALCOLOR _NOBOLD "\n";
+  std::cout << colors::red << "[ LEXER ERROR ] " << colors::bold::green
+            << filePath << ":" << lineNumber << ":" << characterNumber
+            << colors::reset << "\n";
   std::cout << "   " << message << "\n";
   exit(0);
 }

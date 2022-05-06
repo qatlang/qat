@@ -1,6 +1,7 @@
 build/
 .vscode/
-build.sh
-run.sh
+rebuild
+refresh
+run
 test/
 .cache/

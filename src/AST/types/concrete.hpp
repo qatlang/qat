@@ -40,13 +40,32 @@
  * or misleading or gives out false information.
  */
 
-#include "./object.hpp"
+#ifndef QAT_AST_TYPES_CONCRETE_HPP
+#define QAT_AST_TYPES_CONCRETE_HPP
 
-llvm::Type *qat::AST::ObjectType::generate(qat::IR::Generator *generator) {
-  auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
-                                                    llvm::StringRef(name));
-  if (structType == nullptr) {
-    generator->throwError("Type " + name + " cannot be found", filePosition);
-  }
-  return structType;
-}
+#include "../../IR/generator.hpp"
+#include "../function_definition.hpp"
+#include "../space.hpp"
+#include "./qat_type.hpp"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
+#include <string>
+#include <vector>
+
+namespace qat {
+namespace AST {
+class ConcreteType : public QatType {
+public:
+  ConcreteType(std::string _name, utilities::FilePlacement _filePlacement)
+      : name(_name), QatType(_filePlacement, "class") {}
+
+  std::string name;
+
+  llvm::Type *generate(IR::Generator *generator);
+
+  std::string typeName();
+};
+} // namespace AST
+} // namespace qat
+
+#endif

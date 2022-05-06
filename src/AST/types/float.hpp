@@ -56,8 +56,7 @@ private:
   FloatTypeKind bitWidth;
 
 public:
-  FloatType(FloatTypeKind _bitWidth, utilities::FilePosition _filePosition)
-      : bitWidth(_bitWidth), QatType(_filePosition, "float") {}
+  FloatType(FloatTypeKind _bitWidth, utilities::FilePlacement _filePlacement);
 
   llvm::Type *generate(IR::Generator *generator);
 };

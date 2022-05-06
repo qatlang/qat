@@ -42,6 +42,10 @@
 
 #include "./float.hpp"
 
+qat::AST::FloatType::FloatType(FloatTypeKind _bitWidth,
+                               utilities::FilePlacement _filePlacement)
+    : bitWidth(_bitWidth), QatType(_filePlacement, "float") {}
+
 llvm::Type *qat::AST::FloatType::generate(qat::IR::Generator *generator) {
   switch (bitWidth) {
   case FloatTypeKind::_brain: {

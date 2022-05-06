@@ -57,8 +57,8 @@ private:
 
 public:
   TupleType(std::vector<QatType> _types, bool _isPacked,
-            utilities::FilePosition _filePosition)
-      : types(_types), isPacked(_isPacked), QatType(_filePosition, "tuple") {}
+            utilities::FilePlacement _filePlacement)
+      : types(_types), isPacked(_isPacked), QatType(_filePlacement, "tuple") {}
 
   void addType(QatType type);
 

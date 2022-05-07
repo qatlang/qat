@@ -55,15 +55,13 @@ namespace AST {
 class TernaryExpression : public Expression {
 private:
   Expression condition;
-  Expression ifExpression;
-  Expression elseExpression;
+  Expression if_expr;
+  Expression else_expr;
 
 public:
   TernaryExpression(Expression _condition, Expression _ifExpression,
                     Expression _elseExpression,
-                    utilities::FilePlacement _filePlacement)
-      : condition(_condition), ifExpression(_ifExpression),
-        elseExpression(_elseExpression), Expression(_filePlacement) {}
+                    utilities::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

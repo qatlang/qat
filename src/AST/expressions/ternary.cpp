@@ -42,71 +42,74 @@
 
 #include "./ternary.hpp"
 
+qat::AST::TernaryExpression::TernaryExpression(
+    Expression _condition, Expression _ifExpression, Expression _elseExpression,
+    utilities::FilePlacement _filePlacement)
+    : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
+      Expression(_filePlacement) {}
+
 llvm::Value *
 qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
-  llvm::Value *generatedCondition = condition.generate(generator);
-  if (generatedCondition != nullptr) {
-    if (generatedCondition->getType()->isIntegerTy(1)) {
-      llvm::Value *conditionValue = generator->builder.CreateFCmpONE(
-          generatedCondition,
+  auto gen_cond = condition.generate(generator);
+  if (gen_cond != nullptr) {
+    if (gen_cond->getType()->isIntegerTy(1)) {
+      auto cond_val = generator->builder.CreateFCmpONE(
+          gen_cond,
           llvm::ConstantFP::get(generator->llvmContext, llvm::APFloat(0.0)),
           "ternaryCondition");
-      llvm::Function *parentFunction =
-          generator->builder.GetInsertBlock()->getParent();
-      llvm::BasicBlock *ifBlock = llvm::BasicBlock::Create(
-          generator->llvmContext, "ternaryIfBlock", parentFunction);
-      llvm::BasicBlock *elseBlock =
+      auto parent_fn = generator->builder.GetInsertBlock()->getParent();
+      auto if_block = llvm::BasicBlock::Create(generator->llvmContext,
+                                               "ternaryIfBlock", parent_fn);
+      auto else_block =
           llvm::BasicBlock::Create(generator->llvmContext, "ternaryElseBlock");
-      llvm::BasicBlock *mergeBlock =
+      auto mergeBlock =
           llvm::BasicBlock::Create(generator->llvmContext, "ternaryMergeBlock");
-      generator->builder.CreateCondBr(conditionValue, ifBlock, elseBlock);
+      generator->builder.CreateCondBr(cond_val, if_block, else_block);
 
-      generator->builder.SetInsertPoint(ifBlock);
-      llvm::Value *ifValue;
-      ifValue = ifExpression.generate(generator);
+      generator->builder.SetInsertPoint(if_block);
+      auto if_val = if_expr.generate(generator);
       generator->builder.CreateBr(mergeBlock);
-      ifBlock = generator->builder.GetInsertBlock();
+      if_block = generator->builder.GetInsertBlock();
 
-      parentFunction->getBasicBlockList().push_back(elseBlock);
-      generator->builder.SetInsertPoint(elseBlock);
-      llvm::Value *elseValue;
-      elseValue = elseExpression.generate(generator);
+      parent_fn->getBasicBlockList().push_back(else_block);
+      generator->builder.SetInsertPoint(else_block);
+      auto else_value = else_expr.generate(generator);
       generator->builder.CreateBr(mergeBlock);
-      elseBlock = generator->builder.GetInsertBlock();
+      else_block = generator->builder.GetInsertBlock();
 
-      parentFunction->getBasicBlockList().push_back(mergeBlock);
+      parent_fn->getBasicBlockList().push_back(mergeBlock);
       generator->builder.SetInsertPoint(mergeBlock);
       llvm::PHINode *phiNode;
-      if (ifValue != nullptr && elseValue != nullptr) {
-        if (ifValue->getType() != elseValue->getType()) {
+      if (if_val != nullptr && else_value != nullptr) {
+        if (if_val->getType() != else_value->getType()) {
           generator->throwError(
               "Ternary expression is giving values of different types",
-              filePlacement);
+              file_placement);
         } else {
-          phiNode = generator->builder.CreatePHI(ifValue->getType(), 2,
+          phiNode = generator->builder.CreatePHI(if_val->getType(), 2,
                                                  "ifElsePhiNode");
-          phiNode->addIncoming(ifValue, ifBlock);
-          phiNode->addIncoming(elseValue, elseBlock);
+          phiNode->addIncoming(if_val, if_block);
+          phiNode->addIncoming(else_value, else_block);
           return phiNode;
         }
       } else {
         generator->throwError(
-            "Ternary `" + std::string((ifValue == nullptr) ? "if" : "else") +
+            "Ternary `" + std::string((if_val == nullptr) ? "if" : "else") +
                 "` expression is not giving any value",
-            filePlacement);
+            file_placement);
       }
     } else {
       generator->throwError(
           "Condition expression is of the type `" +
-              qat::utilities::llvmTypeToName(generatedCondition->getType()) +
+              qat::utilities::llvmTypeToName(gen_cond->getType()) +
               "`, but ternary expression expects an expression of `bool` or "
               "`i1` type",
-          filePlacement);
+          file_placement);
     }
   } else {
     generator->throwError("Condition expression is null, but `if` sentence "
                           "expects an expression of `bool` or `int<1>` type",
-                          filePlacement);
+                          file_placement);
   }
 }
 

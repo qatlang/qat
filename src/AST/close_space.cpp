@@ -43,21 +43,21 @@
 #include "./close_space.hpp"
 
 llvm::Value *qat::AST::CloseSpace::generate(qat::IR::Generator *generator) {
-  generator->exposedSpaces.push_back(space);
+  generator->exposed_spaces.push_back(space);
   bool spaceExposed = false;
   for (std::deque<qat::AST::Space>::iterator i =
-           generator->exposedSpaces.begin();
-       i < generator->exposedSpaces.end(); i++) {
+           generator->exposed_spaces.begin();
+       i < generator->exposed_spaces.end(); i++) {
     if (i->generate() == space.generate()) {
       spaceExposed = true;
-      generator->exposedSpaces.erase(i);
+      generator->exposed_spaces.erase(i);
       break;
     }
   }
   if (!spaceExposed) {
     generator->throwError("Space `" + space.generate() +
                               "` is not exposed and hence cannot be closed.",
-                          filePlacement);
+                          file_placement);
   }
   return nullptr;
 }

@@ -44,8 +44,8 @@
 #define QAT_LEXER_LEXER_HPP
 
 #include "../CLI/color.hpp"
-#include "../utilities/file_placement.hpp"
-#include "../utilities/is_integer.hpp"
+#include "../utils/file_placement.hpp"
+#include "../utils/is_integer.hpp"
 #include "./token.hpp"
 #include "./token_type.hpp"
 #include <chrono>
@@ -141,7 +141,7 @@ public:
    * standard output in a human-readable format.
    *
    */
-  static bool emitTokens;
+  static bool emit_tokens;
 
   /**
    * @brief Whether the Lexer should display report on its behaviour and
@@ -149,7 +149,7 @@ public:
    * lexer to analyse a file.
    *
    */
-  static bool showReport;
+  static bool show_report;
 
   /**
    * @brief Logs any error occuring during Lexical Analysis.

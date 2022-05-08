@@ -40,12 +40,16 @@
  * or misleading or gives out false information.
  */
 
-#include "./error.hpp"
+#ifndef QAT_UTILS_PARSE_SPACE_IDENTIFIER_HPP
+#define QAT_UTILS_PARSE_SPACE_IDENTIFIER_HPP
 
-void qat::CLI::throw_error(std::string message,
-                           std::experimental::filesystem::path path) {
-  std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
-            << path.string() << "\n"
-            << colors::reset << "   " << message << std::endl;
-  exit(0);
+#include <string>
+#include <vector>
+
+namespace qat {
+namespace utilities {
+std::vector<std::string> parseSpacesFromIdentifier(std::string fullname);
 }
+} // namespace qat
+
+#endif

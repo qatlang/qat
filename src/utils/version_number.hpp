@@ -40,23 +40,45 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_UTILITIES_TYPES_HPP
-#define QAT_UTILITIES_TYPES_HPP
+#ifndef QAT_UTILS_VERSION_NUMBER_HPP
+#define QAT_UTILS_VERSION_NUMBER_HPP
 
-#include <cstdint>
+#include "llvm/ADT/Optional.h"
+#include <sstream>
+#include <string>
 
-// Type aliases and definitions for simplicity
 namespace qat {
-typedef int64_t i64;
-typedef int32_t i32;
-typedef int16_t i16;
-typedef int8_t i8;
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef uint8_t u8;
-typedef float f32;
-typedef double f64;
+namespace utilities {
+class VersionNumber {
+  VersionNumber(const std::string version);
+
+  VersionNumber(const unsigned int _major, const unsigned int _minor,
+                const unsigned int _patch, const std::string _prerelease,
+                const std::string _build)
+      : major(_major), minor(_minor), patch(_patch), prerelease(_prerelease),
+        build(_build) {}
+
+  VersionNumber(const unsigned int _major, const unsigned int _minor,
+                const unsigned int _patch, const std::string _prerelease)
+      : major(_major), minor(_minor), patch(_patch), prerelease(_prerelease),
+        build(llvm::None) {}
+
+  VersionNumber(const unsigned int _major, const unsigned int _minor,
+                const unsigned int _patch)
+      : major(_major), minor(_minor), patch(_patch), prerelease(llvm::None),
+        build(llvm::None) {}
+
+  VersionNumber(const unsigned int _major, const unsigned int _minor)
+      : major(_major), minor(_minor), patch(llvm::None), prerelease(llvm::None),
+        build(llvm::None) {}
+
+  unsigned int major;
+  unsigned int minor;
+  llvm::Optional<unsigned int> patch;
+  llvm::Optional<std::string> prerelease;
+  llvm::Optional<std::string> build;
+};
+} // namespace utilities
 } // namespace qat
 
 #endif

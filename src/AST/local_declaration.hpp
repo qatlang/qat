@@ -44,7 +44,7 @@
 #define QAT_AST_LOCALDECLARATION_HPP
 
 #include "../IR/generator.hpp"
-#include "../utilities/llvm_type_to_name.hpp"
+#include "../utils/llvm_type_to_name.hpp"
 #include "./types/qat_type.hpp"
 #include "expression.hpp"
 #include "sentence.hpp"

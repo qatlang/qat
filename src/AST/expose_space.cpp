@@ -43,21 +43,21 @@
 #include "./expose_space.hpp"
 
 llvm::Value *qat::AST::ExposeSpace::generate(qat::IR::Generator *generator) {
-  bool spaceExists = false;
-  for (qat::AST::Space &nSpace : generator->exposedSpaces) {
-    if (nSpace.generate() == space.generate()) {
-      spaceExists = true;
+  auto space_exists = false;
+  for (auto item : generator->exposed_spaces) {
+    if (item.generate() == space.generate()) {
+      space_exists = true;
       break;
     }
   }
-  if (spaceExists) {
+  if (space_exists) {
     generator->throwError(
         "Space `" + space.generate() +
             "` is already exposed. Please remove this sentence.",
-        filePlacement);
+        file_placement);
     ;
   } else {
-    generator->exposedSpaces.push_back(space);
+    generator->exposed_spaces.push_back(space);
   }
   return nullptr;
 }

@@ -1,4 +1,4 @@
-add_library(QAT_UTILITIES
+add_library(QAT_UTILS
             is_integer.cpp
             file_placement.cpp
             llvm_type_to_name.cpp
@@ -6,4 +6,4 @@ add_library(QAT_UTILITIES
             space_possibilities.cpp
             string_to_callingconv.cpp
             version_number.cpp
-            directory_contents.cpp)
+            get_directory_contents.cpp)

@@ -40,12 +40,24 @@
  * or misleading or gives out false information.
  */
 
-#include "./error.hpp"
+#include "./get_directory_contents.hpp"
 
-void qat::CLI::throw_error(std::string message,
-                           std::experimental::filesystem::path path) {
-  std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
-            << path.string() << "\n"
-            << colors::reset << "   " << message << std::endl;
-  exit(0);
+std::vector<fsexp::path>
+qat::utilities::get_directory_contents(fsexp::path path, bool recursive) {
+  std::vector<fsexp::path> result;
+  for (auto item : fsexp::directory_iterator(path)) {
+    if (fsexp::is_directory(item)) {
+      if (recursive) {
+        auto contents = get_directory_contents(item, recursive);
+        for (auto sub_item : contents) {
+          result.push_back(sub_item);
+        }
+      } else {
+        result.push_back(item.path());
+      }
+    } else {
+      result.push_back(item.path());
+    }
+  }
+  return result;
 }

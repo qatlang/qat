@@ -42,8 +42,8 @@
 
 #include "lexer.hpp"
 
-bool qat::lexer::Lexer::emitTokens = false;
-bool qat::lexer::Lexer::showReport = false;
+bool qat::lexer::Lexer::emit_tokens = false;
+bool qat::lexer::Lexer::show_report = false;
 
 void qat::lexer::Lexer::readNext(std::string context) {
   try {
@@ -524,7 +524,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
 }
 
 void qat::lexer::Lexer::printStatus() {
-  if (Lexer::showReport) {
+  if (Lexer::show_report) {
     double timeValue = 0;
     std::string timeUnit = "";
 
@@ -543,7 +543,7 @@ void qat::lexer::Lexer::printStatus() {
               << --totalCharacterCount << " characters in " << colors::bold_
               << timeValue << timeUnit << colors::reset;
   }
-  if (Lexer::emitTokens) {
+  if (Lexer::emit_tokens) {
     std::cout << "\nAnalysed Tokens \n\n";
     for (std::size_t i = 0; i < tokens.size(); i++) {
       switch (tokens.at(i).type) {

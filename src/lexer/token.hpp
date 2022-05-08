@@ -43,7 +43,7 @@
 #ifndef QAT_LEXER_TOKEN_HPP
 #define QAT_LEXER_TOKEN_HPP
 
-#include "../utilities/file_placement.hpp"
+#include "../utils/file_placement.hpp"
 #include "./token_type.hpp"
 #include <string>
 

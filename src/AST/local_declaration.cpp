@@ -63,7 +63,7 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
         generator->throwError("Floating Point to Integer casting can be lossy. "
                               "Not performing an implicit cast. Please provide "
                               "the correct value or add an explicit cast",
-                              filePlacement);
+                              file_placement);
       } else {
         std::string genType =
             qat::utilities::llvmTypeToName(genValue->getType());
@@ -77,7 +77,7 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
             generator->throwError("Conversion functions `" + genType + "'to'" +
                                       givenType + "` or `" + givenType +
                                       "'from'" + genType + "` not found",
-                                  filePlacement);
+                                  file_placement);
           }
         }
         std::vector<llvm::Value *> args;
@@ -103,7 +103,7 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
         "`" + name + "` is an argument of the function `" +
             function->getName().str() +
             "`. Please remove this declaration or rename this variable",
-        filePlacement);
+        file_placement);
   } else {
     for (auto &instruction : entryBlock) {
       if (llvm::isa<llvm::AllocaInst>(instruction)) {
@@ -123,7 +123,7 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
       generator->throwError("Redeclaration of variable `" + name +
                                 "`. Please remove the previous declaration or "
                                 "rename this variable",
-                            filePlacement);
+                            file_placement);
     }
   }
   llvm::BasicBlock::iterator oldInsertPoint =

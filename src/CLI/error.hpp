@@ -50,7 +50,7 @@
 
 namespace qat {
 namespace CLI {
-void throwError(std::string message, std::experimental::filesystem::path path);
+void throw_error(std::string message, std::experimental::filesystem::path path);
 } // namespace CLI
 } // namespace qat
 

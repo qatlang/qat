@@ -40,12 +40,16 @@
  * or misleading or gives out false information.
  */
 
-#include "./error.hpp"
+#ifndef QAT_UTILS_STRING_TO_CALLINGCONV_HPP
+#define QAT_UTILS_STRING_TO_CALLINGCONV_HPP
 
-void qat::CLI::throw_error(std::string message,
-                           std::experimental::filesystem::path path) {
-  std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
-            << path.string() << "\n"
-            << colors::reset << "   " << message << std::endl;
-  exit(0);
+#include "llvm/IR/CallingConv.h"
+#include <string>
+
+namespace qat {
+namespace utilities {
+llvm::CallingConv::ID stringToCallingConv(std::string name);
 }
+} // namespace qat
+
+#endif

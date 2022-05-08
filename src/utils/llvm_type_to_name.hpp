@@ -40,12 +40,16 @@
  * or misleading or gives out false information.
  */
 
-#include "./error.hpp"
+#ifndef QAT_UTILS_LLVMTYPE_TO_NAME_HPP
+#define QAT_UTILS_LLVMTYPE_TO_NAME_HPP
 
-void qat::CLI::throw_error(std::string message,
-                           std::experimental::filesystem::path path) {
-  std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
-            << path.string() << "\n"
-            << colors::reset << "   " << message << std::endl;
-  exit(0);
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
+#include <string>
+
+namespace qat {
+namespace utilities {
+std::string llvmTypeToName(llvm::Type *type);
 }
+} // namespace qat
+#endif

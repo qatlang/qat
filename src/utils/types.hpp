@@ -40,24 +40,23 @@
  * or misleading or gives out false information.
  */
 
-#include "./directory_contents.hpp"
+#ifndef QAT_UTILS_TYPES_HPP
+#define QAT_UTILS_TYPES_HPP
 
-std::vector<fsexp::path>
-qat::utilities::get_directory_contents(fsexp::path path, bool recursive) {
-  std::vector<fsexp::path> result;
-  for (auto item : fsexp::directory_iterator(path)) {
-    if (fsexp::is_directory(item)) {
-      if (recursive) {
-        auto contents = get_directory_contents(item, recursive);
-        for (auto sub_item : contents) {
-          result.push_back(sub_item);
-        }
-      } else {
-        result.push_back(item.path());
-      }
-    } else {
-      result.push_back(item.path());
-    }
-  }
-  return result;
-}
+#include <cstdint>
+
+// Type aliases and definitions for simplicity
+namespace qat {
+typedef int64_t i64;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t i8;
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
+typedef float f32;
+typedef double f64;
+} // namespace qat
+
+#endif

@@ -44,7 +44,7 @@
 #define QAT_AST_NODE_HPP
 
 #include "../IR/generator.hpp"
-#include "../utilities/file_placement.hpp"
+#include "../utils/file_placement.hpp"
 #include "node_type.hpp"
 #include "llvm/IR/Value.h"
 
@@ -53,7 +53,7 @@ namespace AST {
 class Node {
 public:
   Node(utilities::FilePlacement _filePlacement)
-      : filePlacement(_filePlacement) {}
+      : file_placement(_filePlacement) {}
 
   virtual ~Node(){};
 
@@ -61,7 +61,7 @@ public:
 
   virtual NodeType nodeType(){};
 
-  utilities::FilePlacement filePlacement;
+  utilities::FilePlacement file_placement;
 };
 } // namespace AST
 } // namespace qat

@@ -40,18 +40,17 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_UTILITIES_DIRECTORY_CONTENTS_HPP
-#define QAT_UTILITIES_DIRECTORY_CONTENTS_HPP
+#ifndef QAT_UTILS_SPACE_POSSIBILITIES_HPP
+#define QAT_UTILS_SPACE_POSSIBILITIES_HPP
 
-#include <experimental/filesystem>
+#include "./parse_spaces_identifier.hpp"
+#include <string>
 #include <vector>
 
-namespace fsexp = std::experimental::filesystem;
 namespace qat {
 namespace utilities {
-std::vector<fsexp::path> get_directory_contents(fsexp::path path,
-                                                bool recursive);
-} // namespace utilities
+std::vector<std::string> spacePossibilities(std::string value);
+}
 } // namespace qat
 
 #endif

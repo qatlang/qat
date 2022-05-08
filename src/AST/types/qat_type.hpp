@@ -44,7 +44,7 @@
 #define QAT_AST_TYPES_QAT_TYPE_HPP
 
 #include "../../IR/generator.hpp"
-#include "../../utilities/file_placement.hpp"
+#include "../../utils/file_placement.hpp"
 #include "llvm/IR/Type.h"
 #include <string>
 

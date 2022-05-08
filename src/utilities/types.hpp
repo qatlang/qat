@@ -1,66 +1,60 @@
 /**
- * Qat Programming Language : Copyright 2022 : Aldrin Mathew 
+ * Qat Programming Language : Copyright 2022 : Aldrin Mathew
  *
  * AAF INSPECTABLE LICENCE - 1.0
- * 
- * This project is licensed under the AAF Inspectable Licence 1.0. 
- * You are allowed to inspect the source of this project(s) free of 
+ *
+ * This project is licensed under the AAF Inspectable Licence 1.0.
+ * You are allowed to inspect the source of this project(s) free of
  * cost, and also to verify the authenticity of the product.
- * 
- * Unless required by applicable law, this project is provided 
- * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either 
- * expressed or implied. The author(s) of this project is not 
- * liable for any harms, errors or troubles caused by using the 
- * source or the product, unless implied by law. By using this 
- * project, or part of it, you are acknowledging the complete terms 
- * and conditions of licensing of this project as specified in AAF 
- * Inspectable Licence 1.0 available at this URL: 
- * 
+ *
+ * Unless required by applicable law, this project is provided
+ * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either
+ * expressed or implied. The author(s) of this project is not
+ * liable for any harms, errors or troubles caused by using the
+ * source or the product, unless implied by law. By using this
+ * project, or part of it, you are acknowledging the complete terms
+ * and conditions of licensing of this project as specified in AAF
+ * Inspectable Licence 1.0 available at this URL:
+ *
  * https://github.com/aldrinsartfactory/InspectableLicence/
- * 
- * This project may contain parts that are not licensed under the 
- * same licence. If so, the licences of those parts should be 
- * appropriately mentioned in those parts of the project. The 
- * Author MAY provide a notice about the parts of the project that 
- * are not licensed under the same licence in a publicly visible 
+ *
+ * This project may contain parts that are not licensed under the
+ * same licence. If so, the licences of those parts should be
+ * appropriately mentioned in those parts of the project. The
+ * Author MAY provide a notice about the parts of the project that
+ * are not licensed under the same licence in a publicly visible
  * manner.
- * 
- * You are NOT ALLOWED to sell, or distribute THIS project, its 
- * contents, the source or the product or the build result of the 
- * source under commercial or non-commercial purposes. You are NOT 
- * ALLOWED to revamp, rebrand, refactor, modify, the source, product 
+ *
+ * You are NOT ALLOWED to sell, or distribute THIS project, its
+ * contents, the source or the product or the build result of the
+ * source under commercial or non-commercial purposes. You are NOT
+ * ALLOWED to revamp, rebrand, refactor, modify, the source, product
  * or the contents of this project.
- * 
- * You are NOT ALLOWED to use the name, branding and identity of this 
- * project to identify or brand any other project. You ARE however 
- * allowed to use the name and branding to pinpoint/show the source 
- * of the contents/code/logic of any other project. You are not 
- * allowed to use the identification of the Authors of this project 
- * to associate them to other projects, in a way that is deceiving 
- * or misleading or gives out false information. 
+ *
+ * You are NOT ALLOWED to use the name, branding and identity of this
+ * project to identify or brand any other project. You ARE however
+ * allowed to use the name and branding to pinpoint/show the source
+ * of the contents/code/logic of any other project. You are not
+ * allowed to use the identification of the Authors of this project
+ * to associate them to other projects, in a way that is deceiving
+ * or misleading or gives out false information.
  */
 
 #ifndef QAT_UTILITIES_TYPES_HPP
 #define QAT_UTILITIES_TYPES_HPP
 
-// Type aliases and definitions for simplicity and readability
-
+// Type aliases and definitions for simplicity
 namespace qat {
-namespace utilities {
-/// A reference to a character array can be treated as a string
-using StringConstant = const char *;
-
-/// A reference to an array of character arrays can be treated as a list of
-/// string
-using StringConstantList = const char **;
-
-/// A reference to a character array can be treated as a string
-using String = char *;
-
-/// A reference to an array of character arrays can be treated as a list of
-/// string
-using StringList = char **;
-} // namespace utilities
+typedef int64_t i64;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t i8;
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
+typedef float f32;
+typedef double f64;
 } // namespace qat
 
 #endif

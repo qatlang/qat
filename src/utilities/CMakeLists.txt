@@ -1,5 +1,6 @@
 add_library(QAT_UTILITIES
             is_integer.cpp
+            file_placement.cpp
             llvm_type_to_name.cpp
             parse_spaces_identifier.cpp
             space_possibilities.cpp

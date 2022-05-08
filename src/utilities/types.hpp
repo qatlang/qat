@@ -43,6 +43,8 @@
 #ifndef QAT_UTILITIES_TYPES_HPP
 #define QAT_UTILITIES_TYPES_HPP
 
+#include <cstdint>
+
 // Type aliases and definitions for simplicity
 namespace qat {
 typedef int64_t i64;

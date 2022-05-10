@@ -6,4 +6,5 @@ add_library(QAT_UTILS
             space_possibilities.cpp
             string_to_callingconv.cpp
             version_number.cpp
+            variability.cpp
             get_directory_contents.cpp)

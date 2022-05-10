@@ -45,8 +45,11 @@
 bool qat::utils::Variability::get(llvm::Instruction *value) {
   return llvm::dyn_cast<llvm::MDString>(
              value->getMetadata(llvm::StringRef("variability"))->getOperand(0))
-             ->getString()
-             .str() == std::string("var");
+             ->getString() == llvm::StringRef("var");
+}
+
+bool qat::utils::Variability::get(llvm::Argument *value) {
+  return !(value->hasAttribute(llvm::Attribute::AttrKind::ImmArg));
 }
 
 void qat::utils::Variability::set(llvm::LLVMContext &context,
@@ -56,16 +59,49 @@ void qat::utils::Variability::set(llvm::LLVMContext &context,
       llvm::MDNode::get(context, llvm::MDString::get(context, "variability")));
 }
 
+void qat::utils::Variability::set(llvm::Argument *value, bool is_var) {
+  if (!is_var) {
+    value->addAttr(llvm::Attribute::AttrKind::ImmArg);
+  }
+}
+
 void qat::utils::Variability::propagate(llvm::LLVMContext &context,
                                         llvm::Instruction *source,
                                         llvm::Instruction *target) {
   auto source_md = source->getMetadata(llvm::StringRef("variability"));
-  if (source_md != nullptr) {
-    target->setMetadata(
-        llvm::StringRef(llvm::dyn_cast<llvm::MDString>(source_md->getOperand(0))
-                            ->getString()
-                            .str()),
-        llvm::MDNode::get(context,
-                          llvm::MDString::get(context, "variability")));
+  target->setMetadata(
+      llvm::StringRef(source_md != nullptr ? llvm::dyn_cast<llvm::MDString>(
+                                                 source_md->getOperand(0))
+                                                 ->getString()
+                                                 .str()
+                                           : "const"),
+      llvm::MDNode::get(context, llvm::MDString::get(context, "variability")));
+}
+
+void qat::utils::Variability::propagate(llvm::Argument *source,
+                                        llvm::Argument *target) {
+  if (source->hasAttribute(llvm::Attribute::AttrKind::ImmArg)) {
+    target->addAttr(llvm::Attribute::AttrKind::ImmArg);
   }
+}
+
+void qat::utils::Variability::propagate(llvm::Instruction *source,
+                                        llvm::Argument *target) {
+  auto source_md = source->getMetadata(llvm::StringRef("variability"));
+  if (source_md != nullptr) {
+    if (llvm::dyn_cast<llvm::MDString>(source_md->getOperand(0))->getString() !=
+        llvm::StringRef("var")) {
+      target->addAttr(llvm::Attribute::AttrKind::ImmArg);
+    }
+  }
+}
+
+void qat::utils::Variability::propagate(llvm::LLVMContext &context,
+                                        llvm::Argument *source,
+                                        llvm::Instruction *target) {
+  target->setMetadata(
+      llvm::StringRef(source->hasAttribute(llvm::Attribute::AttrKind::ImmArg)
+                          ? "const"
+                          : "var"),
+      llvm::MDNode::get(context, llvm::MDString::get(context, "variability")));
 }

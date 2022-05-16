@@ -40,29 +40,31 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_AST_EXPOSE_SPACE_HPP
-#define QAT_AST_EXPOSE_SPACE_HPP
+#include "./box.hpp"
 
-#include "./node_type.hpp"
-#include "./sentence.hpp"
-#include "./space.hpp"
-#include <deque>
+std::vector<std::string> qat::AST::Box::resolve() {
+  std::vector<std::string> value;
+  if (has_parent()) {
+    value = parent->resolve();
+  }
+  value.push_back(name);
+  return value;
+}
 
-namespace qat {
-namespace AST {
-class CloseSpace : public Sentence {
-private:
-  Space space;
+std::string qat::AST::Box::generate() {
+  std::vector<std::string> resolved = resolve();
+  std::string result = "";
+  if ((resolved.size() == 1) && (resolved.at(0) == "")) {
+    return result;
+  } else {
+    for (auto &value : resolved) {
+      result += value;
+      result += ":";
+    }
+    return result;
+  }
+}
 
-public:
-  CloseSpace(Space _space, utilities::FilePlacement _filePlacement)
-      : space(_space), Sentence(_filePlacement) {}
+void qat::AST::Box::close() { isOpen = false; }
 
-  llvm::Value *generate(IR::Generator *generator);
-
-  NodeType nodeType();
-};
-} // namespace AST
-} // namespace qat
-
-#endif
+bool qat::AST::Box::has_parent() { return parent != nullptr; }

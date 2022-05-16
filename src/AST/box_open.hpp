@@ -40,28 +40,28 @@
  * or misleading or gives out false information.
  */
 
-#include "./expose_space.hpp"
+#ifndef QAT_AST_EXPOSE_SPACE_HPP
+#define QAT_AST_EXPOSE_SPACE_HPP
 
-llvm::Value *qat::AST::ExposeSpace::generate(qat::IR::Generator *generator) {
-  auto space_exists = false;
-  for (auto item : generator->exposed_spaces) {
-    if (item.generate() == space.generate()) {
-      space_exists = true;
-      break;
-    }
-  }
-  if (space_exists) {
-    generator->throwError(
-        "Space `" + space.generate() +
-            "` is already exposed. Please remove this sentence.",
-        file_placement);
-    ;
-  } else {
-    generator->exposed_spaces.push_back(space);
-  }
-  return nullptr;
-}
+#include "./box.hpp"
+#include "./node_type.hpp"
+#include "./sentence.hpp"
 
-qat::AST::NodeType qat::AST::ExposeSpace::nodeType() {
-  return qat::AST::NodeType::exposeSpace;
-}
+namespace qat {
+namespace AST {
+class OpenBox : public Sentence {
+private:
+  Box box;
+
+public:
+  OpenBox(Box _space, utils::FilePlacement _filePlacement)
+      : box(_space), Sentence(_filePlacement) {}
+
+  llvm::Value *generate(IR::Generator *generator);
+
+  NodeType nodeType();
+};
+} // namespace AST
+} // namespace qat
+
+#endif

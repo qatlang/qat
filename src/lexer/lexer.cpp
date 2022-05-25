@@ -45,38 +45,39 @@
 bool qat::lexer::Lexer::emit_tokens = false;
 bool qat::lexer::Lexer::show_report = false;
 
-void qat::lexer::Lexer::readNext(std::string context) {
+void qat::lexer::Lexer::read(std::string context) {
   try {
     if (file.eof()) {
-      previous = current;
-      current = -1;
+      prev = curr;
+      curr = -1;
     } else {
-      previous = current;
-      file.get(current);
-      characterNumber++;
-      totalCharacterCount++;
+      prev = curr;
+      file.get(curr);
+      char_num++;
+      total_char_count++;
     }
-    if (current == '\n') {
-      lineNumber++;
-      characterNumber = 0;
-    } else if (current == '\r') {
-      lineNumber++;
-      previous = current;
-      file.get(current);
-      totalCharacterCount++;
-      characterNumber = (current == '\n') ? 0 : 1;
+    if (curr == '\n') {
+      line_num++;
+      char_num = 0;
+    } else if (curr == '\r') {
+      line_num++;
+      prev = curr;
+      file.get(curr);
+      total_char_count++;
+      char_num = (curr == '\n') ? 0 : 1;
     }
-  } catch (...) {
-    throwError("Analysis failed while reading the file");
+  } catch (std::exception &err) {
+    throwError(std::string("Lexer failed while reading the file.\nError: ") +
+               err.what());
   }
 }
 
-qat::utilities::FilePlacement
+qat::utils::FilePlacement
 qat::lexer::Lexer::getPosition(unsigned long long length) {
-  qat::utilities::Position start = {
-      lineNumber, ((characterNumber > 0) ? (characterNumber - 1) : 0)};
-  qat::utilities::Position end = {lineNumber, start.character + length};
-  return qat::utilities::FilePlacement(fsexp::path(filePath), start, end);
+  qat::utils::Position start = {line_num,
+                                ((char_num > 0) ? (char_num - 1) : 0)};
+  qat::utils::Position end = {line_num, start.character + length};
+  return qat::utils::FilePlacement(fsexp::path(filePath), start, end);
 }
 
 std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
@@ -84,7 +85,7 @@ std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
   auto lexerStartTime = std::chrono::high_resolution_clock::now();
   tokens.push_back(
       Token::valued(TokenType::startOfFile, filePath, this->getPosition(0)));
-  readNext("start");
+  read("start");
   while (!file.eof()) {
     tokens.push_back(tokeniser());
   }
@@ -102,13 +103,13 @@ std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
 void qat::lexer::Lexer::changeFile(std::string newFilePath) {
   tokens.clear();
   filePath = newFilePath;
-  previousContext = "";
-  previous = -1;
-  current = -1;
-  lineNumber = 1;
-  characterNumber = 0;
+  prev_ctx = "";
+  prev = -1;
+  curr = -1;
+  line_num = 1;
+  char_num = 0;
   timeInNS = 0;
-  totalCharacterCount = 0;
+  total_char_count = 0;
 }
 
 qat::lexer::Token qat::lexer::Lexer::tokeniser() {
@@ -120,129 +121,120 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   if (file.eof()) {
     return Token::valued(TokenType::endOfFile, filePath, this->getPosition(0));
   }
-  if (previous == '\r') {
-    previousContext = "whitespace";
-    readNext(previousContext);
+  if (prev == '\r') {
+    prev_ctx = "whitespace";
+    read(prev_ctx);
     return tokeniser();
   }
-  switch (current) {
+  switch (curr) {
   case ' ':
   case '\n':
   case '\r':
   case '\t': {
-    previousContext = "whitespace";
-    readNext(previousContext);
+    prev_ctx = "whitespace";
+    read(prev_ctx);
     return tokeniser();
   }
   case '.': {
-    previousContext = "stop";
-    readNext(previousContext);
+    prev_ctx = "stop";
+    read(prev_ctx);
     return Token::normal(TokenType::stop, this->getPosition(1));
   }
   case ',': {
-    previousContext = "separator";
-    readNext(previousContext);
+    prev_ctx = "separator";
+    read(prev_ctx);
     return Token::normal(TokenType::separator, this->getPosition(1));
   }
   case '(': {
-    previousContext = "paranthesisOpen";
-    readNext(previousContext);
+    prev_ctx = "paranthesisOpen";
+    read(prev_ctx);
     return Token::normal(TokenType::paranthesisOpen, this->getPosition(1));
   }
   case ')': {
-    previousContext = "paranthesisClose";
-    readNext(previousContext);
+    prev_ctx = "paranthesisClose";
+    read(prev_ctx);
     return Token::normal(TokenType::paranthesisClose, this->getPosition(1));
   }
   case '[': {
-    previousContext = "bracketOpen";
-    readNext(previousContext);
+    prev_ctx = "bracketOpen";
+    read(prev_ctx);
     return Token::normal(TokenType::bracketOpen, this->getPosition(1));
   }
   case ']': {
-    previousContext = "bracketClose";
-    readNext(previousContext);
+    prev_ctx = "bracketClose";
+    read(prev_ctx);
     return Token::normal(TokenType::bracketClose, this->getPosition(1));
   }
   case '{': {
-    previousContext = "curlybraceOpen";
-    readNext(previousContext);
+    prev_ctx = "curlybraceOpen";
+    read(prev_ctx);
     return Token::normal(TokenType::curlybraceOpen, this->getPosition(1));
   }
   case '}': {
-    previousContext = "curlybraceClose";
-    readNext(previousContext);
+    prev_ctx = "curlybraceClose";
+    read(prev_ctx);
     return Token::normal(TokenType::curlybraceClose, this->getPosition(1));
   }
   case '@': {
-    previousContext = "at";
-    readNext(previousContext);
+    prev_ctx = "at";
+    read(prev_ctx);
     return Token::normal(TokenType::at, this->getPosition(1));
   }
   case '^': {
-    previousContext = "staticChild";
-    readNext(previousContext);
-    return Token::normal(TokenType::staticChild, this->getPosition(1));
+    prev_ctx = "pointerAccess";
+    read(prev_ctx);
+    return Token::normal(TokenType::pointerAccess, this->getPosition(1));
   }
   case ':': {
-    readNext("colon");
-    if (current == '>') {
-      previousContext = "pointerAccess";
-      readNext(previousContext);
-      return Token::normal(TokenType::pointerAccess, this->getPosition(2));
-    } else if (current == '=') {
-      previousContext = "inferredAssignment";
-      readNext(previousContext);
-      return Token::normal(TokenType::inferredDeclaration,
-                           this->getPosition(2));
-    } else if (current == ':') {
-      previousContext = "givenTypeSeparator";
-      readNext(previousContext);
+    read("colon");
+    if (curr == ':') {
+      prev_ctx = "givenTypeSeparator";
+      read(prev_ctx);
       return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
     } else {
-      previousContext = "colon";
+      prev_ctx = "colon";
       return Token::normal(TokenType::colon, this->getPosition(1));
     }
   }
   case '#': {
-    previousContext = "hashtag";
-    readNext(previousContext);
+    prev_ctx = "hashtag";
+    read(prev_ctx);
     return Token::normal(TokenType::hashtag, this->getPosition(1));
   }
   case '/': {
-    previousContext = "operator";
+    prev_ctx = "operator";
     std::string value = "/";
-    readNext(previousContext);
-    if (current == '*') {
+    read(prev_ctx);
+    if (curr == '*') {
       bool star = false;
-      previousContext = "multiLineComment";
-      readNext(previousContext);
-      while ((star ? (current != '/') : true) && !file.eof()) {
+      prev_ctx = "multiLineComment";
+      read(prev_ctx);
+      while ((star ? (curr != '/') : true) && !file.eof()) {
         if (star) {
           star = false;
         }
-        if (current == '*') {
+        if (curr == '*') {
           star = true;
         }
-        readNext(previousContext);
+        read(prev_ctx);
       }
       if (file.eof()) {
         return Token::valued(TokenType::endOfFile, filePath,
                              this->getPosition(0));
       } else {
-        readNext(previousContext);
+        read(prev_ctx);
         return tokeniser();
       }
-    } else if (current == '/') {
-      previousContext = "singleLineComment";
-      while ((current != '\n' && previous != '\r') && !file.eof()) {
-        readNext(previousContext);
+    } else if (curr == '/') {
+      prev_ctx = "singleLineComment";
+      while ((curr != '\n' && prev != '\r') && !file.eof()) {
+        read(prev_ctx);
       }
       if (file.eof()) {
         return Token::valued(TokenType::endOfFile, filePath,
                              this->getPosition(0));
       } else {
-        readNext(previousContext);
+        read(prev_ctx);
         return tokeniser();
       }
     } else {
@@ -251,17 +243,52 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
     }
   }
   case '!': {
-    previousContext = "operator";
-    std::string value = "!";
-    readNext(previousContext);
-    if (current == '=') {
-      value += current;
-      readNext(previousContext);
-      return Token::valued(TokenType::binaryOperator, value,
-                           this->getPosition(2));
+    prev_ctx = "operator";
+    read(prev_ctx);
+    if (curr == '=') {
+      read(prev_ctx);
+      return Token::valued(TokenType::assignedBinaryOperator,
+                           "!=", this->getPosition(2));
+    } else {
+      return Token::valued(TokenType::unaryOperatorLeft, "!",
+                           this->getPosition(1));
     }
-    return Token::valued(TokenType::unaryOperatorLeft, value,
-                         this->getPosition(1));
+  }
+  case '~': {
+    prev_ctx = "bitwiseNot";
+    read(prev_ctx);
+    if (curr == '=') {
+      read(prev_ctx);
+      return Token::valued(TokenType::assignedBinaryOperator,
+                           "~=", this->getPosition(2));
+    } else {
+      return Token::valued(TokenType::binaryOperator, "~",
+                           this->getPosition(1));
+    }
+  }
+  case '&': {
+    prev_ctx = "bitwiseAnd";
+    read(prev_ctx);
+    if (curr == '=') {
+      read(prev_ctx);
+      return Token::valued(TokenType::assignedBinaryOperator,
+                           "&=", this->getPosition(2));
+    } else {
+      return Token::valued(TokenType::binaryOperator, "&",
+                           this->getPosition(1));
+    }
+  }
+  case '|': {
+    prev_ctx = "bitwiseOr";
+    read(prev_ctx);
+    if (curr == '=') {
+      read(prev_ctx);
+      return Token::valued(TokenType::assignedBinaryOperator,
+                           "|=", this->getPosition(2));
+    } else {
+      return Token::valued(TokenType::binaryOperator, "|",
+                           this->getPosition(1));
+    }
   }
   case '+':
   case '-':
@@ -269,108 +296,115 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   case '*':
   case '<':
   case '>': {
-    previousContext = "operator";
-    std::string opValue = "";
-    opValue += current;
-    readNext(previousContext);
-    if ((current == '+' && opValue == "+") ||
-        (current == '-' && opValue == "-")) {
-      opValue += current;
-      readNext(previousContext);
+    prev_ctx = "operator";
+    std::string opr = "";
+    opr += curr;
+    read(prev_ctx);
+    if ((curr == '+' && opr == "+") || (curr == '-' && opr == "-")) {
+      opr += curr;
+      read(prev_ctx);
       const std::string identifier =
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-      return Token::valued((identifier.find(current) != std::string::npos
+      return Token::valued((identifier.find(curr) != std::string::npos
                                 ? TokenType::unaryOperatorLeft
                                 : TokenType::unaryOperatorRight),
-                           opValue, this->getPosition(2));
-    } else if (current == '=' && opValue != "<" && opValue != ">") {
-      opValue += current;
-      readNext(previousContext);
-      return Token::valued(TokenType::assignedBinaryOperator, opValue,
+                           opr, this->getPosition(2));
+    } else if (curr == '=' && opr != "<" && opr != ">") {
+      opr += curr;
+      read(prev_ctx);
+      return Token::valued(TokenType::assignedBinaryOperator, opr,
                            this->getPosition(2));
-    } else if ((current == '<' && opValue == "<") ||
-               (current == '>' && opValue == ">")) {
-      opValue += current;
-      readNext(previousContext);
-      return Token::valued(TokenType::binaryOperator, opValue,
+    } else if ((curr == '<' && opr == "<") || (curr == '>' && opr == ">")) {
+      opr += curr;
+      read(prev_ctx);
+      return Token::valued(TokenType::binaryOperator, opr,
                            this->getPosition(2));
-    } else if (opValue == "<") {
+    } else if (curr == '~' && opr == "<") {
+      prev_ctx = "variationMarker";
+      read(prev_ctx);
+      return Token::normal(TokenType::variationMarker, this->getPosition(2));
+    } else if (opr == "<") {
       return Token::normal(TokenType::lesserThan, this->getPosition(1));
-    } else if (opValue == ">") {
-      if (current == '-') {
-        previousContext = "lambda";
-        readNext(previousContext);
+    } else if (opr == ">") {
+      if (curr == '-') {
+        prev_ctx = "lambda";
+        read(prev_ctx);
         return Token::normal(TokenType::lambda, this->getPosition(2));
       }
       return Token::normal(TokenType::greaterThan, this->getPosition(1));
     }
-    return Token::valued(TokenType::binaryOperator, opValue,
-                         this->getPosition(1));
+    return Token::valued(TokenType::binaryOperator, opr, this->getPosition(1));
   }
   case '=': {
-    readNext("assignment");
-    if (current == '=') {
-      previousContext = "operator";
-      readNext(previousContext);
+    read("assignment");
+    if (curr == '=') {
+      prev_ctx = "operator";
+      read(prev_ctx);
       return Token::valued(TokenType::binaryOperator,
                            "==", this->getPosition(2));
-    } else if (current == '>') {
-      previousContext = "singleStatementMarker";
-      readNext(previousContext);
+    } else if (curr == '>') {
+      prev_ctx = "singleStatementMarker";
+      read(prev_ctx);
       return Token::normal(TokenType::singleStatementMarker,
                            this->getPosition(2));
     } else {
-      previousContext = "assignment";
+      prev_ctx = "assignment";
       return Token::normal(TokenType::assignment, this->getPosition(1));
     }
   }
   case '\'': {
-    previousContext = "child";
-    readNext(previousContext);
+    read(prev_ctx);
+    if (curr == '\'') {
+      prev_ctx = "self";
+      read(prev_ctx);
+      return Token::normal(TokenType::self, this->getPosition(2));
+    } else {
+      prev_ctx = "child";
+    }
     return Token::normal(TokenType::child, this->getPosition(1));
   }
   case '"': {
     bool escape = false;
-    readNext("string");
-    std::string stringValue = "";
-    while (escape ? !file.eof() : (current != '"' && !file.eof())) {
+    read("string");
+    std::string str_val = "";
+    while (escape ? !file.eof() : (curr != '"' && !file.eof())) {
       if (escape) {
         escape = false;
-        if (current == '\'')
-          stringValue += '\'';
-        else if (current == '"')
-          stringValue += '"';
-        else if (current == '\\')
-          stringValue += "\\\\";
-        else if (current == 'n')
-          stringValue += "\n";
-        else if (current == '?')
-          stringValue += "\?";
-        else if (current == 'b')
-          stringValue += "\b";
-        else if (current == 'a')
-          stringValue += "\a";
-        else if (current == 'f')
-          stringValue += "\f";
-        else if (current == 'r')
-          stringValue += "\r";
-        else if (current == 't')
-          stringValue += "\t";
-        else if (current == 'v')
-          stringValue += "\v";
-        readNext("string");
+        if (curr == '\'')
+          str_val += '\'';
+        else if (curr == '"')
+          str_val += '"';
+        else if (curr == '\\')
+          str_val += "\\\\";
+        else if (curr == 'n')
+          str_val += "\n";
+        else if (curr == '?')
+          str_val += "\?";
+        else if (curr == 'b')
+          str_val += "\b";
+        else if (curr == 'a')
+          str_val += "\a";
+        else if (curr == 'f')
+          str_val += "\f";
+        else if (curr == 'r')
+          str_val += "\r";
+        else if (curr == 't')
+          str_val += "\t";
+        else if (curr == 'v')
+          str_val += "\v";
+        read("string");
       }
-      if (current == '\\' && previous != '\\') {
+      if (curr == '\\' && prev != '\\') {
         escape = true;
       } else {
-        stringValue += current;
+        str_val += curr;
       }
-      readNext("string");
+      read("string");
     }
-    previousContext = "literal";
-    readNext(previousContext);
-    return Token::valued(TokenType::StringLiteral, stringValue,
-                         this->getPosition(stringValue.length() + 2));
+    prev_ctx = "literal";
+    read(prev_ctx);
+    return Token::valued(TokenType::StringLiteral, str_val,
+                         this->getPosition(str_val.length() + 2));
   }
   case '0':
   case '1':
@@ -382,35 +416,34 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   case '7':
   case '8':
   case '9': {
-    std::string numberValue = "";
-    bool isFloat = false;
+    std::string num_val = "";
+    bool is_float = false;
     const std::string digits = "0123456789";
-    while (((digits.find(current, 0) != std::string::npos) ||
-            (isFloat ? false : (current == '.'))) &&
+    while (((digits.find(curr, 0) != std::string::npos) ||
+            (is_float ? false : (curr == '.'))) &&
            !file.eof()) {
-      if (current == '.') {
-        readNext("integer");
-        if (digits.find(current, 0) != std::string::npos) {
-          isFloat = true;
-          numberValue += '.';
+      if (curr == '.') {
+        read("integer");
+        if (digits.find(curr, 0) != std::string::npos) {
+          is_float = true;
+          num_val += '.';
         } else {
           /// This is in the reverse order since the last element is returned
           /// first
           buffer.push_back(
               Token::normal(TokenType::stop, this->getPosition(1)));
-          buffer.push_back(
-              Token::valued(TokenType::IntegerLiteral, numberValue,
-                            this->getPosition(numberValue.length())));
+          buffer.push_back(Token::valued(TokenType::IntegerLiteral, num_val,
+                                         this->getPosition(num_val.length())));
           return tokeniser();
         }
       }
-      numberValue += current;
-      readNext(isFloat ? "float" : "integer");
+      num_val += curr;
+      read(is_float ? "float" : "integer");
     }
-    previousContext = "literal";
-    return Token::valued(isFloat ? TokenType::FloatLiteral
-                                 : TokenType::IntegerLiteral,
-                         numberValue, this->getPosition(numberValue.length()) //
+    prev_ctx = "literal";
+    return Token::valued(is_float ? TokenType::FloatLiteral
+                                  : TokenType::IntegerLiteral,
+                         num_val, this->getPosition(num_val.length()) //
     );
   }
   case -1: {
@@ -419,104 +452,102 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   default: {
     const std::string alphabets =
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    if ((alphabets.find(current, 0) != std::string::npos) || current == '_') {
+    if ((alphabets.find(curr, 0) != std::string::npos) || curr == '_') {
       const std::string digits = "0123456789";
-      std::string ambiguousValue = "";
-      while ((alphabets.find(current, 0) != std::string::npos) ||
-             (digits.find(current, 0) != std::string::npos) ||
-             (current == '_') && !file.eof()) {
-        ambiguousValue += current;
-        readNext("identifier");
+      std::string value = "";
+      while ((alphabets.find(curr, 0) != std::string::npos) ||
+             (digits.find(curr, 0) != std::string::npos) ||
+             (curr == '_') && !file.eof()) {
+        value += curr;
+        read("identifier");
       }
-      previousContext = "keyword";
-      if (ambiguousValue == "null")
+      prev_ctx = "keyword";
+      if (value == "null")
         return Token::normal(TokenType::null, this->getPosition(4));
-      else if (ambiguousValue == "bring")
+      else if (value == "bring")
         return Token::normal(TokenType::bring, this->getPosition(5));
-      else if (ambiguousValue == "pub")
+      else if (value == "pub")
         return Token::normal(TokenType::Public, this->getPosition(3));
-      else if (ambiguousValue == "pvt")
+      else if (value == "let")
+        return Token::normal(TokenType::let, this->getPosition(3));
+      else if (value == "pvt")
         return Token::normal(TokenType::Private, this->getPosition(3));
-      else if (ambiguousValue == "void")
+      else if (value == "void")
         return Token::normal(TokenType::Void, this->getPosition(4));
-      else if (ambiguousValue == "type")
+      else if (value == "type")
         return Token::normal(TokenType::Type, this->getPosition(4));
-      else if (ambiguousValue == "model")
+      else if (value == "model")
         return Token::normal(TokenType::model, this->getPosition(5));
-      else if (ambiguousValue == "const")
+      else if (value == "const")
         return Token::normal(TokenType::constant, this->getPosition(5));
-      else if (ambiguousValue == "space")
+      else if (value == "space")
         return Token::normal(TokenType::space, this->getPosition(5));
-      else if (ambiguousValue == "from")
+      else if (value == "from")
         return Token::normal(TokenType::from, this->getPosition(4));
-      else if (ambiguousValue == "to")
+      else if (value == "to")
         return Token::normal(TokenType::to, this->getPosition(2));
-      else if (ambiguousValue == "true")
+      else if (value == "true")
         return Token::normal(TokenType::TRUE, this->getPosition(4));
-      else if (ambiguousValue == "false")
+      else if (value == "false")
         return Token::normal(TokenType::FALSE, this->getPosition(5));
-      else if (ambiguousValue == "say")
+      else if (value == "say")
         return Token::normal(TokenType::say, this->getPosition(3));
-      else if (ambiguousValue == "as")
+      else if (value == "as")
         return Token::normal(TokenType::as, this->getPosition(2));
-      else if (ambiguousValue == "file")
+      else if (value == "file")
         return Token::normal(TokenType::file, this->getPosition(4));
-      else if (ambiguousValue == "lib")
+      else if (value == "lib")
         return Token::normal(TokenType::Library, this->getPosition(3));
-      else if (ambiguousValue == "ref")
+      else if (value == "ref")
         return Token::normal(TokenType::reference, this->getPosition(3));
-      else if (ambiguousValue == "self")
-        return Token::normal(TokenType::self, this->getPosition(4));
-      else if (ambiguousValue == "bool")
+      else if (value == "bool")
         return Token::normal(TokenType::Bool, this->getPosition(4));
-      else if (ambiguousValue == "size")
+      else if (value == "size")
         return Token::normal(TokenType::size, this->getPosition(4));
-      else if (ambiguousValue.substr(0, 1) == "i" &&
-               ((ambiguousValue.length() > 1)
-                    ? qat::utilities::isInteger(
-                          ambiguousValue.substr(1, ambiguousValue.length() - 1))
+      else if (value.substr(0, 1) == "i" &&
+               ((value.length() > 1)
+                    ? qat::utils::isInteger(value.substr(1, value.length() - 1))
                     : false)) {
-        return Token::valued(
-            TokenType::Integer,
-            ambiguousValue.substr(1, ambiguousValue.length() - 1),
-            this->getPosition(ambiguousValue.length()));
-      } else if (ambiguousValue == "fbrain")
+        return Token::valued(TokenType::Integer,
+                             value.substr(1, value.length() - 1),
+                             this->getPosition(value.length()));
+      } else if (value == "fbrain")
         return Token::valued(TokenType::Float, "brain", this->getPosition(6));
-      else if (ambiguousValue == "fhalf")
+      else if (value == "fhalf")
         return Token::valued(TokenType::Float, "half", this->getPosition(5));
-      else if (ambiguousValue == "f32")
+      else if (value == "f32")
         return Token::valued(TokenType::Float, "32", this->getPosition(3));
-      else if (ambiguousValue == "f64")
+      else if (value == "f64")
         return Token::valued(TokenType::Float, "64", this->getPosition(3));
-      else if (ambiguousValue == "f80")
+      else if (value == "f80")
         return Token::valued(TokenType::Float, "80", this->getPosition(3));
-      else if (ambiguousValue == "f128ppc")
+      else if (value == "f128ppc")
         return Token::valued(TokenType::Float, "128ppc", this->getPosition(7));
-      else if (ambiguousValue == "f128")
+      else if (value == "f128")
         return Token::valued(TokenType::Float, "128", this->getPosition(4));
-      else if (ambiguousValue == "str")
+      else if (value == "str")
         return Token::normal(TokenType::String, this->getPosition(3));
-      else if (ambiguousValue == "alias")
+      else if (value == "alias")
         return Token::normal(TokenType::Alias, this->getPosition(5));
-      else if (ambiguousValue == "for")
+      else if (value == "for")
         return Token::normal(TokenType::For, this->getPosition(3));
-      else if (ambiguousValue == "give")
+      else if (value == "give")
         return Token::normal(TokenType::give, this->getPosition(4));
-      else if (ambiguousValue == "expose")
+      else if (value == "expose")
         return Token::normal(TokenType::expose, this->getPosition(6));
-      else if (ambiguousValue == "var")
+      else if (value == "var")
         return Token::normal(TokenType::var, this->getPosition(3));
-      else if (ambiguousValue == "if")
+      else if (value == "if")
         return Token::normal(TokenType::If, this->getPosition(2));
-      else if (ambiguousValue == "else")
+      else if (value == "else")
         return Token::normal(TokenType::Else, this->getPosition(4));
       else {
-        previousContext = "identifier";
-        return Token::valued(TokenType::identifier, ambiguousValue,
-                             this->getPosition(ambiguousValue.length()));
+        prev_ctx = "identifier";
+        return Token::valued(TokenType::identifier, value,
+                             this->getPosition(value.length()));
       }
     } else {
-      throwError("Unrecognised character found: " + std::string(1, current));
+      throwError("Unrecognised character found: " + std::string(1, curr));
       return Token::normal(TokenType::endOfFile, this->getPosition(0));
     }
   }
@@ -525,23 +556,23 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
 
 void qat::lexer::Lexer::printStatus() {
   if (Lexer::show_report) {
-    double timeValue = 0;
-    std::string timeUnit = "";
+    double time_val = 0;
+    std::string time_unit = "";
 
     if (timeInNS < 1000000) {
-      timeValue = ((double)timeInNS) / 1000;
-      timeUnit = " microseconds \n";
+      time_val = ((double)timeInNS) / 1000;
+      time_unit = " microseconds \n";
     } else if (timeInNS < 1000000) {
-      timeValue = ((double)timeInNS) / 1000000;
-      timeUnit = " milliseconds \n";
+      time_val = ((double)timeInNS) / 1000000;
+      time_unit = " milliseconds \n";
     } else {
-      timeValue = ((double)timeInNS) / 1000000000;
-      timeUnit = " seconds \n";
+      time_val = ((double)timeInNS) / 1000000000;
+      time_unit = " seconds \n";
     }
     std::cout << colors::cyan << "[ LEXER ] " << colors::bold::green << filePath
-              << colors::reset << "\n   " << --lineNumber << " lines & "
-              << --totalCharacterCount << " characters in " << colors::bold_
-              << timeValue << timeUnit << colors::reset;
+              << colors::reset << "\n   " << --line_num << " lines & "
+              << --total_char_count << " characters in " << colors::bold_
+              << time_val << time_unit << colors::reset;
   }
   if (Lexer::emit_tokens) {
     std::cout << "\nAnalysed Tokens \n\n";
@@ -631,14 +662,17 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::identifier:
         std::cout << " " << tokens.at(i).value << " ";
         break;
-      case TokenType::inferredDeclaration:
-        std::cout << " := ";
+      case TokenType::let:
+        std::cout << " let ";
         break;
       case TokenType::Integer:
         std::cout << " i" << tokens.at(i).value << " ";
         break;
       case TokenType::IntegerLiteral:
         std::cout << " " << tokens.at(i).value << " ";
+        break;
+      case TokenType::lambda:
+        std::cout << " >- ";
         break;
       case TokenType::lesserThan:
         std::cout << " < ";
@@ -653,7 +687,7 @@ void qat::lexer::Lexer::printStatus() {
         std::cout << " obj ";
         break;
       case TokenType::pointerAccess:
-        std::cout << " :> ";
+        std::cout << " ^ ";
         break;
       case TokenType::paranthesisClose:
         std::cout << " ) ";
@@ -673,20 +707,20 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::say:
         std::cout << " say ";
         break;
+      case TokenType::self:
+        std::cout << " '' ";
+        break;
       case TokenType::separator:
         std::cout << " , ";
         break;
       case TokenType::singleStatementMarker:
-        std::cout << " >- ";
+        std::cout << " => ";
         break;
       case TokenType::space:
         std::cout << " space ";
         break;
       case TokenType::startOfFile:
         std::cout << "STARTOFFILE  -  " << filePath << "\n";
-        break;
-      case TokenType::staticChild:
-        std::cout << " ^ ";
         break;
       case TokenType::stop:
         std::cout << " .\n";
@@ -696,9 +730,6 @@ void qat::lexer::Lexer::printStatus() {
         break;
       case TokenType::StringLiteral:
         std::cout << " \"" << tokens.at(i).value << "\" ";
-        break;
-      case TokenType::self:
-        std::cout << " this ";
         break;
       case TokenType::to:
         std::cout << " to ";
@@ -711,6 +742,9 @@ void qat::lexer::Lexer::printStatus() {
         break;
       case TokenType::unaryOperatorRight:
         std::cout << tokens.at(i).value << " ";
+        break;
+      case TokenType::variationMarker:
+        std::cout << " <~ ";
         break;
       case TokenType::Void:
         std::cout << " void ";
@@ -729,8 +763,8 @@ void qat::lexer::Lexer::printStatus() {
 
 void qat::lexer::Lexer::throwError(std::string message) {
   std::cout << colors::red << "[ LEXER ERROR ] " << colors::bold::green
-            << filePath << ":" << lineNumber << ":" << characterNumber
-            << colors::reset << "\n";
+            << filePath << ":" << line_num << ":" << char_num << colors::reset
+            << "\n";
   std::cout << "   " << message << "\n";
   exit(0);
 }

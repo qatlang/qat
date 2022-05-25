@@ -85,23 +85,23 @@ private:
    * token emitted by the Lexer
    *
    */
-  std::string previousContext;
+  std::string prev_ctx;
 
   /**
-   * @brief Previous character read by the `readNext` function. This
+   * @brief Previous character read by the `read` function. This
    * is changed everytime a new character is read and is saved to the
    * current variable
    *
    */
-  char previous;
+  char prev;
 
   /**
-   * @brief The latest character read by the `readNext` function. This
+   * @brief The latest character read by the `read` function. This
    * value is updated everytime a new character is read from the current
    * file
    *
    */
-  char current;
+  char curr;
 
   /**
    * @brief Vector of all tokens found during lexical analysis. This is
@@ -122,7 +122,7 @@ private:
    * reporting purposes
    *
    */
-  unsigned long long totalCharacterCount = 0;
+  unsigned long long total_char_count = 0;
 
   /**
    * @brief Time taken by the lexer to analyse the entire file, in
@@ -174,7 +174,7 @@ public:
    * @param lexerContext A simple string that provides context for the
    * reader to customise reading behaviour.
    */
-  void readNext(std::string lexerContext);
+  void read(std::string lexerContext);
 
   /**
    * @brief Handles the change of the active file
@@ -198,23 +198,23 @@ public:
    * the End of Line is encountered
    *
    */
-  unsigned long long lineNumber = 1;
+  unsigned long long line_num = 1;
 
   /**
    * @brief The number pertaining to the current character read by the
-   * lexer. This is incremented by the `readNext` function everytime a
+   * lexer. This is incremented by the `read` function everytime a
    * character is read in the file. This is reset to zero after the End
    * of Line is encountered
    *
    */
-  unsigned long long characterNumber = 0;
+  unsigned long long char_num = 0;
 
   /**
    * @brief Get the FilePosition object for a token
    *
    * @return utilities::FilePosition
    */
-  utilities::FilePlacement getPosition(unsigned long long length);
+  utils::FilePlacement getPosition(unsigned long long length);
 
   /**
    * @brief Prints all status about the lexical analysis to the standard

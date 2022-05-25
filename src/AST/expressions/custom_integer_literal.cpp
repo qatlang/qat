@@ -40,44 +40,23 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_AST_NODETYPE_HPP
-#define QAT_AST_NODETYPE_HPP
+#include "./custom_integer_literal.hpp"
 
-namespace qat {
-namespace AST {
-enum class NodeType {
-  functionPrototype,
-  functionDefinition,
-  localDeclaration,
-  globalDeclaration,
-  integerLiteral,
-  customIntegerLiteral,
-  floatLiteral,
-  stringLiteral,
-  staticDeclaration,
-  saySentence,
-  ifElseSentence,
-  giveSentence,
-  openBox,
-  defineObjectType,
-  closeBox,
-  reassignment,
-  variableExpression,
-  selfExpression,
-  toConversion,
-  unaryExpression,
-  ternaryExpression,
-  functionCall,
-  binaryExpression,
-  allocateOnHeap,
-  memberFunctionCall,
-  memberVariableExpression,
-  sizeOfType,
-  memberIndexAccess,
-  symbol,
-  expressionSentence
-};
+qat::AST::CustomIntegerLiteral::CustomIntegerLiteral(
+    std::string _value, bool _isUnsigned, unsigned int _bitWidth,
+    qat::utils::FilePlacement _filePlacement)
+    : value(_value), isUnsigned(_isUnsigned), bitWidth(_bitWidth),
+      Expression(_filePlacement) {}
+
+llvm::Value *
+qat::AST::CustomIntegerLiteral::generate(qat::IR::Generator *generator) {
+  auto type = llvm::Type::getIntNTy(generator->llvmContext, bitWidth);
+  // FIXME - Support custom radix
+  auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
+  // FIXME - Support unsigned integer literals
+  return result;
 }
-} // namespace qat
 
-#endif
+qat::AST::NodeType qat::AST::CustomIntegerLiteral::nodeType() {
+  return qat::AST::NodeType::customIntegerLiteral;
+}

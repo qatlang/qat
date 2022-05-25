@@ -43,13 +43,16 @@
 #include "./integer_literal.hpp"
 
 qat::AST::IntegerLiteral::IntegerLiteral(
-    std::string _value, unsigned int _bitWidth,
+    std::string _value, bool _isUnsigned,
     qat::utils::FilePlacement _filePlacement)
-    : value(_value), bitWidth(_bitWidth), Expression(_filePlacement) {}
+    : value(_value), isUnsigned(_isUnsigned), Expression(_filePlacement) {}
 
 llvm::Value *qat::AST::IntegerLiteral::generate(qat::IR::Generator *generator) {
-  llvm::IntegerType *type = llvm::Type::getInt32Ty(generator->llvmContext);
-  return llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
+  auto type = llvm::Type::getInt64Ty(generator->llvmContext);
+  // FIXME - Support custom radix
+  auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
+  // FIXME - Support unsigned integer literals
+  return result;
 }
 
 qat::AST::NodeType qat::AST::IntegerLiteral::nodeType() {

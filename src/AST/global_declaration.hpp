@@ -21,15 +21,15 @@ namespace AST {
 class GlobalDeclaration : public Node {
 private:
   std::string name;
-  llvm::Optional<Space> parent_space;
+  llvm::Optional<Box> parent_space;
   llvm::Optional<QatType> type;
   Expression &value;
   bool is_variable;
 
 public:
-  GlobalDeclaration(std::string _name, llvm::Optional<Space> _parentSpace,
+  GlobalDeclaration(std::string _name, llvm::Optional<Box> _parentSpace,
                     llvm::Optional<QatType> _type, Expression _value,
-                    bool _isVariable, utilities::FilePlacement _filePlacement);
+                    bool _isVariable, utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

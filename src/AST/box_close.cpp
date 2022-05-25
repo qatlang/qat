@@ -62,5 +62,5 @@ llvm::Value *qat::AST::CloseSpace::generate(qat::IR::Generator *generator) {
 }
 
 qat::AST::NodeType qat::AST::CloseSpace::nodeType() {
-  return qat::AST::NodeType::closeSpace;
+  return qat::AST::NodeType::closeBox;
 }

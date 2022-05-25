@@ -49,6 +49,7 @@ enum class NodeType {
   functionPrototype,
   functionDefinition,
   localDeclaration,
+  globalDeclaration,
   integerLiteral,
   floatLiteral,
   stringLiteral,
@@ -56,12 +57,12 @@ enum class NodeType {
   saySentence,
   ifElseSentence,
   giveSentence,
-  exposeSpace,
+  openBox,
   defineObjectType,
-  closeSpace,
+  closeBox,
   reassignment,
   variableExpression,
-  thisExpression,
+  selfExpression,
   toConversion,
   unaryExpression,
   ternaryExpression,
@@ -71,7 +72,9 @@ enum class NodeType {
   memberFunctionCall,
   memberVariableExpression,
   sizeOfType,
-  memberIndexAccess
+  memberIndexAccess,
+  symbol,
+  expressionSentence
 };
 }
 } // namespace qat

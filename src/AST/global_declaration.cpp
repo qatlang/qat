@@ -1,9 +1,9 @@
 #include "./global_declaration.hpp"
 
 qat::AST::GlobalDeclaration::GlobalDeclaration(
-    std::string _name, llvm::Optional<Space> _parentSpace,
+    std::string _name, llvm::Optional<Box> _parentSpace,
     llvm::Optional<QatType> _type, Expression _value, bool _isVariable,
-    utilities::FilePlacement _filePlacement)
+    utils::FilePlacement _filePlacement)
     : name(_name), parent_space(_parentSpace), type(_type), value(_value),
       is_variable(_isVariable), Node(_filePlacement) {}
 

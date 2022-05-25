@@ -82,7 +82,7 @@ enum class TokenType {
   Alias,
   For,
   constant,
-  inferredDeclaration,
+  let,
   assignment,
   hashtag,
   separator,
@@ -96,6 +96,7 @@ enum class TokenType {
   say,
   as,
   self,
+  variationMarker,
   Library,
   space,
   endOfFile,
@@ -117,8 +118,10 @@ enum class TokenType {
   unaryOperatorRight,
   lambda,
   comment,
-  staticChild,
-  singleStatementMarker
+  singleStatementMarker,
+  bitwiseOr,
+  bitwiseAnd,
+  bitwiseNot,
 };
 } // namespace lexer
 } // namespace qat

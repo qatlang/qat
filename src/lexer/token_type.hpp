@@ -79,7 +79,7 @@ enum class TokenType {
   bracketClose,
   colon,
   at,
-  Alias,
+  alias,
   For,
   constant,
   let,

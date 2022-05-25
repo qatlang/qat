@@ -528,7 +528,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
       else if (value == "str")
         return Token::normal(TokenType::String, this->getPosition(3));
       else if (value == "alias")
-        return Token::normal(TokenType::Alias, this->getPosition(5));
+        return Token::normal(TokenType::alias, this->getPosition(5));
       else if (value == "for")
         return Token::normal(TokenType::For, this->getPosition(3));
       else if (value == "give")
@@ -578,7 +578,7 @@ void qat::lexer::Lexer::printStatus() {
     std::cout << "\nAnalysed Tokens \n\n";
     for (std::size_t i = 0; i < tokens.size(); i++) {
       switch (tokens.at(i).type) {
-      case TokenType::Alias:
+      case TokenType::alias:
         std::cout << " alias ";
         break;
       case TokenType::as:

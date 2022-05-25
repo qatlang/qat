@@ -43,13 +43,13 @@
 #ifndef QAT_UTILS_SPACE_POSSIBILITIES_HPP
 #define QAT_UTILS_SPACE_POSSIBILITIES_HPP
 
-#include "./parse_spaces_identifier.hpp"
+#include "./parse_boxes_identifier.hpp"
 #include <string>
 #include <vector>
 
 namespace qat {
 namespace utils {
-std::vector<std::string> spacePossibilities(std::string value);
+std::vector<std::string> boxPossibilities(std::string value);
 }
 } // namespace qat
 

@@ -40,9 +40,9 @@
  * or misleading or gives out false information.
  */
 
-#include "./space_possibilities.hpp"
+#include "./box_possibilities.hpp"
 
-std::vector<std::string> qat::utils::spacePossibilities(std::string value) {
+std::vector<std::string> qat::utils::boxPossibilities(std::string value) {
   std::vector<std::string> parsedValues =
       qat::utils::parseSpacesFromIdentifier(value);
   if (parsedValues.size() > 1) {

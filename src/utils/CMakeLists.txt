@@ -3,7 +3,7 @@ add_library(QAT_UTILS
             file_placement.cpp
             llvm_type_to_name.cpp
             parse_boxes_identifier.cpp
-            space_possibilities.cpp
+            box_possibilities.cpp
             string_to_callingconv.cpp
             version_number.cpp
             variability.cpp

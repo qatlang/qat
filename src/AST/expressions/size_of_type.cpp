@@ -43,7 +43,7 @@
 #include "./size_of_type.hpp"
 
 qat::AST::SizeOfType::SizeOfType(qat::AST::QatType _type,
-                                 qat::utilities::FilePlacement _filePlacement)
+                                 qat::utils::FilePlacement _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
 llvm::Value *qat::AST::SizeOfType::generate(qat::IR::Generator *generator) {

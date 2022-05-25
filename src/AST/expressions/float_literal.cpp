@@ -42,8 +42,8 @@
 
 #include "./float_literal.hpp"
 
-qat::AST::FloatLiteral::FloatLiteral(
-    std::string _value, qat::utilities::FilePlacement _filePlacement)
+qat::AST::FloatLiteral::FloatLiteral(std::string _value,
+                                     qat::utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
 llvm::Value *qat::AST::FloatLiteral::generate(qat::IR::Generator *generator) {

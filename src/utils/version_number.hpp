@@ -48,7 +48,7 @@
 #include <string>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 class VersionNumber {
   VersionNumber(const std::string version);
 
@@ -78,7 +78,7 @@ class VersionNumber {
   llvm::Optional<std::string> prerelease;
   llvm::Optional<std::string> build;
 };
-} // namespace utilities
+} // namespace utils
 } // namespace qat
 
 #endif

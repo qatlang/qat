@@ -42,7 +42,7 @@
 
 #include "./llvm_type_to_name.hpp"
 
-std::string qat::utilities::llvmTypeToName(llvm::Type *type) {
+std::string qat::utils::llvmTypeToName(llvm::Type *type) {
   if (type->isStructTy()) {
     auto structType = llvm::dyn_cast<llvm::StructType>(type);
     if (structType->isLiteral()) {
@@ -76,7 +76,7 @@ std::string qat::utilities::llvmTypeToName(llvm::Type *type) {
       return "void";
     } else if (type->isPointerTy()) {
       llvm::PointerType *pointerType = llvm::dyn_cast<llvm::PointerType>(type);
-      if (pointerType->getElementType() != nullptr) {
+      if (pointerType->getElementType()) {
         return llvmTypeToName(pointerType->getElementType()) + "#";
       } else {
         return "unknown#";

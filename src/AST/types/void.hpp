@@ -52,7 +52,7 @@ namespace qat {
 namespace AST {
 class VoidType : public QatType {
 public:
-  VoidType(const utilities::FilePlacement _filePlacement)
+  VoidType(const utils::FilePlacement _filePlacement)
       : QatType(_filePlacement, "void") {}
 
   llvm::Type *generate(IR::Generator *generator);

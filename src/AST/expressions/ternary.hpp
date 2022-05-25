@@ -61,7 +61,7 @@ private:
 public:
   TernaryExpression(Expression _condition, Expression _ifExpression,
                     Expression _elseExpression,
-                    utilities::FilePlacement _filePlacement);
+                    utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

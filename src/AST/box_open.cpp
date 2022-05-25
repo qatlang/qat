@@ -40,7 +40,7 @@
  * or misleading or gives out false information.
  */
 
-#include "./open_box.hpp"
+#include "./box_open.hpp"
 
 llvm::Value *qat::AST::OpenBox::generate(qat::IR::Generator *generator) {
   for (auto item : generator->exposed_boxes) {

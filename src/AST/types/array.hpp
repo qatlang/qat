@@ -55,7 +55,7 @@ private:
 
 public:
   ArrayType(QatType _subType, uint64_t _count,
-            utilities::FilePlacement _filePlacement);
+            utils::FilePlacement _filePlacement);
 
   llvm::Type *generate(IR::Generator *generator);
 };

@@ -53,7 +53,7 @@ private:
   QatType type;
 
 public:
-  SizeOfType(QatType _type, utilities::FilePlacement _filePlacement);
+  SizeOfType(QatType _type, utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

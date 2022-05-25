@@ -57,12 +57,12 @@ namespace lexer {
  */
 class Token {
 private:
-  explicit Token(TokenType _type, utilities::FilePlacement _filePlacement)
+  Token(TokenType _type, utils::FilePlacement _filePlacement)
       : type(_type), value(""), hasValue(false), filePlacement(_filePlacement) {
   }
 
-  explicit Token(TokenType _type, std::string _value,
-                 utilities::FilePlacement _filePlacement)
+  Token(TokenType _type, std::string _value,
+        utils::FilePlacement _filePlacement)
       : type(_type), value(_value), hasValue(true),
         filePlacement(_filePlacement) {}
 
@@ -80,7 +80,7 @@ public:
    * @return Token
    */
   static Token valued(TokenType _type, std::string _value,
-                      utilities::FilePlacement filePlacement);
+                      utils::FilePlacement filePlacement);
 
   /**
    * @brief Tokens that are by default, recognised by the language. These tokens
@@ -92,7 +92,7 @@ public:
    * numbers
    * @return Token
    */
-  static Token normal(TokenType _type, utilities::FilePlacement filePlacement);
+  static Token normal(TokenType _type, utils::FilePlacement filePlacement);
 
   /**
    * @brief Type of the token. Can mostly refer to symbols that
@@ -117,7 +117,7 @@ public:
    * @brief FilePlacement indicates a starting and ending position that contains
    * appropriate value
    */
-  utilities::FilePlacement filePlacement;
+  utils::FilePlacement filePlacement;
 };
 } // namespace lexer
 } // namespace qat

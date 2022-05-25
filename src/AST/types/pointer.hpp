@@ -56,10 +56,10 @@ private:
   QatType type;
 
 public:
-  PtrType(utilities::FilePlacement _filePlacement)
+  PtrType(utils::FilePlacement _filePlacement)
       : type(VoidType(_filePlacement)), QatType(_filePlacement, "pointer") {}
 
-  PtrType(QatType _type, utilities::FilePlacement _filePlacement)
+  PtrType(QatType _type, utils::FilePlacement _filePlacement)
       : type(_type), QatType(_filePlacement, "pointer") {}
 
   llvm::Type *generate(IR::Generator *generator);

@@ -40,11 +40,12 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_AST_LOCALDECLARATION_HPP
-#define QAT_AST_LOCALDECLARATION_HPP
+#ifndef QAT_AST_LOCAL_DECLARATION_HPP
+#define QAT_AST_LOCAL_DECLARATION_HPP
 
 #include "../IR/generator.hpp"
 #include "../utils/llvm_type_to_name.hpp"
+#include "../utils/variability.hpp"
 #include "./types/qat_type.hpp"
 #include "expression.hpp"
 #include "sentence.hpp"
@@ -60,14 +61,12 @@ private:
   llvm::Optional<QatType> type;
   std::string name;
   Expression value;
-  bool isVariable;
+  bool variability;
 
 public:
   LocalDeclaration(llvm::Optional<QatType> _type, std::string _name,
-                   Expression _value, bool _isVariable,
-                   utilities::FilePlacement _filePlacement)
-      : type(_type), name(_name), value(_value), isVariable(_isVariable),
-        Sentence(_filePlacement) {}
+                   Expression _value, bool _variability,
+                   utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

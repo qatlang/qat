@@ -43,7 +43,7 @@
 #include "./string_literal.hpp"
 
 qat::AST::StringLiteral::StringLiteral(std::string _value,
-                                       utilities::FilePlacement _filePlacement)
+                                       utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
 llvm::Value *qat::AST::StringLiteral::generate(qat::IR::Generator *generator) {

@@ -52,7 +52,7 @@ namespace qat {
 namespace AST {
 class QatType {
 public:
-  QatType(utilities::FilePlacement _filePlacement, std::string _typeName)
+  QatType(utils::FilePlacement _filePlacement, std::string _typeName)
       : typeName(_typeName), filePlacement(_filePlacement) {}
 
   virtual ~QatType(){};
@@ -61,7 +61,7 @@ public:
 
   std::string typeName;
 
-  utilities::FilePlacement filePlacement;
+  utils::FilePlacement filePlacement;
 };
 } // namespace AST
 } // namespace qat

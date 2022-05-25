@@ -48,7 +48,7 @@
 namespace fsexp = std::experimental::filesystem;
 
 namespace qat {
-namespace utilities {
+namespace utils {
 /** Position indicates a line and character number in a file */
 struct Position {
   /** Number of the line of this position. This will never be negative */
@@ -95,7 +95,7 @@ public:
   /** Ending position of the range */
   Position end;
 };
-} // namespace utilities
+} // namespace utils
 } // namespace qat
 
 #endif

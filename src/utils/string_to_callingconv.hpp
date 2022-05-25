@@ -47,7 +47,7 @@
 #include <string>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 llvm::CallingConv::ID stringToCallingConv(std::string name);
 }
 } // namespace qat

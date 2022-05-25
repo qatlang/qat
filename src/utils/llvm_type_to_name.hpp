@@ -48,7 +48,7 @@
 #include <string>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 std::string llvmTypeToName(llvm::Type *type);
 }
 } // namespace qat

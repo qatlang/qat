@@ -42,8 +42,8 @@
 
 #include "./get_directory_contents.hpp"
 
-std::vector<fsexp::path>
-qat::utilities::get_directory_contents(fsexp::path path, bool recursive) {
+std::vector<fsexp::path> qat::utils::get_directory_contents(fsexp::path path,
+                                                            bool recursive) {
   std::vector<fsexp::path> result;
   for (auto item : fsexp::directory_iterator(path)) {
     if (fsexp::is_directory(item)) {

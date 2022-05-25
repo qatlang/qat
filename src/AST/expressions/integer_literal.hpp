@@ -55,9 +55,11 @@ namespace AST {
 class IntegerLiteral : public Expression {
 private:
   std::string value;
+  unsigned int bitWidth;
 
 public:
-  IntegerLiteral(std::string _value, utilities::FilePlacement _filePlacement);
+  IntegerLiteral(std::string _value, unsigned int _bitWidth,
+                 utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

@@ -46,7 +46,7 @@
 #include <string>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 bool isInteger(std::string value);
 }
 } // namespace qat

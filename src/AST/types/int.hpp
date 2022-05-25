@@ -54,10 +54,10 @@ private:
   const unsigned int bitWidth;
 
 public:
-  IntType(const utilities::FilePlacement _filePlacement);
+  IntType(const utils::FilePlacement _filePlacement);
 
   IntType(const unsigned int _bitWidth,
-          const utilities::FilePlacement _filePlacement);
+          const utils::FilePlacement _filePlacement);
 
   llvm::Type *generate(IR::Generator *generator);
 

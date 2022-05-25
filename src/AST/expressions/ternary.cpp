@@ -44,14 +44,14 @@
 
 qat::AST::TernaryExpression::TernaryExpression(
     Expression _condition, Expression _ifExpression, Expression _elseExpression,
-    utilities::FilePlacement _filePlacement)
+    utils::FilePlacement _filePlacement)
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
       Expression(_filePlacement) {}
 
 llvm::Value *
 qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
   auto gen_cond = condition.generate(generator);
-  if (gen_cond != nullptr) {
+  if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1)) {
       auto cond_val = generator->builder.CreateFCmpONE(
           gen_cond,
@@ -80,7 +80,7 @@ qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
       parent_fn->getBasicBlockList().push_back(mergeBlock);
       generator->builder.SetInsertPoint(mergeBlock);
       llvm::PHINode *phiNode;
-      if (if_val != nullptr && else_value != nullptr) {
+      if (if_val && else_value) {
         if (if_val->getType() != else_value->getType()) {
           generator->throwError(
               "Ternary expression is giving values of different types",
@@ -101,7 +101,7 @@ qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
     } else {
       generator->throwError(
           "Condition expression is of the type `" +
-              qat::utilities::llvmTypeToName(gen_cond->getType()) +
+              qat::utils::llvmTypeToName(gen_cond->getType()) +
               "`, but ternary expression expects an expression of `bool` or "
               "`i1` type",
           file_placement);

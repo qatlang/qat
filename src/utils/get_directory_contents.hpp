@@ -48,10 +48,10 @@
 
 namespace fsexp = std::experimental::filesystem;
 namespace qat {
-namespace utilities {
+namespace utils {
 std::vector<fsexp::path> get_directory_contents(fsexp::path path,
                                                 bool recursive);
-} // namespace utilities
+} // namespace utils
 } // namespace qat
 
 #endif

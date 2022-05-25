@@ -58,7 +58,7 @@ private:
   std::string value;
 
 public:
-  StringLiteral(std::string _value, utilities::FilePlacement _filePlacement);
+  StringLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

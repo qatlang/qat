@@ -48,7 +48,7 @@
 #include <vector>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 std::vector<std::string> spacePossibilities(std::string value);
 }
 } // namespace qat

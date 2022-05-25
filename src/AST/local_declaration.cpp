@@ -42,105 +42,105 @@
 
 #include "./local_declaration.hpp"
 
+qat::AST::LocalDeclaration::LocalDeclaration(
+    llvm::Optional<QatType> _type, std::string _name, Expression _value,
+    bool _variability, utils::FilePlacement _filePlacement)
+    : type(_type), name(_name), value(_value), variability(_variability),
+      Sentence(_filePlacement) {}
+
 llvm::Value *
 qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
-  llvm::Value *genValue = value.generate(generator);
+  auto gen_value = value.generate(generator);
   if (type.hasValue()) {
-    llvm::Type *declType = type.getValue().generate(generator);
-    if (declType != genValue->getType()) {
-      if (declType->isIntegerTy() && genValue->getType()->isIntegerTy()) {
-        genValue = generator->builder.CreateIntCast(genValue, declType, true,
+    auto decl_ty = type.getValue().generate(generator);
+    if (decl_ty != gen_value->getType()) {
+      // FIXME - Remove all implicit casts
+      if (decl_ty->isIntegerTy() && gen_value->getType()->isIntegerTy()) {
+        gen_value = generator->builder.CreateIntCast(gen_value, decl_ty, true,
+                                                     "implicit_cast");
+      } else if (decl_ty->isFloatingPointTy() &&
+                 gen_value->getType()->isIntegerTy()) {
+        generator->builder.CreateSIToFP(gen_value, decl_ty, "implicit_cast");
+      } else if (decl_ty->isFloatingPointTy() &&
+                 gen_value->getType()->isFloatingPointTy()) {
+        gen_value = generator->builder.CreateFPCast(gen_value, decl_ty,
                                                     "implicit_cast");
-      } else if (declType->isFloatingPointTy() &&
-                 genValue->getType()->isIntegerTy()) {
-        generator->builder.CreateSIToFP(genValue, declType, "implicit_cast");
-      } else if (declType->isFloatingPointTy() &&
-                 genValue->getType()->isFloatingPointTy()) {
-        genValue = generator->builder.CreateFPCast(genValue, declType,
-                                                   "implicit_cast");
-      } else if (declType->isIntegerTy() &&
-                 genValue->getType()->isFloatingPointTy()) {
+      } else if (decl_ty->isIntegerTy() &&
+                 gen_value->getType()->isFloatingPointTy()) {
         generator->throwError("Floating Point to Integer casting can be lossy. "
                               "Not performing an implicit cast. Please provide "
                               "the correct value or add an explicit cast",
                               file_placement);
       } else {
-        std::string genType =
-            qat::utilities::llvmTypeToName(genValue->getType());
-        std::string givenType = qat::utilities::llvmTypeToName(declType);
-        llvm::Function *conversionFunction =
-            generator->getFunction(genType + "'to'" + givenType);
-        if (conversionFunction == nullptr) {
-          conversionFunction =
-              generator->getFunction(givenType + "'from'" + genType);
-          if (conversionFunction == nullptr) {
-            generator->throwError("Conversion functions `" + genType + "'to'" +
-                                      givenType + "` or `" + givenType +
-                                      "'from'" + genType + "` not found",
+        auto gen_ty_name = qat::utils::llvmTypeToName(gen_value->getType());
+        auto given_ty_name = qat::utils::llvmTypeToName(decl_ty);
+        auto conv_fn =
+            generator->getFunction(gen_ty_name + "'to'" + given_ty_name);
+        if (conv_fn == nullptr) {
+          conv_fn =
+              generator->getFunction(given_ty_name + "'from'" + gen_ty_name);
+          if (conv_fn == nullptr) {
+            generator->throwError("Conversion functions `" + gen_ty_name +
+                                      "'to'" + given_ty_name + "` and `" +
+                                      given_ty_name + "'from'" + gen_ty_name +
+                                      "` not found",
                                   file_placement);
           }
         }
         std::vector<llvm::Value *> args;
-        args.push_back(genValue);
-        genValue = generator->builder.CreateCall(
-            conversionFunction->getFunctionType(), conversionFunction,
+        args.push_back(gen_value);
+        gen_value = generator->builder.CreateCall(
+            conv_fn->getFunctionType(), conv_fn,
             llvm::ArrayRef<llvm::Value *>(args), "conversion_call", nullptr);
       }
     }
   }
-  llvm::Function *function = generator->builder.GetInsertBlock()->getParent();
-  llvm::BasicBlock &entryBlock = function->getEntryBlock();
-  llvm::BasicBlock::iterator insertPoint = entryBlock.begin();
-  bool variableExists = false;
+  auto function = generator->builder.GetInsertBlock()->getParent();
+  auto &e_block = function->getEntryBlock();
+  auto insert_p = e_block.begin();
+  bool entity_exists = false;
   for (std::size_t i = 0; i < function->arg_size(); i++) {
     if (function->getArg(i)->getName().str() == name) {
-      variableExists = true;
+      entity_exists = true;
       break;
     }
   }
-  if (variableExists) {
+  if (entity_exists) {
     generator->throwError(
         "`" + name + "` is an argument of the function `" +
             function->getName().str() +
-            "`. Please remove this declaration or rename this variable",
+            "`. Please remove this declaration or rename this entity",
         file_placement);
   } else {
-    for (auto &instruction : entryBlock) {
-      if (llvm::isa<llvm::AllocaInst>(instruction)) {
-        insertPoint++;
-        llvm::AllocaInst *existingVariable =
-            llvm::dyn_cast<llvm::AllocaInst>(&instruction);
-        if (existingVariable->hasName() &&
-            (existingVariable->getName().str() == name)) {
-          variableExists = true;
+    for (auto &instr : e_block) {
+      if (llvm::isa<llvm::AllocaInst>(instr)) {
+        insert_p++;
+        auto candidate = llvm::dyn_cast<llvm::AllocaInst>(&instr);
+        if (candidate->hasName() && (candidate->getName().str() == name)) {
+          entity_exists = true;
           break;
         }
       } else {
         break;
       }
     }
-    if (variableExists) {
-      generator->throwError("Redeclaration of variable `" + name +
+    if (entity_exists) {
+      generator->throwError("Redeclaration of entity `" + name +
                                 "`. Please remove the previous declaration or "
-                                "rename this variable",
+                                "rename this entity",
                             file_placement);
     }
   }
-  llvm::BasicBlock::iterator oldInsertPoint =
-      generator->builder.GetInsertPoint();
-  generator->builder.SetInsertPoint(&*insertPoint);
-  llvm::AllocaInst *variableAlloca = generator->builder.CreateAlloca(
+  auto old_insert_p = generator->builder.GetInsertPoint();
+  generator->builder.SetInsertPoint(&*insert_p);
+  auto var_alloca = generator->builder.CreateAlloca(
       (type.hasValue() ? type.getValue().generate(generator)
-                       : genValue->getType()),
+                       : gen_value->getType()),
       0, nullptr, llvm::Twine(name));
-  llvm::MDNode *varNatureMD = llvm::MDNode::get(
-      generator->llvmContext,
-      llvm::MDString::get(generator->llvmContext, "var_nature"));
-  variableAlloca->setMetadata(llvm::StringRef(isVariable ? "var" : "const"),
-                              varNatureMD);
-  generator->builder.SetInsertPoint(&*oldInsertPoint);
-  llvm::StoreInst *storeValue =
-      generator->builder.CreateStore(genValue, variableAlloca, false);
+  utils::Variability::set(generator->llvmContext, var_alloca, variability);
+  generator->builder.SetInsertPoint(&*old_insert_p);
+  auto storeValue =
+      generator->builder.CreateStore(gen_value, var_alloca, false);
   return storeValue;
 }
 

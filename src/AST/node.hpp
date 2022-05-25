@@ -52,8 +52,7 @@ namespace qat {
 namespace AST {
 class Node {
 public:
-  Node(utilities::FilePlacement _filePlacement)
-      : file_placement(_filePlacement) {}
+  Node(utils::FilePlacement _filePlacement) : file_placement(_filePlacement) {}
 
   virtual ~Node(){};
 
@@ -61,7 +60,7 @@ public:
 
   virtual NodeType nodeType(){};
 
-  utilities::FilePlacement file_placement;
+  utils::FilePlacement file_placement;
 };
 } // namespace AST
 } // namespace qat

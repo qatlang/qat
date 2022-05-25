@@ -42,11 +42,11 @@
 
 #include "./int.hpp"
 
-qat::AST::IntType::IntType(const qat::utilities::FilePlacement _filePlacement)
+qat::AST::IntType::IntType(const qat::utils::FilePlacement _filePlacement)
     : bitWidth(64), QatType(_filePlacement, "int") {}
 
 qat::AST::IntType::IntType(const unsigned int _bitWidth,
-                           const qat::utilities::FilePlacement _filePlacement)
+                           const qat::utils::FilePlacement _filePlacement)
     : bitWidth(_bitWidth), QatType(_filePlacement, "int") {}
 
 llvm::Type *qat::AST::IntType::generate(qat::IR::Generator *generator) {

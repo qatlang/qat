@@ -67,4 +67,4 @@ std::string qat::AST::Box::generate() {
 
 void qat::AST::Box::close() { isOpen = false; }
 
-bool qat::AST::Box::has_parent() { return parent != nullptr; }
+bool qat::AST::Box::has_parent() { return parent; }

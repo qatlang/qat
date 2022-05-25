@@ -43,8 +43,9 @@
 #include "./integer_literal.hpp"
 
 qat::AST::IntegerLiteral::IntegerLiteral(
-    std::string _value, qat::utilities::FilePlacement _filePlacement)
-    : value(_value), Expression(_filePlacement) {}
+    std::string _value, unsigned int _bitWidth,
+    qat::utils::FilePlacement _filePlacement)
+    : value(_value), bitWidth(_bitWidth), Expression(_filePlacement) {}
 
 llvm::Value *qat::AST::IntegerLiteral::generate(qat::IR::Generator *generator) {
   llvm::IntegerType *type = llvm::Type::getInt32Ty(generator->llvmContext);

@@ -47,7 +47,7 @@
 #include <vector>
 
 namespace qat {
-namespace utilities {
+namespace utils {
 std::vector<std::string> parseSpacesFromIdentifier(std::string fullname);
 }
 } // namespace qat

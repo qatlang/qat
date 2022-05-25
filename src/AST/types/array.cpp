@@ -43,7 +43,7 @@
 #include "./array.hpp"
 
 qat::AST::ArrayType::ArrayType(QatType _subType, uint64_t _count,
-                               utilities::FilePlacement _filePlacement)
+                               utils::FilePlacement _filePlacement)
     : subType(_subType), count(_count), QatType(_filePlacement, "array") {}
 
 llvm::Type *qat::AST::ArrayType::generate(qat::IR::Generator *generator) {

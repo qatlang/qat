@@ -52,7 +52,7 @@ namespace qat {
 namespace AST {
 class Expression : public Node {
 public:
-  Expression(utilities::FilePlacement _filePlacement) : Node(_filePlacement) {}
+  Expression(utils::FilePlacement _filePlacement) : Node(_filePlacement) {}
 
   virtual ~Expression(){};
 

@@ -49,7 +49,7 @@ namespace qat {
 namespace AST {
 class Sentence : public Node {
 public:
-  Sentence(utilities::FilePlacement _filePlacement) : Node(_filePlacement) {}
+  Sentence(utils::FilePlacement _filePlacement) : Node(_filePlacement) {}
 
   virtual llvm::Value *generate(IR::Generator *generator){};
 

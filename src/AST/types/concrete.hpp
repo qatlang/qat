@@ -44,8 +44,8 @@
 #define QAT_AST_TYPES_CONCRETE_HPP
 
 #include "../../IR/generator.hpp"
+#include "../box.hpp"
 #include "../function_definition.hpp"
-#include "../space.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Type.h"
@@ -56,7 +56,7 @@ namespace qat {
 namespace AST {
 class ConcreteType : public QatType {
 public:
-  ConcreteType(std::string _name, utilities::FilePlacement _filePlacement)
+  ConcreteType(std::string _name, utils::FilePlacement _filePlacement)
       : name(_name), QatType(_filePlacement, "class") {}
 
   std::string name;

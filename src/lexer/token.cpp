@@ -44,13 +44,13 @@
 
 qat::lexer::Token
 qat::lexer::Token::valued(qat::lexer::TokenType _type, std::string _value,
-                          qat::utilities::FilePlacement _filePlacement //
+                          qat::utils::FilePlacement _filePlacement //
 ) {
   return Token(_type, _value, _filePlacement);
 }
 
 qat::lexer::Token
 qat::lexer::Token::normal(qat::lexer::TokenType _type,
-                          qat::utilities::FilePlacement _filePlacement) {
+                          qat::utils::FilePlacement _filePlacement) {
   return Token(_type, _filePlacement);
 }

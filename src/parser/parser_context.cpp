@@ -17,7 +17,7 @@ std::string ParserContext::get_alias(const std::string name) {
 }
 
 AST::QatType ParserContext::get_type_alias(const std::string name) {
-  return type_aliases[name];
+  return type_aliases.find(name)->second;
 }
 
 void ParserContext::add_type_alias(const std::string name,

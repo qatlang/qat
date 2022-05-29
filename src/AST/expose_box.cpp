@@ -40,22 +40,49 @@
  * or misleading or gives out false information.
  */
 
-#include "./box_open.hpp"
+#include "./expose_box.hpp"
 
-llvm::Value *qat::AST::OpenBox::generate(qat::IR::Generator *generator) {
-  for (auto item : generator->exposed_boxes) {
-    if (item.generate() == box.generate()) {
-      generator->throwError(
-          "Box `" + box.generate() +
-              "` is already opened. Please remove this sentence.",
-          file_placement);
-      break;
+namespace qat {
+namespace AST {
+
+llvm::Value *ExposeBoxes::generate(IR::Generator *generator) {
+  std::size_t count = 0;
+  for (auto existing : generator->exposed_boxes) {
+    for (auto candidate : boxes) {
+      if (existing.generate() == candidate.generate()) {
+        generator->throw_error(
+            "Box `" + candidate.generate() +
+                "` is already opened. Please remove this box" +
+                (boxes.size() > 1 ? " from the list." : ""),
+            file_placement);
+        break;
+        // NOTE - This break is currently unnecessary, but in the future, when
+        // compilation is not stopped on the first encounter of an error,
+        // this is needed
+      } else {
+        generator->exposed_boxes.push_back(candidate);
+        count++;
+      }
     }
   }
-  generator->exposed_boxes.push_back(box);
+  for (auto sentence : sentences) {
+    sentence.generate(generator);
+  }
+  /**
+   * @brief Interating both vectors in one loop instead of two as this makes
+   * more sense for this scenario
+   *
+   */
+  auto exp_size = generator->exposed_boxes.size();
+  auto boxes_size = boxes.size();
+  for (auto i = exp_size - 1; ((i >= 0) && (i >= (exp_size - count))); i--) {
+    if (generator->exposed_boxes.at(i).generate() ==
+        boxes.at(boxes_size - (exp_size - i)).generate()) {
+      generator->exposed_boxes.pop_back();
+    }
+  }
   return nullptr;
 }
 
-qat::AST::NodeType qat::AST::OpenBox::nodeType() {
-  return qat::AST::NodeType::openBox;
-}
+} // namespace AST
+} // namespace qat

@@ -40,27 +40,30 @@
  * or misleading or gives out false information.
  */
 
-#include "./box_close.hpp"
+#ifndef QAT_AST_EXPOSE_SPACE_HPP
+#define QAT_AST_EXPOSE_SPACE_HPP
 
-llvm::Value *qat::AST::CloseSpace::generate(qat::IR::Generator *generator) {
-  generator->exposed_boxes.push_back(space);
-  bool spaceExposed = false;
-  for (std::deque<qat::AST::Box>::iterator i = generator->exposed_boxes.begin();
-       i < generator->exposed_boxes.end(); i++) {
-    if (i->generate() == space.generate()) {
-      spaceExposed = true;
-      generator->exposed_boxes.erase(i);
-      break;
-    }
-  }
-  if (!spaceExposed) {
-    generator->throwError("Space `" + space.generate() +
-                              "` is not exposed and hence cannot be closed.",
-                          file_placement);
-  }
-  return nullptr;
-}
+#include "./box.hpp"
+#include "./node_type.hpp"
+#include "./sentence.hpp"
 
-qat::AST::NodeType qat::AST::CloseSpace::nodeType() {
-  return qat::AST::NodeType::closeBox;
-}
+namespace qat {
+namespace AST {
+class ExposeBoxes : public Sentence {
+private:
+  std::vector<Box> boxes;
+  std::vector<Sentence> sentences;
+
+public:
+  ExposeBoxes(std::vector<Box> _boxes, std::vector<Sentence> _sentences,
+              utils::FilePlacement _filePlacement)
+      : boxes(_boxes), sentences(_sentences), Sentence(_filePlacement) {}
+
+  llvm::Value *generate(IR::Generator *generator);
+
+  NodeType nodeType() { return qat::AST::NodeType::openBox; }
+};
+} // namespace AST
+} // namespace qat
+
+#endif

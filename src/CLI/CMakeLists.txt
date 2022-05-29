@@ -1,1 +1,11 @@
-add_library(QAT_CLI error.cpp)
+add_library(QAT_CLI error.cpp
+                    config.cpp
+                    display.cpp)
+
+target_link_directories(QAT_CLI
+                    PRIVATE ../lexer/
+                    PRIVATE ../utils/)
+
+target_link_libraries(QAT_CLI
+                        QAT_UTILS
+                        QAT_LEXER)

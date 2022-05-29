@@ -46,6 +46,8 @@
 namespace qat {
 namespace AST {
 enum class NodeType {
+  bringLibrary,
+  bringFile,
   functionPrototype,
   functionDefinition,
   localDeclaration,

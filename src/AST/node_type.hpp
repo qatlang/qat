@@ -46,6 +46,7 @@
 namespace qat {
 namespace AST {
 enum class NodeType {
+  block,
   bringLibrary,
   bringFile,
   functionPrototype,
@@ -58,7 +59,7 @@ enum class NodeType {
   stringLiteral,
   staticDeclaration,
   saySentence,
-  ifElseSentence,
+  ifElse,
   giveSentence,
   openBox,
   defineObjectType,

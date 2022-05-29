@@ -74,17 +74,17 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
     if (utils::Variability::get(var_alloca)) {
       var_store = generator->builder.CreateStore(gen_val, var_alloca, false);
     } else {
-      generator->throwError(
+      generator->throw_error(
           name + " is not a variable value and cannot be reassigned",
           file_placement);
     }
   } else {
-    auto global_var = generator->getGlobalVariable(name);
+    auto global_var = generator->get_global_variable(name);
     if (global_var) {
       if (!global_var->isConstant()) {
         var_store = generator->builder.CreateStore(gen_val, global_var, false);
       } else {
-        generator->throwError(
+        generator->throw_error(
             "Global entity " + name +
                 " is not a variable and cannot be reassigned.",
             file_placement);
@@ -94,10 +94,10 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
   if (var_store) {
     return var_store;
   } else {
-    generator->throwError("The name `" + name + "` not found in function " +
-                              e_block.getParent()->getName().str() +
-                              " and is not a Global Variable",
-                          file_placement);
+    generator->throw_error("The name `" + name + "` not found in function " +
+                               e_block.getParent()->getName().str() +
+                               " and is not a Global Variable",
+                           file_placement);
   }
 }
 

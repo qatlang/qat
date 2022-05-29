@@ -46,7 +46,7 @@ llvm::Type *qat::AST::ConcreteType::generate(qat::IR::Generator *generator) {
   auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
                                                     llvm::StringRef(name));
   if (structType == nullptr) {
-    generator->throwError("Type " + name + " cannot be found", filePlacement);
+    generator->throw_error("Type " + name + " cannot be found", filePlacement);
   }
   return structType;
 }

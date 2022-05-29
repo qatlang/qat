@@ -86,7 +86,7 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
       utils::Variability::propagate(generator->llvmContext, arg_val, var_load);
       return var_load;
     } else {
-      auto globalVariable = generator->getGlobalVariable(name);
+      auto globalVariable = generator->get_global_variable(name);
       if (globalVariable) {
         var_load = generator->builder.CreateLoad(globalVariable->getType(),
                                                  globalVariable, false,
@@ -94,7 +94,7 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
       } else {
         for (std::size_t i = 0; i < generator->exposed_boxes.size(); i++) {
           auto space_name = generator->exposed_boxes.at(i).generate() + name;
-          globalVariable = generator->getGlobalVariable(space_name);
+          globalVariable = generator->get_global_variable(space_name);
           if (globalVariable) {
             var_load = generator->builder.CreateLoad(globalVariable->getType(),
                                                      globalVariable, false,
@@ -106,11 +106,11 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
       if (var_load) {
         return var_load;
       } else {
-        generator->throwError("Variable `" + name +
-                                  "` cannot be found in function `" +
-                                  e_block.getParent()->getName().str() +
-                                  "` and is not a Global Variable",
-                              file_placement);
+        generator->throw_error("Variable `" + name +
+                                   "` cannot be found in function `" +
+                                   e_block.getParent()->getName().str() +
+                                   "` and is not a Global Variable",
+                               file_placement);
       }
     }
   }

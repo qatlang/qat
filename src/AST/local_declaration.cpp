@@ -67,24 +67,25 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
                                                     "implicit_cast");
       } else if (decl_ty->isIntegerTy() &&
                  gen_value->getType()->isFloatingPointTy()) {
-        generator->throwError("Floating Point to Integer casting can be lossy. "
-                              "Not performing an implicit cast. Please provide "
-                              "the correct value or add an explicit cast",
-                              file_placement);
+        generator->throw_error(
+            "Floating Point to Integer casting can be lossy. "
+            "Not performing an implicit cast. Please provide "
+            "the correct value or add an explicit cast",
+            file_placement);
       } else {
         auto gen_ty_name = qat::utils::llvmTypeToName(gen_value->getType());
         auto given_ty_name = qat::utils::llvmTypeToName(decl_ty);
         auto conv_fn =
-            generator->getFunction(gen_ty_name + "'to'" + given_ty_name);
+            generator->get_function(gen_ty_name + "'to'" + given_ty_name);
         if (conv_fn == nullptr) {
           conv_fn =
-              generator->getFunction(given_ty_name + "'from'" + gen_ty_name);
+              generator->get_function(given_ty_name + "'from'" + gen_ty_name);
           if (conv_fn == nullptr) {
-            generator->throwError("Conversion functions `" + gen_ty_name +
-                                      "'to'" + given_ty_name + "` and `" +
-                                      given_ty_name + "'from'" + gen_ty_name +
-                                      "` not found",
-                                  file_placement);
+            generator->throw_error("Conversion functions `" + gen_ty_name +
+                                       "'to'" + given_ty_name + "` and `" +
+                                       given_ty_name + "'from'" + gen_ty_name +
+                                       "` not found",
+                                   file_placement);
           }
         }
         std::vector<llvm::Value *> args;
@@ -106,7 +107,7 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
     }
   }
   if (entity_exists) {
-    generator->throwError(
+    generator->throw_error(
         "`" + name + "` is an argument of the function `" +
             function->getName().str() +
             "`. Please remove this declaration or rename this entity",
@@ -125,10 +126,10 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
       }
     }
     if (entity_exists) {
-      generator->throwError("Redeclaration of entity `" + name +
-                                "`. Please remove the previous declaration or "
-                                "rename this entity",
-                            file_placement);
+      generator->throw_error("Redeclaration of entity `" + name +
+                                 "`. Please remove the previous declaration or "
+                                 "rename this entity",
+                             file_placement);
     }
   }
   auto old_insert_p = generator->builder.GetInsertPoint();

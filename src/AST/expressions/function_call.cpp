@@ -45,12 +45,12 @@
 llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
   llvm::Function *fn;
   llvm::Function *caller = generator->builder.GetInsertBlock()->getParent();
-  if (generator->checkFunctionExists(name)) {
+  if (generator->does_function_exist(name)) {
     /**
      * @brief This is a normal check. The plain name provided is checked.
      *
      */
-    fn = generator->getFunction(name);
+    fn = generator->get_function(name);
   } else {
     if (caller->getName().find(':', 0) != std::string::npos) {
       auto box = caller->getName()
@@ -62,8 +62,8 @@ llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
        * higher priority
        */
       for (std::size_t i = (possibilities.size() - 1); i >= 0; i--) {
-        if (generator->checkFunctionExists(possibilities.at(i) + name)) {
-          fn = generator->getFunction(possibilities.at(i) + name);
+        if (generator->does_function_exist(possibilities.at(i) + name)) {
+          fn = generator->get_function(possibilities.at(i) + name);
           break;
         }
       }
@@ -74,8 +74,8 @@ llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
        */
       for (std::size_t i = generator->exposed_boxes.size() - 1; i >= 0; i--) {
         std::string gen_name = generator->exposed_boxes.at(i).generate() + name;
-        if (generator->checkFunctionExists(gen_name)) {
-          fn = generator->getFunction(name);
+        if (generator->does_function_exist(gen_name)) {
+          fn = generator->get_function(name);
           break;
         }
       }
@@ -87,17 +87,17 @@ llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
       generatedValues.push_back(arguments.at(i).generate(generator));
     }
     if (fn->arg_size() != arguments.size()) {
-      generator->throwError("Number of arguments passed to the function `" +
-                                fn->getName().str() + "` do not match!",
-                            file_placement);
+      generator->throw_error("Number of arguments passed to the function `" +
+                                 fn->getName().str() + "` do not match!",
+                             file_placement);
     }
     return generator->builder.CreateCall(
         fn->getFunctionType(), fn,
         llvm::ArrayRef<llvm::Value *>(generatedValues),
         llvm::Twine("Call to " + fn->getName()), nullptr);
   } else {
-    generator->throwError("Function " + name + " does not exist",
-                          file_placement);
+    generator->throw_error("Function " + name + " does not exist",
+                           file_placement);
   }
 }
 

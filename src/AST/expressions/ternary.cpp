@@ -42,14 +42,17 @@
 
 #include "./ternary.hpp"
 
-qat::AST::TernaryExpression::TernaryExpression(
-    Expression _condition, Expression _ifExpression, Expression _elseExpression,
-    utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+TernaryExpression::TernaryExpression(Expression _condition,
+                                     Expression _ifExpression,
+                                     Expression _elseExpression,
+                                     utils::FilePlacement _filePlacement)
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
       Expression(_filePlacement) {}
 
-llvm::Value *
-qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
+llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
   auto gen_cond = condition.generate(generator);
   if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1)) {
@@ -82,7 +85,7 @@ qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
       llvm::PHINode *phiNode;
       if (if_val && else_value) {
         if (if_val->getType() != else_value->getType()) {
-          generator->throwError(
+          generator->throw_error(
               "Ternary expression is giving values of different types",
               file_placement);
         } else {
@@ -93,26 +96,25 @@ qat::AST::TernaryExpression::generate(qat::IR::Generator *generator) {
           return phiNode;
         }
       } else {
-        generator->throwError(
+        generator->throw_error(
             "Ternary `" + std::string((if_val == nullptr) ? "if" : "else") +
                 "` expression is not giving any value",
             file_placement);
       }
     } else {
-      generator->throwError(
+      generator->throw_error(
           "Condition expression is of the type `" +
               qat::utils::llvmTypeToName(gen_cond->getType()) +
-              "`, but ternary expression expects an expression of `bool` or "
-              "`i1` type",
+              "`, but ternary expression expects an expression of `bool`, `i1` "
+              "or `u1` type",
           file_placement);
     }
   } else {
-    generator->throwError("Condition expression is null, but `if` sentence "
-                          "expects an expression of `bool` or `int<1>` type",
-                          file_placement);
+    generator->throw_error("Condition expression is null, but `if` sentence "
+                           "expects an expression of `bool` or `int<1>` type",
+                           file_placement);
   }
 }
 
-qat::AST::NodeType qat::AST::TernaryExpression::nodeType() {
-  return NodeType::ternaryExpression;
-}
+} // namespace AST
+} // namespace qat

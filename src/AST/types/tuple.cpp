@@ -51,8 +51,8 @@ llvm::Type *qat::AST::TupleType::generate(qat::IR::Generator *generator) {
   for (auto &type : types) {
     llvm::Type *newTy = type.generate(generator);
     if (newTy->isVoidTy()) {
-      generator->throwError("Tuple member type cannot be `void`",
-                            filePlacement);
+      generator->throw_error("Tuple member type cannot be `void`",
+                             filePlacement);
     }
     genTypes.push_back(newTy);
   }

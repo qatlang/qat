@@ -9,7 +9,9 @@ ParserContext::ParserContext(ParserContext &other)
     : aliases(other.aliases), type_aliases(other.type_aliases) {}
 
 void ParserContext::add_alias(const std::string name, const std::string value) {
-  aliases.insert({name, value});
+  if (!aliases.contains(name)) {
+    aliases.insert({name, value});
+  }
 }
 
 std::string ParserContext::get_alias(const std::string name) {
@@ -22,7 +24,9 @@ AST::QatType ParserContext::get_type_alias(const std::string name) {
 
 void ParserContext::add_type_alias(const std::string name,
                                    const qat::AST::QatType value) {
-  type_aliases.insert({name, value});
+  if (!type_aliases.contains(name)) {
+    type_aliases.insert({name, value});
+  }
 }
 
 bool ParserContext::has_alias(const std::string name) {

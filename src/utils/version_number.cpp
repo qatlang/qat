@@ -43,7 +43,7 @@
 #include "./version_number.hpp"
 
 qat::utils::VersionNumber::VersionNumber(const std::string version)
-    : major(0), minor(0), patch(llvm::None), build(llvm::None) {
+    : major(0), minor(0), patch(std::nullopt), build(std::nullopt) {
   const bool hasV = (version[0] == 'v');
   std::vector<std::string> nums;
   std::string cache = "";
@@ -86,31 +86,26 @@ qat::utils::VersionNumber::VersionNumber(const std::string version)
     patch = 0;
     build = "";
   } else {
-    std::stringstream majorStr(nums.at(0));
-    majorStr >> major;
+    major = std::stoi(nums.at(0));
     if (nums.size() < 2) {
       minor = 0;
-      patch = llvm::None;
-      build = llvm::None;
+      patch = std::nullopt;
+      build = std::nullopt;
     } else {
-      std::stringstream minorStr(nums.at(1));
-      minorStr >> minor;
+      minor = std::stoi(nums.at(1));
       if (nums.size() < 3) {
-        patch = llvm::None;
-        prerelease = llvm::None;
-        build = llvm::None;
+        patch = std::nullopt;
+        prerelease = std::nullopt;
+        build = std::nullopt;
       } else {
-        std::stringstream patchStr(nums.at(2));
-        unsigned int patchNum = 0;
-        patchStr >> patchNum;
-        patch = patchNum;
+        patch = std::stoi(nums.at(2));
         if (nums.size() < 4) {
-          prerelease = llvm::None;
-          build = llvm::None;
+          prerelease = std::nullopt;
+          build = std::nullopt;
         } else {
           prerelease = nums.at(3);
           if (nums.size() < 5) {
-            build = llvm::None;
+            build = std::nullopt;
           } else {
             build = nums.at(4);
           }

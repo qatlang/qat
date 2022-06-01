@@ -43,13 +43,14 @@
 #ifndef QAT_UTILS_VERSION_NUMBER_HPP
 #define QAT_UTILS_VERSION_NUMBER_HPP
 
-#include "llvm/ADT/Optional.h"
-#include <sstream>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace qat {
 namespace utils {
 class VersionNumber {
+public:
   VersionNumber(const std::string version);
 
   VersionNumber(const unsigned int _major, const unsigned int _minor,
@@ -61,22 +62,22 @@ class VersionNumber {
   VersionNumber(const unsigned int _major, const unsigned int _minor,
                 const unsigned int _patch, const std::string _prerelease)
       : major(_major), minor(_minor), patch(_patch), prerelease(_prerelease),
-        build(llvm::None) {}
+        build(std::nullopt) {}
 
   VersionNumber(const unsigned int _major, const unsigned int _minor,
                 const unsigned int _patch)
-      : major(_major), minor(_minor), patch(_patch), prerelease(llvm::None),
-        build(llvm::None) {}
+      : major(_major), minor(_minor), patch(_patch), prerelease(std::nullopt),
+        build(std::nullopt) {}
 
   VersionNumber(const unsigned int _major, const unsigned int _minor)
-      : major(_major), minor(_minor), patch(llvm::None), prerelease(llvm::None),
-        build(llvm::None) {}
+      : major(_major), minor(_minor), patch(std::nullopt),
+        prerelease(std::nullopt), build(std::nullopt) {}
 
   unsigned int major;
   unsigned int minor;
-  llvm::Optional<unsigned int> patch;
-  llvm::Optional<std::string> prerelease;
-  llvm::Optional<std::string> build;
+  std::optional<unsigned int> patch;
+  std::optional<std::string> prerelease;
+  std::optional<std::string> build;
 };
 } // namespace utils
 } // namespace qat

@@ -42,8 +42,10 @@
 
 #include "./parse_boxes_identifier.hpp"
 
-std::vector<std::string>
-qat::utils::parseSpacesFromIdentifier(std::string fullname) {
+namespace qat {
+namespace utils {
+
+std::vector<std::string> parseSectionsFromIdentifier(std::string fullname) {
   std::vector<std::string> spaces;
   int lastIndex = 0;
   for (std::size_t i = 0; i < fullname.length(); i++) {
@@ -54,3 +56,6 @@ qat::utils::parseSpacesFromIdentifier(std::string fullname) {
   }
   return spaces;
 }
+
+} // namespace utils
+} // namespace qat

@@ -42,21 +42,26 @@
 
 #include "./box_possibilities.hpp"
 
-std::vector<std::string> qat::utils::boxPossibilities(std::string value) {
-  std::vector<std::string> parsedValues =
-      qat::utils::parseSpacesFromIdentifier(value);
-  if (parsedValues.size() > 1) {
+namespace qat {
+namespace utils {
+
+std::vector<std::string> boxPossibilities(std::string value) {
+  auto parsed_values = parseSectionsFromIdentifier(value);
+  if (parsed_values.size() > 1) {
     std::vector<std::string> result;
-    for (std::size_t i = 0; i < parsedValues.size(); i++) {
-      std::string candidate = "";
+    for (std::size_t i = 0; i < parsed_values.size(); i++) {
+      std::string candidate;
       for (std::size_t j = 0; j <= i; j++) {
-        candidate += parsedValues.at(j);
+        candidate += parsed_values.at(j);
         candidate += ':';
       }
       result.push_back(candidate);
     }
     return result;
   } else {
-    return parsedValues;
+    return parsed_values;
   }
 }
+
+} // namespace utils
+} // namespace qat

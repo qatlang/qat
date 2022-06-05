@@ -41,11 +41,14 @@
  */
 
 #include "lexer.hpp"
+namespace qat {
+namespace lexer {
 
-bool qat::lexer::Lexer::emit_tokens = false;
-bool qat::lexer::Lexer::show_report = false;
+bool Lexer::emit_tokens = false;
 
-void qat::lexer::Lexer::read(std::string context) {
+bool Lexer::show_report = false;
+
+void Lexer::read(std::string context) {
   try {
     if (file.eof()) {
       prev = curr;
@@ -67,22 +70,20 @@ void qat::lexer::Lexer::read(std::string context) {
       char_num = (curr == '\n') ? 0 : 1;
     }
   } catch (std::exception &err) {
-    throwError(std::string("Lexer failed while reading the file.\nError: ") +
-               err.what());
+    throw_error(std::string("Lexer failed while reading the file. Error: ") +
+                err.what());
   }
 }
 
-qat::utils::FilePlacement
-qat::lexer::Lexer::getPosition(unsigned long long length) {
-  qat::utils::Position start = {line_num,
-                                ((char_num > 0) ? (char_num - 1) : 0)};
-  qat::utils::Position end = {line_num, start.character + length};
-  return qat::utils::FilePlacement(fsexp::path(filePath), start, end);
+utils::FilePlacement Lexer::getPosition(unsigned long long length) {
+  utils::Position start = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
+  utils::Position end = {line_num, start.character + length};
+  return utils::FilePlacement(fsexp::path(filePath), start, end);
 }
 
-std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
+void Lexer::analyse() {
   file.open(filePath, std::ios::in);
-  auto lexerStartTime = std::chrono::high_resolution_clock::now();
+  auto lexer_start = std::chrono::high_resolution_clock::now();
   tokens.push_back(
       Token::valued(TokenType::startOfFile, filePath, this->getPosition(0)));
   read("start");
@@ -94,13 +95,12 @@ std::vector<qat::lexer::Token> *qat::lexer::Lexer::analyse() {
     tokens.push_back(
         Token::valued(TokenType::endOfFile, filePath, this->getPosition(0)));
   }
-  std::chrono::nanoseconds lexerElapsed =
-      std::chrono::high_resolution_clock::now() - lexerStartTime;
-  timeInNS = lexerElapsed.count();
-  return &tokens;
+  std::chrono::nanoseconds lexer_elapsed =
+      std::chrono::high_resolution_clock::now() - lexer_start;
+  timeInNS = lexer_elapsed.count();
 }
 
-void qat::lexer::Lexer::changeFile(std::string newFilePath) {
+void Lexer::changeFile(std::string newFilePath) {
   tokens.clear();
   filePath = newFilePath;
   prev_ctx = "";
@@ -112,9 +112,9 @@ void qat::lexer::Lexer::changeFile(std::string newFilePath) {
   total_char_count = 0;
 }
 
-qat::lexer::Token qat::lexer::Lexer::tokeniser() {
+Token Lexer::tokeniser() {
   if (buffer.size() != 0) {
-    qat::lexer::Token token = buffer.back();
+    Token token = buffer.back();
     buffer.pop_back();
     return token;
   }
@@ -191,6 +191,11 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
       prev_ctx = "givenTypeSeparator";
       read(prev_ctx);
       return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
+    } else if (curr == '<') {
+      prev_ctx = "templateTypeStart";
+      read(prev_ctx);
+      template_type_start_count++;
+      return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
     } else {
       prev_ctx = "colon";
       return Token::normal(TokenType::colon, this->getPosition(1));
@@ -296,8 +301,14 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   case '*':
   case '<':
   case '>': {
+    if ((curr == '>') && (template_type_start_count > 0)) {
+      prev_ctx = "templateTypeEnd";
+      read(prev_ctx);
+      template_type_start_count--;
+      return Token::normal(TokenType::templateTypeEnd, this->getPosition(1));
+    }
     prev_ctx = "operator";
-    std::string opr = "";
+    std::string opr;
     opr += curr;
     read(prev_ctx);
     if ((curr == '+' && opr == "+") || (curr == '-' && opr == "-")) {
@@ -366,7 +377,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   case '"': {
     bool escape = false;
     read("string");
-    std::string str_val = "";
+    std::string str_val;
     while (escape ? !file.eof() : (curr != '"' && !file.eof())) {
       if (escape) {
         escape = false;
@@ -416,7 +427,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
   case '7':
   case '8':
   case '9': {
-    std::string num_val = "";
+    std::string num_val;
     bool is_float = false;
     const std::string digits = "0123456789";
     while (((digits.find(curr, 0) != std::string::npos) ||
@@ -454,7 +465,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     if ((alphabets.find(curr, 0) != std::string::npos) || curr == '_') {
       const std::string digits = "0123456789";
-      std::string value = "";
+      std::string value;
       while ((alphabets.find(curr, 0) != std::string::npos) ||
              (digits.find(curr, 0) != std::string::npos) ||
              (curr == '_') && !file.eof()) {
@@ -470,8 +481,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
         return Token::normal(TokenType::Public, this->getPosition(3));
       else if (value == "let")
         return Token::normal(TokenType::let, this->getPosition(3));
-      else if (value == "pvt")
-        return Token::normal(TokenType::Private, this->getPosition(3));
+      else if (value == "self")
+        return Token::normal(TokenType::self, this->getPosition(3));
       else if (value == "void")
         return Token::normal(TokenType::Void, this->getPosition(4));
       else if (value == "type")
@@ -480,8 +491,8 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
         return Token::normal(TokenType::model, this->getPosition(5));
       else if (value == "const")
         return Token::normal(TokenType::constant, this->getPosition(5));
-      else if (value == "space")
-        return Token::normal(TokenType::space, this->getPosition(5));
+      else if (value == "box")
+        return Token::normal(TokenType::box, this->getPosition(5));
       else if (value == "from")
         return Token::normal(TokenType::from, this->getPosition(4));
       else if (value == "to")
@@ -497,7 +508,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
       else if (value == "file")
         return Token::normal(TokenType::file, this->getPosition(4));
       else if (value == "lib")
-        return Token::normal(TokenType::Library, this->getPosition(3));
+        return Token::normal(TokenType::lib, this->getPosition(3));
       else if (value == "ref")
         return Token::normal(TokenType::reference, this->getPosition(3));
       else if (value == "bool")
@@ -506,7 +517,7 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
         return Token::normal(TokenType::size, this->getPosition(4));
       else if (value.substr(0, 1) == "i" &&
                ((value.length() > 1)
-                    ? qat::utils::isInteger(value.substr(1, value.length() - 1))
+                    ? utils::isInteger(value.substr(1, value.length() - 1))
                     : false)) {
         return Token::valued(TokenType::Integer,
                              value.substr(1, value.length() - 1),
@@ -547,17 +558,17 @@ qat::lexer::Token qat::lexer::Lexer::tokeniser() {
                              this->getPosition(value.length()));
       }
     } else {
-      throwError("Unrecognised character found: " + std::string(1, curr));
+      throw_error("Unrecognised character found: " + std::string(1, curr));
       return Token::normal(TokenType::endOfFile, this->getPosition(0));
     }
   }
   }
 }
 
-void qat::lexer::Lexer::printStatus() {
+void Lexer::printStatus() {
   if (Lexer::show_report) {
     double time_val = 0;
-    std::string time_unit = "";
+    std::string time_unit;
 
     if (timeInNS < 1000000) {
       time_val = ((double)timeInNS) / 1000;
@@ -659,6 +670,12 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::binaryOperator:
         std::cout << " " << tokens.at(i).value << " ";
         break;
+      case TokenType::templateTypeEnd:
+        std::cout << " > ";
+        break;
+      case TokenType::templateTypeStart:
+        std::cout << " :< ";
+        break;
       case TokenType::identifier:
         std::cout << " " << tokens.at(i).value << " ";
         break;
@@ -677,7 +694,7 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::lesserThan:
         std::cout << " < ";
         break;
-      case TokenType::Library:
+      case TokenType::lib:
         std::cout << " lib ";
         break;
       case TokenType::var:
@@ -694,9 +711,6 @@ void qat::lexer::Lexer::printStatus() {
         break;
       case TokenType::paranthesisOpen:
         std::cout << " ( ";
-        break;
-      case TokenType::Private:
-        std::cout << " pvt ";
         break;
       case TokenType::Public:
         std::cout << " pub ";
@@ -716,8 +730,8 @@ void qat::lexer::Lexer::printStatus() {
       case TokenType::singleStatementMarker:
         std::cout << " => ";
         break;
-      case TokenType::space:
-        std::cout << " space ";
+      case TokenType::box:
+        std::cout << " box ";
         break;
       case TokenType::startOfFile:
         std::cout << "STARTOFFILE  -  " << filePath << "\n";
@@ -761,10 +775,13 @@ void qat::lexer::Lexer::printStatus() {
   }
 }
 
-void qat::lexer::Lexer::throwError(std::string message) {
+void Lexer::throw_error(std::string message) {
   std::cout << colors::red << "[ LEXER ERROR ] " << colors::bold::green
             << filePath << ":" << line_num << ":" << char_num << colors::reset
             << "\n";
   std::cout << "   " << message << "\n";
   exit(0);
 }
+
+} // namespace lexer
+} // namespace qat

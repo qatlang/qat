@@ -57,7 +57,6 @@ enum class TokenType {
   startOfFile,
   give,
   Public,
-  Private,
   stop,
   Void,
   Bool,
@@ -97,8 +96,8 @@ enum class TokenType {
   as,
   self,
   variationMarker,
-  Library,
-  space,
+  lib,
+  box,
   endOfFile,
   expose,
   packed,
@@ -122,6 +121,8 @@ enum class TokenType {
   bitwiseOr,
   bitwiseAnd,
   bitwiseNot,
+  templateTypeStart,
+  templateTypeEnd,
 };
 } // namespace lexer
 } // namespace qat

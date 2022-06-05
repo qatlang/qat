@@ -118,6 +118,13 @@ private:
   std::vector<Token> buffer;
 
   /**
+   * @brief Number of templateTypeStart tokens encountered that haven't been
+   * closed by a templateTypeEnd token
+   *
+   */
+  unsigned int template_type_start_count = 0;
+
+  /**
    * @brief Total number of characters found in the file. This is for
    * reporting purposes
    *
@@ -152,11 +159,24 @@ public:
   static bool show_report;
 
   /**
+   * @brief Get the tokens that has been obtained so far from the analysis
+   *
+   * @return std::vector<Token>
+   */
+  std::vector<Token> get_tokens();
+
+  /**
+   * @brief Clear all the tokens obtained from the analysis so far
+   *
+   */
+  void clear_tokens();
+
+  /**
    * @brief Logs any error occuring during Lexical Analysis.
    *
    * @param message A meaningful message about the type of error
    */
-  void throwError(std::string message);
+  void throw_error(std::string message);
 
   /**
    * @brief Analyses the current file and emit tokens as identified
@@ -165,7 +185,7 @@ public:
    * @return std::vector<Token> Returns all tokens identified during
    * analysis.
    */
-  std::vector<Token> *analyse();
+  void analyse();
 
   /**
    * @brief This function reads the next character in the active file

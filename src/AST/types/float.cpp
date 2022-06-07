@@ -41,13 +41,14 @@
  */
 
 #include "./float.hpp"
+namespace qat {
+namespace AST {
 
-qat::AST::FloatType::FloatType(FloatTypeKind _bitWidth,
-                               utils::FilePlacement _filePlacement)
-    : bitWidth(_bitWidth), QatType(_filePlacement, "float") {}
+FloatType::FloatType(FloatTypeKind _kind, utils::FilePlacement _filePlacement)
+    : kind(_kind), QatType(_filePlacement) {}
 
-llvm::Type *qat::AST::FloatType::generate(qat::IR::Generator *generator) {
-  switch (bitWidth) {
+llvm::Type *FloatType::generate(IR::Generator *generator) {
+  switch (kind) {
   case FloatTypeKind::_brain: {
     return generator->builder.getBFloatTy();
   }
@@ -71,3 +72,8 @@ llvm::Type *qat::AST::FloatType::generate(qat::IR::Generator *generator) {
   }
   }
 }
+
+TypeKind FloatType::typeKind() { return TypeKind::Float; }
+
+} // namespace AST
+} // namespace qat

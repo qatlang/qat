@@ -40,16 +40,16 @@
  * or misleading or gives out false information.
  */
 
-#include "./int.hpp"
+#include "./integer.hpp"
 
-qat::AST::IntType::IntType(const qat::utils::FilePlacement _filePlacement)
-    : bitWidth(64), QatType(_filePlacement, "int") {}
+namespace qat {
+namespace AST {
 
-qat::AST::IntType::IntType(const unsigned int _bitWidth,
-                           const qat::utils::FilePlacement _filePlacement)
-    : bitWidth(_bitWidth), QatType(_filePlacement, "int") {}
+IntegerType::IntegerType(const unsigned int _bitWidth,
+                         const utils::FilePlacement _filePlacement)
+    : bitWidth(_bitWidth), QatType(_filePlacement) {}
 
-llvm::Type *qat::AST::IntType::generate(qat::IR::Generator *generator) {
+llvm::Type *IntegerType::generate(qat::IR::Generator *generator) {
   switch (bitWidth) {
   case 1: {
     return llvm::Type::getInt1Ty(generator->llvmContext);
@@ -75,6 +75,11 @@ llvm::Type *qat::AST::IntType::generate(qat::IR::Generator *generator) {
   }
 }
 
-bool qat::AST::IntType::isBitWidth(unsigned int width) {
+bool IntegerType::isBitWidth(const unsigned int width) const {
   return bitWidth == width;
 }
+
+TypeKind typeKind() { return TypeKind::integer; }
+
+} // namespace AST
+} // namespace qat

@@ -54,17 +54,54 @@
 
 namespace qat {
 namespace AST {
-class ConcreteType : public QatType {
-public:
-  ConcreteType(std::string _name, utils::FilePlacement _filePlacement)
-      : name(_name), QatType(_filePlacement, "class") {}
 
+/**
+ * @brief ConcreteType is equivalent to the struct type or class type in other
+ * languages
+ *
+ */
+class ConcreteType : public QatType {
+private:
+  /**
+   * @brief Name of the concrete type
+   *
+   */
   std::string name;
 
+public:
+  /**
+   * @brief ConcreteType is equivalent to the struct type or class type in other
+   * languages
+   *
+   * @param _name Name of the concrete type
+   * @param _filePlacement
+   */
+  ConcreteType(std::string _name, utils::FilePlacement _filePlacement);
+
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Type*
+   */
   llvm::Type *generate(IR::Generator *generator);
 
-  std::string typeName();
+  /**
+   * @brief Get the name of the concrete type
+   *
+   * @return std::string
+   */
+  std::string get_name() const;
+
+  /**
+   * @brief TypeKind is used to detect variants of the QatType
+   *
+   * @return TypeKind
+   */
+  TypeKind typeKind();
 };
+
 } // namespace AST
 } // namespace qat
 

@@ -42,20 +42,30 @@
 
 #include "./tuple.hpp"
 
-void qat::AST::TupleType::addType(qat::AST::QatType type) {
-  types.push_back(type);
-}
+namespace qat {
+namespace AST {
 
-llvm::Type *qat::AST::TupleType::generate(qat::IR::Generator *generator) {
-  std::vector<llvm::Type *> genTypes;
+TupleType::TupleType(std::vector<QatType> _types, bool _isPacked,
+                     utils::FilePlacement _filePlacement)
+    : types(_types), isPacked(_isPacked), QatType(_filePlacement) {}
+
+void TupleType::add_type(QatType type) { types.push_back(type); }
+
+llvm::Type *TupleType::generate(IR::Generator *generator) {
+  std::vector<llvm::Type *> gen_types;
   for (auto &type : types) {
     llvm::Type *newTy = type.generate(generator);
     if (newTy->isVoidTy()) {
       generator->throw_error("Tuple member type cannot be `void`",
                              filePlacement);
     }
-    genTypes.push_back(newTy);
+    gen_types.push_back(newTy);
   }
-  return llvm::StructType::get(generator->llvmContext, llvm::ArrayRef(genTypes),
-                               isPacked);
+  return llvm::StructType::get(generator->llvmContext,
+                               llvm::ArrayRef(gen_types), isPacked);
 }
+
+TypeKind TupleType::typeKind() { return TypeKind::tuple; }
+
+} // namespace AST
+} // namespace qat

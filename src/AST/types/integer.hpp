@@ -49,19 +49,53 @@
 
 namespace qat {
 namespace AST {
-class IntType : public QatType {
+
+/**
+ * @brief Integer datatype in the language
+ *
+ */
+class IntegerType : public QatType {
 private:
+  /**
+   * @brief Bitwidth of the integer
+   *
+   */
   const unsigned int bitWidth;
 
 public:
-  IntType(const utils::FilePlacement _filePlacement);
+  /**
+   * @brief Construct an Integer type with a bitwidth
+   *
+   * @param _bitWidth Bitwidth of the integer type
+   * @param _filePlacement
+   */
+  IntegerType(const unsigned int _bitWidth,
+              const utils::FilePlacement _filePlacement);
 
-  IntType(const unsigned int _bitWidth,
-          const utils::FilePlacement _filePlacement);
-
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Type*
+   */
   llvm::Type *generate(IR::Generator *generator);
 
-  bool isBitWidth(unsigned int width);
+  /**
+   * @brief TypeKind is used to detect variants of the QatType
+   *
+   * @return TypeKind
+   */
+  TypeKind typeKind();
+
+  /**
+   * @brief Whether the provided integer is the bitwidth of the IntegerType
+   *
+   * @param width Bitwidth to check for
+   * @return true If the width matches
+   * @return false If the width does not match
+   */
+  bool isBitWidth(const unsigned int width) const;
 };
 } // namespace AST
 } // namespace qat

@@ -42,6 +42,13 @@
 
 #include "./concrete.hpp"
 
+namespace qat {
+namespace AST {
+
+ConcreteType::ConcreteType(std::string _name,
+                           utils::FilePlacement _filePlacement)
+    : name(_name), QatType(_filePlacement) {}
+
 llvm::Type *qat::AST::ConcreteType::generate(qat::IR::Generator *generator) {
   auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
                                                     llvm::StringRef(name));
@@ -50,3 +57,10 @@ llvm::Type *qat::AST::ConcreteType::generate(qat::IR::Generator *generator) {
   }
   return structType;
 }
+
+std::string ConcreteType::get_name() const { return name; }
+
+TypeKind ConcreteType::typeKind() { return TypeKind::Float; }
+
+} // namespace AST
+} // namespace qat

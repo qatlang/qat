@@ -45,22 +45,45 @@
 
 #include "../../IR/generator.hpp"
 #include "../../utils/file_placement.hpp"
+#include "./type_kind.hpp"
 #include "llvm/IR/Type.h"
 #include <string>
 
 namespace qat {
 namespace AST {
+
+/**
+ * @brief This is the base class representing a type in the language
+ *
+ */
 class QatType {
 public:
-  QatType(utils::FilePlacement _filePlacement, std::string _typeName)
-      : typeName(_typeName), filePlacement(_filePlacement) {}
+  QatType(utils::FilePlacement _filePlacement)
+      : filePlacement(_filePlacement) {}
 
   virtual ~QatType(){};
 
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Type*
+   */
   virtual llvm::Type *generate(IR::Generator *generator){};
 
-  std::string typeName;
+  /**
+   * @brief TypeKind is used to detect variants of the QatType
+   *
+   * @return TypeKind
+   */
+  virtual TypeKind typeKind();
 
+  /**
+   * @brief FilePlacement representing the range in the file this type was
+   * parsed from
+   *
+   */
   utils::FilePlacement filePlacement;
 };
 } // namespace AST

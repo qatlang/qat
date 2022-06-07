@@ -42,10 +42,18 @@
 
 #include "./array.hpp"
 
-qat::AST::ArrayType::ArrayType(QatType _subType, uint64_t _count,
-                               utils::FilePlacement _filePlacement)
-    : subType(_subType), count(_count), QatType(_filePlacement, "array") {}
+namespace qat {
+namespace AST {
 
-llvm::Type *qat::AST::ArrayType::generate(qat::IR::Generator *generator) {
-  return llvm::ArrayType::get(subType.generate(generator), count);
+ArrayType::ArrayType(QatType _element_type, uint64_t _length,
+                     utils::FilePlacement _filePlacement)
+    : element_type(_element_type), length(_length), QatType(_filePlacement) {}
+
+llvm::Type *ArrayType::generate(qat::IR::Generator *generator) {
+  return llvm::ArrayType::get(element_type.generate(generator), length);
 }
+
+TypeKind ArrayType::typeKind() { return TypeKind::array; }
+
+} // namespace AST
+} // namespace qat

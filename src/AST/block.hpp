@@ -11,6 +11,7 @@
 
 namespace qat {
 namespace AST {
+
 /**
  * @brief Block represents a group of sentences. This is built so that each
  * block in the language has a unique index within the function
@@ -30,6 +31,22 @@ private:
    */
   llvm::BasicBlock *bb;
 
+  /**
+   * @brief The ending BasicBlock in this block. This is different if there are
+   * nested sentences, if-else, multithread, loops and similar blocky sentences
+   *
+   */
+  llvm::BasicBlock *end_bb;
+
+  /**
+   * @brief Set the block that ends the scope of the current block
+   *
+   * @param ctx LLVMContext
+   * @param end_block Name of the ending block
+   */
+  void set_alloca_scope_end(llvm::LLVMContext &ctx,
+                            std::string end_block) const;
+
 public:
   /**
    * @brief Block represents a group of sentences
@@ -44,9 +61,20 @@ public:
    * This is used when the llvm::BasicBlock* associated with this Block is
    * required before the generation of the contents of the block happens
    *
+   * @param generator IR Generator
+   * @param function Function to insert the BasicBlock into
+   *
    * @return llvm::BasicBlock*
    */
-  llvm::BasicBlock *create_bb(IR::Generator *generator);
+  llvm::BasicBlock *create_bb(IR::Generator *generator,
+                              llvm::Function *function = nullptr);
+
+  /**
+   * @brief Get the BasicBlock that ends the scope of this block
+   *
+   * @return llvm::BasicBlock*
+   */
+  llvm::BasicBlock *get_end_block() const;
 
   /**
    * @brief This is the code generator function that handles the generation of
@@ -64,6 +92,7 @@ public:
    */
   NodeType nodeType() { return NodeType::block; }
 };
+
 } // namespace AST
 } // namespace qat
 

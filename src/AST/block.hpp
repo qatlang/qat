@@ -2,6 +2,7 @@
 #define QAT_AST_BLOCK_HPP
 
 #include "../IR/generator.hpp"
+#include "../utils/new_block_index.hpp"
 #include "./node_type.hpp"
 #include "./sentence.hpp"
 #include "llvm/IR/Value.h"

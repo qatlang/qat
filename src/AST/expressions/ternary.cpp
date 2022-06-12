@@ -1,45 +1,3 @@
-/**
- * Qat Programming Language : Copyright 2022 : Aldrin Mathew
- *
- * AAF INSPECTABLE LICENCE - 1.0
- *
- * This project is licensed under the AAF Inspectable Licence 1.0.
- * You are allowed to inspect the source of this project(s) free of
- * cost, and also to verify the authenticity of the product.
- *
- * Unless required by applicable law, this project is provided
- * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either
- * expressed or implied. The author(s) of this project is not
- * liable for any harms, errors or troubles caused by using the
- * source or the product, unless implied by law. By using this
- * project, or part of it, you are acknowledging the complete terms
- * and conditions of licensing of this project as specified in AAF
- * Inspectable Licence 1.0 available at this URL:
- *
- * https://github.com/aldrinsartfactory/InspectableLicence/
- *
- * This project may contain parts that are not licensed under the
- * same licence. If so, the licences of those parts should be
- * appropriately mentioned in those parts of the project. The
- * Author MAY provide a notice about the parts of the project that
- * are not licensed under the same licence in a publicly visible
- * manner.
- *
- * You are NOT ALLOWED to sell, or distribute THIS project, its
- * contents, the source or the product or the build result of the
- * source under commercial or non-commercial purposes. You are NOT
- * ALLOWED to revamp, rebrand, refactor, modify, the source, product
- * or the contents of this project.
- *
- * You are NOT ALLOWED to use the name, branding and identity of this
- * project to identify or brand any other project. You ARE however
- * allowed to use the name and branding to pinpoint/show the source
- * of the contents/code/logic of any other project. You are not
- * allowed to use the identification of the Authors of this project
- * to associate them to other projects, in a way that is deceiving
- * or misleading or gives out false information.
- */
-
 #include "./ternary.hpp"
 
 namespace qat {
@@ -55,36 +13,35 @@ TernaryExpression::TernaryExpression(Expression _condition,
 llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
   auto gen_cond = condition.generate(generator);
   if (gen_cond) {
-    if (gen_cond->getType()->isIntegerTy(1)) {
-      auto cond_val = generator->builder.CreateFCmpONE(
-          gen_cond,
-          llvm::ConstantFP::get(generator->llvmContext, llvm::APFloat(0.0)),
-          "ternaryCondition");
+    if (gen_cond->getType()->isIntegerTy(1) ||
+        gen_cond->getType()->isIntegerTy(8)) {
       auto parent_fn = generator->builder.GetInsertBlock()->getParent();
-      auto if_block = llvm::BasicBlock::Create(generator->llvmContext,
-                                               "ternaryIfBlock", parent_fn);
-      auto else_block =
-          llvm::BasicBlock::Create(generator->llvmContext, "ternaryElseBlock");
-      auto mergeBlock =
-          llvm::BasicBlock::Create(generator->llvmContext, "ternaryMergeBlock");
-      generator->builder.CreateCondBr(cond_val, if_block, else_block);
+      auto if_block = llvm::BasicBlock::Create(
+          generator->llvmContext,
+          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
+      auto else_block = llvm::BasicBlock::Create(
+          generator->llvmContext,
+          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
+      auto mergeBlock = llvm::BasicBlock::Create(
+          generator->llvmContext,
+          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
+      generator->builder.CreateCondBr(gen_cond, if_block, else_block);
 
+      /* If block */
       generator->builder.SetInsertPoint(if_block);
       auto if_val = if_expr.generate(generator);
       generator->builder.CreateBr(mergeBlock);
-      if_block = generator->builder.GetInsertBlock();
 
-      parent_fn->getBasicBlockList().push_back(else_block);
+      /* Else block */
       generator->builder.SetInsertPoint(else_block);
-      auto else_value = else_expr.generate(generator);
+      auto else_val = else_expr.generate(generator);
       generator->builder.CreateBr(mergeBlock);
-      else_block = generator->builder.GetInsertBlock();
 
-      parent_fn->getBasicBlockList().push_back(mergeBlock);
+      /* After Block */
       generator->builder.SetInsertPoint(mergeBlock);
       llvm::PHINode *phiNode;
-      if (if_val && else_value) {
-        if (if_val->getType() != else_value->getType()) {
+      if (if_val && else_val) {
+        if (if_val->getType() != else_val->getType()) {
           generator->throw_error(
               "Ternary expression is giving values of different types",
               file_placement);
@@ -92,27 +49,28 @@ llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
           phiNode = generator->builder.CreatePHI(if_val->getType(), 2,
                                                  "ifElsePhiNode");
           phiNode->addIncoming(if_val, if_block);
-          phiNode->addIncoming(else_value, else_block);
+          phiNode->addIncoming(else_val, else_block);
           return phiNode;
         }
       } else {
         generator->throw_error(
             "Ternary `" + std::string((if_val == nullptr) ? "if" : "else") +
                 "` expression is not giving any value",
-            file_placement);
+            ((if_val == nullptr) ? if_expr.file_placement
+                                 : else_expr.file_placement));
       }
     } else {
       generator->throw_error(
           "Condition expression is of the type `" +
               qat::utils::llvmTypeToName(gen_cond->getType()) +
-              "`, but ternary expression expects an expression of `bool`, `i1` "
-              "or `u1` type",
-          file_placement);
+              "`, but ternary expression expects an expression of `bool`, "
+              "`i1`, `i8`, `u1` or `u8` type",
+          if_expr.file_placement);
     }
   } else {
     generator->throw_error("Condition expression is null, but `if` sentence "
                            "expects an expression of `bool` or `int<1>` type",
-                           file_placement);
+                           if_expr.file_placement);
   }
 }
 

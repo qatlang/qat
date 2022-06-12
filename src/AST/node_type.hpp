@@ -46,6 +46,7 @@
 namespace qat {
 namespace AST {
 enum class NodeType {
+  lib,
   block,
   bringLibrary,
   bringFile,
@@ -75,10 +76,19 @@ enum class NodeType {
   allocateOnHeap,
   memberFunctionCall,
   memberVariableExpression,
+  sizeOf,
   sizeOfType,
   memberIndexAccess,
   symbol,
-  expressionSentence
+  expressionSentence,
+  loopTimes,
+  loopWhile,
+  loopOver,
+  multiThread,
+  multiThreadGive,
+  atomicAssignedExpression,
+  nullPointer,
+  referenceEntity
 };
 }
 } // namespace qat

@@ -42,110 +42,118 @@
 
 #include "./string_to_callingconv.hpp"
 
+namespace qat {
+namespace utils {
+
 llvm::CallingConv::ID qat::utils::stringToCallingConv(std::string name) {
+  namespace CallingConv = llvm::CallingConv;
+
   if (name == "C") {
-    return llvm::CallingConv::C;
+    return CallingConv::C;
   } else if (name == "Fast") {
-    return llvm::CallingConv::Fast;
+    return CallingConv::Fast;
   } else if (name == "Cold") {
-    return llvm::CallingConv::Cold;
+    return CallingConv::Cold;
   } else if (name == "GHC") {
-    return llvm::CallingConv::GHC;
+    return CallingConv::GHC;
   } else if (name == "HiPE") {
-    return llvm::CallingConv::HiPE;
+    return CallingConv::HiPE;
   } else if (name == "WebKitJS") {
-    return llvm::CallingConv::WebKit_JS;
+    return CallingConv::WebKit_JS;
   } else if (name == "AnyReg") {
-    return llvm::CallingConv::AnyReg;
+    return CallingConv::AnyReg;
   } else if (name == "PreserveMost") {
-    return llvm::CallingConv::PreserveMost;
+    return CallingConv::PreserveMost;
   } else if (name == "PreserveAll") {
-    return llvm::CallingConv::PreserveAll;
+    return CallingConv::PreserveAll;
   } else if (name == "Swift") {
-    return llvm::CallingConv::Swift;
+    return CallingConv::Swift;
   } else if (name == "CXX_FAST_TLS") {
-    return llvm::CallingConv::CXX_FAST_TLS;
+    return CallingConv::CXX_FAST_TLS;
   } else if (name == "Tail") {
-    return llvm::CallingConv::Tail;
+    return CallingConv::Tail;
   } else if (name == "CFGuardCheck") {
-    return llvm::CallingConv::CFGuard_Check;
+    return CallingConv::CFGuard_Check;
   } else if (name == "SwiftTail") {
-    return llvm::CallingConv::SwiftTail;
+    return CallingConv::SwiftTail;
   } else if (name == "FirstTargetCC") {
-    return llvm::CallingConv::FirstTargetCC;
+    return CallingConv::FirstTargetCC;
   } else if (name == "X86_StdCall") {
-    return llvm::CallingConv::X86_StdCall;
+    return CallingConv::X86_StdCall;
   } else if (name == "X86_FastCall") {
-    return llvm::CallingConv::X86_FastCall;
+    return CallingConv::X86_FastCall;
   } else if (name == "ARM_APCS") {
-    return llvm::CallingConv::ARM_APCS;
+    return CallingConv::ARM_APCS;
   } else if (name == "ARM_AAPCS") {
-    return llvm::CallingConv::ARM_AAPCS;
+    return CallingConv::ARM_AAPCS;
   } else if (name == "ARM_AAPCS_VFP") {
-    return llvm::CallingConv::ARM_AAPCS_VFP;
+    return CallingConv::ARM_AAPCS_VFP;
   } else if (name == "MSP430_INTR") {
-    return llvm::CallingConv::MSP430_INTR;
+    return CallingConv::MSP430_INTR;
   } else if (name == "X86_ThisCall") {
-    return llvm::CallingConv::X86_ThisCall;
+    return CallingConv::X86_ThisCall;
   } else if (name == "PTX_Kernel") {
-    return llvm::CallingConv::PTX_Kernel;
+    return CallingConv::PTX_Kernel;
   } else if (name == "PTX_Device") {
-    return llvm::CallingConv::PTX_Device;
+    return CallingConv::PTX_Device;
   } else if (name == "SPIR_FUNC") {
-    return llvm::CallingConv::SPIR_FUNC;
+    return CallingConv::SPIR_FUNC;
   } else if (name == "SPIR_KERNEL") {
-    return llvm::CallingConv::SPIR_KERNEL;
+    return CallingConv::SPIR_KERNEL;
   } else if (name == "Intel_OCL_BI") {
-    return llvm::CallingConv::Intel_OCL_BI;
+    return CallingConv::Intel_OCL_BI;
   } else if (name == "X86_64_SysV") {
-    return llvm::CallingConv::X86_64_SysV;
+    return CallingConv::X86_64_SysV;
   } else if (name == "Win64") {
-    return llvm::CallingConv::Win64;
+    return CallingConv::Win64;
   } else if (name == "X86_VectorCall") {
-    return llvm::CallingConv::X86_VectorCall;
+    return CallingConv::X86_VectorCall;
   } else if (name == "HHVM") {
-    return llvm::CallingConv::HHVM;
+    return CallingConv::HHVM;
   } else if (name == "HHVM_C") {
-    return llvm::CallingConv::HHVM_C;
+    return CallingConv::HHVM_C;
   } else if (name == "X86_INTR") {
-    return llvm::CallingConv::X86_INTR;
+    return CallingConv::X86_INTR;
   } else if (name == "AVR_INTR") {
-    return llvm::CallingConv::AVR_INTR;
+    return CallingConv::AVR_INTR;
   } else if (name == "AVR_SIGNAL") {
-    return llvm::CallingConv::AVR_SIGNAL;
+    return CallingConv::AVR_SIGNAL;
   } else if (name == "AVR_BUILTIN") {
-    return llvm::CallingConv::AVR_BUILTIN;
+    return CallingConv::AVR_BUILTIN;
   } else if (name == "AMDGPU_VS") {
-    return llvm::CallingConv::AMDGPU_VS;
+    return CallingConv::AMDGPU_VS;
   } else if (name == "AMDGPU_GS") {
-    return llvm::CallingConv::AMDGPU_GS;
+    return CallingConv::AMDGPU_GS;
   } else if (name == "AMDGPU_PS") {
-    return llvm::CallingConv::AMDGPU_PS;
+    return CallingConv::AMDGPU_PS;
   } else if (name == "AMDGPU_CS") {
-    return llvm::CallingConv::AMDGPU_CS;
+    return CallingConv::AMDGPU_CS;
   } else if (name == "AMDGPU_KERNEL") {
-    return llvm::CallingConv::AMDGPU_KERNEL;
+    return CallingConv::AMDGPU_KERNEL;
   } else if (name == "X86_RegCall") {
-    return llvm::CallingConv::X86_RegCall;
+    return CallingConv::X86_RegCall;
   } else if (name == "AMDGPU_HS") {
-    return llvm::CallingConv::AMDGPU_HS;
+    return CallingConv::AMDGPU_HS;
   } else if (name == "MSP430_BUILTIN") {
-    return llvm::CallingConv::MSP430_BUILTIN;
+    return CallingConv::MSP430_BUILTIN;
   } else if (name == "AMDGPU_LS") {
-    return llvm::CallingConv::AMDGPU_LS;
+    return CallingConv::AMDGPU_LS;
   } else if (name == "AMDGPU_ES") {
-    return llvm::CallingConv::AMDGPU_ES;
+    return CallingConv::AMDGPU_ES;
   } else if (name == "AArch64VectorCall") {
-    return llvm::CallingConv::AArch64_VectorCall;
+    return CallingConv::AArch64_VectorCall;
   } else if (name == "AArch64_SVE_VectorCall") {
-    return llvm::CallingConv::AArch64_SVE_VectorCall;
+    return CallingConv::AArch64_SVE_VectorCall;
   } else if (name == "WASM_EmscriptenInvoke") {
-    return llvm::CallingConv::WASM_EmscriptenInvoke;
+    return CallingConv::WASM_EmscriptenInvoke;
   } else if (name == "AMDGPU_Gfx") {
-    return llvm::CallingConv::AMDGPU_Gfx;
+    return CallingConv::AMDGPU_Gfx;
   } else if (name == "M68k_INTR") {
-    return llvm::CallingConv::M68k_INTR;
+    return CallingConv::M68k_INTR;
   } else {
     return 1024;
   }
 }
+
+} // namespace utils
+} // namespace qat

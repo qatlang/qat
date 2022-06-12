@@ -42,11 +42,14 @@
 
 #include "./version_number.hpp"
 
-qat::utils::VersionNumber::VersionNumber(const std::string version)
+namespace qat {
+namespace utils {
+
+VersionNumber::VersionNumber(const std::string version)
     : major(0), minor(0), patch(std::nullopt), build(std::nullopt) {
   const bool hasV = (version[0] == 'v');
   std::vector<std::string> nums;
-  std::string cache = "";
+  std::string cache;
   for (std::size_t i = hasV; i < version.length(); i++) {
     if (nums.size() == 3) {
       if (version[i] == '-') {
@@ -114,3 +117,6 @@ qat::utils::VersionNumber::VersionNumber(const std::string version)
     }
   }
 }
+
+} // namespace utils
+} // namespace qat

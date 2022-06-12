@@ -41,16 +41,19 @@
  */
 
 #include "./llvm_type_to_name.hpp"
+namespace qat {
+namespace utils {
 
-std::string qat::utils::llvmTypeToName(llvm::Type *type) {
+std::string llvmTypeToName(llvm::Type *type) {
   if (type->isStructTy()) {
     auto structType = llvm::dyn_cast<llvm::StructType>(type);
     if (structType->isLiteral()) {
       std::string value = "(";
-      for (std::size_t i = 0; i < structType->getNumElements(); i++) {
+      for (std::size_t i = 0; i < structType->getNumContainedTypes(); i++) {
         value += llvmTypeToName(structType->getElementType(i));
-        if (i + 1 < structType->getNumElements()) {
-          value += ", ";
+        if ((i + 1 < structType->getNumContainedTypes()) ||
+            (structType->getNumContainedTypes() == 1)) {
+          value += "; ";
         }
       }
       value += ")";
@@ -86,3 +89,6 @@ std::string qat::utils::llvmTypeToName(llvm::Type *type) {
     }
   }
 }
+
+} // namespace utils
+} // namespace qat

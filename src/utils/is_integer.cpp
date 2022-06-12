@@ -42,7 +42,10 @@
 
 #include "./is_integer.hpp"
 
-bool qat::utils::isInteger(std::string value) {
+namespace qat {
+namespace utils {
+
+bool isInteger(std::string value) {
   bool result = true;
   std::string digits = "0123456789";
   for (std::size_t i = 0; i < value.length(); i++) {
@@ -52,3 +55,6 @@ bool qat::utils::isInteger(std::string value) {
   }
   return result;
 }
+
+} // namespace utils
+} // namespace qat

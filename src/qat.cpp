@@ -1,30 +1,14 @@
-#include <iostream>
+#include "./CLI/config.hpp"
 
-#include "utilities/types.cpp"
-
-int main(int count, my::StringConstantList args)
-{
-    if (count == 1)
-    {
-        std::cout << "No command or arguments provided!\n"
-                  << "Run \"qat help\" for documentation on the available commands" << std::endl;
-        return 0;
-    }
-    else
-    {
-        if (args[1] == "run")
-        {
-            if (count != 3)
-            {
-                std::cout << "Filepath not provided!\n"
-                          << "Do \"qat run path/to/my/file.qat\" to compile your application\n"
-                          << "Run \"qat help\" for documentation on the available commands" << std::endl;
-                return 0;
-            }
-            else
-            {
-                /// TODO: 
-            }
-        }
-    }
+int main(int count, const char **args) {
+  auto cli = qat::CLI::Config::init(count, args);
+  if (cli.should_exit()) {
+    return 0;
+  }
+  if (cli.is_compile()) {
+    auto paths = cli.get_paths();
+  }
+  std::atexit(qat::CLI::Config::destroy);
+  std::at_quick_exit(qat::CLI::Config::destroy);
+  return 0;
 }

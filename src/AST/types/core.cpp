@@ -40,69 +40,26 @@
  * or misleading or gives out false information.
  */
 
-#ifndef QAT_AST_TYPES_CONCRETE_HPP
-#define QAT_AST_TYPES_CONCRETE_HPP
-
-#include "../../IR/generator.hpp"
-#include "../box.hpp"
-#include "../function_definition.hpp"
-#include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
-#include <string>
-#include <vector>
+#include "./core.hpp"
 
 namespace qat {
 namespace AST {
 
-/**
- * @brief ConcreteType is equivalent to the struct type or class type in other
- * languages
- *
- */
-class ConcreteType : public QatType {
-private:
-  /**
-   * @brief Name of the concrete type
-   *
-   */
-  std::string name;
+CoreType::CoreType(std::string _name, utils::FilePlacement _filePlacement)
+    : name(_name), QatType(_filePlacement) {}
 
-public:
-  /**
-   * @brief ConcreteType is equivalent to the struct type or class type in other
-   * languages
-   *
-   * @param _name Name of the concrete type
-   * @param _filePlacement
-   */
-  ConcreteType(std::string _name, utils::FilePlacement _filePlacement);
+llvm::Type *qat::AST::CoreType::generate(qat::IR::Generator *generator) {
+  auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
+                                                    llvm::StringRef(name));
+  if (structType == nullptr) {
+    generator->throw_error("Type " + name + " cannot be found", filePlacement);
+  }
+  return structType;
+}
 
-  /**
-   * @brief This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  llvm::Type *generate(IR::Generator *generator);
+std::string CoreType::get_name() const { return name; }
 
-  /**
-   * @brief Get the name of the concrete type
-   *
-   * @return std::string
-   */
-  std::string get_name() const;
-
-  /**
-   * @brief TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
-  TypeKind typeKind();
-};
+TypeKind CoreType::typeKind() { return TypeKind::Float; }
 
 } // namespace AST
 } // namespace qat
-
-#endif

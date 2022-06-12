@@ -40,27 +40,69 @@
  * or misleading or gives out false information.
  */
 
-#include "./concrete.hpp"
+#ifndef QAT_AST_TYPES_CORE_HPP
+#define QAT_AST_TYPES_CORE_HPP
+
+#include "../../IR/generator.hpp"
+#include "../box.hpp"
+#include "../function_definition.hpp"
+#include "./qat_type.hpp"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
+#include <string>
+#include <vector>
 
 namespace qat {
 namespace AST {
 
-ConcreteType::ConcreteType(std::string _name,
-                           utils::FilePlacement _filePlacement)
-    : name(_name), QatType(_filePlacement) {}
+/**
+ * @brief CoreType is equivalent to the struct type or class type in other
+ * languages
+ *
+ */
+class CoreType : public QatType {
+private:
+  /**
+   * @brief Name of the core type
+   *
+   */
+  std::string name;
 
-llvm::Type *qat::AST::ConcreteType::generate(qat::IR::Generator *generator) {
-  auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
-                                                    llvm::StringRef(name));
-  if (structType == nullptr) {
-    generator->throw_error("Type " + name + " cannot be found", filePlacement);
-  }
-  return structType;
-}
+public:
+  /**
+   * @brief CoreType is equivalent to the struct type or class type in other
+   * languages
+   *
+   * @param _name Name of the core type
+   * @param _filePlacement
+   */
+  CoreType(std::string _name, utils::FilePlacement _filePlacement);
 
-std::string ConcreteType::get_name() const { return name; }
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Type*
+   */
+  llvm::Type *generate(IR::Generator *generator);
 
-TypeKind ConcreteType::typeKind() { return TypeKind::Float; }
+  /**
+   * @brief Get the name of the core type
+   *
+   * @return std::string
+   */
+  std::string get_name() const;
+
+  /**
+   * @brief TypeKind is used to detect variants of the QatType
+   *
+   * @return TypeKind
+   */
+  TypeKind typeKind();
+};
 
 } // namespace AST
 } // namespace qat
+
+#endif

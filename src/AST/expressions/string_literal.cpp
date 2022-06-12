@@ -42,17 +42,19 @@
 
 #include "./string_literal.hpp"
 
-qat::AST::StringLiteral::StringLiteral(std::string _value,
-                                       utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+StringLiteral::StringLiteral(std::string _value,
+                             utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
-llvm::Value *qat::AST::StringLiteral::generate(qat::IR::Generator *generator) {
+llvm::Value *StringLiteral::generate(IR::Generator *generator) {
   return llvm::ConstantDataArray::getString(generator->llvmContext,
                                             llvm::StringRef(value),
                                             true //
   );
 }
 
-qat::AST::NodeType qat::AST::StringLiteral::nodeType() {
-  return qat::AST::NodeType::stringLiteral;
-}
+} // namespace AST
+} // namespace qat

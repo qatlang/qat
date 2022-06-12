@@ -42,14 +42,16 @@
 
 #include "./custom_integer_literal.hpp"
 
-qat::AST::CustomIntegerLiteral::CustomIntegerLiteral(
-    std::string _value, bool _isUnsigned, unsigned int _bitWidth,
-    qat::utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+CustomIntegerLiteral::CustomIntegerLiteral(std::string _value, bool _isUnsigned,
+                                           unsigned int _bitWidth,
+                                           utils::FilePlacement _filePlacement)
     : value(_value), isUnsigned(_isUnsigned), bitWidth(_bitWidth),
       Expression(_filePlacement) {}
 
-llvm::Value *
-qat::AST::CustomIntegerLiteral::generate(qat::IR::Generator *generator) {
+llvm::Value *CustomIntegerLiteral::generate(IR::Generator *generator) {
   auto type = llvm::Type::getIntNTy(generator->llvmContext, bitWidth);
   // FIXME - Support custom radix
   auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
@@ -57,6 +59,5 @@ qat::AST::CustomIntegerLiteral::generate(qat::IR::Generator *generator) {
   return result;
 }
 
-qat::AST::NodeType qat::AST::CustomIntegerLiteral::nodeType() {
-  return qat::AST::NodeType::customIntegerLiteral;
-}
+} // namespace AST
+} // namespace qat

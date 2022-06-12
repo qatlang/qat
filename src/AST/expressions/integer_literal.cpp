@@ -42,12 +42,14 @@
 
 #include "./integer_literal.hpp"
 
-qat::AST::IntegerLiteral::IntegerLiteral(
-    std::string _value, bool _isUnsigned,
-    qat::utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+IntegerLiteral::IntegerLiteral(std::string _value, bool _isUnsigned,
+                               utils::FilePlacement _filePlacement)
     : value(_value), isUnsigned(_isUnsigned), Expression(_filePlacement) {}
 
-llvm::Value *qat::AST::IntegerLiteral::generate(qat::IR::Generator *generator) {
+llvm::Value *IntegerLiteral::generate(IR::Generator *generator) {
   auto type = llvm::Type::getInt64Ty(generator->llvmContext);
   // FIXME - Support custom radix
   auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
@@ -55,6 +57,5 @@ llvm::Value *qat::AST::IntegerLiteral::generate(qat::IR::Generator *generator) {
   return result;
 }
 
-qat::AST::NodeType qat::AST::IntegerLiteral::nodeType() {
-  return qat::AST::NodeType::integerLiteral;
-}
+} // namespace AST
+} // namespace qat

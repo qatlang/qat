@@ -51,19 +51,54 @@
 
 namespace qat {
 namespace AST {
+
+/**
+ * @brief FunctionCall represents a normal call to a function in the language
+ *
+ */
 class FunctionCall : public Expression {
 private:
+  /**
+   * @brief Name of the function to call
+   *
+   */
   std::string name;
+
+  /**
+   * @brief Expressions for the arguments to be passed
+   *
+   */
   std::vector<Expression> arguments;
 
 public:
+  /**
+   * @brief FunctionCall represents a normal/static function call in the
+   * language
+   *
+   * @param _name Name of the function to call
+   * @param _arguments Expressions representing the value of the arguments to be
+   * passed
+   * @param _filePlacement
+   */
   FunctionCall(std::string _name, std::vector<Expression> _arguments,
                utils::FilePlacement _filePlacement)
       : name(_name), arguments(_arguments), Expression(_filePlacement) {}
 
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Value*
+   */
   llvm::Value *generate(IR::Generator *generator);
 
-  NodeType nodeType();
+  /**
+   * @brief Type of the node represented by this AST member
+   *
+   * @return NodeType
+   */
+  NodeType nodeType() { return qat::AST::NodeType::functionCall; }
 };
 } // namespace AST
 } // namespace qat

@@ -42,6 +42,9 @@
 
 #include "./function_call.hpp"
 
+namespace qat {
+namespace AST {
+
 llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
   llvm::Function *fn;
   llvm::Function *caller = generator->builder.GetInsertBlock()->getParent();
@@ -72,8 +75,8 @@ llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
        * Looping in reverse order so that the latest exposed boxes will have
        * higher priority
        */
-      for (std::size_t i = generator->exposed_boxes.size() - 1; i >= 0; i--) {
-        std::string gen_name = generator->exposed_boxes.at(i).generate() + name;
+      for (std::size_t i = generator->exposed.size() - 1; i >= 0; i--) {
+        auto gen_name = generator->exposed.at(i).generate() + name;
         if (generator->does_function_exist(gen_name)) {
           fn = generator->get_function(name);
           break;
@@ -82,25 +85,22 @@ llvm::Value *qat::AST::FunctionCall::generate(qat::IR::Generator *generator) {
     }
   }
   if (fn) {
-    std::vector<llvm::Value *> generatedValues;
+    std::vector<llvm::Value *> gen_vals;
     for (std::size_t i = 0; i < arguments.size(); i++) {
-      generatedValues.push_back(arguments.at(i).generate(generator));
+      gen_vals.push_back(arguments.at(i).generate(generator));
     }
     if (fn->arg_size() != arguments.size()) {
       generator->throw_error("Number of arguments passed to the function `" +
                                  fn->getName().str() + "` do not match!",
                              file_placement);
     }
-    return generator->builder.CreateCall(
-        fn->getFunctionType(), fn,
-        llvm::ArrayRef<llvm::Value *>(generatedValues),
-        llvm::Twine("Call to " + fn->getName()), nullptr);
+    return generator->builder.CreateCall(fn->getFunctionType(), fn, {gen_vals},
+                                         ("Call to " + fn->getName()), nullptr);
   } else {
     generator->throw_error("Function " + name + " does not exist",
                            file_placement);
   }
 }
 
-qat::AST::NodeType qat::AST::FunctionCall::nodeType() {
-  return qat::AST::NodeType::functionCall;
-}
+} // namespace AST
+} // namespace qat

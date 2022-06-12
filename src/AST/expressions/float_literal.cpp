@@ -42,16 +42,18 @@
 
 #include "./float_literal.hpp"
 
-qat::AST::FloatLiteral::FloatLiteral(std::string _value,
-                                     qat::utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+FloatLiteral::FloatLiteral(std::string _value,
+                           utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
-llvm::Value *qat::AST::FloatLiteral::generate(qat::IR::Generator *generator) {
+llvm::Value *FloatLiteral::generate(IR::Generator *generator) {
   return llvm::ConstantFP::get(llvm::Type::getFloatTy(generator->llvmContext),
                                llvm::StringRef(value) //
   );
 }
 
-qat::AST::NodeType qat::AST::FloatLiteral::nodeType() {
-  return qat::AST::NodeType::floatLiteral;
-}
+} // namespace AST
+} // namespace qat

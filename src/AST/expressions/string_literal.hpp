@@ -53,16 +53,43 @@
 
 namespace qat {
 namespace AST {
+
+/**
+ * @brief StringLiteral is used to represent literal strings
+ *
+ */
 class StringLiteral : public Expression {
 private:
+  /**
+   * @brief Value of the string
+   *
+   */
   std::string value;
 
 public:
+  /**
+   * @brief StringLiteral is used to represent literal strings
+   *
+   * @param _value Value of the string
+   * @param _filePlacement
+   */
   StringLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Value*
+   */
   llvm::Value *generate(IR::Generator *generator);
 
-  NodeType nodeType();
+  /**
+   * @brief Type of the node represented by this AST member
+   *
+   * @return NodeType
+   */
+  NodeType nodeType() { return NodeType::stringLiteral; }
 };
 } // namespace AST
 } // namespace qat

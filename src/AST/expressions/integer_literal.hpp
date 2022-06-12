@@ -52,19 +52,49 @@
 
 namespace qat {
 namespace AST {
+
 class IntegerLiteral : public Expression {
 private:
+  /**
+   * @brief String representation of the integer
+   *
+   */
   std::string value;
+
+  /**
+   * @brief Whether the literal should be interpreted as signed or unsigned
+   *
+   */
   bool isUnsigned;
 
 public:
+  /**
+   * @brief An Integer Literal
+   *
+   * @param _value String representation of the integer
+   * @param _isUnsigned Whether the literal is signed or unsigned
+   * @param _filePlacement
+   */
   IntegerLiteral(std::string _value, bool _isUnsigned,
                  utils::FilePlacement _filePlacement);
 
+  /**
+   * @brief This is the code generator function that handles the generation of
+   * LLVM IR
+   *
+   * @param generator The IR::Generator instance that handles LLVM IR Generation
+   * @return llvm::Value*
+   */
   llvm::Value *generate(IR::Generator *generator);
 
-  NodeType nodeType();
+  /**
+   * @brief Type of the node represented by this AST member
+   *
+   * @return NodeType
+   */
+  NodeType nodeType() { return qat::AST::NodeType::integerLiteral; }
 };
+
 } // namespace AST
 } // namespace qat
 

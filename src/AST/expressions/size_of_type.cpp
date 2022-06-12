@@ -42,19 +42,15 @@
 
 #include "./size_of_type.hpp"
 
-qat::AST::SizeOfType::SizeOfType(qat::AST::QatType _type,
-                                 qat::utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+SizeOfType::SizeOfType(QatType _type, qat::utils::FilePlacement _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
-llvm::Value *qat::AST::SizeOfType::generate(qat::IR::Generator *generator) {
-  llvm::Value *objPtr = generator->builder.CreateConstGEP1_64(
-      type.generate(generator),
-      llvm::Constant::getNullValue(type.generate(generator)->getPointerTo()), 1,
-      "");
-  return generator->builder.CreatePointerCast(
-      objPtr, llvm::Type::getInt64Ty(generator->llvmContext), "sizeOfType");
+llvm::Value *SizeOfType::generate(qat::IR::Generator *generator) {
+  return llvm::ConstantExpr::getSizeOf(type.generate(generator));
 }
 
-qat::AST::NodeType qat::AST::SizeOfType::nodeType() {
-  return NodeType::sizeOfType;
-}
+} // namespace AST
+} // namespace qat

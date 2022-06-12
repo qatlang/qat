@@ -1,58 +1,22 @@
-/**
- * Qat Programming Language : Copyright 2022 : Aldrin Mathew
- *
- * AAF INSPECTABLE LICENCE - 1.0
- *
- * This project is licensed under the AAF Inspectable Licence 1.0.
- * You are allowed to inspect the source of this project(s) free of
- * cost, and also to verify the authenticity of the product.
- *
- * Unless required by applicable law, this project is provided
- * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either
- * expressed or implied. The author(s) of this project is not
- * liable for any harms, errors or troubles caused by using the
- * source or the product, unless implied by law. By using this
- * project, or part of it, you are acknowledging the complete terms
- * and conditions of licensing of this project as specified in AAF
- * Inspectable Licence 1.0 available at this URL:
- *
- * https://github.com/aldrinsartfactory/InspectableLicence/
- *
- * This project may contain parts that are not licensed under the
- * same licence. If so, the licences of those parts should be
- * appropriately mentioned in those parts of the project. The
- * Author MAY provide a notice about the parts of the project that
- * are not licensed under the same licence in a publicly visible
- * manner.
- *
- * You are NOT ALLOWED to sell, or distribute THIS project, its
- * contents, the source or the product or the build result of the
- * source under commercial or non-commercial purposes. You are NOT
- * ALLOWED to revamp, rebrand, refactor, modify, the source, product
- * or the contents of this project.
- *
- * You are NOT ALLOWED to use the name, branding and identity of this
- * project to identify or brand any other project. You ARE however
- * allowed to use the name and branding to pinpoint/show the source
- * of the contents/code/logic of any other project. You are not
- * allowed to use the identification of the Authors of this project
- * to associate them to other projects, in a way that is deceiving
- * or misleading or gives out false information.
- */
-
 #include "./local_declaration.hpp"
 
-qat::AST::LocalDeclaration::LocalDeclaration(
-    llvm::Optional<QatType> _type, std::string _name, Expression _value,
-    bool _variability, utils::FilePlacement _filePlacement)
+namespace qat {
+namespace AST {
+
+LocalDeclaration::LocalDeclaration(std::optional<QatType> _type,
+                                   std::string _name, Expression _value,
+                                   bool _variability,
+                                   utils::FilePlacement _filePlacement)
     : type(_type), name(_name), value(_value), variability(_variability),
       Sentence(_filePlacement) {}
 
-llvm::Value *
-qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
+llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
+  bool is_reference = type.has_value()
+                          ? (type.value().typeKind() == TypeKind::reference)
+                          : false;
   auto gen_value = value.generate(generator);
-  if (type.hasValue()) {
-    auto decl_ty = type.getValue().generate(generator);
+  if (type.has_value()) {
+    auto decl_ty = type.value().generate(generator);
     if (decl_ty != gen_value->getType()) {
       // FIXME - Remove all implicit casts
       if (decl_ty->isIntegerTy() && gen_value->getType()->isIntegerTy()) {
@@ -90,9 +54,9 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
         }
         std::vector<llvm::Value *> args;
         args.push_back(gen_value);
-        gen_value = generator->builder.CreateCall(
-            conv_fn->getFunctionType(), conv_fn,
-            llvm::ArrayRef<llvm::Value *>(args), "conversion_call", nullptr);
+        gen_value =
+            generator->builder.CreateCall(conv_fn->getFunctionType(), conv_fn,
+                                          {args}, "conversion_call", nullptr);
       }
     }
   }
@@ -132,19 +96,36 @@ qat::AST::LocalDeclaration::generate(qat::IR::Generator *generator) {
                              file_placement);
     }
   }
-  auto old_insert_p = generator->builder.GetInsertPoint();
+  auto origin_bb = generator->builder.GetInsertBlock();
   generator->builder.SetInsertPoint(&*insert_p);
   auto var_alloca = generator->builder.CreateAlloca(
-      (type.hasValue() ? type.getValue().generate(generator)
-                       : gen_value->getType()),
-      0, nullptr, llvm::Twine(name));
+      (type.has_value() ? type.value().generate(generator)
+                        : gen_value->getType()),
+      0, nullptr, name);
+  if (var_alloca->getAllocatedType()->isPointerTy()) {
+    var_alloca->setMetadata(
+        "pointer_type",
+        llvm::MDNode::get(
+            generator->llvmContext,
+            {llvm::MDString::get(generator->llvmContext,
+                                 is_reference ? "reference" : "pointer")}));
+  }
+  set_origin_block(generator->llvmContext, var_alloca, origin_bb);
   utils::Variability::set(generator->llvmContext, var_alloca, variability);
-  generator->builder.SetInsertPoint(&*old_insert_p);
+  generator->builder.SetInsertPoint(origin_bb);
   auto storeValue =
       generator->builder.CreateStore(gen_value, var_alloca, false);
   return storeValue;
 }
 
-qat::AST::NodeType qat::AST::LocalDeclaration::nodeType() {
-  return qat::AST::NodeType::localDeclaration;
+void LocalDeclaration::set_origin_block(llvm::LLVMContext &ctx,
+                                        llvm::AllocaInst *alloca,
+                                        llvm::BasicBlock *bb) {
+
+  alloca->setMetadata(
+      "origin_block",
+      llvm::MDNode::get(ctx, llvm::MDString::get(ctx, bb->getName().str())));
 }
+
+} // namespace AST
+} // namespace qat

@@ -48,6 +48,12 @@ bool Lexer::emit_tokens = false;
 
 bool Lexer::show_report = false;
 
+Lexer::Lexer() {
+  auto cli = CLI::Config::get();
+  emit_tokens = cli.should_lexer_emit_tokens();
+  show_report = cli.should_show_report();
+}
+
 void Lexer::read(std::string context) {
   try {
     if (file.eof()) {
@@ -513,8 +519,12 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::reference, this->getPosition(3));
       else if (value == "bool")
         return Token::normal(TokenType::Bool, this->getPosition(4));
-      else if (value == "size")
-        return Token::normal(TokenType::size, this->getPosition(4));
+      else if (value == "await")
+        return Token::normal(TokenType::Await, this->getPosition(5));
+      else if (value == "async")
+        return Token::normal(TokenType::Async, this->getPosition(5));
+      else if (value == "sizeOf")
+        return Token::normal(TokenType::sizeOf, this->getPosition(6));
       else if (value.substr(0, 1) == "i" &&
                ((value.length() > 1)
                     ? utils::isInteger(value.substr(1, value.length() - 1))

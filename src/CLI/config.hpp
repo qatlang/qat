@@ -1,16 +1,18 @@
 #ifndef QAT_CLI_CONFIG_HPP
 #define QAT_CLI_CONFIG_HPP
 
-#include "../lexer/lexer.hpp"
 #include "../utils/types.hpp"
 #include "./display.hpp"
 #include <experimental/filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
+
 namespace qat {
 namespace CLI {
+
 namespace fsexp = std::experimental::filesystem;
+
 /**
  * @brief CLI Configuration -
  *
@@ -64,6 +66,32 @@ private:
    *
    */
   bool verbose;
+
+  /**
+   * @brief Whether comments in the source files should be analysed, parsed and
+   * then saved along with the AST, to later be used for documentation
+   *
+   */
+  bool save_docs;
+
+  /**
+   * @brief Whether reports about the timing and performance of the lexing,
+   * parsing, generation and other processes should be displayed in the console.
+   *
+   */
+  bool show_report;
+
+  /**
+   * @brief Whether lexer should display the tokens analysed in the console
+   *
+   */
+  bool lexer_emit_tokens;
+
+  /**
+   * @brief Number of active users of the configuration
+   *
+   */
+  unsigned users;
 
 public:
   /**
@@ -133,7 +161,43 @@ public:
    * @return std::vector<fsexp::path>
    */
   std::vector<fsexp::path> get_paths() { return paths; }
+
+  /**
+   * @brief Whether comments in source code files should be saved to be used for
+   * documentation
+   *
+   * @return true
+   * @return false
+   */
+  bool should_save_docs() { return save_docs; }
+
+  /**
+   * @brief Whether different parts of the compiler should show reports about
+   * the performance and timing statistics
+   *
+   * @return true
+   * @return false
+   */
+  bool should_show_report() { return show_report; }
+
+  /**
+   * @brief Whether lexer should display the analysed tokens in the console
+   *
+   * @return true
+   * @return false
+   */
+  bool should_lexer_emit_tokens() { return lexer_emit_tokens; }
+
+  ~Config() {
+    if ((users - 1) >= 0) {
+      users--;
+    }
+    if (users == 0 && Config::instance) {
+      delete Config::instance;
+    }
+  };
 };
+
 } // namespace CLI
 } // namespace qat
 

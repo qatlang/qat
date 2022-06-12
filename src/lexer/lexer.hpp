@@ -44,6 +44,7 @@
 #define QAT_LEXER_LEXER_HPP
 
 #include "../CLI/color.hpp"
+#include "../CLI/config.hpp"
 #include "../utils/file_placement.hpp"
 #include "../utils/is_integer.hpp"
 #include "./token.hpp"
@@ -140,7 +141,7 @@ private:
   unsigned long long timeInNS = 0;
 
 public:
-  Lexer() {}
+  Lexer();
 
   /**
    * @brief Whether the Lexer should emit tokens to the standard output.

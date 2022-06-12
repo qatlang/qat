@@ -7,7 +7,9 @@ Config *Config::instance = nullptr;
 
 Config Config::init(u64 count, const char **args) {
   if (instance == nullptr) {
-    return *(new Config(count, args));
+    auto result = *(new Config(count, args));
+    result.users++;
+    return result;
   } else {
     return get();
   }
@@ -24,6 +26,7 @@ bool Config::has_instance() { return Config::instance != nullptr; }
 
 Config Config::get() {
   if (has_instance()) {
+    (*instance).users++;
     return *instance;
   }
 }
@@ -88,10 +91,12 @@ Config::Config(u64 count, const char **args) {
       if (arg == "-v" || arg == "--verbose") {
         verbose = true;
       } else if (arg == "--report") {
-        lexer::Lexer::show_report = true;
+        show_report = true;
         // TODO - Set parser report option here once that is implemented
       } else if (arg == "--emit-tokens") {
-        lexer::Lexer::emit_tokens = true;
+        lexer_emit_tokens = true;
+      } else if (arg == "--save-docs") {
+        save_docs = true;
       } else {
         if (fsexp::exists(arg)) {
           paths.push_back(fsexp::path(arg));

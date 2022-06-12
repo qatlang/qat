@@ -112,7 +112,7 @@ enum class TokenType {
   lesserThan,
   greaterThan,
   heap,
-  size,
+  sizeOf,
   unaryOperatorLeft,
   unaryOperatorRight,
   lambda,
@@ -123,6 +123,8 @@ enum class TokenType {
   bitwiseNot,
   templateTypeStart,
   templateTypeEnd,
+  Await,
+  Async,
 };
 } // namespace lexer
 } // namespace qat

@@ -72,6 +72,15 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
   llvm::StoreInst *var_store = nullptr;
   if (var_alloca) {
     if (utils::Variability::get(var_alloca)) {
+      gen_val = utils::cast_if_null_pointer(var_alloca, gen_val);
+      if (var_alloca->getType() != gen_val->getType()) {
+        generator->throw_error(
+            "The variable `" + name + "` is of the type `" +
+                utils::llvmTypeToName(var_alloca->getType()) +
+                "`, but the provided expression is of the type `" +
+                utils::llvmTypeToName(gen_val->getType()) + "`",
+            value.file_placement);
+      }
       var_store = generator->builder.CreateStore(gen_val, var_alloca, false);
     } else {
       generator->throw_error(
@@ -82,6 +91,15 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
     auto global_var = generator->get_global_variable(name);
     if (global_var) {
       if (!global_var->isConstant()) {
+        gen_val = utils::cast_if_null_pointer(global_var, gen_val);
+        if (global_var->getValueType() != gen_val->getType()) {
+          generator->throw_error(
+              "The global variable " + name + " is of the type `" +
+                  utils::llvmTypeToName(global_var->getValueType()) +
+                  "`, but the provided expression is of the type `" +
+                  utils::llvmTypeToName(gen_val->getType()) + "`",
+              value.file_placement);
+        }
         var_store = generator->builder.CreateStore(gen_val, global_var, false);
       } else {
         generator->throw_error(

@@ -188,14 +188,7 @@ public:
    */
   bool should_lexer_emit_tokens() { return lexer_emit_tokens; }
 
-  ~Config() {
-    if ((users - 1) >= 0) {
-      users--;
-    }
-    if (users == 0 && Config::instance) {
-      delete Config::instance;
-    }
-  };
+  ~Config();
 };
 
 } // namespace CLI

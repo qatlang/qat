@@ -5,6 +5,16 @@ namespace CLI {
 
 Config *Config::instance = nullptr;
 
+Config::~Config() {
+  if ((users - 1) >= 0) {
+    users--;
+  }
+  if (users == 0 && Config::instance) {
+    delete Config::instance;
+    Config::instance = nullptr;
+  }
+};
+
 Config Config::init(u64 count, const char **args) {
   if (instance == nullptr) {
     auto result = *(new Config(count, args));

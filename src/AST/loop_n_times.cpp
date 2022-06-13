@@ -98,9 +98,9 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
   // adapt to that
   generator->builder.CreateCondBr(
       generator->builder.CreateICmpSGE(
-          count_val,
-          llvm::ConstantInt::get(llvm::dyn_cast<llvm::IntegerType>(count_val),
-                                 1U, true)),
+          count_val, llvm::ConstantInt::get(llvm::dyn_cast<llvm::IntegerType>(
+                                                count_val->getType()),
+                                            1U, true)),
       loop_bb, after_bb);
   generator->builder.SetInsertPoint(after_end_bb);
   return after_end;

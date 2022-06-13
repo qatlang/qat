@@ -41,6 +41,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
     }
   }
   generator->builder.SetInsertPoint(last_inst);
+  auto loop_bb = block.create_bb(generator);
   auto id =
       std::to_string(new_loop_index_id(generator->builder.GetInsertBlock()));
   auto index_alloca = generator->builder.CreateAlloca(
@@ -49,7 +50,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
       "origin_block",
       llvm::MDNode::get(
           generator->llvmContext,
-          llvm::MDString::get(generator->llvmContext, prev_bb->getName())));
+          llvm::MDString::get(generator->llvmContext, loop_bb->getName())));
   utils::Variability::set(generator->llvmContext, index_alloca, true);
   generator->builder.SetInsertPoint(prev_bb);
   /**
@@ -60,14 +61,6 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
       llvm::ConstantInt::get(
           llvm::dyn_cast<llvm::IntegerType>(count_val->getType()), 0U, false),
       index_alloca, false);
-  auto loop_bb = block.create_bb(generator);
-  generator->builder.SetInsertPoint(prev_bb);
-  /**
-   * @brief Since this is looping for n times, there is no need to check in the
-   * beginning of the first loop
-   *
-   */
-  generator->builder.CreateBr(loop_bb);
   /**
    * @brief Generate IR for all sentences present within the loop
    *
@@ -98,7 +91,19 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
           generator->builder.CreateLoad(index_alloca), count_val,
           "loop:times:check:" + id),
       loop_bb, after_bb);
-  after.generate(generator);
+  auto after_end = after.generate(generator);
+  auto after_end_bb = generator->builder.GetInsertBlock();
+  generator->builder.SetInsertPoint(prev_bb);
+  // FIXME - The count could be signed or unsigned integer, change logic to
+  // adapt to that
+  generator->builder.CreateCondBr(
+      generator->builder.CreateICmpSGE(
+          count_val,
+          llvm::ConstantInt::get(llvm::dyn_cast<llvm::IntegerType>(count_val),
+                                 1U, true)),
+      loop_bb, after_bb);
+  generator->builder.SetInsertPoint(after_end_bb);
+  return after_end;
 }
 
 } // namespace AST

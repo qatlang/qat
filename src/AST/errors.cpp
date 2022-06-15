@@ -1,7 +1,7 @@
 #include "./errors.hpp"
 
-#define COLOR(col, value) colors::##col << value << colors::reset
-#define COLORBOLD(col, value) colors::bold::##col << value << colors::reset
+#define COLOR(col, value) colors::col << value << colors::reset
+#define COLORBOLD(col, value) colors::bold::col << value << colors::reset
 #define HIGHLIGHT(value) colors::bold::yellow << value << colors::reset
 
 namespace qat {

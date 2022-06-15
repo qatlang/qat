@@ -44,6 +44,7 @@
 #define QAT_AST_EXPRESSIONS_ENTITY_HPP
 
 #include "../../IR/generator.hpp"
+#include "../../utils/pointer_kind.hpp"
 #include "../../utils/variability.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"

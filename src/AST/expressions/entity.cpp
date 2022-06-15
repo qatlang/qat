@@ -72,7 +72,11 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
   }
   if (var_alloca) {
     var_load = generator->builder.CreateLoad(var_alloca->getType(), var_alloca,
-                                             false, llvm::Twine(name));
+                                             false, name);
+    if (utils::PointerKind::is_reference(var_alloca)) {
+      var_load = generator->builder.CreateLoad(var_load->getType(), var_load,
+                                               false, name);
+    }
     utils::Variability::propagate(generator->llvmContext, var_alloca, var_load);
     return var_load;
   } else {
@@ -86,14 +90,21 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
     if (arg_val) {
       var_load = generator->builder.CreateLoad(arg_val->getType(), arg_val,
                                                false, name);
+      if (utils::PointerKind::is_reference(arg_val)) {
+        var_load = generator->builder.CreateLoad(var_load->getType(), var_load,
+                                                 false, name);
+      }
       utils::Variability::propagate(generator->llvmContext, arg_val, var_load);
       return var_load;
     } else {
       auto globalVariable = generator->get_global_variable(name);
       if (globalVariable) {
         var_load = generator->builder.CreateLoad(globalVariable->getType(),
-                                                 globalVariable, false,
-                                                 llvm::Twine(name));
+                                                 globalVariable, false, name);
+        if (utils::PointerKind::is_reference(globalVariable)) {
+          var_load = generator->builder.CreateLoad(var_load->getType(),
+                                                   var_load, false, name);
+        }
         utils::Variability::set(generator->llvmContext, var_load,
                                 globalVariable->isConstant());
         return var_load;

@@ -45,6 +45,10 @@
 namespace qat {
 namespace AST {
 
+ReferenceEntity Entity::to_reference() {
+  return ReferenceEntity(name, file_placement);
+}
+
 llvm::Value *Entity::generate(IR::Generator *generator) {
   auto func = generator->builder.GetInsertBlock()->getParent();
   auto &e_block = func->getEntryBlock();
@@ -62,7 +66,6 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
           break;
         }
       }
-
     } else {
       break;
     }
@@ -91,27 +94,29 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
         var_load = generator->builder.CreateLoad(globalVariable->getType(),
                                                  globalVariable, false,
                                                  llvm::Twine(name));
+        utils::Variability::set(generator->llvmContext, var_load,
+                                globalVariable->isConstant());
+        return var_load;
       } else {
-        for (std::size_t i = 0; i < generator->exposed_boxes.size(); i++) {
-          auto space_name = generator->exposed_boxes.at(i).generate() + name;
+        for (std::size_t i = 0; i < generator->exposed.size(); i++) {
+          auto space_name = generator->exposed.at(i).generate() + name;
           globalVariable = generator->get_global_variable(space_name);
           if (globalVariable) {
-            var_load = generator->builder.CreateLoad(globalVariable->getType(),
-                                                     globalVariable, false,
-                                                     llvm::Twine(space_name));
-            break;
+            var_load = generator->builder.CreateLoad(
+                globalVariable->getValueType(), globalVariable, false,
+                llvm::Twine(space_name));
+            utils::Variability::set(generator->llvmContext, var_load,
+                                    globalVariable->isConstant());
+            return var_load;
           }
         }
       }
-      if (var_load) {
-        return var_load;
-      } else {
-        generator->throw_error("Variable `" + name +
-                                   "` cannot be found in function `" +
-                                   e_block.getParent()->getName().str() +
-                                   "` and is not a Global Variable",
-                               file_placement);
-      }
+
+      generator->throw_error("Entity `" + name +
+                                 "` cannot be found in function `" +
+                                 e_block.getParent()->getName().str() +
+                                 "` and is not a Global Entity",
+                             file_placement);
     }
   }
 }

@@ -47,6 +47,7 @@
 #include "../../utils/variability.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"
+#include "./reference_entity.hpp"
 #include "llvm/IR/Value.h"
 #include <string>
 
@@ -82,6 +83,13 @@ public:
       : name(_name), Expression(_filePlacement) {}
 
   /**
+   * @brief Convert this entity to a ReferenceEntity
+   *
+   * @return ReferenceEntity
+   */
+  ReferenceEntity to_reference();
+
+  /**
    * @brief This is the code generator function that handles the generation of
    * LLVM IR
    *
@@ -95,7 +103,7 @@ public:
    *
    * @return NodeType
    */
-  NodeType nodeType() { return qat::AST::NodeType::variableExpression; }
+  NodeType nodeType() { return qat::AST::NodeType::entity; }
 };
 
 } // namespace AST

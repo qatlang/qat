@@ -3,6 +3,7 @@
 
 #include "../IR/generator.hpp"
 #include "../utils/llvm_type_to_name.hpp"
+#include "../utils/pointer_kind.hpp"
 #include "../utils/variability.hpp"
 #include "./types/qat_type.hpp"
 #include "expression.hpp"

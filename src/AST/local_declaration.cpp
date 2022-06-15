@@ -103,12 +103,7 @@ llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
                         : gen_value->getType()),
       0, nullptr, name);
   if (var_alloca->getAllocatedType()->isPointerTy()) {
-    var_alloca->setMetadata(
-        "pointer_type",
-        llvm::MDNode::get(
-            generator->llvmContext,
-            {llvm::MDString::get(generator->llvmContext,
-                                 is_reference ? "reference" : "pointer")}));
+    utils::PointerKind::set(generator->llvmContext, var_alloca, is_reference);
   }
   set_origin_block(generator->llvmContext, var_alloca, origin_bb);
   utils::Variability::set(generator->llvmContext, var_alloca, variability);

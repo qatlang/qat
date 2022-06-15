@@ -49,6 +49,8 @@ StringLiteral::StringLiteral(std::string _value,
                              utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
+std::string StringLiteral::get_value() const { return value; }
+
 llvm::Value *StringLiteral::generate(IR::Generator *generator) {
   return llvm::ConstantDataArray::getString(generator->llvmContext,
                                             llvm::StringRef(value),

@@ -76,6 +76,13 @@ public:
   StringLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
   /**
+   * @brief Get the value of the string
+   *
+   * @return std::string Value of the string
+   */
+  std::string get_value() const;
+
+  /**
    * @brief This is the code generator function that handles the generation of
    * LLVM IR
    *

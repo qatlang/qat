@@ -87,12 +87,6 @@ private:
    */
   bool lexer_emit_tokens;
 
-  /**
-   * @brief Number of active users of the configuration
-   *
-   */
-  unsigned users;
-
 public:
   /**
    * @brief The pointer to the only instance of Config. If this is nullptr, the
@@ -109,7 +103,7 @@ public:
    * @param args The arguments provided to the compiler
    * @return Config
    */
-  static Config init(u64 count, const char **args);
+  static Config *init(u64 count, const char **args);
 
   /**
    * @brief This is technically the proper function to get the existing instance
@@ -117,7 +111,7 @@ public:
    *
    * @return Config
    */
-  static Config get();
+  static Config *get();
 
   /**
    * @brief Whether there is an instance of Config that has been initialised

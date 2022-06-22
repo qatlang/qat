@@ -6,40 +6,31 @@ namespace CLI {
 Config *Config::instance = nullptr;
 
 Config::~Config() {
-  if ((users - 1) >= 0) {
-    users--;
-  }
-  if (users == 0 && Config::instance) {
+  if (Config::instance) {
     delete Config::instance;
     Config::instance = nullptr;
   }
 };
 
-Config Config::init(u64 count, const char **args) {
-  if (instance == nullptr) {
-    auto result = *(new Config(count, args));
-    result.users++;
-    return result;
+Config *Config::init(u64 count, const char **args) {
+  if (!Config::instance) {
+    return new Config(count, args);
   } else {
     return get();
   }
 }
 
 void Config::destroy() {
-  if (Config::instance != nullptr) {
-    delete Config::instance;
+  if (Config::instance) {
+    auto inst = Config::instance;
     Config::instance = nullptr;
+    delete inst;
   }
 }
 
 bool Config::has_instance() { return Config::instance != nullptr; }
 
-Config Config::get() {
-  if (has_instance()) {
-    (*instance).users++;
-    return *instance;
-  }
-}
+Config *Config::get() { return Config::instance; }
 
 Config::Config(u64 count, const char **args) {
   if (!has_instance()) {

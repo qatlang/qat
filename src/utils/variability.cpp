@@ -52,7 +52,11 @@ bool Variability::get(llvm::Instruction *value) {
 }
 
 bool Variability::get(llvm::Argument *value) {
-  return !(value->hasAttribute(llvm::Attribute::AttrKind::ImmArg));
+  return !(value->hasAttribute(llvm::Attribute::AttrKind::ReadOnly));
+}
+
+bool Variability::get(llvm::GlobalVariable *value) {
+  return !(value->isConstant());
 }
 
 void Variability::set(llvm::LLVMContext &context, llvm::Instruction *value,
@@ -65,7 +69,7 @@ void Variability::set(llvm::LLVMContext &context, llvm::Instruction *value,
 
 void Variability::set(llvm::Argument *value, bool is_var) {
   if (!is_var) {
-    value->addAttr(llvm::Attribute::AttrKind::ImmArg);
+    value->addAttr(llvm::Attribute::AttrKind::ReadOnly);
   }
 }
 
@@ -85,8 +89,8 @@ void Variability::propagate(llvm::LLVMContext &context,
 }
 
 void Variability::propagate(llvm::Argument *source, llvm::Argument *target) {
-  if (source->hasAttribute(llvm::Attribute::AttrKind::ImmArg)) {
-    target->addAttr(llvm::Attribute::AttrKind::ImmArg);
+  if (source->hasAttribute(llvm::Attribute::AttrKind::ReadOnly)) {
+    target->addAttr(llvm::Attribute::AttrKind::ReadOnly);
   }
 }
 
@@ -95,7 +99,7 @@ void Variability::propagate(llvm::Instruction *source, llvm::Argument *target) {
   if (source_md) {
     if (llvm::dyn_cast<llvm::MDString>(source_md->getOperand(0))->getString() !=
         llvm::StringRef("var")) {
-      target->addAttr(llvm::Attribute::AttrKind::ImmArg);
+      target->addAttr(llvm::Attribute::AttrKind::ReadOnly);
     }
   }
 }
@@ -106,10 +110,20 @@ void Variability::propagate(llvm::LLVMContext &context, llvm::Argument *source,
       "variability",
       llvm::MDNode::get(
           context,
-          llvm::MDString::get(
-              context, source->hasAttribute(llvm::Attribute::AttrKind::ImmArg)
-                           ? "const"
-                           : "var")));
+          llvm::MDString::get(context, (source->hasAttribute(
+                                            llvm::Attribute::AttrKind::ReadOnly)
+                                            ? "const"
+                                            : "var"))));
+}
+
+void Variability::propagate(llvm::LLVMContext &context,
+                            llvm::GlobalVariable *source,
+                            llvm::Instruction *target) {
+  target->setMetadata(
+      "variability",
+      llvm::MDNode::get(
+          context, llvm::MDString::get(
+                       context, (source->isConstant() ? "const" : "var"))));
 }
 
 } // namespace utils

@@ -57,9 +57,12 @@ namespace AST {
  *
  */
 class QatType {
+private:
+  bool variable;
+
 public:
-  QatType(utils::FilePlacement _filePlacement)
-      : filePlacement(_filePlacement) {}
+  QatType(const bool _variable, const utils::FilePlacement _filePlacement)
+      : variable(_variable), filePlacement(_filePlacement) {}
 
   virtual ~QatType(){};
 
@@ -77,7 +80,16 @@ public:
    *
    * @return TypeKind
    */
-  virtual TypeKind typeKind();
+  virtual TypeKind typeKind(){};
+
+  /**
+   * @brief Whether this type was accompanied by the var keyword, which
+   * represents variability for the value in context
+   *
+   * @return true If the value is supposed to be a variable
+   * @return false If the value is NOT supposed to be a variable
+   */
+  bool isVariable() { return variable; }
 
   /**
    * @brief FilePlacement representing the range in the file this type was

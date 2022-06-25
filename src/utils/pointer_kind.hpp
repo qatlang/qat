@@ -19,11 +19,26 @@ public:
 
   static void set(llvm::Argument *arg, bool is_reference);
 
+  static void set(llvm::LLVMContext &ctx, llvm::CallInst *inst,
+                  bool is_reference);
+
+  static void set(llvm::LLVMContext &ctx, llvm::Function *inst,
+                  bool is_reference);
+
+  static void set(llvm::LLVMContext &ctx, llvm::Instruction *inst,
+                  bool is_reference);
+
+  static bool is_reference(llvm::Function *fn);
+
+  static bool is_reference(llvm::CallInst *inst);
+
   static bool is_reference(llvm::AllocaInst *inst);
 
   static bool is_reference(llvm::GlobalVariable *gvar);
 
   static bool is_reference(llvm::Argument *arg);
+
+  static bool is_reference(llvm::Instruction *inst);
 };
 
 } // namespace utils

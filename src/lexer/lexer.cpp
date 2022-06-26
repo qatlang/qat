@@ -1,46 +1,5 @@
-/**
- * Qat Programming Language : Copyright 2022 : Aldrin Mathew
- *
- * AAF INSPECTABLE LICENCE - 1.0
- *
- * This project is licensed under the AAF Inspectable Licence 1.0.
- * You are allowed to inspect the source of this project(s) free of
- * cost, and also to verify the authenticity of the product.
- *
- * Unless required by applicable law, this project is provided
- * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either
- * expressed or implied. The author(s) of this project is not
- * liable for any harms, errors or troubles caused by using the
- * source or the product, unless implied by law. By using this
- * project, or part of it, you are acknowledging the complete terms
- * and conditions of licensing of this project as specified in AAF
- * Inspectable Licence 1.0 available at this URL:
- *
- * https://github.com/aldrinsartfactory/InspectableLicence/
- *
- * This project may contain parts that are not licensed under the
- * same licence. If so, the licences of those parts should be
- * appropriately mentioned in those parts of the project. The
- * Author MAY provide a notice about the parts of the project that
- * are not licensed under the same licence in a publicly visible
- * manner.
- *
- * You are NOT ALLOWED to sell, or distribute THIS project, its
- * contents, the source or the product or the build result of the
- * source under commercial or non-commercial purposes. You are NOT
- * ALLOWED to revamp, rebrand, refactor, modify, the source, product
- * or the contents of this project.
- *
- * You are NOT ALLOWED to use the name, branding and identity of this
- * project to identify or brand any other project. You ARE however
- * allowed to use the name and branding to pinpoint/show the source
- * of the contents/code/logic of any other project. You are not
- * allowed to use the identification of the Authors of this project
- * to associate them to other projects, in a way that is deceiving
- * or misleading or gives out false information.
- */
-
 #include "lexer.hpp"
+
 namespace qat {
 namespace lexer {
 
@@ -50,9 +9,11 @@ bool Lexer::show_report = false;
 
 Lexer::Lexer() {
   auto cli = CLI::Config::get();
-  emit_tokens = cli.should_lexer_emit_tokens();
-  show_report = cli.should_show_report();
+  Lexer::emit_tokens = cli->should_lexer_emit_tokens();
+  Lexer::show_report = cli->should_show_report();
 }
+
+std::vector<Token> &Lexer::get_tokens() { return tokens; }
 
 void Lexer::read(std::string context) {
   try {
@@ -84,7 +45,7 @@ void Lexer::read(std::string context) {
 utils::FilePlacement Lexer::getPosition(unsigned long long length) {
   utils::Position start = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
   utils::Position end = {line_num, start.character + length};
-  return utils::FilePlacement(fsexp::path(filePath), start, end);
+  return utils::FilePlacement(fs::path(filePath), start, end);
 }
 
 void Lexer::analyse() {
@@ -104,6 +65,7 @@ void Lexer::analyse() {
   std::chrono::nanoseconds lexer_elapsed =
       std::chrono::high_resolution_clock::now() - lexer_start;
   timeInNS = lexer_elapsed.count();
+  printStatus();
 }
 
 void Lexer::changeFile(std::string newFilePath) {
@@ -154,12 +116,12 @@ Token Lexer::tokeniser() {
   case '(': {
     prev_ctx = "paranthesisOpen";
     read(prev_ctx);
-    return Token::normal(TokenType::paranthesisOpen, this->getPosition(1));
+    return Token::normal(TokenType::parenthesisOpen, this->getPosition(1));
   }
   case ')': {
     prev_ctx = "paranthesisClose";
     read(prev_ctx);
-    return Token::normal(TokenType::paranthesisClose, this->getPosition(1));
+    return Token::normal(TokenType::parenthesisClose, this->getPosition(1));
   }
   case '[': {
     prev_ctx = "bracketOpen";
@@ -182,9 +144,9 @@ Token Lexer::tokeniser() {
     return Token::normal(TokenType::curlybraceClose, this->getPosition(1));
   }
   case '@': {
-    prev_ctx = "at";
+    prev_ctx = "reference";
     read(prev_ctx);
-    return Token::normal(TokenType::at, this->getPosition(1));
+    return Token::normal(TokenType::referenceType, this->getPosition(1));
   }
   case '^': {
     prev_ctx = "pointerAccess";
@@ -193,11 +155,7 @@ Token Lexer::tokeniser() {
   }
   case ':': {
     read("colon");
-    if (curr == ':') {
-      prev_ctx = "givenTypeSeparator";
-      read(prev_ctx);
-      return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
-    } else if (curr == '<') {
+    if (curr == '<') {
       prev_ctx = "templateTypeStart";
       read(prev_ctx);
       template_type_start_count++;
@@ -208,9 +166,9 @@ Token Lexer::tokeniser() {
     }
   }
   case '#': {
-    prev_ctx = "hashtag";
+    prev_ctx = "pointerType";
     read(prev_ctx);
-    return Token::normal(TokenType::hashtag, this->getPosition(1));
+    return Token::normal(TokenType::pointerType, this->getPosition(1));
   }
   case '/': {
     prev_ctx = "operator";
@@ -301,6 +259,35 @@ Token Lexer::tokeniser() {
                            this->getPosition(1));
     }
   }
+  case '?': {
+    prev_ctx = "ternary";
+    read(prev_ctx);
+    if (curr == '?') {
+      prev_ctx = "isNullPointer";
+      read(prev_ctx);
+      if (curr == '=') {
+        prev_ctx = "assignToNullPointer";
+        read(prev_ctx);
+        return Token::normal(TokenType::assignToNullPointer,
+                             this->getPosition(3));
+      } else {
+        return Token::normal(TokenType::isNullPointer, this->getPosition(2));
+      }
+    } else if (curr == '!') {
+      prev_ctx = "isNotNullPointer";
+      read(prev_ctx);
+      if (curr == '=') {
+        prev_ctx = "assignToNonNullPointer";
+        read(prev_ctx);
+        return Token::normal(TokenType::assignToNonNullPointer,
+                             this->getPosition(3));
+      } else {
+        return Token::normal(TokenType::isNotNullPointer, this->getPosition(2));
+      }
+    } else {
+      return Token::normal(TokenType::ternary, this->getPosition(1));
+    }
+  }
   case '+':
   case '-':
   case '%':
@@ -320,9 +307,9 @@ Token Lexer::tokeniser() {
     if ((curr == '+' && opr == "+") || (curr == '-' && opr == "-")) {
       opr += curr;
       read(prev_ctx);
-      const std::string identifier =
+      const std::string identifierStart =
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-      return Token::valued((identifier.find(curr) != std::string::npos
+      return Token::valued((identifierStart.find(curr) != std::string::npos
                                 ? TokenType::unaryOperatorLeft
                                 : TokenType::unaryOperatorRight),
                            opr, this->getPosition(2));
@@ -340,6 +327,10 @@ Token Lexer::tokeniser() {
       prev_ctx = "variationMarker";
       read(prev_ctx);
       return Token::normal(TokenType::variationMarker, this->getPosition(2));
+    } else if (curr == '>' && opr == "-") {
+      prev_ctx = "givenTypeSeparator";
+      read(prev_ctx);
+      return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
     } else if (opr == "<") {
       return Token::normal(TokenType::lesserThan, this->getPosition(1));
     } else if (opr == ">") {
@@ -369,6 +360,11 @@ Token Lexer::tokeniser() {
       return Token::normal(TokenType::assignment, this->getPosition(1));
     }
   }
+  // TODO - Consider implementing raw identifiers
+  // case '`': {
+  //   prev_ctx = "rawIdentifier";
+  //   read(prev_ctx);
+  // }
   case '\'': {
     read(prev_ctx);
     if (curr == '\'') {
@@ -377,8 +373,8 @@ Token Lexer::tokeniser() {
       return Token::normal(TokenType::self, this->getPosition(2));
     } else {
       prev_ctx = "child";
+      return Token::normal(TokenType::child, this->getPosition(1));
     }
-    return Token::normal(TokenType::child, this->getPosition(1));
   }
   case '"': {
     bool escape = false;
@@ -490,7 +486,7 @@ Token Lexer::tokeniser() {
       else if (value == "self")
         return Token::normal(TokenType::self, this->getPosition(3));
       else if (value == "void")
-        return Token::normal(TokenType::Void, this->getPosition(4));
+        return Token::normal(TokenType::voidType, this->getPosition(4));
       else if (value == "type")
         return Token::normal(TokenType::Type, this->getPosition(4));
       else if (value == "model")
@@ -515,10 +511,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::file, this->getPosition(4));
       else if (value == "lib")
         return Token::normal(TokenType::lib, this->getPosition(3));
-      else if (value == "ref")
-        return Token::normal(TokenType::reference, this->getPosition(3));
       else if (value == "bool")
-        return Token::normal(TokenType::Bool, this->getPosition(4));
+        return Token::normal(TokenType::boolType, this->getPosition(4));
       else if (value == "await")
         return Token::normal(TokenType::Await, this->getPosition(5));
       else if (value == "async")
@@ -529,25 +523,28 @@ Token Lexer::tokeniser() {
                ((value.length() > 1)
                     ? utils::isInteger(value.substr(1, value.length() - 1))
                     : false)) {
-        return Token::valued(TokenType::Integer,
+        return Token::valued(TokenType::integerType,
                              value.substr(1, value.length() - 1),
                              this->getPosition(value.length()));
       } else if (value == "fbrain")
-        return Token::valued(TokenType::Float, "brain", this->getPosition(6));
+        return Token::valued(TokenType::floatType, "brain",
+                             this->getPosition(6));
       else if (value == "fhalf")
-        return Token::valued(TokenType::Float, "half", this->getPosition(5));
+        return Token::valued(TokenType::floatType, "half",
+                             this->getPosition(5));
       else if (value == "f32")
-        return Token::valued(TokenType::Float, "32", this->getPosition(3));
+        return Token::valued(TokenType::floatType, "32", this->getPosition(3));
       else if (value == "f64")
-        return Token::valued(TokenType::Float, "64", this->getPosition(3));
+        return Token::valued(TokenType::floatType, "64", this->getPosition(3));
       else if (value == "f80")
-        return Token::valued(TokenType::Float, "80", this->getPosition(3));
+        return Token::valued(TokenType::floatType, "80", this->getPosition(3));
       else if (value == "f128ppc")
-        return Token::valued(TokenType::Float, "128ppc", this->getPosition(7));
+        return Token::valued(TokenType::floatType, "128ppc",
+                             this->getPosition(7));
       else if (value == "f128")
-        return Token::valued(TokenType::Float, "128", this->getPosition(4));
+        return Token::valued(TokenType::floatType, "128", this->getPosition(4));
       else if (value == "str")
-        return Token::normal(TokenType::String, this->getPosition(3));
+        return Token::normal(TokenType::stringType, this->getPosition(3));
       else if (value == "alias")
         return Token::normal(TokenType::alias, this->getPosition(5));
       else if (value == "for")
@@ -608,9 +605,6 @@ void Lexer::printStatus() {
       case TokenType::assignment:
         std::cout << " = ";
         break;
-      case TokenType::at:
-        std::cout << " @ ";
-        break;
       case TokenType::model:
         std::cout << " box ";
         break;
@@ -647,7 +641,7 @@ void Lexer::printStatus() {
       case TokenType::file:
         std::cout << " file ";
         break;
-      case TokenType::Float:
+      case TokenType::floatType:
         std::cout << " f" << tokens.at(i).value << " ";
         break;
       case TokenType::FloatLiteral:
@@ -669,12 +663,12 @@ void Lexer::printStatus() {
         std::cout << " give ";
         break;
       case TokenType::givenTypeSeparator:
-        std::cout << " :: ";
+        std::cout << " -> ";
         break;
       case TokenType::greaterThan:
         std::cout << " > ";
         break;
-      case TokenType::hashtag:
+      case TokenType::pointerType:
         std::cout << " # ";
         break;
       case TokenType::binaryOperator:
@@ -692,7 +686,7 @@ void Lexer::printStatus() {
       case TokenType::let:
         std::cout << " let ";
         break;
-      case TokenType::Integer:
+      case TokenType::integerType:
         std::cout << " i" << tokens.at(i).value << " ";
         break;
       case TokenType::IntegerLiteral:
@@ -713,20 +707,23 @@ void Lexer::printStatus() {
       case TokenType::Type:
         std::cout << " obj ";
         break;
+      case TokenType::null:
+        std::cout << " null ";
+        break;
       case TokenType::pointerAccess:
         std::cout << " ^ ";
         break;
-      case TokenType::paranthesisClose:
+      case TokenType::parenthesisClose:
         std::cout << " ) ";
         break;
-      case TokenType::paranthesisOpen:
+      case TokenType::parenthesisOpen:
         std::cout << " ( ";
         break;
       case TokenType::Public:
         std::cout << " pub ";
         break;
-      case TokenType::reference:
-        std::cout << " ref ";
+      case TokenType::referenceType:
+        std::cout << " @ ";
         break;
       case TokenType::say:
         std::cout << " say ";
@@ -749,7 +746,7 @@ void Lexer::printStatus() {
       case TokenType::stop:
         std::cout << " .\n";
         break;
-      case TokenType::String:
+      case TokenType::stringType:
         std::cout << " string ";
         break;
       case TokenType::StringLiteral:
@@ -770,14 +767,17 @@ void Lexer::printStatus() {
       case TokenType::variationMarker:
         std::cout << " <~ ";
         break;
-      case TokenType::Void:
+      case TokenType::voidType:
         std::cout << " void ";
         break;
       case TokenType::expose:
         std::cout << " expose ";
         break;
+      case TokenType::ternary:
+        std::cout << " ? ";
+        break;
       default:
-        std::cout << " UNKNOWN ";
+        std::cout << colors::bold::red << " UNKNOWN " << colors::reset;
         break;
       }
     }

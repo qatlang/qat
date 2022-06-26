@@ -59,7 +59,7 @@ Config::Config(u64 count, const char **args) {
       // TODO - Implement this after implementing Compile and Run
     } else if (command == "build") {
       if (count == 2) {
-        paths.push_back(fsexp::current_path());
+        paths.push_back(fs::current_path());
         return;
       }
     } else if (command == "help") {
@@ -99,11 +99,11 @@ Config::Config(u64 count, const char **args) {
       } else if (arg == "--save-docs") {
         save_docs = true;
       } else {
-        if (fsexp::exists(arg)) {
-          paths.push_back(fsexp::path(arg));
+        if (fs::exists(arg)) {
+          paths.push_back(fs::path(arg));
         } else {
           std::cout
-              << "Provided path " << fsexp::path(arg).string()
+              << "Provided path " << fs::path(arg).string()
               << " does not exist! Please provide path to a file or directory"
               << std::endl;
           exit_after = true;

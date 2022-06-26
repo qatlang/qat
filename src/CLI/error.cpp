@@ -42,8 +42,7 @@
 
 #include "./error.hpp"
 
-void qat::CLI::throw_error(std::string message,
-                           std::experimental::filesystem::path path) {
+void qat::CLI::throw_error(std::string message, std::filesystem::path path) {
   std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
             << path.string() << "\n"
             << colors::reset << "   " << message << std::endl;

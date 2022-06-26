@@ -11,12 +11,12 @@ namespace qat {
 namespace CLI {
 namespace display {
 /**
- * @brief Displays version of the compiler (Short form)
+ *  Displays version of the compiler (Short form)
  *
  */
 void version();
 /**
- * @brief Displays details about the compiler, like version build info,
+ *  Displays details about the compiler, like version build info,
  * website...
  *
  * @param buildCommit
@@ -24,26 +24,26 @@ void version();
 void about(std::string buildCommit);
 
 /**
- * @brief Displays the build info
+ *  Displays the build info
  *
  * @param buildCommit
  */
 void build_info(std::string buildCommit);
 
 /**
- * @brief Displays detailed information on how to use the CLI of the compiler.
+ *  Displays detailed information on how to use the CLI of the compiler.
  *
  */
 void help();
 
 /**
- * @brief Displays websites related to the project
+ *  Displays websites related to the project
  *
  */
 void websites();
 
 /**
- * @brief Displays information about potential errors that are shown while using
+ *  Displays information about potential errors that are shown while using
  * the language in a wrong manner
  *
  */

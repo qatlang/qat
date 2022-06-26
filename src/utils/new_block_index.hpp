@@ -7,7 +7,7 @@ namespace qat {
 namespace utils {
 
 /**
- * @brief Get the index for a new BasicBlock to be inserted into the specified
+ *  Get the index for a new BasicBlock to be inserted into the specified
  * function
  *
  * @param fn Function to get the name from

@@ -10,7 +10,7 @@ namespace qat {
 namespace utils {
 
 /**
- * @brief Generate a unique id. This is almost UUID
+ *  Generate a unique id. This is almost UUID
  *
  * @return std::string The Unique ID
  */

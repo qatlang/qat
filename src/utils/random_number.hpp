@@ -10,7 +10,7 @@ namespace qat {
 namespace utils {
 
 /**
- * @brief Generate a 64-bit random number with 64-bits of randomness
+ *  Generate a 64-bit random number with 64-bits of randomness
  *
  * @return uint64_t
  */

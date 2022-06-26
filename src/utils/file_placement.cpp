@@ -1,11 +1,13 @@
 #include "./file_placement.hpp"
+namespace qat {
+namespace utils {
 
-qat::utils::FilePlacement::FilePlacement(fsexp::path _file,
-                                         qat::utils::Position _start,
-                                         qat::utils::Position _end)
+FilePlacement::FilePlacement(fs::path _file, Position _start, Position _end)
     : file(_file), start(_start), end(_end) {}
 
-qat::utils::FilePlacement::FilePlacement(qat::utils::FilePlacement first,
-                                         qat::utils::FilePlacement second)
+FilePlacement::FilePlacement(FilePlacement first, FilePlacement second)
     : file(first.file), start(first.start),
       end((first.file == second.file) ? second.end : first.end) {}
+
+} // namespace utils
+} // namespace qat

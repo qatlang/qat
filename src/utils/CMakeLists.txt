@@ -1,10 +1,17 @@
 add_library(QAT_UTILS
-            is_integer.cpp
-            file_placement.cpp
-            llvm_type_to_name.cpp
-            parse_boxes_identifier.cpp
-            box_possibilities.cpp
-            string_to_callingconv.cpp
-            version_number.cpp
-            variability.cpp
-            get_directory_contents.cpp)
+    box_possibilities.cpp
+    cast_if_null_pointer.cpp
+    file_placement.cpp
+    get_directory_contents.cpp
+    get_parent_names.cpp
+    is_integer.cpp
+    llvm_type_to_name.cpp
+    new_block_index.cpp
+    parse_boxes_identifier.cpp
+    pointer_kind.cpp
+    random_number.cpp
+    string_to_callingconv.cpp
+    unique_id.cpp
+    variability.cpp
+    version_number.cpp
+    visibility.cpp)

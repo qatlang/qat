@@ -9,7 +9,7 @@ namespace qat {
 namespace utils {
 
 /**
- * @brief Cast a null pointer value to the type of the global variable
+ *  Cast a null pointer value to the type of the global variable
  *
  * @param gvar The global variable to store the pointer to
  * @param value The value to check and cast
@@ -19,7 +19,7 @@ llvm::Value *cast_if_null_pointer(llvm::GlobalVariable *gvar,
                                   llvm::Value *value);
 
 /**
- * @brief Cast a null pointer value to the type of the alloca
+ *  Cast a null pointer value to the type of the alloca
  *
  * @param gvar The alloca of the variable to store the pointer to
  * @param value The value to check and cast

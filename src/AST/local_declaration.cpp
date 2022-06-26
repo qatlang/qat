@@ -3,20 +3,17 @@
 namespace qat {
 namespace AST {
 
-LocalDeclaration::LocalDeclaration(std::optional<QatType> _type,
-                                   std::string _name, Expression _value,
-                                   bool _variability,
+LocalDeclaration::LocalDeclaration(QatType *_type, std::string _name,
+                                   Expression *_value, bool _variability,
                                    utils::FilePlacement _filePlacement)
     : type(_type), name(_name), value(_value), variability(_variability),
       Sentence(_filePlacement) {}
 
 llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
-  bool is_reference = type.has_value()
-                          ? (type.value().typeKind() == TypeKind::reference)
-                          : false;
-  auto gen_value = value.generate(generator);
-  if (type.has_value()) {
-    auto decl_ty = type.value().generate(generator);
+  bool is_reference = type ? (type->typeKind() == TypeKind::reference) : false;
+  auto gen_value = value->generate(generator);
+  if (type) {
+    auto decl_ty = type->generate(generator);
     if (decl_ty != gen_value->getType()) {
       // FIXME - Remove all implicit casts
       if (decl_ty->isIntegerTy() && gen_value->getType()->isIntegerTy()) {
@@ -99,9 +96,8 @@ llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
   auto origin_bb = generator->builder.GetInsertBlock();
   generator->builder.SetInsertPoint(&*insert_p);
   auto var_alloca = generator->builder.CreateAlloca(
-      (type.has_value() ? type.value().generate(generator)
-                        : gen_value->getType()),
-      0, nullptr, name);
+      (type ? type->generate(generator) : gen_value->getType()), 0, nullptr,
+      name);
   if (var_alloca->getAllocatedType()->isPointerTy()) {
     utils::PointerKind::set(generator->llvmContext, var_alloca, is_reference);
   }

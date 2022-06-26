@@ -44,7 +44,7 @@
 namespace qat {
 namespace AST {
 
-GiveSentence::GiveSentence(std::optional<Expression> _given_expr,
+GiveSentence::GiveSentence(std::optional<Expression *> _given_expr,
                            utils::FilePlacement _filePlacement)
     : give_expr(_given_expr), Sentence(_filePlacement) {}
 
@@ -54,7 +54,7 @@ llvm::Value *GiveSentence::generate(IR::Generator *generator) {
   auto ret_type = parent->getReturnType();
   if (give_expr.has_value()) {
     auto expr = give_expr.value();
-    auto val = expr.generate(generator);
+    auto val = expr->generate(generator);
     if (val->getType() == ret_type) {
       return llvm::ReturnInst::Create(generator->llvmContext, val, block);
     } else {

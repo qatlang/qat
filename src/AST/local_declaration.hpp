@@ -18,40 +18,40 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief LocalDeclaration represents declaration of values or variables inside
+ *  LocalDeclaration represents declaration of values or variables inside
  * functions
  *
  */
 class LocalDeclaration : public Sentence {
 private:
   /**
-   * @brief Optional QatType instance representing the type of the variable.
+   *  Optional QatType instance representing the type of the variable.
    * This is optional so as for type inference.
    *
    */
-  std::optional<QatType> type;
+  QatType *type;
 
   /**
-   * @brief Name of the entity
+   *  Name of the entity
    *
    */
   std::string name;
 
   /**
-   * @brief Value to assign to the entity
+   *  Value to assign to the entity
    *
    */
-  Expression value;
+  Expression *value;
 
   /**
-   * @brief Whether this entity is a variable or not
+   *  Whether this entity is a variable or not
    *
    */
   bool variability;
 
 public:
   /**
-   * @brief LocalDeclaration represents declaration of variables inside
+   *  LocalDeclaration represents declaration of variables inside
    * functions
    *
    * @param _type The optional type of the entity. If this is optional, the type
@@ -61,12 +61,11 @@ public:
    * @param _variability Whether the entity is a variable or not
    * @param _filePlacement
    */
-  LocalDeclaration(std::optional<QatType> _type, std::string _name,
-                   Expression _value, bool _variability,
-                   utils::FilePlacement _filePlacement);
+  LocalDeclaration(QatType *_type, std::string _name, Expression *_value,
+                   bool _variability, utils::FilePlacement _filePlacement);
 
   /**
-   * @brief Set the origin block of the declaration
+   *  Set the origin block of the declaration
    *
    * @param ctx The LLVMContext
    * @param alloca The alloca instruction related to the declaration
@@ -76,7 +75,7 @@ public:
                         llvm::BasicBlock *bb);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -85,7 +84,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

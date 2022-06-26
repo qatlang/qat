@@ -13,7 +13,7 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief TernaryExpression represents an expression created by the ternary
+ *  TernaryExpression represents an expression created by the ternary
  * operator. This requires 3 expressions. The first one is the condition on
  * which the operation takes place. If the condition is true, the second
  * expression is the result. If the condition is false, the third expression is
@@ -23,26 +23,26 @@ namespace AST {
 class TernaryExpression : public Expression {
 private:
   /**
-   * @brief The condition that determines the result of this expression
+   *  The condition that determines the result of this expression
    *
    */
   Expression condition;
 
   /**
-   * @brief The expression to be used if the provided condition is true
+   *  The expression to be used if the provided condition is true
    *
    */
   Expression if_expr;
 
   /**
-   * @brief The expression to be used if the provided condition is false
+   *  The expression to be used if the provided condition is false
    *
    */
   Expression else_expr;
 
 public:
   /**
-   * @brief Construct a new Ternary Expression object.
+   *  Construct a new Ternary Expression object.
    *
    * This represents a ternary expression in the language
    *
@@ -56,7 +56,7 @@ public:
                     utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -65,7 +65,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

@@ -50,13 +50,35 @@
 
 namespace qat {
 namespace AST {
+
+// Kind of the expression
+//
+// "assignable" & "temporary" can be grouped to the generalised kind glvalue
+// "pure" and "temporary" can be grouped to the generalsied kind rvalue
+//
+// Assignable expressions can be assigned to
+enum class ExpressionKind {
+  assignable, // lvalue
+  temporary,  // xvalue
+  pure,       // prvalue
+};
+
 class Expression : public Node {
+private:
+  ExpressionKind expected;
+
 public:
-  Expression(utils::FilePlacement _filePlacement) : Node(_filePlacement) {}
+  Expression(utils::FilePlacement _filePlacement);
 
-  virtual ~Expression(){};
+  virtual ~Expression() {}
 
-  virtual llvm::Value *generate(IR::Generator *generator){};
+  void setExpectedKind(ExpressionKind _kind);
+
+  ExpressionKind getExpectedKind();
+
+  bool isExpectedKind(ExpressionKind _kind);
+
+  virtual llvm::Value *generate(IR::Generator *generator) {}
 
   virtual NodeType nodeType(){};
 };

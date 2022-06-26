@@ -7,7 +7,7 @@
 namespace qat {
 namespace parser {
 /**
- * @brief CacheSymbol is used to represent a symbol/group of identifiers that
+ *  CacheSymbol is used to represent a symbol/group of identifiers that
  * represents an entity, type name or a value in the language
  *
  */

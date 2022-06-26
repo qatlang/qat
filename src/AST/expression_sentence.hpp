@@ -8,29 +8,29 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief ExpressionSentence is used to represent a sentence that is a
+ *  ExpressionSentence is used to represent a sentence that is a
  * standalone expression. Like a function call with no assignment,  lonely
  * binary or unary expression or series of function calls...
  *
  */
 class ExpressionSentence : public Sentence {
   /**
-   * @brief Expression in this sentence
+   *  Expression in this sentence
    *
    */
-  Expression expr;
+  Expression *expr;
 
 public:
   /**
-   * @brief Construct a new Sentence that is just an expression
+   *  Construct a new Sentence that is just an expression
    *
    * @param _exp Expression in the sentence
    * @param _filePlacement
    */
-  ExpressionSentence(Expression _expr, utils::FilePlacement _filePlacement);
+  ExpressionSentence(Expression *_expr, utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -39,7 +39,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

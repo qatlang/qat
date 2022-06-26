@@ -50,20 +50,20 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief SizeOfType is used to find the size of a type specified
+ *  SizeOfType is used to find the size of a type specified
  *
  */
 class SizeOfType : public Expression {
 private:
   /**
-   * @brief Type to find the size of
+   *  Type to find the size of
    *
    */
   QatType type;
 
 public:
   /**
-   * @brief SizeOfType is used to find the size of a type specified
+   *  SizeOfType is used to find the size of a type specified
    *
    * @param _type
    * @param _filePlacement
@@ -71,7 +71,7 @@ public:
   SizeOfType(QatType _type, utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -80,7 +80,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

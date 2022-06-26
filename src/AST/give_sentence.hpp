@@ -55,28 +55,28 @@
 namespace qat {
 namespace AST {
 /**
- * @brief GiveSentence represents a return statement in the language
+ *  GiveSentence represents a return statement in the language
  *
  */
 class GiveSentence : public Sentence {
 private:
   /**
-   * @brief Expression that should be returned/given
+   *  Expression that should be returned/given
    *
    */
-  std::optional<Expression> give_expr;
+  std::optional<Expression *> give_expr;
 
 public:
   /**
-   * @brief GiveSentence represents a return statement in the language
+   *  GiveSentence represents a return statement in the language
    *
    * @param _filePlacement
    */
-  GiveSentence(std::optional<Expression> _given_expr,
+  GiveSentence(std::optional<Expression *> _given_expr,
                utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -85,7 +85,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

@@ -9,36 +9,36 @@ namespace qat {
 namespace IR {
 
 /**
- * @brief Argument represents an argument of a function
+ *  Argument represents an argument of a function
  *
  */
 class Argument {
   /**
-   * @brief Name of the argument
+   *  Name of the argument
    *
    */
   std::string name;
 
   /**
-   * @brief Type of the argument
+   *  Type of the argument
    *
    */
   llvm::Type *type;
 
   /**
-   * @brief Variability of the argument
+   *  Variability of the argument
    *
    */
   bool variability;
 
   /**
-   * @brief Index of the argument in the function
+   *  Index of the argument in the function
    *
    */
   unsigned arg_index;
 
   /**
-   * @brief Construct a new Argument
+   *  Construct a new Argument
    *
    * @param _name Name of the argument
    * @param _type LLVM Type of the argument
@@ -52,7 +52,7 @@ class Argument {
 
 public:
   /**
-   * @brief This constructs an immutable argument
+   *  This constructs an immutable argument
    *
    * @param name Name of the argument
    * @param type LLVM Type of the argument
@@ -65,7 +65,7 @@ public:
   }
 
   /**
-   * @brief This constructs a variable argument
+   *  This constructs a variable argument
    *
    * @param name Name of the argument
    * @param type LLVM Type of the argument
@@ -78,21 +78,21 @@ public:
   }
 
   /**
-   * @brief Get the name of the argument
+   *  Get the name of the argument
    *
    * @return std::string
    */
   std::string get_name() const { return name; }
 
   /**
-   * @brief Get the LLVM type of the argument
+   *  Get the LLVM type of the argument
    *
    * @return llvm::Type*
    */
   llvm::Type *get_type() const { return type; }
 
   /**
-   * @brief Get the variability of the argument
+   *  Get the variability of the argument
    *
    * @return true
    * @return false

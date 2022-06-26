@@ -54,7 +54,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
   utils::Variability::set(generator->llvmContext, index_alloca, true);
   generator->builder.SetInsertPoint(prev_bb);
   /**
-   * @brief Storing the initial value of the index
+   *  Storing the initial value of the index
    *
    */
   generator->builder.CreateStore(
@@ -62,12 +62,12 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
           llvm::dyn_cast<llvm::IntegerType>(count_val->getType()), 0U, false),
       index_alloca, false);
   /**
-   * @brief Generate IR for all sentences present within the loop
+   *  Generate IR for all sentences present within the loop
    *
    */
   block.generate(generator);
   /**
-   * @brief The ending BasicBlock generated might be different
+   *  The ending BasicBlock generated might be different
    *
    */
   auto loop_end_bb = generator->builder.GetInsertBlock();

@@ -14,33 +14,33 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief Block represents a group of sentences. This is built so that each
+ *  Block represents a group of sentences. This is built so that each
  * block in the language has a unique index within the function
  *
  */
 class Block : public Sentence {
 private:
   /**
-   * @brief All sentences in the block
+   *  All sentences in the block
    *
    */
   std::vector<Sentence> sentences;
 
   /**
-   * @brief BasicBlock corresponding to this Block
+   *  BasicBlock corresponding to this Block
    *
    */
   llvm::BasicBlock *bb;
 
   /**
-   * @brief The ending BasicBlock in this block. This is different if there are
+   *  The ending BasicBlock in this block. This is different if there are
    * nested sentences, if-else, multithread, loops and similar blocky sentences
    *
    */
   llvm::BasicBlock *end_bb;
 
   /**
-   * @brief Set the block that ends the scope of the current block
+   *  Set the block that ends the scope of the current block
    *
    * @param ctx LLVMContext
    * @param end_block Name of the ending block
@@ -50,7 +50,7 @@ private:
 
 public:
   /**
-   * @brief Block represents a group of sentences
+   *  Block represents a group of sentences
    *
    * @param _sentences All sentences in the block
    * @param _filePlacement
@@ -58,7 +58,7 @@ public:
   Block(std::vector<Sentence> _sentences, utils::FilePlacement _filePlacement);
 
   /**
-   * @brief Creates a BasicBlock instance associated with the current function.
+   *  Creates a BasicBlock instance associated with the current function.
    * This is used when the llvm::BasicBlock* associated with this Block is
    * required before the generation of the contents of the block happens
    *
@@ -71,14 +71,14 @@ public:
                               llvm::Function *function = nullptr);
 
   /**
-   * @brief Get the BasicBlock that ends the scope of this block
+   *  Get the BasicBlock that ends the scope of this block
    *
    * @return llvm::BasicBlock*
    */
   llvm::BasicBlock *get_end_block() const;
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -87,7 +87,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

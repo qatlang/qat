@@ -14,21 +14,21 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief NamedType is a type, usually a core type, that can be identified by a
+ *  NamedType is a type, usually a core type, that can be identified by a
  * name
  *
  */
 class NamedType : public QatType {
 private:
   /**
-   * @brief Name of the type
+   *  Name of the type
    *
    */
   std::string name;
 
 public:
   /**
-   * @brief NamedType is a type, usually a core type, that can be identified by
+   *  NamedType is a type, usually a core type, that can be identified by
    * a name
    *
    * @param _name Name of the type
@@ -38,7 +38,7 @@ public:
             const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -47,14 +47,14 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief Get the name of the type
+   *  Get the name of the type
    *
    * @return std::string
    */
   std::string get_name() const;
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */

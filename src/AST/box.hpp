@@ -49,7 +49,7 @@
 namespace qat {
 namespace AST {
 /**
- * @brief Box is a container for objects in the
+ *  Box is a container for objects in the
  * QAT language. It is not a structural container,
  * but exists merely to avoid conflict between
  * libraries
@@ -61,21 +61,21 @@ public:
       : name(_name), parent(_parent), isOpen(_isOpen) {}
 
   /**
-   * @brief Name of the box. This is then appended to the
+   *  Name of the box. This is then appended to the
    * names of all members present in this box.
    *
    */
   std::string name;
 
   /**
-   * @brief If this box has a parent box, then this will
+   *  If this box has a parent box, then this will
    * not be nullptr
    *
    */
   Box *parent;
 
   /**
-   * @brief Whether this box is Open or not depending on the
+   *  Whether this box is Open or not depending on the
    * context of the Parser. If this is open, then subsequent
    * members will be part of this spave
    *
@@ -83,7 +83,7 @@ public:
   bool isOpen = true;
 
   /**
-   * @brief Resolve the depth of this box. This depends on the
+   *  Resolve the depth of this box. This depends on the
    * parent box of this box and parent of that box and so on.
    *
    * @return std::vector<std::string> Returns the vector of names
@@ -92,7 +92,7 @@ public:
   std::vector<std::string> resolve();
 
   /**
-   * @brief Generates the complete value of the name of this box with the
+   *  Generates the complete value of the name of this box with the
    * names of all parent boxes prepended to this box's name
    *
    * @return std::string The complete value of the name of this box
@@ -100,7 +100,7 @@ public:
   std::string generate();
 
   /**
-   * @brief Closes the box if it is open. A box is open on creation by
+   *  Closes the box if it is open. A box is open on creation by
    * default. And being open ensures that all subsequent members are part
    * of this box
    *
@@ -108,7 +108,7 @@ public:
   void close();
 
   /**
-   * @brief Whether this box has a parent box
+   *  Whether this box has a parent box
    *
    * @return true if there is a parent
    * @return false if there is no parent

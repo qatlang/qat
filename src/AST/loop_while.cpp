@@ -24,7 +24,7 @@ llvm::Value *LoopWhile::generate(IR::Generator *generator) {
   auto prev_bb = generator->builder.GetInsertBlock();
   auto loop_bb = block.create_bb(generator);
   /**
-   * @brief Generate IR for all sentences present within the loop
+   *  Generate IR for all sentences present within the loop
    *
    */
   block.generate(generator);
@@ -35,7 +35,7 @@ llvm::Value *LoopWhile::generate(IR::Generator *generator) {
                                   after_bb);
   generator->builder.SetInsertPoint(prev_bb);
   /**
-   * @brief Since this is looping as long as the condition is true, there should
+   *  Since this is looping as long as the condition is true, there should
    * be a check in the beginning of the first loop execution
    *
    */

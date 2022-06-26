@@ -55,7 +55,7 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief IfElse is used to represent two kinds of conditional sentences : If
+ *  IfElse is used to represent two kinds of conditional sentences : If
  * and If-Else. The Else block is optional and if omitted, IfElse becomes a
  * plain if sentence
  *
@@ -63,32 +63,32 @@ namespace AST {
 class IfElse : public Sentence {
 private:
   /**
-   * @brief Condition for this if sentence
+   *  Condition for this if sentence
    *
    */
   Expression condition;
 
   /**
-   * @brief The block belonging to the if section
+   *  The block belonging to the if section
    *
    */
   Block if_block;
 
   /**
-   * @brief The optional block belonging to the else section
+   *  The optional block belonging to the else section
    *
    */
   std::optional<Block> else_block;
 
   /**
-   * @brief The
+   *  The
    *
    */
   Block merge_block;
 
 public:
   /**
-   * @brief IfElse is used to represent two kinds of conditional statements : If
+   *  IfElse is used to represent two kinds of conditional statements : If
    * and If-Else. The Else block is optional and if omitted, this becomes a
    * plain if sentence
    *
@@ -105,7 +105,7 @@ public:
          utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -114,7 +114,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

@@ -10,30 +10,30 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief Tuples are product types. It is a defined fixed-length sequence of
+ *  Tuples are product types. It is a defined fixed-length sequence of
  * other types
  *
  */
 class TupleType : public QatType {
 private:
-  std::vector<QatType> types;
+  std::vector<QatType *> types;
 
   // Whether this tuple should be packed
   bool isPacked;
 
 public:
-  TupleType(const std::vector<QatType> _types, const bool _isPacked,
+  TupleType(const std::vector<QatType *> _types, const bool _isPacked,
             const bool _variable, const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief Add another QatType to this tuple
+   *  Add another QatType to this tuple
    *
    * @param type
    */
-  void add_type(QatType type);
+  void add_type(QatType *type);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -42,7 +42,7 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */

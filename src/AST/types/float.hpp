@@ -9,26 +9,26 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief The kind of floating point number
+ *  The kind of floating point number
  *
  */
 enum class FloatTypeKind { _brain, _half, _32, _64, _80, _128PPC, _128 };
 
 /**
- * @brief FloatType represents a floating point number in the language
+ *  FloatType represents a floating point number in the language
  *
  */
 class FloatType : public QatType {
 private:
   /**
-   * @brief Kind of the floating point number
+   *  Kind of the floating point number
    *
    */
   FloatTypeKind kind;
 
 public:
   /**
-   * @brief FloatType represents a floating point number in the language
+   *  FloatType represents a floating point number in the language
    *
    * @param _kind Kind of the float
    * @param _filePlacement
@@ -37,7 +37,7 @@ public:
             const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -46,7 +46,7 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */

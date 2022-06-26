@@ -9,20 +9,20 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief Integer datatype in the language
+ *  Integer datatype in the language
  *
  */
 class IntegerType : public QatType {
 private:
   /**
-   * @brief Bitwidth of the integer
+   *  Bitwidth of the integer
    *
    */
   const unsigned int bitWidth;
 
 public:
   /**
-   * @brief Construct an Integer type with a bitwidth
+   *  Construct an Integer type with a bitwidth
    *
    * @param _bitWidth Bitwidth of the integer type
    * @param _filePlacement
@@ -31,7 +31,7 @@ public:
               const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -40,14 +40,14 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */
   TypeKind typeKind();
 
   /**
-   * @brief Whether the provided integer is the bitwidth of the IntegerType
+   *  Whether the provided integer is the bitwidth of the IntegerType
    *
    * @param width Bitwidth to check for
    * @return true If the width matches

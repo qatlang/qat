@@ -10,20 +10,20 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief Void type in the language
+ *  Void type in the language
  *
  */
 class VoidType : public QatType {
 public:
   /**
-   * @brief Void type in the language
+   *  Void type in the language
    *
    * @param _filePlacement
    */
   VoidType(const bool _variable, const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -32,7 +32,7 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */

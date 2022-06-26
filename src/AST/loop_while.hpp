@@ -14,31 +14,31 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief LoopWhile is used to loop a block of code while a condition is true
+ *  LoopWhile is used to loop a block of code while a condition is true
  *
  */
 class LoopWhile : public Sentence {
   /**
-   * @brief The block that will be looped over
+   *  The block that will be looped over
    *
    */
   Block block;
 
   /**
-   * @brief The block that happens after the loop block
+   *  The block that happens after the loop block
    *
    */
   Block after;
 
   /**
-   * @brief Expression representing the condition for the loop
+   *  Expression representing the condition for the loop
    *
    */
   Expression condition;
 
 public:
   /**
-   * @brief LoopWhile is used to loop through a block of code while a condition
+   *  LoopWhile is used to loop through a block of code while a condition
    * is true
    *
    * @param _condition Condition that controls the number of times the loop
@@ -51,7 +51,7 @@ public:
             utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -60,7 +60,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

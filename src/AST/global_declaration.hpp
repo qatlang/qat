@@ -12,7 +12,7 @@
 namespace qat {
 namespace AST {
 /**
- * @brief This AST element handles declaring Global variables in the language
+ *  This AST element handles declaring Global variables in the language
  *
  * Currently initialisation is handled by `dyn_cast`ing the value to a constant
  * as that seems to be the proper way to do it.

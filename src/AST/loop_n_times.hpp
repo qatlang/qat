@@ -15,32 +15,32 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief LoopNTimes is used to loop through a block of code a provided number
+ *  LoopNTimes is used to loop through a block of code a provided number
  * of times
  *
  */
 class LoopNTimes : public Sentence {
   /**
-   * @brief The block that will be looped over
+   *  The block that will be looped over
    *
    */
   Block block;
 
   /**
-   * @brief The block that happens after the loop block
+   *  The block that happens after the loop block
    *
    */
   Block after;
 
   /**
-   * @brief Expression representing the number of times it should loop
+   *  Expression representing the number of times it should loop
    *
    */
   Expression count;
 
 public:
   /**
-   * @brief LoopNTimes is used to loop a specified number of times
+   *  LoopNTimes is used to loop a specified number of times
    *
    * @param _count The expression that gives the number of loop executions
    * @param _block The main block of the loop
@@ -51,7 +51,7 @@ public:
              utils::FilePlacement _filePlacement);
 
   /**
-   * @brief Get the index name for the loop index for this sentence
+   *  Get the index name for the loop index for this sentence
    *
    * @param bb Any BasicBlock inside the parent function
    * @return unsigned The new index id
@@ -59,7 +59,7 @@ public:
   unsigned new_loop_index_id(llvm::BasicBlock *bb);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -68,7 +68,7 @@ public:
   llvm::Value *generate(IR::Generator *generator);
 
   /**
-   * @brief Type of the node represented by this AST member
+   *  Type of the node represented by this AST member
    *
    * @return NodeType
    */

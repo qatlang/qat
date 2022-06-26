@@ -3,12 +3,15 @@
 namespace qat {
 namespace AST {
 
-PointerType::PointerType(QatType _type, const bool _variable,
+PointerType::PointerType(QatType *_type, const bool _variable,
                          const utils::FilePlacement _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
 llvm::Type *PointerType::generate(IR::Generator *generator) {
-  return llvm::PointerType::get(type.generate(generator), 0);
+  SHOW("Before generating type of Pointer")
+  auto genType = type->generate(generator)->getPointerTo();
+  SHOW("Generated type " << utils::llvmTypeToName(genType))
+  return genType;
 }
 
 TypeKind PointerType::typeKind() { return TypeKind::pointer; }

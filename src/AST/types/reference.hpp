@@ -11,25 +11,25 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief A reference type in the language
+ *  A reference type in the language
  *
  */
 class ReferenceType : public QatType {
 private:
-  QatType type;
+  QatType *type;
 
 public:
   /**
-   * @brief Create a reference to the provided datatype
+   *  Create a reference to the provided datatype
    *
    * @param _type Datatype to which the pointer is pointing to
    * @param _filePlacement
    */
-  ReferenceType(QatType _type, const bool _variable,
+  ReferenceType(QatType *_type, const bool _variable,
                 const utils::FilePlacement _filePlacement);
 
   /**
-   * @brief This is the code generator function that handles the generation of
+   *  This is the code generator function that handles the generation of
    * LLVM IR
    *
    * @param generator The IR::Generator instance that handles LLVM IR Generation
@@ -38,7 +38,7 @@ public:
   llvm::Type *generate(IR::Generator *generator);
 
   /**
-   * @brief TypeKind is used to detect variants of the QatType
+   *  TypeKind is used to detect variants of the QatType
    *
    * @return TypeKind
    */

@@ -5,7 +5,7 @@ namespace qat {
 namespace AST {
 
 /**
- * @brief The kind of type of the QatType instance.
+ *  The kind of type of the QatType instance.
  *
  * I almost named this TypeType
  *

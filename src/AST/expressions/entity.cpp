@@ -32,11 +32,6 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
                                       result);
         return result;
       } else {
-        if (!(var_alloca->getAllocatedType()->isPointerTy())) {
-          generator->throw_error(
-              "This entity is not a pointer and hence is not assignable",
-              file_placement);
-        }
         return var_alloca;
       }
     } else {
@@ -66,11 +61,6 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
                                         result);
           return result;
         } else {
-          if (!(arg_val->getType()->isPointerTy())) {
-            generator->throw_error(
-                "This entity is not a pointer and hence is not assignable",
-                file_placement);
-          }
           return arg_val;
         }
       } else {
@@ -93,11 +83,6 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
                                           globalVariable, result);
             return result;
           } else {
-            if (!(globalVariable->getValueType()->isPointerTy())) {
-              generator->throw_error(
-                  "This entity is not a pointer and hence is not assignable",
-                  file_placement);
-            }
             return globalVariable;
           }
         } else {
@@ -124,11 +109,6 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
                                               globalVariable, result);
                 return result;
               } else {
-                if (!(globalVariable->getValueType()->isPointerTy())) {
-                  generator->throw_error("This entity is not a pointer and "
-                                         "hence is not assignable",
-                                         file_placement);
-                }
                 return globalVariable;
               }
             } else {

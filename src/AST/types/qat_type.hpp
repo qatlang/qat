@@ -2,6 +2,7 @@
 #define QAT_AST_TYPES_QAT_TYPE_HPP
 
 #include "../../IR/generator.hpp"
+#include "../../backend/json.hpp"
 #include "../../utils/file_placement.hpp"
 #include "./type_kind.hpp"
 #include "llvm/IR/Type.h"
@@ -47,7 +48,12 @@ public:
    * @return true If the value is supposed to be a variable
    * @return false If the value is NOT supposed to be a variable
    */
-  bool isVariable() { return variable; }
+  bool isVariable() const noexcept { return variable; }
+
+  /**
+   *  This generates JSON to represent the type
+   */
+  virtual backend::JSON toJSON() const {};
 
   /**
    *  FilePlacement representing the range in the file this type was

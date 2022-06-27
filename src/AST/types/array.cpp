@@ -15,5 +15,13 @@ llvm::Type *ArrayType::generate(qat::IR::Generator *generator) {
 
 TypeKind ArrayType::typeKind() { return TypeKind::array; }
 
+backend::JSON ArrayType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "array")
+      ._("subType", element_type->toJSON())
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
+
 } // namespace AST
 } // namespace qat

@@ -20,6 +20,8 @@ private:
    */
   const unsigned int bitWidth;
 
+  const bool isUnsigned;
+
 public:
   /**
    *  Construct an Integer type with a bitwidth
@@ -27,8 +29,8 @@ public:
    * @param _bitWidth Bitwidth of the integer type
    * @param _filePlacement
    */
-  IntegerType(const unsigned int _bitWidth, const bool _variable,
-              const utils::FilePlacement _filePlacement);
+  IntegerType(const unsigned int _bitWidth, const bool isUnsigned,
+              const bool _variable, const utils::FilePlacement _filePlacement);
 
   /**
    *  This is the code generator function that handles the generation of
@@ -54,6 +56,10 @@ public:
    * @return false If the width does not match
    */
   bool isBitWidth(const unsigned int width) const;
+
+  bool isUnsignedType() const noexcept;
+
+  backend::JSON toJSON() const;
 };
 } // namespace AST
 } // namespace qat

@@ -3,9 +3,11 @@
 namespace qat {
 namespace AST {
 
-IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
+IntegerType::IntegerType(const unsigned int _bitWidth, const bool _isUnsigned,
+                         const bool _variable,
                          const utils::FilePlacement _filePlacement)
-    : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
+    : bitWidth(_bitWidth), isUnsigned(_isUnsigned),
+      QatType(_variable, _filePlacement) {}
 
 llvm::Type *IntegerType::generate(qat::IR::Generator *generator) {
   switch (bitWidth) {
@@ -37,7 +39,18 @@ bool IntegerType::isBitWidth(const unsigned int width) const {
   return bitWidth == width;
 }
 
+bool IntegerType::isUnsignedType() const noexcept { return isUnsigned; }
+
 TypeKind IntegerType::typeKind() { return TypeKind::integer; }
+
+backend::JSON IntegerType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "integer")
+      ._("bitWidth", bitWidth)
+      ._("isUnsigned", isUnsigned)
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
 
 } // namespace AST
 } // namespace qat

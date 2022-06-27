@@ -1,4 +1,5 @@
 #include "./tuple.hpp"
+#include <vector>
 
 namespace qat {
 namespace AST {
@@ -25,6 +26,19 @@ llvm::Type *TupleType::generate(IR::Generator *generator) {
 }
 
 TypeKind TupleType::typeKind() { return TypeKind::tuple; }
+
+backend::JSON TupleType::toJSON() const {
+  std::vector<backend::JSON> mems;
+  for (auto mem : types) {
+    mems.push_back(mem->toJSON());
+  }
+  return backend::JSON()
+      ._("typeKind", "tuple")
+      ._("members", mems)
+      ._("isVariable", isVariable())
+      ._("isPacked", isPacked)
+      ._("filePlacement", filePlacement);
+}
 
 } // namespace AST
 } // namespace qat

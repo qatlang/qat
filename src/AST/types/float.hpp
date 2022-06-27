@@ -14,6 +14,8 @@ namespace AST {
  */
 enum class FloatTypeKind { _brain, _half, _32, _64, _80, _128PPC, _128 };
 
+std::string to_string(FloatTypeKind);
+
 /**
  *  FloatType represents a floating point number in the language
  *
@@ -51,6 +53,8 @@ public:
    * @return TypeKind
    */
   TypeKind typeKind();
+
+  backend::JSON toJSON() const;
 };
 } // namespace AST
 } // namespace qat

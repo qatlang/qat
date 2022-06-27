@@ -16,5 +16,13 @@ llvm::Type *PointerType::generate(IR::Generator *generator) {
 
 TypeKind PointerType::typeKind() { return TypeKind::pointer; }
 
+backend::JSON PointerType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "pointer")
+      ._("subType", type->toJSON())
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
+
 } // namespace AST
 } // namespace qat

@@ -13,5 +13,13 @@ llvm::Type *ReferenceType::generate(IR::Generator *generator) {
 
 TypeKind ReferenceType::typeKind() { return TypeKind::reference; }
 
+backend::JSON ReferenceType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "reference")
+      ._("subType", type->toJSON())
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
+
 } // namespace AST
 } // namespace qat

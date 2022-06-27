@@ -13,5 +13,12 @@ llvm::Type *VoidType::generate(IR::Generator *generator) {
 
 TypeKind VoidType::typeKind() { return TypeKind::Void; }
 
+backend::JSON VoidType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "void")
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
+
 } // namespace AST
 } // namespace qat

@@ -52,6 +52,8 @@ public:
    * @return TypeKind
    */
   TypeKind typeKind();
+
+  backend::JSON toJSON() const;
 };
 
 } // namespace AST

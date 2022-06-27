@@ -21,5 +21,13 @@ std::string NamedType::get_name() const { return name; }
 
 TypeKind NamedType::typeKind() { return TypeKind::Float; }
 
+backend::JSON NamedType::toJSON() const {
+  return backend::JSON()
+      ._("typeKind", "named")
+      ._("name", name)
+      ._("isVariable", isVariable())
+      ._("filePlacement", filePlacement);
+}
+
 } // namespace AST
 } // namespace qat

@@ -1,9 +1,13 @@
 #include "./json.hpp"
-#include <cstddef>
-#include <initializer_list>
+#include <string>
+#include <vector>
 
 namespace qat {
 namespace backend {
+
+JsonValue::JsonValue(unsigned long long val) : value(std::to_string(val)) {}
+
+JsonValue::JsonValue(unsigned int val) : value(std::to_string(val)) {}
 
 JsonValue::JsonValue(int val) : value(std::to_string(val)) {}
 
@@ -144,9 +148,40 @@ JsonValue::JsonValue(std::initializer_list<JsonValue> val) : value("[") {
   value += "]";
 }
 
+JsonValue::JsonValue(std::vector<JsonValue> val) : value("[") {
+  unsigned i = 0;
+  for (auto elem : val) {
+    value += elem.get();
+    if (i != (val.size() - 1)) {
+      value += ",";
+    }
+    i++;
+  }
+  value += "]";
+}
+
 JsonValue::JsonValue(std::string val, bool is_raw) : value(val) {}
 
 JsonValue::JsonValue(std::nullptr_t val) : value("null") {}
+
+JsonValue::JsonValue(utils::FilePlacement val) {
+  value =
+      JSON()
+          ._("file", val.file.string())
+          ._("start", JSON()
+                          ._("line", val.start.line)
+                          ._("character", val.start.character))
+          ._("end",
+             JSON()._("line", val.end.line)._("character", val.end.character))
+          .toString();
+}
+
+JsonValue::JsonValue(utils::VisibilityInfo visibility) {
+  value = JSON()
+              ._("kind", utils::Visibility::get_value(visibility.kind))
+              ._("value", visibility.value)
+              .toString();
+}
 
 std::string JsonValue::get() const noexcept { return value; }
 
@@ -160,6 +195,16 @@ JSON &JSON::_(std::string key, JsonValue value) {
 JSON &JSON::_(std::string key, JSON value) {
   value.setLevel(level + 1);
   fields.insert({key, JsonValue(value.toString(), true)});
+  return *this;
+}
+
+JSON &JSON::_(std::string key, std::vector<JSON> values) {
+  std::vector<JsonValue> jvals;
+  for (auto val : values) {
+    val.setLevel(level + 1);
+    jvals.push_back(JsonValue(val.toString(), true));
+  }
+  fields.insert({key, JsonValue(jvals)});
   return *this;
 }
 

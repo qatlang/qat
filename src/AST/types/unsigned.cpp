@@ -1,13 +1,13 @@
-#include "./integer.hpp"
+#include "./unsigned.hpp"
 
 namespace qat {
 namespace AST {
 
-IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
-                         const utils::FilePlacement _filePlacement)
+UnsignedType::UnsignedType(const unsigned int _bitWidth, const bool _variable,
+                           const utils::FilePlacement _filePlacement)
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
-llvm::Type *IntegerType::generate(qat::IR::Generator *generator) {
+llvm::Type *UnsignedType::generate(qat::IR::Generator *generator) {
   switch (bitWidth) {
   case 1: {
     return llvm::Type::getInt1Ty(generator->llvmContext);
@@ -33,15 +33,15 @@ llvm::Type *IntegerType::generate(qat::IR::Generator *generator) {
   }
 }
 
-bool IntegerType::isBitWidth(const unsigned int width) const {
+bool UnsignedType::isBitWidth(const unsigned int width) const {
   return bitWidth == width;
 }
 
-TypeKind IntegerType::typeKind() { return TypeKind::integer; }
+TypeKind UnsignedType::typeKind() { return TypeKind::unsignedInteger; }
 
-backend::JSON IntegerType::toJSON() const {
+backend::JSON UnsignedType::toJSON() const {
   return backend::JSON()
-      ._("typeKind", "integer")
+      ._("typeKind", "unsignedInteger")
       ._("bitWidth", bitWidth)
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);

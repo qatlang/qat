@@ -1,5 +1,5 @@
-#ifndef QAT_AST_TYPES_INTEGER_HPP
-#define QAT_AST_TYPES_INTEGER_HPP
+#ifndef QAT_AST_TYPES_UNSIGNED_HPP
+#define QAT_AST_TYPES_UNSIGNED_HPP
 
 #include "../../IR/generator.hpp"
 #include "qat_type.hpp"
@@ -9,10 +9,10 @@ namespace qat {
 namespace AST {
 
 /**
- *  Integer datatype in the language
+ *  Unsigned integer datatype in the language
  *
  */
-class IntegerType : public QatType {
+class UnsignedType : public QatType {
 private:
   /**
    *  Bitwidth of the integer
@@ -25,10 +25,11 @@ public:
    *  Construct an Integer type with a bitwidth
    *
    * @param _bitWidth Bitwidth of the integer type
+   * @param _variable Variability
    * @param _filePlacement
    */
-  IntegerType(const unsigned int _bitWidth, const bool _variable,
-              const utils::FilePlacement _filePlacement);
+  UnsignedType(const unsigned int _bitWidth, const bool _variable,
+               const utils::FilePlacement _filePlacement);
 
   /**
    *  This is the code generator function that handles the generation of
@@ -47,7 +48,7 @@ public:
   TypeKind typeKind();
 
   /**
-   *  Whether the provided integer is the bitwidth of the IntegerType
+   *  Whether the provided integer is the bitwidth of the UnsignedType
    *
    * @param width Bitwidth to check for
    * @return true If the width matches

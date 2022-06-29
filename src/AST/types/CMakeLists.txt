@@ -6,6 +6,7 @@ add_library(QAT_AST_TYPES
     reference.cpp
     pointer.cpp
     tuple.cpp
+    unsigned.cpp
     void.cpp)
 
 target_link_libraries(QAT_AST_TYPES QAT_UTILS)

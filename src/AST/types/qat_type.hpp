@@ -48,7 +48,7 @@ public:
    * @return true If the value is supposed to be a variable
    * @return false If the value is NOT supposed to be a variable
    */
-  bool isVariable() const noexcept { return variable; }
+  bool isVariable() const { return variable; }
 
   /**
    *  This generates JSON to represent the type

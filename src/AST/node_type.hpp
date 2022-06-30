@@ -13,6 +13,7 @@ enum class NodeType {
   localDeclaration,
   globalDeclaration,
   integerLiteral,
+  unsignedLiteral,
   customIntegerLiteral,
   floatLiteral,
   stringLiteral,
@@ -45,7 +46,8 @@ enum class NodeType {
   multiThread,
   multiThreadGive,
   atomicAssignedExpression,
-  nullPointer
+  nullPointer,
+  radixLiteral
 };
 }
 } // namespace qat

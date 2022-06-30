@@ -15,7 +15,9 @@ namespace AST {
 class CustomIntegerLiteral : public Expression {
 private:
   std::string value;
+
   u64 bitWidth;
+
   bool isUnsigned;
 
 public:
@@ -23,20 +25,10 @@ public:
                        unsigned int _bitWidth,
                        utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
   llvm::Value *generate(IR::Generator *generator);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
+  backend::JSON toJSON() const;
+
   NodeType nodeType() { return qat::AST::NodeType::customIntegerLiteral; }
 };
 } // namespace AST

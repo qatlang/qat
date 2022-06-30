@@ -13,11 +13,17 @@ llvm::Value *CustomIntegerLiteral::generate(IR::Generator *generator) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     generator->throw_error("This expression is not assignable", file_placement);
   }
-  auto type = llvm::Type::getIntNTy(generator->llvmContext, bitWidth);
-  // FIXME - Support custom radix
-  auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
-  // FIXME - Support unsigned integer literals
-  return result;
+  return llvm::ConstantInt::get(
+      llvm::Type::getIntNTy(generator->llvmContext, bitWidth), value, 10u);
+}
+
+backend::JSON CustomIntegerLiteral::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "customIntegerLiteral")
+      ._("isUnsigned", isUnsigned)
+      ._("bitWidth", (unsigned long long)bitWidth)
+      ._("value", value)
+      ._("filePlacement", file_placement);
 }
 
 } // namespace AST

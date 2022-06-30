@@ -3,7 +3,7 @@
 namespace qat {
 namespace AST {
 
-Block::Block(std::vector<Sentence> _sentences,
+Block::Block(std::vector<Sentence *> _sentences,
              utils::FilePlacement _filePlacement)
     : sentences(_sentences), bb(nullptr), end_bb(nullptr),
       Sentence(_filePlacement) {}
@@ -44,12 +44,23 @@ llvm::Value *Block::generate(IR::Generator *generator) {
   generator->builder.SetInsertPoint(bb);
   llvm::Value *last = nullptr;
   for (auto sentence : sentences) {
-    last = sentence.generate(generator);
+    last = sentence->generate(generator);
   }
   end_bb = generator->builder.GetInsertBlock();
   auto latest_bb = end_bb->getName().str();
   set_alloca_scope_end(generator->llvmContext, latest_bb);
   return last;
+}
+
+backend::JSON Block::toJSON() const {
+  std::vector<backend::JSON> snts;
+  for (auto sentence : sentences) {
+    snts.push_back(sentence->toJSON());
+  }
+  return backend::JSON()
+      ._("nodeType", "block")
+      ._("sentences", snts)
+      ._("filePlacement", file_placement);
 }
 
 } // namespace AST

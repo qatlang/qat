@@ -24,7 +24,7 @@ private:
    *  All sentences in the block
    *
    */
-  std::vector<Sentence> sentences;
+  std::vector<Sentence *> sentences;
 
   /**
    *  BasicBlock corresponding to this Block
@@ -55,7 +55,8 @@ public:
    * @param _sentences All sentences in the block
    * @param _filePlacement
    */
-  Block(std::vector<Sentence> _sentences, utils::FilePlacement _filePlacement);
+  Block(std::vector<Sentence *> _sentences,
+        utils::FilePlacement _filePlacement);
 
   /**
    *  Creates a BasicBlock instance associated with the current function.
@@ -77,20 +78,10 @@ public:
    */
   llvm::BasicBlock *get_end_block() const;
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
   llvm::Value *generate(IR::Generator *generator);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
+  backend::JSON toJSON() const;
+
   NodeType nodeType() { return NodeType::block; }
 };
 

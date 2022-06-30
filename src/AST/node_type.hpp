@@ -21,7 +21,7 @@ enum class NodeType {
   saySentence,
   ifElse,
   giveSentence,
-  openBox,
+  exposeBoxes,
   defineObjectType,
   closeBox,
   reassignment,

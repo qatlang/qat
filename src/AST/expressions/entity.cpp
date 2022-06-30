@@ -132,5 +132,12 @@ llvm::Value *Entity::generate(IR::Generator *generator) {
   }
 }
 
+backend::JSON Entity::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "entity")
+      ._("name", name)
+      ._("filePlacement", file_placement);
+}
+
 } // namespace AST
 } // namespace qat

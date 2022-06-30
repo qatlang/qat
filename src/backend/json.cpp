@@ -183,7 +183,7 @@ JsonValue::JsonValue(utils::VisibilityInfo visibility) {
               .toString();
 }
 
-std::string JsonValue::get() const noexcept { return value; }
+std::string JsonValue::get() const { return value; }
 
 JSON::JSON() : fields(), level(0) {}
 
@@ -208,9 +208,9 @@ JSON &JSON::_(std::string key, std::vector<JSON> values) {
   return *this;
 }
 
-void JSON::setLevel(int _level) noexcept { level = _level; }
+void JSON::setLevel(int _level) { level = _level; }
 
-std::string JSON::toString() const noexcept {
+std::string JSON::toString() const {
   std::string result = "{\n";
   unsigned i = 0;
   fields.size();

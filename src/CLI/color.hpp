@@ -89,4 +89,4 @@ const auto white("\e[1;107m");
 
 } // namespace colors
 
-#endif QAT_CLI_COLOR_HPP
+#endif

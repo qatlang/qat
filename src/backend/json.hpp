@@ -49,7 +49,7 @@ public:
   JsonValue(utils::VisibilityInfo val);
 
   // Get the value of this JsonValue
-  std::string get() const noexcept;
+  std::string get() const;
 };
 
 class JSON {
@@ -68,9 +68,9 @@ public:
   JSON &_(std::string key, JSON value);
   JSON &_(std::string key, std::vector<JSON> value);
 
-  void setLevel(int _level) noexcept;
+  void setLevel(int _level);
 
-  std::string toString() const noexcept;
+  std::string toString() const;
 };
 
 } // namespace backend

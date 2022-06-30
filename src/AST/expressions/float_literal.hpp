@@ -38,11 +38,8 @@ public:
    */
   llvm::Value *generate(IR::Generator *generator);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
+  backend::JSON toJSON() const;
+
   NodeType nodeType() { return qat::AST::NodeType::floatLiteral; }
 };
 

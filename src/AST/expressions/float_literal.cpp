@@ -16,5 +16,12 @@ llvm::Value *FloatLiteral::generate(IR::Generator *generator) {
   );
 }
 
+backend::JSON FloatLiteral::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "floatLiteral")
+      ._("value", value)
+      ._("filePlacement", file_placement);
+}
+
 } // namespace AST
 } // namespace qat

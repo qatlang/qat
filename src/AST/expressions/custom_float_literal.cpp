@@ -25,9 +25,7 @@ llvm::Value *CustomFloatLiteral::generate(IR::Generator *generator) {
   } else if (kind == "f128ppc") {
     flType = llvm::Type::getPPC_FP128Ty(generator->llvmContext);
   }
-  return llvm::ConstantFP::get(llvm::Type::getFloatTy(generator->llvmContext),
-                               llvm::StringRef(value) //
-  );
+  return llvm::ConstantFP::get(flType, llvm::StringRef(value));
 }
 
 backend::JSON CustomFloatLiteral::toJSON() const {

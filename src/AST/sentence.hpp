@@ -55,6 +55,8 @@ public:
 
   virtual NodeType nodeType(){};
 
+  virtual backend::JSON toJSON() const {};
+
   virtual ~Sentence(){};
 };
 } // namespace AST

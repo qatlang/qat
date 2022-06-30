@@ -11,5 +11,9 @@ llvm::Value *SizeOf::generate(IR::Generator *generator) {
   return llvm::ConstantExpr::getSizeOf(gen_exp->getType());
 }
 
+backend::JSON SizeOf::toJSON() const {
+  return backend::JSON()._("nodeType", "sizeOf");
+}
+
 } // namespace AST
 } // namespace qat

@@ -35,7 +35,7 @@ public:
   virtual llvm::Value *generate(IR::Generator *generator){};
 
   // This is the generator function that handles the generation of JSON
-  virtual backend::JSON toJSON(){};
+  virtual backend::JSON toJSON() const {};
 
   /**
    *  Type of the node represented by this AST member

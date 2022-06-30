@@ -118,5 +118,16 @@ void LocalDeclaration::set_origin_block(llvm::LLVMContext &ctx,
       llvm::MDNode::get(ctx, llvm::MDString::get(ctx, bb->getName().str())));
 }
 
+backend::JSON LocalDeclaration::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "localDeclaration")
+      ._("name", name)
+      ._("isVariable", variability)
+      ._("hasType", (type != nullptr))
+      ._("type", (type != nullptr) ? type->toJSON() : backend::JSON())
+      ._("value", value->toJSON())
+      ._("filePlacement", file_placement);
+}
+
 } // namespace AST
 } // namespace qat

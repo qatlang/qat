@@ -20,5 +20,9 @@ llvm::Value *NullPointer::generate(IR::Generator *generator) {
            : llvm::Type::getVoidTy(generator->llvmContext)->getPointerTo());
 }
 
+backend::JSON NullPointer::toJSON() const {
+  return backend::JSON()._("nodeType", "nullPointer");
+}
+
 } // namespace AST
 } // namespace qat

@@ -58,5 +58,12 @@ llvm::Value *StringLiteral::generate(IR::Generator *generator) {
   );
 }
 
+backend::JSON StringLiteral::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "stringLiteral")
+      ._("value", value)
+      ._("filePlacement", file_placement);
+}
+
 } // namespace AST
 } // namespace qat

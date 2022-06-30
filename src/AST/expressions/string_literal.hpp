@@ -97,6 +97,8 @@ public:
    * @return NodeType
    */
   NodeType nodeType() { return NodeType::stringLiteral; }
+
+  backend::JSON toJSON() const;
 };
 } // namespace AST
 } // namespace qat

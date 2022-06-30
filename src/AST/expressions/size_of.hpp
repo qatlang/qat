@@ -17,7 +17,7 @@ private:
    *  Expression for which the size of the type has to be calculated
    *
    */
-  Expression expression;
+  Expression *expression;
 
 public:
   /**
@@ -27,7 +27,7 @@ public:
    * @param _expression Expression to be used to find the size of the type
    * @param _filePlacement
    */
-  SizeOf(Expression _expression, utils::FilePlacement _filePlacement);
+  SizeOf(Expression *_expression, utils::FilePlacement _filePlacement);
 
   llvm::Value *generate(IR::Generator *generator);
 

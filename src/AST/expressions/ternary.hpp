@@ -26,19 +26,19 @@ private:
    *  The condition that determines the result of this expression
    *
    */
-  Expression condition;
+  Expression *condition;
 
   /**
    *  The expression to be used if the provided condition is true
    *
    */
-  Expression if_expr;
+  Expression *if_expr;
 
   /**
    *  The expression to be used if the provided condition is false
    *
    */
-  Expression else_expr;
+  Expression *else_expr;
 
 public:
   /**
@@ -51,8 +51,8 @@ public:
    * @param _elseExpression Expression returned if the condition is false
    * @param _filePlacement
    */
-  TernaryExpression(Expression _condition, Expression _ifExpression,
-                    Expression _elseExpression,
+  TernaryExpression(Expression *_condition, Expression *_ifExpression,
+                    Expression *_elseExpression,
                     utils::FilePlacement _filePlacement);
 
   /**
@@ -63,6 +63,8 @@ public:
    * @return llvm::Value*
    */
   llvm::Value *generate(IR::Generator *generator);
+
+  backend::JSON toJSON() const;
 
   /**
    *  Type of the node represented by this AST member

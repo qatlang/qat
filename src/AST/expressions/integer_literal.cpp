@@ -3,19 +3,16 @@
 namespace qat {
 namespace AST {
 
-IntegerLiteral::IntegerLiteral(std::string _value, bool _isUnsigned,
+IntegerLiteral::IntegerLiteral(std::string _value,
                                utils::FilePlacement _filePlacement)
-    : value(_value), isUnsigned(_isUnsigned), Expression(_filePlacement) {}
+    : value(_value), Expression(_filePlacement) {}
 
 llvm::Value *IntegerLiteral::generate(IR::Generator *generator) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     generator->throw_error("This expression is not assignable", file_placement);
   }
-  auto type = llvm::Type::getInt64Ty(generator->llvmContext);
-  // FIXME - Support custom radix
-  auto result = llvm::ConstantInt::get(type, llvm::StringRef(value), 10u);
-  // FIXME - Support unsigned integer literals
-  return result;
+  return llvm::ConstantInt::get(llvm::Type::getInt32Ty(generator->llvmContext),
+                                value, 10u);
 }
 
 } // namespace AST

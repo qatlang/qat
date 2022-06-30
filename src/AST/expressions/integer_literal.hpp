@@ -19,22 +19,14 @@ private:
    */
   std::string value;
 
-  /**
-   *  Whether the literal should be interpreted as signed or unsigned
-   *
-   */
-  bool isUnsigned;
-
 public:
   /**
    *  An Integer Literal
    *
    * @param _value String representation of the integer
-   * @param _isUnsigned Whether the literal is signed or unsigned
    * @param _filePlacement
    */
-  IntegerLiteral(std::string _value, bool _isUnsigned,
-                 utils::FilePlacement _filePlacement);
+  IntegerLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
   /**
    *  This is the code generator function that handles the generation of

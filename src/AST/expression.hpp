@@ -81,6 +81,8 @@ public:
   virtual llvm::Value *generate(IR::Generator *generator) {}
 
   virtual NodeType nodeType(){};
+
+  virtual backend::JSON toJSON() const {};
 };
 } // namespace AST
 } // namespace qat

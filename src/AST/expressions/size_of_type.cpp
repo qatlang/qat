@@ -45,11 +45,18 @@
 namespace qat {
 namespace AST {
 
-SizeOfType::SizeOfType(QatType _type, qat::utils::FilePlacement _filePlacement)
+SizeOfType::SizeOfType(QatType *_type, qat::utils::FilePlacement _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
 llvm::Value *SizeOfType::generate(qat::IR::Generator *generator) {
-  return llvm::ConstantExpr::getSizeOf(type.generate(generator));
+  return llvm::ConstantExpr::getSizeOf(type->generate(generator));
+}
+
+backend::JSON SizeOfType::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "sizeOfType")
+      ._("type", type->toJSON())
+      ._("filePlacement", file_placement);
 }
 
 } // namespace AST

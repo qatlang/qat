@@ -59,7 +59,7 @@ private:
    *  Type to find the size of
    *
    */
-  QatType type;
+  QatType *type;
 
 public:
   /**
@@ -68,22 +68,12 @@ public:
    * @param _type
    * @param _filePlacement
    */
-  SizeOfType(QatType _type, utils::FilePlacement _filePlacement);
+  SizeOfType(QatType *_type, utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
   llvm::Value *generate(IR::Generator *generator);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
+  backend::JSON toJSON() const;
+
   NodeType nodeType() { return NodeType::sizeOfType; }
 };
 

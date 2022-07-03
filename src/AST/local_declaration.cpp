@@ -14,47 +14,14 @@ llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
   auto gen_value = value->generate(generator);
   if (type) {
     auto decl_ty = type->generate(generator);
-    if (decl_ty != gen_value->getType()) {
-      // FIXME - Remove all implicit casts
-      if (decl_ty->isIntegerTy() && gen_value->getType()->isIntegerTy()) {
-        gen_value = generator->builder.CreateIntCast(gen_value, decl_ty, true,
-                                                     "implicit_cast");
-      } else if (decl_ty->isFloatingPointTy() &&
-                 gen_value->getType()->isIntegerTy()) {
-        generator->builder.CreateSIToFP(gen_value, decl_ty, "implicit_cast");
-      } else if (decl_ty->isFloatingPointTy() &&
-                 gen_value->getType()->isFloatingPointTy()) {
-        gen_value = generator->builder.CreateFPCast(gen_value, decl_ty,
-                                                    "implicit_cast");
-      } else if (decl_ty->isIntegerTy() &&
-                 gen_value->getType()->isFloatingPointTy()) {
-        generator->throw_error(
-            "Floating Point to Integer casting can be lossy. "
-            "Not performing an implicit cast. Please provide "
-            "the correct value or add an explicit cast",
-            file_placement);
-      } else {
-        auto gen_ty_name = qat::utils::llvmTypeToName(gen_value->getType());
-        auto given_ty_name = qat::utils::llvmTypeToName(decl_ty);
-        auto conv_fn =
-            generator->get_function(gen_ty_name + "'to'" + given_ty_name);
-        if (conv_fn == nullptr) {
-          conv_fn =
-              generator->get_function(given_ty_name + "'from'" + gen_ty_name);
-          if (conv_fn == nullptr) {
-            generator->throw_error("Conversion functions `" + gen_ty_name +
-                                       "'to'" + given_ty_name + "` and `" +
-                                       given_ty_name + "'from'" + gen_ty_name +
-                                       "` not found",
-                                   file_placement);
-          }
-        }
-        std::vector<llvm::Value *> args;
-        args.push_back(gen_value);
-        gen_value =
-            generator->builder.CreateCall(conv_fn->getFunctionType(), conv_fn,
-                                          {args}, "conversion_call", nullptr);
-      }
+    if ((decl_ty->isPointerTy()) &&
+        (value->nodeType() == NodeType::nullPointer)) {
+      gen_value = generator->builder.CreatePointerCast(
+          gen_value, decl_ty, "implcitNullPointerCast");
+    } else if (decl_ty != gen_value->getType()) {
+      generator->throw_error("The type of the entity being declared does not "
+                             "match with the value provided",
+                             file_placement);
     }
   }
   auto function = generator->builder.GetInsertBlock()->getParent();

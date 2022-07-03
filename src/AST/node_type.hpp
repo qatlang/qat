@@ -7,7 +7,7 @@ enum class NodeType {
   lib,
   block,
   bringEntities,
-  bringFiles,
+  bringPaths,
   functionPrototype,
   functionDefinition,
   localDeclaration,
@@ -17,7 +17,6 @@ enum class NodeType {
   customIntegerLiteral,
   floatLiteral,
   stringLiteral,
-  staticDeclaration,
   saySentence,
   ifElse,
   giveSentence,
@@ -47,7 +46,8 @@ enum class NodeType {
   multiThreadGive,
   atomicAssignedExpression,
   nullPointer,
-  radixLiteral
+  radixLiteral,
+  customFloatLiteral
 };
 }
 } // namespace qat

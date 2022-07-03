@@ -78,7 +78,9 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
           llvm::MDString::get(generator->llvmContext, loop_end_bb->getName())));
   generator->builder.CreateStore(
       generator->builder.CreateAdd(
-          generator->builder.CreateLoad(index_alloca),
+          generator->builder.CreateLoad(index_alloca->getAllocatedType(),
+                                        index_alloca, false,
+                                        index_alloca->getName()),
           llvm::ConstantInt::get(
               llvm::dyn_cast<llvm::IntegerType>(count_val->getType()), 1U,
               false) //
@@ -88,8 +90,10 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
   auto after_bb = after.create_bb(generator);
   generator->builder.CreateCondBr(
       generator->builder.CreateICmpULT(
-          generator->builder.CreateLoad(index_alloca), count_val,
-          "loop:times:check:" + id),
+          generator->builder.CreateLoad(index_alloca->getAllocatedType(),
+                                        index_alloca, false,
+                                        index_alloca->getName()),
+          count_val, "loop:times:check:" + id),
       loop_bb, after_bb);
   auto after_end = after.generate(generator);
   auto after_end_bb = generator->builder.GetInsertBlock();

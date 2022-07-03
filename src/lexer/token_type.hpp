@@ -43,10 +43,12 @@ enum class TokenType {
   pointerType,
   separator,
   referenceType,
+  unsignedIntegerType,
   integerType,
-  IntegerLiteral,
+  integerLiteral,
+  unsignedLiteral,
   floatType,
-  FloatLiteral,
+  floatLiteral,
   stringType,
   StringLiteral,
   say,
@@ -88,7 +90,8 @@ enum class TokenType {
   isNotNullPointer,
   assignToNullPointer,
   assignToNonNullPointer,
-  super
+  super,
+  variadic
 };
 } // namespace lexer
 } // namespace qat

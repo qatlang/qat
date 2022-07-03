@@ -1,4 +1,5 @@
 #include "lexer.hpp"
+#include "token_type.hpp"
 
 namespace qat {
 namespace lexer {
@@ -43,8 +44,8 @@ void Lexer::read(std::string context) {
 }
 
 utils::FilePlacement Lexer::getPosition(unsigned long long length) {
-  utils::Position start = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
-  utils::Position end = {line_num, start.character + length};
+  utils::Position end = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
+  utils::Position start = {line_num, end.character - length};
   return utils::FilePlacement(fs::path(filePath), start, end);
 }
 
@@ -106,6 +107,11 @@ Token Lexer::tokeniser() {
   case '.': {
     prev_ctx = "stop";
     read(prev_ctx);
+    if (curr == '.') {
+      prev_ctx = "super";
+      read(prev_ctx);
+      return Token::normal(TokenType::super, this->getPosition(2));
+    }
     return Token::normal(TokenType::stop, this->getPosition(1));
   }
   case ',': {
@@ -429,34 +435,77 @@ Token Lexer::tokeniser() {
   case '7':
   case '8':
   case '9': {
-    std::string num_val;
+    std::string numVal;
     bool is_float = false;
+    const std::string alphabets = "abcdefghijklmnopqrstuvwxyz";
     const std::string digits = "0123456789";
+    bool found_number = true;
+    bool found_spec = false;
     while (((digits.find(curr, 0) != std::string::npos) ||
-            (is_float ? false : (curr == '.'))) &&
+            (is_float ? false : (found_number ? (curr == '.') : false)) ||
+            (found_number ? (curr == '_') : false)) &&
            !file.eof()) {
       if (curr == '.') {
         read("integer");
-        if (digits.find(curr, 0) != std::string::npos) {
+        if (digits.find('.', 0) != std::string::npos) {
           is_float = true;
-          num_val += '.';
+          numVal += '.';
         } else {
           /// This is in the reverse order since the last element is returned
           /// first
           buffer.push_back(
               Token::normal(TokenType::stop, this->getPosition(1)));
-          buffer.push_back(Token::valued(TokenType::IntegerLiteral, num_val,
-                                         this->getPosition(num_val.length())));
+          auto fp = this->getPosition(numVal.length() + 1);
+          if (fp.end.character > 0) {
+            fp.end.character--;
+          }
+          buffer.push_back(
+              Token::valued(TokenType::integerLiteral, numVal, fp));
           return tokeniser();
         }
+      } else if (found_number ? (curr == '_') : false) {
+        std::string bitstr;
+        read("integer");
+        if (curr == 'u') {
+          read("unsigned");
+          while (digits.find(curr) != std::string::npos) {
+            bitstr += curr;
+            read("unsigned");
+          }
+          return Token::valued(
+              TokenType::unsignedLiteral, numVal + "_u" + bitstr,
+              this->getPosition((numVal + "_u" + bitstr).length()));
+        } else if (curr == 'i') {
+          read("integer");
+          while (digits.find(curr) != std::string::npos) {
+            bitstr += curr;
+            read("integer");
+          }
+          return Token::valued(
+              TokenType::integerLiteral, numVal + "_i" + bitstr,
+              this->getPosition((numVal + "_i" + bitstr).length()));
+        } else if (curr == 'f') {
+          read("float");
+          while ((digits.find(curr) != std::string::npos) ||
+                 (alphabets.find(curr) != std::string::npos)) {
+            bitstr += curr;
+            read("float");
+          }
+          return Token::valued(
+              TokenType::floatLiteral, numVal + "_f" + bitstr,
+              this->getPosition((numVal + "_f" + bitstr).length()));
+        } else {
+          throw_error("Invalid integer literal suffix");
+        }
       }
-      num_val += curr;
+      numVal += curr;
+      found_number = true;
       read(is_float ? "float" : "integer");
     }
     prev_ctx = "literal";
-    return Token::valued(is_float ? TokenType::FloatLiteral
-                                  : TokenType::IntegerLiteral,
-                         num_val, this->getPosition(num_val.length()) //
+    return Token::valued(is_float ? TokenType::floatLiteral
+                                  : TokenType::integerLiteral,
+                         numVal, this->getPosition(numVal.length()) //
     );
   }
   case -1: {
@@ -519,6 +568,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::Async, this->getPosition(5));
       else if (value == "sizeOf")
         return Token::normal(TokenType::sizeOf, this->getPosition(6));
+      else if (value == "variadic")
+        return Token::normal(TokenType::variadic, this->getPosition(8));
       else if (value.substr(0, 1) == "i" &&
                ((value.length() > 1)
                     ? utils::isInteger(value.substr(1, value.length() - 1))
@@ -644,7 +695,7 @@ void Lexer::printStatus() {
       case TokenType::floatType:
         std::cout << " f" << tokens.at(i).value << " ";
         break;
-      case TokenType::FloatLiteral:
+      case TokenType::floatLiteral:
         std::cout << " " << tokens.at(i).value << " ";
         break;
       case TokenType::function:
@@ -686,10 +737,13 @@ void Lexer::printStatus() {
       case TokenType::let:
         std::cout << " let ";
         break;
+      case TokenType::variadic:
+        std::cout << " variadic ";
+        break;
       case TokenType::integerType:
         std::cout << " i" << tokens.at(i).value << " ";
         break;
-      case TokenType::IntegerLiteral:
+      case TokenType::integerLiteral:
         std::cout << " " << tokens.at(i).value << " ";
         break;
       case TokenType::lambda:
@@ -736,6 +790,9 @@ void Lexer::printStatus() {
         break;
       case TokenType::singleStatementMarker:
         std::cout << " => ";
+        break;
+      case TokenType::super:
+        std::cout << " .. ";
         break;
       case TokenType::box:
         std::cout << " box ";

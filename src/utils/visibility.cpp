@@ -45,6 +45,7 @@ Visibility::get_linkage(const VisibilityKind kind) {
   switch (kind) {
   case VisibilityKind::pub:
   case VisibilityKind::file:
+  case VisibilityKind::folder:
   case VisibilityKind::box: {
     return llvm::GlobalValue::LinkageTypes::ExternalLinkage;
   }
@@ -60,6 +61,7 @@ Visibility::get_llvm_visibility(const VisibilityKind kind) {
   switch (kind) {
   case VisibilityKind::pub:
   case VisibilityKind::file:
+  case VisibilityKind::folder:
   case VisibilityKind::box: {
     return llvm::GlobalValue::VisibilityTypes::DefaultVisibility;
   }
@@ -168,6 +170,10 @@ std::string Visibility::get_value(llvm::Module *mod) {
       .str();
 }
 
+std::string Visibility::get_value(VisibilityKind kind) {
+  return kind_value_map.find(kind)->second;
+}
+
 bool Visibility::isAccessible(const VisibilityInfo visibility,
                               const RequesterInfo req_info) {
   switch (visibility.kind) {
@@ -203,5 +209,10 @@ bool Visibility::isAccessible(const VisibilityInfo visibility,
   }
   }
 }
+
+bool VisibilityInfo::isAccessible(const RequesterInfo &reqInfo) const {
+  return Visibility::isAccessible(*this, reqInfo);
+}
+
 } // namespace utils
 } // namespace qat

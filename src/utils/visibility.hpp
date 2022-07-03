@@ -67,6 +67,8 @@ enum class VisibilityKind {
   box
 };
 
+class RequesterInfo;
+
 /**
  *  VisibilityInfo is used to store details about the visibility kind of
  * an entity. Some kinds require a value to be complete, others don't.
@@ -135,6 +137,8 @@ public:
   static VisibilityInfo box(std::string name) {
     return VisibilityInfo(VisibilityKind::box, name);
   }
+
+  bool isAccessible(const RequesterInfo &reqInfo) const;
 
   /**
    *  Kind of the Visibility of the entity
@@ -241,6 +245,7 @@ private:
    */
   static const std::map<std::string, VisibilityKind> value_kind_map;
 
+public:
   /**
    *  Get the appropriate linkage for an entity from its VisibilityKind
    *
@@ -325,7 +330,8 @@ private:
    */
   static std::string get_value(std::string name);
 
-public:
+  static std::string get_value(VisibilityKind kind);
+
   /**
    *  Set the visibility of the provided GlobalVariable
    *

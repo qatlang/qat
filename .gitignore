@@ -1,6 +1,8 @@
 build/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 rebuild
+release
 refresh
 run
 test/

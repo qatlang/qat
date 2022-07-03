@@ -29,5 +29,12 @@ llvm::Value *RadixLiteral::generate(IR::Generator *generator) {
       llvm::Type::getIntNTy(generator->llvmContext, bitWidth), value, radix);
 }
 
+backend::JSON RadixLiteral::toJSON() const {
+  return backend::JSON()
+      ._("nodeType", "radixLiteral")
+      ._("value", value)
+      ._("filePlacement", file_placement);
+}
+
 } // namespace AST
 } // namespace qat

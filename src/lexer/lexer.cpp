@@ -382,6 +382,11 @@ Token Lexer::tokeniser() {
       return Token::normal(TokenType::child, this->getPosition(1));
     }
   }
+  case ';': {
+    prev_ctx = "semiColon";
+    read(prev_ctx);
+    return Token::normal(TokenType::semiColon, this->getPosition(1));
+  }
   case '"': {
     bool escape = false;
     read("string");
@@ -570,10 +575,17 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::sizeOf, this->getPosition(6));
       else if (value == "variadic")
         return Token::normal(TokenType::variadic, this->getPosition(8));
-      else if (value.substr(0, 1) == "i" &&
+      else if (value.substr(0, 1) == "u" &&
                ((value.length() > 1)
                     ? utils::isInteger(value.substr(1, value.length() - 1))
                     : false)) {
+        return Token::valued(TokenType::unsignedIntegerType,
+                             value.substr(1, value.length() - 1),
+                             this->getPosition(value.length()));
+      } else if (value.substr(0, 1) == "i" &&
+                 ((value.length() > 1)
+                      ? utils::isInteger(value.substr(1, value.length() - 1))
+                      : false)) {
         return Token::valued(TokenType::integerType,
                              value.substr(1, value.length() - 1),
                              this->getPosition(value.length()));

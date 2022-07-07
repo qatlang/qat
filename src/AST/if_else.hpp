@@ -12,36 +12,21 @@
 namespace qat {
 namespace AST {
 
-/**
- *  IfElse is used to represent two kinds of conditional sentences : If
- * and If-Else. The Else block is optional and if omitted, IfElse becomes a
- * plain if sentence
- *
- */
+// `IfElse` is used to represent two kinds of conditional sentences : If
+// and If-Else. The Else block is optional and if omitted, IfElse becomes a
+// plain if sentence
 class IfElse : public Sentence {
 private:
-  /**
-   *  Condition for this if sentence
-   *
-   */
+  //  Condition for this if sentence
   Expression *condition;
 
-  /**
-   *  The block belonging to the if section
-   *
-   */
+  //  The block belonging to the if section
   Block *if_block;
 
-  /**
-   *  The optional block belonging to the else section
-   *
-   */
+  //  The optional block belonging to the else section
   std::optional<Block *> else_block;
 
-  /**
-   *  The block after the if-else case
-   *
-   */
+  //  The block after the if-else case
   Block *merge_block;
 
 public:
@@ -63,11 +48,13 @@ public:
          std::optional<Block *> _merge_block,
          utils::FilePlacement _filePlacement);
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return NodeType::ifElse; }
+  NodeType nodeType() const { return NodeType::ifElse; }
 };
 } // namespace AST
 } // namespace qat

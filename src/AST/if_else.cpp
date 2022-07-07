@@ -16,8 +16,8 @@ IfElse::IfElse(Expression *_condition, Block *_if_block,
                         _else_block.value_or(_if_block)->file_placement.end)))),
       Sentence(_filePlacement) {}
 
-llvm::Value *IfElse::generate(IR::Generator *generator) {
-  auto gen_cond = condition->generate(generator);
+llvm::Value *IfElse::emit(IR::Generator *generator) {
+  auto gen_cond = condition->emit(generator);
   if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1)) {
       auto if_bb = if_block->create_bb(generator);
@@ -33,17 +33,17 @@ llvm::Value *IfElse::generate(IR::Generator *generator) {
       generator->builder.CreateCondBr(cond_value, if_bb, else_bb);
 
       /* If */
-      if_block->generate(generator);
+      if_block->emit(generator);
       generator->builder.CreateBr(merge_bb);
 
       /* Else */
       if (else_block.has_value()) {
-        else_block.value()->generate(generator);
+        else_block.value()->emit(generator);
         generator->builder.CreateBr(merge_bb);
       }
 
       /* Merge - Remaining sentences not part of the conditional branching */
-      return merge_block->generate(generator);
+      return merge_block->emit(generator);
     } else {
       generator->throw_error(
           "Condition expression is of the type `" +
@@ -56,6 +56,21 @@ llvm::Value *IfElse::generate(IR::Generator *generator) {
     generator->throw_error("Condition expression is null, but `if` sentence "
                            "expects an expression of `bool`, `i1` or `u1` type",
                            file_placement);
+  }
+}
+
+void IfElse::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "if (";
+    condition->emitCPP(file, isHeader);
+    file += ") ";
+    if_block->emitCPP(file, isHeader);
+    if (else_block.has_value()) {
+      file += " else ";
+      else_block.value()->emitCPP(file, isHeader);
+    }
+    file.setOpenBlock(true);
+    merge_block->emitCPP(file, isHeader);
   }
 }
 

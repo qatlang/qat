@@ -29,7 +29,7 @@ public:
   PointerType(QatType *_type, const bool _variable,
               const utils::FilePlacement _filePlacement);
 
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

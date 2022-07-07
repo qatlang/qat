@@ -25,14 +25,7 @@ public:
   TupleType(const std::vector<QatType *> _types, const bool _isPacked,
             const bool _variable, const utils::FilePlacement _filePlacement);
 
-  /**
-   *  Add another QatType to this tuple
-   *
-   * @param type
-   */
-  void add_type(QatType *type);
-
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

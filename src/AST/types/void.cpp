@@ -1,3 +1,4 @@
+#include "../../IR/types/void.hpp"
 #include "./void.hpp"
 
 namespace qat {
@@ -7,8 +8,8 @@ VoidType::VoidType(const bool _variable,
                    const utils::FilePlacement _filePlacement)
     : QatType(_variable, _filePlacement) {}
 
-llvm::Type *VoidType::emit(IR::Generator *generator) {
-  return llvm::Type::getVoidTy(generator->llvmContext);
+IR::QatType *VoidType::emit(IR::Generator *generator) {
+  return new IR::VoidType(generator->llvmContext);
 }
 
 void VoidType::emitCPP(backend::cpp::File &file, bool isHeader) const {

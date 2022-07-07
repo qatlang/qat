@@ -28,7 +28,7 @@ public:
 
   // This is the code generator function that handles the generation of
   // LLVM IR
-  virtual llvm::Type *emit(IR::Generator *generator){};
+  virtual IR::QatType *emit(IR::Generator *generator){};
 
   // TypeKind is used to detect variants of the QatType
   virtual TypeKind typeKind(){};

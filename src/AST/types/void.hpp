@@ -1,8 +1,7 @@
 #ifndef QAT_AST_TYPES_VOID_HPP
 #define QAT_AST_TYPES_VOID_HPP
 
-#include "../../IR/generator.hpp"
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
 #include "llvm/IR/Type.h"
 #include <string>
 
@@ -22,7 +21,7 @@ public:
    */
   VoidType(const bool _variable, const utils::FilePlacement _filePlacement);
 
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

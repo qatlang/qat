@@ -2,7 +2,6 @@
 #define QAT_TYPES_REFERENCE_HPP
 
 #include "./qat_type.hpp"
-#include "./void.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/raw_ostream.h"
 #include <string>
@@ -28,7 +27,7 @@ public:
   ReferenceType(QatType *_type, const bool _variable,
                 const utils::FilePlacement _filePlacement);
 
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

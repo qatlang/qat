@@ -1,4 +1,5 @@
 #include "./pointer.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
 
 namespace qat {
@@ -8,11 +9,8 @@ PointerType::PointerType(QatType *_type, const bool _variable,
                          const utils::FilePlacement _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
-llvm::Type *PointerType::emit(IR::Generator *generator) {
-  SHOW("Before generating type of Pointer")
-  auto genType = type->emit(generator)->getPointerTo();
-  SHOW("Generated type " << utils::llvmTypeToName(genType))
-  return genType;
+IR::QatType *PointerType::emit(IR::Generator *generator) {
+  return new IR::PointerType(type->emit(generator));
 }
 
 void PointerType::emitCPP(backend::cpp::File &file, bool isHeader) const {

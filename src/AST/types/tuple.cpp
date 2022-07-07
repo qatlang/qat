@@ -1,29 +1,25 @@
 #include "./tuple.hpp"
-#include <tuple>
+#include "../../IR/types/tuple.hpp"
 #include <vector>
 
 namespace qat {
 namespace AST {
 
-TupleType::TupleType(const std::vector<QatType *> _types, const bool _isPacked,
-                     const bool _variable,
+TupleType::TupleType(const std::vector<AST::QatType *> _types,
+                     const bool _isPacked, const bool _variable,
                      const utils::FilePlacement _filePlacement)
     : types(_types), isPacked(_isPacked), QatType(_variable, _filePlacement) {}
 
-void TupleType::add_type(QatType *type) { types.push_back(type); }
-
-llvm::Type *TupleType::emit(IR::Generator *generator) {
-  std::vector<llvm::Type *> gen_types;
+IR::QatType *TupleType::emit(IR::Generator *generator) {
+  std::vector<IR::QatType *> irTypes;
   for (auto &type : types) {
-    llvm::Type *newTy = type->emit(generator);
-    if (newTy->isVoidTy()) {
+    if (type->typeKind() == AST::TypeKind::Void) {
       generator->throw_error("Tuple member type cannot be `void`",
                              filePlacement);
     }
-    gen_types.push_back(newTy);
+    irTypes.push_back(type->emit(generator));
   }
-  return llvm::StructType::get(generator->llvmContext,
-                               llvm::ArrayRef(gen_types), isPacked);
+  return new IR::TupleType(generator->llvmContext, irTypes, isPacked);
 }
 
 void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {

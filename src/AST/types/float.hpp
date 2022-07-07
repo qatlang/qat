@@ -10,14 +10,6 @@ namespace qat {
 namespace AST {
 
 /**
- *  The kind of floating point number
- *
- */
-enum class FloatTypeKind { _brain, _half, _32, _64, _80, _128PPC, _128 };
-
-std::string to_string(FloatTypeKind);
-
-/**
  *  FloatType represents a floating point number in the language
  *
  */
@@ -27,7 +19,7 @@ private:
    *  Kind of the floating point number
    *
    */
-  FloatTypeKind kind;
+  IR::FloatTypeKind kind;
 
 public:
   /**
@@ -36,12 +28,12 @@ public:
    * @param _kind Kind of the float
    * @param _filePlacement
    */
-  FloatType(const FloatTypeKind _kind, const bool _variable,
+  FloatType(const IR::FloatTypeKind _kind, const bool _variable,
             const utils::FilePlacement _filePlacement);
 
-  static std::string kindToString(FloatTypeKind kind);
+  static std::string kindToString(IR::FloatTypeKind kind);
 
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

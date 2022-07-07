@@ -1,4 +1,5 @@
 #include "./reference.hpp"
+#include "../../IR/types/reference.hpp"
 
 namespace qat {
 namespace AST {
@@ -7,8 +8,8 @@ ReferenceType::ReferenceType(QatType *_type, bool _variable,
                              utils::FilePlacement _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
-llvm::Type *ReferenceType::emit(IR::Generator *generator) {
-  return llvm::PointerType::get(type->emit(generator), 0);
+IR::QatType *ReferenceType::emit(IR::Generator *generator) {
+  return new IR::ReferenceType(type->emit(generator));
 }
 
 void ReferenceType::emitCPP(backend::cpp::File &file, bool isHeader) const {

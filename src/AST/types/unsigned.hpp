@@ -31,19 +31,13 @@ public:
   UnsignedType(const unsigned int _bitWidth, const bool _variable,
                const utils::FilePlacement _filePlacement);
 
-  llvm::Type *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Generator *generator);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   TypeKind typeKind();
 
-  /**
-   *  Whether the provided integer is the bitwidth of the UnsignedType
-   *
-   * @param width Bitwidth to check for
-   * @return true If the width matches
-   * @return false If the width does not match
-   */
+  //  Whether the provided integer is the bitwidth of the UnsignedType
   bool isBitWidth(const unsigned int width) const;
 
   backend::JSON toJSON() const;

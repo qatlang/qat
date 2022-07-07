@@ -6,13 +6,13 @@ GiveSentence::GiveSentence(std::optional<Expression *> _given_expr,
                            utils::FilePlacement _filePlacement)
     : give_expr(_given_expr), Sentence(_filePlacement) {}
 
-llvm::Value *GiveSentence::generate(IR::Generator *generator) {
+llvm::Value *GiveSentence::emit(IR::Generator *generator) {
   auto block = generator->builder.GetInsertBlock();
   auto parent = block->getParent();
   auto ret_type = parent->getReturnType();
   if (give_expr.has_value()) {
     auto expr = give_expr.value();
-    auto val = expr->generate(generator);
+    auto val = expr->emit(generator);
     if (val->getType() == ret_type) {
       return llvm::ReturnInst::Create(generator->llvmContext, val, block);
     } else {
@@ -32,6 +32,16 @@ llvm::Value *GiveSentence::generate(IR::Generator *generator) {
           file_placement);
     }
     return llvm::ReturnInst::Create(generator->llvmContext, block);
+  }
+}
+
+void GiveSentence::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "return ";
+    if (give_expr.has_value()) {
+      give_expr.value()->emitCPP(file, isHeader);
+    }
+    file += ";";
   }
 }
 

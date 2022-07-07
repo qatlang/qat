@@ -9,8 +9,8 @@ PointerType::PointerType(QatType *_type, const bool _variable,
                          const utils::FilePlacement _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
-IR::QatType *PointerType::emit(IR::Generator *generator) {
-  return new IR::PointerType(type->emit(generator));
+IR::QatType *PointerType::emit(IR::Context *ctx) {
+  return new IR::PointerType(type->emit(ctx));
 }
 
 void PointerType::emitCPP(backend::cpp::File &file, bool isHeader) const {

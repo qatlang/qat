@@ -30,7 +30,7 @@ public:
       : name(_name), members(_members), visibility(_visibility),
         Node(_filePlacement) {}
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

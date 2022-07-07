@@ -1,7 +1,7 @@
 #ifndef QAT_AST_BLOCK_HPP
 #define QAT_AST_BLOCK_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "../utils/new_block_index.hpp"
 #include "./node_type.hpp"
 #include "./sentence.hpp"
@@ -63,12 +63,12 @@ public:
    * This is used when the llvm::BasicBlock* associated with this Block is
    * required before the generation of the contents of the block happens
    *
-   * @param generator IR Generator
+   * @param ctx IR Generator
    * @param function Function to insert the BasicBlock into
    *
    * @return llvm::BasicBlock*
    */
-  llvm::BasicBlock *create_bb(IR::Generator *generator,
+  llvm::BasicBlock *create_bb(IR::Context *ctx,
                               llvm::Function *function = nullptr);
 
   /**
@@ -78,7 +78,7 @@ public:
    */
   llvm::BasicBlock *get_end_block() const;
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -1,7 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_CUSTOM_INTEGER_LITERAL_HPP
 #define QAT_AST_EXPRESSIONS_CUSTOM_INTEGER_LITERAL_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../../utils/types.hpp"
 #include "../expression.hpp"
 #include "llvm/ADT/APInt.h"
@@ -25,7 +25,7 @@ public:
                        unsigned int _bitWidth,
                        utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

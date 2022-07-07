@@ -1,7 +1,7 @@
 #ifndef QAT_AST_GIVE_SENTENCE_HPP
 #define QAT_AST_GIVE_SENTENCE_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "../utils/llvm_type_to_name.hpp"
 #include "expression.hpp"
 #include "sentence.hpp"
@@ -33,7 +33,7 @@ public:
   GiveSentence(std::optional<Expression *> _given_expr,
                utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

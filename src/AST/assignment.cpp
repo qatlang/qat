@@ -7,9 +7,9 @@ Assignment::Assignment(Expression *_lhs, Expression *_value,
                        utils::FilePlacement _filePlacement)
     : lhs(_lhs), value(_value), Sentence(_filePlacement) {}
 
-llvm::Value *Assignment::emit(qat::IR::Generator *generator) {
+llvm::Value *Assignment::emit(qat::IR::Context *ctx) {
   lhs->setExpectedKind(ExpressionKind::assignable);
-  auto lhs_val = lhs->emit(generator);
+  auto lhs_val = lhs->emit(ctx);
   bool is_reference = false;
   llvm::Type *lhs_type = nullptr;
   if (llvm::isa<llvm::Instruction>(lhs_val)) {
@@ -37,7 +37,7 @@ llvm::Value *Assignment::emit(qat::IR::Generator *generator) {
   if (!lhs_type) {
     lhs_type = lhs_val->getType();
   }
-  auto gen_val = value->emit(generator);
+  auto gen_val = value->emit(ctx);
   if (is_reference
           ? (llvm::dyn_cast<llvm::PointerType>(lhs_type)->getElementType() !=
              gen_val->getType())
@@ -50,7 +50,7 @@ llvm::Value *Assignment::emit(qat::IR::Generator *generator) {
         utils::llvmTypeToName(gen_val->getType()), file_placement);
   }
   // TODO - Support copy and move semantics
-  return generator->builder.CreateStore(gen_val, lhs_val, false);
+  return ctx->builder.CreateStore(gen_val, lhs_val, false);
 }
 
 void Assignment::emitCPP(backend::cpp::File &file, bool isHeader) const {

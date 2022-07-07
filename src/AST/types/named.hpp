@@ -1,7 +1,7 @@
 #ifndef QAT_AST_TYPES_NAMED_HPP
 #define QAT_AST_TYPES_NAMED_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../box.hpp"
 #include "../function_definition.hpp"
 #include "./qat_type.hpp"
@@ -37,7 +37,7 @@ public:
   NamedType(const std::string _name, const bool _variable,
             const utils::FilePlacement _filePlacement);
 
-  IR::QatType *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -1,7 +1,7 @@
 #ifndef QAT_AST_GLOBAL_DECLARATION_HPP
 #define QAT_AST_GLOBAL_DECLARATION_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "./expression.hpp"
 #include "./node.hpp"
 #include "./node_type.hpp"
@@ -21,19 +21,25 @@ namespace AST {
 class GlobalDeclaration : public Node {
 private:
   std::string name;
-  llvm::Optional<Box> parent_space;
-  llvm::Optional<QatType> type;
-  Expression &value;
-  bool is_variable;
+
+  llvm::Optional<QatType *> type;
+
+  Expression *value;
+
+  bool isVariable;
 
 public:
-  GlobalDeclaration(std::string _name, llvm::Optional<Box> _parentSpace,
-                    llvm::Optional<QatType> _type, Expression _value,
-                    bool _isVariable, utils::FilePlacement _filePlacement);
+  GlobalDeclaration(std::string _name, llvm::Optional<QatType *> _type,
+                    Expression *_value, bool _isVariable,
+                    utils::FilePlacement _filePlacement);
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
-  NodeType nodeType();
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
+  backend::JSON toJSON() const;
+
+  NodeType nodeType() const { return NodeType::globalDeclaration; }
 };
 } // namespace AST
 } // namespace qat

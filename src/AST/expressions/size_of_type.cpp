@@ -6,8 +6,8 @@ namespace AST {
 SizeOfType::SizeOfType(QatType *_type, utils::FilePlacement _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
-llvm::Value *SizeOfType::emit(IR::Generator *generator) {
-  return llvm::ConstantExpr::getSizeOf(type->emit(generator));
+llvm::Value *SizeOfType::emit(IR::Context *ctx) {
+  return llvm::ConstantExpr::getSizeOf(type->emit(ctx)->getLLVMType());
 }
 
 void SizeOfType::emitCPP(backend::cpp::File &file, bool isHeader) const {

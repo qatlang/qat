@@ -13,22 +13,22 @@ LocalDeclaration::LocalDeclaration(QatType *_type, std::string _name,
     : type(_type), name(_name), value(_value), variability(_variability),
       Sentence(_filePlacement) {}
 
-llvm::Value *LocalDeclaration::emit(qat::IR::Generator *generator) {
+llvm::Value *LocalDeclaration::emit(qat::IR::Context *ctx) {
   bool is_reference = type ? (type->typeKind() == TypeKind::reference) : false;
-  auto gen_value = value->emit(generator);
+  auto gen_value = value->emit(ctx);
   if (type) {
-    auto decl_ty = type->emit(generator);
+    auto decl_ty = type->emit(ctx);
     if ((decl_ty->isPointerTy()) &&
         (value->nodeType() == NodeType::nullPointer)) {
-      gen_value = generator->builder.CreatePointerCast(
-          gen_value, decl_ty, "implcitNullPointerCast");
+      gen_value = ctx->builder.CreatePointerCast(gen_value, decl_ty,
+                                                 "implcitNullPointerCast");
     } else if (decl_ty != gen_value->getType()) {
-      generator->throw_error("The type of the entity being declared does not "
-                             "match with the value provided",
-                             file_placement);
+      ctx->throw_error("The type of the entity being declared does not "
+                       "match with the value provided",
+                       file_placement);
     }
   }
-  auto function = generator->builder.GetInsertBlock()->getParent();
+  auto function = ctx->builder.GetInsertBlock()->getParent();
   auto e_block = function->getEntryBlock().begin()->getParent();
   bool entity_exists = false;
   for (std::size_t i = 0; i < function->arg_size(); i++) {
@@ -38,31 +38,30 @@ llvm::Value *LocalDeclaration::emit(qat::IR::Generator *generator) {
     }
   }
   if (entity_exists) {
-    generator->throw_error(
+    ctx->throw_error(
         "`" + name + "` is an argument of the function `" +
             function->getName().str() +
             "`. Please remove this declaration or rename this entity",
         file_placement);
   }
   SHOW("Getting origin block")
-  auto origin_bb = generator->builder.GetInsertBlock();
+  auto origin_bb = ctx->builder.GetInsertBlock();
   SHOW("Setting insert point")
-  generator->builder.SetInsertPoint(e_block);
+  ctx->builder.SetInsertPoint(e_block);
   SHOW("Insert point set")
   auto var_alloca = new llvm::AllocaInst(
-      (type ? type->emit(generator) : gen_value->getType()), 0u, name, e_block);
+      (type ? type->emit(ctx) : gen_value->getType()), 0u, name, e_block);
   SHOW("Alloca created")
   if (var_alloca->getAllocatedType()->isPointerTy()) {
-    utils::PointerKind::set(generator->llvmContext, var_alloca, is_reference);
+    utils::PointerKind::set(ctx->llvmContext, var_alloca, is_reference);
     SHOW("Pointer kind handled")
   }
   SHOW("Setting origin block to alloca")
-  set_origin_block(generator->llvmContext, var_alloca, origin_bb);
-  utils::Variability::set(generator->llvmContext, var_alloca, variability);
-  generator->builder.SetInsertPoint(origin_bb);
+  set_origin_block(ctx->llvmContext, var_alloca, origin_bb);
+  utils::Variability::set(ctx->llvmContext, var_alloca, variability);
+  ctx->builder.SetInsertPoint(origin_bb);
   SHOW("Going back to origin block")
-  auto storeValue =
-      generator->builder.CreateStore(gen_value, var_alloca, false);
+  auto storeValue = ctx->builder.CreateStore(gen_value, var_alloca, false);
   SHOW("Store created")
   return storeValue;
 }

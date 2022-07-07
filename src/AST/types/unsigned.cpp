@@ -8,8 +8,8 @@ UnsignedType::UnsignedType(const unsigned int _bitWidth, const bool _variable,
                            const utils::FilePlacement _filePlacement)
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
-IR::QatType *UnsignedType::emit(qat::IR::Generator *generator) {
-  return new IR::UnsignedType(generator->llvmContext, bitWidth);
+IR::QatType *UnsignedType::emit(qat::IR::Context *ctx) {
+  return new IR::UnsignedType(ctx->llvmContext, bitWidth);
 }
 
 void UnsignedType::emitCPP(backend::cpp::File &file, bool isHeader) const {

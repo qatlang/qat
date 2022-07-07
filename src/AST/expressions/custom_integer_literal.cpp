@@ -9,12 +9,12 @@ CustomIntegerLiteral::CustomIntegerLiteral(std::string _value, bool _isUnsigned,
     : value(_value), isUnsigned(_isUnsigned), bitWidth(_bitWidth),
       Expression(_filePlacement) {}
 
-llvm::Value *CustomIntegerLiteral::emit(IR::Generator *generator) {
+llvm::Value *CustomIntegerLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
-    generator->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("This expression is not assignable", file_placement);
   }
   return llvm::ConstantInt::get(
-      llvm::Type::getIntNTy(generator->llvmContext, bitWidth), value, 10u);
+      llvm::Type::getIntNTy(ctx->llvmContext, bitWidth), value, 10u);
 }
 
 void CustomIntegerLiteral::emitCPP(backend::cpp::File &file,

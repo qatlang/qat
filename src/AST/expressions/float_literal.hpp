@@ -23,7 +23,7 @@ public:
    */
   FloatLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

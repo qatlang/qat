@@ -1,7 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_ENTITY_HPP
 #define QAT_AST_EXPRESSIONS_ENTITY_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../../utils/pointer_kind.hpp"
 #include "../../utils/variability.hpp"
 #include "../expression.hpp"
@@ -40,11 +40,13 @@ public:
   Entity(std::string _name, utils::FilePlacement _filePlacement)
       : name(_name), Expression(_filePlacement) {}
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return qat::AST::NodeType::entity; }
+  NodeType nodeType() const { return qat::AST::NodeType::entity; }
 };
 
 } // namespace AST

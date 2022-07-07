@@ -3,9 +3,9 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *ExposeBoxes::emit(IR::Generator *generator) {
+llvm::Value *ExposeBoxes::emit(IR::Context *ctx) {
   std::size_t count = 0;
-  for (auto existing : generator->exposed) {
+  for (auto existing : ctx->exposed) {
     for (auto candidate : boxes) {
       if (existing == candidate) {
         Errors::AST4(candidate, (boxes.size() > 1), file_placement);
@@ -14,24 +14,24 @@ llvm::Value *ExposeBoxes::emit(IR::Generator *generator) {
         // compilation is not stopped on the first encounter of an error,
         // this is needed
       } else {
-        generator->exposed.push_back(candidate);
+        ctx->exposed.push_back(candidate);
         count++;
       }
     }
   }
   for (auto sentence : sentences) {
-    sentence->emit(generator);
+    sentence->emit(ctx);
   }
   /**
    *  Interating both vectors in one loop instead of two as this makes
    * more sense for this scenario
    *
    */
-  auto exp_size = generator->exposed.size();
+  auto exp_size = ctx->exposed.size();
   auto boxes_size = boxes.size();
   for (auto i = exp_size - 1; ((i >= 0) && (i >= (exp_size - count))); i--) {
-    if (generator->exposed.at(i) == boxes.at(boxes_size - (exp_size - i))) {
-      generator->exposed.pop_back();
+    if (ctx->exposed.at(i) == boxes.at(boxes_size - (exp_size - i))) {
+      ctx->exposed.pop_back();
     }
   }
   return nullptr;

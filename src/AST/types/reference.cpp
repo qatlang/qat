@@ -8,8 +8,8 @@ ReferenceType::ReferenceType(QatType *_type, bool _variable,
                              utils::FilePlacement _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
-IR::QatType *ReferenceType::emit(IR::Generator *generator) {
-  return new IR::ReferenceType(type->emit(generator));
+IR::QatType *ReferenceType::emit(IR::Context *ctx) {
+  return new IR::ReferenceType(type->emit(ctx));
 }
 
 void ReferenceType::emitCPP(backend::cpp::File &file, bool isHeader) const {

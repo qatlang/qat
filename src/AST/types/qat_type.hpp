@@ -1,7 +1,7 @@
 #ifndef QAT_AST_TYPES_QAT_TYPE_HPP
 #define QAT_AST_TYPES_QAT_TYPE_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../../backend/cpp.hpp"
 #include "../../backend/json.hpp"
 #include "../../utils/file_placement.hpp"
@@ -26,9 +26,9 @@ public:
 
   virtual ~QatType(){};
 
-  // This is the code generator function that handles the generation of
+  // This is the code ctx function that handles the generation of
   // LLVM IR
-  virtual IR::QatType *emit(IR::Generator *generator){};
+  virtual IR::QatType *emit(IR::Context *ctx){};
 
   // TypeKind is used to detect variants of the QatType
   virtual TypeKind typeKind(){};
@@ -39,7 +39,7 @@ public:
 
   bool isConstant() const { return !variable; }
 
-  // This is the generator function for C++
+  // This is the ctx function for C++
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
 
   // This generates JSON to represent the type

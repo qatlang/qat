@@ -6,8 +6,8 @@ namespace AST {
 SizeOf::SizeOf(Expression *_expression, utils::FilePlacement _filePlacement)
     : expression(_expression), Expression(_filePlacement) {}
 
-llvm::Value *SizeOf::emit(IR::Generator *generator) {
-  auto gen_exp = expression->emit(generator);
+llvm::Value *SizeOf::emit(IR::Context *ctx) {
+  auto gen_exp = expression->emit(ctx);
   return llvm::ConstantExpr::getSizeOf(gen_exp->getType());
 }
 

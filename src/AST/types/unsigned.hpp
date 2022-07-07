@@ -1,7 +1,7 @@
 #ifndef QAT_AST_TYPES_UNSIGNED_HPP
 #define QAT_AST_TYPES_UNSIGNED_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "qat_type.hpp"
 #include "llvm/IR/Type.h"
 
@@ -31,7 +31,7 @@ public:
   UnsignedType(const unsigned int _bitWidth, const bool _variable,
                const utils::FilePlacement _filePlacement);
 
-  IR::QatType *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

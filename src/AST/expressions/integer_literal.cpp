@@ -7,12 +7,12 @@ IntegerLiteral::IntegerLiteral(std::string _value,
                                utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
-llvm::Value *IntegerLiteral::emit(IR::Generator *generator) {
+llvm::Value *IntegerLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    generator->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("This expression is not assignable", file_placement);
   }
-  return llvm::ConstantInt::get(llvm::Type::getInt32Ty(generator->llvmContext),
-                                value, 10u);
+  return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->llvmContext), value,
+                                10u);
 }
 
 void IntegerLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

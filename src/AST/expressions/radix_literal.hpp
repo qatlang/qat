@@ -1,7 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_RADIX_LITERAL_HPP
 #define QAT_AST_EXPRESSIONS_RADIX_LITERAL_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../expression.hpp"
 #include "llvm/ADT/APInt.h"
 #include "llvm/IR/Constants.h"
@@ -30,7 +30,7 @@ public:
   RadixLiteral(std::string _value, unsigned _radix,
                utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

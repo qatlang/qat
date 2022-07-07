@@ -1,7 +1,7 @@
 #ifndef QAT_AST_EXPRESSION_HPP
 #define QAT_AST_EXPRESSION_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "node.hpp"
 #include "node_type.hpp"
 #include "llvm/IR/Value.h"
@@ -36,7 +36,7 @@ public:
 
   bool isExpectedKind(ExpressionKind _kind);
 
-  virtual llvm::Value *emit(IR::Generator *generator){};
+  virtual llvm::Value *emit(IR::Context *ctx){};
 
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
 

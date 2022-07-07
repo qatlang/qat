@@ -1,7 +1,7 @@
 #ifndef QAT_AST_LOOP_N_TIMES_HPP
 #define QAT_AST_LOOP_N_TIMES_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "./block.hpp"
 #include "./expression.hpp"
 #include "./node_type.hpp"
@@ -54,7 +54,7 @@ public:
    */
   unsigned new_loop_index_id(llvm::BasicBlock *bb);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

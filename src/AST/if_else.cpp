@@ -16,36 +16,34 @@ IfElse::IfElse(Expression *_condition, Block *_if_block,
                         _else_block.value_or(_if_block)->file_placement.end)))),
       Sentence(_filePlacement) {}
 
-llvm::Value *IfElse::emit(IR::Generator *generator) {
-  auto gen_cond = condition->emit(generator);
+llvm::Value *IfElse::emit(IR::Context *ctx) {
+  auto gen_cond = condition->emit(ctx);
   if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1)) {
-      auto if_bb = if_block->create_bb(generator);
-      auto cond_value = generator->builder.CreateICmpEQ(
+      auto if_bb = if_block->create_bb(ctx);
+      auto cond_value = ctx->builder.CreateICmpEQ(
           gen_cond,
-          llvm::ConstantInt::get(generator->llvmContext,
-                                 llvm::APInt(1u, 1u, false)),
+          llvm::ConstantInt::get(ctx->llvmContext, llvm::APInt(1u, 1u, false)),
           if_bb->getName() + "'condition");
-      auto else_bb = else_block.has_value()
-                         ? else_block.value()->create_bb(generator)
-                         : nullptr;
-      auto merge_bb = merge_block->create_bb(generator);
-      generator->builder.CreateCondBr(cond_value, if_bb, else_bb);
+      auto else_bb =
+          else_block.has_value() ? else_block.value()->create_bb(ctx) : nullptr;
+      auto merge_bb = merge_block->create_bb(ctx);
+      ctx->builder.CreateCondBr(cond_value, if_bb, else_bb);
 
       /* If */
-      if_block->emit(generator);
-      generator->builder.CreateBr(merge_bb);
+      if_block->emit(ctx);
+      ctx->builder.CreateBr(merge_bb);
 
       /* Else */
       if (else_block.has_value()) {
-        else_block.value()->emit(generator);
-        generator->builder.CreateBr(merge_bb);
+        else_block.value()->emit(ctx);
+        ctx->builder.CreateBr(merge_bb);
       }
 
       /* Merge - Remaining sentences not part of the conditional branching */
-      return merge_block->emit(generator);
+      return merge_block->emit(ctx);
     } else {
-      generator->throw_error(
+      ctx->throw_error(
           "Condition expression is of the type `" +
               qat::utils::llvmTypeToName(gen_cond->getType()) +
               "`, but `if` sentence expects an expression of `bool`, "
@@ -53,9 +51,9 @@ llvm::Value *IfElse::emit(IR::Generator *generator) {
           file_placement);
     }
   } else {
-    generator->throw_error("Condition expression is null, but `if` sentence "
-                           "expects an expression of `bool`, `i1` or `u1` type",
-                           file_placement);
+    ctx->throw_error("Condition expression is null, but `if` sentence "
+                     "expects an expression of `bool`, `i1` or `u1` type",
+                     file_placement);
   }
 }
 

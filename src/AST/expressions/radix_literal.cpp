@@ -7,9 +7,9 @@ RadixLiteral::RadixLiteral(std::string _value, unsigned _radix,
                            utils::FilePlacement _filePlacement)
     : value(_value), radix(_radix), Expression(_filePlacement) {}
 
-llvm::Value *RadixLiteral::emit(IR::Generator *generator) {
+llvm::Value *RadixLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    generator->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("This expression is not assignable", file_placement);
   }
   unsigned bitWidth = 0;
   if (radix == 2) {
@@ -19,14 +19,13 @@ llvm::Value *RadixLiteral::emit(IR::Generator *generator) {
   } else if (radix == 16) {
     bitWidth = (value.length() - 2) * 4;
   } else {
-    generator->throw_error("Unsupported radix", file_placement);
+    ctx->throw_error("Unsupported radix", file_placement);
   }
   if (bitWidth == 0) {
-    generator->throw_error("No numbers provided for radix string",
-                           file_placement);
+    ctx->throw_error("No numbers provided for radix string", file_placement);
   }
   return llvm::ConstantInt::get(
-      llvm::Type::getIntNTy(generator->llvmContext, bitWidth), value, radix);
+      llvm::Type::getIntNTy(ctx->llvmContext, bitWidth), value, radix);
 }
 
 void RadixLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

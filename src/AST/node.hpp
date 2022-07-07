@@ -1,7 +1,7 @@
 #ifndef QAT_AST_NODE_HPP
 #define QAT_AST_NODE_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "../backend/cpp.hpp"
 #include "../backend/json.hpp"
 #include "../utils/file_placement.hpp"
@@ -27,14 +27,14 @@ public:
 
   virtual ~Node(){};
 
-  // This is the code generator function that handles the generation of
+  // This is the code emitter function that handles the generation of
   // LLVM IR
-  virtual llvm::Value *emit(IR::Generator *generator){};
+  virtual llvm::Value *emit(IR::Context *ctx){};
 
-  // This is the generator function that handles the generation of JSON
+  // This is the emitter function that handles the generation of JSON
   virtual backend::JSON toJSON() const {};
 
-  // This is the generator function for C++
+  // This is the emitter function for C++
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {}
 
   // Type of the node represented by this AST member

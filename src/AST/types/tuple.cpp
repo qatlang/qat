@@ -10,16 +10,15 @@ TupleType::TupleType(const std::vector<AST::QatType *> _types,
                      const utils::FilePlacement _filePlacement)
     : types(_types), isPacked(_isPacked), QatType(_variable, _filePlacement) {}
 
-IR::QatType *TupleType::emit(IR::Generator *generator) {
+IR::QatType *TupleType::emit(IR::Context *ctx) {
   std::vector<IR::QatType *> irTypes;
   for (auto &type : types) {
     if (type->typeKind() == AST::TypeKind::Void) {
-      generator->throw_error("Tuple member type cannot be `void`",
-                             filePlacement);
+      ctx->throw_error("Tuple member type cannot be `void`", filePlacement);
     }
-    irTypes.push_back(type->emit(generator));
+    irTypes.push_back(type->emit(ctx));
   }
-  return new IR::TupleType(generator->llvmContext, irTypes, isPacked);
+  return new IR::TupleType(ctx->llvmContext, irTypes, isPacked);
 }
 
 void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {

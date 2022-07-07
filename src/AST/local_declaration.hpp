@@ -1,7 +1,7 @@
 #ifndef QAT_AST_LOCAL_DECLARATION_HPP
 #define QAT_AST_LOCAL_DECLARATION_HPP
 
-#include "../IR/generator.hpp"
+#include "../IR/context.hpp"
 #include "../utils/llvm_type_to_name.hpp"
 #include "../utils/pointer_kind.hpp"
 #include "../utils/variability.hpp"
@@ -74,7 +74,7 @@ public:
   void set_origin_block(llvm::LLVMContext &ctx, llvm::AllocaInst *alloca,
                         llvm::BasicBlock *bb);
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

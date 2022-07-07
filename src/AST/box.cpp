@@ -3,9 +3,9 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *Box::emit(IR::Generator *generator) {
+llvm::Value *Box::emit(IR::Context *ctx) {
   // FIXME - Perform name checks
-  generator->mod->openBox(name, visibility);
+  ctx->mod->openBox(name, visibility);
 }
 
 void Box::emitCPP(backend::cpp::File &file, bool isHeader) const {

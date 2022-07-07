@@ -8,13 +8,11 @@ Block::Block(std::vector<Sentence *> _sentences,
     : sentences(_sentences), bb(nullptr), end_bb(nullptr),
       Sentence(_filePlacement) {}
 
-llvm::BasicBlock *Block::create_bb(IR::Generator *generator,
-                                   llvm::Function *function) {
-  auto fn =
-      function ? function : generator->builder.GetInsertBlock()->getParent();
+llvm::BasicBlock *Block::create_bb(IR::Context *ctx, llvm::Function *function) {
+  auto fn = function ? function : ctx->builder.GetInsertBlock()->getParent();
   if (!bb) {
     auto name = std::to_string(utils::new_block_index(fn) + 1);
-    bb = llvm::BasicBlock::Create(generator->llvmContext, name, fn, nullptr);
+    bb = llvm::BasicBlock::Create(ctx->llvmContext, name, fn, nullptr);
   }
   return bb;
 }
@@ -39,16 +37,16 @@ void Block::set_alloca_scope_end(llvm::LLVMContext &ctx,
   }
 }
 
-llvm::Value *Block::emit(IR::Generator *generator) {
-  create_bb(generator);
-  generator->builder.SetInsertPoint(bb);
+llvm::Value *Block::emit(IR::Context *ctx) {
+  create_bb(ctx);
+  ctx->builder.SetInsertPoint(bb);
   llvm::Value *last = nullptr;
   for (auto sentence : sentences) {
-    last = sentence->emit(generator);
+    last = sentence->emit(ctx);
   }
-  end_bb = generator->builder.GetInsertBlock();
+  end_bb = ctx->builder.GetInsertBlock();
   auto latest_bb = end_bb->getName().str();
-  set_alloca_scope_end(generator->llvmContext, latest_bb);
+  set_alloca_scope_end(ctx->llvmContext, latest_bb);
   return last;
 }
 

@@ -1,7 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_STRING_LITERAL_HPP
 #define QAT_AST_EXPRESSIONS_STRING_LITERAL_HPP
 
-#include "../../IR/generator.hpp"
+#include "../../IR/context.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"
 #include "llvm/ADT/APFloat.h"
@@ -40,7 +40,7 @@ public:
    */
   std::string get_value() const;
 
-  llvm::Value *emit(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

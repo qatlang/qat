@@ -9,8 +9,8 @@ StringLiteral::StringLiteral(std::string _value,
 
 std::string StringLiteral::get_value() const { return value; }
 
-llvm::Value *StringLiteral::emit(IR::Generator *generator) {
-  return llvm::ConstantDataArray::getString(generator->llvmContext,
+llvm::Value *StringLiteral::emit(IR::Context *ctx) {
+  return llvm::ConstantDataArray::getString(ctx->llvmContext,
                                             llvm::StringRef(value),
                                             true //
   );

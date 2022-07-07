@@ -29,11 +29,13 @@ public:
    */
   SizeOf(Expression *_expression, utils::FilePlacement _filePlacement);
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Context *ctx);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return NodeType::sizeOf; }
+  NodeType nodeType() const { return NodeType::sizeOf; }
 };
 
 } // namespace AST

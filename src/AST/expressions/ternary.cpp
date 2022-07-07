@@ -10,57 +10,57 @@ TernaryExpression::TernaryExpression(Expression *_condition,
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
       Expression(_filePlacement) {}
 
-llvm::Value *TernaryExpression::emit(qat::IR::Generator *generator) {
-  auto gen_cond = condition->emit(generator);
+llvm::Value *TernaryExpression::emit(qat::IR::Context *ctx) {
+  auto gen_cond = condition->emit(ctx);
   if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1) ||
         gen_cond->getType()->isIntegerTy(8)) {
-      auto parent_fn = generator->builder.GetInsertBlock()->getParent();
+      auto parent_fn = ctx->builder.GetInsertBlock()->getParent();
       auto if_block = llvm::BasicBlock::Create(
-          generator->llvmContext,
-          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
+          ctx->llvmContext, std::to_string(utils::new_block_index(parent_fn)),
+          parent_fn);
       auto else_block = llvm::BasicBlock::Create(
-          generator->llvmContext,
-          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
+          ctx->llvmContext, std::to_string(utils::new_block_index(parent_fn)),
+          parent_fn);
       auto mergeBlock = llvm::BasicBlock::Create(
-          generator->llvmContext,
-          std::to_string(utils::new_block_index(parent_fn)), parent_fn);
-      generator->builder.CreateCondBr(gen_cond, if_block, else_block);
+          ctx->llvmContext, std::to_string(utils::new_block_index(parent_fn)),
+          parent_fn);
+      ctx->builder.CreateCondBr(gen_cond, if_block, else_block);
 
       /* If block */
-      generator->builder.SetInsertPoint(if_block);
-      auto if_val = if_expr->emit(generator);
-      generator->builder.CreateBr(mergeBlock);
+      ctx->builder.SetInsertPoint(if_block);
+      auto if_val = if_expr->emit(ctx);
+      ctx->builder.CreateBr(mergeBlock);
 
       /* Else block */
-      generator->builder.SetInsertPoint(else_block);
-      auto else_val = else_expr->emit(generator);
-      generator->builder.CreateBr(mergeBlock);
+      ctx->builder.SetInsertPoint(else_block);
+      auto else_val = else_expr->emit(ctx);
+      ctx->builder.CreateBr(mergeBlock);
 
       /* After Block */
-      generator->builder.SetInsertPoint(mergeBlock);
+      ctx->builder.SetInsertPoint(mergeBlock);
       llvm::PHINode *phiNode;
       if (if_val && else_val) {
         if (if_val->getType() != else_val->getType()) {
-          generator->throw_error(
+          ctx->throw_error(
               "Ternary expression is giving values of different types",
               file_placement);
         } else {
-          phiNode = generator->builder.CreatePHI(if_val->getType(), 2,
-                                                 "ifElsePhiNode");
+          phiNode =
+              ctx->builder.CreatePHI(if_val->getType(), 2, "ifElsePhiNode");
           phiNode->addIncoming(if_val, if_block);
           phiNode->addIncoming(else_val, else_block);
           return phiNode;
         }
       } else {
-        generator->throw_error(
-            "Ternary `" + std::string((if_val == nullptr) ? "if" : "else") +
-                "` expression is not giving any value",
-            ((if_val == nullptr) ? if_expr->file_placement
-                                 : else_expr->file_placement));
+        ctx->throw_error("Ternary `" +
+                             std::string((if_val == nullptr) ? "if" : "else") +
+                             "` expression is not giving any value",
+                         ((if_val == nullptr) ? if_expr->file_placement
+                                              : else_expr->file_placement));
       }
     } else {
-      generator->throw_error(
+      ctx->throw_error(
           "Condition expression is of the type `" +
               qat::utils::llvmTypeToName(gen_cond->getType()) +
               "`, but ternary expression expects an expression of `bool`, "
@@ -68,9 +68,9 @@ llvm::Value *TernaryExpression::emit(qat::IR::Generator *generator) {
           if_expr->file_placement);
     }
   } else {
-    generator->throw_error("Condition expression is null, but `if` sentence "
-                           "expects an expression of `bool` or `int<1>` type",
-                           if_expr->file_placement);
+    ctx->throw_error("Condition expression is null, but `if` sentence "
+                     "expects an expression of `bool` or `int<1>` type",
+                     if_expr->file_placement);
   }
 }
 

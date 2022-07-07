@@ -37,7 +37,7 @@ public:
   ArrayType(QatType *_element_type, const uint64_t _length,
             const bool _variable, const utils::FilePlacement _filePlacement);
 
-  IR::QatType *emit(IR::Generator *generator);
+  IR::QatType *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

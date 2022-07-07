@@ -7,12 +7,12 @@ NamedType::NamedType(const std::string _name, const bool _variable,
                      const utils::FilePlacement _filePlacement)
     : name(_name), QatType(_variable, _filePlacement) {}
 
-IR::QatType *NamedType::emit(IR::Generator *generator) {
+IR::QatType *NamedType::emit(IR::Context *ctx) {
   // FIXME - Support sum types, other kinds of named types and type definitions
-  // auto structType = llvm::StructType::getTypeByName(generator->llvmContext,
+  // auto structType = llvm::StructType::getTypeByName(ctx->llvmContext,
   //                                                   llvm::StringRef(name));
   // if (structType == nullptr) {
-  //   generator->throw_error("Type " + name + " cannot be found",
+  //   ctx->throw_error("Type " + name + " cannot be found",
   //   filePlacement);
   // }
   // return structType;

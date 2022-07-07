@@ -10,8 +10,8 @@ ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
     : element_type(_element_type), length(_length),
       QatType(_variable, _filePlacement) {}
 
-IR::QatType *ArrayType::emit(qat::IR::Generator *generator) {
-  return new IR::ArrayType(element_type->emit(generator), length);
+IR::QatType *ArrayType::emit(IR::Context *ctx) {
+  return new IR::ArrayType(element_type->emit(ctx), length);
 }
 
 void ArrayType::emitCPP(backend::cpp::File &file, bool isHeader) const {

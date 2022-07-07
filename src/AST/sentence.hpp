@@ -9,7 +9,7 @@ class Sentence : public Node {
 public:
   Sentence(utils::FilePlacement _filePlacement) : Node(_filePlacement) {}
 
-  virtual llvm::Value *emit(IR::Generator *generator){};
+  virtual llvm::Value *emit(IR::Context *ctx){};
 
   virtual NodeType nodeType(){};
 

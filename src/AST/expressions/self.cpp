@@ -5,7 +5,7 @@ namespace AST {
 
 Self::Self(utils::FilePlacement _filePlacement) : Expression(_filePlacement) {}
 
-llvm::Value *Self::generate(IR::Generator *generator) {
+llvm::Value *Self::emit(IR::Generator *generator) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     generator->throw_error("This expression is not assignable", file_placement);
   }
@@ -48,6 +48,12 @@ llvm::Value *Self::generate(IR::Generator *generator) {
                                "` is not a member of any object, and hence is "
                                "not allowed to use '' expression!",
                            file_placement);
+  }
+}
+
+void Self::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "this";
   }
 }
 

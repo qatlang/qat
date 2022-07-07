@@ -1,4 +1,8 @@
 #include "./local_declaration.hpp"
+#include "../show.hpp"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {
@@ -9,11 +13,11 @@ LocalDeclaration::LocalDeclaration(QatType *_type, std::string _name,
     : type(_type), name(_name), value(_value), variability(_variability),
       Sentence(_filePlacement) {}
 
-llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
+llvm::Value *LocalDeclaration::emit(qat::IR::Generator *generator) {
   bool is_reference = type ? (type->typeKind() == TypeKind::reference) : false;
-  auto gen_value = value->generate(generator);
+  auto gen_value = value->emit(generator);
   if (type) {
-    auto decl_ty = type->generate(generator);
+    auto decl_ty = type->emit(generator);
     if ((decl_ty->isPointerTy()) &&
         (value->nodeType() == NodeType::nullPointer)) {
       gen_value = generator->builder.CreatePointerCast(
@@ -25,8 +29,7 @@ llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
     }
   }
   auto function = generator->builder.GetInsertBlock()->getParent();
-  auto &e_block = function->getEntryBlock();
-  auto insert_p = e_block.begin();
+  auto e_block = function->getEntryBlock().begin()->getParent();
   bool entity_exists = false;
   for (std::size_t i = 0; i < function->arg_size(); i++) {
     if (function->getArg(i)->getName().str() == name) {
@@ -40,40 +43,45 @@ llvm::Value *LocalDeclaration::generate(qat::IR::Generator *generator) {
             function->getName().str() +
             "`. Please remove this declaration or rename this entity",
         file_placement);
-  } else {
-    for (auto &instr : e_block) {
-      if (llvm::isa<llvm::AllocaInst>(instr)) {
-        insert_p++;
-        auto candidate = llvm::dyn_cast<llvm::AllocaInst>(&instr);
-        if (candidate->hasName() && (candidate->getName().str() == name)) {
-          entity_exists = true;
-          break;
-        }
-      } else {
-        break;
-      }
-    }
-    if (entity_exists) {
-      generator->throw_error("Redeclaration of entity `" + name +
-                                 "`. Please remove the previous declaration or "
-                                 "rename this entity",
-                             file_placement);
-    }
   }
+  SHOW("Getting origin block")
   auto origin_bb = generator->builder.GetInsertBlock();
-  generator->builder.SetInsertPoint(&*insert_p);
-  auto var_alloca = generator->builder.CreateAlloca(
-      (type ? type->generate(generator) : gen_value->getType()), 0, nullptr,
-      name);
+  SHOW("Setting insert point")
+  generator->builder.SetInsertPoint(e_block);
+  SHOW("Insert point set")
+  auto var_alloca = new llvm::AllocaInst(
+      (type ? type->emit(generator) : gen_value->getType()), 0u, name, e_block);
+  SHOW("Alloca created")
   if (var_alloca->getAllocatedType()->isPointerTy()) {
     utils::PointerKind::set(generator->llvmContext, var_alloca, is_reference);
+    SHOW("Pointer kind handled")
   }
+  SHOW("Setting origin block to alloca")
   set_origin_block(generator->llvmContext, var_alloca, origin_bb);
   utils::Variability::set(generator->llvmContext, var_alloca, variability);
   generator->builder.SetInsertPoint(origin_bb);
+  SHOW("Going back to origin block")
   auto storeValue =
       generator->builder.CreateStore(gen_value, var_alloca, false);
+  SHOW("Store created")
   return storeValue;
+}
+
+void LocalDeclaration::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    if (variability) {
+      file += "const ";
+    }
+    if (type) {
+      type->emitCPP(file, isHeader);
+    } else {
+      file += "auto ";
+    }
+    file += name;
+    file += " = ";
+    value->emitCPP(file, isHeader);
+    file += ";\n";
+  }
 }
 
 void LocalDeclaration::set_origin_block(llvm::LLVMContext &ctx,

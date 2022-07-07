@@ -1,4 +1,5 @@
 #include "./tuple.hpp"
+#include <tuple>
 #include <vector>
 
 namespace qat {
@@ -11,10 +12,10 @@ TupleType::TupleType(const std::vector<QatType *> _types, const bool _isPacked,
 
 void TupleType::add_type(QatType *type) { types.push_back(type); }
 
-llvm::Type *TupleType::generate(IR::Generator *generator) {
+llvm::Type *TupleType::emit(IR::Generator *generator) {
   std::vector<llvm::Type *> gen_types;
   for (auto &type : types) {
-    llvm::Type *newTy = type->generate(generator);
+    llvm::Type *newTy = type->emit(generator);
     if (newTy->isVoidTy()) {
       generator->throw_error("Tuple member type cannot be `void`",
                              filePlacement);
@@ -23,6 +24,21 @@ llvm::Type *TupleType::generate(IR::Generator *generator) {
   }
   return llvm::StructType::get(generator->llvmContext,
                                llvm::ArrayRef(gen_types), isPacked);
+}
+
+void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  file.addInclude("<tuple>");
+  if (isConstant()) {
+    file += "const ";
+  }
+  file += "std::tuple<";
+  for (std::size_t i = 0; i < types.size(); i++) {
+    types.at(i)->emitCPP(file, isHeader);
+    if (i != (types.size() - 1)) {
+      file += ", ";
+    }
+  }
+  file += "> ";
 }
 
 TypeKind TupleType::typeKind() { return TypeKind::tuple; }

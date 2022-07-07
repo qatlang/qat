@@ -7,9 +7,9 @@ Assignment::Assignment(Expression *_lhs, Expression *_value,
                        utils::FilePlacement _filePlacement)
     : lhs(_lhs), value(_value), Sentence(_filePlacement) {}
 
-llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
+llvm::Value *Assignment::emit(qat::IR::Generator *generator) {
   lhs->setExpectedKind(ExpressionKind::assignable);
-  auto lhs_val = lhs->generate(generator);
+  auto lhs_val = lhs->emit(generator);
   bool is_reference = false;
   llvm::Type *lhs_type = nullptr;
   if (llvm::isa<llvm::Instruction>(lhs_val)) {
@@ -37,7 +37,7 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
   if (!lhs_type) {
     lhs_type = lhs_val->getType();
   }
-  auto gen_val = value->generate(generator);
+  auto gen_val = value->emit(generator);
   if (is_reference
           ? (llvm::dyn_cast<llvm::PointerType>(lhs_type)->getElementType() !=
              gen_val->getType())
@@ -51,6 +51,13 @@ llvm::Value *Assignment::generate(qat::IR::Generator *generator) {
   }
   // TODO - Support copy and move semantics
   return generator->builder.CreateStore(gen_val, lhs_val, false);
+}
+
+void Assignment::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  lhs->emitCPP(file, isHeader);
+  file += " = ";
+  value->emitCPP(file, isHeader);
+  file += ";\n";
 }
 
 backend::JSON Assignment::toJSON() const {

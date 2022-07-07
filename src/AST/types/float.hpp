@@ -2,6 +2,7 @@
 #define QAT_AST_TYPES_FLOAT_HPP
 
 #include "./qat_type.hpp"
+#include "cstdint"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
 
@@ -38,20 +39,12 @@ public:
   FloatType(const FloatTypeKind _kind, const bool _variable,
             const utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  llvm::Type *generate(IR::Generator *generator);
+  static std::string kindToString(FloatTypeKind kind);
 
-  /**
-   *  TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
+  llvm::Type *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
   TypeKind typeKind();
 
   backend::JSON toJSON() const;

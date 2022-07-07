@@ -2,6 +2,7 @@
 #define QAT_AST_NODE_HPP
 
 #include "../IR/generator.hpp"
+#include "../backend/cpp.hpp"
 #include "../backend/json.hpp"
 #include "../utils/file_placement.hpp"
 #include "./errors.hpp"
@@ -28,21 +29,16 @@ public:
 
   // This is the code generator function that handles the generation of
   // LLVM IR
-  //
-  // @param generator The IR::Generator instance that handles LLVM IR
-  // Generation
-  // @return llvm::Value*
-  virtual llvm::Value *generate(IR::Generator *generator){};
+  virtual llvm::Value *emit(IR::Generator *generator){};
 
   // This is the generator function that handles the generation of JSON
   virtual backend::JSON toJSON() const {};
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
-  virtual NodeType nodeType(){};
+  // This is the generator function for C++
+  virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {}
+
+  // Type of the node represented by this AST member
+  virtual NodeType nodeType() const {};
 
   /**
    *  A range present in a file that represents the placement spanned by

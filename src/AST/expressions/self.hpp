@@ -22,18 +22,13 @@ public:
    */
   Self(utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return qat::AST::NodeType::selfExpression; }
+  NodeType nodeType() const { return qat::AST::NodeType::selfExpression; }
 };
 
 } // namespace AST

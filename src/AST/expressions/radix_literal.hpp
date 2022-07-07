@@ -30,11 +30,13 @@ public:
   RadixLiteral(std::string _value, unsigned _radix,
                utils::FilePlacement _filePlacement);
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return qat::AST::NodeType::radixLiteral; }
+  NodeType nodeType() const { return qat::AST::NodeType::radixLiteral; }
 };
 
 } // namespace AST

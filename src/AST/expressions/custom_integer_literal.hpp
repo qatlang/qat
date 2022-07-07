@@ -25,11 +25,13 @@ public:
                        unsigned int _bitWidth,
                        utils::FilePlacement _filePlacement);
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return qat::AST::NodeType::customIntegerLiteral; }
+  NodeType nodeType() const { return qat::AST::NodeType::customIntegerLiteral; }
 };
 } // namespace AST
 } // namespace qat

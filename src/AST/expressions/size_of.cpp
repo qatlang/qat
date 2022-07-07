@@ -6,9 +6,17 @@ namespace AST {
 SizeOf::SizeOf(Expression *_expression, utils::FilePlacement _filePlacement)
     : expression(_expression), Expression(_filePlacement) {}
 
-llvm::Value *SizeOf::generate(IR::Generator *generator) {
-  auto gen_exp = expression->generate(generator);
+llvm::Value *SizeOf::emit(IR::Generator *generator) {
+  auto gen_exp = expression->emit(generator);
   return llvm::ConstantExpr::getSizeOf(gen_exp->getType());
+}
+
+void SizeOf::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "sizeof(";
+    expression->emitCPP(file, isHeader);
+    file += ")";
+  }
 }
 
 backend::JSON SizeOf::toJSON() const {

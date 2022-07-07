@@ -7,8 +7,16 @@ ExpressionSentence::ExpressionSentence(Expression *_exp,
                                        utils::FilePlacement _filePlacement)
     : expr(_exp), qat::AST::Sentence(_filePlacement) {}
 
-llvm::Value *ExpressionSentence::generate(IR::Generator *generator) {
-  return expr->generate(generator);
+llvm::Value *ExpressionSentence::emit(IR::Generator *generator) {
+  return expr->emit(generator);
+}
+
+void ExpressionSentence::emitCPP(backend::cpp::File &file,
+                                 bool isHeader) const {
+  if (!isHeader) {
+    expr->emitCPP(file, isHeader);
+    file += ";\n";
+  }
 }
 
 backend::JSON ExpressionSentence::toJSON() const {

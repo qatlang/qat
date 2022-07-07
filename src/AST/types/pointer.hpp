@@ -1,7 +1,6 @@
 #ifndef QAT_TYPES_POINTER_HPP
 #define QAT_TYPES_POINTER_HPP
 
-#include "../../show.hpp"
 #include "../../utils/llvm_type_to_name.hpp"
 #include "./qat_type.hpp"
 #include "./void.hpp"
@@ -30,20 +29,10 @@ public:
   PointerType(QatType *_type, const bool _variable,
               const utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  llvm::Type *generate(IR::Generator *generator);
+  llvm::Type *emit(IR::Generator *generator);
 
-  /**
-   *  TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
   TypeKind typeKind();
 
   backend::JSON toJSON() const;

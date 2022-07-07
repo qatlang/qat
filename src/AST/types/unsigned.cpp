@@ -7,7 +7,7 @@ UnsignedType::UnsignedType(const unsigned int _bitWidth, const bool _variable,
                            const utils::FilePlacement _filePlacement)
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
-llvm::Type *UnsignedType::generate(qat::IR::Generator *generator) {
+llvm::Type *UnsignedType::emit(qat::IR::Generator *generator) {
   switch (bitWidth) {
   case 1: {
     return llvm::Type::getInt1Ty(generator->llvmContext);
@@ -31,6 +31,25 @@ llvm::Type *UnsignedType::generate(qat::IR::Generator *generator) {
     return llvm::Type::getIntNTy(generator->llvmContext, bitWidth);
   }
   }
+}
+
+void UnsignedType::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  std::string value;
+  file.addInclude("<cstdint>");
+  if (bitWidth <= 8) {
+    value = "std::uint8_t";
+  } else if (bitWidth <= 16) {
+    value = "std::uint16_t";
+  } else if (bitWidth <= 32) {
+    value = "std::uint32_t";
+  } else {
+    value = "std::uint64_t";
+  }
+  if (isConstant()) {
+    file += "const ";
+  }
+  file += value;
+  // file.addEnclosedComment("u" + std::to_string(bitWidth));
 }
 
 bool UnsignedType::isBitWidth(const unsigned int width) const {

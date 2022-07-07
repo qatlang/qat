@@ -2,6 +2,7 @@
 #define QAT_AST_TYPES_QAT_TYPE_HPP
 
 #include "../../IR/generator.hpp"
+#include "../../backend/cpp.hpp"
 #include "../../backend/json.hpp"
 #include "../../utils/file_placement.hpp"
 #include "./type_kind.hpp"
@@ -25,41 +26,27 @@ public:
 
   virtual ~QatType(){};
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  virtual llvm::Type *generate(IR::Generator *generator){};
+  // This is the code generator function that handles the generation of
+  // LLVM IR
+  virtual llvm::Type *emit(IR::Generator *generator){};
 
-  /**
-   *  TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
+  // TypeKind is used to detect variants of the QatType
   virtual TypeKind typeKind(){};
 
-  /**
-   *  Whether this type was accompanied by the var keyword, which
-   * represents variability for the value in context
-   *
-   * @return true If the value is supposed to be a variable
-   * @return false If the value is NOT supposed to be a variable
-   */
+  // Whether this type was accompanied by the var keyword, which
+  // represents variability for the value in context
   bool isVariable() const { return variable; }
 
-  /**
-   *  This generates JSON to represent the type
-   */
+  bool isConstant() const { return !variable; }
+
+  // This is the generator function for C++
+  virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
+
+  // This generates JSON to represent the type
   virtual backend::JSON toJSON() const {};
 
-  /**
-   *  FilePlacement representing the range in the file this type was
-   * parsed from
-   *
-   */
+  // FilePlacement representing the range in the file this type was
+  // parsed from
   utils::FilePlacement filePlacement;
 };
 } // namespace AST

@@ -7,7 +7,7 @@ RadixLiteral::RadixLiteral(std::string _value, unsigned _radix,
                            utils::FilePlacement _filePlacement)
     : value(_value), radix(_radix), Expression(_filePlacement) {}
 
-llvm::Value *RadixLiteral::generate(IR::Generator *generator) {
+llvm::Value *RadixLiteral::emit(IR::Generator *generator) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     generator->throw_error("This expression is not assignable", file_placement);
   }
@@ -27,6 +27,22 @@ llvm::Value *RadixLiteral::generate(IR::Generator *generator) {
   }
   return llvm::ConstantInt::get(
       llvm::Type::getIntNTy(generator->llvmContext, bitWidth), value, radix);
+}
+
+void RadixLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    std::string val;
+    if (radix == 2) {
+      val = "0b" + value;
+    } else if (radix == 8) {
+      val = "0" + value;
+    } else if (radix == 16) {
+      val = "0x" + value;
+    } else {
+      val = value;
+    }
+    file += (val + " ");
+  }
 }
 
 backend::JSON RadixLiteral::toJSON() const {

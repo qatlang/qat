@@ -9,8 +9,16 @@ ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
     : element_type(_element_type), length(_length),
       QatType(_variable, _filePlacement) {}
 
-llvm::Type *ArrayType::generate(qat::IR::Generator *generator) {
-  return llvm::ArrayType::get(element_type->generate(generator), length);
+llvm::Type *ArrayType::emit(qat::IR::Generator *generator) {
+  return llvm::ArrayType::get(element_type->emit(generator), length);
+}
+
+void ArrayType::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  element_type->emitCPP(file, isHeader);
+  if (isConstant()) {
+    file += " const";
+  }
+  file += "* ";
 }
 
 TypeKind ArrayType::typeKind() { return TypeKind::array; }

@@ -7,7 +7,7 @@ CustomFloatLiteral::CustomFloatLiteral(std::string _value, std::string _kind,
                                        utils::FilePlacement _filePlacement)
     : value(_value), kind(_kind), Expression(_filePlacement) {}
 
-llvm::Value *CustomFloatLiteral::generate(IR::Generator *generator) {
+llvm::Value *CustomFloatLiteral::emit(IR::Generator *generator) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     generator->throw_error("This expression is not assignable", file_placement);
   }
@@ -26,6 +26,19 @@ llvm::Value *CustomFloatLiteral::generate(IR::Generator *generator) {
     flType = llvm::Type::getPPC_FP128Ty(generator->llvmContext);
   }
   return llvm::ConstantFP::get(flType, llvm::StringRef(value));
+}
+
+void CustomFloatLiteral::emitCPP(backend::cpp::File &file,
+                                 bool isHeader) const {
+  std::string val = "((";
+  if (kind == "f32" || kind == "fhalf" || kind == "fbrain") {
+    val += "float";
+  } else if (kind == "f64") {
+    val += "double";
+  } else {
+    val += "long double";
+  }
+  val += ")" + value + ")";
 }
 
 backend::JSON CustomFloatLiteral::toJSON() const {

@@ -32,7 +32,7 @@ FloatType::FloatType(const FloatTypeKind _kind, const bool _variable,
                      const utils::FilePlacement _filePlacement)
     : kind(_kind), QatType(_variable, _filePlacement) {}
 
-llvm::Type *FloatType::generate(IR::Generator *generator) {
+llvm::Type *FloatType::emit(IR::Generator *generator) {
   switch (kind) {
   case FloatTypeKind::_brain: {
     return generator->builder.getBFloatTy();
@@ -54,6 +54,59 @@ llvm::Type *FloatType::generate(IR::Generator *generator) {
   }
   case FloatTypeKind::_128: {
     return llvm::Type::getFP128Ty(generator->llvmContext);
+  }
+  }
+}
+
+void FloatType::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  std::string value;
+  switch (kind) {
+  case FloatTypeKind::_brain:
+  case FloatTypeKind::_half:
+  case FloatTypeKind::_32: {
+    value = "float";
+    break;
+  }
+  case FloatTypeKind::_64: {
+    value = "double";
+    break;
+  }
+  case FloatTypeKind::_80:
+  case FloatTypeKind::_128PPC:
+  case FloatTypeKind::_128: {
+    value = "long double";
+    break;
+  }
+  }
+  if (isConstant()) {
+    file += "const ";
+  }
+  file += value;
+  // file.addEnclosedComment(kindToString(kind));
+}
+
+std::string FloatType::kindToString(FloatTypeKind kind) {
+  switch (kind) {
+  case FloatTypeKind::_half: {
+    return "fhalf";
+  }
+  case FloatTypeKind::_brain: {
+    return "fbrain";
+  }
+  case FloatTypeKind::_32: {
+    return "f32";
+  }
+  case FloatTypeKind::_64: {
+    return "f64";
+  }
+  case FloatTypeKind::_80: {
+    return "f80";
+  }
+  case FloatTypeKind::_128: {
+    return "f128";
+  }
+  case FloatTypeKind::_128PPC: {
+    return "f128ppc";
   }
   }
 }

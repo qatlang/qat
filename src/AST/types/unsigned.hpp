@@ -31,20 +31,10 @@ public:
   UnsignedType(const unsigned int _bitWidth, const bool _variable,
                const utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  llvm::Type *generate(IR::Generator *generator);
+  llvm::Type *emit(IR::Generator *generator);
 
-  /**
-   *  TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
   TypeKind typeKind();
 
   /**

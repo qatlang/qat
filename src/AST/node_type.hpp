@@ -21,7 +21,7 @@ enum class NodeType {
   ifElse,
   giveSentence,
   exposeBoxes,
-  defineObjectType,
+  defineCoreType,
   closeBox,
   reassignment,
   entity,
@@ -42,12 +42,15 @@ enum class NodeType {
   loopTimes,
   loopWhile,
   loopOver,
-  multiThread,
-  multiThreadGive,
+  loopIndex,
+  multithread,
+  multithreadGive,
   atomicAssignedExpression,
   nullPointer,
   radixLiteral,
-  customFloatLiteral
+  customFloatLiteral,
+  box,
+  tupleValue
 };
 }
 } // namespace qat

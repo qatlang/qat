@@ -10,8 +10,8 @@ TernaryExpression::TernaryExpression(Expression *_condition,
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
       Expression(_filePlacement) {}
 
-llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
-  auto gen_cond = condition->generate(generator);
+llvm::Value *TernaryExpression::emit(qat::IR::Generator *generator) {
+  auto gen_cond = condition->emit(generator);
   if (gen_cond) {
     if (gen_cond->getType()->isIntegerTy(1) ||
         gen_cond->getType()->isIntegerTy(8)) {
@@ -29,12 +29,12 @@ llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
 
       /* If block */
       generator->builder.SetInsertPoint(if_block);
-      auto if_val = if_expr->generate(generator);
+      auto if_val = if_expr->emit(generator);
       generator->builder.CreateBr(mergeBlock);
 
       /* Else block */
       generator->builder.SetInsertPoint(else_block);
-      auto else_val = else_expr->generate(generator);
+      auto else_val = else_expr->emit(generator);
       generator->builder.CreateBr(mergeBlock);
 
       /* After Block */
@@ -71,6 +71,18 @@ llvm::Value *TernaryExpression::generate(qat::IR::Generator *generator) {
     generator->throw_error("Condition expression is null, but `if` sentence "
                            "expects an expression of `bool` or `int<1>` type",
                            if_expr->file_placement);
+  }
+}
+
+void TernaryExpression::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "((";
+    condition->emitCPP(file, isHeader);
+    file += ") ? (";
+    if_expr->emitCPP(file, isHeader);
+    file += ") : (";
+    else_expr->emitCPP(file, isHeader);
+    file += ")) ";
   }
 }
 

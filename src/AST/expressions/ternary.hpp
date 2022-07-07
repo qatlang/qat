@@ -55,22 +55,12 @@ public:
                     Expression *_elseExpression,
                     utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
   NodeType nodeType() { return NodeType::ternaryExpression; }
 };
 

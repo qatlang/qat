@@ -3,12 +3,12 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *ExposeBoxes::generate(IR::Generator *generator) {
+llvm::Value *ExposeBoxes::emit(IR::Generator *generator) {
   std::size_t count = 0;
   for (auto existing : generator->exposed) {
     for (auto candidate : boxes) {
-      if (existing.generate() == candidate.generate()) {
-        Errors::AST4(candidate.generate(), (boxes.size() > 1), file_placement);
+      if (existing == candidate) {
+        Errors::AST4(candidate, (boxes.size() > 1), file_placement);
         break;
         // NOTE - This break is currently unnecessary, but in the future, when
         // compilation is not stopped on the first encounter of an error,
@@ -20,7 +20,7 @@ llvm::Value *ExposeBoxes::generate(IR::Generator *generator) {
     }
   }
   for (auto sentence : sentences) {
-    sentence.generate(generator);
+    sentence->emit(generator);
   }
   /**
    *  Interating both vectors in one loop instead of two as this makes
@@ -30,22 +30,35 @@ llvm::Value *ExposeBoxes::generate(IR::Generator *generator) {
   auto exp_size = generator->exposed.size();
   auto boxes_size = boxes.size();
   for (auto i = exp_size - 1; ((i >= 0) && (i >= (exp_size - count))); i--) {
-    if (generator->exposed.at(i).generate() ==
-        boxes.at(boxes_size - (exp_size - i)).generate()) {
+    if (generator->exposed.at(i) == boxes.at(boxes_size - (exp_size - i))) {
       generator->exposed.pop_back();
     }
   }
   return nullptr;
 }
 
+void ExposeBoxes::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "{\n";
+    for (auto box : boxes) {
+      // TODO - Resolve relative named boxes
+      file += "   using namespace " + box + ";\n";
+    }
+    for (auto snt : sentences) {
+      snt->emitCPP(file, isHeader);
+    }
+    file += "}\n";
+  }
+}
+
 backend::JSON ExposeBoxes::toJSON() const {
   std::vector<backend::JsonValue> boxs;
   std::vector<backend::JSON> sntcs;
   for (auto box : boxes) {
-    boxs.push_back(backend::JsonValue(box.generate()));
+    boxs.push_back(backend::JsonValue(box));
   }
   for (auto sen : sentences) {
-    sntcs.push_back(sen.toJSON());
+    sntcs.push_back(sen->toJSON());
   }
   return backend::JSON()
       ._("nodeType", "exposeBoxes")

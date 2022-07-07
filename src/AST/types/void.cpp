@@ -7,8 +7,12 @@ VoidType::VoidType(const bool _variable,
                    const utils::FilePlacement _filePlacement)
     : QatType(_variable, _filePlacement) {}
 
-llvm::Type *VoidType::generate(IR::Generator *generator) {
+llvm::Type *VoidType::emit(IR::Generator *generator) {
   return llvm::Type::getVoidTy(generator->llvmContext);
+}
+
+void VoidType::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  file += "void ";
 }
 
 TypeKind VoidType::typeKind() { return TypeKind::Void; }

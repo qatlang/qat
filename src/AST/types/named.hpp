@@ -37,27 +37,13 @@ public:
   NamedType(const std::string _name, const bool _variable,
             const utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Type*
-   */
-  llvm::Type *generate(IR::Generator *generator);
+  llvm::Type *emit(IR::Generator *generator);
 
-  /**
-   *  Get the name of the type
-   *
-   * @return std::string
-   */
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
+  // Get the name of the type
   std::string get_name() const;
 
-  /**
-   *  TypeKind is used to detect variants of the QatType
-   *
-   * @return TypeKind
-   */
   TypeKind typeKind();
 
   backend::JSON toJSON() const;

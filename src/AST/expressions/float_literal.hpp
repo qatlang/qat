@@ -1,13 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_FLOAT_LITERAL_HPP
 #define QAT_AST_EXPRESSIONS_FLOAT_LITERAL_HPP
 
-#include "../../IR/generator.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
-#include "llvm/ADT/APFloat.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {
@@ -29,18 +23,13 @@ public:
    */
   FloatLiteral(std::string _value, utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return qat::AST::NodeType::floatLiteral; }
+  NodeType nodeType() const { return qat::AST::NodeType::floatLiteral; }
 };
 
 } // namespace AST

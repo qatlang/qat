@@ -1,9 +1,11 @@
 #include "./loop_n_times.hpp"
+#include "../utils/unique_id.hpp"
+#include "llvm/IR/BasicBlock.h"
 
 namespace qat {
 namespace AST {
 
-LoopNTimes::LoopNTimes(Expression _count, Block _block, Block _after,
+LoopNTimes::LoopNTimes(Expression *_count, Block *_block, Block *_after,
                        utils::FilePlacement _filePlacement)
     : count(_count), block(_block), after(_after), Sentence(_filePlacement) {}
 
@@ -24,12 +26,12 @@ unsigned LoopNTimes::new_loop_index_id(llvm::BasicBlock *bb) {
   return result;
 }
 
-llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
-  auto count_val = count.generate(generator);
+llvm::Value *LoopNTimes::emit(IR::Generator *generator) {
+  auto count_val = count->emit(generator);
   if (!count_val->getType()->isIntegerTy()) {
     generator->throw_error("Expected an expression of integer type for the "
                            "number of times to loop",
-                           count.file_placement);
+                           count->file_placement);
   }
   auto prev_bb = generator->builder.GetInsertBlock();
   auto inst_iter =
@@ -41,7 +43,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
     }
   }
   generator->builder.SetInsertPoint(last_inst);
-  auto loop_bb = block.create_bb(generator);
+  auto loop_bb = block->create_bb(generator);
   auto id =
       std::to_string(new_loop_index_id(generator->builder.GetInsertBlock()));
   auto index_alloca = generator->builder.CreateAlloca(
@@ -65,7 +67,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
    *  Generate IR for all sentences present within the loop
    *
    */
-  block.generate(generator);
+  block->emit(generator);
   /**
    *  The ending BasicBlock generated might be different
    *
@@ -87,7 +89,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
           ),
       index_alloca, false //
   );
-  auto after_bb = after.create_bb(generator);
+  auto after_bb = after->create_bb(generator);
   generator->builder.CreateCondBr(
       generator->builder.CreateICmpULT(
           generator->builder.CreateLoad(index_alloca->getAllocatedType(),
@@ -95,7 +97,7 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
                                         index_alloca->getName()),
           count_val, "loop:times:check:" + id),
       loop_bb, after_bb);
-  auto after_end = after.generate(generator);
+  auto after_end = after->emit(generator);
   auto after_end_bb = generator->builder.GetInsertBlock();
   generator->builder.SetInsertPoint(prev_bb);
   // FIXME - The count could be signed or unsigned integer, change logic to
@@ -108,6 +110,20 @@ llvm::Value *LoopNTimes::generate(IR::Generator *generator) {
       loop_bb, after_bb);
   generator->builder.SetInsertPoint(after_end_bb);
   return after_end;
+}
+
+void LoopNTimes::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    auto loopID = "loop_" + utils::unique_id();
+    file.addLoopID(loopID);
+    file += ("for (std::size " + loopID + " = 0; " + loopID + " < (");
+    count->emitCPP(file, isHeader);
+    file += ("); ++" + loopID + ") ");
+    block->emitCPP(file, isHeader);
+    file.popLastLoopIndex();
+    file.setOpenBlock(true);
+    after->emitCPP(file, isHeader);
+  }
 }
 
 } // namespace AST

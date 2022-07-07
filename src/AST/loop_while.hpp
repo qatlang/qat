@@ -22,19 +22,19 @@ class LoopWhile : public Sentence {
    *  The block that will be looped over
    *
    */
-  Block block;
+  Block *block;
 
   /**
    *  The block that happens after the loop block
    *
    */
-  Block after;
+  Block *after;
 
   /**
    *  Expression representing the condition for the loop
    *
    */
-  Expression condition;
+  Expression *condition;
 
 public:
   /**
@@ -47,24 +47,14 @@ public:
    * @param _after The block after the loop, which is not part of it
    * @param _filePlacement
    */
-  LoopWhile(Expression _condition, Block _block, Block _after,
+  LoopWhile(Expression *_condition, Block *_block, Block *_after,
             utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code generator function that handles the generation of
-   * LLVM IR
-   *
-   * @param generator The IR::Generator instance that handles LLVM IR Generation
-   * @return llvm::Value*
-   */
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
-  NodeType nodeType() { return NodeType::loopWhile; }
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
+  NodeType nodeType() const { return NodeType::loopWhile; }
 };
 
 } // namespace AST

@@ -3,35 +3,35 @@
 namespace qat {
 namespace AST {
 
-LoopWhile::LoopWhile(Expression _condition, Block _block, Block _after,
+LoopWhile::LoopWhile(Expression *_condition, Block *_block, Block *_after,
                      utils::FilePlacement _filePlacement)
     : condition(_condition), block(_block), after(_after),
       Sentence(_filePlacement) {}
 
-llvm::Value *LoopWhile::generate(IR::Generator *generator) {
-  auto cond_val = condition.generate(generator);
+llvm::Value *LoopWhile::emit(IR::Generator *generator) {
+  auto cond_val = condition->emit(generator);
   if (cond_val->getType()->isIntegerTy()) {
     auto bitWidth =
         llvm::dyn_cast<llvm::IntegerType>(cond_val->getType())->getBitWidth();
     if (bitWidth != 1) {
       generator->throw_error("The integer type is not i1 or u1",
-                             condition.file_placement);
+                             condition->file_placement);
     }
   } else if (!llvm::isa<llvm::BranchInst>(cond_val)) {
     generator->throw_error("Expected an expression of i1, bool or u1 type",
-                           condition.file_placement);
+                           condition->file_placement);
   }
   auto prev_bb = generator->builder.GetInsertBlock();
-  auto loop_bb = block.create_bb(generator);
+  auto loop_bb = block->create_bb(generator);
   /**
    *  Generate IR for all sentences present within the loop
    *
    */
-  block.generate(generator);
+  block->emit(generator);
   auto loop_end_bb = generator->builder.GetInsertBlock();
-  auto after_bb = after.create_bb(generator);
+  auto after_bb = after->create_bb(generator);
   generator->builder.SetInsertPoint(loop_end_bb);
-  generator->builder.CreateCondBr(condition.generate(generator), loop_bb,
+  generator->builder.CreateCondBr(condition->emit(generator), loop_bb,
                                   after_bb);
   generator->builder.SetInsertPoint(prev_bb);
   /**
@@ -40,7 +40,16 @@ llvm::Value *LoopWhile::generate(IR::Generator *generator) {
    *
    */
   generator->builder.CreateCondBr(cond_val, loop_bb, after_bb);
-  return after.generate(generator);
+  return after->emit(generator);
+}
+
+void LoopWhile::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  file += "while (";
+  condition->emitCPP(file, isHeader);
+  file += ")";
+  block->emitCPP(file, isHeader);
+  file.setOpenBlock(true);
+  after->emitCPP(file, isHeader);
 }
 
 } // namespace AST

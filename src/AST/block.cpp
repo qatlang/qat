@@ -39,17 +39,31 @@ void Block::set_alloca_scope_end(llvm::LLVMContext &ctx,
   }
 }
 
-llvm::Value *Block::generate(IR::Generator *generator) {
+llvm::Value *Block::emit(IR::Generator *generator) {
   create_bb(generator);
   generator->builder.SetInsertPoint(bb);
   llvm::Value *last = nullptr;
   for (auto sentence : sentences) {
-    last = sentence->generate(generator);
+    last = sentence->emit(generator);
   }
   end_bb = generator->builder.GetInsertBlock();
   auto latest_bb = end_bb->getName().str();
   set_alloca_scope_end(generator->llvmContext, latest_bb);
   return last;
+}
+
+void Block::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  bool open = file.getOpenBlock();
+  file.setOpenBlock(false);
+  if (!open) {
+    file += "{\n";
+  }
+  for (auto snt : sentences) {
+    snt->emitCPP(file, isHeader);
+  }
+  if (!open) {
+    file += "}\n";
+  }
 }
 
 backend::JSON Block::toJSON() const {

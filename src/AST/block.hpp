@@ -78,11 +78,13 @@ public:
    */
   llvm::BasicBlock *get_end_block() const;
 
-  llvm::Value *generate(IR::Generator *generator);
+  llvm::Value *emit(IR::Generator *generator);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return NodeType::block; }
+  NodeType nodeType() const { return NodeType::block; }
 };
 
 } // namespace AST

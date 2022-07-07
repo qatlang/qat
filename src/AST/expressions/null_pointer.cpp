@@ -1,4 +1,7 @@
 #include "./null_pointer.hpp"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
 
 namespace qat {
 namespace AST {
@@ -9,15 +12,19 @@ NullPointer::NullPointer(utils::FilePlacement _filePlacement)
 NullPointer::NullPointer(llvm::Type *_type, utils::FilePlacement _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
-void NullPointer::set_type(llvm::Type *type_val) { type = type_val; }
-
-llvm::Value *NullPointer::generate(IR::Generator *generator) {
+llvm::Value *NullPointer::emit(IR::Generator *generator) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    generator->throw_error("This expression is not assignable", file_placement);
-  }
-  return llvm::Constant::getNullValue(
+    generator->throw_error("Null pointer is not assignable", file_placement);
+  };
+  return llvm::ConstantPointerNull::get(
       type ? type->getPointerTo()
-           : llvm::Type::getVoidTy(generator->llvmContext)->getPointerTo());
+           : llvm::Type::getInt8PtrTy(generator->llvmContext));
+}
+
+void NullPointer::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  if (!isHeader) {
+    file += "nullptr";
+  }
 }
 
 backend::JSON NullPointer::toJSON() const {

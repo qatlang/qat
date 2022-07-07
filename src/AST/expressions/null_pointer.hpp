@@ -21,13 +21,13 @@ public:
 
   NullPointer(llvm::Type *_type, utils::FilePlacement _filePlacement);
 
-  void set_type(llvm::Type *type);
+  llvm::Value *emit(IR::Generator *generator);
 
-  llvm::Value *generate(IR::Generator *generator);
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
   backend::JSON toJSON() const;
 
-  NodeType nodeType() { return NodeType::nullPointer; }
+  NodeType nodeType() const { return NodeType::nullPointer; }
 };
 
 } // namespace AST

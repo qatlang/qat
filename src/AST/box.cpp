@@ -1,28 +1,33 @@
 #include "./box.hpp"
 
-std::vector<std::string> qat::AST::Box::resolve() {
-  std::vector<std::string> value;
-  if (has_parent()) {
-    value = parent->resolve();
-  }
-  value.push_back(name);
-  return value;
+namespace qat {
+namespace AST {
+
+llvm::Value *Box::emit(IR::Generator *generator) {
+  // FIXME - Perform name checks
+  generator->mod->openBox(name, visibility);
 }
 
-std::string qat::AST::Box::generate() {
-  std::vector<std::string> resolved = resolve();
-  std::string result;
-  if ((resolved.size() == 1) && (resolved.at(0) == "")) {
-    return result;
-  } else {
-    for (auto &value : resolved) {
-      result += value;
-      result += ":";
-    }
-    return result;
+void Box::emitCPP(backend::cpp::File &file, bool isHeader) const {
+  file += ("namespace " + name + " ");
+  file.addEnclosedComment("box");
+  file += " {\n";
+  for (auto mem : members) {
+    mem->emitCPP(file, isHeader);
   }
+  file += "} // namespace " + name + " (box)\n";
 }
 
-void qat::AST::Box::close() { isOpen = false; }
+backend::JSON Box::toJSON() const {
+  std::vector<backend::JSON> mems;
+  for (auto mem : members) {
+    mems.push_back(mem->toJSON());
+  }
+  return backend::JSON()
+      ._("nodeType", "box")
+      ._("members", mems)
+      ._("filePlacement", file_placement);
+}
 
-bool qat::AST::Box::has_parent() { return parent; }
+} // namespace AST
+} // namespace qat

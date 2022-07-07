@@ -1,53 +1,20 @@
-/**
- * Qat Programming Language : Copyright 2022 : Aldrin Mathew
- *
- * AAF INSPECTABLE LICENCE - 1.0
- *
- * This project is licensed under the AAF Inspectable Licence 1.0.
- * You are allowed to inspect the source of this project(s) free of
- * cost, and also to verify the authenticity of the product.
- *
- * Unless required by applicable law, this project is provided
- * "AS IS", WITHOUT ANY WARRANTIES OR PROMISES OF ANY KIND, either
- * expressed or implied. The author(s) of this project is not
- * liable for any harms, errors or troubles caused by using the
- * source or the product, unless implied by law. By using this
- * project, or part of it, you are acknowledging the complete terms
- * and conditions of licensing of this project as specified in AAF
- * Inspectable Licence 1.0 available at this URL:
- *
- * https://github.com/aldrinsartfactory/InspectableLicence/
- *
- * This project may contain parts that are not licensed under the
- * same licence. If so, the licences of those parts should be
- * appropriately mentioned in those parts of the project. The
- * Author MAY provide a notice about the parts of the project that
- * are not licensed under the same licence in a publicly visible
- * manner.
- *
- * You are NOT ALLOWED to sell, or distribute THIS project, its
- * contents, the source or the product or the build result of the
- * source under commercial or non-commercial purposes. You are NOT
- * ALLOWED to revamp, rebrand, refactor, modify, the source, product
- * or the contents of this project.
- *
- * You are NOT ALLOWED to use the name, branding and identity of this
- * project to identify or brand any other project. You ARE however
- * allowed to use the name and branding to pinpoint/show the source
- * of the contents/code/logic of any other project. You are not
- * allowed to use the identification of the Authors of this project
- * to associate them to other projects, in a way that is deceiving
- * or misleading or gives out false information.
- */
-
 #include "./variability.hpp"
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Metadata.h>
+#include <llvm/Support/Casting.h>
+
+#define VARIABILITY "variability"
+#define CONST "const"
+#define VAR "var"
 
 namespace qat {
 namespace utils {
 
 bool Variability::get(llvm::Instruction *value) {
   return llvm::dyn_cast<llvm::MDString>(
-             value->getMetadata("variability")->getOperand(0))
+             value->getMetadata(VARIABILITY)->getOperand(0))
              ->getString() == llvm::StringRef("var");
 }
 
@@ -61,10 +28,20 @@ bool Variability::get(llvm::GlobalVariable *value) {
 
 void Variability::set(llvm::LLVMContext &context, llvm::Instruction *value,
                       bool is_var) {
-  value->setMetadata(
-      "variability",
-      llvm::MDNode::get(
-          context, llvm::MDString::get(context, (is_var ? "var" : "const"))));
+  if (value->hasMetadata(VARIABILITY)) {
+    auto mdn = (llvm::MDTuple *)value->getMetadata(VARIABILITY);
+    std::vector<llvm::MDString *> vals;
+    for (unsigned i = 0; i < mdn->getNumOperands(); i++) {
+      vals.push_back(llvm::dyn_cast<llvm::MDString>(mdn->getOperand(i)));
+    }
+    vals.push_back(llvm::MDString::get(context, is_var ? VAR : CONST));
+    value->setMetadata(VARIABILITY, mdn);
+  } else {
+    value->setMetadata(
+        VARIABILITY,
+        llvm::MDNode::get(
+            context, llvm::MDString::get(context, (is_var ? VAR : CONST))));
+  }
 }
 
 void Variability::set(llvm::Argument *value, bool is_var) {
@@ -73,19 +50,25 @@ void Variability::set(llvm::Argument *value, bool is_var) {
   }
 }
 
+void Variability::set(llvm::LLVMContext &ctx, llvm::Function *fn, bool is_var) {
+  fn->setMetadata(
+      VARIABILITY,
+      llvm::MDNode::get(ctx, llvm::MDString::get(ctx, (is_var ? VAR : CONST))));
+}
+
 void Variability::propagate(llvm::LLVMContext &context,
                             llvm::Instruction *source,
                             llvm::Instruction *target) {
-  auto source_md = source->getMetadata("variability");
+  auto source_md = source->getMetadata(VARIABILITY);
   target->setMetadata(
-      "variability",
+      VARIABILITY,
       llvm::MDNode::get(context,
                         llvm::MDString::get(
                             context, source_md ? llvm::dyn_cast<llvm::MDString>(
                                                      source_md->getOperand(0))
                                                      ->getString()
                                                      .str()
-                                               : "const")));
+                                               : CONST)));
 }
 
 void Variability::propagate(llvm::Argument *source, llvm::Argument *target) {
@@ -95,10 +78,10 @@ void Variability::propagate(llvm::Argument *source, llvm::Argument *target) {
 }
 
 void Variability::propagate(llvm::Instruction *source, llvm::Argument *target) {
-  auto source_md = source->getMetadata("variability");
+  auto source_md = source->getMetadata(VARIABILITY);
   if (source_md) {
     if (llvm::dyn_cast<llvm::MDString>(source_md->getOperand(0))->getString() !=
-        llvm::StringRef("var")) {
+        llvm::StringRef(CONST)) {
       target->addAttr(llvm::Attribute::AttrKind::ReadOnly);
     }
   }
@@ -107,23 +90,23 @@ void Variability::propagate(llvm::Instruction *source, llvm::Argument *target) {
 void Variability::propagate(llvm::LLVMContext &context, llvm::Argument *source,
                             llvm::Instruction *target) {
   target->setMetadata(
-      "variability",
+      VARIABILITY,
       llvm::MDNode::get(
           context,
           llvm::MDString::get(context, (source->hasAttribute(
                                             llvm::Attribute::AttrKind::ReadOnly)
-                                            ? "const"
-                                            : "var"))));
+                                            ? CONST
+                                            : VAR))));
 }
 
 void Variability::propagate(llvm::LLVMContext &context,
                             llvm::GlobalVariable *source,
                             llvm::Instruction *target) {
   target->setMetadata(
-      "variability",
+      VARIABILITY,
       llvm::MDNode::get(
-          context, llvm::MDString::get(
-                       context, (source->isConstant() ? "const" : "var"))));
+          context,
+          llvm::MDString::get(context, (source->isConstant() ? CONST : VAR))));
 }
 
 } // namespace utils

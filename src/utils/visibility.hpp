@@ -9,6 +9,7 @@
 #include "llvm/IR/Module.h"
 #include <map>
 #include <optional>
+#include <string>
 
 namespace qat {
 namespace utils {

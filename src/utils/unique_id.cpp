@@ -1,4 +1,7 @@
 #include "./unique_id.hpp"
+#include <cstdint>
+#include <random>
+#include <sstream>
 
 namespace qat {
 namespace utils {

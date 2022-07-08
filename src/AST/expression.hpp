@@ -36,7 +36,7 @@ public:
 
   bool isExpectedKind(ExpressionKind _kind);
 
-  virtual llvm::Value *emit(IR::Context *ctx){};
+  virtual IR::Value *emit(IR::Context *ctx){};
 
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
 

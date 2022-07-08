@@ -1,2 +1,3 @@
 add_library(QAT_BACKEND
-    ./json.cpp)
+    cpp.cpp
+    json.cpp)

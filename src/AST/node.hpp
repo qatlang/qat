@@ -27,9 +27,8 @@ public:
 
   virtual ~Node(){};
 
-  // This is the code emitter function that handles the generation of
-  // LLVM IR
-  virtual llvm::Value *emit(IR::Context *ctx){};
+  // This is the code emitter function that handles Qat IR
+  virtual IR::Value *emit(IR::Context *ctx){};
 
   // This is the emitter function that handles the generation of JSON
   virtual backend::JSON toJSON() const {};
@@ -46,6 +45,9 @@ public:
    *
    */
   utils::FilePlacement file_placement;
+
+  // Destroy all owned objects in the heap
+  virtual void destroy(){};
 };
 
 } // namespace AST

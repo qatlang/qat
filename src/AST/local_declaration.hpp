@@ -74,7 +74,7 @@ public:
   void set_origin_block(llvm::LLVMContext &ctx, llvm::AllocaInst *alloca,
                         llvm::BasicBlock *bb);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

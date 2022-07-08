@@ -3,7 +3,7 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *ExposeBoxes::emit(IR::Context *ctx) {
+IR::Value *ExposeBoxes::emit(IR::Context *ctx) {
   std::size_t count = 0;
   for (auto existing : ctx->exposed) {
     for (auto candidate : boxes) {

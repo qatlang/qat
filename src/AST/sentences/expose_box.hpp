@@ -1,9 +1,8 @@
-#ifndef QAT_AST_EXPOSE_SPACE_HPP
-#define QAT_AST_EXPOSE_SPACE_HPP
+#ifndef QAT_AST_SENTENCES_EXPOSE_SPACE_HPP
+#define QAT_AST_SENTENCES_EXPOSE_SPACE_HPP
 
-#include "./box.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
 
 namespace qat {
 namespace AST {
@@ -18,7 +17,7 @@ public:
               utils::FilePlacement _filePlacement)
       : boxes(_boxes), sentences(_sentences), Sentence(_filePlacement) {}
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -1,13 +1,13 @@
-#ifndef QAT_AST_LOCAL_DECLARATION_HPP
-#define QAT_AST_LOCAL_DECLARATION_HPP
+#ifndef QAT_AST_SENTENCES_LOCAL_DECLARATION_HPP
+#define QAT_AST_SENTENCES_LOCAL_DECLARATION_HPP
 
-#include "../IR/context.hpp"
-#include "../utils/llvm_type_to_name.hpp"
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
-#include "./types/qat_type.hpp"
-#include "expression.hpp"
-#include "sentence.hpp"
+#include "../../IR/context.hpp"
+#include "../../utils/llvm_type_to_name.hpp"
+#include "../../utils/pointer_kind.hpp"
+#include "../../utils/variability.hpp"
+#include "../expression.hpp"
+#include "../sentence.hpp"
+#include "../types/qat_type.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Type.h"

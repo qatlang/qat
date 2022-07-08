@@ -4,7 +4,7 @@ namespace qat {
 namespace AST {
 
 /// TODO: Complete Implementation
-IR::Value *SaySentence::emit(IR::Context *ctx) {
+IR::Value *Say::emit(IR::Context *ctx) {
   // using qat::AST::NodeType;
 
   // std::string formatting;
@@ -129,7 +129,7 @@ IR::Value *SaySentence::emit(IR::Context *ctx) {
   // nullptr);
 }
 
-void SaySentence::emitCPP(backend::cpp::File &file, bool isHeader) const {
+void Say::emitCPP(backend::cpp::File &file, bool isHeader) const {
   if (!isHeader) {
     file.addInclude("<iostream>");
     file += "std::cout << ";
@@ -143,7 +143,7 @@ void SaySentence::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON SaySentence::toJSON() const {
+backend::JSON Say::toJSON() const {
   std::vector<backend::JSON> exps;
   for (auto exp : expressions) {
     exps.push_back(exp->toJSON());

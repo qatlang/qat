@@ -1,11 +1,11 @@
-#ifndef QAT_AST_LOOP_N_TIMES_HPP
-#define QAT_AST_LOOP_N_TIMES_HPP
+#ifndef QAT_AST_SENTENCES_LOOP_N_TIMES_HPP
+#define QAT_AST_SENTENCES_LOOP_N_TIMES_HPP
 
-#include "../IR/context.hpp"
+#include "../../IR/context.hpp"
+#include "../expression.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
 #include "./block.hpp"
-#include "./expression.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
 
 namespace qat {
 namespace AST {
@@ -54,7 +54,7 @@ public:
    */
   unsigned new_loop_index_id(llvm::BasicBlock *bb);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -1,4 +1,4 @@
-#include "./multithread_give.hpp"
+#include "multithread_give.hpp"
 
 namespace qat {
 namespace AST {

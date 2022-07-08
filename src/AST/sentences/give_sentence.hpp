@@ -1,10 +1,10 @@
-#ifndef QAT_AST_GIVE_SENTENCE_HPP
-#define QAT_AST_GIVE_SENTENCE_HPP
+#ifndef QAT_AST_SENTENCES_GIVE_SENTENCE_HPP
+#define QAT_AST_SENTENCES_GIVE_SENTENCE_HPP
 
-#include "../IR/context.hpp"
-#include "../utils/llvm_type_to_name.hpp"
-#include "expression.hpp"
-#include "sentence.hpp"
+#include "../../IR/context.hpp"
+#include "../../utils/llvm_type_to_name.hpp"
+#include "../expression.hpp"
+#include "../sentence.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Type.h"
@@ -33,7 +33,7 @@ public:
   GiveSentence(std::optional<Expression *> _given_expr,
                utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

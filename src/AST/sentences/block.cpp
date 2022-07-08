@@ -37,17 +37,17 @@ void Block::set_alloca_scope_end(llvm::LLVMContext &ctx,
   }
 }
 
-llvm::Value *Block::emit(IR::Context *ctx) {
-  create_bb(ctx);
-  ctx->builder.SetInsertPoint(bb);
-  llvm::Value *last = nullptr;
-  for (auto sentence : sentences) {
-    last = sentence->emit(ctx);
-  }
-  end_bb = ctx->builder.GetInsertBlock();
-  auto latest_bb = end_bb->getName().str();
-  set_alloca_scope_end(ctx->llvmContext, latest_bb);
-  return last;
+IR::Value *Block::emit(IR::Context *ctx) {
+  // create_bb(ctx);
+  // ctx->builder.SetInsertPoint(bb);
+  // llvm::Value *last = nullptr;
+  // for (auto sentence : sentences) {
+  //   last = sentence->emit(ctx);
+  // }
+  // end_bb = ctx->builder.GetInsertBlock();
+  // auto latest_bb = end_bb->getName().str();
+  // set_alloca_scope_end(ctx->llvmContext, latest_bb);
+  // return last;
 }
 
 void Block::emitCPP(backend::cpp::File &file, bool isHeader) const {

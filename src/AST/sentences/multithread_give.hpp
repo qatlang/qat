@@ -1,8 +1,8 @@
-#ifndef QAT_AST_MULTITHREAD_GIVE_HPP
-#define QAT_AST_MULTITHREAD_GIVE_HPP
+#ifndef QAT_AST_SENTENCES_MULTITHREAD_GIVE_HPP
+#define QAT_AST_SENTENCES_MULTITHREAD_GIVE_HPP
 
-#include "./expression.hpp"
-#include "./sentence.hpp"
+#include "../expression.hpp"
+#include "../sentence.hpp"
 
 namespace qat {
 namespace AST {

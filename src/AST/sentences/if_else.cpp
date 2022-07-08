@@ -16,45 +16,46 @@ IfElse::IfElse(Expression *_condition, Block *_if_block,
                         _else_block.value_or(_if_block)->file_placement.end)))),
       Sentence(_filePlacement) {}
 
-llvm::Value *IfElse::emit(IR::Context *ctx) {
-  auto gen_cond = condition->emit(ctx);
-  if (gen_cond) {
-    if (gen_cond->getType()->isIntegerTy(1)) {
-      auto if_bb = if_block->create_bb(ctx);
-      auto cond_value = ctx->builder.CreateICmpEQ(
-          gen_cond,
-          llvm::ConstantInt::get(ctx->llvmContext, llvm::APInt(1u, 1u, false)),
-          if_bb->getName() + "'condition");
-      auto else_bb =
-          else_block.has_value() ? else_block.value()->create_bb(ctx) : nullptr;
-      auto merge_bb = merge_block->create_bb(ctx);
-      ctx->builder.CreateCondBr(cond_value, if_bb, else_bb);
+IR::Value *IfElse::emit(IR::Context *ctx) {
+  // auto gen_cond = condition->emit(ctx);
+  // if (gen_cond) {
+  //   if (gen_cond->getType()->isIntegerTy(1)) {
+  //     auto if_bb = if_block->create_bb(ctx);
+  //     auto cond_value = ctx->builder.CreateICmpEQ(
+  //         gen_cond,
+  //         llvm::ConstantInt::get(ctx->llvmContext, llvm::APInt(1u, 1u,
+  //         false)), if_bb->getName() + "'condition");
+  //     auto else_bb =
+  //         else_block.has_value() ? else_block.value()->create_bb(ctx) :
+  //         nullptr;
+  //     auto merge_bb = merge_block->create_bb(ctx);
+  //     ctx->builder.CreateCondBr(cond_value, if_bb, else_bb);
 
-      /* If */
-      if_block->emit(ctx);
-      ctx->builder.CreateBr(merge_bb);
+  //     /* If */
+  //     if_block->emit(ctx);
+  //     ctx->builder.CreateBr(merge_bb);
 
-      /* Else */
-      if (else_block.has_value()) {
-        else_block.value()->emit(ctx);
-        ctx->builder.CreateBr(merge_bb);
-      }
+  //     /* Else */
+  //     if (else_block.has_value()) {
+  //       else_block.value()->emit(ctx);
+  //       ctx->builder.CreateBr(merge_bb);
+  //     }
 
-      /* Merge - Remaining sentences not part of the conditional branching */
-      return merge_block->emit(ctx);
-    } else {
-      ctx->throw_error(
-          "Condition expression is of the type `" +
-              qat::utils::llvmTypeToName(gen_cond->getType()) +
-              "`, but `if` sentence expects an expression of `bool`, "
-              "`i1` or `u1` type",
-          file_placement);
-    }
-  } else {
-    ctx->throw_error("Condition expression is null, but `if` sentence "
-                     "expects an expression of `bool`, `i1` or `u1` type",
-                     file_placement);
-  }
+  //     /* Merge - Remaining sentences not part of the conditional branching */
+  //     return merge_block->emit(ctx);
+  //   } else {
+  //     ctx->throw_error(
+  //         "Condition expression is of the type `" +
+  //             qat::utils::llvmTypeToName(gen_cond->getType()) +
+  //             "`, but `if` sentence expects an expression of `bool`, "
+  //             "`i1` or `u1` type",
+  //         file_placement);
+  //   }
+  // } else {
+  //   ctx->throw_error("Condition expression is null, but `if` sentence "
+  //                    "expects an expression of `bool`, `i1` or `u1` type",
+  //                    file_placement);
+  // }
 }
 
 void IfElse::emitCPP(backend::cpp::File &file, bool isHeader) const {

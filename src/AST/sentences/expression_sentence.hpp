@@ -1,8 +1,8 @@
-#ifndef QAT_EXPRESSION_SENTENCE_HPP
-#define QAT_EXPRESSION_SENTENCE_HPP
+#ifndef QAT_AST_SENTENCES_EXPRESSION_SENTENCE_HPP
+#define QAT_AST_SENTENCES_EXPRESSION_SENTENCE_HPP
 
-#include "./expression.hpp"
-#include "./sentence.hpp"
+#include "../expression.hpp"
+#include "../sentence.hpp"
 
 namespace qat {
 namespace AST {
@@ -29,7 +29,7 @@ public:
    */
   ExpressionSentence(Expression *_expr, utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

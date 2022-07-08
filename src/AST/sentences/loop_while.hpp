@@ -1,12 +1,12 @@
-#ifndef QAT_AST_LOOP_WHILE_HPP
-#define QAT_AST_LOOP_WHILE_HPP
+#ifndef QAT_AST_SENTENCES_LOOP_WHILE_HPP
+#define QAT_AST_SENTENCES_LOOP_WHILE_HPP
 
-#include "../IR/context.hpp"
-#include "../utils/variability.hpp"
-#include "./block.hpp"
-#include "./expression.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
+#include "../../IR/context.hpp"
+#include "../../utils/variability.hpp"
+#include "../expression.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
+#include "block.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Value.h"
 
@@ -50,7 +50,7 @@ public:
   LoopWhile(Expression *_condition, Block *_block, Block *_after,
             utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -7,7 +7,7 @@ ExpressionSentence::ExpressionSentence(Expression *_exp,
                                        utils::FilePlacement _filePlacement)
     : expr(_exp), qat::AST::Sentence(_filePlacement) {}
 
-llvm::Value *ExpressionSentence::emit(IR::Context *ctx) {
+IR::Value *ExpressionSentence::emit(IR::Context *ctx) {
   return expr->emit(ctx);
 }
 

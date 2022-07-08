@@ -1,13 +1,13 @@
-#ifndef QAT_AST_MULTITHREAD_HPP
-#define QAT_AST_MULTITHREAD_HPP
+#ifndef QAT_AST_SENTENCES_MULTITHREAD_HPP
+#define QAT_AST_SENTENCES_MULTITHREAD_HPP
 
-#include "../utils/file_placement.hpp"
-#include "../utils/unique_id.hpp"
-#include "./block.hpp"
-#include "./expression.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
-#include "types/qat_type.hpp"
+#include "../../utils/file_placement.hpp"
+#include "../../utils/unique_id.hpp"
+#include "../expression.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
+#include "../types/qat_type.hpp"
+#include "block.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Value.h"

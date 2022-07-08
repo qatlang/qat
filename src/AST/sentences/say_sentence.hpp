@@ -1,18 +1,18 @@
-#ifndef QAT_AST_SAY_SENTENCE_HPP
-#define QAT_AST_SAY_SENTENCE_HPP
+#ifndef QAT_AST_SENTENCES_SAY_HPP
+#define QAT_AST_SENTENCES_SAY_HPP
 
-#include "./expression.hpp"
-#include "./sentence.hpp"
+#include "../expression.hpp"
+#include "../sentence.hpp"
 
 namespace qat {
 namespace AST {
-class SaySentence : public Sentence {
+class Say : public Sentence {
 private:
   std::vector<Expression *> expressions;
 
 public:
-  SaySentence(std::vector<Expression *> _expressions,
-              utils::FilePlacement _filePlacement)
+  Say(std::vector<Expression *> _expressions,
+      utils::FilePlacement _filePlacement)
       : expressions(_expressions), Sentence(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);

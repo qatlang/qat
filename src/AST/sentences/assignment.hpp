@@ -1,14 +1,14 @@
-#ifndef QAT_AST_ASSIGNMENT_HPP
-#define QAT_AST_ASSIGNMENT_HPP
+#ifndef QAT_AST_SENTENCES_ASSIGNMENT_HPP
+#define QAT_AST_SENTENCES_ASSIGNMENT_HPP
 
-#include "../IR/context.hpp"
-#include "../utils/cast_if_null_pointer.hpp"
-#include "../utils/llvm_type_to_name.hpp"
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
-#include "./expression.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
+#include "../../IR/context.hpp"
+#include "../../utils/cast_if_null_pointer.hpp"
+#include "../../utils/llvm_type_to_name.hpp"
+#include "../../utils/pointer_kind.hpp"
+#include "../../utils/variability.hpp"
+#include "../expression.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
@@ -52,7 +52,7 @@ public:
   Assignment(Expression *_lhs, Expression *_value,
              utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

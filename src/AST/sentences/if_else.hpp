@@ -1,11 +1,11 @@
-#ifndef QAT_AST_IF_ELSE_HPP
-#define QAT_AST_IF_ELSE_HPP
+#ifndef QAT_AST_SENTENCES_IF_ELSE_HPP
+#define QAT_AST_SENTENCES_IF_ELSE_HPP
 
-#include "../utils/llvm_type_to_name.hpp"
+#include "../../utils/llvm_type_to_name.hpp"
+#include "../expression.hpp"
+#include "../node_type.hpp"
+#include "../sentence.hpp"
 #include "./block.hpp"
-#include "./expression.hpp"
-#include "./node_type.hpp"
-#include "./sentence.hpp"
 #include <optional>
 #include <vector>
 
@@ -48,7 +48,7 @@ public:
          std::optional<Block *> _merge_block,
          utils::FilePlacement _filePlacement);
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

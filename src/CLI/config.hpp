@@ -5,6 +5,7 @@
 #include "./display.hpp"
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,8 @@ namespace qat {
 namespace CLI {
 
 namespace fs = std::filesystem;
+
+enum class CompileTarget { normal, cpp, json };
 
 /**
  *  CLI Configuration -
@@ -34,37 +37,26 @@ private:
    */
   Config(u64 count, const char **args);
 
-  /**
-   *  The first CLI argument. Indicates the path specified to invoke the
-   * compiler
-   *
-   */
-  std::string invoke_path;
+  // The first CLI argument. Indicates the path specified to invoke the compiler
+  std::string invokePath;
 
-  /**
-   *  All paths provided to the compiler for compilation of qat source
-   * code.
-   *
-   */
+  // All paths provided to the compiler for compilation of qat source code
   std::vector<fs::path> paths;
 
-  /**
-   *  The latest commit at the time of the build of the compiler
-   *
-   */
-  std::string build_commit;
+  // Path to be used for outputs
+  std::optional<fs::path> outputPath;
 
-  /**
-   *  Whether the compiler should exit after initialisation of Config is
-   * complete and arguments have been handled
-   *
-   */
-  bool exit_after;
+  // Compile target value
+  CompileTarget target;
 
-  /**
-   *  Whether the user has chosen to be in Verbose mode
-   *
-   */
+  // The latest commit at the time of the build of the compiler
+  std::string buildCommit;
+
+  // Whether the compiler should exit after initialisation of Config is
+  // complete and arguments have been handled
+  bool exitAfter;
+
+  // Whether the user has chosen to be in Verbose mode
   bool verbose;
 
   /**
@@ -72,14 +64,14 @@ private:
    * then saved along with the AST, to later be used for documentation
    *
    */
-  bool save_docs;
+  bool saveDocs;
 
   /**
    *  Whether reports about the timing and performance of the lexing,
    * parsing, generation and other processes should be displayed in the console.
    *
    */
-  bool show_report;
+  bool showReport;
 
   /**
    *  Whether lexer should display the tokens analysed in the console
@@ -113,13 +105,16 @@ public:
    */
   static Config *get();
 
+  // Get the CompileTarget from the argument
+  static CompileTarget getCompileTarget(std::string val);
+
   /**
    *  Whether there is an instance of Config that has been initialised
    *
    * @return true
    * @return false
    */
-  static bool has_instance();
+  static bool hasInstance();
 
   /**
    *  Function that destroys/deletes the single instance of Config
@@ -129,58 +124,35 @@ public:
 
   /** Behaviour specific functions */
 
-  /**
-   *  Whether there are paths provided in the CLI and the compilation step
-   * should proceed
-   *
-   * @return true
-   * @return false
-   */
-  bool is_compile() { return !paths.empty(); }
+  // Whether there are paths provided in the CLI and the compilation step
+  // should proceed
+  bool isCompile() const;
 
-  /**
-   *  Whether compiler should exit after arguments are handled by Config
-   *
-   * This is usually true for simple actions like version display, about... and
-   * if there were errors during Config initialisation
-   *
-   * @return true
-   * @return false
-   */
-  bool should_exit() { return exit_after; }
+  // Whether compiler should exit after arguments are handled by Config
+  //
+  // This is usually true for simple actions like version display, about... and
+  // if there were errors during Config initialisation
+  bool shouldExit() const;
 
-  /**
-   * Get paths provided to the compiler for the compilation stage
-   *
-   * returns All paths obtained from initialisation
-   */
-  std::vector<fs::path> get_paths() { return paths; }
+  // Get paths provided to the compiler for the compilation stage
+  std::vector<fs::path> getPaths() const;
 
-  /**
-   *  Whether comments in source code files should be saved to be used for
-   * documentation
-   *
-   * @return true
-   * @return false
-   */
-  bool should_save_docs() { return save_docs; }
+  //  Whether comments in source code files should be saved to be used for
+  // documentation
+  bool shouldSaveDocs() const;
 
-  /**
-   *  Whether different parts of the compiler should show reports about
-   * the performance and timing statistics
-   *
-   * @return true
-   * @return false
-   */
-  bool should_show_report() { return show_report; }
+  //  Whether different parts of the compiler should show reports about
+  // the performance and timing statistics
+  bool shouldShowReport() const;
 
-  /**
-   *  Whether lexer should display the analysed tokens in the console
-   *
-   * @return true
-   * @return false
-   */
-  bool should_lexer_emit_tokens() { return lexer_emit_tokens; }
+  //  Whether lexer should display the analysed tokens in the console
+  bool shouldLexerEmitTokens() const;
+
+  // Whether an output path is provided to the compiler
+  bool hasOutputPath() const;
+
+  // Get the compile target provided by the user
+  CompileTarget getTarget() const;
 
   ~Config();
 };

@@ -1,4 +1,6 @@
 #include "./config.hpp"
+#include "error.hpp"
+#include <vector>
 
 namespace qat {
 namespace CLI {
@@ -28,29 +30,44 @@ void Config::destroy() {
   }
 }
 
-bool Config::has_instance() { return Config::instance != nullptr; }
+bool Config::isCompile() const { return !paths.empty(); }
+
+bool Config::hasInstance() { return Config::instance != nullptr; }
+
+bool Config::shouldExit() const { return exitAfter; }
 
 Config *Config::get() { return Config::instance; }
 
+CompileTarget Config::getCompileTarget(std::string val) {
+  if (val == "cpp") {
+    return CompileTarget::cpp;
+  } else if (val == "json") {
+    return CompileTarget::json;
+  } else {
+    return CompileTarget::normal;
+  }
+}
+
 Config::Config(u64 count, const char **args) {
-  if (!has_instance()) {
+  target = CompileTarget::normal;
+  if (!hasInstance()) {
     Config::instance = this;
-    invoke_path = args[0];
+    invokePath = args[0];
     verbose = false;
-    exit_after = false;
+    exitAfter = false;
     if (count <= 1) {
       std::cout << "No commands or arguments provided" << std::endl;
       exit(0);
     }
-    build_commit = BUILD_COMMIT_QUOTED;
-    if (build_commit.find('"') != std::string::npos) {
+    buildCommit = BUILD_COMMIT_QUOTED;
+    if (buildCommit.find('"') != std::string::npos) {
       std::string res;
-      for (auto ch : build_commit) {
+      for (auto ch : buildCommit) {
         if (ch != '"') {
           res += ch;
         }
       }
-      build_commit = res;
+      buildCommit = res;
     }
 
     std::string command = args[1];
@@ -64,20 +81,20 @@ Config::Config(u64 count, const char **args) {
       }
     } else if (command == "help") {
       display::help();
-      exit_after = true;
+      exitAfter = true;
     } else if (command == "about") {
-      display::about(build_commit);
-      exit_after = true;
+      display::about(buildCommit);
+      exitAfter = true;
     } else if (command == "version") {
       display::version();
-      exit_after = true;
+      exitAfter = true;
     } else if (command == "show") {
       if (count == 2) {
         std::cout << "Nothing to show here" << std::endl;
       } else {
         std::string candidate = args[2];
         if (candidate == "build-info") {
-          display::build_info(build_commit);
+          display::build_info(buildCommit);
         } else if (candidate == "web") {
           display::websites();
         } else if (candidate == "errors") {
@@ -85,19 +102,29 @@ Config::Config(u64 count, const char **args) {
         }
         proceed = 3;
       }
-      exit_after = true;
+      exitAfter = true;
     }
     for (std::size_t i = proceed; i < count; i++) {
       std::string arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
         verbose = true;
+      } else if (std::string(arg).find("-t=") == 0) {
+        target = getCompileTarget(std::string(arg).substr(3));
+      } else if (std::string(arg).find("--target=") == 0) {
+        target = getCompileTarget(std::string(arg).substr(9));
+      } else if (arg == "-t" || arg == "--target") {
+        if ((i + 1) < count) {
+          target = getCompileTarget(args[i + 1]);
+        } else {
+          throw_error("Expected a target after " + arg + " flag", invokePath);
+        }
       } else if (arg == "--report") {
-        show_report = true;
+        showReport = true;
         // TODO - Set parser report option here once that is implemented
       } else if (arg == "--emit-tokens") {
         lexer_emit_tokens = true;
       } else if (arg == "--save-docs") {
-        save_docs = true;
+        saveDocs = true;
       } else {
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
@@ -106,15 +133,27 @@ Config::Config(u64 count, const char **args) {
               << "Provided path " << fs::path(arg).string()
               << " does not exist! Please provide path to a file or directory"
               << std::endl;
-          exit_after = true;
+          exitAfter = true;
         }
       }
     }
-    if (exit_after && (proceed == 2) && (count > 2)) {
+    if (exitAfter && (proceed == 2) && (count > 2)) {
       std::cout << "\nIgnoring additional arguments provided...\n";
     }
   }
 }
+
+std::vector<fs::path> Config::getPaths() const { return paths; }
+
+bool Config::shouldSaveDocs() const { return saveDocs; }
+
+bool Config::hasOutputPath() const { return outputPath.has_value(); }
+
+bool Config::shouldShowReport() const { return showReport; }
+
+bool Config::shouldLexerEmitTokens() const { lexer_emit_tokens; }
+
+CompileTarget Config::getTarget() const { return target; }
 
 } // namespace CLI
 } // namespace qat

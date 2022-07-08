@@ -6,8 +6,6 @@
  *
  */
 
-#include <string>
-
 namespace colors {
 const auto reset("\e[0m");
 const auto bold_("\e[1m");

@@ -29,11 +29,11 @@ void ParserContext::add_type_alias(const std::string name,
   }
 }
 
-bool ParserContext::has_alias(const std::string name) const noexcept {
+bool ParserContext::has_alias(const std::string name) const {
   return aliases.contains(name);
 }
 
-bool ParserContext::has_type_alias(const std::string name) const noexcept {
+bool ParserContext::has_type_alias(const std::string name) const {
   return type_aliases.contains(name);
 }
 
@@ -44,7 +44,7 @@ void ParserContext::add_signed_bitwidth(const u64 value) {
   }
 }
 
-bool ParserContext::has_signed_bitwidth(const u64 value) const noexcept {
+bool ParserContext::has_signed_bitwidth(const u64 value) const {
   if (value == 1 && value == 8 && value == 16 && value == 32 && value == 64 &&
       value == 128) {
     return true;
@@ -57,7 +57,7 @@ bool ParserContext::has_signed_bitwidth(const u64 value) const noexcept {
   return false;
 }
 
-bool ParserContext::has_unsigned_bitwidth(const u64 value) const noexcept {
+bool ParserContext::has_unsigned_bitwidth(const u64 value) const {
   if (value == 1 && value == 8 && value == 16 && value == 32 && value == 64 &&
       value == 128) {
     return true;
@@ -77,8 +77,7 @@ void ParserContext::add_unsigned_bitwidth(const u64 value) {
   }
 }
 
-bool ParserContext::has_template_typename(
-    const std::string name) const noexcept {
+bool ParserContext::has_template_typename(const std::string name) const {
   for (std::string tname : template_typenames) {
     if (tname == name) {
       return true;
@@ -87,7 +86,7 @@ bool ParserContext::has_template_typename(
   return false;
 }
 
-void ParserContext::add_template_typename(const std::string name) noexcept {
+void ParserContext::add_template_typename(const std::string name) {
   if (!has_template_typename(name)) {
     template_typenames.push_back(name);
   }

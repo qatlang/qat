@@ -10,8 +10,8 @@ bool Lexer::show_report = false;
 
 Lexer::Lexer() {
   auto cli = CLI::Config::get();
-  Lexer::emit_tokens = cli->should_lexer_emit_tokens();
-  Lexer::show_report = cli->should_show_report();
+  Lexer::emit_tokens = cli->shouldLexerEmitTokens();
+  Lexer::show_report = cli->shouldShowReport();
 }
 
 std::vector<Token> &Lexer::get_tokens() { return tokens; }

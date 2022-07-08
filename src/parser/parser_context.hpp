@@ -62,7 +62,7 @@ public:
    * @return true If there is an alias with the specified name
    * @return false IF there is no alias with the specified name
    */
-  bool has_alias(const std::string name) const noexcept;
+  bool has_alias(const std::string name) const;
 
   /**
    *  Checks whether there is an alias for a type, with the provided
@@ -72,7 +72,7 @@ public:
    * @return true If there is an alias with the specified name
    * @return false IF there is no alias with the specified name
    */
-  bool has_type_alias(const std::string name) const noexcept;
+  bool has_type_alias(const std::string name) const;
 
   /**
    *  Add the provided bitwidth to the list of bitwidths available for the
@@ -107,7 +107,7 @@ public:
    * @return true If the value is present
    * @return false If the value is not present
    */
-  bool has_signed_bitwidth(const u64 value) const noexcept;
+  bool has_signed_bitwidth(const u64 value) const;
 
   /**
    *  Whether the provided bitwidth is already in the list of used
@@ -120,7 +120,7 @@ public:
    * @return true If the value is present
    * @return false If the value is not present
    */
-  bool has_unsigned_bitwidth(const u64 value) const noexcept;
+  bool has_unsigned_bitwidth(const u64 value) const;
 
   /**
    * Whether the provided name is an existing typename in the previous scope
@@ -129,14 +129,14 @@ public:
    * @return true If the typename exists
    * @return false If the typename does not exist
    */
-  bool has_template_typename(const std::string name) const noexcept;
+  bool has_template_typename(const std::string name) const;
 
   /**
    * Add a new typename to the current context to be used by child nodes
    *
    * @param name
    */
-  void add_template_typename(const std::string name) noexcept;
+  void add_template_typename(const std::string name);
 
 private:
   /**

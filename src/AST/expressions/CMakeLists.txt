@@ -1,0 +1,22 @@
+add_library(QAT_AST_EXPRESSIONS
+    binary_expression.cpp
+    custom_float_literal.cpp
+    custom_integer_literal.cpp
+    entity.cpp
+    float_literal.cpp
+    function_call.cpp
+    integer_literal.cpp
+    loop_index.cpp
+    member_function_call.cpp
+    member_index_access.cpp
+    member_variable.cpp
+    null_pointer.cpp
+    radix_literal.cpp
+    self.cpp
+    size_of_type.cpp
+    size_of.cpp
+    string_literal.cpp
+    ternary.cpp
+    to_conversion.cpp
+    tuple_value.cpp
+    unsigned_literal.cpp)

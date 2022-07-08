@@ -1,4 +1,5 @@
 #include "./tuple.hpp"
+#include "qat_type.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include <vector>
 
@@ -16,6 +17,12 @@ TupleType::TupleType(llvm::LLVMContext &ctx,
 }
 
 std::vector<QatType *> TupleType::getSubTypes() const { return types; }
+
+QatType *TupleType::getSubtypeAt(unsigned index) { return types.at(index); }
+
+unsigned TupleType::getSubTypeCount() const { return types.size(); }
+
+bool TupleType::isPackedTuple() const { return isPacked; }
 
 TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 

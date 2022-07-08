@@ -18,6 +18,8 @@ public:
 
   TypeKind typeKind() const;
 
+  unsigned getBitwidth() const;
+
   bool isBitWidth(const unsigned int width) const;
 };
 

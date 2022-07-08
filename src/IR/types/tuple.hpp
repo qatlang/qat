@@ -28,6 +28,12 @@ public:
 
   std::vector<QatType *> getSubTypes() const;
 
+  QatType *getSubtypeAt(unsigned index);
+
+  unsigned getSubTypeCount() const;
+
+  bool isPackedTuple() const;
+
   TypeKind typeKind() const;
 };
 } // namespace IR

@@ -16,6 +16,8 @@ private:
 public:
   FloatType(llvm::LLVMContext &ctx, const FloatTypeKind _kind);
 
+  FloatTypeKind getKind() const;
+
   TypeKind typeKind() const;
 };
 } // namespace IR

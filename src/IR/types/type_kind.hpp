@@ -22,6 +22,7 @@ enum class TypeKind {
   tuple,           // Tuple is a product type of multiple types
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type
+  function,
   /* Template type kinds */
   templateCoreType, // Template struct type
   templateSumType,  // Template sum type

@@ -5,7 +5,6 @@
 #include "qat_type.hpp"
 #include "type_kind.hpp"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
 
 namespace qat {
 namespace IR {
@@ -18,6 +17,8 @@ public:
   IntegerType(llvm::LLVMContext &ctx, const unsigned int _bitWidth);
 
   bool isBitWidth(const unsigned int width) const;
+
+  unsigned getBitwidth() const;
 
   TypeKind typeKind() const;
 };

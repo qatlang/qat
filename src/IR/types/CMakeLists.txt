@@ -2,9 +2,11 @@ add_library(QAT_IR_TYPES
     array.cpp
     core_type.cpp
     float.cpp
+    function.cpp
     integer.cpp
     reference.cpp
     pointer.cpp
+    qat_type.cpp
     tuple.cpp
     unsigned.cpp
     void.cpp)

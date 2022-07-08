@@ -27,6 +27,8 @@ public:
   // TypeKind is used to detect variants of the QatType
   virtual TypeKind typeKind() const {};
 
+  bool isSame(QatType *other) const;
+
   llvm::Type *getLLVMType() const { return llvmType; }
 };
 } // namespace IR

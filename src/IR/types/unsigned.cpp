@@ -8,6 +8,8 @@ UnsignedType::UnsignedType(llvm::LLVMContext &ctx, const unsigned int _bitWidth)
   llvmType = llvm::Type::getIntNTy(ctx, _bitWidth);
 }
 
+unsigned UnsignedType::getBitwidth() const { return bitWidth; }
+
 bool UnsignedType::isBitWidth(const unsigned int width) const {
   return bitWidth == width;
 }

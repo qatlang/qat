@@ -1,5 +1,4 @@
 #include "./integer.hpp"
-#include <string>
 
 namespace qat {
 namespace IR {
@@ -14,6 +13,8 @@ bool IntegerType::isBitWidth(const unsigned int width) const {
 }
 
 TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
+
+unsigned IntegerType::getBitwidth() const { return bitWidth; }
 
 } // namespace IR
 } // namespace qat

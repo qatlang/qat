@@ -33,5 +33,7 @@ FloatType::FloatType(llvm::LLVMContext &ctx, const FloatTypeKind _kind)
 
 TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
+FloatTypeKind FloatType::getKind() const { return kind; }
+
 } // namespace IR
 } // namespace qat

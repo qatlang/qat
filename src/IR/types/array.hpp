@@ -22,6 +22,8 @@ private:
 public:
   ArrayType(QatType *_element_type, const uint64_t _length);
 
+  QatType *getElementType();
+
   u64 getLength() const;
 
   TypeKind typeKind() const;

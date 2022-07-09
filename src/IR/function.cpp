@@ -1,7 +1,6 @@
 #include "./function.hpp"
 #include "../show.hpp"
 #include "value.hpp"
-#include <llvm/IR/Attributes.h>
 
 namespace qat {
 namespace IR {
@@ -15,31 +14,7 @@ Function::Function(llvm::Module *mod, std::string _parentName,
       returns_reference(_returns_reference), placement(filePlacement),
       visibility_info(_visibility_info), function(nullptr),
       Value(nullptr, false, Kind::pure) //
-{
-  std::vector<llvm::Type *> arg_types;
-  SHOW("Separating arg types")
-  for (auto arg : arguments) {
-    arg_types.push_back(arg.getType()->getLLVMType());
-  }
-  SHOW("Types sorted")
-  auto fnType = llvm::FunctionType::get(returnType->getLLVMType(), arg_types,
-                                        is_variable_arguments);
-  SHOW("Function type retrieved")
-  function = llvm::Function::Create(
-      fnType, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0u,
-      (_parentName + ":" + _name), mod);
-  SHOW("LLVM Function created")
-  // If this is the main function, it can't recurse
-  if ((_parentName == "") && (name == "main")) {
-    function->setDoesNotRecurse();
-  }
-  utils::Visibility::set(function, visibility_info, mod->getContext());
-  utils::PointerKind::set(mod->getContext(), function, _returns_reference);
-  for (std::size_t i = 0; i < arguments.size(); i++) {
-    utils::Variability::set(function->getArg(i),
-                            arguments.at(i).get_variability());
-  }
-}
+{}
 
 Function *Function::Create(llvm::Module *mod, const std::string parentName,
                            const std::string name, QatType *returnTy,

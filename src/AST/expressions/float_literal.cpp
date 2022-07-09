@@ -7,13 +7,11 @@ FloatLiteral::FloatLiteral(std::string _value,
                            utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
-llvm::Value *FloatLiteral::emit(IR::Context *ctx) {
+IR::Value *FloatLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
-    ctx->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("Float literals are not assignable", file_placement);
   }
-  return llvm::ConstantFP::get(llvm::Type::getFloatTy(ctx->llvmContext),
-                               llvm::StringRef(value) //
-  );
+  //
 }
 
 void FloatLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

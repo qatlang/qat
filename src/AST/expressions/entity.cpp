@@ -3,7 +3,7 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *Entity::emit(IR::Context *ctx) {
+IR::Value *Entity::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 

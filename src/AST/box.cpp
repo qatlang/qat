@@ -3,9 +3,9 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *Box::emit(IR::Context *ctx) {
+IR::Value *Box::emit(IR::Context *ctx) {
   // FIXME - Perform name checks
-  ctx->mod->openBox(name, visibility);
+  // TODO - Implement this
 }
 
 void Box::emitCPP(backend::cpp::File &file, bool isHeader) const {

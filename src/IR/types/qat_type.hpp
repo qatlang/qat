@@ -11,14 +11,8 @@
 namespace qat {
 namespace IR {
 
-/**
- *  This is the base class representing a type in the language
- *
- */
+// QatType is the base class for all types in the IR
 class QatType {
-protected:
-  llvm::Type *llvmType;
-
 public:
   QatType() {}
 
@@ -28,8 +22,6 @@ public:
   virtual TypeKind typeKind() const {};
 
   bool isSame(QatType *other) const;
-
-  llvm::Type *getLLVMType() const { return llvmType; }
 };
 } // namespace IR
 } // namespace qat

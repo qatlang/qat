@@ -18,23 +18,7 @@ MemberFunction::MemberFunction(llvm::Module *module, CoreType *_parent,
     : parent(_parent),
       Function(module, parent->getName(), _name, returnType, _is_async, _args,
                is_variable_arguments, _returns_reference, _placement,
-               _visibility_info) {
-  std::vector<llvm::Type *> arg_types;
-  for (auto arg : arguments) {
-    arg_types.push_back(arg.getType()->getLLVMType());
-  }
-  function = llvm::Function::Create(
-      llvm::FunctionType::get(returnType->getLLVMType(), arg_types,
-                              is_variable_arguments),
-      llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0,
-      (parent->getName() + (isStatic ? ":" : "'") + _name), module);
-  utils::Visibility::set(function, visibility_info, module->getContext());
-  utils::PointerKind::set(module->getContext(), function, _returns_reference);
-  for (std::size_t i = 0; i < arguments.size(); i++) {
-    utils::Variability::set(function->getArg(i),
-                            arguments.at(i).get_variability());
-  }
-}
+               _visibility_info) {}
 
 MemberFunction *MemberFunction::Create(
     llvm::Module *mod, CoreType *parent, const bool is_variation,

@@ -119,21 +119,8 @@ public:
   Multithread(Expression *_count, std::string _name, QatType *_type,
               Block *_main, Block *_after, utils::FilePlacement _filePlacement);
 
-  /**
-   *  This is the code ctx function that handles the generation of
-   * LLVM IR
-   *
-   * @param ctx The IR::Context instance that handles LLVM IR
-   Generation
-   * @return llvm::Value*
-   */
   IR::Value *emit(IR::Context *ctx);
 
-  /**
-   *  Type of the node represented by this AST member
-   *
-   * @return NodeType
-   */
   NodeType nodeType() const { return NodeType::multithread; }
 };
 

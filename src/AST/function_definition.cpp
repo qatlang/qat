@@ -10,57 +10,7 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
     : prototype(_prototype), sentences(_sentences), Node(_filePlacement) {}
 
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
-  // SHOW("Before generating prototype")
-  // auto function = llvm::dyn_cast<llvm::Function>(prototype->emit(ctx));
-  // SHOW("Prototype generated")
-  // auto entryBlock =
-  //     llvm::BasicBlock::Create(ctx->llvmContext, "0", function, nullptr);
-  // llvm::Value *lastSentence;
-  // SHOW("BB created")
-  // ctx->builder.SetInsertPoint(entryBlock);
-  // std::vector<llvm::AllocaInst *> argAllocas;
-  // SHOW("Creating arg allocas")
-  // for (std::size_t i = 0; i < function->arg_size(); i++) {
-  //   function->getArg(i)->setName(prototype->arguments.at(i)->getName());
-  //   auto argAlloca =
-  //       new llvm::AllocaInst(function->getArg(i)->getType(), 0,
-  //                            prototype->arguments.at(i)->getName(),
-  //                            entryBlock);
-  //   lastSentence = argAlloca;
-  //   argAllocas.push_back(argAlloca);
-  //   bool variability = prototype->arguments.at(i)->getType()->isVariable();
-  //   utils::PointerKind::set(
-  //       ctx->llvmContext, argAlloca,
-  //       utils::PointerKind::is_reference(function->getArg(i)));
-  //   utils::Variability::set(ctx->llvmContext, argAlloca, variability);
-  // }
-  // SHOW("Arg allocas created")
-  // SHOW("Arg stores")
-  // for (std::size_t i = 0; i < function->arg_size(); i++) {
-  //   lastSentence =
-  //       ctx->builder.CreateStore(function->getArg(i), argAllocas.at(i),
-  //       false);
-  // }
-  // SHOW("Arg stores done")
-  // argAllocas.clear();
-  // SHOW("Emitting sentences...")
-  // if (sentences.size() > 0) {
-  //   for (auto sentence : sentences) {
-  //     lastSentence = sentence->emit(ctx);
-  //   }
-  // }
-  // SHOW("Sentences emitted")
-  // if (lastSentence) {
-  //   // FIXME - Check logic for return
-  //   if (!llvm::isa<llvm::ReturnInst>(lastSentence)) {
-  //     if (prototype->returnType->emit(ctx)->getLLVMType()->isVoidTy()) {
-  //       lastSentence = ctx->builder.CreateRetVoid();
-  //     }
-  //   }
-  //   return lastSentence;
-  // } else {
-  //   return function;
-  // }
+  // TODO - Implement this
 }
 
 void FunctionDefinition::emitCPP(backend::cpp::File &file,

@@ -2,6 +2,7 @@
 #include "../show.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
+#include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "value.hpp"
 #include "llvm/IR/DataLayout.h"
@@ -13,34 +14,6 @@
 
 namespace qat {
 namespace IR {
-
-GlobalEntity::GlobalEntity(QatModule *parent, std::string _name, QatType *_type,
-                           bool _is_variable, bool _is_reference, Value *_value,
-                           utils::VisibilityInfo _visibility)
-    : name(_name), visibility(_visibility),
-      Value(_type, _is_variable, Kind::assignable) {
-  value = new llvm::GlobalVariable(
-      *(parent->getLLVMModule()), _type->getLLVMType(), !_is_variable,
-      llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-      llvm::dyn_cast<llvm::Constant>(_value->getLLVMValue()),
-      parent->getFullName() + ":" + _name);
-}
-
-StaticMember::StaticMember(QatModule *qmod, llvm::StructType *_parent,
-                           std::string _name, llvm::Type *type,
-                           bool _is_variable, bool _is_reference,
-                           std::optional<llvm::Constant *> _constant_value,
-                           utils::VisibilityInfo _visibility)
-    : is_variable(_is_variable), name(_name), is_reference(_is_reference),
-      constant_value(_constant_value), visibility(_visibility), gvar(nullptr),
-      parent(_parent) {
-  // NOTE - The user of this type has to make sure that constant global entities
-  // are initialised
-  gvar = new llvm::GlobalVariable(
-      *(qmod->getLLVMModule()), type, !_is_variable,
-      llvm::GlobalValue::LinkageTypes::ExternalLinkage, _constant_value.value(),
-      _parent->getName() + ":" + _name);
-}
 
 QatModule::QatModule(std::string _name, std::string _filename,
                      llvm::LLVMContext &ctx, ModuleType _type,
@@ -486,7 +459,7 @@ CoreType *QatModule::getCoreType(const std::string name,
 
 bool QatModule::hasGlobalEntity(const std::string name) const {
   for (auto ge : globalEntities) {
-    if (ge->selfName() == name) {
+    if (ge->getName() == name) {
       return true;
     }
   }
@@ -497,7 +470,7 @@ bool QatModule::hasBroughtGlobalEntity(const std::string name) const {
   for (auto brought : broughtGlobalEntities) {
     if (!brought.isNamed()) {
       auto bGlobal = brought.get();
-      if (bGlobal->selfName() == name) {
+      if (bGlobal->getName() == name) {
         return true;
       }
     } else if (brought.getName() == name) {
@@ -535,14 +508,14 @@ GlobalEntity *
 QatModule::getGlobalEntity(const std::string name,
                            const utils::RequesterInfo &reqInfo) const {
   for (auto ent : globalEntities) {
-    if (ent->selfName() == name) {
+    if (ent->getName() == name) {
       return ent;
     }
   }
   for (auto brought : broughtGlobalEntities) {
     auto bGlobal = brought.get();
     if (!brought.isNamed()) {
-      if (bGlobal->selfName() == name) {
+      if (bGlobal->getName() == name) {
         return bGlobal;
       }
     } else if (brought.getName() == name) {

@@ -20,7 +20,7 @@ public:
                    Expression *_rhs, utils::FilePlacement _filePlacement)
       : lhs(_lhs), op(_binaryOperator), rhs(_rhs), Expression(_filePlacement) {}
 
-  llvm::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 

@@ -7,7 +7,7 @@ RadixLiteral::RadixLiteral(std::string _value, unsigned _radix,
                            utils::FilePlacement _filePlacement)
     : value(_value), radix(_radix), Expression(_filePlacement) {}
 
-llvm::Value *RadixLiteral::emit(IR::Context *ctx) {
+IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->throw_error("This expression is not assignable", file_placement);
   }
@@ -24,8 +24,7 @@ llvm::Value *RadixLiteral::emit(IR::Context *ctx) {
   if (bitWidth == 0) {
     ctx->throw_error("No numbers provided for radix string", file_placement);
   }
-  return llvm::ConstantInt::get(
-      llvm::Type::getIntNTy(ctx->llvmContext, bitWidth), value, radix);
+  // TODO - Implement this
 }
 
 void RadixLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

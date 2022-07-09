@@ -4,7 +4,7 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *qat::AST::FunctionCall::emit(qat::IR::Context *ctx) {
+IR::Value *qat::AST::FunctionCall::emit(qat::IR::Context *ctx) {
   // TODO - Implement this
 }
 

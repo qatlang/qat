@@ -9,7 +9,7 @@ BringPaths::BringPaths(std::vector<StringLiteral> _paths,
                        utils::FilePlacement _filePlacement)
     : paths(_paths), visibility(_visibility), Sentence(_filePlacement) {}
 
-llvm::Value *BringPaths::emit(IR::Context *ctx) {
+IR::Value *BringPaths::emit(IR::Context *ctx) {
   namespace fs = std::filesystem;
   for (auto pathstr : paths) {
     auto path = pathstr.get_value();

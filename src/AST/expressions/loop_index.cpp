@@ -6,7 +6,7 @@ namespace AST {
 LoopIndex::LoopIndex(utils::FilePlacement _filePlacement)
     : Expression(_filePlacement) {}
 
-llvm::Value *LoopIndex::emit(IR::Context *ctx) {
+IR::Value *LoopIndex::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 

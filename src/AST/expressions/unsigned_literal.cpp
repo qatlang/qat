@@ -7,12 +7,11 @@ UnsignedLiteral::UnsignedLiteral(std::string _value,
                                  utils::FilePlacement _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
-llvm::Value *UnsignedLiteral::emit(IR::Context *ctx) {
+IR::Value *UnsignedLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("Unsigned literals are not assignable", file_placement);
   }
-  return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->llvmContext),
-                                llvm::StringRef(value), 10u);
+  // TODO - Implement this
 }
 
 void UnsignedLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

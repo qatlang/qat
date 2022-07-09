@@ -30,7 +30,7 @@ BringEntities::BringEntities(std::vector<BroughtGroup> _entities,
                              utils::FilePlacement _filePlacement)
     : entities(_entities), visibility(_visibility), Node(_filePlacement) {}
 
-llvm::Value *BringEntities::emit(IR::Context *ctx) {
+IR::Value *BringEntities::emit(IR::Context *ctx) {
   // FIXME - Implement this
   return nullptr;
 }

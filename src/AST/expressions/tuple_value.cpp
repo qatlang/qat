@@ -8,25 +8,8 @@ TupleValue::TupleValue(std::vector<Expression *> _members,
                        utils::FilePlacement _filePlacement)
     : members(_members), Expression(_filePlacement) {}
 
-llvm::Value *TupleValue::emit(IR::Context *ctx) {
-  std::vector<llvm::Type *> memTypes;
-  std::vector<llvm::Value *> memValues;
-  for (auto mem : members) {
-    auto memVal = mem->emit(ctx);
-    memValues.push_back(memVal);
-    memTypes.push_back(memVal->getType());
-  }
-  auto tupleType = llvm::StructType::create(memTypes);
-  auto currBB = ctx->builder.GetInsertBlock();
-  auto bb = &currBB->getParent()->getEntryBlock();
-  ctx->builder.SetInsertPoint(bb);
-  auto tupleAlloca = ctx->builder.CreateAlloca(tupleType);
-  for (std::size_t i = 0; i < memValues.size(); i++) {
-    ctx->builder.CreateInsertValue(tupleAlloca, memValues.at(i),
-                                   {0u, (unsigned int)i});
-  }
-  return ctx->builder.CreateLoad(tupleAlloca->getAllocatedType(), tupleAlloca,
-                                 "");
+IR::Value *TupleValue::emit(IR::Context *ctx) {
+  // TODO - Implement this
 }
 
 void TupleValue::emitCPP(backend::cpp::File &file, bool isHeader) const {

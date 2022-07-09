@@ -2,7 +2,7 @@
 namespace qat {
 namespace AST {
 
-llvm::Value *BinaryExpression::emit(IR::Context *ctx) {
+IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 

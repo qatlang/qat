@@ -9,11 +9,8 @@ StringLiteral::StringLiteral(std::string _value,
 
 std::string StringLiteral::get_value() const { return value; }
 
-llvm::Value *StringLiteral::emit(IR::Context *ctx) {
-  return llvm::ConstantDataArray::getString(ctx->llvmContext,
-                                            llvm::StringRef(value),
-                                            true //
-  );
+IR::Value *StringLiteral::emit(IR::Context *ctx) {
+  // TODO - Implement this
 }
 
 void StringLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {

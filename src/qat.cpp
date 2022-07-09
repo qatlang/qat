@@ -1,14 +1,16 @@
-#include "./CLI/config.hpp"
+#include "./error.hpp"
+#include "./qat_sitter.hpp"
 
 int main(int count, const char **args) {
-  auto cli = qat::CLI::Config::init(count, args);
-  if (cli.should_exit()) {
+  using qat::CLI::Config;
+
+  qat::initAllErrors();
+  auto cli = Config::init(count, args);
+  if (cli->shouldExit()) {
     return 0;
   }
-  if (cli.is_compile()) {
-    auto paths = cli.get_paths();
-  }
-  std::atexit(qat::CLI::Config::destroy);
-  std::at_quick_exit(qat::CLI::Config::destroy);
+  auto sitter = qat::QatSitter();
+  sitter.init();
+  Config::destroy();
   return 0;
 }

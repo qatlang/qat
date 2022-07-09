@@ -1,5 +1,5 @@
-#ifndef QAT_IR_GLOBAL_ENTITY_HPP
-#define QAT_IR_GLOBAL_ENTITY_HPP
+#ifndef QAT_IR_STATIC_MEMBER_HPP
+#define QAT_IR_STATIC_MEMBER_HPP
 
 #include "../utils/pointer_kind.hpp"
 #include "../utils/variability.hpp"
@@ -13,20 +13,16 @@
 namespace qat {
 namespace IR {
 
+class CoreType;
 class QatModule;
 
-class GlobalEntity : public Value {
+class StaticMember : public Value {
 private:
-  // Name of this GlobalEntity
   std::string name;
 
-  // Details about the visibility of this global
-  utils::VisibilityInfo visibility;
+  CoreType *parent;
 
   Value *initial;
-
-  // Parent of this GlobalEntity
-  QatModule *parent;
 
   unsigned loads;
 
@@ -34,10 +30,14 @@ private:
 
   unsigned refers;
 
+  utils::VisibilityInfo visibility;
+
 public:
-  GlobalEntity(QatModule *_parent, std::string name, QatType *type,
-               bool _is_variable, Value *_value,
+  StaticMember(CoreType *_parent, std::string name, QatType *_type,
+               bool _is_variable, Value *_initial,
                utils::VisibilityInfo _visibility);
+
+  CoreType *getParentType();
 
   std::string getName() const;
 

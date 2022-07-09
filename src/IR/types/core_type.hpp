@@ -114,13 +114,17 @@ public:
    */
   int get_index_of(const std::string member) const;
 
+  unsigned getMemberCount() const;
+
+  Member *getMemberAt(unsigned index);
+
   /**
    *  Get the name of the member field at the provided index
    *
    * @param index Index of the member field
    * @return std::string Name of the member corresponding to that field
    */
-  std::string get_member_at(const unsigned int index) const;
+  std::string getMemberNameAt(const unsigned int index) const;
 
   QatType *get_type_of_member(const std::string member) const;
 

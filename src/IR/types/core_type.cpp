@@ -34,6 +34,12 @@ std::string CoreType::getName() const {
   }
 }
 
+unsigned CoreType::getMemberCount() const { return members.size(); }
+
+CoreType::Member *CoreType::getMemberAt(unsigned index) {
+  return members.at(index);
+}
+
 int CoreType::get_index_of(const std::string member) const {
   auto result = -1;
   for (std::size_t i = 0; i < members.size(); i++) {
@@ -45,7 +51,7 @@ int CoreType::get_index_of(const std::string member) const {
   return result;
 }
 
-std::string CoreType::get_member_at(const unsigned int index) const {
+std::string CoreType::getMemberNameAt(const unsigned int index) const {
   return (index < members.size()) ? members.at(index)->name : "";
 }
 

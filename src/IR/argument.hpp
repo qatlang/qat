@@ -1,6 +1,7 @@
 #ifndef QAT_IR_ARGUMENT_HPP
 #define QAT_IR_ARGUMENT_HPP
 
+#include "types/qat_type.hpp"
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/Type.h"
 #include <string>
@@ -23,7 +24,7 @@ class Argument {
    *  Type of the argument
    *
    */
-  llvm::Type *type;
+  QatType *type;
 
   /**
    *  Variability of the argument
@@ -45,7 +46,7 @@ class Argument {
    * @param _variability Variability of the argument
    * @param _arg_index Index of the argument in the function
    */
-  Argument(std::string _name, llvm::Type *_type, bool _variability,
+  Argument(std::string _name, QatType *_type, bool _variability,
            unsigned _arg_index)
       : name(_name), type(_type), variability(_variability),
         arg_index(_arg_index) {}
@@ -59,8 +60,7 @@ public:
    * @param arg_index Index of the argument in the function
    * @return Argument
    */
-  static Argument Create(std::string name, llvm::Type *type,
-                         unsigned arg_index) {
+  static Argument Create(std::string name, QatType *type, unsigned arg_index) {
     return Argument(name, type, false, arg_index);
   }
 
@@ -72,7 +72,7 @@ public:
    * @param arg_index Index of the argument in the function
    * @return Argument
    */
-  static Argument CreateVariable(std::string name, llvm::Type *type,
+  static Argument CreateVariable(std::string name, QatType *type,
                                  unsigned arg_index) {
     return Argument(name, type, true, arg_index);
   }
@@ -89,7 +89,7 @@ public:
    *
    * @return llvm::Type*
    */
-  llvm::Type *get_type() const { return type; }
+  QatType *getType() const { return type; }
 
   /**
    *  Get the variability of the argument

@@ -8,9 +8,7 @@ VoidType::VoidType(const bool _variable,
                    const utils::FilePlacement _filePlacement)
     : QatType(_variable, _filePlacement) {}
 
-IR::QatType *VoidType::emit(IR::Context *ctx) {
-  return new IR::VoidType(ctx->llvmContext);
-}
+IR::QatType *VoidType::emit(IR::Context *ctx) { return new IR::VoidType(); }
 
 void VoidType::emitCPP(backend::cpp::File &file, bool isHeader) const {
   file += "void ";

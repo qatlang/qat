@@ -1,18 +1,13 @@
 #include "./pointer.hpp"
-#include "../../show.hpp"
-#include "qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat {
 namespace IR {
 
-PointerType::PointerType(QatType *_type) : subType(_type) {
-  llvmType = llvm::PointerType::get(_type->getLLVMType(), 0U);
-}
+PointerType::PointerType(QatType *_type) : subType(_type) {}
 
 QatType *PointerType::getSubType() const { return subType; }
 
-TypeKind PointerType::typeKind() { return TypeKind::pointer; }
+TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
 } // namespace IR
 } // namespace qat

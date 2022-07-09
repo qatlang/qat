@@ -14,7 +14,7 @@ GlobalEntity::GlobalEntity(QatModule *_parent, std::string _name,
 std::string GlobalEntity::getName() const { return name; }
 
 std::string GlobalEntity::getFullName() const {
-  return parent->getFullName() + ":" + name;
+  return parent->getFullNameWithChild(name);
 }
 
 const utils::VisibilityInfo &GlobalEntity::getVisibility() const {

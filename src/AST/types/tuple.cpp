@@ -18,7 +18,7 @@ IR::QatType *TupleType::emit(IR::Context *ctx) {
     }
     irTypes.push_back(type->emit(ctx));
   }
-  return new IR::TupleType(ctx->llvmContext, irTypes, isPacked);
+  return new IR::TupleType(irTypes, isPacked);
 }
 
 void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {

@@ -8,16 +8,16 @@
 namespace qat {
 namespace IR {
 
-MemberFunction::MemberFunction(llvm::Module *module, CoreType *_parent,
+MemberFunction::MemberFunction(bool _isVariation, CoreType *_parent,
                                std::string _name, QatType *returnType,
                                bool _is_async, std::vector<Argument> _args,
                                bool is_variable_arguments, bool _is_static,
                                bool _returns_reference,
                                const utils::FilePlacement _placement,
                                utils::VisibilityInfo _visibility_info)
-    : parent(_parent),
-      Function(module, parent->getName(), _name, returnType, _is_async, _args,
-               is_variable_arguments, _returns_reference, _placement,
+    : parent(_parent), isVariation(_isVariation),
+      Function(parent->getParent(), parent->getName(), _name, returnType,
+               _is_async, _args, is_variable_arguments, _placement,
                _visibility_info) {}
 
 MemberFunction *MemberFunction::Create(
@@ -50,16 +50,14 @@ MemberFunction *
 MemberFunction::CreateDestructor(llvm::Module *mod, CoreType *parent,
                                  const utils::FilePlacement placement) {
   return new MemberFunction(
-      mod, parent, "end", new VoidType(mod->getContext()), false,
+      mod, parent, "end", new VoidType(), false,
       std::vector<Argument>(
           {Argument::CreateVariable("self", new PointerType(parent), 0)}),
       false, false, false, placement, utils::VisibilityInfo::pub());
 }
 
 bool MemberFunction::isVariationFunction() const {
-  return isStatic
-             ? false
-             : function->getArg(0)->hasAttribute(llvm::Attribute::ReadOnly);
+  return isStatic ? false : isVariation;
 }
 
 std::string MemberFunction::getFullName() const {
@@ -67,14 +65,6 @@ std::string MemberFunction::getFullName() const {
 }
 
 bool MemberFunction::isStaticFunction() const { return isStatic; }
-
-llvm::CallInst *
-MemberFunction::create_call(llvm::IRBuilder<> &builder,
-                            llvm::ArrayRef<llvm::Value *> args //
-) const {
-  return builder.CreateCall(function->getFunctionType(), function, args,
-                            getFullName(), nullptr);
-}
 
 bool MemberFunction::isMemberFunction() const { return true; }
 

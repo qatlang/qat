@@ -3,10 +3,8 @@
 namespace qat {
 namespace IR {
 
-UnsignedType::UnsignedType(llvm::LLVMContext &ctx, const unsigned int _bitWidth)
-    : bitWidth(_bitWidth) {
-  llvmType = llvm::Type::getIntNTy(ctx, _bitWidth);
-}
+UnsignedType::UnsignedType(const unsigned int _bitWidth)
+    : bitWidth(_bitWidth) {}
 
 unsigned UnsignedType::getBitwidth() const { return bitWidth; }
 

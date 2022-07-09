@@ -9,7 +9,7 @@ namespace IR {
 
 class VoidType : public QatType {
 public:
-  VoidType(llvm::LLVMContext &llctx);
+  VoidType() {}
 
   TypeKind typeKind() const;
 };

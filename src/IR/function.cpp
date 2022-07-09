@@ -1,39 +1,33 @@
 #include "./function.hpp"
 #include "../show.hpp"
+#include "./qat_module.hpp"
 #include "value.hpp"
 
 namespace qat {
 namespace IR {
 
-Function::Function(llvm::Module *mod, std::string _parentName,
-                   std::string _name, QatType *returnType, bool _is_async,
+Function::Function(QatModule *_mod, std::string _parentName, std::string _name,
+                   QatType *returnType, bool _is_async,
                    std::vector<Argument> _args, bool is_variable_arguments,
-                   bool _returns_reference, utils::FilePlacement filePlacement,
+                   utils::FilePlacement filePlacement,
                    utils::VisibilityInfo _visibility_info)
-    : arguments(_args), name(_name), is_async(_is_async),
-      returns_reference(_returns_reference), placement(filePlacement),
-      visibility_info(_visibility_info), function(nullptr),
+    : arguments(_args), name(_name), is_async(_is_async), mod(_mod),
+      placement(filePlacement), visibility_info(_visibility_info),
       Value(nullptr, false, Kind::pure) //
 {}
 
-Function *Function::Create(llvm::Module *mod, const std::string parentName,
+Function *Function::Create(QatModule *mod, const std::string parentName,
                            const std::string name, QatType *returnTy,
                            bool is_async, const std::vector<Argument> args,
                            const bool has_variadic_args,
-                           const bool returns_reference,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visib_info) {
   std::vector<Argument> args_info;
   return new Function(mod, parentName, name, returnTy, is_async, args_info,
-                      has_variadic_args, returns_reference, placement,
-                      visib_info);
+                      has_variadic_args, placement, visib_info);
 }
 
-llvm::Function *Function::getLLVMFunction() { return function; }
-
-bool Function::hasVariadicArgs() const {
-  return function->getFunctionType()->isVarArg();
-}
+bool Function::hasVariadicArgs() const { return has_variadic_args; }
 
 bool Function::isAsyncFunction() const { return is_async; }
 
@@ -44,30 +38,11 @@ std::string Function::argumentNameAt(unsigned int index) const {
 std::string Function::getName() const { return name; }
 
 std::string Function::getFullName() const {
-  return function->getParent()->getName().str() + ":" + name;
-}
-
-bool Function::isReturnTypeReference() const { return returns_reference; }
-
-bool Function::isReturnTypePointer() const {
-  return (!returns_reference) &&
-         (function->getFunctionType()->getReturnType()->isPointerTy());
+  return mod->getFullNameWithChild(name);
 }
 
 bool Function::isAccessible(const utils::RequesterInfo req_info) const {
   return utils::Visibility::isAccessible(visibility_info, req_info);
-}
-
-llvm::CallInst *Function::call(llvm::IRBuilder<> &builder,
-                               llvm::ArrayRef<llvm::Value *> args,
-                               utils::RequesterInfo req_info //
-) const {
-  if (isAccessible(req_info)) {
-    return builder.CreateCall(function->getFunctionType(), function, args,
-                              getFullName(), nullptr);
-  } else {
-    return nullptr;
-  }
 }
 
 Block *Function::getEntryBlock() { return blocks.front(); }

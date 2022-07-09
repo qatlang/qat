@@ -1,5 +1,6 @@
 #include "./qat_sitter.hpp"
-#include "show.hpp"
+#include "./show.hpp"
+#include <filesystem>
 
 namespace qat {
 
@@ -23,7 +24,7 @@ void QatSitter::init() {
         {
           SHOW("Creating QatModule")
           auto *mod = new IR::QatModule(
-              path.filename().string(), path.string(), Generator->llvmContext,
+              path.filename().string(), fs::absolute(path),
               IR::ModuleType::file, utils::VisibilityInfo::pub());
           SHOW("QatModule created")
           modules.push_back(mod);
@@ -39,12 +40,6 @@ void QatSitter::init() {
             i++;
           }
           SHOW("Module Output")
-          std::error_code errorCode;
-          llvm::raw_fd_ostream output((path.filename() / ".ll").c_str(),
-                                      errorCode);
-          llvm::WriteBitcodeToFile(*Generator->mod->getLLVMModule(), output);
-          SHOW("Module written to file")
-          output.flush();
           return;
         }
         {
@@ -96,9 +91,9 @@ std::vector<IR::QatModule *> QatSitter::handle_top_modules(fs::path path) {
   if (fs::is_directory(path)) {
     auto libpath = path / "lib.qat";
     if (fs::exists(libpath) && fs::is_regular_file(libpath)) {
-      result.push_back(IR::QatModule::Create(
-          "lib.qat", fs::absolute(libpath), Generator->llvmContext,
-          IR::ModuleType::file, utils::VisibilityInfo::pub()));
+      result.push_back(IR::QatModule::Create("lib.qat", fs::absolute(libpath),
+                                             IR::ModuleType::file,
+                                             utils::VisibilityInfo::pub()));
     } else {
       for (auto sub : path) {
         auto subres = handle_top_modules(sub);
@@ -108,9 +103,9 @@ std::vector<IR::QatModule *> QatSitter::handle_top_modules(fs::path path) {
       }
     }
   } else if (fs::is_regular_file(path)) {
-    auto mod = IR::QatModule::Create(
-        path.string(), fs::absolute(path).string(), Generator->llvmContext,
-        IR::ModuleType::file, utils::VisibilityInfo::pub());
+    auto mod = IR::QatModule::Create(path.string(), fs::absolute(path),
+                                     IR::ModuleType::file,
+                                     utils::VisibilityInfo::pub());
     modules.push_back(mod);
     top_modules.push_back(mod);
 
@@ -122,11 +117,6 @@ std::vector<IR::QatModule *> QatSitter::handle_top_modules(fs::path path) {
     for (auto node : nodes) {
       node->emit(Generator);
     }
-    std::error_code EC;
-    const auto llpath = fs::path(".ll");
-    llvm::raw_fd_ostream OS((path / fs::path(std::string(".ll"))).string(), EC);
-    llvm::WriteBitcodeToFile(*(Generator->mod->getLLVMModule()), OS);
-    OS.flush();
   }
   return result;
 }

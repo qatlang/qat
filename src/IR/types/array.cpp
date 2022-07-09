@@ -1,5 +1,5 @@
 #include "./array.hpp"
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
 
 namespace qat {
 namespace IR {

@@ -5,34 +5,21 @@
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "value.hpp"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Target/TargetMachine.h"
-#include <llvm/ADT/StringRef.h>
-#include <llvm/Config/llvm-config.h>
-#include <llvm/Support/CodeGen.h>
 
 namespace qat {
 namespace IR {
 
-QatModule::QatModule(std::string _name, std::string _filename,
-                     llvm::LLVMContext &ctx, ModuleType _type,
+QatModule::QatModule(std::string _name, fs::path _filepath, ModuleType _type,
                      utils::VisibilityInfo _visibility)
-    : parent(nullptr), name(_name), moduleType(_type), mod(nullptr),
-      visibility(_visibility), active(nullptr) {
-  mod = new llvm::Module(_name, ctx);
-  mod->setCodeModel(llvm::CodeModel::Small);
-  mod->setDataLayout(llvm::DataLayout("e-m:e-i64:64-f80:128-n8:16:32:64-S128"));
-  mod->setTargetTriple(LLVM_HOST_TRIPLE);
-  mod->setSourceFileName(_filename);
-}
+    : parent(nullptr), name(_name), moduleType(_type), filePath(_filepath),
+      visibility(_visibility), active(nullptr) {}
 
 QatModule::~QatModule() {}
 
-QatModule *QatModule::Create(std::string name, std::string filename,
-                             llvm::LLVMContext &ctx, ModuleType type,
+QatModule *QatModule::Create(std::string name, fs::path filepath,
+                             ModuleType type,
                              utils::VisibilityInfo visib_info) {
-  return new QatModule(name, filename, ctx, type, visib_info);
+  return new QatModule(name, filepath, type, visib_info);
 }
 
 const utils::VisibilityInfo &QatModule::getVisibility() const {
@@ -89,8 +76,6 @@ QatModule *QatModule::getNthParent(unsigned int n) {
   }
 }
 
-llvm::Module *QatModule::getLLVMModule() const { return mod; }
-
 Function *QatModule::createFunction(const std::string name, QatType *returnType,
                                     const bool isAsync,
                                     const std::vector<Argument> args,
@@ -99,21 +84,17 @@ Function *QatModule::createFunction(const std::string name, QatType *returnType,
                                     const utils::FilePlacement placement,
                                     const utils::VisibilityInfo visibility) {
   SHOW("Creating IR function")
-  auto fn =
-      Function::Create(mod, getFullName(), name, returnType, isAsync, args,
-                       isVariadic, returnsReference, placement, visibility);
+  auto fn = Function::Create(this, getFullName(), name, returnType, isAsync,
+                             args, isVariadic, placement, visibility);
   SHOW("Created function")
   functions.push_back(fn);
-  auto res = fn->getLLVMFunction();
-  SHOW("Got LLVM Function")
   return fn;
 }
 
 QatModule *QatModule::CreateSubmodule(QatModule *parent, std::string filename,
                                       std::string name, ModuleType type,
                                       utils::VisibilityInfo visib_info) {
-  auto sub = new QatModule(name, filename, parent->mod->getContext(), type,
-                           visib_info);
+  auto sub = new QatModule(name, filename, type, visib_info);
   sub->parent = parent;
   parent->submodules.push_back(sub);
   return sub;
@@ -126,6 +107,14 @@ std::string QatModule::getFullName() const {
     return parent->getFullName() + (shouldPrefixName() ? (":" + name) : "");
   } else {
     return shouldPrefixName() ? name : "";
+  }
+}
+
+std::string QatModule::getFullNameWithChild(std::string child) const {
+  if (getFullName() != "") {
+    return getFullName() + ":" + child;
+  } else {
+    return child;
   }
 }
 
@@ -180,7 +169,7 @@ std::pair<bool, std::string> QatModule::hasAccessibleLibInImports(
           if (bMod->getLib(name, reqInfo)
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
-            return std::pair(true, bMod->mod->getSourceFileName());
+            return std::pair(true, bMod->filePath);
           }
         }
       }
@@ -238,7 +227,7 @@ std::pair<bool, std::string> QatModule::hasAccessibleBoxInImports(
           if (bMod->getBox(name, reqInfo)
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
-            return std::pair(true, bMod->mod->getSourceFileName());
+            return std::pair(true, bMod->filePath);
           }
         }
       }
@@ -335,7 +324,7 @@ std::pair<bool, std::string> QatModule::hasAccessibleFunctionInImports(
           if (bMod->getFunction(name, reqInfo)
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
-            return std::pair(true, bMod->mod->getSourceFileName());
+            return std::pair(true, bMod->filePath);
           }
         }
       }
@@ -414,7 +403,7 @@ std::pair<bool, std::string> QatModule::hasAccessibleCoreTypeInImports(
         if (bMod->getCoreType(name, reqInfo)
                 ->getVisibility()
                 .isAccessible(reqInfo)) {
-          return std::pair(true, bMod->mod->getSourceFileName());
+          return std::pair(true, bMod->filePath);
         }
       }
     }
@@ -494,7 +483,7 @@ std::pair<bool, std::string> QatModule::hasAccessibleGlobalEntityInImports(
         if (bMod->getGlobalEntity(name, reqInfo)
                 ->getVisibility()
                 .isAccessible(reqInfo)) {
-          return std::pair(true, bMod->mod->getSourceFileName());
+          return std::pair(true, bMod->filePath);
         }
       }
     }

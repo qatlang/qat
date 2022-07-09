@@ -1,12 +1,7 @@
 #ifndef QAT_IR_TYPES_QAT_TYPE_HPP
 #define QAT_IR_TYPES_QAT_TYPE_HPP
 
-#include "../../backend/cpp.hpp"
-#include "../../backend/json.hpp"
-#include "../../utils/file_placement.hpp"
 #include "./type_kind.hpp"
-#include "llvm/IR/Type.h"
-#include <string>
 
 namespace qat {
 namespace IR {

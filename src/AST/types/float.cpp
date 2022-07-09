@@ -35,7 +35,7 @@ FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable,
     : kind(_kind), QatType(_variable, _filePlacement) {}
 
 IR::QatType *FloatType::emit(IR::Context *ctx) {
-  return new IR::FloatType(ctx->llvmContext, kind);
+  return new IR::FloatType(kind);
 }
 
 void FloatType::emitCPP(backend::cpp::File &file, bool isHeader) const {

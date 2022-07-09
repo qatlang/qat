@@ -4,11 +4,9 @@
 namespace qat {
 namespace IR {
 
-ReferenceType::ReferenceType(QatType *_type) : subType(_type) {
-  llvmType = llvm::PointerType::get(_type->getLLVMType(), 0U);
-}
+ReferenceType::ReferenceType(QatType *_type) : subType(_type) {}
 
-TypeKind ReferenceType::typeKind() { return TypeKind::reference; }
+TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
 
 } // namespace IR
 } // namespace qat

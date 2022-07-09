@@ -53,6 +53,11 @@ public:
   };
 
 private:
+  std::string name;
+
+  // Parent module
+  QatModule *parent;
+
   /**
    *  Member fields
    *
@@ -207,17 +212,9 @@ public:
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visib_info);
 
-  /**
-   *  Create a call to the destructor of this core type
-   *
-   * @param builder LLVM IRBuilder
-   * @param instance Value of the pointer to the instance
-   * @return llvm::CallInst*
-   */
-  llvm::CallInst *call_destructor(llvm::IRBuilder<> &builder,
-                                  llvm::Value *instance) const;
-
   utils::VisibilityInfo getVisibility() const;
+
+  QatModule *getParent();
 
   TypeKind typeKind() const;
 };

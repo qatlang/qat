@@ -1,5 +1,5 @@
 #include "./core_type.hpp"
-#include "type_kind.hpp"
+#include "../qat_module.hpp"
 
 namespace qat {
 namespace IR {
@@ -10,18 +10,14 @@ CoreType::CoreType(llvm::LLVMContext &ctx, llvm::Module *mod,
                    const std::vector<MemberFunction *> _memberFunctions,
                    const bool _isPacked,
                    const utils::VisibilityInfo _visibility)
-    : members(_members), memberFunctions(_memberFunctions),
+    : name(_name), members(_members), memberFunctions(_memberFunctions),
       destructor(std::nullopt), visibility(_visibility) {
-  std::vector<llvm::Type *> mTypes;
-  for (auto memb : _members) {
-    mTypes.push_back(memb->type->getLLVMType());
-  }
   destructor = MemberFunction::CreateDestructor(
       mod, this, utils::FilePlacement("", {0u, 0u}, {0u, 0u}));
 }
 
 std::string CoreType::getFullName() const {
-  return llvm::dyn_cast<llvm::StructType>(llvmType)->getName().str();
+  return parent->getFullNameWithChild(name);
 }
 
 std::string CoreType::getName() const {
@@ -132,6 +128,8 @@ void CoreType::add_static_function(llvm::Module *mod, const std::string name,
 }
 
 utils::VisibilityInfo CoreType::getVisibility() const { return visibility; }
+
+QatModule *CoreType::getParent() { return parent; }
 
 TypeKind CoreType::typeKind() const { return TypeKind::core; }
 

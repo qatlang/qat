@@ -1,7 +1,6 @@
 #ifndef QAT_IR_TYPES_POINTER_HPP
 #define QAT_IR_TYPES_POINTER_HPP
 
-#include "../../utils/llvm_type_to_name.hpp"
 #include "./qat_type.hpp"
 #include <string>
 

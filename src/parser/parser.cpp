@@ -1246,7 +1246,7 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       }
       auto end = end_res.getValue();
       auto exps = parseSeparatedExpressions(ctx, i, end);
-      result.push_back(new AST::SaySentence(exps, token.filePlacement));
+      result.push_back(new AST::Say(exps, token.filePlacement));
       i = end;
       break;
     }

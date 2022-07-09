@@ -23,8 +23,7 @@ private:
   bool isPacked;
 
 public:
-  TupleType(llvm::LLVMContext &ctx, const std::vector<QatType *> _types,
-            const bool _isPacked);
+  TupleType(const std::vector<QatType *> _types, const bool _isPacked);
 
   std::vector<QatType *> getSubTypes() const;
 

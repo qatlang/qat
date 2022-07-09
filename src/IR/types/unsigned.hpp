@@ -1,9 +1,7 @@
 #ifndef QAT_IR_TYPES_UNSIGNED_HPP
 #define QAT_IR_TYPES_UNSIGNED_HPP
 
-#include "qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
+#include "./qat_type.hpp"
 
 namespace qat {
 namespace IR {
@@ -14,7 +12,7 @@ private:
   const unsigned int bitWidth;
 
 public:
-  UnsignedType(llvm::LLVMContext &ctx, const unsigned int _bitWidth);
+  UnsignedType(const unsigned int _bitWidth);
 
   TypeKind typeKind() const;
 

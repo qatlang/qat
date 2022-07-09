@@ -1,8 +1,10 @@
 #ifndef QAT_IR_TYPES_SUM_TYPE_HPP
 #define QAT_IR_TYPES_SUM_TYPE_HPP
 
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
+#include <string>
 #include <vector>
+
 namespace qat {
 namespace IR {
 

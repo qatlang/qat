@@ -3,7 +3,6 @@
 
 #include "../../utils/types.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat {
 namespace IR {

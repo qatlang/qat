@@ -10,7 +10,7 @@ IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
 IR::QatType *IntegerType::emit(qat::IR::Context *ctx) {
-  return new IR::IntegerType(ctx->llvmContext, bitWidth);
+  return new IR::IntegerType(bitWidth);
 }
 
 void IntegerType::emitCPP(backend::cpp::File &file, bool isHeader) const {

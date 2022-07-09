@@ -1,6 +1,9 @@
 #ifndef QAT_IR_VALUE_HPP
 #define QAT_IR_VALUE_HPP
 
+#include "llvm/IR/ConstantFolder.h"
+#include "llvm/IR/IRBuilder.h"
+
 namespace qat {
 namespace IR {
 
@@ -31,6 +34,10 @@ public:
   bool isVariable() const;
 
   Kind getKind() const;
+
+  virtual llvm::Value *
+  emitLLVM(llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
+               builder) const {}
 };
 
 } // namespace IR

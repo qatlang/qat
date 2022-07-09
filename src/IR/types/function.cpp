@@ -1,6 +1,4 @@
 #include "./function.hpp"
-#include "qat_type.hpp"
-#include <vector>
 
 namespace qat {
 namespace IR {

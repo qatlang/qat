@@ -33,11 +33,10 @@ private:
    */
   CoreType *parent;
 
-  /**
-   *  Whether this is a static member function or not
-   *
-   */
+  //  Whether this is a static member function or not
   bool isStatic;
+
+  bool isVariation;
 
   /**
    *  Private constructor for MemberFunction
@@ -53,7 +52,7 @@ private:
    * @param _is_static Whether the function is a static member function
    * @param _visibility_info VisibilityInfo of the function
    */
-  MemberFunction(llvm::Module *mod, CoreType *_parent, std::string _name,
+  MemberFunction(bool _isVariation, CoreType *_parent, std::string _name,
                  QatType *returnType, bool _is_async,
                  std::vector<Argument> _args, bool has_variadic_arguments,
                  bool _is_static, bool _returns_reference,
@@ -117,16 +116,6 @@ public:
   bool isStaticFunction() const;
 
   std::string getFullName() const;
-
-  /**
-   *  Create a call to this function
-   *
-   * @return llvm::CallInst*
-   */
-  llvm::CallInst *create_call(
-      llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
-          &builder,
-      llvm::ArrayRef<llvm::Value *> args) const;
 
   bool isMemberFunction() const;
 };

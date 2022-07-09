@@ -214,5 +214,9 @@ bool VisibilityInfo::isAccessible(const RequesterInfo &reqInfo) const {
   return Visibility::isAccessible(*this, reqInfo);
 }
 
+bool VisibilityInfo::operator==(VisibilityInfo other) const {
+  return (kind == other.kind) && (value == other.value);
+}
+
 } // namespace utils
 } // namespace qat

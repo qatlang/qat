@@ -153,6 +153,8 @@ public:
    *
    */
   std::string value;
+
+  bool operator==(VisibilityInfo other) const;
 };
 
 /**

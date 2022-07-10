@@ -1,8 +1,7 @@
 #include "./array.hpp"
 #include "../../IR/types/array.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
                      const bool _variable,
@@ -37,5 +36,4 @@ std::string ArrayType::toString() const {
          std::to_string(length) + "]";
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

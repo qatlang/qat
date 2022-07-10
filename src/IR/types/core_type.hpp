@@ -97,7 +97,7 @@ public:
   CoreType(llvm::LLVMContext &ctx, llvm::Module *mod, const std::string _name,
            const std::vector<Member *> _members,
            const std::vector<MemberFunction *> _memberFunctions,
-           const bool _isPacked, const utils::VisibilityInfo _visibility);
+           const utils::VisibilityInfo _visibility);
 
   /**
    *  Get the full name of this type

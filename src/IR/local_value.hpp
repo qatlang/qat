@@ -22,6 +22,8 @@ private:
 
   Value *initial;
 
+  Block* parent;
+
   unsigned loads;
 
   unsigned stores;
@@ -30,9 +32,11 @@ private:
 
 public:
   LocalValue(std::string _name, IR::QatType *_type, bool _isVariable,
-             Value *_initial, Block *bb, Context *ctx);
+             Value *_initial, Block *block);
 
   std::string getName() const { return name; }
+
+  Block* getParent();
 
   unsigned getLoads() const { return loads; }
 

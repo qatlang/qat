@@ -38,7 +38,7 @@ void BringPaths::emitCPP(backend::cpp::File &file, bool isHeader) const {
       if (fs::is_regular_file(path) &&
           (fs::path(pathVal.get_value()).extension().string() == ".qat")) {
         file.addInclude(
-            fs::path(path).lexically_relative(base).replace_extension(".hpp"));
+            fs::path(path).lexically_relative(base).replace_extension(".hpp").string());
         file.addSingleLineComment(
             "Brought file " + fs::path(path).lexically_relative(base).string());
       } else if (fs::is_directory(path)) {

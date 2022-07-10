@@ -7,8 +7,7 @@
 #include "./node.hpp"
 #include "./node_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class BroughtGroup {
 private:
@@ -16,32 +15,32 @@ private:
    *  The parent entity of the group
    *
    */
-  StringLiteral parent;
+  StringLiteral *parent;
 
   /**
    *  All the members of the parent that should be brought in
    *
    */
-  std::vector<StringLiteral> members;
+  std::vector<StringLiteral *> members;
 
 public:
-  BroughtGroup(StringLiteral _parent, std::vector<StringLiteral> _members);
+  BroughtGroup(StringLiteral *_parent, std::vector<StringLiteral *> _members);
 
-  BroughtGroup(StringLiteral _parent);
+  explicit BroughtGroup(StringLiteral *_parent);
 
   /**
    *  Get the parent entity
    *
    * @return std::string
    */
-  StringLiteral get_parent() const;
+  StringLiteral *get_parent() const;
 
   /**
    *  Get the members of the parent entity
    *
    * @return std::vector<std::string>
    */
-  std::vector<StringLiteral> get_members() const;
+  std::vector<StringLiteral *> get_members() const;
 
   /**
    *  Whether the entire entity should be brought into the scope
@@ -60,25 +59,24 @@ private:
    *  All entities to be brought in
    *
    */
-  std::vector<BroughtGroup> entities;
+  std::vector<BroughtGroup *> entities;
 
   utils::VisibilityInfo visibility;
 
 public:
-  BringEntities(std::vector<BroughtGroup> _entities,
+  BringEntities(std::vector<BroughtGroup *> _entities,
                 utils::VisibilityInfo _visibility,
                 utils::FilePlacement _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
-  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+  void emitCPP(backend::cpp::File &file, bool isHeader) const override;
 
   backend::JSON toJSON() const;
 
   NodeType nodeType() const { return NodeType::bringEntities; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

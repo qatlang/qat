@@ -4,8 +4,7 @@
 #include "../../IR/context.hpp"
 #include "qat_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Integer datatype in the language
@@ -48,7 +47,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

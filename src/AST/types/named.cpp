@@ -1,7 +1,6 @@
 #include "./named.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 NamedType::NamedType(const std::string _name, const bool _variable,
                      const utils::FilePlacement _filePlacement)
@@ -41,5 +40,4 @@ std::string NamedType::toString() const {
   return (isVariable() ? "var " : "") + name;
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

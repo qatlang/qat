@@ -45,7 +45,7 @@ void QatSitter::init() {
         {
           // CPP & JSON
           std::string headerFileName =
-              path.replace_extension(".hpp").filename();
+              path.replace_extension(".hpp").filename().string();
           auto headerFile = backend::cpp::File::Header(
               path.replace_extension(".hpp").string());
           auto sourceFile = backend::cpp::File::Source(

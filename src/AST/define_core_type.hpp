@@ -25,14 +25,14 @@ private:
   const std::string name;
   bool isPacked = false;
   std::vector<CoreTypeMember> members;
+  utils::VisibilityInfo visibility;
 
 public:
-  DefineCoreType(std::string _name, bool _isPacked,
+  DefineCoreType(std::string _name, bool isPacked,
                  std::vector<CoreTypeMember> _members,
-                 //  std::vector<FunctionDefinition> _memberFunctions,
-                 utils::VisibilityKind visibility,
+                 utils::VisibilityKind _visibility,
                  utils::FilePlacement _filePlacement)
-      : name(_name), isPacked(_isPacked), members(_members),
+      : name(_name), isPacked(isPacked), members(_members), visibility(_visibility),
         Node(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);

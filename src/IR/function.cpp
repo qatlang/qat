@@ -7,13 +7,13 @@
 namespace qat {
 namespace IR {
 
-Function::Function(QatModule *_mod, std::string _parentName, std::string _name,
+Function::Function(QatModule *_mod, std::string _name,
                    QatType *returnType, bool _isRetTypeVariable, bool _is_async,
                    std::vector<Argument> _args, bool is_variable_arguments,
                    utils::FilePlacement filePlacement,
                    utils::VisibilityInfo _visibility_info)
     : arguments(_args), name(_name), isReturnValueVariable(_isRetTypeVariable),
-      is_async(_is_async), mod(_mod), placement(filePlacement),
+      is_async(_is_async), mod(_mod), placement(filePlacement), has_variadic_args(is_variable_arguments),
       visibility_info(_visibility_info), Value(nullptr, false, Kind::pure) //
 {
   std::vector<ArgumentType *> argTypes;
@@ -24,17 +24,16 @@ Function::Function(QatModule *_mod, std::string _parentName, std::string _name,
   type = new FunctionType(returnType, _isRetTypeVariable, argTypes);
 }
 
-Function *Function::Create(QatModule *mod, const std::string parentName,
+Function *Function::Create(QatModule *mod,
                            const std::string name, QatType *returnTy,
                            bool isReturnTypeVariable, bool is_async,
                            const std::vector<Argument> args,
                            const bool has_variadic_args,
                            const utils::FilePlacement placement,
-                           const utils::VisibilityInfo visib_info) {
-  std::vector<Argument> args_info;
+                           const utils::VisibilityInfo visibilityInfo) {
   return new Function(mod, parentName, name, returnTy, isReturnTypeVariable,
-                      is_async, args_info, has_variadic_args, placement,
-                      visib_info);
+                      is_async, args, has_variadic_args, placement,
+                      visibilityInfo);
 }
 
 bool Function::hasVariadicArgs() const { return has_variadic_args; }
@@ -57,7 +56,7 @@ bool Function::isAccessible(const utils::RequesterInfo req_info) const {
 
 Block *Function::getEntryBlock() { return blocks.front(); }
 
-Block *Function::addBlock(bool isSub) { return new Block(this, nullptr); }
+Block *Function::addBlock(bool isSub) { return new Block(this, isSub ? getCurrentBlock() : nullptr); }
 
 Block *Function::getCurrentBlock() { return current; }
 

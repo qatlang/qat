@@ -12,7 +12,7 @@ Config::~Config() {
     delete Config::instance;
     Config::instance = nullptr;
   }
-};
+}
 
 Config *Config::init(u64 count, const char **args) {
   if (!Config::instance) {
@@ -53,7 +53,6 @@ Config::Config(u64 count, const char **args) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath = args[0];
-    verbose = false;
     exitAfter = false;
     if (count <= 1) {
       std::cout << "No commands or arguments provided" << std::endl;
@@ -107,7 +106,6 @@ Config::Config(u64 count, const char **args) {
     for (std::size_t i = proceed; i < count; i++) {
       std::string arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
-        verbose = true;
       } else if (std::string(arg).find("-t=") == 0) {
         target = getCompileTarget(std::string(arg).substr(3));
       } else if (std::string(arg).find("--target=") == 0) {
@@ -151,7 +149,9 @@ bool Config::hasOutputPath() const { return outputPath.has_value(); }
 
 bool Config::shouldShowReport() const { return showReport; }
 
-bool Config::shouldLexerEmitTokens() const { lexer_emit_tokens; }
+bool Config::shouldLexerEmitTokens() const { return lexer_emit_tokens; }
+
+bool Config::isVerbose() const {return verbose;}
 
 CompileTarget Config::getTarget() const { return target; }
 

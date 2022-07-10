@@ -64,11 +64,11 @@ VersionNumber::VersionNumber(const std::string version)
           prerelease = std::nullopt;
           build = std::nullopt;
         } else {
-          prerelease = nums.at(3);
+          prerelease = std::string(nums.at(3));
           if (nums.size() < 5) {
             build = std::nullopt;
           } else {
-            build = nums.at(4);
+            build = std::string(nums.at(4));
           }
         }
       }

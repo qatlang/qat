@@ -1,8 +1,7 @@
 #include "./reference.hpp"
 #include "../../IR/types/reference.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 ReferenceType::ReferenceType(QatType *_type, bool _variable,
                              utils::FilePlacement _filePlacement)
@@ -34,5 +33,4 @@ std::string ReferenceType::toString() const {
   return (isVariable() ? "var @" : "@") + type->toString();
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

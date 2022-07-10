@@ -1,8 +1,7 @@
 #include "./float.hpp"
 #include "../../IR/types/float.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable,
                      const utils::FilePlacement _filePlacement)
@@ -79,5 +78,4 @@ std::string FloatType::toString() const {
   return (isVariable() ? "var " : "") + kindToString(kind);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

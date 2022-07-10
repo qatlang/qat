@@ -15,7 +15,7 @@ MemberFunction::MemberFunction(bool _isVariation, CoreType *_parent,
                                bool is_variable_arguments, bool _is_static,
                                const utils::FilePlacement _placement,
                                utils::VisibilityInfo _visibility_info)
-    : parent(_parent), isVariation(_isVariation),
+    : parent(_parent), isVariation(_isVariation), isStatic(_is_static),
       Function(parent->getParent(), parent->getName(), _name, returnType,
                _isReturnTypeVariable, _is_async, _args, is_variable_arguments,
                _placement, _visibility_info) {}
@@ -25,13 +25,16 @@ MemberFunction *MemberFunction::Create(
     QatType *returnTy, const bool _isReturnTypeVariable, const bool _is_async,
     const std::vector<Argument> args, const bool has_variadic_args,
     const utils::FilePlacement placement,
-    const utils::VisibilityInfo visib_info) {
+    const utils::VisibilityInfo visibilityInfo) {
   std::vector<Argument> args_info;
   args_info.push_back(is_variation ? Argument::CreateVariable("self", parent, 0)
                                    : Argument::Create("self", parent, 0));
+  for(auto arg : args) {
+      args_info.push_back(arg);
+  }
   return new MemberFunction(is_variation, parent, name, returnTy,
                             _isReturnTypeVariable, _is_async, args_info,
-                            has_variadic_args, false, placement, visib_info);
+                            has_variadic_args, false, placement, visibilityInfo);
 }
 
 MemberFunction *MemberFunction::CreateStatic(

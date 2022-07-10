@@ -1,9 +1,11 @@
 build/
 .vscode/*
 !.vscode/extensions.json
+src/cmake-build-debug/
 rebuild
 release
 refresh
 run
 test/
 .cache/
+.idea/

@@ -11,7 +11,7 @@ namespace IR {
 
 QatModule::QatModule(std::string _name, fs::path _filepath, ModuleType _type,
                      utils::VisibilityInfo _visibility)
-    : parent(nullptr), name(_name), moduleType(_type), filePath(_filepath),
+    : parent(nullptr), name(_name), moduleType(_type), filePath(_filepath.string()),
       visibility(_visibility), active(nullptr) {}
 
 QatModule::~QatModule() {}
@@ -38,7 +38,7 @@ std::pair<unsigned, std::string>
 QatModule::resolveNthParent(const std::string name) const {
   unsigned result = 0;
   if (name.find("..:") == 0) {
-    unsigned i = 0;
+    unsigned i;
     for (i = 0; i < name.length(); i++) {
       if (name.find("..:", i) == i) {
         result++;

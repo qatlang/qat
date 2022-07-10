@@ -9,8 +9,7 @@
 
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  This is the base class representing a type in the language
@@ -51,7 +50,7 @@ public:
 
   virtual std::string toString() const {};
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

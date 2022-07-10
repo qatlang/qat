@@ -1,7 +1,6 @@
 #include "./parser.hpp"
 #include "../AST/lib.hpp"
 #include "../show.hpp"
-#include <string>
 
 // NOTE - Check if file placement values are making use of the new merge
 // functionality
@@ -137,7 +136,7 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
       if (!pCloseResult.hasValue()) {
         throw_error("Expected )", token.filePlacement);
       }
-      if (to.has_value() ? (pCloseResult.getValue() > to.value()) : false) {
+      if (to.has_value() && (pCloseResult.getValue() > to.value())) {
         throw_error("Invalid position for )",
                     tokens.at(pCloseResult.getValue()).filePlacement);
       }
@@ -352,7 +351,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
     switch (token.type) {
     case TokenType::endOfFile: {
       return result;
-    };
+    }
     case TokenType::parenthesisOpen:
     case TokenType::boolType:
     case TokenType::voidType:
@@ -946,7 +945,7 @@ Parser::parseSymbol(ParserContext &prev_ctx, const std::size_t start) {
     for (; i < tokens.size(); i++) {
       auto tok = tokens.at(i);
       if (tok.type == TokenType::identifier) {
-        if (i != start ? prev != TokenType::identifier : true) {
+        if ((i != start) ? prev != TokenType::identifier : true) {
           name += tok.value;
         } else {
           break;

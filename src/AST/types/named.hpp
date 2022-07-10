@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  NamedType is a type, usually a core type, that can be identified by a
@@ -50,7 +49,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

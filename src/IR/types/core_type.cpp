@@ -8,7 +8,6 @@ CoreType::CoreType(llvm::LLVMContext &ctx, llvm::Module *mod,
                    const std::string _name,
                    const std::vector<Member *> _members,
                    const std::vector<MemberFunction *> _memberFunctions,
-                   const bool _isPacked,
                    const utils::VisibilityInfo _visibility)
     : name(_name), members(_members), memberFunctions(_memberFunctions),
       destructor(std::nullopt), visibility(_visibility) {

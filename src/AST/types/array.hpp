@@ -3,8 +3,7 @@
 
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  A continuous sequence of elements of a particular type. The sequence
@@ -47,7 +46,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

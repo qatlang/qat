@@ -4,8 +4,7 @@
 #include "./qat_type.hpp"
 #include "cstdint"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  FloatType represents a floating point number in the language
@@ -41,7 +40,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

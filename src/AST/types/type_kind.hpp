@@ -13,20 +13,21 @@ namespace AST {
 enum class TypeKind {
   Void,            // Void type
   array,           // Array of elements of QatType type
-  core,            // Struct type
+  named,           // Struct type
   Float,           // Floating point number
   integer,         // Signed integer
   unsignedInteger, // Unsigned integer
   vector,          // Vector of elements of another QatType type
-  sumType,         // Sum Type - Additions of different types (union)
   tuple,           // Tuple is a product type of multiple types
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type
+  function,
   /* Template type kinds */
-  templateCoreType, // Template struct type
-  templateSumType,  // Template sum type
-  templateTuple,    // Template tuple type
-  templatePointer,  // Template pointer
+  templateNamedType, // Template named type
+  templateSumType,   // Template sum type
+  templateTuple,     // Template tuple type
+  templatePointer,   // Template pointer
+  templateArray,     // Template array
 };
 
 } // namespace AST

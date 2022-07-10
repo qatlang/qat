@@ -152,7 +152,7 @@ public:
    * @param lexerContext A simple string that provides context for the
    * reader to customise reading behaviour.
    */
-  void read(std::string lexerContext);
+  void read();
 
   /**
    *  Handles the change of the active file

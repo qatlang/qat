@@ -12,7 +12,7 @@ NullPointer::NullPointer(llvm::Type *_type, utils::FilePlacement _filePlacement)
 IR::Value *NullPointer::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->throw_error("Null pointer is not assignable", file_placement);
-  };
+  }
   // TODO - Implement this
 }
 

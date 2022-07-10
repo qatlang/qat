@@ -2,8 +2,7 @@
 #include "../../IR/types/integer.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
                          const utils::FilePlacement _filePlacement)
@@ -49,5 +48,4 @@ std::string IntegerType::toString() const {
   return (isVariable() ? "var i" : "i") + std::to_string(bitWidth);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

@@ -52,7 +52,7 @@ protected:
   unsigned refers;
 
   // Private constructor for Function
-  Function(QatModule *mod, std::string _parentName, std::string _name,
+  Function(QatModule *mod, std::string _name,
            QatType *returnType, bool _isReturnValueVariable, bool _is_async,
            std::vector<Argument> _args, bool has_variadic_arguments,
            utils::FilePlacement placement,
@@ -60,7 +60,7 @@ protected:
 
 public:
   // Create a member function for the provided parent type
-  static Function *Create(QatModule *mod, const std::string parentName,
+  static Function *Create(QatModule *mod,
                           const std::string name, QatType *return_type,
                           bool isReturnValueVariable, bool is_async,
                           const std::vector<Argument> args,

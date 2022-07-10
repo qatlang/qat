@@ -5,8 +5,7 @@
 #include "./void.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  A pointer type in the language
@@ -37,7 +36,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

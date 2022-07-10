@@ -1,6 +1,8 @@
 #ifndef QAT_AST_NODE_HPP
 #define QAT_AST_NODE_HPP
 
+#include <utility>
+
 #include "../IR/context.hpp"
 #include "../backend/cpp.hpp"
 #include "../backend/json.hpp"
@@ -8,23 +10,23 @@
 #include "./errors.hpp"
 #include "./node_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-//  Node is the base class for all AST members of the language and it
+//  Node is the base class for all AST members of the language, and it
 // requires a FilePlacement instance that indicates its position in the
 // corresponding file
 class Node {
 public:
-  // Node is the base class for all AST members of the language and it
+  // Node is the base class for all AST members of the language, and it
   // requires a FilePlacement instance that indicates its position in the
   // corresponding file
   //
   // `_filePlacement` FilePlacement instance that represents the range
   // spanned by the tokens that made up this AST member
-  Node(utils::FilePlacement _filePlacement) : file_placement(_filePlacement) {}
+  explicit Node(utils::FilePlacement _filePlacement)
+      : file_placement(std::move(_filePlacement)) {}
 
-  virtual ~Node(){};
+  virtual ~Node() = default;
 
   // This is the code emitter function that handles Qat IR
   virtual IR::Value *emit(IR::Context *ctx){};
@@ -49,7 +51,6 @@ public:
   virtual void destroy(){};
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

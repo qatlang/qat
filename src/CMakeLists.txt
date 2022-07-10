@@ -139,24 +139,44 @@ else()
         endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME}
-        ${LLVM_LIBRARIES}
-        LLVMBitWriter
-        stdc++
-        stdc++fs
-        rt
-        dl
-        pthread
-        m
-        z
-        tinfo
-        xml2
-        QAT_AST
-        QAT_LEXER
-        QAT_PARSER
-        QAT_IR
-        QAT_UTILS
-        QAT_CLI
-        QAT_BACKEND)
+if(WIN32)
+        target_link_libraries(${PROJECT_NAME}
+                ${LLVM_LIBRARIES}
+                LLVMBitWriter
+                stdc++
+                pthread
+                m
+                z
+                xml2
+                QAT_AST
+                QAT_LEXER
+                QAT_PARSER
+                QAT_IR
+                QAT_UTILS
+                QAT_CLI
+                QAT_BACKEND)
+else()
+        target_link_libraries(${PROJECT_NAME}
+                ${LLVM_LIBRARIES}
+                LLVMBitWriter
+                stdc++
+                stdc++fs
+                rt
+                dl
+                pthread
+                m
+                z
+                tinfo
+                xml2
+                QAT_AST
+                QAT_LEXER
+                QAT_PARSER
+                QAT_IR
+                QAT_UTILS
+                QAT_CLI
+                QAT_BACKEND)
+endif()
 
-execute_process(COMMAND "export PATH=${CMAKE_BINARY_DIR}:$PATH")
+if(NOT WIN32)
+        execute_process(COMMAND "export PATH=${CMAKE_BINARY_DIR}:$PATH")
+endif()

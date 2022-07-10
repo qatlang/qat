@@ -151,7 +151,9 @@ public:
   // Whether an output path is provided to the compiler
   bool hasOutputPath() const;
 
-  // Get the compile target provided by the user
+  bool isVerbose() const;
+
+  // Get the compile-target provided by the user
   CompileTarget getTarget() const;
 
   ~Config();

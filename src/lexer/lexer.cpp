@@ -16,7 +16,7 @@ Lexer::Lexer() {
 
 std::vector<Token> &Lexer::get_tokens() { return tokens; }
 
-void Lexer::read(std::string context) {
+void Lexer::read() {
   try {
     if (file.eof()) {
       prev = curr;
@@ -54,7 +54,7 @@ void Lexer::analyse() {
   auto lexer_start = std::chrono::high_resolution_clock::now();
   tokens.push_back(
       Token::valued(TokenType::startOfFile, filePath, this->getPosition(0)));
-  read("start");
+  read();
   while (!file.eof()) {
     tokens.push_back(tokeniser());
   }
@@ -92,7 +92,7 @@ Token Lexer::tokeniser() {
   }
   if (prev == '\r') {
     prev_ctx = "whitespace";
-    read(prev_ctx);
+    read();
     return tokeniser();
   }
   switch (curr) {
@@ -101,69 +101,69 @@ Token Lexer::tokeniser() {
   case '\r':
   case '\t': {
     prev_ctx = "whitespace";
-    read(prev_ctx);
+    read();
     return tokeniser();
   }
   case '.': {
     prev_ctx = "stop";
-    read(prev_ctx);
+    read();
     if (curr == '.') {
       prev_ctx = "super";
-      read(prev_ctx);
+      read();
       return Token::normal(TokenType::super, this->getPosition(2));
     }
     return Token::normal(TokenType::stop, this->getPosition(1));
   }
   case ',': {
     prev_ctx = "separator";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::separator, this->getPosition(1));
   }
   case '(': {
-    prev_ctx = "paranthesisOpen";
-    read(prev_ctx);
+    prev_ctx = "parenthesisOpen";
+    read();
     return Token::normal(TokenType::parenthesisOpen, this->getPosition(1));
   }
   case ')': {
-    prev_ctx = "paranthesisClose";
-    read(prev_ctx);
+    prev_ctx = "parenthesisClose";
+    read();
     return Token::normal(TokenType::parenthesisClose, this->getPosition(1));
   }
   case '[': {
     prev_ctx = "bracketOpen";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::bracketOpen, this->getPosition(1));
   }
   case ']': {
     prev_ctx = "bracketClose";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::bracketClose, this->getPosition(1));
   }
   case '{': {
     prev_ctx = "curlybraceOpen";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::curlybraceOpen, this->getPosition(1));
   }
   case '}': {
     prev_ctx = "curlybraceClose";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::curlybraceClose, this->getPosition(1));
   }
   case '@': {
     prev_ctx = "reference";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::referenceType, this->getPosition(1));
   }
   case '^': {
     prev_ctx = "pointerAccess";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::pointerAccess, this->getPosition(1));
   }
   case ':': {
-    read("colon");
+    read();
     if (curr == '<') {
       prev_ctx = "templateTypeStart";
-      read(prev_ctx);
+      read();
       template_type_start_count++;
       return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
     } else {
@@ -173,17 +173,17 @@ Token Lexer::tokeniser() {
   }
   case '#': {
     prev_ctx = "pointerType";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::pointerType, this->getPosition(1));
   }
   case '/': {
     prev_ctx = "operator";
     std::string value = "/";
-    read(prev_ctx);
+    read();
     if (curr == '*') {
       bool star = false;
       prev_ctx = "multiLineComment";
-      read(prev_ctx);
+      read();
       while ((star ? (curr != '/') : true) && !file.eof()) {
         if (star) {
           star = false;
@@ -191,25 +191,25 @@ Token Lexer::tokeniser() {
         if (curr == '*') {
           star = true;
         }
-        read(prev_ctx);
+        read();
       }
       if (file.eof()) {
         return Token::valued(TokenType::endOfFile, filePath,
                              this->getPosition(0));
       } else {
-        read(prev_ctx);
+        read();
         return tokeniser();
       }
     } else if (curr == '/') {
       prev_ctx = "singleLineComment";
       while ((curr != '\n' && prev != '\r') && !file.eof()) {
-        read(prev_ctx);
+        read();
       }
       if (file.eof()) {
         return Token::valued(TokenType::endOfFile, filePath,
                              this->getPosition(0));
       } else {
-        read(prev_ctx);
+        read();
         return tokeniser();
       }
     } else {
@@ -219,9 +219,9 @@ Token Lexer::tokeniser() {
   }
   case '!': {
     prev_ctx = "operator";
-    read(prev_ctx);
+    read();
     if (curr == '=') {
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::assignedBinaryOperator,
                            "!=", this->getPosition(2));
     } else {
@@ -231,9 +231,9 @@ Token Lexer::tokeniser() {
   }
   case '~': {
     prev_ctx = "bitwiseNot";
-    read(prev_ctx);
+    read();
     if (curr == '=') {
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::assignedBinaryOperator,
                            "~=", this->getPosition(2));
     } else {
@@ -243,9 +243,9 @@ Token Lexer::tokeniser() {
   }
   case '&': {
     prev_ctx = "bitwiseAnd";
-    read(prev_ctx);
+    read();
     if (curr == '=') {
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::assignedBinaryOperator,
                            "&=", this->getPosition(2));
     } else {
@@ -255,9 +255,9 @@ Token Lexer::tokeniser() {
   }
   case '|': {
     prev_ctx = "bitwiseOr";
-    read(prev_ctx);
+    read();
     if (curr == '=') {
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::assignedBinaryOperator,
                            "|=", this->getPosition(2));
     } else {
@@ -267,13 +267,13 @@ Token Lexer::tokeniser() {
   }
   case '?': {
     prev_ctx = "ternary";
-    read(prev_ctx);
+    read();
     if (curr == '?') {
       prev_ctx = "isNullPointer";
-      read(prev_ctx);
+      read();
       if (curr == '=') {
         prev_ctx = "assignToNullPointer";
-        read(prev_ctx);
+        read();
         return Token::normal(TokenType::assignToNullPointer,
                              this->getPosition(3));
       } else {
@@ -281,10 +281,10 @@ Token Lexer::tokeniser() {
       }
     } else if (curr == '!') {
       prev_ctx = "isNotNullPointer";
-      read(prev_ctx);
+      read();
       if (curr == '=') {
         prev_ctx = "assignToNonNullPointer";
-        read(prev_ctx);
+        read();
         return Token::normal(TokenType::assignToNonNullPointer,
                              this->getPosition(3));
       } else {
@@ -302,17 +302,17 @@ Token Lexer::tokeniser() {
   case '>': {
     if ((curr == '>') && (template_type_start_count > 0)) {
       prev_ctx = "templateTypeEnd";
-      read(prev_ctx);
+      read();
       template_type_start_count--;
       return Token::normal(TokenType::templateTypeEnd, this->getPosition(1));
     }
     prev_ctx = "operator";
     std::string opr;
     opr += curr;
-    read(prev_ctx);
+    read();
     if ((curr == '+' && opr == "+") || (curr == '-' && opr == "-")) {
       opr += curr;
-      read(prev_ctx);
+      read();
       const std::string identifierStart =
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
       return Token::valued((identifierStart.find(curr) != std::string::npos
@@ -321,28 +321,28 @@ Token Lexer::tokeniser() {
                            opr, this->getPosition(2));
     } else if (curr == '=' && opr != "<" && opr != ">") {
       opr += curr;
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::assignedBinaryOperator, opr,
                            this->getPosition(2));
     } else if ((curr == '<' && opr == "<") || (curr == '>' && opr == ">")) {
       opr += curr;
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::binaryOperator, opr,
                            this->getPosition(2));
     } else if (curr == '~' && opr == "<") {
       prev_ctx = "variationMarker";
-      read(prev_ctx);
+      read();
       return Token::normal(TokenType::variationMarker, this->getPosition(2));
     } else if (curr == '>' && opr == "-") {
       prev_ctx = "givenTypeSeparator";
-      read(prev_ctx);
+      read();
       return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
     } else if (opr == "<") {
       return Token::normal(TokenType::lesserThan, this->getPosition(1));
     } else if (opr == ">") {
       if (curr == '-') {
         prev_ctx = "lambda";
-        read(prev_ctx);
+        read();
         return Token::normal(TokenType::lambda, this->getPosition(2));
       }
       return Token::normal(TokenType::greaterThan, this->getPosition(1));
@@ -350,15 +350,15 @@ Token Lexer::tokeniser() {
     return Token::valued(TokenType::binaryOperator, opr, this->getPosition(1));
   }
   case '=': {
-    read("assignment");
+    read();
     if (curr == '=') {
       prev_ctx = "operator";
-      read(prev_ctx);
+      read();
       return Token::valued(TokenType::binaryOperator,
                            "==", this->getPosition(2));
     } else if (curr == '>') {
       prev_ctx = "singleStatementMarker";
-      read(prev_ctx);
+      read();
       return Token::normal(TokenType::singleStatementMarker,
                            this->getPosition(2));
     } else {
@@ -369,13 +369,13 @@ Token Lexer::tokeniser() {
   // TODO - Consider implementing raw identifiers
   // case '`': {
   //   prev_ctx = "rawIdentifier";
-  //   read(prev_ctx);
+  //   read();
   // }
   case '\'': {
-    read(prev_ctx);
+    read();
     if (curr == '\'') {
       prev_ctx = "self";
-      read(prev_ctx);
+      read();
       return Token::normal(TokenType::self, this->getPosition(2));
     } else {
       prev_ctx = "child";
@@ -384,12 +384,12 @@ Token Lexer::tokeniser() {
   }
   case ';': {
     prev_ctx = "semiColon";
-    read(prev_ctx);
+    read();
     return Token::normal(TokenType::semiColon, this->getPosition(1));
   }
   case '"': {
     bool escape = false;
-    read("string");
+    read();
     std::string str_val;
     while (escape ? !file.eof() : (curr != '"' && !file.eof())) {
       if (escape) {
@@ -416,17 +416,17 @@ Token Lexer::tokeniser() {
           str_val += "\t";
         else if (curr == 'v')
           str_val += "\v";
-        read("string");
+        read();
       }
       if (curr == '\\' && prev != '\\') {
         escape = true;
       } else {
         str_val += curr;
       }
-      read("string");
+      read();
     }
     prev_ctx = "literal";
-    read(prev_ctx);
+    read();
     return Token::valued(TokenType::StringLiteral, str_val,
                          this->getPosition(str_val.length() + 2));
   }
@@ -442,8 +442,8 @@ Token Lexer::tokeniser() {
   case '9': {
     std::string numVal;
     bool is_float = false;
-    const std::string alphabets = "abcdefghijklmnopqrstuvwxyz";
-    const std::string digits = "0123456789";
+    const std::string alphabets("abcdefghijklmnopqrstuvwxyz");
+    const std::string digits("0123456789");
     bool found_number = true;
     bool found_spec = false;
     while (((digits.find(curr, 0) != std::string::npos) ||
@@ -451,7 +451,7 @@ Token Lexer::tokeniser() {
             (found_number ? (curr == '_') : false)) &&
            !file.eof()) {
       if (curr == '.') {
-        read("integer");
+        read();
         if (digits.find('.', 0) != std::string::npos) {
           is_float = true;
           numVal += '.';
@@ -470,31 +470,31 @@ Token Lexer::tokeniser() {
         }
       } else if (found_number ? (curr == '_') : false) {
         std::string bitstr;
-        read("integer");
+        read();
         if (curr == 'u') {
-          read("unsigned");
+          read();
           while (digits.find(curr) != std::string::npos) {
             bitstr += curr;
-            read("unsigned");
+            read();
           }
           return Token::valued(
               TokenType::unsignedLiteral, numVal + "_u" + bitstr,
               this->getPosition((numVal + "_u" + bitstr).length()));
         } else if (curr == 'i') {
-          read("integer");
+          read();
           while (digits.find(curr) != std::string::npos) {
             bitstr += curr;
-            read("integer");
+            read();
           }
           return Token::valued(
               TokenType::integerLiteral, numVal + "_i" + bitstr,
               this->getPosition((numVal + "_i" + bitstr).length()));
         } else if (curr == 'f') {
-          read("float");
+          read();
           while ((digits.find(curr) != std::string::npos) ||
                  (alphabets.find(curr) != std::string::npos)) {
             bitstr += curr;
-            read("float");
+            read();
           }
           return Token::valued(
               TokenType::floatLiteral, numVal + "_f" + bitstr,
@@ -505,7 +505,7 @@ Token Lexer::tokeniser() {
       }
       numVal += curr;
       found_number = true;
-      read(is_float ? "float" : "integer");
+      read();
     }
     prev_ctx = "literal";
     return Token::valued(is_float ? TokenType::floatLiteral
@@ -526,7 +526,7 @@ Token Lexer::tokeniser() {
              (digits.find(curr, 0) != std::string::npos) ||
              (curr == '_') && !file.eof()) {
         value += curr;
-        read("identifier");
+        read();
       }
       prev_ctx = "keyword";
       if (value == "null")
@@ -637,7 +637,7 @@ Token Lexer::tokeniser() {
 
 void Lexer::printStatus() {
   if (Lexer::show_report) {
-    double time_val = 0;
+    double time_val;
     std::string time_unit;
 
     if (timeInNS < 1000000) {

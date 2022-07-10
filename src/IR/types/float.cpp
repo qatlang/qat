@@ -33,7 +33,7 @@ std::string FloatType::toString() const {
     return "f128ppc";
   }
   }
-};
+}
 
 } // namespace IR
 } // namespace qat

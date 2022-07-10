@@ -2,8 +2,7 @@
 #include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 PointerType::PointerType(QatType *_type, const bool _variable,
                          const utils::FilePlacement _filePlacement)
@@ -35,5 +34,4 @@ std::string PointerType::toString() const {
   return (isVariable() ? "var #[" : "#[") + type->toString() + "]";
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

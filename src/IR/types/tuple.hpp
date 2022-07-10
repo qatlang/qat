@@ -33,6 +33,8 @@ public:
   bool isPackedTuple() const;
 
   TypeKind typeKind() const;
+
+  std::string toString() const;
 };
 } // namespace IR
 } // namespace qat

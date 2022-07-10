@@ -1,7 +1,4 @@
 #include "./tuple.hpp"
-#include "qat_type.hpp"
-
-#include <vector>
 
 namespace qat {
 namespace IR {
@@ -18,6 +15,17 @@ unsigned TupleType::getSubTypeCount() const { return types.size(); }
 bool TupleType::isPackedTuple() const { return isPacked; }
 
 TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
+
+std::string TupleType::toString() const {
+  std::string result = "(";
+  for (std::size_t i = 0; i < types.size(); i++) {
+    result += types.at(i)->toString();
+    if (i != (types.size() - 1)) {
+      result += ", ";
+    }
+  }
+  result += ")";
+}
 
 } // namespace IR
 } // namespace qat

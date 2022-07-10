@@ -19,6 +19,8 @@ public:
   unsigned getBitwidth() const;
 
   bool isBitWidth(const unsigned int width) const;
+
+  std::string toString() const;
 };
 
 } // namespace IR

@@ -25,6 +25,8 @@ protected:
   // Name of the function
   std::string name;
 
+  bool isReturnValueVariable;
+
   // Parent module of the function
   QatModule *mod;
 
@@ -55,15 +57,17 @@ protected:
 
   // Private constructor for Function
   Function(QatModule *mod, std::string _parentName, std::string _name,
-           QatType *returnType, bool _is_async, std::vector<Argument> _args,
-           bool has_variadic_arguments, utils::FilePlacement placement,
+           QatType *returnType, bool _isReturnValueVariable, bool _is_async,
+           std::vector<Argument> _args, bool has_variadic_arguments,
+           utils::FilePlacement placement,
            utils::VisibilityInfo _visibility_info);
 
 public:
   // Create a member function for the provided parent type
   static Function *Create(QatModule *mod, const std::string parentName,
                           const std::string name, QatType *return_type,
-                          bool is_async, const std::vector<Argument> args,
+                          bool isReturnValueVariable, bool is_async,
+                          const std::vector<Argument> args,
                           const bool has_variadic_args,
                           const utils::FilePlacement placement,
                           const utils::VisibilityInfo visib_info);

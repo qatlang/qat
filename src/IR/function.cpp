@@ -1,30 +1,40 @@
 #include "./function.hpp"
 #include "../show.hpp"
 #include "./qat_module.hpp"
-#include "value.hpp"
+#include "./types/function.hpp"
+#include <vector>
 
 namespace qat {
 namespace IR {
 
 Function::Function(QatModule *_mod, std::string _parentName, std::string _name,
-                   QatType *returnType, bool _is_async,
+                   QatType *returnType, bool _isRetTypeVariable, bool _is_async,
                    std::vector<Argument> _args, bool is_variable_arguments,
                    utils::FilePlacement filePlacement,
                    utils::VisibilityInfo _visibility_info)
-    : arguments(_args), name(_name), is_async(_is_async), mod(_mod),
-      placement(filePlacement), visibility_info(_visibility_info),
-      Value(nullptr, false, Kind::pure) //
-{}
+    : arguments(_args), name(_name), isReturnValueVariable(_isRetTypeVariable),
+      is_async(_is_async), mod(_mod), placement(filePlacement),
+      visibility_info(_visibility_info), Value(nullptr, false, Kind::pure) //
+{
+  std::vector<ArgumentType *> argTypes;
+  for (auto arg : _args) {
+    argTypes.push_back(
+        new ArgumentType(arg.get_name(), arg.getType(), arg.get_variability()));
+  }
+  type = new FunctionType(returnType, _isRetTypeVariable, argTypes);
+}
 
 Function *Function::Create(QatModule *mod, const std::string parentName,
                            const std::string name, QatType *returnTy,
-                           bool is_async, const std::vector<Argument> args,
+                           bool isReturnTypeVariable, bool is_async,
+                           const std::vector<Argument> args,
                            const bool has_variadic_args,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visib_info) {
   std::vector<Argument> args_info;
-  return new Function(mod, parentName, name, returnTy, is_async, args_info,
-                      has_variadic_args, placement, visib_info);
+  return new Function(mod, parentName, name, returnTy, isReturnTypeVariable,
+                      is_async, args_info, has_variadic_args, placement,
+                      visib_info);
 }
 
 bool Function::hasVariadicArgs() const { return has_variadic_args; }

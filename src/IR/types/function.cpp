@@ -17,6 +17,10 @@ QatType *ArgumentType::getType() { return type; }
 
 bool ArgumentType::isVariable() const { return variability; }
 
+std::string ArgumentType::toString() const {
+  return type->toString() + (name.has_value() ? (" " + name.value()) : "");
+}
+
 FunctionType::FunctionType(QatType *_retType, bool _isRetTypeVariable,
                            std::vector<ArgumentType *> _argTypes)
     : returnType(_retType), isReturnVariable(_isRetTypeVariable),
@@ -35,6 +39,18 @@ std::vector<ArgumentType *> FunctionType::getArgumentTypes() const {
 }
 
 unsigned FunctionType::getArgumentCount() const { return argTypes.size(); }
+
+std::string FunctionType::toString() const {
+  std::string result("(");
+  for (std::size_t i = 0; i < argTypes.size(); i++) {
+    result += (argTypes.at(i)->toString());
+    if (i != (argTypes.size() - 1)) {
+      result += ", ";
+    }
+  }
+  result += ")";
+  result += " -> " + returnType->toString();
+}
 
 } // namespace IR
 } // namespace qat

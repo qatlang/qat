@@ -11,6 +11,8 @@ public:
   VoidType() {}
 
   TypeKind typeKind() const;
+
+  std::string toString() const;
 };
 
 } // namespace IR

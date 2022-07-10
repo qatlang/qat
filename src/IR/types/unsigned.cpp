@@ -14,5 +14,9 @@ bool UnsignedType::isBitWidth(const unsigned int width) const {
 
 TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
+std::string UnsignedType::toString() const {
+  return "u" + std::to_string(bitWidth);
+}
+
 } // namespace IR
 } // namespace qat

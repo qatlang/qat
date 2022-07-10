@@ -13,7 +13,7 @@ class QatType;
 enum class Kind { assignable, temporary, pure, expired };
 
 class Value {
-private:
+protected:
   // Type representation of the value
   IR::QatType *type;
 

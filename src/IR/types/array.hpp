@@ -26,6 +26,8 @@ public:
   u64 getLength() const;
 
   TypeKind typeKind() const;
+
+  std::string toString() const;
 };
 
 } // namespace IR

@@ -13,5 +13,9 @@ TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
 
 unsigned IntegerType::getBitwidth() const { return bitWidth; }
 
+std::string IntegerType::toString() const {
+  return "i" + std::to_string(bitWidth);
+}
+
 } // namespace IR
 } // namespace qat

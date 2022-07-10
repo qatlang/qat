@@ -2,6 +2,7 @@
 #define QAT_IR_TYPES_QAT_TYPE_HPP
 
 #include "./type_kind.hpp"
+#include <string>
 
 namespace qat {
 namespace IR {
@@ -17,6 +18,8 @@ public:
   virtual TypeKind typeKind() const {};
 
   bool isSame(QatType *other) const;
+
+  virtual std::string toString() const {}
 };
 } // namespace IR
 } // namespace qat

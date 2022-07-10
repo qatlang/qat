@@ -133,5 +133,7 @@ QatModule *CoreType::getParent() { return parent; }
 
 TypeKind CoreType::typeKind() const { return TypeKind::core; }
 
+std::string CoreType::toString() const { return getFullName(); }
+
 } // namespace IR
 } // namespace qat

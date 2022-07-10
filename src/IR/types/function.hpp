@@ -32,6 +32,8 @@ public:
   QatType *getType();
 
   bool isVariable() const;
+
+  std::string toString() const;
 };
 
 class FunctionType : public QatType {
@@ -55,6 +57,8 @@ public:
   unsigned getArgumentCount() const;
 
   TypeKind typeKind() const { return TypeKind::function; }
+
+  std::string toString() const;
 };
 
 } // namespace IR

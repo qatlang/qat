@@ -32,6 +32,8 @@ public:
   bool isCompatible(QatType *other) const;
 
   TypeKind typeKind() const { return TypeKind::sumType; }
+
+  std::string toString() const;
 };
 
 } // namespace IR

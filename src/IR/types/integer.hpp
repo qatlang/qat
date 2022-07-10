@@ -18,6 +18,8 @@ public:
   unsigned getBitwidth() const;
 
   TypeKind typeKind() const;
+
+  std::string toString() const;
 };
 } // namespace IR
 } // namespace qat

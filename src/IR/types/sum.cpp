@@ -37,5 +37,7 @@ bool SumType::isCompatible(QatType *other) const {
   return false;
 }
 
+std::string SumType::toString() const { return name; }
+
 } // namespace IR
 } // namespace qat

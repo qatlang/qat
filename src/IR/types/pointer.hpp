@@ -27,6 +27,8 @@ public:
   QatType *getSubType() const;
 
   TypeKind typeKind() const;
+
+  std::string toString() const;
 };
 
 } // namespace IR

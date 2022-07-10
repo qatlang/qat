@@ -6,9 +6,16 @@ namespace IR {
 ArgumentType::ArgumentType(QatType *_type, bool _variability)
     : type(_type), variability(_variability) {}
 
+ArgumentType::ArgumentType(std::string _name, QatType *_type, bool _variability)
+    : name(_name), type(_type), variability(_variability) {}
+
+bool ArgumentType::hasName() const { return name.has_value(); }
+
+std::string ArgumentType::getName() const { return name.value_or(""); }
+
 QatType *ArgumentType::getType() { return type; }
 
-bool ArgumentType::isVariable() { return variability; }
+bool ArgumentType::isVariable() const { return variability; }
 
 FunctionType::FunctionType(QatType *_retType, bool _isRetTypeVariable,
                            std::vector<ArgumentType *> _argTypes)

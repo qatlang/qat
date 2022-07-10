@@ -30,5 +30,9 @@ backend::JSON ReferenceType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string ReferenceType::toString() const {
+  return (isVariable() ? "var @" : "@") + type->toString();
+}
+
 } // namespace AST
 } // namespace qat

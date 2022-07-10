@@ -37,5 +37,9 @@ backend::JSON NamedType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string NamedType::toString() const {
+  return (isVariable() ? "var " : "") + name;
+}
+
 } // namespace AST
 } // namespace qat

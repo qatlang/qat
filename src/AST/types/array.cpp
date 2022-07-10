@@ -32,5 +32,10 @@ backend::JSON ArrayType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string ArrayType::toString() const {
+  return (isVariable() ? "var " : "") + element_type->toString() + "[" +
+         std::to_string(length) + "]";
+}
+
 } // namespace AST
 } // namespace qat

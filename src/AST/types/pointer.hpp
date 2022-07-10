@@ -33,6 +33,8 @@ public:
   TypeKind typeKind();
 
   backend::JSON toJSON() const;
+
+  std::string toString() const;
 };
 
 } // namespace AST

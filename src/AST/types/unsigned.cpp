@@ -45,5 +45,9 @@ backend::JSON UnsignedType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string UnsignedType::toString() const {
+  return (isVariable() ? "var u" : "u") + std::to_string(bitWidth);
+}
+
 } // namespace AST
 } // namespace qat

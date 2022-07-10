@@ -40,6 +40,8 @@ public:
   bool isBitWidth(const unsigned int width) const;
 
   backend::JSON toJSON() const;
+
+  std::string toString() const;
 };
 } // namespace AST
 } // namespace qat

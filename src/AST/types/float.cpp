@@ -4,32 +4,6 @@
 namespace qat {
 namespace AST {
 
-std::string to_string(IR::FloatTypeKind kind) {
-  switch (kind) {
-  case IR::FloatTypeKind::_brain: {
-    return "brain";
-  }
-  case IR::FloatTypeKind::_half: {
-    return "half";
-  }
-  case IR::FloatTypeKind::_32: {
-    return "32";
-  }
-  case IR::FloatTypeKind::_64: {
-    return "64";
-  }
-  case IR::FloatTypeKind::_80: {
-    return "80";
-  }
-  case IR::FloatTypeKind::_128PPC: {
-    return "128ppc";
-  }
-  case IR::FloatTypeKind::_128: {
-    return "128";
-  }
-  }
-}
-
 FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable,
                      const utils::FilePlacement _filePlacement)
     : kind(_kind), QatType(_variable, _filePlacement) {}
@@ -96,9 +70,13 @@ TypeKind FloatType::typeKind() { return TypeKind::Float; }
 backend::JSON FloatType::toJSON() const {
   return backend::JSON()
       ._("typeKind", "float")
-      ._("floatTypeKind", to_string(kind))
+      ._("floatTypeKind", kindToString(kind))
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);
+}
+
+std::string FloatType::toString() const {
+  return (isVariable() ? "var " : "") + kindToString(kind);
 }
 
 } // namespace AST

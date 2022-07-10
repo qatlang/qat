@@ -48,6 +48,8 @@ public:
   // FilePlacement representing the range in the file this type was
   // parsed from
   utils::FilePlacement filePlacement;
+
+  virtual std::string toString() const {};
 };
 } // namespace AST
 } // namespace qat

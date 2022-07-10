@@ -23,5 +23,9 @@ backend::JSON VoidType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string VoidType::toString() const {
+  return isVariable() ? "var void" : "void";
+}
+
 } // namespace AST
 } // namespace qat

@@ -31,5 +31,9 @@ backend::JSON PointerType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string PointerType::toString() const {
+  return (isVariable() ? "var #[" : "#[") + type->toString() + "]";
+}
+
 } // namespace AST
 } // namespace qat

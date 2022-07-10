@@ -51,5 +51,21 @@ backend::JSON TupleType::toJSON() const {
       ._("filePlacement", filePlacement);
 }
 
+std::string TupleType::toString() const {
+  std::string result;
+  if (isVariable()) {
+    result = "var (";
+  } else {
+    result = "(";
+  }
+  for (std::size_t i = 0; i < types.size(); i++) {
+    result += types.at(i)->toString();
+    if (i != (types.size() - 1)) {
+      result += ", ";
+    }
+  }
+  result += ")";
+}
+
 } // namespace AST
 } // namespace qat

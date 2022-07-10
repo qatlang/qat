@@ -29,7 +29,6 @@ void IntegerType::emitCPP(backend::cpp::File &file, bool isHeader) const {
     file += "const ";
   }
   file += value;
-  // file.addEnclosedComment("i" + std::to_string(bitWidth));
 }
 
 bool IntegerType::isBitWidth(const unsigned int width) const {
@@ -44,6 +43,10 @@ backend::JSON IntegerType::toJSON() const {
       ._("bitWidth", bitWidth)
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);
+}
+
+std::string IntegerType::toString() const {
+  return (isVariable() ? "var i" : "i") + std::to_string(bitWidth);
 }
 
 } // namespace AST

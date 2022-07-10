@@ -77,15 +77,16 @@ QatModule *QatModule::getNthParent(unsigned int n) {
 }
 
 Function *QatModule::createFunction(const std::string name, QatType *returnType,
+                                    const bool isReturnTypeVariable,
                                     const bool isAsync,
                                     const std::vector<Argument> args,
                                     const bool isVariadic,
-                                    const bool returnsReference,
                                     const utils::FilePlacement placement,
                                     const utils::VisibilityInfo visibility) {
   SHOW("Creating IR function")
-  auto fn = Function::Create(this, getFullName(), name, returnType, isAsync,
-                             args, isVariadic, placement, visibility);
+  auto fn = Function::Create(this, getFullName(), name, returnType,
+                             isReturnTypeVariable, isAsync, args, isVariadic,
+                             placement, visibility);
   SHOW("Created function")
   functions.push_back(fn);
   return fn;

@@ -6,7 +6,6 @@
 #include "./argument.hpp"
 #include "./block.hpp"
 #include "types/qat_type.hpp"
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,10 +15,7 @@ namespace IR {
 
 class QatModule;
 
-/**
- * Function represents a normal function in the language
- *
- */
+// Function represents a normal function in the language
 class Function : public Value {
 protected:
   // Name of the function

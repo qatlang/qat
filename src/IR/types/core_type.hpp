@@ -194,21 +194,20 @@ public:
    * value
    * @param visib_info VisibilityInfo of the function
    */
-  void add_member_function(llvm::Module *mod, const std::string name,
-                           const bool is_variation, QatType *return_type,
+  void add_member_function(const std::string name, const bool is_variation,
+                           QatType *return_type, bool is_return_type_variable,
                            const bool is_async,
                            const std::vector<Argument> args,
                            const bool has_variadic_args,
-                           const bool returns_reference,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visib_info);
 
   // NOTE - Add documentation
-  void add_static_function(llvm::Module *mod, const std::string name,
-                           QatType *return_type, const bool is_async,
+  void add_static_function(const std::string name, QatType *return_type,
+                           const bool is_return_type_variable,
+                           const bool is_async,
                            const std::vector<Argument> args,
                            const bool has_variadic_args,
-                           const bool returns_reference,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visib_info);
 

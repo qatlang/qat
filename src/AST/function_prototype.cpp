@@ -34,10 +34,9 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create function")
-  function = ctx->mod->createFunction(
-      name, returnType->emit(ctx), isAsync, args, isVariadic,
-      (returnType->typeKind() == TypeKind::reference), file_placement,
-      visibility);
+  function = ctx->mod->createFunction(name, returnType->emit(ctx),
+                                      returnType->isVariable(), isAsync, args,
+                                      isVariadic, file_placement, visibility);
   SHOW("Function created!!")
   if ((linkageType == llvm::GlobalValue::ExternalLinkage) &&
       (utils::stringToCallingConv(callingConv) != 1024)) {

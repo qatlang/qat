@@ -102,29 +102,27 @@ CoreType::get_static_function(const std::string fnName) const {
   }
 }
 
-void CoreType::add_member_function(llvm::Module *mod, const std::string name,
-                                   const bool is_variation,
-                                   QatType *return_type, const bool is_async,
-                                   const std::vector<Argument> args,
-                                   const bool has_variadic_args,
-                                   const bool returns_reference,
-                                   const utils::FilePlacement placement,
-                                   const utils::VisibilityInfo visib_info) {
+void CoreType::add_member_function(
+    const std::string name, const bool is_variation, QatType *return_type,
+    const bool is_return_type_variable, const bool is_async,
+    const std::vector<Argument> args, const bool has_variadic_args,
+    const utils::FilePlacement placement,
+    const utils::VisibilityInfo visib_info) {
   memberFunctions.push_back(MemberFunction::Create(
-      mod, this, is_variation, name, return_type, is_async, args,
-      has_variadic_args, returns_reference, placement, visib_info));
+      this, is_variation, name, return_type, is_return_type_variable, is_async,
+      args, has_variadic_args, placement, visib_info));
 }
 
-void CoreType::add_static_function(llvm::Module *mod, const std::string name,
-                                   QatType *return_type, const bool is_async,
+void CoreType::add_static_function(const std::string name, QatType *return_type,
+                                   const bool is_return_type_variable,
+                                   const bool is_async,
                                    const std::vector<Argument> args,
                                    const bool has_variadic_args,
-                                   const bool returns_reference,
                                    const utils::FilePlacement placement,
                                    const utils::VisibilityInfo visib_info) {
   staticFunctions.push_back(MemberFunction::CreateStatic(
-      mod, this, name, return_type, is_async, args, has_variadic_args,
-      returns_reference, placement, visib_info));
+      this, name, return_type, is_return_type_variable, is_async, args,
+      has_variadic_args, placement, visib_info));
 }
 
 utils::VisibilityInfo CoreType::getVisibility() const { return visibility; }

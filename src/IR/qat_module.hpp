@@ -94,8 +94,9 @@ public:
   const utils::VisibilityInfo &getVisibility() const;
 
   Function *createFunction(const std::string name, QatType *returnType,
-                           const bool isAsync, const std::vector<Argument> args,
-                           const bool isVariadic, const bool returnsReference,
+                           const bool isReturnTypeVariable, const bool isAsync,
+                           const std::vector<Argument> args,
+                           const bool isVariadic,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visibility);
 

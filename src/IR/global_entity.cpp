@@ -1,6 +1,5 @@
 #include "./global_entity.hpp"
 #include "./qat_module.hpp"
-#include "llvm/Support/Casting.h"
 
 namespace qat {
 namespace IR {

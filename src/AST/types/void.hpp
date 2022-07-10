@@ -2,7 +2,7 @@
 #define QAT_AST_TYPES_VOID_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/Type.h"
+
 #include <string>
 
 namespace qat {

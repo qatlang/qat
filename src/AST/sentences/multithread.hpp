@@ -1,16 +1,11 @@
 #ifndef QAT_AST_SENTENCES_MULTITHREAD_HPP
 #define QAT_AST_SENTENCES_MULTITHREAD_HPP
 
-#include "../../utils/file_placement.hpp"
-#include "../../utils/unique_id.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
 #include "../sentence.hpp"
 #include "../types/qat_type.hpp"
-#include "block.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/Value.h"
+#include "./block.hpp"
+
 #include <optional>
 #include <string>
 
@@ -25,64 +20,35 @@ namespace AST {
  */
 class Multithread : public Sentence {
 private:
-  /**
-   *  The number of threads to spawn. This should be of integer type
-   *
-   */
+  //  The number of threads to spawn. This should be of integer type
   Expression *count;
 
-  /**
-   *  The optional type of the entity to store the results of the
-   * execution of the threads
-   *
-   */
+  // The optional type of the entity to store the results of the
+  // execution of the threads
   std::optional<QatType *> type;
 
-  /**
-   *  The optional name of the entity to store the results of the
-   * execution of the threads
-   *
-   */
+  // The optional name of the entity to store the results of the
+  // execution of the threads
   std::optional<std::string> name;
 
-  /**
-   *  Main block of the multithread sentence. This is executed
-   * successfully in each thread spawned if the number of threads specified
-   is
-   * greater than 0.
-   *
-   */
+  // Main block of the multithread sentence. This is executed successfully in
+  // each thread spawned if the number of threads specified is greater than 0.
   Block *block;
 
-  /**
-   *  Block for adding declarations and other sentences that are related
-   * to multithreading
-   *
-   */
+  // Block for adding declarations and other sentences that are related
+  // to multithreading
   Block *cache_block;
 
-  /**
-   *  Cache block to add the loop that starts different threads
-   *
-   */
+  //  Cache block to add the loop that starts different threads
   Block *call_block;
 
-  /**
-   *  Cache block to add the loop that joins different threads
-   *
-   */
+  // Cache block to add the loop that joins different threads
   Block *join_block;
 
-  /**
-   *  The block after the main block. This is not part of the multithread
-   * sentence, except that the result obtained from the threads are
-   recognised
-   * to be declared in the scope of this variable
-   *
-   */
+  // The block after the main block. This is not part of the multithread
+  // sentence, except that the result obtained from the threads are
+  // recognised to be declared in the scope of this variable
   Block *after;
-
-  std::pair<unsigned, unsigned> get_index_and_position(llvm::BasicBlock *bb);
 
 public:
   /**

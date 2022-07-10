@@ -1,7 +1,6 @@
 #ifndef QAT_AST_EXPRESSIONS_THIS_HPP
 #define QAT_AST_EXPRESSIONS_THIS_HPP
 
-#include "../../utils/variability.hpp"
 #include "../expression.hpp"
 #include "../function_prototype.hpp"
 

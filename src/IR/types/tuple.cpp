@@ -1,6 +1,6 @@
 #include "./tuple.hpp"
 #include "qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
 #include <vector>
 
 namespace qat {

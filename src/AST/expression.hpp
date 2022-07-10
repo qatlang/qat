@@ -1,10 +1,7 @@
 #ifndef QAT_AST_EXPRESSION_HPP
 #define QAT_AST_EXPRESSION_HPP
 
-#include "../IR/context.hpp"
-#include "node.hpp"
-#include "node_type.hpp"
-#include "llvm/IR/Value.h"
+#include "./node.hpp"
 
 namespace qat {
 namespace AST {

@@ -1,13 +1,10 @@
 #ifndef QAT_AST_SENTENCES_IF_ELSE_HPP
 #define QAT_AST_SENTENCES_IF_ELSE_HPP
 
-#include "../../utils/llvm_type_to_name.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
 #include "../sentence.hpp"
 #include "./block.hpp"
 #include <optional>
-#include <vector>
 
 namespace qat {
 namespace AST {

@@ -1,12 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_TERNARY_HPP
 #define QAT_AST_EXPRESSIONS_TERNARY_HPP
 
-#include "../../utils/llvm_type_to_name.hpp"
-#include "../../utils/new_block_index.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
-#include "../sentence.hpp"
-#include "llvm/Support/SHA256.h"
 #include <vector>
 
 namespace qat {

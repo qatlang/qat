@@ -2,13 +2,9 @@
 #define QAT_AST_FUNCTION_DEFINITION_HPP
 
 #include "../IR/context.hpp"
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
 #include "./function_prototype.hpp"
 #include "./node.hpp"
 #include "./sentence.hpp"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/Type.h"
 #include <iostream>
 #include <string>
 

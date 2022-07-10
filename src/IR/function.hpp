@@ -2,14 +2,11 @@
 #define QAT_IR_FUNCTION_HPP
 
 #include "../utils/file_placement.hpp"
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./block.hpp"
 #include "types/qat_type.hpp"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Module.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -72,9 +69,6 @@ public:
                           const utils::VisibilityInfo visib_info);
 
   virtual bool isMemberFunction() const;
-
-  // Get the `llvm::Function` of this function
-  llvm::Function *getLLVMFunction();
 
   //  Whether this function has variadic arguments
   bool hasVariadicArgs() const;

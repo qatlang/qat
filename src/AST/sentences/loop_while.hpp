@@ -1,14 +1,10 @@
 #ifndef QAT_AST_SENTENCES_LOOP_WHILE_HPP
 #define QAT_AST_SENTENCES_LOOP_WHILE_HPP
 
-#include "../../IR/context.hpp"
-#include "../../utils/variability.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"
 #include "../sentence.hpp"
-#include "block.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Value.h"
+#include "./block.hpp"
 
 namespace qat {
 namespace AST {

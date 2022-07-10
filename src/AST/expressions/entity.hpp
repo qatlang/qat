@@ -1,12 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_ENTITY_HPP
 #define QAT_AST_EXPRESSIONS_ENTITY_HPP
 
-#include "../../IR/context.hpp"
-#include "../../utils/pointer_kind.hpp"
-#include "../../utils/variability.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
-#include "llvm/IR/Value.h"
 #include <string>
 
 namespace qat {

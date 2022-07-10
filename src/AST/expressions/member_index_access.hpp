@@ -4,7 +4,6 @@
 #include "../../IR/context.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"
-#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {

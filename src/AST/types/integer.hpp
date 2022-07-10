@@ -3,7 +3,6 @@
 
 #include "../../IR/context.hpp"
 #include "qat_type.hpp"
-#include "llvm/IR/Type.h"
 
 namespace qat {
 namespace AST {

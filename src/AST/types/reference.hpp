@@ -2,8 +2,6 @@
 #define QAT_TYPES_REFERENCE_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/Support/raw_ostream.h"
 #include <string>
 
 namespace qat {

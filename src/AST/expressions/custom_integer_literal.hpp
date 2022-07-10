@@ -4,10 +4,6 @@
 #include "../../IR/context.hpp"
 #include "../../utils/types.hpp"
 #include "../expression.hpp"
-#include "llvm/ADT/APInt.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {

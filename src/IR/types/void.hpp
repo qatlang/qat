@@ -2,7 +2,6 @@
 #define QAT_IR_TYPES_VOID_HPP
 
 #include "./qat_type.hpp"
-#include <llvm/IR/LLVMContext.h>
 
 namespace qat {
 namespace IR {

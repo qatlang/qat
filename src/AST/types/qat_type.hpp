@@ -6,7 +6,7 @@
 #include "../../backend/json.hpp"
 #include "../../utils/file_placement.hpp"
 #include "./type_kind.hpp"
-#include "llvm/IR/Type.h"
+
 #include <string>
 
 namespace qat {

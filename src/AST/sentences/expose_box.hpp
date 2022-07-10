@@ -1,7 +1,6 @@
 #ifndef QAT_AST_SENTENCES_EXPOSE_SPACE_HPP
 #define QAT_AST_SENTENCES_EXPOSE_SPACE_HPP
 
-#include "../node_type.hpp"
 #include "../sentence.hpp"
 
 namespace qat {

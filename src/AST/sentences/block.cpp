@@ -5,37 +5,7 @@ namespace AST {
 
 Block::Block(std::vector<Sentence *> _sentences,
              utils::FilePlacement _filePlacement)
-    : sentences(_sentences), bb(nullptr), end_bb(nullptr),
-      Sentence(_filePlacement) {}
-
-llvm::BasicBlock *Block::create_bb(IR::Context *ctx, llvm::Function *function) {
-  auto fn = function ? function : ctx->builder.GetInsertBlock()->getParent();
-  if (!bb) {
-    auto name = std::to_string(utils::new_block_index(fn) + 1);
-    bb = llvm::BasicBlock::Create(ctx->llvmContext, name, fn, nullptr);
-  }
-  return bb;
-}
-
-llvm::BasicBlock *Block::get_end_block() const { return end_bb; }
-
-void Block::set_alloca_scope_end(llvm::LLVMContext &ctx,
-                                 std::string end_block) const {
-  for (auto inst = bb->getParent()->getEntryBlock().begin();
-       inst != bb->getParent()->getEntryBlock().end(); inst++) {
-    if (llvm::isa<llvm::AllocaInst>(*inst)) {
-      auto alloc = llvm::dyn_cast<llvm::AllocaInst>(inst);
-      if (llvm::dyn_cast<llvm::MDString>(
-              alloc->getMetadata("origin_block")->getOperand(0))
-              ->getString()
-              .str() == bb->getName().str()) {
-        alloc->setMetadata(
-            "end_block",
-            llvm::MDNode::get(ctx, llvm::MDString::get(ctx, end_block)));
-      }
-    }
-  }
-}
+    : sentences(_sentences), Sentence(_filePlacement) {}
 
 IR::Value *Block::emit(IR::Context *ctx) {
   // TODO - Implement this

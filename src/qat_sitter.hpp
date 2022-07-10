@@ -6,9 +6,6 @@
 #include "./IR/qat_module.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
-#include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Support/raw_ostream.h"
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -38,7 +35,7 @@ private:
    *  The ctx instance used by this class to control IR generation
    *
    */
-  IR::Context *Generator;
+  IR::Context *Context;
 
   /**
    *  The lexer instance used to manage lexical analysis of files

@@ -6,8 +6,7 @@
 #include "../backend/json.hpp"
 #include "../utils/file_placement.hpp"
 #include "./errors.hpp"
-#include "node_type.hpp"
-#include "llvm/IR/Value.h"
+#include "./node_type.hpp"
 
 namespace qat {
 namespace AST {

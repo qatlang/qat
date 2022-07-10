@@ -6,9 +6,6 @@
 #include "./argument.hpp"
 #include "./node.hpp"
 #include "./types/qat_type.hpp"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Value.h"
 #include <string>
 
 namespace qat {

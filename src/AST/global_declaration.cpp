@@ -1,6 +1,4 @@
 #include "./global_declaration.hpp"
-#include "llvm/IR/Type.h"
-#include "llvm/Support/Casting.h"
 
 namespace qat {
 namespace AST {

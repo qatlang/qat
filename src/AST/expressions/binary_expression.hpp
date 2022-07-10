@@ -1,10 +1,7 @@
 #ifndef QAT_AST_EXPRESSIONS_BINARY_EXPRESSION_HPP
 #define QAT_AST_EXPRESSIONS_BINARY_EXPRESSION_HPP
 
-#include "../../utils/llvm_type_to_name.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
-#include "llvm/IR/Value.h"
 #include <string>
 
 namespace qat {

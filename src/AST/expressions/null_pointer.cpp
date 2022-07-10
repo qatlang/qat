@@ -1,7 +1,4 @@
 #include "./null_pointer.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
 
 namespace qat {
 namespace AST {

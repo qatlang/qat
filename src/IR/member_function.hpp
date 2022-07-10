@@ -1,17 +1,10 @@
 #ifndef QAT_IR_MEMBER_FUNCTION_HPP
 #define QAT_IR_MEMBER_FUNCTION_HPP
 
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./function.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
+
 #include <string>
 #include <vector>
 

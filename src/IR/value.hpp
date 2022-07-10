@@ -3,6 +3,7 @@
 
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace IR {

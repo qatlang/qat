@@ -2,9 +2,7 @@
 #define QAT_AST_EXPRESSIONS_TUPLE_VALUE_HPP
 
 #include "../expression.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
+
 #include <vector>
 
 namespace qat {

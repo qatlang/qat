@@ -5,8 +5,6 @@
 #include "../utils/visibility.hpp"
 #include "./expression.hpp"
 #include "./types/qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
 #include <optional>
 #include <string>
 #include <vector>

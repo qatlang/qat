@@ -6,8 +6,6 @@
 #include "./node.hpp"
 #include "./node_type.hpp"
 #include "./types/qat_type.hpp"
-#include "llvm/ADT/Optional.h"
-#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {

@@ -2,10 +2,8 @@
 #define QAT_AST_EXPRESSIONS_MEMBER_FUNCTION_CALL_HPP
 
 #include "../../IR/context.hpp"
-#include "../../utils/pointer_kind.hpp"
 #include "../expression.hpp"
 #include "../node_type.hpp"
-#include "llvm/IR/Value.h"
 #include <string>
 #include <vector>
 

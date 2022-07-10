@@ -1,12 +1,6 @@
 #ifndef QAT_UTILS_VISIBILITY_HPP
 #define QAT_UTILS_VISIBILITY_HPP
 
-#include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/GlobalVariable.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Metadata.h"
-#include "llvm/IR/Module.h"
 #include <map>
 #include <optional>
 #include <string>
@@ -187,184 +181,19 @@ public:
    *
    */
   std::optional<std::string> type;
-
-  /**
-   *  Whether the requester has access to the lib represented by the
-   * provided name
-   *
-   * @param other The lib to check for
-   * @return true
-   * @return false
-   */
-  bool has_access_to_lib(const std::string other) const;
-
-  /**
-   *  Whether the requester has access to the box represented by the
-   * provided name
-   *
-   * @param other The box to check for
-   * @return true
-   * @return false
-   */
-  bool has_access_to_box(const std::string other) const;
-
-  /**
-   *  Whether the requester's parent file is the same as that of the
-   * entity to be accessed
-   *
-   * @param other File path of the entity to check for
-   * @return true
-   * @return false
-   */
-  bool is_same_file(const std::string other) const;
-
-  /**
-   *  Whether the requester's parent type is the same as that of the
-   * entity to be accessed
-   *
-   * @param other Name of the type of the entity to check for
-   * @return true
-   * @return false
-   */
-  bool is_same_type(const std::string other) const;
 };
 
-/**
- *  Visibility provides static functions to manage, set and retrieve
- * access kinds and info related to that
- *
- */
 class Visibility {
-private:
-  /**
-   *  VisibilityKind, VisibilityValue
-   *
-   */
+public:
   static const std::map<VisibilityKind, std::string> kind_value_map;
 
-  /**
-   *  VisibilityValue, VisibilityKind
-   *
-   */
   static const std::map<std::string, VisibilityKind> value_kind_map;
 
-public:
-  /**
-   *  Get the appropriate linkage for an entity from its VisibilityKind
-   *
-   * @param kind VisibilityKind value
-   * @return llvm::GlobalValue::LinkageTypes
-   */
-  static llvm::GlobalValue::LinkageTypes get_linkage(const VisibilityKind kind);
+  static std::string getValue(VisibilityKind kind);
 
-  /**
-   *  Get the LLVM VisibilityTypes value of an entity from its
-   * VisibilityKind
-   *
-   * @param kind VisibilityKind value
-   * @return llvm::GlobalValue::VisibilityTypes
-   */
-  static llvm::GlobalValue::VisibilityTypes
-  get_llvm_visibility(const VisibilityKind kind);
+  static VisibilityKind getKind(std::string value);
 
-  /**
-   *  Get the VisibilityKind of the provided GlobalVariable
-   *
-   * @param var The GlobalVariable to find the value of
-   * @return VisibilityKind
-   */
-  static VisibilityKind get_kind(llvm::GlobalVariable *var);
-
-  /**
-   *  Get the VisibilityKind of the provided Function
-   *
-   * @param func The Function to find the value of
-   * @return VisibilityKind
-   */
-  static VisibilityKind get_kind(llvm::Function *func);
-
-  /**
-   *  Get the VisibilityKind value of the provided Module
-   *
-   * @param mod The GlobalVariable to find the value of
-   * @return VisibilityKind
-   */
-  static VisibilityKind get_kind(llvm::Module *mod);
-
-  /**
-   *  Get the VisibilityKind value of an entity with the provided name. It
-   * can be a lib, box or type
-   *
-   * @param name The Name of the entity to find the value of
-   * @return VisibilityKind
-   */
-  static VisibilityKind get_kind(std::string name);
-
-  /**
-   *  Get the visibility value of the provided GlobalVariable
-   *
-   * @param var
-   * @return std::string
-   */
-  static std::string get_value(llvm::GlobalVariable *var);
-
-  /**
-   *  Get the visibility value of the provided Function
-   *
-   * @param func
-   * @return std::string
-   */
-  static std::string get_value(llvm::Function *func);
-
-  /**
-   *  Get the visibility value of the provided Module
-   *
-   * @param mod
-   * @return std::string
-   */
-  static std::string get_value(llvm::Module *mod);
-
-  /**
-   *  Get the visibility value of an entity with the provided name. It
-   * can be a lib, box or type
-   *
-   * @param name The Name of the entity to find the value of
-   * @return std::string
-   */
-  static std::string get_value(std::string name);
-
-  static std::string get_value(VisibilityKind kind);
-
-  /**
-   *  Set the visibility of the provided GlobalVariable
-   *
-   * @param var
-   * @param info
-   * @param context
-   */
-  static void set(llvm::GlobalVariable *var, const VisibilityInfo info,
-                  llvm::LLVMContext &context);
-
-  static void set(llvm::Function *func, const VisibilityInfo info,
-                  llvm::LLVMContext &context);
-
-  static void set(llvm::Module *mod, const VisibilityInfo info,
-                  llvm::LLVMContext &context);
-
-  static void set(std::string name, std::string type, const VisibilityInfo info,
-                  llvm::LLVMContext &context);
-
-  /**
-   *  Compare the provided visibility and requester-info and see if the
-   * entity whose visibility is provided, can be accessed by the requester
-   *
-   * @param vinfo VisibilityInfo of the entity that has to be accessed
-   * @param reqinfo RequesterInfo of the part that is trying to access the value
-   * @return true If it is accessible
-   * @return false If it is not accessible
-   */
-  static bool isAccessible(const VisibilityInfo vinfo,
-                           const RequesterInfo reqinfo);
+  static bool isAccessible(VisibilityInfo visibility, RequesterInfo reqInfo);
 };
 
 } // namespace utils

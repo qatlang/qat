@@ -5,8 +5,7 @@
 #include "../box.hpp"
 #include "../function_definition.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
+
 #include <string>
 #include <vector>
 

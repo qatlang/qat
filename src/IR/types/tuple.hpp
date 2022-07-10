@@ -3,8 +3,7 @@
 
 #include "../../IR/context.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
+
 #include <vector>
 
 namespace qat {

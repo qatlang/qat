@@ -178,7 +178,7 @@ JsonValue::JsonValue(utils::FilePlacement val) {
 
 JsonValue::JsonValue(utils::VisibilityInfo visibility) {
   value = JSON()
-              ._("kind", utils::Visibility::get_value(visibility.kind))
+              ._("kind", utils::Visibility::getValue(visibility.kind))
               ._("value", visibility.value)
               .toString();
 }

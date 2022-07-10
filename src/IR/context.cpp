@@ -5,7 +5,7 @@
 namespace qat {
 namespace IR {
 
-Context::Context() : llvmContext(), mod(nullptr) {}
+Context::Context() : mod(nullptr) {}
 
 void Context::throw_error(const std::string message,
                           const utils::FilePlacement placement) {

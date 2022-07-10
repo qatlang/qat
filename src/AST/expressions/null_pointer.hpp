@@ -2,7 +2,6 @@
 #define QAT_AST_EXPRESSIONS_NULL_POINTER_HPP
 
 #include "../expression.hpp"
-#include "llvm/IR/Type.h"
 
 namespace qat {
 namespace AST {

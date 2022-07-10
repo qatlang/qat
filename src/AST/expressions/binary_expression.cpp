@@ -1,4 +1,5 @@
 #include "./binary_expression.hpp"
+
 namespace qat {
 namespace AST {
 

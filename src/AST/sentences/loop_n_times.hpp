@@ -1,9 +1,7 @@
 #ifndef QAT_AST_SENTENCES_LOOP_N_TIMES_HPP
 #define QAT_AST_SENTENCES_LOOP_N_TIMES_HPP
 
-#include "../../IR/context.hpp"
 #include "../expression.hpp"
-#include "../node_type.hpp"
 #include "../sentence.hpp"
 #include "./block.hpp"
 

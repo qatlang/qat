@@ -1,11 +1,8 @@
 #ifndef QAT_TYPES_POINTER_HPP
 #define QAT_TYPES_POINTER_HPP
 
-#include "../../utils/llvm_type_to_name.hpp"
 #include "./qat_type.hpp"
 #include "./void.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/Support/raw_ostream.h"
 #include <string>
 
 namespace qat {

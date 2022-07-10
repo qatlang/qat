@@ -1,5 +1,4 @@
 #include "./tuple_value.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat {
 namespace AST {

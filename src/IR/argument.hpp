@@ -2,8 +2,7 @@
 #define QAT_IR_ARGUMENT_HPP
 
 #include "types/qat_type.hpp"
-#include "llvm/IR/Argument.h"
-#include "llvm/IR/Type.h"
+
 #include <string>
 
 namespace qat {

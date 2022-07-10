@@ -1,13 +1,8 @@
 #ifndef QAT_AST_SENTENCES_GIVE_SENTENCE_HPP
 #define QAT_AST_SENTENCES_GIVE_SENTENCE_HPP
 
-#include "../../IR/context.hpp"
-#include "../../utils/llvm_type_to_name.hpp"
 #include "../expression.hpp"
 #include "../sentence.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Type.h"
 #include <optional>
 
 namespace qat {

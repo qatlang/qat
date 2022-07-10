@@ -4,7 +4,6 @@
 #include "../IR/context.hpp"
 #include "../utils/visibility.hpp"
 #include "./node.hpp"
-#include "llvm/IR/Value.h"
 #include <vector>
 
 namespace qat {

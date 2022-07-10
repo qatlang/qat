@@ -3,8 +3,6 @@
 
 #include "./qat_type.hpp"
 #include "cstdint"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Value.h"
 
 namespace qat {
 namespace AST {

@@ -5,7 +5,7 @@
 namespace qat {
 
 QatSitter::QatSitter()
-    : Generator(new IR::Context()), Parser(new parser::Parser()),
+    : Context(new IR::Context()), Parser(new parser::Parser()),
       Lexer(new lexer::Lexer()) {}
 
 void QatSitter::init() {
@@ -31,12 +31,12 @@ void QatSitter::init() {
           SHOW("Pushed to modules")
           top_modules.push_back(mod);
           SHOW("Pushed to Top modules")
-          Generator->mod = mod;
+          Context->mod = mod;
           SHOW("QatModule initialised in ctx")
           SHOW("Number of nodes " << nodes.size())
           for (std::size_t i = 0; i < nodes.size(); i++) {
             SHOW("Node at " << (i + 1))
-            nodes.at(i)->emit(Generator);
+            nodes.at(i)->emit(Context);
             i++;
           }
           SHOW("Module Output")
@@ -113,9 +113,9 @@ std::vector<IR::QatModule *> QatSitter::handle_top_modules(fs::path path) {
     Lexer->analyse();
     Parser->setTokens(Lexer->get_tokens());
     auto nodes = Parser->parse();
-    Generator->mod = mod;
+    Context->mod = mod;
     for (auto node : nodes) {
-      node->emit(Generator);
+      node->emit(Context);
     }
   }
   return result;
@@ -127,8 +127,8 @@ QatSitter::~QatSitter() {
   }
   modules.clear();
   top_modules.clear();
-  delete Generator;
-  Generator = nullptr;
+  delete Context;
+  Context = nullptr;
   delete Parser;
   Parser = nullptr;
   delete Lexer;

@@ -2,7 +2,6 @@
 #define QAT_AST_TYPES_ARRAY_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat {
 namespace AST {

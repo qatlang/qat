@@ -1,5 +1,4 @@
 #include "./reference.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat {
 namespace IR {

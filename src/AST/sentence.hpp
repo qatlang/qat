@@ -1,7 +1,7 @@
 #ifndef QAT_AST_SENTENCE_HPP
 #define QAT_AST_SENTENCE_HPP
 
-#include "node.hpp"
+#include "./node.hpp"
 
 namespace qat {
 namespace AST {

@@ -1,12 +1,9 @@
 #ifndef QAT_IR_GLOBAL_ENTITY_HPP
 #define QAT_IR_GLOBAL_ENTITY_HPP
 
-#include "../utils/pointer_kind.hpp"
-#include "../utils/variability.hpp"
 #include "../utils/visibility.hpp"
 #include "./value.hpp"
-#include "llvm/IR/GlobalVariable.h"
-#include "llvm/IR/IRBuilder.h"
+
 #include <optional>
 #include <string>
 

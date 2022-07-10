@@ -2,7 +2,6 @@
 #define QAT_AST_EXPRESSIONS_SIZE_OF_HPP
 
 #include "../expression.hpp"
-#include "llvm/IR/Constants.h"
 
 namespace qat {
 namespace AST {

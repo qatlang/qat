@@ -1,17 +1,17 @@
-[![wakatime](https://wakatime.com/badge/user/af510812-c60b-4a16-bb6e-fada8313362b/project/e1c4e435-cfac-41ac-9ba3-59d61be2f357.svg)](https://qat.dev)
+[![Wakatime](https://wakatime.com/badge/user/af510812-c60b-4a16-bb6e-fada8313362b/project/e1c4e435-cfac-41ac-9ba3-59d61be2f357.svg)](https://qat.dev)
 
 ![Qat cover image](./media/cover_wide.png)
 
 <div><center>
-<!-- <a href="https://qat.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/qat.dev-444444?style=for-the-badge&logoColor=white"/></a> -->
+<a href="https://qat.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/qat.dev-444444?style=for-the-badge&logoColor=white"/></a>
 <a href="https://youtube.com/c/aldrinmathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white"/></a>
-<a href="https://discord.gg/GbmfprHK" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white"/></a>
+<a href="https://discord.gg/CNW3Uvptvd" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white"/></a>
 <a href="https://reddit.com/r/qatlang" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white"/></a>
 <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Profile-000000?style=for-the-badge&logo=github&logoColor=white"/></a>
 <hr>
 </div>
 
-**qat** is closer to your machine's heart. It is envisioned to be a super-fast, legible systems language for maintainable code...
+**qat** is closer to your machine's heart. It is envisioned to be a superfast, legible systems language for maintainable code...
 
 This project is published under a **Shared Source** [license](https://github.com/qatlang/qat/blob/main/LICENSE) and is solely maintained by <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer">Aldrin Mathew</a>. The project is not open to public contributions when it comes to development. But if you are facing issues with the language, you are always welcome to [open an issue](https://github.com/qatlang/qat/issues/new/choose).
 
@@ -26,13 +26,15 @@ Besides that, you can contribute to the project via the following links:
 
 #### Hello, World!
 ```qat
-void :: main() [
+main -> void
+() [
   say "Hello, World!".
 ]
 ```
 #### Square
 ```qat
-i64 :: square(i32 a, i32 b) [
+square -> i64
+(i32 a, i32 b) [
   return (a to i64) * (b to i64).
 ]
 ```
@@ -41,12 +43,9 @@ i64 :: square(i32 a, i32 b) [
 /**
  *  Changing default values of a and b can generate a custom sequence
  */
-vec<i32> :: fibonacci(
-  count := 10,
-  a := 1,
-  b := 1,
-) [
-  vec<i32> result = [a, b].
+fibonacci -> vec<i32>
+( i32 count, i32 a, i32 b)  [
+  vec<i32> result from [a, b].
   loop count times [
     result'push(result'last() + result'at(result'length() - 2)).
   ]

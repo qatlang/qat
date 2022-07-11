@@ -24,8 +24,10 @@ public:
    */
   class Member {
   public:
-    Member(std::string _name, QatType *_type, utils::VisibilityInfo _visibility)
-        : name(_name), type(_type), visibility(_visibility) {}
+    Member(std::string _name, QatType *_type, bool _variability,
+           utils::VisibilityInfo _visibility)
+        : name(_name), type(_type), variability(_variability),
+          visibility(_visibility) {}
 
     /**
      *  Name of the member
@@ -53,39 +55,25 @@ public:
   };
 
 private:
+  // Name of the core type
   std::string name;
 
   // Parent module
   QatModule *parent;
 
-  /**
-   *  Member fields
-   *
-   */
+  // Member fields
   std::vector<Member *> members;
 
-  /**
-   *  Static member fields
-   *
-   */
+  // Static member fields
   std::vector<StaticMember *> static_members;
 
-  /**
-   *  All member functions (non-static) of this type
-   *
-   */
+  // All member functions (non-static) of this type
   std::vector<MemberFunction *> memberFunctions;
 
-  /**
-   *  All static member functions of this type
-   *
-   */
+  // All static member functions of this type
   std::vector<MemberFunction *> staticFunctions;
 
-  /**
-   *  The destructor function of the core type
-   *
-   */
+  // The destructor function of the core type
   std::optional<MemberFunction *> destructor;
 
   // VisibilityInfo of this CoreType
@@ -94,7 +82,7 @@ private:
   // TODO - Add support for extension functions
 
 public:
-  CoreType(llvm::LLVMContext &ctx, llvm::Module *mod, const std::string _name,
+  CoreType(QatModule *mod, const std::string _name,
            const std::vector<Member *> _members,
            const std::vector<MemberFunction *> _memberFunctions,
            const utils::VisibilityInfo _visibility);
@@ -117,7 +105,7 @@ public:
    * @param member Name of the member to find
    * @return int Index of the corresponding field
    */
-  int get_index_of(const std::string member) const;
+  int getIndexOf(const std::string member) const;
 
   unsigned getMemberCount() const;
 
@@ -131,7 +119,7 @@ public:
    */
   std::string getMemberNameAt(const unsigned int index) const;
 
-  QatType *get_type_of_member(const std::string member) const;
+  QatType *getTypeOfMember(const std::string member) const;
 
   /**
    *  Whether there is a static member in this type with the provided
@@ -141,7 +129,7 @@ public:
    * @return true If there is a static member
    * @return false If there is no static member
    */
-  bool has_static(const std::string name) const;
+  bool hasStatic(const std::string name) const;
 
   /**
    *  Whether there is a non-static member function of this type with the
@@ -151,7 +139,7 @@ public:
    * @return true
    * @return false
    */
-  bool has_member_function(const std::string fnName) const;
+  bool hasMemberFunction(const std::string fnName) const;
 
   /**
    *  Get the member function of this type with the provided name
@@ -159,7 +147,7 @@ public:
    * @param fnName Name of the function
    * @return const qat::IR::QatMemberFunction &
    */
-  const MemberFunction *get_member_function(const std::string fnName) const;
+  const MemberFunction *getMemberFunction(const std::string fnName) const;
 
   /**
    *  Whether there is a static member function of this type with the
@@ -169,7 +157,7 @@ public:
    * @return true
    * @return false
    */
-  bool has_static_function(const std::string fnName) const;
+  bool hasStaticFunction(const std::string fnName) const;
 
   /**
    *  Get the static member function of this type with the provided name
@@ -177,7 +165,7 @@ public:
    * @param fnName Name of the function
    * @return const QatMemberFunction&
    */
-  const MemberFunction *get_static_function(const std::string fnName) const;
+  const MemberFunction *getStaticFunction(const std::string fnName) const;
 
   /**
    *  Add a member function (non-static) to this core type
@@ -194,22 +182,23 @@ public:
    * value
    * @param visib_info VisibilityInfo of the function
    */
-  void add_member_function(const std::string name, const bool is_variation,
-                           QatType *return_type, bool is_return_type_variable,
-                           const bool is_async,
-                           const std::vector<Argument> args,
-                           const bool has_variadic_args,
-                           const utils::FilePlacement placement,
-                           const utils::VisibilityInfo visib_info);
+  void addMemberFunction(const std::string name, const bool is_variation,
+                         QatType *return_type, bool is_return_type_variable,
+                         const bool is_async, const std::vector<Argument> args,
+                         const bool has_variadic_args,
+                         const utils::FilePlacement placement,
+                         const utils::VisibilityInfo visib_info);
 
   // NOTE - Add documentation
-  void add_static_function(const std::string name, QatType *return_type,
-                           const bool is_return_type_variable,
-                           const bool is_async,
-                           const std::vector<Argument> args,
-                           const bool has_variadic_args,
-                           const utils::FilePlacement placement,
-                           const utils::VisibilityInfo visib_info);
+  void addStaticFunction(const std::string name, QatType *return_type,
+                         const bool is_return_type_variable,
+                         const bool is_async, const std::vector<Argument> args,
+                         const bool has_variadic_args,
+                         const utils::FilePlacement placement,
+                         const utils::VisibilityInfo visib_info);
+
+  void addStaticMember(std::string name, QatType *type, bool variability,
+                       Value *initial, utils::VisibilityInfo visibility);
 
   utils::VisibilityInfo getVisibility() const;
 

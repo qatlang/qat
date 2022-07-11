@@ -4,16 +4,16 @@
 #include "./types/function.hpp"
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
-Function::Function(QatModule *_mod, std::string _name,
-                   QatType *returnType, bool _isRetTypeVariable, bool _is_async,
+Function::Function(QatModule *_mod, std::string _name, QatType *returnType,
+                   bool _isRetTypeVariable, bool _is_async,
                    std::vector<Argument> _args, bool is_variable_arguments,
                    utils::FilePlacement filePlacement,
                    utils::VisibilityInfo _visibility_info)
     : arguments(_args), name(_name), isReturnValueVariable(_isRetTypeVariable),
-      is_async(_is_async), mod(_mod), placement(filePlacement), has_variadic_args(is_variable_arguments),
+      is_async(_is_async), mod(_mod), placement(filePlacement),
+      has_variadic_args(is_variable_arguments),
       visibility_info(_visibility_info), Value(nullptr, false, Kind::pure) //
 {
   std::vector<ArgumentType *> argTypes;
@@ -24,16 +24,15 @@ Function::Function(QatModule *_mod, std::string _name,
   type = new FunctionType(returnType, _isRetTypeVariable, argTypes);
 }
 
-Function *Function::Create(QatModule *mod,
-                           const std::string name, QatType *returnTy,
-                           bool isReturnTypeVariable, bool is_async,
+Function *Function::Create(QatModule *mod, const std::string name,
+                           QatType *returnTy, const bool isReturnTypeVariable,
+                           const bool is_async,
                            const std::vector<Argument> args,
                            const bool has_variadic_args,
                            const utils::FilePlacement placement,
                            const utils::VisibilityInfo visibilityInfo) {
-  return new Function(mod, parentName, name, returnTy, isReturnTypeVariable,
-                      is_async, args, has_variadic_args, placement,
-                      visibilityInfo);
+  return new Function(mod, name, returnTy, isReturnTypeVariable, is_async, args,
+                      has_variadic_args, placement, visibilityInfo);
 }
 
 bool Function::hasVariadicArgs() const { return has_variadic_args; }
@@ -56,7 +55,9 @@ bool Function::isAccessible(const utils::RequesterInfo req_info) const {
 
 Block *Function::getEntryBlock() { return blocks.front(); }
 
-Block *Function::addBlock(bool isSub) { return new Block(this, isSub ? getCurrentBlock() : nullptr); }
+Block *Function::addBlock(bool isSub) {
+  return new Block(this, isSub ? getCurrentBlock() : nullptr);
+}
 
 Block *Function::getCurrentBlock() { return current; }
 
@@ -68,5 +69,4 @@ utils::VisibilityInfo Function::getVisibility() const {
 
 bool Function::isMemberFunction() const { return false; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

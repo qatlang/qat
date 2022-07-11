@@ -11,8 +11,8 @@ namespace IR {
 
 QatModule::QatModule(std::string _name, fs::path _filepath, ModuleType _type,
                      utils::VisibilityInfo _visibility)
-    : parent(nullptr), name(_name), moduleType(_type), filePath(_filepath.string()),
-      visibility(_visibility), active(nullptr) {}
+    : parent(nullptr), name(_name), moduleType(_type),
+      filePath(_filepath.string()), visibility(_visibility), active(nullptr) {}
 
 QatModule::~QatModule() {}
 
@@ -84,9 +84,8 @@ Function *QatModule::createFunction(const std::string name, QatType *returnType,
                                     const utils::FilePlacement placement,
                                     const utils::VisibilityInfo visibility) {
   SHOW("Creating IR function")
-  auto fn = Function::Create(this, getFullName(), name, returnType,
-                             isReturnTypeVariable, isAsync, args, isVariadic,
-                             placement, visibility);
+  auto fn = Function::Create(this, name, returnType, isReturnTypeVariable,
+                             isAsync, args, isVariadic, placement, visibility);
   SHOW("Created function")
   functions.push_back(fn);
   return fn;

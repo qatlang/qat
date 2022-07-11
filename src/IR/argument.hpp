@@ -5,8 +5,7 @@
 
 #include <string>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  Argument represents an argument of a function
@@ -98,7 +97,6 @@ public:
    */
   bool get_variability() const { return variability; }
 };
-} // namespace IR
 } // namespace qat
 
 #endif

@@ -20,7 +20,7 @@ std::vector<StringLiteral *> BroughtGroup::get_members() const {
 bool BroughtGroup::is_all_brought() const { return members.empty(); }
 
 backend::JSON BroughtGroup::toJSON() const {
-  std::vector<backend::JSON> membes;
+  std::vector<backend::JSON> mems;
   for (auto mem : members) {
     mems.push_back(mem->toJSON());
   }

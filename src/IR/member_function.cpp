@@ -16,9 +16,9 @@ MemberFunction::MemberFunction(bool _isVariation, CoreType *_parent,
                                const utils::FilePlacement _placement,
                                utils::VisibilityInfo _visibility_info)
     : parent(_parent), isVariation(_isVariation), isStatic(_is_static),
-      Function(parent->getParent(), parent->getName(), _name, returnType,
-               _isReturnTypeVariable, _is_async, _args, is_variable_arguments,
-               _placement, _visibility_info) {}
+      Function(parent->getParent(), _name, returnType, _isReturnTypeVariable,
+               _is_async, _args, is_variable_arguments, _placement,
+               _visibility_info) {}
 
 MemberFunction *MemberFunction::Create(
     CoreType *parent, const bool is_variation, const std::string name,
@@ -29,12 +29,12 @@ MemberFunction *MemberFunction::Create(
   std::vector<Argument> args_info;
   args_info.push_back(is_variation ? Argument::CreateVariable("self", parent, 0)
                                    : Argument::Create("self", parent, 0));
-  for(auto arg : args) {
-      args_info.push_back(arg);
+  for (auto arg : args) {
+    args_info.push_back(arg);
   }
-  return new MemberFunction(is_variation, parent, name, returnTy,
-                            _isReturnTypeVariable, _is_async, args_info,
-                            has_variadic_args, false, placement, visibilityInfo);
+  return new MemberFunction(
+      is_variation, parent, name, returnTy, _isReturnTypeVariable, _is_async,
+      args_info, has_variadic_args, false, placement, visibilityInfo);
 }
 
 MemberFunction *MemberFunction::CreateStatic(
@@ -50,10 +50,10 @@ MemberFunction *MemberFunction::CreateStatic(
 }
 
 MemberFunction *
-MemberFunction::CreateDestructor(llvm::Module *mod, CoreType *parent,
+MemberFunction::CreateDestructor(CoreType *parent,
                                  const utils::FilePlacement placement) {
   return new MemberFunction(
-      mod, parent, "end", new VoidType(), false, false,
+      parent->getParent(), parent, "end", new VoidType(), false, false,
       std::vector<Argument>(
           {Argument::CreateVariable("self", new PointerType(parent), 0)}),
       false, false, placement, utils::VisibilityInfo::pub());

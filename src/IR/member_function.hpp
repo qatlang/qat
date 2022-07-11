@@ -72,7 +72,7 @@ public:
          const bool has_variadic_args, const utils::FilePlacement placement,
          const utils::VisibilityInfo visib_info);
 
-  static MemberFunction *CreateDestructor(llvm::Module *mod, CoreType *parent,
+  static MemberFunction *CreateDestructor(CoreType *parent,
                                           const utils::FilePlacement placement);
 
   /**

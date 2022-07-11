@@ -14,6 +14,24 @@
 namespace qat {
 namespace IR {
 
+QatType::QatType() { types.push_back(this); }
+
+std::vector<QatType *> QatType::types = {};
+
+bool QatType::checkTypeExists(const std::string name) {
+  for (auto typ : types) {
+    if (typ->typeKind() == TypeKind::sumType) {
+      if (((SumType *)typ)->getFullName() == name) {
+        return true;
+      }
+    } else if (typ->typeKind() == TypeKind::core) {
+      if (((CoreType *)typ)->getFullName() == name) {
+        return true;
+      }
+    }
+  }
+}
+
 bool QatType::isSame(QatType *other) const {
   if (typeKind() != other->typeKind()) {
     return false;

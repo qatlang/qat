@@ -6,7 +6,7 @@ namespace utils {
 #define VISIB_KIND "visibility_kind"
 #define VISIB_VALUE "visibility_value"
 
-bool Visibility::isAccessible(const VisibilityInfo visibility,
+bool Visibility::isAccessible(VisibilityInfo visibility,
                               const RequesterInfo req_info) {
   switch (visibility.kind) {
   case VisibilityKind::box: {
@@ -49,6 +49,9 @@ bool VisibilityInfo::isAccessible(const RequesterInfo &reqInfo) const {
 bool VisibilityInfo::operator==(VisibilityInfo other) const {
   return (kind == other.kind) && (value == other.value);
 }
+
+VisibilityInfo::VisibilityInfo(const VisibilityInfo &other)
+    : kind(other.kind), value(other.value) {}
 
 const std::map<VisibilityKind, std::string> Visibility::kind_value_map = {
     {VisibilityKind::pub, "public"},

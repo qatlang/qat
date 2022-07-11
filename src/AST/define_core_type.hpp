@@ -9,31 +9,58 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace AST {
-class CoreTypeMember {
-public:
-  CoreTypeMember();
-  QatType *type;
-  std::string name;
-  utils::VisibilityKind visibility;
-  std::optional<Expression> value;
-};
+namespace qat::AST {
 
 class DefineCoreType : public Node {
+public:
+  class Member {
+  public:
+    Member(QatType *_type, std::string _name, bool _variability,
+           utils::VisibilityInfo _visibility, utils::FilePlacement _placement);
+
+    QatType *type;
+    std::string name;
+    bool variability;
+    utils::VisibilityInfo visibility;
+    utils::FilePlacement placement;
+  };
+
+  // Static member representation in the AST
+  class StaticMember {
+  public:
+    StaticMember(QatType *_type, std::string _name, bool _variability,
+                 Expression *_value, utils::VisibilityInfo _visibility,
+                 utils::FilePlacement _placement);
+
+    QatType *type;
+    std::string name;
+    bool variability;
+    Expression *value;
+    utils::VisibilityInfo visibility;
+    utils::FilePlacement placement;
+  };
+
 private:
+  // Name of the core type
   const std::string name;
-  bool isPacked = false;
-  std::vector<CoreTypeMember> members;
+
+  // Whether the low-level structure is tightly packed
+  bool isPacked;
+
+  // Non-static fields in the core type
+  std::vector<Member *> members;
+
+  // Static fields in the core type
+  std::vector<StaticMember *> staticMembers;
+
+  // Visibility of the core type
   utils::VisibilityInfo visibility;
 
 public:
-  DefineCoreType(std::string _name, bool isPacked,
-                 std::vector<CoreTypeMember> _members,
-                 utils::VisibilityKind _visibility,
-                 utils::FilePlacement _filePlacement)
-      : name(_name), isPacked(isPacked), members(_members), visibility(_visibility),
-        Node(_filePlacement) {}
+  DefineCoreType(std::string _name, std::vector<Member *> _members,
+                 std::vector<StaticMember *> _staticMembers,
+                 utils::VisibilityInfo _visibility,
+                 utils::FilePlacement _filePlacement, bool _isPacked = false);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -41,7 +68,7 @@ public:
 
   NodeType nodeType() const { return NodeType::defineCoreType; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

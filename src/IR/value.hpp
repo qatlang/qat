@@ -1,6 +1,9 @@
 #ifndef QAT_IR_VALUE_HPP
 #define QAT_IR_VALUE_HPP
 
+#include "../backend/cpp.hpp"
+#include "../backend/json.hpp"
+#include "llvm_helper.hpp"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Value.h"
@@ -36,9 +39,11 @@ public:
 
   Kind getKind() const;
 
-  virtual llvm::Value *
-  emitLLVM(llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
-               builder) const {}
+  virtual llvm::Value *emitLLVM(llvmHelper helper) const {}
+
+  virtual void emitCPP(backend::cpp::File &file) const {}
+
+  virtual backend::JSON toJSON() const {}
 };
 
 } // namespace IR

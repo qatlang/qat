@@ -1,38 +1,39 @@
 #ifndef QAT_PARSER_PARSER_HPP
 #define QAT_PARSER_PARSER_HPP
 
-#include "../AST/box.hpp"
-#include "../AST/expression.hpp"
-#include "../AST/expressions/binary_expression.hpp"
-#include "../AST/expressions/custom_float_literal.hpp"
-#include "../AST/expressions/custom_integer_literal.hpp"
-#include "../AST/expressions/entity.hpp"
-#include "../AST/expressions/float_literal.hpp"
-#include "../AST/expressions/function_call.hpp"
-#include "../AST/expressions/integer_literal.hpp"
-#include "../AST/expressions/member_function_call.hpp"
-#include "../AST/expressions/null_pointer.hpp"
-#include "../AST/expressions/string_literal.hpp"
-#include "../AST/expressions/to_conversion.hpp"
-#include "../AST/expressions/tuple_value.hpp"
-#include "../AST/expressions/unsigned_literal.hpp"
-#include "../AST/function_definition.hpp"
-#include "../AST/function_prototype.hpp"
-#include "../AST/node.hpp"
-#include "../AST/sentences/assignment.hpp"
-#include "../AST/sentences/expression_sentence.hpp"
-#include "../AST/sentences/give_sentence.hpp"
-#include "../AST/sentences/local_declaration.hpp"
-#include "../AST/sentences/say_sentence.hpp"
-#include "../AST/types/array.hpp"
-#include "../AST/types/float.hpp"
-#include "../AST/types/integer.hpp"
-#include "../AST/types/named.hpp"
-#include "../AST/types/pointer.hpp"
-#include "../AST/types/qat_type.hpp"
-#include "../AST/types/tuple.hpp"
-#include "../AST/types/unsigned.hpp"
-#include "../CLI/color.hpp"
+#include "../ast/box.hpp"
+#include "../ast/expression.hpp"
+#include "../ast/expressions/binary_expression.hpp"
+#include "../ast/expressions/custom_float_literal.hpp"
+#include "../ast/expressions/custom_integer_literal.hpp"
+#include "../ast/expressions/entity.hpp"
+#include "../ast/expressions/float_literal.hpp"
+#include "../ast/expressions/function_call.hpp"
+#include "../ast/expressions/integer_literal.hpp"
+#include "../ast/expressions/member_function_call.hpp"
+#include "../ast/expressions/null_pointer.hpp"
+#include "../ast/expressions/string_literal.hpp"
+#include "../ast/expressions/to_conversion.hpp"
+#include "../ast/expressions/tuple_value.hpp"
+#include "../ast/expressions/unsigned_literal.hpp"
+#include "../ast/function_definition.hpp"
+#include "../ast/function_prototype.hpp"
+#include "../ast/node.hpp"
+#include "../ast/sentences/assignment.hpp"
+#include "../ast/sentences/expression_sentence.hpp"
+#include "../ast/sentences/give_sentence.hpp"
+#include "../ast/sentences/local_declaration.hpp"
+#include "../ast/sentences/say_sentence.hpp"
+#include "../ast/types/array.hpp"
+#include "../ast/types/float.hpp"
+#include "../ast/types/integer.hpp"
+#include "../ast/types/named.hpp"
+#include "../ast/types/pointer.hpp"
+#include "../ast/types/qat_type.hpp"
+#include "../ast/types/reference.hpp"
+#include "../ast/types/tuple.hpp"
+#include "../ast/types/unsigned.hpp"
+#include "../cli/color.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/types.hpp"
@@ -46,8 +47,6 @@
 #include <optional>
 #include <sstream>
 #include <vector>
-
-#include "../AST/types/reference.hpp"
 
 namespace qat::parser {
 
@@ -133,15 +132,15 @@ public:
    * scope
    * @param from The position after which parsing starts
    * @param to The position before which parsing stops
-   * @return std::pair<AST::QatType, std::size_t> The pair containing QatType
+   * @return std::pair<ast::QatType, std::size_t> The pair containing QatType
    * obtained and the index at which the parser stopped
    */
-  std::pair<AST::QatType *, std::size_t>
+  std::pair<ast::QatType *, std::size_t>
   parseType(ParserContext &prev_ctx, const std::size_t from,
             const std::optional<std::size_t> to);
 
   // NOTE - Change to accept a range so as for container-like contexts
-  std::vector<AST::Node *> parse(ParserContext prevCtx = ParserContext(),
+  std::vector<ast::Node *> parse(ParserContext prevCtx = ParserContext(),
                                  std::size_t from = -1, std::size_t to = -1);
 
   /**
@@ -164,10 +163,10 @@ public:
    * @param from The position after which the parsing starts
    * @param to The position before which the parsing ends
    * @param name The name of the CoreType in question
-   * @return std::vector<AST::Node> Vector of nodes parsed within the
+   * @return std::vector<ast::Node> Vector of nodes parsed within the
    * CoreType
    */
-  std::vector<AST::Node *> parseCoreTypeContents(ParserContext &prev_ctx,
+  std::vector<ast::Node *> parseCoreTypeContents(ParserContext &prev_ctx,
                                                  const std::size_t from,
                                                  const std::size_t to,
                                                  const std::string name);
@@ -182,7 +181,7 @@ public:
    * @return results::FunctionParameters All parameters obtained from the
    * parsing
    */
-  std::pair<std::vector<AST::Argument *>, bool>
+  std::pair<std::vector<ast::Argument *>, bool>
   parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
                           const std::size_t to);
 
@@ -196,9 +195,9 @@ public:
    * @param symbol An optional CacheSymbol instance
    * @param from The position after which the parsing starts
    * @param to The position before which the parsing ends
-   * @return AST::Expression An expression obtained from the expression
+   * @return ast::Expression An expression obtained from the expression
    */
-  AST::Expression *parseExpression(ParserContext &prev_ctx,
+  ast::Expression *parseExpression(ParserContext &prev_ctx,
                                    const llvm::Optional<CacheSymbol> symbol,
                                    const std::size_t from,
                                    const std::size_t to);
@@ -210,9 +209,9 @@ public:
    * scope
    * @param from The position after which the parsing starts
    * @param to The position before which the parsing ends
-   * @return std::vector<AST::Expression> Multiple Expressions parsed
+   * @return std::vector<ast::Expression> Multiple Expressions parsed
    */
-  std::vector<AST::Expression *>
+  std::vector<ast::Expression *>
   parseSeparatedExpressions(ParserContext &prev_ctx, const std::size_t from,
                             const std::size_t to);
 
@@ -223,9 +222,9 @@ public:
    * scope
    * @param from The position after which the parsing starts
    * @param to The position before which the parsing ends
-   * @return std::vector<AST::Sentence>
+   * @return std::vector<ast::Sentence>
    */
-  std::vector<AST::Sentence *> parseSentences(ParserContext &prev_ctx,
+  std::vector<ast::Sentence *> parseSentences(ParserContext &prev_ctx,
                                               const std::size_t from,
                                               const std::size_t to);
 
@@ -327,10 +326,9 @@ public:
    *  Throws error with a formatted error message and exits the program
    *
    * @param message Custom message
-   * @param filePlacement Position in the file corresponding to the error
+   * @param fileRange Position in the file corresponding to the error
    */
-  void throw_error(const std::string message,
-                   const utils::FileRange filePlacement);
+  void throw_error(const std::string message, const utils::FileRange fileRange);
 };
 
 } // namespace qat::parser

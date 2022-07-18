@@ -17,12 +17,12 @@ std::string ParserContext::get_alias(const std::string name) const {
   return aliases.find(name)->second;
 }
 
-AST::QatType *ParserContext::get_type_alias(const std::string name) const {
+ast::QatType *ParserContext::get_type_alias(const std::string name) const {
   return type_aliases.find(name)->second;
 }
 
 void ParserContext::add_type_alias(const std::string name,
-                                   qat::AST::QatType *value) {
+                                   ast::QatType *value) {
   if (!type_aliases.contains(name)) {
     type_aliases.insert({name, value});
   }

@@ -4,7 +4,7 @@
 #include "./value.hpp"
 #include <string>
 
-namespace qat::AST {
+namespace qat::ast {
 class QatType;
 }
 

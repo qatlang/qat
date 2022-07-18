@@ -31,9 +31,9 @@ public:
   /**
    *  FileRange represents a particular range in a file
    *
-   * @param file The file this placement belongs to
-   * @param start The beginning position of the placement
-   * @param end The ending position of the placement
+   * @param file The file this fileRange belongs to
+   * @param start The beginning position of the fileRange
+   * @param end The ending position of the fileRange
    */
   FileRange(fs::path _file, FilePos _start, FilePos _end);
 
@@ -45,11 +45,11 @@ public:
    * This creates a FileRange from two other FileRanges. The beginning
    * of the first one will be the beginning of the new one. The end of the
    * second one will be the end of the new one, unless the files of the provided
-   * placements are different
+   * fileRanges are different
    *
-   * @param first The placement from which the start of the new placement
+   * @param first The fileRange from which the start of the new fileRange
    * is obtained
-   * @param second The placement from which the end of the new placement
+   * @param second The fileRange from which the end of the new fileRange
    * is obtained. This argument is ignored if the files of both FileRanges
    * don't match
    */

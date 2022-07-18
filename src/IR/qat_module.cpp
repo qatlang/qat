@@ -80,11 +80,11 @@ Function *QatModule::createFunction(const std::string name, QatType *returnType,
                                     const bool isAsync,
                                     const std::vector<Argument> args,
                                     const bool isVariadic,
-                                    const utils::FileRange placement,
+                                    const utils::FileRange fileRange,
                                     const utils::VisibilityInfo visibility) {
   SHOW("Creating IR function")
   auto fn = Function::Create(this, name, returnType, isReturnTypeVariable,
-                             isAsync, args, isVariadic, placement, visibility);
+                             isAsync, args, isVariadic, fileRange, visibility);
   SHOW("Created function")
   functions.push_back(fn);
   return fn;

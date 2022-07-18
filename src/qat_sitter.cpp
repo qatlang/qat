@@ -9,7 +9,7 @@ QatSitter::QatSitter()
       Lexer(new lexer::Lexer()) {}
 
 void QatSitter::init() {
-  auto config = CLI::Config::get();
+  auto config = cli::Config::get();
   if (config->isCompile()) {
     if (config->getPaths().size() == 1) {
       auto path = config->getPaths().at(0);

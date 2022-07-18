@@ -1,0 +1,54 @@
+#ifndef QAT_AST_TYPES_NAMED_HPP
+#define QAT_AST_TYPES_NAMED_HPP
+
+#include "../../IR/context.hpp"
+#include "../box.hpp"
+#include "../function_definition.hpp"
+#include "./qat_type.hpp"
+
+#include <string>
+#include <vector>
+
+namespace qat::ast {
+
+/**
+ *  NamedType is a type, usually a core type, that can be identified by a
+ * name
+ *
+ */
+class NamedType : public QatType {
+private:
+  /**
+   *  Name of the type
+   *
+   */
+  std::string name;
+
+public:
+  /**
+   *  NamedType is a type, usually a core type, that can be identified by
+   * a name
+   *
+   * @param _name Name of the type
+   * @param _fileRange
+   */
+  NamedType(const std::string _name, const bool _variable,
+            const utils::FileRange _fileRange);
+
+  IR::QatType *emit(IR::Context *ctx);
+
+  void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
+  // Get the name of the type
+  std::string get_name() const;
+
+  TypeKind typeKind();
+
+  nuo::Json toJson() const;
+
+  std::string toString() const;
+};
+
+} // namespace qat::ast
+
+#endif

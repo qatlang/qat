@@ -96,7 +96,7 @@ public:
                            const bool isReturnTypeVariable, const bool isAsync,
                            const std::vector<Argument> args,
                            const bool isVariadic,
-                           const utils::FileRange placement,
+                           const utils::FileRange fileRange,
                            const utils::VisibilityInfo visibility);
 
   bool isSubmodule() const;
@@ -204,7 +204,7 @@ public:
   llvm::GlobalVariable *get_global_variable(std::string name,
                                             utils::RequesterInfo &req_info);
 
-  void throw_error(std::string message, utils::FileRange placement);
+  void throw_error(std::string message, utils::FileRange fileRange);
 };
 
 } // namespace qat::IR

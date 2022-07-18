@@ -32,7 +32,7 @@ protected:
   utils::VisibilityInfo visibility_info;
 
   // FileRange of this function
-  utils::FileRange placement;
+  utils::FileRange fileRange;
 
   //  Whether this function is async or not
   bool is_async;
@@ -54,7 +54,7 @@ protected:
   Function(QatModule *mod, std::string _name, QatType *returnType,
            bool _isReturnValueVariable, bool _is_async,
            std::vector<Argument> _args, bool has_variadic_arguments,
-           utils::FileRange placement, utils::VisibilityInfo _visibility_info);
+           utils::FileRange fileRange, utils::VisibilityInfo _visibility_info);
 
 public:
   // Create a member function for the provided parent type
@@ -62,7 +62,7 @@ public:
                           QatType *return_type, bool isReturnValueVariable,
                           bool is_async, const std::vector<Argument> args,
                           const bool has_variadic_args,
-                          const utils::FileRange placement,
+                          const utils::FileRange fileRange,
                           const utils::VisibilityInfo visib_info);
 
   virtual bool isMemberFunction() const;

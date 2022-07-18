@@ -1,7 +1,7 @@
 #ifndef QAT_SHOW_HPP
 #define QAT_SHOW_HPP
 
-#include "./CLI/color.hpp"
+#include "./cli/color.hpp"
 
 #if NDEBUG
 #define SHOW(val)

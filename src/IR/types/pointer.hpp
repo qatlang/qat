@@ -19,7 +19,7 @@ public:
    *  Create a pointer to the provided datatype
    *
    * @param _type Datatype to which the pointer is pointing to
-   * @param _filePlacement
+   * @param _fileRange
    */
   PointerType(QatType *_type);
 

@@ -1,8 +1,8 @@
 #include "./parser.hpp"
-#include "../AST/lib.hpp"
+#include "../ast/lib.hpp"
 #include "../show.hpp"
 
-// NOTE - Check if file placement values are making use of the new merge
+// NOTE - Check if file fileRange values are making use of the new merge
 // functionality
 namespace qat::parser {
 
@@ -56,7 +56,7 @@ Parser::parseBroughtFilesOrFolders(const std::size_t from,
             "supported in bring sentences, to avoid ambiguity and confusion. "
             "If this is supposed to be another file or folder to bring, then "
             "add a separator between these. Or else fix the sentence.",
-            tokens.at(i + 1).filePlacement);
+            tokens.at(i + 1).fileRange);
       }
       result.push_back(token.value);
       break;
@@ -70,24 +70,23 @@ Parser::parseBroughtFilesOrFolders(const std::size_t from,
           throw_error(
               "Multiple adjacent separators found. This is not supported to "
               "discourage code clutter. Please remove this",
-              tokens.at(i + 1).filePlacement);
+              tokens.at(i + 1).fileRange);
         } else {
           throw_error("Unexpected token in bring sentence",
-                      tokens.at(i).filePlacement);
+                      tokens.at(i).fileRange);
         }
       }
       break;
     }
     default: {
-      throw_error("Unexpected token in bring sentence",
-                  tokens.at(i).filePlacement);
+      throw_error("Unexpected token in bring sentence", tokens.at(i).fileRange);
     }
     }
   }
   return result;
 }
 
-std::pair<AST::QatType *, std::size_t>
+std::pair<ast::QatType *, std::size_t>
 Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
                   const std::optional<std::size_t> to) {
   using lexer::Token;
@@ -102,7 +101,7 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
 
   auto ctx = ParserContext(prev_ctx);
   std::size_t i = 0;
-  std::optional<AST::QatType *> cacheTy;
+  std::optional<ast::QatType *> cacheTy;
 
   for (i = from + 1; i < (to.has_value() ? to.value() : tokens.size()); i++) {
     Token &token = tokens.at(i);
@@ -119,33 +118,33 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
           auto hasPrimary =
               isPrimaryWithin(TokenType::semiColon, i, pCloseRes.getValue());
           if (hasPrimary) {
-            throw_error("Tuple type found after another type",
-                        utils::FileRange(
-                            token.filePlacement,
-                            tokens.at(pCloseRes.getValue()).filePlacement));
+            throw_error(
+                "Tuple type found after another type",
+                utils::FileRange(token.fileRange,
+                                 tokens.at(pCloseRes.getValue()).fileRange));
           } else {
             return std::pair(cacheTy.value(), i - 1);
           }
         } else {
-          throw_error("Expected )", token.filePlacement);
+          throw_error("Expected )", token.fileRange);
         }
       }
       auto pCloseResult = getPairEnd(TokenType::parenthesisOpen,
                                      TokenType::parenthesisClose, i, false);
       if (!pCloseResult.hasValue()) {
-        throw_error("Expected )", token.filePlacement);
+        throw_error("Expected )", token.fileRange);
       }
       if (to.has_value() && (pCloseResult.getValue() > to.value())) {
         throw_error("Invalid position for )",
-                    tokens.at(pCloseResult.getValue()).filePlacement);
+                    tokens.at(pCloseResult.getValue()).fileRange);
       }
       auto pClose = pCloseResult.getValue();
-      std::vector<AST::QatType *> subTypes;
+      std::vector<ast::QatType *> subTypes;
       for (std::size_t j = i; j < pClose; j++) {
         if (isPrimaryWithin(TokenType::semiColon, j, pClose)) {
           auto semiPosResult = firstPrimaryPosition(TokenType::semiColon, j);
           if (!semiPosResult.hasValue()) {
-            throw_error("Invalid position of ; separator", token.filePlacement);
+            throw_error("Invalid position of ; separator", token.fileRange);
           }
           auto semiPos = semiPosResult.getValue();
           subTypes.push_back(parseType(ctx, j, semiPos).first);
@@ -156,38 +155,38 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
         }
       }
       i = pClose;
-      cacheTy = new AST::TupleType(subTypes, false, getVariability(),
-                                   token.filePlacement);
+      cacheTy = new ast::TupleType(subTypes, false, getVariability(),
+                                   token.fileRange);
       break;
     }
     case TokenType::voidType: {
       if (cacheTy.has_value()) {
         return std::pair(cacheTy.value(), i - 1);
       }
-      cacheTy = new AST::VoidType(getVariability(), token.filePlacement);
+      cacheTy = new ast::VoidType(getVariability(), token.fileRange);
       break;
     }
     case TokenType::boolType: {
       if (cacheTy.has_value()) {
         return std::pair(cacheTy.value(), i - 1);
       }
-      cacheTy = new AST::UnsignedType(1, getVariability(), token.filePlacement);
+      cacheTy = new ast::UnsignedType(1, getVariability(), token.fileRange);
       break;
     }
     case TokenType::unsignedIntegerType: {
       if (cacheTy.has_value()) {
         return std::pair(cacheTy.value(), i - 1);
       }
-      cacheTy = new AST::UnsignedType(std::stoi(token.value), getVariability(),
-                                      token.filePlacement);
+      cacheTy = new ast::UnsignedType(std::stoi(token.value), getVariability(),
+                                      token.fileRange);
       break;
     }
     case TokenType::integerType: {
       if (cacheTy.has_value()) {
         return std::pair(cacheTy.value(), i - 1);
       }
-      cacheTy = new AST::IntegerType(std::stoi(token.value), getVariability(),
-                                     token.filePlacement);
+      cacheTy = new ast::IntegerType(std::stoi(token.value), getVariability(),
+                                     token.fileRange);
       break;
     }
     case TokenType::floatType: {
@@ -195,29 +194,29 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
         return std::pair(cacheTy.value(), i - 1);
       }
       if (token.value == "brain") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_brain,
-                                     getVariability(), token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_brain,
+                                     getVariability(), token.fileRange);
       } else if (token.value == "half") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_half, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_half, getVariability(),
+                                     token.fileRange);
       } else if (token.value == "32") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_32, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_32, getVariability(),
+                                     token.fileRange);
       } else if (token.value == "64") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_64, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_64, getVariability(),
+                                     token.fileRange);
       } else if (token.value == "80") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_80, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_80, getVariability(),
+                                     token.fileRange);
       } else if (token.value == "128") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_128, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_128, getVariability(),
+                                     token.fileRange);
       } else if (token.value == "128ppc") {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_128PPC,
-                                     getVariability(), token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_128PPC,
+                                     getVariability(), token.fileRange);
       } else {
-        cacheTy = new AST::FloatType(IR::FloatTypeKind::_32, getVariability(),
-                                     token.filePlacement);
+        cacheTy = new ast::FloatType(IR::FloatTypeKind::_32, getVariability(),
+                                     token.fileRange);
       }
       break;
     }
@@ -230,8 +229,8 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
       if (isNext(TokenType::templateTypeStart, i)) {
         // TODO - Implement template type parsing
       }
-      cacheTy = new AST::NamedType(symRes.first.name, getVariability(),
-                                   token.filePlacement);
+      cacheTy = new ast::NamedType(symRes.first.name, getVariability(),
+                                   token.fileRange);
       break;
     }
     case TokenType::referenceType: {
@@ -240,9 +239,9 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
       }
       auto subRes = parseType(ctx, i, to);
       i = subRes.second;
-      cacheTy = new AST::ReferenceType(
+      cacheTy = new ast::ReferenceType(
           subRes.first, getVariability(),
-          utils::FileRange(token.filePlacement, tokens.at(i).filePlacement));
+          utils::FileRange(token.fileRange, tokens.at(i).fileRange));
       break;
     }
     case TokenType::pointerType: {
@@ -257,23 +256,21 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
           auto bClose = bCloseRes.getValue();
           auto subTypeRes = parseType(ctx, i + 1, bClose);
           i = bClose;
-          cacheTy = new AST::PointerType(
+          cacheTy = new ast::PointerType(
               subTypeRes.first, getVariability(),
-              utils::FileRange(token.filePlacement,
-                               tokens.at(bClose).filePlacement));
+              utils::FileRange(token.fileRange, tokens.at(bClose).fileRange));
           break;
         } else {
-          throw_error("Invalid end for pointer type",
-                      tokens.at(i).filePlacement);
+          throw_error("Invalid end for pointer type", tokens.at(i).fileRange);
         }
       } else {
-        throw_error("Type of the pointer not specified", token.filePlacement);
+        throw_error("Type of the pointer not specified", token.fileRange);
       }
       break;
     }
     case TokenType::bracketOpen: {
       if (!cacheTy.has_value()) {
-        throw_error("Element type of array not specified", token.filePlacement);
+        throw_error("Element type of array not specified", token.fileRange);
       }
       if (isNext(TokenType::unsignedLiteral, i) ||
           isNext(TokenType::integerLiteral, i)) {
@@ -283,37 +280,37 @@ Parser::parseType(ParserContext &prev_ctx, const std::size_t from,
           if (numstr.find('_') != std::string::npos) {
             numstr = numstr.substr(0, numstr.find('_'));
           }
-          cacheTy = new AST::ArrayType(subType, std::stoul(numstr),
-                                       getVariability(), token.filePlacement);
+          cacheTy = new ast::ArrayType(subType, std::stoul(numstr),
+                                       getVariability(), token.fileRange);
           i = i + 2;
           break;
         } else {
           throw_error("Expected ] after the array size",
-                      tokens.at(i + 1).filePlacement);
+                      tokens.at(i + 1).fileRange);
         }
       } else {
         throw_error("Expected non negative number of elements for the array",
-                    token.filePlacement);
+                    token.fileRange);
       }
       break;
     }
     default: {
       if (!cacheTy.has_value()) {
-        throw_error("No type found", tokens.at(from).filePlacement);
+        throw_error("No type found", tokens.at(from).fileRange);
       }
       return std::pair(cacheTy.value(), i - 1);
     }
     }
   }
   if (!cacheTy.has_value()) {
-    throw_error("No type found", tokens.at(from).filePlacement);
+    throw_error("No type found", tokens.at(from).fileRange);
   }
   return std::pair(cacheTy.value(), i - 1);
 }
 
-std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
+std::vector<ast::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                                        std::size_t to) {
-  std::vector<AST::Node *> result;
+  std::vector<ast::Node *> result;
   using lexer::Token;
   using lexer::TokenType;
 
@@ -333,7 +330,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
   auto hasCachedSymbol = [&c_sym]() { return c_sym.has_value(); };
 
   std::deque<Token> cacheT;
-  std::deque<AST::QatType *> cacheTy;
+  std::deque<ast::QatType *> cacheTy;
   std::string context = "global";
 
   bool isVar = false;
@@ -376,7 +373,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
             // FIXME - Handle this scenario
           } else {
             throw_error("Invalid end for declaring a type",
-                        tokens.at(i + 2).filePlacement);
+                        tokens.at(i + 2).fileRange);
           }
           i = bClose.getValue();
         }
@@ -391,7 +388,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                   std::string(ctx.has_alias(t_ident.value) ? "An" : "A type") +
                       "alias with the name `" + t_ident.value +
                       "` already exists",
-                  t_ident.filePlacement);
+                  t_ident.fileRange);
             } else {
               if (isNext(TokenType::assignment, i + 3)) {
                 auto end_res = firstPrimaryPosition(TokenType::stop, i + 4);
@@ -401,23 +398,23 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                   i = end_res.getValue();
                 } else {
                   throw_error("Invalid end for the sentence",
-                              utils::FileRange(token.filePlacement,
-                                               tokens.at(i + 4).filePlacement));
+                              utils::FileRange(token.fileRange,
+                                               tokens.at(i + 4).fileRange));
                 }
               } else {
                 throw_error("Expected assignment after type alias name",
-                            utils::FileRange(token.filePlacement,
-                                             tokens.at(i + 3).filePlacement));
+                            utils::FileRange(token.fileRange,
+                                             tokens.at(i + 3).fileRange));
               }
             }
           } else {
-            throw_error("Expected name for the type alias",
-                        utils::FileRange(token.filePlacement,
-                                         tokens.at(i + 2).filePlacement));
+            throw_error(
+                "Expected name for the type alias",
+                utils::FileRange(token.fileRange, tokens.at(i + 2).fileRange));
           }
         }
       } else {
-        throw_error("Expected name for the type", token.filePlacement);
+        throw_error("Expected name for the type", token.fileRange);
       }
       break;
     }
@@ -428,21 +425,21 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                                    TokenType::curlybraceClose, i + 2, false);
           if (bClose.hasValue()) {
             auto contents = parse(ctx, i + 2, bClose.getValue());
-            result.push_back(new AST::Lib(
+            result.push_back(new ast::Lib(
                 tokens.at(i + 1).value, contents, utils::VisibilityInfo::pub(),
-                utils::FileRange(token.filePlacement,
-                                 tokens.at(bClose.getValue()).filePlacement)));
+                utils::FileRange(token.fileRange,
+                                 tokens.at(bClose.getValue()).fileRange)));
             i = bClose.getValue();
           } else {
             throw_error("Expected } to close the lib",
-                        tokens.at(i + 2).filePlacement);
+                        tokens.at(i + 2).fileRange);
           }
         } else {
           throw_error("Expected { after name for the lib",
-                      tokens.at(i + 1).filePlacement);
+                      tokens.at(i + 1).fileRange);
         }
       } else {
-        throw_error("Expected name for the lib", token.filePlacement);
+        throw_error("Expected name for the lib", token.fileRange);
       }
       break;
     }
@@ -453,21 +450,21 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                                    TokenType::curlybraceClose, i + 2, false);
           if (bClose.hasValue()) {
             auto contents = parse(ctx, i + 2, bClose.getValue());
-            result.push_back(new AST::Box(
+            result.push_back(new ast::Box(
                 tokens.at(i + 1).value, contents, utils::VisibilityInfo::pub(),
-                utils::FileRange(token.filePlacement,
-                                 tokens.at(bClose.getValue()).filePlacement)));
+                utils::FileRange(token.fileRange,
+                                 tokens.at(bClose.getValue()).fileRange)));
             i = bClose.getValue();
           } else {
             throw_error("Expected } to close the box",
-                        tokens.at(i + 2).filePlacement);
+                        tokens.at(i + 2).fileRange);
           }
         } else {
           throw_error("Expected { after name for the box",
-                      tokens.at(i + 1).filePlacement);
+                      tokens.at(i + 1).fileRange);
         }
       } else {
-        throw_error("Expected name for the box", token.filePlacement);
+        throw_error("Expected name for the box", token.fileRange);
       }
       break;
     }
@@ -479,7 +476,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
           throw_error(
               std::string(ctx.has_alias(t_ident.value) ? "An" : "A type") +
                   "alias with the name `" + t_ident.value + "` already exists",
-              t_ident.filePlacement);
+              t_ident.fileRange);
         } else {
           if (isNext(TokenType::assignment, i + 1)) {
             auto end_res = firstPrimaryPosition(TokenType::stop, i + 2);
@@ -491,23 +488,21 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
               } else {
                 throw_error("Expected an identifier representing an entity for "
                             "the alias",
-                            tokens.at(i + 2).filePlacement);
+                            tokens.at(i + 2).fileRange);
               }
             } else {
               throw_error("Invalid end for the sentence",
-                          utils::FileRange(token.filePlacement,
-                                           tokens.at(i + 2).filePlacement));
+                          utils::FileRange(token.fileRange,
+                                           tokens.at(i + 2).fileRange));
             }
           } else {
-            throw_error("Expected assignment after alias name",
-                        utils::FileRange(token.filePlacement,
-                                         tokens.at(i + 1).filePlacement));
+            throw_error(
+                "Expected assignment after alias name",
+                utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange));
           }
         }
       } else {
-        throw_error("Expected name for the type alias",
-                    utils::FileRange(token.filePlacement,
-                                     tokens.at(i + 2).filePlacement));
+        throw_error("Expected name for the type alias", token.fileRange);
       }
       break;
     }
@@ -524,7 +519,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
     case TokenType::givenTypeSeparator: {
       // TODO - Add support for template types for functions
       if (!hasCachedSymbol()) {
-        throw_error("Function name not provided", token.filePlacement);
+        throw_error("Function name not provided", token.fileRange);
       }
       SHOW("Parsing Type")
       auto retTypeRes = parseType(ctx, i, std::nullopt);
@@ -537,7 +532,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
             getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose,
                        i + 1, false);
         if (!pCloseResult.hasValue()) {
-          throw_error("Expected )", tokens.at(i + 1).filePlacement);
+          throw_error("Expected )", tokens.at(i + 1).fileRange);
         }
         SHOW("Found )")
         auto pClose = pCloseResult.getValue();
@@ -549,7 +544,7 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
         std::string callConv;
         if (isNext(TokenType::stop, pClose)) {
           throw_error("Expected external keyword or a definition",
-                      tokens.at(pClose).filePlacement);
+                      tokens.at(pClose).fileRange);
         } else if (isNext(TokenType::external, pClose)) {
           isExternal = true;
           if (isNext(TokenType::StringLiteral, pClose + 1)) {
@@ -558,12 +553,11 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
               // TODO - Sync errors
               throw_error("Expected the function declaration to end here. "
                           "Please add `.` here",
-                          tokens.at(pClose + 2).filePlacement);
+                          tokens.at(pClose + 2).fileRange);
             }
             i = pClose + 3;
           } else {
-            throw_error("Expected Calling Convention string",
-                        token.filePlacement);
+            throw_error("Expected Calling Convention string", token.fileRange);
           }
         }
         SHOW("Argument count: " << argResult.first.size())
@@ -571,14 +565,14 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
           SHOW("Arg name " << arg->getName())
         }
         /// TODO: Change implementation of Box
-        auto prototype = new AST::FunctionPrototype(
+        auto prototype = new ast::FunctionPrototype(
             getCachedSymbol().name, argResult.first, argResult.second,
             // FIXME - Support async
             retType, false,
             isExternal ? llvm::GlobalValue::ExternalLinkage
                        : llvm::GlobalValue::WeakAnyLinkage,
             // FIXME - Support other visibilities
-            callConv, utils::VisibilityInfo::pub(), token.filePlacement);
+            callConv, utils::VisibilityInfo::pub(), token.fileRange);
         SHOW("Prototype created")
         if (!isExternal) {
           if (isNext(TokenType::bracketOpen, pClose)) {
@@ -589,30 +583,30 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
                     ? (bCloseResult.getValue() >= tokens.size())
                     : true) {
               throw_error("Expected ] at the end of the Function Definition",
-                          tokens.at(pClose + 1).filePlacement);
+                          tokens.at(pClose + 1).fileRange);
             }
             SHOW("HAS BCLOSE")
             auto bClose = bCloseResult.getValue();
             SHOW("Starting sentence parsing")
             auto sentences = parseSentences(ctx, pClose + 1, bClose);
             SHOW("Sentence parsing completed")
-            auto definition = new AST::FunctionDefinition(
+            auto definition = new ast::FunctionDefinition(
                 prototype, sentences,
-                utils::FileRange(tokens.at(pClose + 1).filePlacement,
-                                 tokens.at(bClose).filePlacement));
+                utils::FileRange(tokens.at(pClose + 1).fileRange,
+                                 tokens.at(bClose).fileRange));
             SHOW("Function definition created")
             result.push_back(definition);
             i = bClose;
             continue;
           } else {
             throw_error("Expected definition for non-external function",
-                        token.filePlacement);
+                        token.fileRange);
           }
         } else {
           // TODO - Implement this for external functions
         }
       } else {
-        throw_error("Expected (", token.filePlacement);
+        throw_error("Expected (", token.fileRange);
       }
       break;
     }
@@ -622,14 +616,14 @@ std::vector<AST::Node *> Parser::parse(ParserContext prev_ctx, std::size_t from,
 }
 
 // FIXME - Finish functionality for parsing type contents
-std::vector<AST::Node *> Parser::parseCoreTypeContents(ParserContext &prev_ctx,
+std::vector<ast::Node *> Parser::parseCoreTypeContents(ParserContext &prev_ctx,
                                                        const std::size_t from,
                                                        const std::size_t to,
                                                        const std::string name) {
   using lexer::Token;
   using lexer::TokenType;
 
-  std::vector<AST::Node *> result;
+  std::vector<ast::Node *> result;
 
   for (std::size_t i = from + 1; i < to; i++) {
     Token &token = tokens.at(i);
@@ -650,11 +644,11 @@ std::vector<AST::Node *> Parser::parseCoreTypeContents(ParserContext &prev_ctx,
   }
 }
 
-AST::Expression *
+ast::Expression *
 Parser::parseExpression(ParserContext &prev_ctx,
                         const llvm::Optional<CacheSymbol> symbol,
                         const std::size_t from, const std::size_t to) {
-  using AST::Expression;
+  using ast::Expression;
   using lexer::Token;
   using lexer::TokenType;
 
@@ -684,11 +678,10 @@ Parser::parseExpression(ParserContext &prev_ctx,
         if ((split + 2) < token.value.length()) {
           bits = std::stoul(token.value.substr(split + 2));
         }
-        c_exp.push_back(new AST::CustomIntegerLiteral(number, true, bits,
-                                                      token.filePlacement));
-      } else {
         c_exp.push_back(
-            new AST::UnsignedLiteral(token.value, token.filePlacement));
+            new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
+      } else {
+        c_exp.push_back(new ast::UnsignedLiteral(token.value, token.fileRange));
       }
       break;
     }
@@ -700,32 +693,30 @@ Parser::parseExpression(ParserContext &prev_ctx,
         if ((split + 2) < token.value.length()) {
           bits = std::stoul(token.value.substr(split + 2));
         }
-        c_exp.push_back(new AST::CustomIntegerLiteral(number, false, bits,
-                                                      token.filePlacement));
+        c_exp.push_back(new ast::CustomIntegerLiteral(number, false, bits,
+                                                      token.fileRange));
       } else {
-        c_exp.push_back(
-            new AST::IntegerLiteral(token.value, token.filePlacement));
+        c_exp.push_back(new ast::IntegerLiteral(token.value, token.fileRange));
       }
       break;
     }
     case TokenType::floatLiteral: {
       auto number = token.value;
       if (number.find('_') != std::string::npos) {
-        c_exp.push_back(new AST::CustomFloatLiteral(
+        c_exp.push_back(new ast::CustomFloatLiteral(
             number.substr(0, number.find('_')),
-            number.substr(number.find('_') + 1), token.filePlacement));
+            number.substr(number.find('_') + 1), token.fileRange));
       } else {
-        c_exp.push_back(
-            new AST::FloatLiteral(token.value, token.filePlacement));
+        c_exp.push_back(new ast::FloatLiteral(token.value, token.fileRange));
       }
       break;
     }
     case TokenType::StringLiteral: {
-      c_exp.push_back(new AST::StringLiteral(token.value, token.filePlacement));
+      c_exp.push_back(new ast::StringLiteral(token.value, token.fileRange));
       break;
     }
     case TokenType::null: {
-      c_exp.push_back(new AST::NullPointer(token.filePlacement));
+      c_exp.push_back(new ast::NullPointer(token.fileRange));
       break;
     }
     case TokenType::variationMarker: {
@@ -736,20 +727,20 @@ Parser::parseExpression(ParserContext &prev_ctx,
       bool isStatic = false;
       auto symbol_res = parseSymbol(prev_ctx, i);
       // TODO - Check if this is indeed the only possible scenario
-      c_exp.push_back(new AST::Entity(
+      c_exp.push_back(new ast::Entity(
           symbol_res.first.name,
-          utils::FileRange(token.filePlacement,
-                           tokens.at(symbol_res.second).filePlacement)));
+          utils::FileRange(token.fileRange,
+                           tokens.at(symbol_res.second).fileRange)));
       i = symbol_res.second;
       break;
     }
     case TokenType::lesserThan: {
       if (!c_exp.empty()) {
         c_binops.push_back(
-            Token::valued(TokenType::binaryOperator, "<", token.filePlacement));
+            Token::valued(TokenType::binaryOperator, "<", token.fileRange));
       } else {
         throw_error("Expected expression before binary operator <",
-                    token.filePlacement);
+                    token.fileRange);
       }
       break;
     }
@@ -760,9 +751,9 @@ Parser::parseExpression(ParserContext &prev_ctx,
                                   TokenType::parenthesisClose, i, false);
         if (p_close.hasValue()) {
           if (p_close.getValue() >= to) {
-            throw_error("Invalid position of )", token.filePlacement);
+            throw_error("Invalid position of )", token.fileRange);
           } else {
-            std::vector<AST::Expression *> args;
+            std::vector<ast::Expression *> args;
             if (isPrimaryWithin(TokenType::separator, i, p_close.getValue())) {
               args = parseSeparatedExpressions(prev_ctx, i, p_close.getValue());
             } else {
@@ -771,10 +762,10 @@ Parser::parseExpression(ParserContext &prev_ctx,
             }
             if (c_exp.empty()) {
               if (c_sym.hasValue()) {
-                c_exp.push_back(new AST::FunctionCall(
+                c_exp.push_back(new ast::FunctionCall(
                     c_sym.getValue().name, args,
-                    c_sym.getValue().extend_placement(
-                        tokens.at(p_close.getValue()).filePlacement)));
+                    c_sym.getValue().extend_fileRange(
+                        tokens.at(p_close.getValue()).fileRange)));
                 c_sym = llvm::None;
               } else {
                 auto varVal = getVar();
@@ -784,48 +775,47 @@ Parser::parseExpression(ParserContext &prev_ctx,
                         (varVal ? ""
                                 : " And no function name found for "
                                   "the static function call"),
-                    utils::FileRange(
-                        token.filePlacement,
-                        tokens.at(p_close.getValue()).filePlacement));
+                    utils::FileRange(token.fileRange,
+                                     tokens.at(p_close.getValue()).fileRange));
               }
             } else if (c_sym.hasValue()) {
               auto instance = *c_exp.end();
               c_exp.pop_back();
-              c_exp.push_back(new AST::MemberFunctionCall(
+              c_exp.push_back(new ast::MemberFunctionCall(
                   instance, c_sym.getValue().name, args, getVar(),
-                  c_sym.getValue().filePlacement));
+                  c_sym.getValue().fileRange));
               c_sym = llvm::None;
             } else {
-              throw_error(std::string("No function name found for the ") +
-                              "variation " + "function call",
-                          utils::FileRange(
-                              token.filePlacement,
-                              tokens.at(p_close.getValue()).filePlacement));
+              throw_error(
+                  std::string("No function name found for the ") +
+                      "variation " + "function call",
+                  utils::FileRange(token.fileRange,
+                                   tokens.at(p_close.getValue()).fileRange));
             }
             i = p_close.getValue();
           }
         } else {
           throw_error("Expected ) to close the scope started by this opening "
                       "paranthesis",
-                      token.filePlacement);
+                      token.fileRange);
         }
       } else {
         auto p_close_res = getPairEnd(TokenType::parenthesisOpen,
                                       TokenType::parenthesisClose, i, false);
         if (!p_close_res.hasValue()) {
-          throw_error("Expected )", token.filePlacement);
+          throw_error("Expected )", token.fileRange);
         }
         if (p_close_res.getValue() >= to) {
-          throw_error("Invalid position of )", token.filePlacement);
+          throw_error("Invalid position of )", token.fileRange);
         }
         auto p_close = p_close_res.getValue();
         if (isPrimaryWithin(TokenType::semiColon, i, p_close)) {
           if (!c_exp.empty()) {
             throw_error("Tuple expression found after another expression",
-                        utils::FileRange(token.filePlacement,
-                                         tokens.at(p_close).filePlacement));
+                        utils::FileRange(token.fileRange,
+                                         tokens.at(p_close).fileRange));
           }
-          std::vector<AST::Expression *> values;
+          std::vector<ast::Expression *> values;
           auto separations =
               primaryPositionsWithin(TokenType::semiColon, i, p_close);
           values.push_back(
@@ -844,9 +834,9 @@ Parser::parseExpression(ParserContext &prev_ctx,
             values.push_back(
                 parseExpression(prev_ctx, c_sym, separations.back(), p_close));
           }
-          c_exp.push_back(new AST::TupleValue(
-              values, utils::FileRange(token.filePlacement,
-                                       tokens.at(p_close).filePlacement)));
+          c_exp.push_back(new ast::TupleValue(
+              values,
+              utils::FileRange(token.fileRange, tokens.at(p_close).fileRange)));
         } else {
           auto exp = parseExpression(prev_ctx, llvm::None, i, p_close);
           if (c_unops.empty() && c_binops.empty()) {
@@ -859,12 +849,12 @@ Parser::parseExpression(ParserContext &prev_ctx,
               throw_error("No expression found on the left side of the binary "
                           "operator " +
                               c_binops.end()->value,
-                          token.filePlacement);
+                          token.fileRange);
             }
             auto lhs = *c_exp.end();
             auto opr = *c_binops.end();
-            auto binExp = new AST::BinaryExpression(lhs, opr.value, exp,
-                                                    token.filePlacement);
+            auto binExp =
+                new ast::BinaryExpression(lhs, opr.value, exp, token.fileRange);
             c_exp.pop_back();
             c_binops.pop_back();
             c_exp.push_back(binExp);
@@ -883,7 +873,7 @@ Parser::parseExpression(ParserContext &prev_ctx,
         throw_error(
             "No expression found on the left side of the binary operator " +
                 token.value,
-            token.filePlacement);
+            token.fileRange);
       } else {
         c_binops.push_back(token);
       }
@@ -895,7 +885,7 @@ Parser::parseExpression(ParserContext &prev_ctx,
     }
     case TokenType::stop: {
       throw_error("Found . in an expression - please remove this",
-                  token.filePlacement);
+                  token.fileRange);
     }
     default: {
       // TODO - Throw error?
@@ -903,20 +893,20 @@ Parser::parseExpression(ParserContext &prev_ctx,
     }
   }
   if (c_exp.empty()) {
-    throw_error("No expression found", tokens.at(from).filePlacement);
+    throw_error("No expression found", tokens.at(from).fileRange);
   }
   return c_exp.back();
 }
 
-std::vector<AST::Expression *> Parser::parseSeparatedExpressions(
+std::vector<ast::Expression *> Parser::parseSeparatedExpressions(
     ParserContext &prev_ctx, const std::size_t from, const std::size_t to) {
-  std::vector<AST::Expression *> result;
+  std::vector<ast::Expression *> result;
   for (std::size_t i = from; i < to; i++) {
     if (isPrimaryWithin(lexer::TokenType::separator, i, to)) {
       auto endResult = firstPrimaryPosition(lexer::TokenType::separator, i);
       if (endResult.hasValue() ? (endResult.getValue() >= to) : true) {
         throw_error("Invalid position for separator `,`",
-                    tokens.at(i).filePlacement);
+                    tokens.at(i).fileRange);
       }
       auto end = endResult.getValue();
       result.push_back(parseExpression(prev_ctx, llvm::None, i, end));
@@ -950,7 +940,7 @@ Parser::parseSymbol(ParserContext &prev_ctx, const std::size_t start) {
         } else {
           throw_error("No identifier found before `:`. Anonymous boxes are "
                       "not allowed",
-                      tok.filePlacement);
+                      tok.fileRange);
         }
       } else {
         break;
@@ -962,31 +952,31 @@ Parser::parseSymbol(ParserContext &prev_ctx, const std::size_t start) {
       name = prev_ctx.get_alias(name);
     }
     return std::pair<CacheSymbol, std::size_t>(
-        CacheSymbol(name, start, tokens.at(start).filePlacement), i - 1);
+        CacheSymbol(name, start, tokens.at(start).fileRange), i - 1);
   } else {
     // TODO - Change this, after verifying that this situation is never
     // encountered.
     throw_error("No identifier found for parsing the symbol",
-                tokens.at(start).filePlacement);
+                tokens.at(start).fileRange);
   }
 }
 
-std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
+std::vector<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
                                                     const std::size_t from,
                                                     const std::size_t to) {
-  using AST::FloatType;
-  using AST::IntegerType;
+  using ast::FloatType;
+  using ast::IntegerType;
   using IR::FloatTypeKind;
   using lexer::Token;
   using lexer::TokenType;
 
   auto ctx = ParserContext(prev_ctx);
-  std::vector<AST::Sentence *> result;
+  std::vector<ast::Sentence *> result;
 
   llvm::Optional<CacheSymbol> c_sym = llvm::None;
   // NOTE - Potentially remove this variable
-  std::vector<AST::QatType *> cacheTy;
-  std::vector<AST::Expression *> cacheExp;
+  std::vector<ast::QatType *> cacheTy;
+  std::vector<ast::Expression *> cacheExp;
 
   std::size_t index = 0;
   std::string context;
@@ -1034,24 +1024,24 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
                 auto exp =
                     parseExpression(ctx, c_sym, i - 1, endRes.getValue());
                 i = endRes.getValue();
-                result.push_back(new AST::ExpressionSentence(
-                    exp, utils::FileRange(
-                             token.filePlacement,
-                             tokens.at(endRes.getValue()).filePlacement)));
+                result.push_back(new ast::ExpressionSentence(
+                    exp,
+                    utils::FileRange(token.fileRange,
+                                     tokens.at(endRes.getValue()).fileRange)));
                 break;
               } else {
                 throw_error("End for the sentence not found",
                             utils::FileRange(
-                                token.filePlacement,
-                                tokens.at(bCloseRes.getValue()).filePlacement));
+                                token.fileRange,
+                                tokens.at(bCloseRes.getValue()).fileRange));
               }
             } else {
               throw_error("Invalid end for definition of closure",
-                          tokens.at(pClose + 2).filePlacement);
+                          tokens.at(pClose + 2).fileRange);
             }
           } else {
             throw_error("Definition for closure not found",
-                        tokens.at(pClose + 1).filePlacement);
+                        tokens.at(pClose + 1).fileRange);
           }
         } else if (isNext(TokenType::identifier, pClose)) {
           /* Tuple value declaration */
@@ -1065,19 +1055,16 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
           if (endRes.hasValue()) {
             auto exp = parseExpression(ctx, c_sym, i - 1, endRes.getValue());
             i = endRes.getValue();
-            result.push_back(new AST::ExpressionSentence(
-                exp,
-                utils::FileRange(token.filePlacement,
-                                 tokens.at(endRes.getValue()).filePlacement)));
+            result.push_back(new ast::ExpressionSentence(
+                exp, utils::FileRange(token.fileRange,
+                                      tokens.at(endRes.getValue()).fileRange)));
             break;
           } else {
-            throw_error("End of sentence not found",
-                        utils::FileRange(token.filePlacement,
-                                         tokens.at(pClose).filePlacement));
+            throw_error("End of sentence not found", token.fileRange);
           }
         }
       } else {
-        throw_error("Invalid end of parenthesis", token.filePlacement);
+        throw_error("Invalid end of parenthesis", token.fileRange);
       }
       break;
     }
@@ -1089,11 +1076,11 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
           i = end.getValue();
         } else {
           throw_error("End of the sentence not found",
-                      c_sym.getValue().filePlacement);
+                      c_sym.getValue().fileRange);
         }
       } else {
         throw_error("No expression or entity found to access the child of",
-                    token.filePlacement);
+                    token.fileRange);
       }
 
       break;
@@ -1114,12 +1101,12 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
           if (end_res.hasValue() ? (end_res.getValue() < to) : false) {
             auto exp = parseExpression(ctx, llvm::None, i, end_res.getValue());
-            result.push_back(new AST::LocalDeclaration(
+            result.push_back(new ast::LocalDeclaration(
                 (cacheTy.empty()
-                     ? (new AST::NamedType(c_sym.getValue().name, false,
-                                           c_sym.getValue().filePlacement))
+                     ? (new ast::NamedType(c_sym.getValue().name, false,
+                                           c_sym.getValue().fileRange))
                      : cacheTy.back()),
-                token.value, exp, var, token.filePlacement));
+                token.value, exp, var, token.fileRange));
             var = false;
             cacheTy.clear();
             c_sym = llvm::None;
@@ -1127,7 +1114,7 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
             break;
           } else {
             throw_error("Invalid end for declaration syntax",
-                        tokens.at(i + 1).filePlacement);
+                        tokens.at(i + 1).fileRange);
           }
         } else if (isNext(TokenType::from, i)) {
           // TODO - Handle constructor call
@@ -1152,14 +1139,14 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
           SHOW("Found end of id sentence")
           if (end_res.hasValue() ? (end_res.getValue() >= to) : true) {
             throw_error("Invalid end for the inferred declaration",
-                        token.filePlacement);
+                        token.fileRange);
           }
           auto end = end_res.getValue();
           SHOW("Parsing expression")
           auto exp = parseExpression(ctx, llvm::None, i + 1, end);
           SHOW("Expression parsed")
-          result.push_back(new AST::LocalDeclaration(
-              nullptr, token.value, exp, isVar, token.filePlacement));
+          result.push_back(new ast::LocalDeclaration(nullptr, token.value, exp,
+                                                     isVar, token.fileRange));
           var = false;
           cacheTy.clear();
           i = end;
@@ -1169,13 +1156,13 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
                   (isVar ? "variable" : "constant") +
                   " since type inference requires an assignment. You cannot "
                   "use a `from` expression if there is no type specified.",
-              tokens.at(i).filePlacement);
+              tokens.at(i).fileRange);
         } else {
           throw_error(
               std::string("Expected an expression to be assigned to the ") +
                   (isVar ? "variable" : "constant") +
                   " since type inference requires an assignment",
-              tokens.at(i).filePlacement);
+              tokens.at(i).fileRange);
         }
       } else if (isNext(TokenType::child, i)) {
         if (c_sym.hasValue()) {
@@ -1183,19 +1170,19 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
           if (end_res.hasValue() ? (end_res.getValue() <= to) : false) {
             auto end = end_res.getValue();
             auto exp = parseExpression(ctx, c_sym, i, end);
-            result.push_back(new AST::ExpressionSentence(
-                exp, utils::FileRange(c_sym.getValue().filePlacement,
-                                      tokens.at(end).filePlacement)));
+            result.push_back(new ast::ExpressionSentence(
+                exp, utils::FileRange(c_sym.getValue().fileRange,
+                                      tokens.at(end).fileRange)));
             i = end;
           } else {
             // TODO - Sync errors
-            throw_error("Invalid end of sentence", token.filePlacement);
+            throw_error("Invalid end of sentence", token.fileRange);
           }
         } else {
           // TODO - There is another error call with the same error explained
           // differently. Make sure that these remain the same
           throw_error("Expected an expression before ' for correct access",
-                      token.filePlacement);
+                      token.fileRange);
         }
       } else {
         auto sym_res = parseSymbol(ctx, i);
@@ -1210,16 +1197,16 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       if (c_sym.hasValue()) {
         auto end_res = firstPrimaryPosition(TokenType::stop, i);
         if (end_res.hasValue() ? (end_res.getValue() >= to) : true) {
-          throw_error("Invalid end for the sentence", token.filePlacement);
+          throw_error("Invalid end for the sentence", token.fileRange);
         }
         auto end = end_res.getValue();
         auto exp = parseExpression(ctx, llvm::None, i, end);
-        auto lhs = new AST::Entity(c_sym.getValue().name,
-                                   c_sym.getValue().filePlacement);
-        result.push_back(new AST::Assignment(
-            lhs, exp,
-            utils::FileRange(c_sym.getValue().filePlacement,
-                             tokens.at(end).filePlacement)));
+        auto lhs =
+            new ast::Entity(c_sym.getValue().name, c_sym.getValue().fileRange);
+        result.push_back(
+            new ast::Assignment(lhs, exp,
+                                utils::FileRange(c_sym.getValue().fileRange,
+                                                 tokens.at(end).fileRange)));
         var = false;
         cacheTy.clear();
         i = end;
@@ -1227,7 +1214,7 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
 
       } else {
         throw_error("Expected an expression to assign the expression to",
-                    token.filePlacement);
+                    token.fileRange);
       }
       break;
     }
@@ -1235,11 +1222,11 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       context = "SAY";
       auto end_res = firstPrimaryPosition(TokenType::stop, i);
       if (end_res.hasValue() ? (end_res.getValue() >= to) : true) {
-        throw_error("Say sentence has invalid end", token.filePlacement);
+        throw_error("Say sentence has invalid end", token.fileRange);
       }
       auto end = end_res.getValue();
       auto exps = parseSeparatedExpressions(ctx, i, end);
-      result.push_back(new AST::Say(exps, token.filePlacement));
+      result.push_back(new ast::Say(exps, token.fileRange));
       i = end;
       break;
     }
@@ -1257,44 +1244,44 @@ std::vector<AST::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       context = "GIVE";
       if (isNext(TokenType::stop, i)) {
         i++;
-        result.push_back(new AST::GiveSentence(
-            std::nullopt, utils::FileRange(token.filePlacement,
-                                           tokens.at(i + 1).filePlacement)));
+        result.push_back(new ast::GiveSentence(
+            std::nullopt,
+            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange)));
       } else {
         auto end = firstPrimaryPosition(TokenType::stop, i);
         if (!end.hasValue()) {
           throw_error("Expected give sentence to end. Please add `.` wherever "
                       "appropriate to mark the end of the statement",
-                      token.filePlacement);
+                      token.fileRange);
         }
         auto exp = parseExpression(ctx, c_sym, i, end.getValue());
         i = end.getValue();
-        result.push_back(new AST::GiveSentence(
-            exp, utils::FileRange(token.filePlacement,
-                                  tokens.at(end.getValue()).filePlacement)));
+        result.push_back(new ast::GiveSentence(
+            exp, utils::FileRange(token.fileRange,
+                                  tokens.at(end.getValue()).fileRange)));
       }
       break;
     }
     default: {
       throw_error("Unexpected token found for parsing sentence",
-                  token.filePlacement);
+                  token.fileRange);
     }
     }
   }
   return result;
 }
 
-std::pair<std::vector<AST::Argument *>, bool>
+std::pair<std::vector<ast::Argument *>, bool>
 Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
                                 const std::size_t to) {
-  using AST::FloatType;
-  using AST::IntegerType;
+  using ast::FloatType;
+  using ast::IntegerType;
   using IR::FloatTypeKind;
   using lexer::TokenType;
 
-  std::vector<AST::Argument *> args;
+  std::vector<ast::Argument *> args;
 
-  std::optional<AST::QatType *> typ;
+  std::optional<ast::QatType *> typ;
   auto hasType = [&typ]() { return typ.has_value(); };
   auto useType = [&typ]() {
     if (typ.has_value()) {
@@ -1318,7 +1305,7 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
     auto &token = tokens.at(i);
     switch (token.type) {
     case TokenType::voidType: {
-      throw_error("Arguments cannot have void type", token.filePlacement);
+      throw_error("Arguments cannot have void type", token.fileRange);
       break;
     }
     case TokenType::identifier: {
@@ -1327,17 +1314,16 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
         if (isNext(TokenType::separator, i) ||
             isNext(TokenType::parenthesisClose, i)) {
           args.push_back(
-              AST::Argument::Normal(useName(), token.filePlacement, useType()));
+              ast::Argument::Normal(useName(), token.fileRange, useType()));
           i++;
           break;
         } else {
-          throw_error("Expected , or ) after argument name",
-                      token.filePlacement);
+          throw_error("Expected , or ) after argument name", token.fileRange);
         }
       } else if (hasName()) {
         throw_error("Additional name provided after the previous one. Please "
                     "remove this name",
-                    token.filePlacement);
+                    token.fileRange);
       } else {
         auto typeRes = parseType(prev_ctx, i - 1, std::nullopt);
         typ = typeRes.first;
@@ -1355,7 +1341,7 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
       if (hasType()) {
         throw_error("A type is already provided before. Please change this "
                     "to the name of the argument, or remove the previous type",
-                    token.filePlacement);
+                    token.fileRange);
       } else {
         auto typeRes = parseType(prev_ctx, i - 1, std::nullopt);
         typ = typeRes.first;
@@ -1365,10 +1351,9 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
     }
     case TokenType::variadic: {
       if (isNext(TokenType::identifier, i)) {
-        args.push_back(AST::Argument::Normal(
+        args.push_back(ast::Argument::Normal(
             tokens.at(i + 1).value,
-            utils::FileRange(token.filePlacement,
-                             tokens.at(i + 1).filePlacement),
+            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange),
             nullptr));
         if (isNext(TokenType::parenthesisClose, i + 1) ||
             (isNext(TokenType::separator, i + 1) &&
@@ -1377,25 +1362,24 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, const std::size_t from,
         } else {
           throw_error(
               "Variadic argument should be the last argument of the function",
-              token.filePlacement);
+              token.fileRange);
         }
       } else {
         throw_error(
             "Expected name for the variadic argument. Please provide a name",
-            token.filePlacement);
+            token.fileRange);
       }
     }
     case TokenType::self: {
       if (isNext(TokenType::identifier, i)) {
-        args.push_back(AST::Argument::ForConstructor(
+        args.push_back(ast::Argument::ForConstructor(
             tokens.at(i + 1).value,
-            utils::FileRange(token.filePlacement,
-                             tokens.at(i + 1).filePlacement),
+            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange),
             nullptr, true));
         i++;
       } else {
         throw_error("Expected name of the member to be initialised",
-                    token.filePlacement);
+                    token.fileRange);
       }
     }
     }
@@ -1557,12 +1541,12 @@ Parser::primaryPositionsWithin(const lexer::TokenType candidate,
 }
 
 void Parser::throw_error(const std::string message,
-                         const utils::FileRange filePlacement) {
+                         const utils::FileRange fileRange) {
   std::cout << colors::red << "[ PARSER ERROR ] " << colors::bold::green
-            << fs::absolute(filePlacement.file).string() << ":"
-            << filePlacement.start.line << ":" << filePlacement.start.character
-            << " - " << filePlacement.end.line << ":"
-            << filePlacement.end.character << colors::reset << "\n"
+            << fs::absolute(fileRange.file).string() << ":"
+            << fileRange.start.line << ":" << fileRange.start.character << " - "
+            << fileRange.end.line << ":" << fileRange.end.character
+            << colors::reset << "\n"
             << "   " << message << "\n";
   tokens.clear();
   exit(0);

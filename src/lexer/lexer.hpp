@@ -1,8 +1,8 @@
 #ifndef QAT_LEXER_LEXER_HPP
 #define QAT_LEXER_LEXER_HPP
 
-#include "../CLI/color.hpp"
-#include "../CLI/config.hpp"
+#include "../cli/color.hpp"
+#include "../cli/config.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/is_integer.hpp"
 #include "./token.hpp"

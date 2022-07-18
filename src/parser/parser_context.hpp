@@ -1,7 +1,7 @@
 #ifndef QAT_PARSER_PARSER_CONTEXT_HPP
 #define QAT_PARSER_PARSER_CONTEXT_HPP
 
-#include "../AST/types/qat_type.hpp"
+#include "../ast/types/qat_type.hpp"
 #include "../utils/types.hpp"
 #include <map>
 #include <string>
@@ -43,16 +43,16 @@ public:
    * @param name The name of the alias
    * @param value The type for which the alias has to be added
    */
-  void add_type_alias(const std::string name, qat::AST::QatType *value);
+  void add_type_alias(const std::string name, ast::QatType *value);
 
   /**
    *  Get the type value of the provided alias. Whether type alias is
    * present for this name has to be checked before calling this function
    *
    * @param name Name of the type alias
-   * @return qat::AST::QatType Type value of the alias
+   * @return qat::ast::QatType Type value of the alias
    */
-  qat::AST::QatType *get_type_alias(const std::string name) const;
+  ast::QatType *get_type_alias(const std::string name) const;
 
   /**
    *  Checks whether there is an alias for an entity, with the provided
@@ -149,7 +149,7 @@ private:
    *  All type aliases declared by the user in this parser context
    *
    */
-  std::map<std::string, qat::AST::QatType *> type_aliases;
+  std::map<std::string, ast::QatType *> type_aliases;
 
   /**
    *  All bitwidths declared to be available by the user, for signed

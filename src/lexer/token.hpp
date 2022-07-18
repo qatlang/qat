@@ -14,13 +14,11 @@ namespace qat::lexer {
  */
 class Token {
 private:
-  Token(TokenType _type, utils::FileRange _filePlacement)
-      : type(_type), value(""), hasValue(false), filePlacement(_filePlacement) {
-  }
+  Token(TokenType _type, utils::FileRange _fileRange)
+      : type(_type), value(""), hasValue(false), fileRange(_fileRange) {}
 
-  Token(TokenType _type, std::string _value, utils::FileRange _filePlacement)
-      : type(_type), value(_value), hasValue(true),
-        filePlacement(_filePlacement) {}
+  Token(TokenType _type, std::string _value, utils::FileRange _fileRange)
+      : type(_type), value(_value), hasValue(true), fileRange(_fileRange) {}
 
 public:
   /**
@@ -36,7 +34,7 @@ public:
    * @return Token
    */
   static Token valued(TokenType _type, std::string _value,
-                      utils::FileRange filePlacement);
+                      utils::FileRange fileRange);
 
   /**
    *  Tokens that are by default, recognised by the language. These tokens
@@ -48,7 +46,7 @@ public:
    * numbers
    * @return Token
    */
-  static Token normal(TokenType _type, utils::FileRange filePlacement);
+  static Token normal(TokenType _type, utils::FileRange fileRange);
 
   /**
    *  Type of the token. Can mostly refer to symbols that
@@ -73,7 +71,7 @@ public:
    *  FileRange indicates a starting and ending position that contains
    * appropriate value
    */
-  utils::FileRange filePlacement;
+  utils::FileRange fileRange;
 };
 
 } // namespace qat::lexer

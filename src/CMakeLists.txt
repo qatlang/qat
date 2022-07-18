@@ -114,19 +114,19 @@ message(STATUS "Linking libraries ${LLVM_LIBRARIES}")
 add_executable(${PROJECT_NAME}
         qat.cpp
         qat_sitter.cpp)
-add_subdirectory(AST/)
+add_subdirectory(ast/)
 add_subdirectory(lexer/)
 add_subdirectory(parser/)
 add_subdirectory(utils/)
 add_subdirectory(IR/)
-add_subdirectory(CLI/)
+add_subdirectory(cli/)
 add_subdirectory(backend/)
 target_link_directories(${PROJECT_NAME}
-        PRIVATE AST/
+        PRIVATE ast/
         PRIVATE lexer/
         PRIVATE parser/
         PRIVATE utils/
-        PRIVATE CLI/
+        PRIVATE cli/
         PRIVATE IR/
         PRIVATE backend/
         PRIVATE /usr/local/lib/)

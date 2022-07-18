@@ -145,7 +145,7 @@ public:
    *  Get the member function of this type with the provided name
    *
    * @param fnName Name of the function
-   * @return const qat::IR::QatMemberFunction &
+   * @return const IR::QatMemberFunction &
    */
   const MemberFunction *getMemberFunction(const std::string fnName) const;
 
@@ -186,7 +186,7 @@ public:
                          QatType *return_type, bool is_return_type_variable,
                          const bool is_async, const std::vector<Argument> args,
                          const bool has_variadic_args,
-                         const utils::FileRange placement,
+                         const utils::FileRange fileRange,
                          const utils::VisibilityInfo visib_info);
 
   // NOTE - Add documentation
@@ -194,7 +194,7 @@ public:
                          const bool is_return_type_variable,
                          const bool is_async, const std::vector<Argument> args,
                          const bool has_variadic_args,
-                         const utils::FileRange placement,
+                         const utils::FileRange fileRange,
                          const utils::VisibilityInfo visib_info);
 
   void addStaticMember(std::string name, QatType *type, bool variability,

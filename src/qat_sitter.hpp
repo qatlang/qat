@@ -1,9 +1,9 @@
 #ifndef QAT_QAT_SITTER_HPP
 #define QAT_QAT_SITTER_HPP
 
-#include "./CLI/config.hpp"
 #include "./IR/context.hpp"
 #include "./IR/qat_module.hpp"
+#include "./cli/config.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
 #include <filesystem>

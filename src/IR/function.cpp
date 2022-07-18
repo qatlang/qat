@@ -9,10 +9,10 @@ namespace qat::IR {
 Function::Function(QatModule *_mod, std::string _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async,
                    std::vector<Argument> _args, bool is_variable_arguments,
-                   utils::FileRange filePlacement,
+                   utils::FileRange fileRange,
                    utils::VisibilityInfo _visibility_info)
     : arguments(_args), name(_name), isReturnValueVariable(_isRetTypeVariable),
-      is_async(_is_async), mod(_mod), placement(filePlacement),
+      is_async(_is_async), mod(_mod), fileRange(fileRange),
       has_variadic_args(is_variable_arguments),
       visibility_info(_visibility_info), Value(nullptr, false, Kind::pure) //
 {
@@ -29,10 +29,10 @@ Function *Function::Create(QatModule *mod, const std::string name,
                            const bool is_async,
                            const std::vector<Argument> args,
                            const bool has_variadic_args,
-                           const utils::FileRange placement,
+                           const utils::FileRange fileRange,
                            const utils::VisibilityInfo visibilityInfo) {
   return new Function(mod, name, returnTy, isReturnTypeVariable, is_async, args,
-                      has_variadic_args, placement, visibilityInfo);
+                      has_variadic_args, fileRange, visibilityInfo);
 }
 
 bool Function::hasVariadicArgs() const { return has_variadic_args; }

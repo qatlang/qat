@@ -113,10 +113,10 @@ void CoreType::addMemberFunction(
     const std::string name, const bool is_variation, QatType *return_type,
     const bool is_return_type_variable, const bool is_async,
     const std::vector<Argument> args, const bool has_variadic_args,
-    const utils::FileRange placement, const utils::VisibilityInfo visib_info) {
+    const utils::FileRange fileRange, const utils::VisibilityInfo visib_info) {
   memberFunctions.push_back(MemberFunction::Create(
       this, is_variation, name, return_type, is_return_type_variable, is_async,
-      args, has_variadic_args, placement, visib_info));
+      args, has_variadic_args, fileRange, visib_info));
 }
 
 void CoreType::addStaticFunction(const std::string name, QatType *return_type,
@@ -124,11 +124,11 @@ void CoreType::addStaticFunction(const std::string name, QatType *return_type,
                                  const bool is_async,
                                  const std::vector<Argument> args,
                                  const bool has_variadic_args,
-                                 const utils::FileRange placement,
+                                 const utils::FileRange fileRange,
                                  const utils::VisibilityInfo visib_info) {
   staticFunctions.push_back(MemberFunction::CreateStatic(
       this, name, return_type, is_return_type_variable, is_async, args,
-      has_variadic_args, placement, visib_info));
+      has_variadic_args, fileRange, visib_info));
 }
 
 void CoreType::addStaticMember(std::string name, QatType *type,

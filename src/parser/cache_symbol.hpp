@@ -14,13 +14,13 @@ namespace qat::parser {
 class CacheSymbol {
 public:
   CacheSymbol(std::string _name, std::size_t _tokenIndex,
-              utils::FileRange _filePlacement);
+              utils::FileRange _fileRange);
 
   std::string name;
-  utils::FileRange filePlacement;
+  utils::FileRange fileRange;
   std::size_t tokenIndex;
 
-  utils::FileRange extend_placement(utils::FileRange to);
+  utils::FileRange extend_fileRange(utils::FileRange to);
 };
 
 } // namespace qat::parser

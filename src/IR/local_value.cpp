@@ -1,5 +1,5 @@
 #include "./local_value.hpp"
-#include "../AST/types/qat_type.hpp"
+#include "../ast/types/qat_type.hpp"
 
 namespace qat::IR {
 

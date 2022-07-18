@@ -23,7 +23,7 @@ public:
   // be populated and de-populated when the expose scope starts and ends
   std::vector<std::string> exposed;
 
-  void throw_error(const std::string message, const utils::FileRange placement);
+  void throw_error(const std::string message, const utils::FileRange fileRange);
 };
 
 } // namespace qat::IR

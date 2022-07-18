@@ -3,8 +3,8 @@
 
 #include "../sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class ExposeBoxes : public Sentence {
 private:
   std::vector<std::string> boxes;
@@ -14,7 +14,7 @@ public:
   ExposeBoxes(std::vector<std::string> _boxes,
               std::vector<Sentence *> _sentences,
               utils::FilePlacement _filePlacement)
-      : boxes(_boxes), sentences(_sentences), Sentence(_filePlacement) {}
+      : Sentence(_filePlacement), boxes(_boxes), sentences(_sentences) {}
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -22,9 +22,9 @@ public:
 
   NodeType nodeType() const { return qat::AST::NodeType::exposeBoxes; }
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

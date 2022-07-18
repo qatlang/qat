@@ -23,7 +23,7 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::customFloatLiteral; }
 };

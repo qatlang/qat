@@ -7,8 +7,7 @@
 
 #include <optional>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  LocalDeclaration represents declaration of values or variables inside
@@ -71,12 +70,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::localDeclaration; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include "../sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  ExpressionSentence is used to represent a sentence that is a
@@ -33,12 +32,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::expressionSentence; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

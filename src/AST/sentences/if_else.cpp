@@ -1,20 +1,19 @@
 #include "./if_else.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IfElse::IfElse(Expression *_condition, Block *_if_block,
                std::optional<Block *> _else_block,
                std::optional<Block *> _merge_block,
                utils::FilePlacement _filePlacement)
-    : condition(_condition), if_block(_if_block), else_block(_else_block),
-      merge_block(_merge_block.value_or(
-          new Block(std::vector<Sentence *>(),
-                    utils::FilePlacement(
-                        _else_block.value_or(_if_block)->file_placement.file,
-                        _else_block.value_or(_if_block)->file_placement.end,
-                        _else_block.value_or(_if_block)->file_placement.end)))),
-      Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), condition(_condition), if_block(_if_block),
+      else_block(_else_block),
+      merge_block(_merge_block.value_or(new Block(
+          std::vector<Sentence *>(),
+          utils::FilePlacement(
+              _else_block.value_or(_if_block)->file_placement.file,
+              _else_block.value_or(_if_block)->file_placement.end,
+              _else_block.value_or(_if_block)->file_placement.end)))) {}
 
 IR::Value *IfElse::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -35,17 +34,16 @@ void IfElse::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON IfElse::toJSON() const {
-  return backend::JSON()
+nuo::Json IfElse::toJson() const {
+  return nuo::Json()
       ._("nodeType", "ifElse")
-      ._("condition", condition->toJSON())
-      ._("ifBlock", if_block->toJSON())
+      ._("condition", condition->toJson())
+      ._("ifBlock", if_block->toJson())
       ._("hasElse", else_block.has_value())
-      ._("elseBlock", else_block.has_value() ? else_block.value()->toJSON()
-                                             : backend::JSON())
-      ._("mergeBlock", merge_block->toJSON())
+      ._("elseBlock",
+         else_block.has_value() ? else_block.value()->toJson() : nuo::Json())
+      ._("mergeBlock", merge_block->toJson())
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

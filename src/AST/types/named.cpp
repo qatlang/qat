@@ -28,8 +28,8 @@ std::string NamedType::get_name() const { return name; }
 
 TypeKind NamedType::typeKind() { return TypeKind::Float; }
 
-backend::JSON NamedType::toJSON() const {
-  return backend::JSON()
+nuo::Json NamedType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "named")
       ._("name", name)
       ._("isVariable", isVariable())

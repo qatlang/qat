@@ -1,12 +1,11 @@
 #include "./loop_n_times.hpp"
 #include "../../utils/unique_id.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 LoopNTimes::LoopNTimes(Expression *_count, Block *_block, Block *_after,
                        utils::FilePlacement _filePlacement)
-    : count(_count), block(_block), after(_after), Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), block(_block), after(_after), count(_count) {}
 
 unsigned LoopNTimes::new_loop_index_id(llvm::BasicBlock *bb) {
   unsigned result = 0;
@@ -43,5 +42,4 @@ void LoopNTimes::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

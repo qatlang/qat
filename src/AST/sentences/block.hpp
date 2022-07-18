@@ -4,11 +4,10 @@
 #include "../sentence.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
- *  Block represents a group of sentences. This is built so that each
+ * Block represents a group of sentences. This is built so that each
  * block in the language has a unique index within the function
  *
  */
@@ -34,12 +33,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::block; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

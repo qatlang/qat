@@ -17,12 +17,12 @@ void BinaryExpression::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON BinaryExpression::toJSON() const {
-  return backend::JSON()
+nuo::Json BinaryExpression::toJson() const {
+  return nuo::Json()
       ._("nodeType", "binaryExpression")
       ._("operator", op)
-      ._("lhs", lhs->toJSON())
-      ._("rhs", rhs->toJSON())
+      ._("lhs", lhs->toJson())
+      ._("rhs", rhs->toJson())
       ._("filePlacement", file_placement);
 }
 

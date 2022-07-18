@@ -38,12 +38,12 @@ void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {
 
 TypeKind TupleType::typeKind() { return TypeKind::tuple; }
 
-backend::JSON TupleType::toJSON() const {
-  std::vector<backend::JSON> mems;
+nuo::Json TupleType::toJson() const {
+  std::vector<nuo::JsonValue> mems;
   for (auto mem : types) {
-    mems.push_back(mem->toJSON());
+    mems.push_back(mem->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("typeKind", "tuple")
       ._("members", mems)
       ._("isVariable", isVariable())

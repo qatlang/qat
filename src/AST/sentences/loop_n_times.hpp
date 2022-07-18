@@ -5,8 +5,7 @@
 #include "../sentence.hpp"
 #include "./block.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  LoopNTimes is used to loop through a block of code a provided number
@@ -59,7 +58,6 @@ public:
   NodeType nodeType() const { return NodeType::loopTimes; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

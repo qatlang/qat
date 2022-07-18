@@ -14,7 +14,7 @@ private:
 public:
   IR::Value *emit(IR::Context *ctx);
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType();
 };

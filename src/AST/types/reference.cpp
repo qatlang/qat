@@ -21,10 +21,10 @@ void ReferenceType::emitCPP(backend::cpp::File &file, bool isHeader) const {
 
 TypeKind ReferenceType::typeKind() { return TypeKind::reference; }
 
-backend::JSON ReferenceType::toJSON() const {
-  return backend::JSON()
+nuo::Json ReferenceType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "reference")
-      ._("subType", type->toJSON())
+      ._("subType", type->toJson())
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);
 }

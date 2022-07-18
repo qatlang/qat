@@ -18,8 +18,8 @@ void Self::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON Self::toJSON() const {
-  return backend::JSON()
+nuo::Json Self::toJson() const {
+  return nuo::Json()
       ._("nodeType", "selfExpression")
       ._("filePlacement", file_placement);
 }

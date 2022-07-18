@@ -17,11 +17,11 @@ void MemberIndexAccess::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON MemberIndexAccess::toJSON() const {
-  return backend::JSON()
+nuo::Json MemberIndexAccess::toJson() const {
+  return nuo::Json()
       ._("nodeType", "memberIndexAccess")
-      ._("instance", instance->toJSON())
-      ._("index", index->toJSON())
+      ._("instance", instance->toJson())
+      ._("index", index->toJson())
       ._("filePlacement", file_placement);
 }
 

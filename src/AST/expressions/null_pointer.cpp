@@ -22,8 +22,8 @@ void NullPointer::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON NullPointer::toJSON() const {
-  return backend::JSON()._("nodeType", "nullPointer");
+nuo::Json NullPointer::toJson() const {
+  return nuo::Json()._("nodeType", "nullPointer");
 }
 
 } // namespace AST

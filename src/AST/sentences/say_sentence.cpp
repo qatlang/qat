@@ -21,12 +21,12 @@ void Say::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON Say::toJSON() const {
-  std::vector<backend::JSON> exps;
+nuo::Json Say::toJson() const {
+  std::vector<nuo::JsonValue> exps;
   for (auto exp : expressions) {
-    exps.push_back(exp->toJSON());
+    exps.push_back(exp->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "saySentence")
       ._("values", exps)
       ._("filePlacement", file_placement);

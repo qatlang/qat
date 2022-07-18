@@ -20,8 +20,8 @@ void FloatLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON FloatLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json FloatLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "floatLiteral")
       ._("value", value)
       ._("filePlacement", file_placement);

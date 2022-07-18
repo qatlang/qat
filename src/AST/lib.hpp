@@ -29,7 +29,7 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON();
+  nuo::Json toJson();
 
   NodeType nodeType() const { return NodeType::lib; }
 };

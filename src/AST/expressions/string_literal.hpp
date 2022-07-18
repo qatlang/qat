@@ -42,7 +42,7 @@ public:
 
   NodeType nodeType() { return NodeType::stringLiteral; }
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 };
 } // namespace AST
 } // namespace qat

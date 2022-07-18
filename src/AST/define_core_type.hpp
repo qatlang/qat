@@ -1,7 +1,6 @@
 #ifndef QAT_AST_DEFINE_CORE_HPP
 #define QAT_AST_DEFINE_CORE_HPP
 
-#include "../IR/context.hpp"
 #include "../utils/visibility.hpp"
 #include "./expression.hpp"
 #include "./types/qat_type.hpp"
@@ -23,6 +22,8 @@ public:
     bool variability;
     utils::VisibilityInfo visibility;
     utils::FilePlacement placement;
+
+    nuo::Json toJson() const;
   };
 
   // Static member representation in the AST
@@ -38,6 +39,8 @@ public:
     Expression *value;
     utils::VisibilityInfo visibility;
     utils::FilePlacement placement;
+
+    nuo::Json toJson() const;
   };
 
 private:
@@ -65,6 +68,8 @@ public:
   IR::Value *emit(IR::Context *ctx);
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
+
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::defineCoreType; }
 };

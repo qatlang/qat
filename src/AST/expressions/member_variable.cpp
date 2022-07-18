@@ -15,10 +15,10 @@ void MemberVariable::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON MemberVariable::toJSON() const {
-  return backend::JSON()
+nuo::Json MemberVariable::toJson() const {
+  return nuo::Json()
       ._("nodeType", "memberVariable")
-      ._("instance", instance->toJSON())
+      ._("instance", instance->toJson())
       ._("isPointerAccess", isPointerAccess)
       ._("member", memberName)
       ._("filePlacement", file_placement);

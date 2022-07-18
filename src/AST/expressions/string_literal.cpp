@@ -19,8 +19,8 @@ void StringLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON StringLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json StringLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "stringLiteral")
       ._("value", value)
       ._("filePlacement", file_placement);

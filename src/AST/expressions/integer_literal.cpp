@@ -20,8 +20,8 @@ void IntegerLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON IntegerLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json IntegerLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "integerLiteral")
       ._("value", value)
       ._("filePlacement", file_placement);

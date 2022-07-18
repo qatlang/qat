@@ -1,11 +1,10 @@
 #include "./expression_sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 ExpressionSentence::ExpressionSentence(Expression *_exp,
                                        utils::FilePlacement _filePlacement)
-    : expr(_exp), qat::AST::Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), expr(_exp) {}
 
 IR::Value *ExpressionSentence::emit(IR::Context *ctx) {
   return expr->emit(ctx);
@@ -19,12 +18,11 @@ void ExpressionSentence::emitCPP(backend::cpp::File &file,
   }
 }
 
-backend::JSON ExpressionSentence::toJSON() const {
-  return backend::JSON()
+nuo::Json ExpressionSentence::toJson() const {
+  return nuo::Json()
       ._("nodeType", "expressionSentence")
-      ._("value", expr->toJSON())
+      ._("value", expr->toJson())
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

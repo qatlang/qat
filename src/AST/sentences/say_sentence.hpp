@@ -21,7 +21,7 @@ public:
 
   NodeType nodeType() const { return NodeType::saySentence; }
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 };
 } // namespace AST
 } // namespace qat

@@ -43,8 +43,8 @@ void RadixLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON RadixLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json RadixLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "radixLiteral")
       ._("value", value)
       ._("filePlacement", file_placement);

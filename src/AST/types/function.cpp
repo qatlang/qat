@@ -14,9 +14,9 @@ std::string ArgumentType::getName() const { return name.value_or(""); }
 
 QatType *ArgumentType::getType() { return type; }
 
-backend::JSON ArgumentType::toJSON() const {
-  return backend::JSON()
-      ._("type", type->toJSON())
+nuo::Json ArgumentType::toJson() const {
+  return nuo::Json()
+      ._("type", type->toJson())
       ._("hasName", name.has_value())
       ._("name", name.value_or(""));
 }
@@ -28,14 +28,14 @@ FunctionType::FunctionType(QatType *_retType,
 
 TypeKind FunctionType::typeKind() const { return TypeKind::function; }
 
-backend::JSON FunctionType::toJSON() const {
-  std::vector<backend::JSON> args;
+nuo::Json FunctionType::toJson() const {
+  std::vector<nuo::JsonValue> args;
   for (auto argTy : argTypes) {
-    args.push_back(argTy->toJSON());
+    args.push_back(argTy->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("typeKind", "function")
-      ._("returnType", returnType->toJSON())
+      ._("returnType", returnType->toJson())
       ._("arguments", args);
 }
 

@@ -7,11 +7,11 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-backend::JSON ToConversion::toJSON() const {
-  return backend::JSON()
+nuo::Json ToConversion::toJson() const {
+  return nuo::Json()
       ._("nodeType", "toConversion")
-      ._("instance", source->toJSON())
-      ._("targetType", destinationType->toJSON())
+      ._("instance", source->toJson())
+      ._("targetType", destinationType->toJson())
       ._("filePlacement", file_placement);
 }
 

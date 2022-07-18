@@ -19,12 +19,12 @@ std::vector<StringLiteral *> BroughtGroup::get_members() const {
 
 bool BroughtGroup::is_all_brought() const { return members.empty(); }
 
-backend::JSON BroughtGroup::toJSON() const {
-  std::vector<backend::JSON> mems;
+nuo::Json BroughtGroup::toJson() const {
+  std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {
-    mems.push_back(mem->toJSON());
+    mems.push_back(mem->toJson());
   }
-  return backend::JSON()._("parent", parent->toJSON())._("members", mems);
+  return nuo::Json()._("parent", parent->toJson())._("members", mems);
 }
 
 BringEntities::BringEntities(std::vector<BroughtGroup *> _entities,
@@ -60,12 +60,12 @@ void BringEntities::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON BringEntities::toJSON() const {
-  std::vector<backend::JSON> ents;
+nuo::Json BringEntities::toJson() const {
+  std::vector<nuo::JsonValue> ents;
   for (auto ent : entities) {
-    ents.push_back(ent->toJSON());
+    ents.push_back(ent->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "bringEntities")
       ._("entities", ents)
       ._("visibility", visibility)

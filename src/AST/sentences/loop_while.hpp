@@ -6,8 +6,7 @@
 #include "../sentence.hpp"
 #include "./block.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  LoopWhile is used to loop a block of code while a condition is true
@@ -50,10 +49,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
+  nuo::Json toJson() const;
+
   NodeType nodeType() const { return NodeType::loopWhile; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

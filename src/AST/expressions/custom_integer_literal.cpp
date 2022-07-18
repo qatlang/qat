@@ -1,4 +1,5 @@
 #include "./custom_integer_literal.hpp"
+#include <nuo/json.hpp>
 
 namespace qat {
 namespace AST {
@@ -44,8 +45,8 @@ void CustomIntegerLiteral::emitCPP(backend::cpp::File &file,
   file += (val + ")" + value + ")");
 }
 
-backend::JSON CustomIntegerLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json CustomIntegerLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "customIntegerLiteral")
       ._("isUnsigned", isUnsigned)
       ._("bitWidth", (unsigned long long)bitWidth)

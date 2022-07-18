@@ -16,5 +16,9 @@ void LoopIndex::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
+nuo::Json LoopIndex::toJson() const {
+  return nuo::Json()._("nodeType", "loopIndex");
+}
+
 } // namespace AST
 } // namespace qat

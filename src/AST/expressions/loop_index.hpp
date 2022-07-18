@@ -14,6 +14,8 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
+  nuo::Json toJson() const;
+
   NodeType nodeType() const { return NodeType::loopIndex; }
 };
 

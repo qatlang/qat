@@ -50,7 +50,7 @@ public:
    */
   bool is_all_brought() const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 };
 
 class BringEntities : public Node {
@@ -72,7 +72,7 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const override;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::bringEntities; }
 };

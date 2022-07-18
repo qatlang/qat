@@ -39,7 +39,7 @@ public:
   //  Whether the provided integer is the bitwidth of the UnsignedType
   bool isBitWidth(const unsigned int width) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   std::string toString() const;
 };

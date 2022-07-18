@@ -18,10 +18,10 @@ void SizeOfType::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON SizeOfType::toJSON() const {
-  return backend::JSON()
+nuo::Json SizeOfType::toJson() const {
+  return nuo::Json()
       ._("nodeType", "sizeOfType")
-      ._("type", type->toJSON())
+      ._("type", type->toJson())
       ._("filePlacement", file_placement);
 }
 

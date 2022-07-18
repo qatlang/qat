@@ -5,8 +5,7 @@
 #include "../sentence.hpp"
 #include <optional>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 /**
  *  GiveSentence represents a return statement in the language
  *
@@ -32,11 +31,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return qat::AST::NodeType::giveSentence; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

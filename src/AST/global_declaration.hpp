@@ -6,6 +6,7 @@
 #include "./node.hpp"
 #include "./node_type.hpp"
 #include "./types/qat_type.hpp"
+#include <optional>
 
 namespace qat {
 namespace AST {
@@ -20,14 +21,14 @@ class GlobalDeclaration : public Node {
 private:
   std::string name;
 
-  llvm::Optional<QatType *> type;
+  std::optional<QatType *> type;
 
   Expression *value;
 
   bool isVariable;
 
 public:
-  GlobalDeclaration(std::string _name, llvm::Optional<QatType *> _type,
+  GlobalDeclaration(std::string _name, std::optional<QatType *> _type,
                     Expression *_value, bool _isVariable,
                     utils::FilePlacement _filePlacement);
 
@@ -35,7 +36,7 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::globalDeclaration; }
 };

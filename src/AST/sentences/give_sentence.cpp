@@ -1,10 +1,9 @@
 #include "./give_sentence.hpp"
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 GiveSentence::GiveSentence(std::optional<Expression *> _given_expr,
                            utils::FilePlacement _filePlacement)
-    : give_expr(_given_expr), Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), give_expr(_given_expr) {}
 
 IR::Value *GiveSentence::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -20,14 +19,13 @@ void GiveSentence::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON GiveSentence::toJSON() const {
-  return backend::JSON()
+nuo::Json GiveSentence::toJson() const {
+  return nuo::Json()
       ._("nodeType", "giveSentence")
       ._("hasValue", give_expr.has_value())
       ._("value",
-         give_expr.has_value() ? give_expr.value()->toJSON() : backend::JSON())
+         give_expr.has_value() ? give_expr.value()->toJson() : nuo::Json())
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

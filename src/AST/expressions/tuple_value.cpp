@@ -25,12 +25,12 @@ void TupleValue::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON TupleValue::toJSON() const {
-  std::vector<backend::JSON> mems;
+nuo::Json TupleValue::toJson() const {
+  std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {
-    mems.push_back(mem->toJSON());
+    mems.push_back(mem->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "tupleValue")
       ._("members", mems)
       ._("filePlacement", file_placement);

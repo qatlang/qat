@@ -23,10 +23,10 @@ void ArrayType::emitCPP(backend::cpp::File &file, bool isHeader) const {
 
 TypeKind ArrayType::typeKind() { return TypeKind::array; }
 
-backend::JSON ArrayType::toJSON() const {
-  return backend::JSON()
+nuo::Json ArrayType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "array")
-      ._("subType", element_type->toJSON())
+      ._("subType", element_type->toJson())
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);
 }

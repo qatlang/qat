@@ -27,8 +27,8 @@ void CustomFloatLiteral::emitCPP(backend::cpp::File &file,
   val += ")" + value + ")";
 }
 
-backend::JSON CustomFloatLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json CustomFloatLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "customFloatLiteral")
       ._("kind", kind)
       ._("value", value)

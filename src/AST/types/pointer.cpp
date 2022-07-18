@@ -22,10 +22,10 @@ void PointerType::emitCPP(backend::cpp::File &file, bool isHeader) const {
 
 TypeKind PointerType::typeKind() { return TypeKind::pointer; }
 
-backend::JSON PointerType::toJSON() const {
-  return backend::JSON()
+nuo::Json PointerType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "pointer")
-      ._("subType", type->toJSON())
+      ._("subType", type->toJson())
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);
 }

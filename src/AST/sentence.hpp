@@ -11,9 +11,9 @@ public:
 
   virtual IR::Value *emit(IR::Context *ctx){};
 
-  virtual NodeType nodeType(){};
+  virtual NodeType nodeType() const {};
 
-  virtual backend::JSON toJSON() const {};
+  virtual nuo::Json toJson() const {};
 
   virtual ~Sentence(){};
 };

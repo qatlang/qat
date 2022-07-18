@@ -19,8 +19,8 @@ void Entity::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON Entity::toJSON() const {
-  return backend::JSON()
+nuo::Json Entity::toJson() const {
+  return nuo::Json()
       ._("nodeType", "entity")
       ._("name", name)
       ._("filePlacement", file_placement);

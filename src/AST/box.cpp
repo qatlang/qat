@@ -1,7 +1,7 @@
 #include "./box.hpp"
+#include <nuo/json.hpp>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *Box::emit(IR::Context *ctx) {
   // FIXME - Perform name checks
@@ -18,16 +18,15 @@ void Box::emitCPP(backend::cpp::File &file, bool isHeader) const {
   file += "} // namespace " + name + " (box)\n";
 }
 
-backend::JSON Box::toJSON() const {
-  std::vector<backend::JSON> mems;
+nuo::Json Box::toJson() const {
+  std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {
-    mems.push_back(mem->toJSON());
+    mems.push_back(mem->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "box")
       ._("members", mems)
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

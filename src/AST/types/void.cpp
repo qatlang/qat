@@ -16,8 +16,8 @@ void VoidType::emitCPP(backend::cpp::File &file, bool isHeader) const {
 
 TypeKind VoidType::typeKind() { return TypeKind::Void; }
 
-backend::JSON VoidType::toJSON() const {
-  return backend::JSON()
+nuo::Json VoidType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "void")
       ._("isVariable", isVariable())
       ._("filePlacement", filePlacement);

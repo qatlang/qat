@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include "../sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  MultithreadGive represents a give sentence (return statement) inside a
@@ -18,7 +17,7 @@ private:
    *  Expression to be returned from the multithread block.
    *
    */
-  Expression expression;
+  Expression *expression;
 
 public:
   /**
@@ -28,14 +27,15 @@ public:
    block
    * @param _filePlacement
    */
-  MultithreadGive(Expression _expression, utils::FilePlacement _filePlacement);
+  MultithreadGive(Expression *_expression, utils::FilePlacement _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
+
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::multithreadGive; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

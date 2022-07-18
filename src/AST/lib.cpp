@@ -35,12 +35,12 @@ void Lib::emitCPP(backend::cpp::File &file, bool isHeader) const {
   file += "\n} // namespace " + name + " (lib)\n";
 }
 
-backend::JSON Lib::toJSON() {
-  std::vector<backend::JSON> mems;
+nuo::Json Lib::toJson() {
+  std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {
-    mems.push_back(mem->toJSON());
+    mems.push_back(mem->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("name", name)
       ._("nodeType", "lib")
       ._("members", mems)

@@ -1,15 +1,20 @@
 #include "multithread_give.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-MultithreadGive::MultithreadGive(Expression _expression,
+MultithreadGive::MultithreadGive(Expression *_expression,
                                  utils::FilePlacement _filePlacement)
-    : expression(_expression), Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), expression(_expression) {}
 
 IR::Value *MultithreadGive::emit(IR::Context *ctx) {
   // FIXME - Implement this
 }
 
-} // namespace AST
-} // namespace qat
+nuo::Json MultithreadGive::toJson() const {
+  return nuo::Json()
+      ._("nodeType", "multithreadGive")
+      ._("value", expression->toJson())
+      ._("filePlacement", file_placement);
+}
+
+} // namespace qat::AST

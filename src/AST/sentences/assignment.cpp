@@ -1,11 +1,10 @@
 #include "./assignment.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 Assignment::Assignment(Expression *_lhs, Expression *_value,
                        utils::FilePlacement _filePlacement)
-    : lhs(_lhs), value(_value), Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), lhs(_lhs), value(_value) {}
 
 IR::Value *Assignment::emit(qat::IR::Context *ctx) {
   // TODO - Implement this
@@ -18,13 +17,12 @@ void Assignment::emitCPP(backend::cpp::File &file, bool isHeader) const {
   file += ";\n";
 }
 
-backend::JSON Assignment::toJSON() const {
-  return backend::JSON()
+nuo::Json Assignment::toJson() const {
+  return nuo::Json()
       ._("nodeType", "assignment")
-      ._("lhs", lhs->toJSON())
-      ._("rhs", value->toJSON())
+      ._("lhs", lhs->toJson())
+      ._("rhs", value->toJson())
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

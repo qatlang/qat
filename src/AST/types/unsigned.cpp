@@ -37,8 +37,8 @@ bool UnsignedType::isBitWidth(const unsigned int width) const {
 
 TypeKind UnsignedType::typeKind() { return TypeKind::unsignedInteger; }
 
-backend::JSON UnsignedType::toJSON() const {
-  return backend::JSON()
+nuo::Json UnsignedType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "unsignedInteger")
       ._("bitWidth", bitWidth)
       ._("isVariable", isVariable())

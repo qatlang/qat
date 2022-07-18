@@ -39,7 +39,7 @@ public:
 
   virtual NodeType nodeType() const {};
 
-  virtual backend::JSON toJSON() const {};
+  virtual nuo::Json toJson() const {};
 };
 } // namespace AST
 } // namespace qat

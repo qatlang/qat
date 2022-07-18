@@ -66,8 +66,8 @@ std::string FloatType::kindToString(IR::FloatTypeKind kind) {
 
 TypeKind FloatType::typeKind() { return TypeKind::Float; }
 
-backend::JSON FloatType::toJSON() const {
-  return backend::JSON()
+nuo::Json FloatType::toJson() const {
+  return nuo::Json()
       ._("typeKind", "float")
       ._("floatTypeKind", kindToString(kind))
       ._("isVariable", isVariable())

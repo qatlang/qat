@@ -1,4 +1,5 @@
 #include "./member_function_call.hpp"
+
 namespace qat {
 namespace AST {
 
@@ -22,14 +23,14 @@ void MemberFunctionCall::emitCPP(backend::cpp::File &file,
   }
 }
 
-backend::JSON MemberFunctionCall::toJSON() const {
-  std::vector<backend::JSON> args;
+nuo::Json MemberFunctionCall::toJson() const {
+  std::vector<nuo::JsonValue> args;
   for (auto arg : arguments) {
-    args.push_back(arg->toJSON());
+    args.push_back(arg->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "memberFunctionCall")
-      ._("instance", instance->toJSON())
+      ._("instance", instance->toJson())
       ._("function", memberName)
       ._("arguments", args)
       ._("isVariation", variation)

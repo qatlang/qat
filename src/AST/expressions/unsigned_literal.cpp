@@ -20,8 +20,8 @@ void UnsignedLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON UnsignedLiteral::toJSON() const {
-  return backend::JSON()
+nuo::Json UnsignedLiteral::toJson() const {
+  return nuo::Json()
       ._("nodeType", "unsignedLiteral")
       ._("value", value)
       ._("filePlacement", file_placement);

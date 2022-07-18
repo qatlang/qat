@@ -1,12 +1,11 @@
 #include "./loop_while.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 LoopWhile::LoopWhile(Expression *_condition, Block *_block, Block *_after,
                      utils::FilePlacement _filePlacement)
-    : condition(_condition), block(_block), after(_after),
-      Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), block(_block), after(_after),
+      condition(_condition) {}
 
 IR::Value *LoopWhile::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -21,5 +20,13 @@ void LoopWhile::emitCPP(backend::cpp::File &file, bool isHeader) const {
   after->emitCPP(file, isHeader);
 }
 
-} // namespace AST
-} // namespace qat
+nuo::Json LoopWhile::toJson() const {
+  return nuo::Json()
+      ._("nodeType", "loopWhile")
+      ._("condition", condition->toJson())
+      ._("block", block->toJson())
+      ._("after", after->toJson())
+      ._("filePlacement", file_placement);
+}
+
+} // namespace qat::AST

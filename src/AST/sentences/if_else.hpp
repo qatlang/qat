@@ -6,8 +6,7 @@
 #include "./block.hpp"
 #include <optional>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 // `IfElse` is used to represent two kinds of conditional sentences : If
 // and If-Else. The Else block is optional and if omitted, IfElse becomes a
@@ -49,11 +48,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::ifElse; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

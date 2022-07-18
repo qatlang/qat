@@ -1,7 +1,6 @@
 #include "./expose_box.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *ExposeBoxes::emit(IR::Context *ctx) {
   std::size_t count = 0;
@@ -51,21 +50,20 @@ void ExposeBoxes::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON ExposeBoxes::toJSON() const {
-  std::vector<backend::JsonValue> boxs;
-  std::vector<backend::JSON> sntcs;
+nuo::Json ExposeBoxes::toJson() const {
+  std::vector<nuo::JsonValue> boxs;
+  std::vector<nuo::JsonValue> sntcs;
   for (auto box : boxes) {
-    boxs.push_back(backend::JsonValue(box));
+    boxs.push_back(nuo::JsonValue(box));
   }
   for (auto sen : sentences) {
-    sntcs.push_back(sen->toJSON());
+    sntcs.push_back(sen->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "exposeBoxes")
       ._("boxes", boxs)
       ._("sentences", sntcs)
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

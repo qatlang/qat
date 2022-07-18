@@ -56,4 +56,22 @@ void DefineCoreType::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
+nuo::Json DefineCoreType::toJson() const {
+  std::vector<nuo::JsonValue> mems;
+  std::vector<nuo::JsonValue> staticMems;
+  for (auto mem : members) {
+    mems.push_back(mem->toJson());
+  }
+  for (auto mem : staticMembers) {
+    staticMems.push_back(mem->toJson());
+  }
+  return nuo::Json()
+      ._("nodeType", "defineCoreType")
+      ._("members", mems)
+      ._("staticMembers", staticMems)
+      ._("isPacked", isPacked)
+      ._("visibility", visibility)
+      ._("filePlacement", file_placement);
+}
+
 } // namespace qat::AST

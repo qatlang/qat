@@ -5,10 +5,10 @@
 
 #include "../IR/context.hpp"
 #include "../backend/cpp.hpp"
-#include "../backend/json.hpp"
 #include "../utils/file_placement.hpp"
 #include "./errors.hpp"
 #include "./node_type.hpp"
+#include "nuo/json.hpp"
 
 namespace qat::AST {
 
@@ -32,7 +32,7 @@ public:
   virtual IR::Value *emit(IR::Context *ctx){};
 
   // This is the emitter function that handles the generation of JSON
-  virtual backend::JSON toJSON() const {};
+  virtual nuo::Json toJson() const {};
 
   // This is the emitter function for C++
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {}

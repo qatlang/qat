@@ -1,11 +1,10 @@
 #include "./block.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 Block::Block(std::vector<Sentence *> _sentences,
              utils::FilePlacement _filePlacement)
-    : sentences(_sentences), Sentence(_filePlacement) {}
+    : Sentence(_filePlacement), sentences(_sentences) {}
 
 IR::Value *Block::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -25,16 +24,15 @@ void Block::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON Block::toJSON() const {
-  std::vector<backend::JSON> snts;
+nuo::Json Block::toJson() const {
+  std::vector<nuo::JsonValue> snts;
   for (auto sentence : sentences) {
-    snts.push_back(sentence->toJSON());
+    snts.push_back(sentence->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "block")
       ._("sentences", snts)
       ._("filePlacement", file_placement);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

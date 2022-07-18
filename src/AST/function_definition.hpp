@@ -27,7 +27,7 @@ public:
 
   NodeType nodeType() const { return NodeType::functionDefinition; }
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 };
 } // namespace AST
 } // namespace qat

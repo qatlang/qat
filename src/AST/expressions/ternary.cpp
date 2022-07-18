@@ -26,12 +26,12 @@ void TernaryExpression::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON TernaryExpression::toJSON() const {
-  return backend::JSON()
+nuo::Json TernaryExpression::toJson() const {
+  return nuo::Json()
       ._("nodeType", "ternaryExpression")
-      ._("condition", condition->toJSON())
-      ._("ifCase", if_expr->toJSON())
-      ._("elseCase", else_expr->toJSON())
+      ._("condition", condition->toJson())
+      ._("ifCase", if_expr->toJson())
+      ._("elseCase", else_expr->toJson())
       ._("filePlacement", file_placement);
 }
 

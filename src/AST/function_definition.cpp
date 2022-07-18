@@ -26,14 +26,15 @@ void FunctionDefinition::emitCPP(backend::cpp::File &file,
   }
 }
 
-backend::JSON FunctionDefinition::toJSON() const {
-  std::vector<backend::JSON> sntcs;
+nuo::Json FunctionDefinition::toJson() const {
+  std::vector<nuo::JsonValue> sntcs;
   for (auto sentence : sentences) {
-    sntcs.push_back(sentence->toJSON());
+    auto sjson = sentence->toJson();
+    sntcs.push_back(sjson);
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "functionDefinition")
-      ._("prototype", prototype->toJSON())
+      ._("prototype", prototype->toJson())
       ._("body", sntcs)
       ._("filePlacement", file_placement);
 }

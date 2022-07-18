@@ -27,7 +27,7 @@ public:
 
   TypeKind typeKind();
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   std::string toString() const;
 };

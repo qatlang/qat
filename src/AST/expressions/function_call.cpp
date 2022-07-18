@@ -20,12 +20,12 @@ void FunctionCall::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON FunctionCall::toJSON() const {
-  std::vector<backend::JSON> args;
+nuo::Json FunctionCall::toJson() const {
+  std::vector<nuo::JsonValue> args;
   for (auto arg : arguments) {
-    args.push_back(arg->toJSON());
+    args.push_back(arg->toJson());
   }
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "functionCall")
       ._("function", name)
       ._("arguments", args)

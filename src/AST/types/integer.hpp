@@ -43,7 +43,7 @@ public:
    */
   bool isBitWidth(const unsigned int width) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   std::string toString() const;
 };

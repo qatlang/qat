@@ -3,7 +3,6 @@
 
 #include "../../IR/context.hpp"
 #include "../../backend/cpp.hpp"
-#include "../../backend/json.hpp"
 #include "../../utils/file_placement.hpp"
 #include "./type_kind.hpp"
 
@@ -42,7 +41,7 @@ public:
   virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
 
   // This generates JSON to represent the type
-  virtual backend::JSON toJSON() const {};
+  virtual nuo::Json toJson() const {};
 
   // FilePlacement representing the range in the file this type was
   // parsed from

@@ -8,8 +8,7 @@
 
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Assignment represents storage of a value to a variable in the
@@ -50,12 +49,11 @@ public:
 
   void emitCPP(backend::cpp::File &file, bool isHeader) const;
 
-  backend::JSON toJSON() const;
+  nuo::Json toJson() const;
 
   NodeType nodeType() const { return NodeType::reassignment; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

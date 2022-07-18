@@ -71,22 +71,21 @@ void FunctionPrototype::emitCPP(backend::cpp::File &file, bool isHeader) const {
   }
 }
 
-backend::JSON FunctionPrototype::toJSON() const {
-  std::vector<backend::JSON> args;
+nuo::Json FunctionPrototype::toJson() const {
+  std::vector<nuo::JsonValue> args;
   for (auto arg : arguments) {
-    args.push_back(backend::JSON()
-                       ._("name", arg->getName())
-                       ._("type", arg->getType() ? arg->getType()->toJSON()
-                                                 : backend::JSON())
-                       ._("filePlacement", arg->getFilePlacement()));
+    auto aJson =
+        nuo::Json()
+            ._("name", arg->getName())
+            ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
+            ._("filePlacement", arg->getFilePlacement());
+    args.push_back(aJson);
   }
-  std::cout << "Number of args " << arguments.size() << "\n";
-  // FIXME - Add linkage to the JSON representation
-  return backend::JSON()
+  return nuo::Json()
       ._("nodeType", "functionPrototype")
       ._("name", name)
       ._("isAsync", isAsync)
-      ._("returnType", returnType->toJSON())
+      ._("returnType", returnType->toJson())
       ._("arguments", args)
       ._("isVariadic", isVariadic)
       ._("callingConvention", callingConv);

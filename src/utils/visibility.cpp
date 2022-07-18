@@ -50,6 +50,14 @@ bool VisibilityInfo::operator==(VisibilityInfo other) const {
   return (kind == other.kind) && (value == other.value);
 }
 
+VisibilityInfo::operator nuo::Json() const {
+  return nuo::Json()._("kind", Visibility::getValue(kind))._("value", value);
+}
+
+VisibilityInfo::operator nuo::JsonValue() const {
+  return nuo::JsonValue((nuo::Json)(*this));
+}
+
 VisibilityInfo::VisibilityInfo(const VisibilityInfo &other)
     : kind(other.kind), value(other.value) {}
 

@@ -2,6 +2,7 @@
 #define QAT_UTILS_VISIBILITY_HPP
 
 #include <map>
+#include <nuo/json.hpp>
 #include <optional>
 #include <string>
 
@@ -149,6 +150,10 @@ public:
   std::string value;
 
   bool operator==(VisibilityInfo other) const;
+
+  operator nuo::Json() const;
+
+  operator nuo::JsonValue() const;
 
   VisibilityInfo(const VisibilityInfo &other);
 };

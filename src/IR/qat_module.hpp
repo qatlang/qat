@@ -1,7 +1,7 @@
 #ifndef QAT_IR_QAT_MODULE_HPP
 #define QAT_IR_QAT_MODULE_HPP
 
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
 #include "./function.hpp"
@@ -13,8 +13,7 @@
 #include "./types/void.hpp"
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 enum class ModuleType { lib, box, file, folder };
 
@@ -97,7 +96,7 @@ public:
                            const bool isReturnTypeVariable, const bool isAsync,
                            const std::vector<Argument> args,
                            const bool isVariadic,
-                           const utils::FilePlacement placement,
+                           const utils::FileRange placement,
                            const utils::VisibilityInfo visibility);
 
   bool isSubmodule() const;
@@ -205,10 +204,9 @@ public:
   llvm::GlobalVariable *get_global_variable(std::string name,
                                             utils::RequesterInfo &req_info);
 
-  void throw_error(std::string message, utils::FilePlacement placement);
+  void throw_error(std::string message, utils::FileRange placement);
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

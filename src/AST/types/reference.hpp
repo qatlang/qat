@@ -22,7 +22,7 @@ public:
    * @param _filePlacement
    */
   ReferenceType(QatType *_type, const bool _variable,
-                const utils::FilePlacement _filePlacement);
+                const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 

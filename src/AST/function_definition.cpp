@@ -1,12 +1,11 @@
 #include "./function_definition.hpp"
 #include "../show.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
                                        std::vector<Sentence *> _sentences,
-                                       utils::FilePlacement _filePlacement)
+                                       utils::FileRange _filePlacement)
     : prototype(_prototype), sentences(_sentences), Node(_filePlacement) {}
 
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
@@ -36,8 +35,7 @@ nuo::Json FunctionDefinition::toJson() const {
       ._("nodeType", "functionDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

@@ -3,8 +3,7 @@
 
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class FloatLiteral : public Expression {
 private:
@@ -21,7 +20,7 @@ public:
    * @param _value String representation of the floating point number
    * @param _filePlacement
    */
-  FloatLiteral(std::string _value, utils::FilePlacement _filePlacement);
+  FloatLiteral(std::string _value, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -32,7 +31,6 @@ public:
   NodeType nodeType() const { return qat::AST::NodeType::floatLiteral; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

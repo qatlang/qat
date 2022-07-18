@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 MultithreadGive::MultithreadGive(Expression *_expression,
-                                 utils::FilePlacement _filePlacement)
+                                 utils::FileRange _filePlacement)
     : Sentence(_filePlacement), expression(_expression) {}
 
 IR::Value *MultithreadGive::emit(IR::Context *ctx) {
@@ -14,7 +14,7 @@ nuo::Json MultithreadGive::toJson() const {
   return nuo::Json()
       ._("nodeType", "multithreadGive")
       ._("value", expression->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

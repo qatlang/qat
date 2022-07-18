@@ -3,8 +3,7 @@
 
 #include "./node.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 // Kind of the expression
 //
@@ -23,7 +22,7 @@ private:
   ExpressionKind expected;
 
 public:
-  Expression(utils::FilePlacement _filePlacement);
+  Expression(utils::FileRange _filePlacement);
 
   virtual ~Expression() {}
 
@@ -41,7 +40,7 @@ public:
 
   virtual nuo::Json toJson() const {};
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

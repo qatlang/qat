@@ -11,8 +11,7 @@
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 QatType::QatType() { types.push_back(this); }
 
@@ -133,5 +132,4 @@ bool QatType::isSame(QatType *other) const {
   }
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

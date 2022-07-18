@@ -6,8 +6,8 @@
 #include <map>
 #include <string>
 
-namespace qat {
-namespace parser {
+namespace qat::parser {
+
 /**
  *  ParserContext will be shared between different types of parser
  * functions for managing shared entities/definitions within the scope
@@ -171,7 +171,7 @@ private:
    */
   std::vector<std::string> template_typenames;
 };
-} // namespace parser
-} // namespace qat
+
+} // namespace qat::parser
 
 #endif

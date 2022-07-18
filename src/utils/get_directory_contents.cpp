@@ -1,7 +1,6 @@
 #include "./get_directory_contents.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<fs::path> qatget_directory_contents(fs::path path, bool recursive) {
   std::vector<fs::path> result;
@@ -22,5 +21,4 @@ std::vector<fs::path> qatget_directory_contents(fs::path path, bool recursive) {
   return result;
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

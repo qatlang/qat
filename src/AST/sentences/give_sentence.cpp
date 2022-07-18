@@ -2,7 +2,7 @@
 namespace qat::AST {
 
 GiveSentence::GiveSentence(std::optional<Expression *> _given_expr,
-                           utils::FilePlacement _filePlacement)
+                           utils::FileRange _filePlacement)
     : Sentence(_filePlacement), give_expr(_given_expr) {}
 
 IR::Value *GiveSentence::emit(IR::Context *ctx) {
@@ -25,7 +25,7 @@ nuo::Json GiveSentence::toJson() const {
       ._("hasValue", give_expr.has_value())
       ._("value",
          give_expr.has_value() ? give_expr.value()->toJson() : nuo::Json())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

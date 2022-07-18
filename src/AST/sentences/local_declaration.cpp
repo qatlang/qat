@@ -5,7 +5,7 @@ namespace qat::AST {
 
 LocalDeclaration::LocalDeclaration(QatType *_type, std::string _name,
                                    Expression *_value, bool _variability,
-                                   utils::FilePlacement _filePlacement)
+                                   utils::FileRange _filePlacement)
     : Sentence(_filePlacement), type(_type), name(_name), value(_value),
       variability(_variability) {}
 
@@ -47,7 +47,7 @@ nuo::Json LocalDeclaration::toJson() const {
       ._("hasType", (type != nullptr))
       ._("type", (type != nullptr) ? type->toJson() : nuo::Json())
       ._("value", value->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

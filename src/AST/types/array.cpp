@@ -5,7 +5,7 @@ namespace qat::AST {
 
 ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
                      const bool _variable,
-                     const utils::FilePlacement _filePlacement)
+                     const utils::FileRange _filePlacement)
     : element_type(_element_type), length(_length),
       QatType(_variable, _filePlacement) {}
 

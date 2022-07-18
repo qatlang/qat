@@ -1,9 +1,8 @@
 #include "./size_of.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-SizeOf::SizeOf(Expression *_expression, utils::FilePlacement _filePlacement)
+SizeOf::SizeOf(Expression *_expression, utils::FileRange _filePlacement)
     : expression(_expression), Expression(_filePlacement) {}
 
 IR::Value *SizeOf::emit(IR::Context *ctx) {
@@ -22,8 +21,7 @@ nuo::Json SizeOf::toJson() const {
   return nuo::Json()
       ._("nodeType", "sizeOf")
       ._("expression", expression->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

@@ -25,7 +25,7 @@ public:
    * @param _filePlacement
    */
   GiveSentence(std::optional<Expression *> _given_expr,
-               utils::FilePlacement _filePlacement);
+               utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

@@ -4,8 +4,7 @@
 #include "../utils/visibility.hpp"
 #include <optional>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 // Brought Entity
 template <class T> class Brought {
@@ -38,7 +37,6 @@ public:
   const utils::VisibilityInfo getVisibility() const { return visibility; }
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

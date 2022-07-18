@@ -6,8 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 /**
  *  Visibility
@@ -203,7 +202,6 @@ public:
   static bool isAccessible(VisibilityInfo visibility, RequesterInfo reqInfo);
 };
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils
 
 #endif

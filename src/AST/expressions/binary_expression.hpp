@@ -4,8 +4,8 @@
 #include "../expression.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class BinaryExpression : public Expression {
 private:
   std::string op;
@@ -14,7 +14,7 @@ private:
 
 public:
   BinaryExpression(Expression *_lhs, std::string _binaryOperator,
-                   Expression *_rhs, utils::FilePlacement _filePlacement)
+                   Expression *_rhs, utils::FileRange _filePlacement)
       : lhs(_lhs), op(_binaryOperator), rhs(_rhs), Expression(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);
@@ -25,7 +25,7 @@ public:
 
   NodeType nodeType() const { return NodeType::binaryExpression; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

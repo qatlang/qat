@@ -1,11 +1,10 @@
 #include "./unsigned.hpp"
 #include "../../IR/types/unsigned.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 UnsignedType::UnsignedType(const unsigned int _bitWidth, const bool _variable,
-                           const utils::FilePlacement _filePlacement)
+                           const utils::FileRange _filePlacement)
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
 IR::QatType *UnsignedType::emit(qat::IR::Context *ctx) {
@@ -49,5 +48,4 @@ std::string UnsignedType::toString() const {
   return (isVariable() ? "var u" : "u") + std::to_string(bitWidth);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

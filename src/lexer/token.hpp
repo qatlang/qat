@@ -1,12 +1,11 @@
 #ifndef QAT_LEXER_TOKEN_HPP
 #define QAT_LEXER_TOKEN_HPP
 
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "./token_type.hpp"
 #include <string>
 
-namespace qat {
-namespace lexer {
+namespace qat::lexer {
 
 /**
  *  Token constitutes of a symbol encountered by the Lexer
@@ -15,12 +14,11 @@ namespace lexer {
  */
 class Token {
 private:
-  Token(TokenType _type, utils::FilePlacement _filePlacement)
+  Token(TokenType _type, utils::FileRange _filePlacement)
       : type(_type), value(""), hasValue(false), filePlacement(_filePlacement) {
   }
 
-  Token(TokenType _type, std::string _value,
-        utils::FilePlacement _filePlacement)
+  Token(TokenType _type, std::string _value, utils::FileRange _filePlacement)
       : type(_type), value(_value), hasValue(true),
         filePlacement(_filePlacement) {}
 
@@ -38,7 +36,7 @@ public:
    * @return Token
    */
   static Token valued(TokenType _type, std::string _value,
-                      utils::FilePlacement filePlacement);
+                      utils::FileRange filePlacement);
 
   /**
    *  Tokens that are by default, recognised by the language. These tokens
@@ -50,7 +48,7 @@ public:
    * numbers
    * @return Token
    */
-  static Token normal(TokenType _type, utils::FilePlacement filePlacement);
+  static Token normal(TokenType _type, utils::FileRange filePlacement);
 
   /**
    *  Type of the token. Can mostly refer to symbols that
@@ -72,12 +70,12 @@ public:
   bool hasValue = false;
 
   /**
-   *  FilePlacement indicates a starting and ending position that contains
+   *  FileRange indicates a starting and ending position that contains
    * appropriate value
    */
-  utils::FilePlacement filePlacement;
+  utils::FileRange filePlacement;
 };
-} // namespace lexer
-} // namespace qat
+
+} // namespace qat::lexer
 
 #endif

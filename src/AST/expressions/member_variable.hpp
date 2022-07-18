@@ -6,8 +6,7 @@
 #include "../node_type.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 class MemberVariable : public Expression {
   Expression *instance;
 
@@ -17,7 +16,7 @@ class MemberVariable : public Expression {
 
 public:
   MemberVariable(Expression *_instance, bool _isPointerAccess,
-                 std::string _memberName, utils::FilePlacement _filePlacement)
+                 std::string _memberName, utils::FileRange _filePlacement)
       : instance(_instance), isPointerAccess(_isPointerAccess),
         memberName(_memberName), Expression(_filePlacement) {}
 
@@ -29,7 +28,7 @@ public:
 
   NodeType nodeType() const { return NodeType::memberVariableExpression; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

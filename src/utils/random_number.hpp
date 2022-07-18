@@ -6,8 +6,7 @@
 #include <sstream>
 #include <string>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 /**
  *  Generate a 64-bit random number with 64-bits of randomness
@@ -16,7 +15,6 @@ namespace utils {
  */
 uint64_t random_number();
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils
 
 #endif

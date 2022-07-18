@@ -5,15 +5,14 @@ namespace qat::AST {
 IfElse::IfElse(Expression *_condition, Block *_if_block,
                std::optional<Block *> _else_block,
                std::optional<Block *> _merge_block,
-               utils::FilePlacement _filePlacement)
+               utils::FileRange _filePlacement)
     : Sentence(_filePlacement), condition(_condition), if_block(_if_block),
       else_block(_else_block),
       merge_block(_merge_block.value_or(new Block(
           std::vector<Sentence *>(),
-          utils::FilePlacement(
-              _else_block.value_or(_if_block)->file_placement.file,
-              _else_block.value_or(_if_block)->file_placement.end,
-              _else_block.value_or(_if_block)->file_placement.end)))) {}
+          utils::FileRange(_else_block.value_or(_if_block)->fileRange.file,
+                           _else_block.value_or(_if_block)->fileRange.end,
+                           _else_block.value_or(_if_block)->fileRange.end)))) {}
 
 IR::Value *IfElse::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -43,7 +42,7 @@ nuo::Json IfElse::toJson() const {
       ._("elseBlock",
          else_block.has_value() ? else_block.value()->toJson() : nuo::Json())
       ._("mergeBlock", merge_block->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

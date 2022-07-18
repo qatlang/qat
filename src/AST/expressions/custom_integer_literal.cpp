@@ -1,18 +1,17 @@
 #include "./custom_integer_literal.hpp"
 #include <nuo/json.hpp>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 CustomIntegerLiteral::CustomIntegerLiteral(std::string _value, bool _isUnsigned,
                                            unsigned int _bitWidth,
-                                           utils::FilePlacement _filePlacement)
+                                           utils::FileRange _filePlacement)
     : value(_value), isUnsigned(_isUnsigned), bitWidth(_bitWidth),
       Expression(_filePlacement) {}
 
 IR::Value *CustomIntegerLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
-    ctx->throw_error("Integer literals are not assignable", file_placement);
+    ctx->throw_error("Integer literals are not assignable", fileRange);
   }
   // TODO - Implement this
 }
@@ -51,8 +50,7 @@ nuo::Json CustomIntegerLiteral::toJson() const {
       ._("isUnsigned", isUnsigned)
       ._("bitWidth", (unsigned long long)bitWidth)
       ._("value", value)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

@@ -5,26 +5,26 @@ namespace qat::AST {
 
 DefineCoreType::Member::Member( //
     QatType *_type, std::string _name, bool _variability,
-    utils::VisibilityInfo _visibility, utils::FilePlacement _placement)
+    utils::VisibilityInfo _visibility, utils::FileRange _placement)
     : type(_type), name(_name), variability(_variability),
       visibility(_visibility), placement(_placement) {}
 
 DefineCoreType::StaticMember::StaticMember( //
     QatType *_type, std::string _name, bool _variability, Expression *_value,
-    utils::VisibilityInfo _visibility, utils::FilePlacement _placement)
+    utils::VisibilityInfo _visibility, utils::FileRange _placement)
     : type(_type), name(_name), variability(_variability), value(_value),
       visibility(_visibility), placement(_placement) {}
 
 DefineCoreType::DefineCoreType( //
     std::string _name, std::vector<Member *> _members,
     std::vector<StaticMember *> _staticMembers,
-    utils::VisibilityInfo _visibility, utils::FilePlacement _filePlacement,
+    utils::VisibilityInfo _visibility, utils::FileRange _filePlacement,
     bool _isPacked)
     : name(_name), isPacked(_isPacked), members(_members),
       visibility(_visibility), Node(_filePlacement) {}
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
-  auto mod = ctx->mod->getActive();
+  auto mod = ctx->getActive();
   if (!IR::QatType::checkTypeExists(mod->getFullNameWithChild(name))) {
     std::vector<IR::CoreType::Member *> mems;
     for (auto mem : members) {
@@ -42,7 +42,7 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
     ctx->throw_error("Type " + mod->getFullNameWithChild(name) +
                          " exists already. Please change name of this type or "
                          "check the codebase",
-                     file_placement);
+                     fileRange);
   }
 }
 
@@ -71,7 +71,7 @@ nuo::Json DefineCoreType::toJson() const {
       ._("staticMembers", staticMems)
       ._("isPacked", isPacked)
       ._("visibility", visibility)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

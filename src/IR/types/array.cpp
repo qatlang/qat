@@ -1,8 +1,7 @@
 #include "./array.hpp"
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 ArrayType::ArrayType(QatType *_element_type, const uint64_t _length)
     : element_type(_element_type), length(_length) {}
@@ -17,5 +16,4 @@ std::string ArrayType::toString() const {
   return element_type->toString() + "[" + std::to_string(length) + "]";
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

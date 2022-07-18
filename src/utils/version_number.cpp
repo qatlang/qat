@@ -1,7 +1,6 @@
 #include "./version_number.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 VersionNumber::VersionNumber(const std::string version)
     : major(0), minor(0), patch(std::nullopt), build(std::nullopt) {
@@ -76,5 +75,4 @@ VersionNumber::VersionNumber(const std::string version)
   }
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

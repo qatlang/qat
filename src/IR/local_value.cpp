@@ -1,8 +1,7 @@
 #include "./local_value.hpp"
 #include "../AST/types/qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 LocalValue::LocalValue(std::string _name, QatType *_type, bool is_variable,
                        Value *_initial, Block *block)
@@ -21,5 +20,4 @@ bool LocalValue::isRemovable() const {
 
 Block *LocalValue::getParent() { return parent; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

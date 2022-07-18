@@ -1,17 +1,16 @@
 #include "./null_pointer.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-NullPointer::NullPointer(utils::FilePlacement _filePlacement)
+NullPointer::NullPointer(utils::FileRange _filePlacement)
     : type(nullptr), Expression(_filePlacement) {}
 
-NullPointer::NullPointer(llvm::Type *_type, utils::FilePlacement _filePlacement)
+NullPointer::NullPointer(llvm::Type *_type, utils::FileRange _filePlacement)
     : type(_type), Expression(_filePlacement) {}
 
 IR::Value *NullPointer::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("Null pointer is not assignable", file_placement);
+    ctx->throw_error("Null pointer is not assignable", fileRange);
   }
   // TODO - Implement this
 }
@@ -26,5 +25,4 @@ nuo::Json NullPointer::toJson() const {
   return nuo::Json()._("nodeType", "nullPointer");
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

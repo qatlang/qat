@@ -1,7 +1,6 @@
 #include "./unsigned.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 UnsignedType::UnsignedType(const unsigned int _bitWidth)
     : bitWidth(_bitWidth) {}
@@ -18,5 +17,4 @@ std::string UnsignedType::toString() const {
   return "u" + std::to_string(bitWidth);
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

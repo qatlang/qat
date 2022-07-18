@@ -3,8 +3,7 @@
 #include "qat_type.hpp"
 #include "type_kind.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 SumType::SumType(std::string _name, std::vector<QatType *> _subTypes)
     : name(_name), subTypes(_subTypes) {}
@@ -39,5 +38,4 @@ bool SumType::isCompatible(QatType *other) const {
 
 std::string SumType::toString() const { return name; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

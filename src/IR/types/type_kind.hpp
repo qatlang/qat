@@ -1,8 +1,7 @@
 #ifndef QAT_IR_TYPES_TYPE_KIND_HPP
 #define QAT_IR_TYPES_TYPE_KIND_HPP
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  The kind of type of the QatType instance.
@@ -30,7 +29,6 @@ enum class TypeKind {
   templatePointer,  // Template pointer
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

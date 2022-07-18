@@ -4,13 +4,11 @@
 #include "./value.hpp"
 #include <string>
 
-namespace qat {
-
-namespace AST {
+namespace qat::AST {
 class QatType;
 }
 
-namespace IR {
+namespace qat::IR {
 
 class Block;
 class Context;
@@ -22,7 +20,7 @@ private:
 
   Value *initial;
 
-  Block* parent;
+  Block *parent;
 
   unsigned loads;
 
@@ -36,7 +34,7 @@ public:
 
   std::string getName() const { return name; }
 
-  Block* getParent();
+  Block *getParent();
 
   unsigned getLoads() const { return loads; }
 
@@ -47,7 +45,6 @@ public:
   bool isRemovable() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

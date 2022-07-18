@@ -1,7 +1,6 @@
 #include "./parser_context.hpp"
 
-namespace qat {
-namespace parser {
+namespace qat::parser {
 
 ParserContext::ParserContext() : aliases(), type_aliases() {}
 
@@ -92,5 +91,4 @@ void ParserContext::add_template_typename(const std::string name) {
   }
 }
 
-} // namespace parser
-} // namespace qat
+} // namespace qat::parser

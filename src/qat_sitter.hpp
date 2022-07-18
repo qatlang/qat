@@ -19,39 +19,25 @@ namespace fs = std::filesystem;
 
 class QatSitter {
 private:
-  /**
-   *  Top level modules found.
-   *
-   */
+  // Top level modules found.
   std::vector<IR::QatModule *> top_modules;
 
-  /**
-   *  All modules found during the compilation phase
-   *
-   */
+  // All modules found during the compilation phase
   std::vector<IR::QatModule *> modules;
 
-  /**
-   *  The ctx instance used by this class to control IR generation
-   *
-   */
+  // The Context instance used by this class to control IR generation
   IR::Context *Context;
 
-  /**
-   *  The lexer instance used to manage lexical analysis of files
-   *
-   */
+  // The lexer instance used to manage lexical analysis of files
   lexer::Lexer *Lexer;
 
-  /**
-   *  The parser instance that converts tokens to AST representation
-   *
-   */
+  // The parser instance that converts tokens to AST representation
   parser::Parser *Parser;
 
 public:
   QatSitter();
 
+  // Initialise QatSitter
   void init();
 
   std::vector<IR::QatModule *> handle_top_modules(fs::path path);

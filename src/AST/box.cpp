@@ -26,7 +26,7 @@ nuo::Json Box::toJson() const {
   return nuo::Json()
       ._("nodeType", "box")
       ._("members", mems)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

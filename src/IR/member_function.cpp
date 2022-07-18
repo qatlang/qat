@@ -5,15 +5,14 @@
 #include "types/qat_type.hpp"
 #include "types/void.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 MemberFunction::MemberFunction(bool _isVariation, CoreType *_parent,
                                std::string _name, QatType *returnType,
                                bool _isReturnTypeVariable, bool _is_async,
                                std::vector<Argument> _args,
                                bool is_variable_arguments, bool _is_static,
-                               const utils::FilePlacement _placement,
+                               const utils::FileRange _placement,
                                utils::VisibilityInfo _visibility_info)
     : parent(_parent), isVariation(_isVariation), isStatic(_is_static),
       Function(parent->getParent(), _name, returnType, _isReturnTypeVariable,
@@ -24,7 +23,7 @@ MemberFunction *MemberFunction::Create(
     CoreType *parent, const bool is_variation, const std::string name,
     QatType *returnTy, const bool _isReturnTypeVariable, const bool _is_async,
     const std::vector<Argument> args, const bool has_variadic_args,
-    const utils::FilePlacement placement,
+    const utils::FileRange placement,
     const utils::VisibilityInfo visibilityInfo) {
   std::vector<Argument> args_info;
   args_info.push_back(is_variation ? Argument::CreateVariable("self", parent, 0)
@@ -41,7 +40,7 @@ MemberFunction *MemberFunction::CreateStatic(
     CoreType *parent, const std::string name, QatType *returnTy,
     const bool isReturnTypeVariable, const bool is_async,
     const std::vector<Argument> args, const bool has_variadic_args,
-    const utils::FilePlacement placement,
+    const utils::FileRange placement,
     const utils::VisibilityInfo visib_info //
 ) {
   return new MemberFunction(false, parent, name, returnTy, isReturnTypeVariable,
@@ -51,7 +50,7 @@ MemberFunction *MemberFunction::CreateStatic(
 
 MemberFunction *
 MemberFunction::CreateDestructor(CoreType *parent,
-                                 const utils::FilePlacement placement) {
+                                 const utils::FileRange placement) {
   return new MemberFunction(
       parent->getParent(), parent, "end", new VoidType(), false, false,
       std::vector<Argument>(
@@ -71,5 +70,4 @@ bool MemberFunction::isStaticFunction() const { return isStatic; }
 
 bool MemberFunction::isMemberFunction() const { return true; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

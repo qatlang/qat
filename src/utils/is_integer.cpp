@@ -1,7 +1,6 @@
 #include "./is_integer.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 bool isInteger(std::string value) {
   bool result = true;
@@ -14,5 +13,4 @@ bool isInteger(std::string value) {
   return result;
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

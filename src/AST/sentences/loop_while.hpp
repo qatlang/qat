@@ -43,7 +43,7 @@ public:
    * @param _filePlacement
    */
   LoopWhile(Expression *_condition, Block *_block, Block *_after,
-            utils::FilePlacement _filePlacement);
+            utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

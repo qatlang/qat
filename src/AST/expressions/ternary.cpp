@@ -1,12 +1,11 @@
 #include "./ternary.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 TernaryExpression::TernaryExpression(Expression *_condition,
                                      Expression *_ifExpression,
                                      Expression *_elseExpression,
-                                     utils::FilePlacement _filePlacement)
+                                     utils::FileRange _filePlacement)
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
       Expression(_filePlacement) {}
 
@@ -32,8 +31,7 @@ nuo::Json TernaryExpression::toJson() const {
       ._("condition", condition->toJson())
       ._("ifCase", if_expr->toJson())
       ._("elseCase", else_expr->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

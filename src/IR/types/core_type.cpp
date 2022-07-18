@@ -10,7 +10,7 @@ CoreType::CoreType(QatModule *mod, const std::string _name,
     : name(_name), members(_members), static_members(),
       memberFunctions(_memberFunctions),
       destructor(MemberFunction::CreateDestructor(
-          this, utils::FilePlacement("", {0u, 0u}, {0u, 0u}))),
+          this, utils::FileRange("", {0u, 0u}, {0u, 0u}))),
       visibility(_visibility), parent(mod) {}
 
 std::string CoreType::getFullName() const {
@@ -109,14 +109,11 @@ CoreType::getStaticFunction(const std::string fnName) const {
   }
 }
 
-void CoreType::addMemberFunction(const std::string name,
-                                 const bool is_variation, QatType *return_type,
-                                 const bool is_return_type_variable,
-                                 const bool is_async,
-                                 const std::vector<Argument> args,
-                                 const bool has_variadic_args,
-                                 const utils::FilePlacement placement,
-                                 const utils::VisibilityInfo visib_info) {
+void CoreType::addMemberFunction(
+    const std::string name, const bool is_variation, QatType *return_type,
+    const bool is_return_type_variable, const bool is_async,
+    const std::vector<Argument> args, const bool has_variadic_args,
+    const utils::FileRange placement, const utils::VisibilityInfo visib_info) {
   memberFunctions.push_back(MemberFunction::Create(
       this, is_variation, name, return_type, is_return_type_variable, is_async,
       args, has_variadic_args, placement, visib_info));
@@ -127,7 +124,7 @@ void CoreType::addStaticFunction(const std::string name, QatType *return_type,
                                  const bool is_async,
                                  const std::vector<Argument> args,
                                  const bool has_variadic_args,
-                                 const utils::FilePlacement placement,
+                                 const utils::FileRange placement,
                                  const utils::VisibilityInfo visib_info) {
   staticFunctions.push_back(MemberFunction::CreateStatic(
       this, name, return_type, is_return_type_variable, is_async, args,
@@ -148,5 +145,18 @@ QatModule *CoreType::getParent() { return parent; }
 TypeKind CoreType::typeKind() const { return TypeKind::core; }
 
 std::string CoreType::toString() const { return getFullName(); }
+
+void CoreType::defineLLVM(llvmHelper helper) const {
+  // TODO - Implement this
+}
+
+void CoreType::defineCPP(backend::cpp::File &file) const {
+  // TODO - Implement this
+}
+
+nuo::Json CoreType::toJson() const {
+  // TODO - Implement this
+  return nuo::Json();
+}
 
 } // namespace qat::IR

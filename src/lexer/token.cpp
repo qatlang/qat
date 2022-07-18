@@ -1,17 +1,15 @@
 #include "./token.hpp"
 
-namespace qat {
-namespace lexer {
+namespace qat::lexer {
 
 Token Token::valued(TokenType _type, std::string _value,
-                    utils::FilePlacement _filePlacement //
+                    utils::FileRange _filePlacement //
 ) {
   return Token(_type, _value, _filePlacement);
 }
 
-Token Token::normal(TokenType _type, utils::FilePlacement _filePlacement) {
+Token Token::normal(TokenType _type, utils::FileRange _filePlacement) {
   return Token(_type, _filePlacement);
 }
 
-} // namespace lexer
-} // namespace qat
+} // namespace qat::lexer

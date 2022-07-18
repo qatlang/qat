@@ -41,8 +41,7 @@ public:
    */
   IfElse(Expression *_condition, Block *_if_block,
          std::optional<Block *> _else_block,
-         std::optional<Block *> _merge_block,
-         utils::FilePlacement _filePlacement);
+         std::optional<Block *> _merge_block, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

@@ -7,9 +7,8 @@
 #include <iostream>
 #include <string>
 
-namespace qat {
-namespace CLI {
-namespace display {
+namespace qat::CLI::display {
+
 /**
  *  Displays version of the compiler (Short form)
  *
@@ -49,8 +48,6 @@ void websites();
  */
 void errors();
 
-} // namespace display
-} // namespace CLI
-} // namespace qat
+} // namespace qat::CLI::display
 
 #endif

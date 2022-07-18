@@ -6,8 +6,7 @@
 
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  Tuples are product types. It is a defined fixed-length sequence of
@@ -36,7 +35,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace IR
-} // namespace qat
+
+} // namespace qat::IR
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef QAT_AST_NODE_TYPE_HPP
 #define QAT_AST_NODE_TYPE_HPP
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 enum class NodeType {
   lib,
   block,
@@ -52,7 +52,7 @@ enum class NodeType {
   box,
   tupleValue
 };
-}
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

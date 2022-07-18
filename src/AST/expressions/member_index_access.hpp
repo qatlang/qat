@@ -5,8 +5,8 @@
 #include "../expression.hpp"
 #include "../node_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class MemberIndexAccess : public Expression {
   Expression *instance;
   Expression *index;
@@ -20,7 +20,7 @@ public:
 
   NodeType nodeType() const { return NodeType::memberIndexAccess; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

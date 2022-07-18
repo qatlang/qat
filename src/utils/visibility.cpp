@@ -1,7 +1,6 @@
 #include "./visibility.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 #define VISIB_KIND "visibility_kind"
 #define VISIB_VALUE "visibility_value"
@@ -83,5 +82,4 @@ VisibilityKind Visibility::getKind(std::string value) {
   return value_kind_map.find(value)->second;
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

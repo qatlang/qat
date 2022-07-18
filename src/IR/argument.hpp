@@ -97,6 +97,6 @@ public:
    */
   bool get_variability() const { return variability; }
 };
-} // namespace qat
+} // namespace qat::IR
 
 #endif

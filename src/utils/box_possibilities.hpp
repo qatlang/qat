@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
+
 std::vector<std::string> boxPossibilities(std::string value);
-}
-} // namespace qat
+
+} // namespace qat::utils
 
 #endif

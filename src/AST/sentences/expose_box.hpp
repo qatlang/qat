@@ -13,7 +13,7 @@ private:
 public:
   ExposeBoxes(std::vector<std::string> _boxes,
               std::vector<Sentence *> _sentences,
-              utils::FilePlacement _filePlacement)
+              utils::FileRange _filePlacement)
       : Sentence(_filePlacement), boxes(_boxes), sentences(_sentences) {}
 
   IR::Value *emit(IR::Context *ctx);

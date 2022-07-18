@@ -4,15 +4,14 @@
 #include "../expression.hpp"
 #include "../sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class Say : public Sentence {
 private:
   std::vector<Expression *> expressions;
 
 public:
-  Say(std::vector<Expression *> _expressions,
-      utils::FilePlacement _filePlacement)
+  Say(std::vector<Expression *> _expressions, utils::FileRange _filePlacement)
       : expressions(_expressions), Sentence(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);
@@ -23,7 +22,7 @@ public:
 
   nuo::Json toJson() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

@@ -5,8 +5,7 @@
 #include "../../utils/types.hpp"
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class CustomIntegerLiteral : public Expression {
 private:
@@ -18,8 +17,7 @@ private:
 
 public:
   CustomIntegerLiteral(std::string _value, bool _isUnsigned,
-                       unsigned int _bitWidth,
-                       utils::FilePlacement _filePlacement);
+                       unsigned int _bitWidth, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -29,7 +27,7 @@ public:
 
   NodeType nodeType() const { return qat::AST::NodeType::customIntegerLiteral; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

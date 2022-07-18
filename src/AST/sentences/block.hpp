@@ -26,8 +26,7 @@ public:
    * @param _sentences All sentences in the block
    * @param _filePlacement
    */
-  Block(std::vector<Sentence *> _sentences,
-        utils::FilePlacement _filePlacement);
+  Block(std::vector<Sentence *> _sentences, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

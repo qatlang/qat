@@ -6,8 +6,7 @@
 
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Tuples are product types. It is a defined fixed-length sequence of
@@ -23,7 +22,7 @@ private:
 
 public:
   TupleType(const std::vector<QatType *> _types, const bool _isPacked,
-            const bool _variable, const utils::FilePlacement _filePlacement);
+            const bool _variable, const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 
@@ -35,7 +34,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

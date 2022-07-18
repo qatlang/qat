@@ -3,8 +3,7 @@
 
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class IntegerType : public QatType {
 private:
@@ -21,7 +20,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace IR
-} // namespace qat
+
+} // namespace qat::IR
 
 #endif

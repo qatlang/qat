@@ -1,15 +1,14 @@
 #include "./radix_literal.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 RadixLiteral::RadixLiteral(std::string _value, unsigned _radix,
-                           utils::FilePlacement _filePlacement)
+                           utils::FileRange _filePlacement)
     : value(_value), radix(_radix), Expression(_filePlacement) {}
 
 IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("This expression is not assignable", file_placement);
+    ctx->throw_error("This expression is not assignable", fileRange);
   }
   unsigned bitWidth = 0;
   if (radix == 2) {
@@ -19,10 +18,10 @@ IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   } else if (radix == 16) {
     bitWidth = (value.length() - 2) * 4;
   } else {
-    ctx->throw_error("Unsupported radix", file_placement);
+    ctx->throw_error("Unsupported radix", fileRange);
   }
   if (bitWidth == 0) {
-    ctx->throw_error("No numbers provided for radix string", file_placement);
+    ctx->throw_error("No numbers provided for radix string", fileRange);
   }
   // TODO - Implement this
 }
@@ -47,8 +46,7 @@ nuo::Json RadixLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "radixLiteral")
       ._("value", value)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

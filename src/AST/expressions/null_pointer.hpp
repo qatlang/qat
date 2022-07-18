@@ -3,8 +3,7 @@
 
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  A null pointer
@@ -16,9 +15,9 @@ private:
   llvm::Type *type;
 
 public:
-  NullPointer(utils::FilePlacement _filePlacement);
+  NullPointer(utils::FileRange _filePlacement);
 
-  NullPointer(llvm::Type *_type, utils::FilePlacement _filePlacement);
+  NullPointer(llvm::Type *_type, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -29,7 +28,6 @@ public:
   NodeType nodeType() const { return NodeType::nullPointer; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

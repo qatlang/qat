@@ -1,7 +1,6 @@
 #include "./tuple.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 TupleType::TupleType(const std::vector<QatType *> _types, const bool _isPacked)
     : types(_types), isPacked(_isPacked) {}
@@ -27,5 +26,4 @@ std::string TupleType::toString() const {
   result += ")";
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

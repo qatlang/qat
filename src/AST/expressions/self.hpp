@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include "../function_prototype.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Self represents the pointer to an instance, in the context of a
@@ -19,7 +18,7 @@ public:
    *
    * @param _filePlacement
    */
-  Self(utils::FilePlacement _filePlacement);
+  Self(utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -30,7 +29,6 @@ public:
   NodeType nodeType() const { return qat::AST::NodeType::selfExpression; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

@@ -2,12 +2,11 @@
 #include "../../IR/types/tuple.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 TupleType::TupleType(const std::vector<AST::QatType *> _types,
                      const bool _isPacked, const bool _variable,
-                     const utils::FilePlacement _filePlacement)
+                     const utils::FileRange _filePlacement)
     : types(_types), isPacked(_isPacked), QatType(_variable, _filePlacement) {}
 
 IR::QatType *TupleType::emit(IR::Context *ctx) {
@@ -67,5 +66,4 @@ std::string TupleType::toString() const {
   result += ")";
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

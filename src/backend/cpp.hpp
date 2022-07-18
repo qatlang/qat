@@ -5,10 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace backend {
-
-namespace cpp {
+namespace qat::backend::cpp {
 
 class File;
 
@@ -112,8 +109,6 @@ public:
   void write();
 };
 
-} // namespace cpp
-} // namespace backend
-} // namespace qat
+} // namespace qat::backend::cpp
 
 #endif

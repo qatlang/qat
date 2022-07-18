@@ -2,13 +2,14 @@
 #include "../CLI/color.hpp"
 #include <iostream>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 Context::Context() : mod(nullptr) {}
 
+QatModule *Context::getActive() { return mod->getActive(); }
+
 void Context::throw_error(const std::string message,
-                          const utils::FilePlacement placement) {
+                          const utils::FileRange placement) {
   std::cout << colors::red << "[ COMPILER ERROR ] " << colors::bold::green
             << placement.file.string() << ":" << placement.start.line << ":"
             << placement.start.character << " - " << placement.end.line << ":"
@@ -17,5 +18,4 @@ void Context::throw_error(const std::string message,
   exit(0);
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

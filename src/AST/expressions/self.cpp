@@ -1,13 +1,12 @@
 #include "./self.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-Self::Self(utils::FilePlacement _filePlacement) : Expression(_filePlacement) {}
+Self::Self(utils::FileRange _filePlacement) : Expression(_filePlacement) {}
 
 IR::Value *Self::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("Self is not assignable", file_placement);
+    ctx->throw_error("Self is not assignable", fileRange);
   }
   // TODO - Implement this
 }
@@ -21,8 +20,7 @@ void Self::emitCPP(backend::cpp::File &file, bool isHeader) const {
 nuo::Json Self::toJson() const {
   return nuo::Json()
       ._("nodeType", "selfExpression")
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

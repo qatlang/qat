@@ -1,9 +1,8 @@
 #include "./expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-Expression::Expression(utils::FilePlacement _filePlacement)
+Expression::Expression(utils::FileRange _filePlacement)
     : expected(ExpressionKind::temporary), Node(_filePlacement) {}
 
 bool Expression::isExpectedKind(ExpressionKind _kind) {
@@ -16,5 +15,4 @@ void Expression::setExpectedKind(ExpressionKind _kind) {
   this->expected = _kind;
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

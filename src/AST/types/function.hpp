@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class ArgumentType {
 private:
@@ -37,7 +36,7 @@ private:
 
 public:
   FunctionType(QatType *_retType, std::vector<ArgumentType *> _argTypes,
-               utils::FilePlacement _placement);
+               utils::FileRange _placement);
 
   IR::QatType *emit(IR::Context *ctx);
 
@@ -48,7 +47,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

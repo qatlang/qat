@@ -6,14 +6,10 @@
 #include "./sentence.hpp"
 #include <filesystem>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-/**
- *  BringPaths represents importing of files or folders into the current
- * compilable scope
- *
- */
+// BringPaths represents importing of files or folders into the current
+// compilable scope
 class BringPaths : public Sentence {
 private:
   /**
@@ -33,8 +29,7 @@ public:
    * @param _placement
    */
   BringPaths(std::vector<StringLiteral> _paths,
-             utils::VisibilityInfo _visibility,
-             utils::FilePlacement _placement);
+             utils::VisibilityInfo _visibility, utils::FileRange _placement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -45,7 +40,6 @@ public:
   NodeType nodeType() const { return NodeType::bringPaths; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

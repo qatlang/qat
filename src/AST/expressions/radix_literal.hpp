@@ -4,8 +4,7 @@
 #include "../../IR/context.hpp"
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class RadixLiteral : public Expression {
 private:
@@ -24,7 +23,7 @@ public:
    * @param _filePlacement
    */
   RadixLiteral(std::string _value, unsigned _radix,
-               utils::FilePlacement _filePlacement);
+               utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -35,7 +34,6 @@ public:
   NodeType nodeType() const { return qat::AST::NodeType::radixLiteral; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

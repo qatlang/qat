@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class CustomFloatLiteral : public Expression {
 private:
@@ -17,7 +16,7 @@ private:
 
 public:
   CustomFloatLiteral(std::string _value, std::string _kind,
-                     utils::FilePlacement _filePlacement);
+                     utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -28,7 +27,6 @@ public:
   NodeType nodeType() const { return NodeType::customFloatLiteral; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

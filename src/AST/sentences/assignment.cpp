@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 Assignment::Assignment(Expression *_lhs, Expression *_value,
-                       utils::FilePlacement _filePlacement)
+                       utils::FileRange _filePlacement)
     : Sentence(_filePlacement), lhs(_lhs), value(_value) {}
 
 IR::Value *Assignment::emit(qat::IR::Context *ctx) {
@@ -22,7 +22,7 @@ nuo::Json Assignment::toJson() const {
       ._("nodeType", "assignment")
       ._("lhs", lhs->toJson())
       ._("rhs", value->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

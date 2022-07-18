@@ -8,8 +8,8 @@
 #include <iostream>
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class FunctionDefinition : public Node {
 private:
   std::vector<Sentence *> sentences;
@@ -17,7 +17,7 @@ private:
 public:
   FunctionDefinition(FunctionPrototype *_prototype,
                      std::vector<Sentence *> _sentences,
-                     utils::FilePlacement _filePlacement);
+                     utils::FileRange _filePlacement);
 
   FunctionPrototype *prototype;
 
@@ -29,7 +29,7 @@ public:
 
   nuo::Json toJson() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

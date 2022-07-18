@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 Block::Block(std::vector<Sentence *> _sentences,
-             utils::FilePlacement _filePlacement)
+             utils::FileRange _filePlacement)
     : Sentence(_filePlacement), sentences(_sentences) {}
 
 IR::Value *Block::emit(IR::Context *ctx) {
@@ -32,7 +32,7 @@ nuo::Json Block::toJson() const {
   return nuo::Json()
       ._("nodeType", "block")
       ._("sentences", snts)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

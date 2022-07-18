@@ -2,10 +2,10 @@
 #define QAT_IR_TYPES_QAT_TYPE_HPP
 
 #include "../../backend/cpp.hpp"
-#include "../../backend/json.hpp"
 #include "../llvm_helper.hpp"
 #include "./type_kind.hpp"
 #include "llvm/IR/Type.h"
+#include <nuo/json.hpp>
 #include <string>
 #include <vector>
 
@@ -38,7 +38,7 @@ public:
 
   virtual std::string toString() const {}
 
-  virtual backend::JSON toJSON() const {}
+  virtual nuo::Json toJson() const {}
 };
 
 } // namespace qat::IR

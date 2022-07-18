@@ -54,7 +54,7 @@ public:
    * @param _filePlacement
    */
   LocalDeclaration(QatType *_type, std::string _name, Expression *_value,
-                   bool _variability, utils::FilePlacement _filePlacement);
+                   bool _variability, utils::FileRange _filePlacement);
 
   /**
    *  Set the origin block of the declaration

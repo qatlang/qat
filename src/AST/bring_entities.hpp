@@ -2,7 +2,7 @@
 #define QAT_AST_BRING_ENTITIES_HPP
 
 #include "../IR/context.hpp"
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "./expressions/string_literal.hpp"
 #include "./node.hpp"
 #include "./node_type.hpp"
@@ -11,16 +11,10 @@ namespace qat::AST {
 
 class BroughtGroup {
 private:
-  /**
-   *  The parent entity of the group
-   *
-   */
+  // The parent entity of the group
   StringLiteral *parent;
 
-  /**
-   *  All the members of the parent that should be brought in
-   *
-   */
+  // All the members of the parent that should be brought in
   std::vector<StringLiteral *> members;
 
 public:
@@ -28,26 +22,13 @@ public:
 
   explicit BroughtGroup(StringLiteral *_parent);
 
-  /**
-   *  Get the parent entity
-   *
-   * @return std::string
-   */
+  // Get the parent entity
   StringLiteral *get_parent() const;
 
-  /**
-   *  Get the members of the parent entity
-   *
-   * @return std::vector<std::string>
-   */
+  // Get the members of the parent entity
   std::vector<StringLiteral *> get_members() const;
 
-  /**
-   *  Whether the entire entity should be brought into the scope
-   *
-   * @return true
-   * @return false
-   */
+  // Whether the entire entity should be brought into the scope
   bool is_all_brought() const;
 
   nuo::Json toJson() const;
@@ -55,18 +36,16 @@ public:
 
 class BringEntities : public Node {
 private:
-  /**
-   *  All entities to be brought in
-   *
-   */
+  // All entities to be brought in
   std::vector<BroughtGroup *> entities;
 
+  // Visibility of the brought entities
   utils::VisibilityInfo visibility;
 
 public:
   BringEntities(std::vector<BroughtGroup *> _entities,
                 utils::VisibilityInfo _visibility,
-                utils::FilePlacement _filePlacement);
+                utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

@@ -33,7 +33,7 @@ public:
    * @param _filePlacement
    */
   ArrayType(QatType *_element_type, const uint64_t _length,
-            const bool _variable, const utils::FilePlacement _filePlacement);
+            const bool _variable, const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 

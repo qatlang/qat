@@ -4,8 +4,7 @@
 #include "../../utils/types.hpp"
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  A continuous sequence of elements of a particular type. The sequence
@@ -30,7 +29,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

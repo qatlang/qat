@@ -4,12 +4,10 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<std::string> parseSectionsFromIdentifier(std::string fullname);
 
-}
-} // namespace qat
+} // namespace qat::utils
 
 #endif

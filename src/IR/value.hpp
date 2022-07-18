@@ -2,14 +2,13 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../backend/cpp.hpp"
-#include "../backend/json.hpp"
 #include "llvm_helper.hpp"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Value.h"
+#include <nuo/json.hpp>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class QatType;
 
@@ -43,10 +42,9 @@ public:
 
   virtual void emitCPP(backend::cpp::File &file) const {}
 
-  virtual backend::JSON toJSON() const {}
+  virtual nuo::Json toJson() const {}
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

@@ -3,8 +3,7 @@
 
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 enum class FloatTypeKind { _brain, _half, _32, _64, _80, _128PPC, _128 };
 
@@ -21,7 +20,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace IR
-} // namespace qat
+
+} // namespace qat::IR
 
 #endif

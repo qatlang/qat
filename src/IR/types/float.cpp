@@ -1,7 +1,6 @@
 #include "./float.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 FloatType::FloatType(const FloatTypeKind _kind) : kind(_kind) {}
 
@@ -35,5 +34,4 @@ std::string FloatType::toString() const {
   }
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

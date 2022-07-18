@@ -3,12 +3,11 @@
 
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class LoopIndex : public Expression {
 public:
-  LoopIndex(utils::FilePlacement _filePlacement);
+  LoopIndex(utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -19,7 +18,6 @@ public:
   NodeType nodeType() const { return NodeType::loopIndex; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

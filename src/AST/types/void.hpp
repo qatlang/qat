@@ -5,8 +5,7 @@
 
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Void type in the language
@@ -19,7 +18,7 @@ public:
    *
    * @param _filePlacement
    */
-  VoidType(const bool _variable, const utils::FilePlacement _filePlacement);
+  VoidType(const bool _variable, const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 
@@ -31,7 +30,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

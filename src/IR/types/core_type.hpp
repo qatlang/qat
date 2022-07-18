@@ -2,20 +2,20 @@
 #define QAT_IR_TYPES_CORE_TYPE_HPP
 
 #include "../../utils/visibility.hpp"
+#include "../definable.hpp"
 #include "../member_function.hpp"
 #include "../static_member.hpp"
 #include "./qat_type.hpp"
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  This represents a core type in the language
  *
  */
-class CoreType : public QatType {
+class CoreType : public QatType, public Definable {
 public:
   /**
    *  Member represents an individual member of a core
@@ -186,7 +186,7 @@ public:
                          QatType *return_type, bool is_return_type_variable,
                          const bool is_async, const std::vector<Argument> args,
                          const bool has_variadic_args,
-                         const utils::FilePlacement placement,
+                         const utils::FileRange placement,
                          const utils::VisibilityInfo visib_info);
 
   // NOTE - Add documentation
@@ -194,7 +194,7 @@ public:
                          const bool is_return_type_variable,
                          const bool is_async, const std::vector<Argument> args,
                          const bool has_variadic_args,
-                         const utils::FilePlacement placement,
+                         const utils::FileRange placement,
                          const utils::VisibilityInfo visib_info);
 
   void addStaticMember(std::string name, QatType *type, bool variability,
@@ -207,9 +207,14 @@ public:
   TypeKind typeKind() const;
 
   std::string toString() const;
+
+  void defineLLVM(llvmHelper helper) const override;
+
+  void defineCPP(backend::cpp::File &file) const override;
+
+  nuo::Json toJson() const override;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

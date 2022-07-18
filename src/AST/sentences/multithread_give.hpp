@@ -27,7 +27,7 @@ public:
    block
    * @param _filePlacement
    */
-  MultithreadGive(Expression *_expression, utils::FilePlacement _filePlacement);
+  MultithreadGive(Expression *_expression, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

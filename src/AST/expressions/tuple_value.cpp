@@ -1,10 +1,9 @@
 #include "./tuple_value.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 TupleValue::TupleValue(std::vector<Expression *> _members,
-                       utils::FilePlacement _filePlacement)
+                       utils::FileRange _filePlacement)
     : members(_members), Expression(_filePlacement) {}
 
 IR::Value *TupleValue::emit(IR::Context *ctx) {
@@ -33,8 +32,7 @@ nuo::Json TupleValue::toJson() const {
   return nuo::Json()
       ._("nodeType", "tupleValue")
       ._("members", mems)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

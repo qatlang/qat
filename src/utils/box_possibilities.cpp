@@ -1,7 +1,6 @@
 #include "./box_possibilities.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<std::string> boxPossibilities(std::string value) {
   auto parsed_values = parseSectionsFromIdentifier(value);
@@ -21,5 +20,4 @@ std::vector<std::string> boxPossibilities(std::string value) {
   }
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

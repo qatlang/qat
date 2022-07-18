@@ -2,8 +2,7 @@
 #include "../show.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   IR::Function *function;
@@ -11,7 +10,7 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   if (ctx->mod->hasFunction(name)) {
     ctx->throw_error("A function named " + name +
                          " exists already in this scope",
-                     file_placement);
+                     fileRange);
   }
   SHOW("Generating types")
   int i = 1;
@@ -36,7 +35,7 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   SHOW("About to create function")
   function = ctx->mod->createFunction(name, returnType->emit(ctx),
                                       returnType->isVariable(), isAsync, args,
-                                      isVariadic, file_placement, visibility);
+                                      isVariadic, fileRange, visibility);
   SHOW("Function created!!")
   if ((linkageType == llvm::GlobalValue::ExternalLinkage) &&
       (utils::stringToCallingConv(callingConv) != 1024)) {
@@ -78,7 +77,7 @@ nuo::Json FunctionPrototype::toJson() const {
         nuo::Json()
             ._("name", arg->getName())
             ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
-            ._("filePlacement", arg->getFilePlacement());
+            ._("filePlacement", arg->getFileRange());
     args.push_back(aJson);
   }
   return nuo::Json()
@@ -91,5 +90,4 @@ nuo::Json FunctionPrototype::toJson() const {
       ._("callingConvention", callingConv);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

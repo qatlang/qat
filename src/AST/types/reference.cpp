@@ -4,7 +4,7 @@
 namespace qat::AST {
 
 ReferenceType::ReferenceType(QatType *_type, bool _variable,
-                             utils::FilePlacement _filePlacement)
+                             utils::FileRange _filePlacement)
     : type(_type), QatType(_variable, _filePlacement) {}
 
 IR::QatType *ReferenceType::emit(IR::Context *ctx) {

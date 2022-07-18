@@ -3,7 +3,7 @@
 
 #include "../CLI/color.hpp"
 #include "../CLI/config.hpp"
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "../utils/is_integer.hpp"
 #include "./token.hpp"
 #include "./token_type.hpp"
@@ -14,8 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace lexer {
+namespace qat::lexer {
 
 /**
  *  Lexer of the QAT Programming language. This handles lexical
@@ -192,7 +191,7 @@ public:
    *
    * @return utilities::FilePosition
    */
-  utils::FilePlacement getPosition(unsigned long long length);
+  utils::FileRange getPosition(unsigned long long length);
 
   /**
    *  Prints all status about the lexical analysis to the standard
@@ -202,7 +201,7 @@ public:
    */
   void printStatus();
 };
-} // namespace lexer
-} // namespace qat
+
+} // namespace qat::lexer
 
 #endif

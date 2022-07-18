@@ -1,11 +1,9 @@
 #include "../../IR/types/void.hpp"
 #include "./void.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-VoidType::VoidType(const bool _variable,
-                   const utils::FilePlacement _filePlacement)
+VoidType::VoidType(const bool _variable, const utils::FileRange _filePlacement)
     : QatType(_variable, _filePlacement) {}
 
 IR::QatType *VoidType::emit(IR::Context *ctx) { return new IR::VoidType(); }
@@ -27,5 +25,4 @@ std::string VoidType::toString() const {
   return isVariable() ? "var void" : "void";
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

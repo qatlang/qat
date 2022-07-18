@@ -1,7 +1,6 @@
 #include "./function.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 ArgumentType::ArgumentType(QatType *_type, bool _variability)
     : type(_type), variability(_variability) {}
@@ -52,5 +51,4 @@ std::string FunctionType::toString() const {
   result += " -> " + returnType->toString();
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

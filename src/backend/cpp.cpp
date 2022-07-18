@@ -3,9 +3,7 @@
 #include <fstream>
 #include <ios>
 
-namespace qat {
-namespace backend {
-namespace cpp {
+namespace qat::backend::cpp {
 
 Content::Content() : value() {}
 
@@ -137,6 +135,4 @@ void File::write() {
   }
 }
 
-} // namespace cpp
-} // namespace backend
-} // namespace qat
+} // namespace qat::backend::cpp

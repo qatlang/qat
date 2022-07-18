@@ -5,8 +5,7 @@
 #include "../expression.hpp"
 #include "../node_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  StringLiteral is used to represent literal strings
@@ -27,7 +26,7 @@ public:
    * @param _value Value of the string
    * @param _filePlacement
    */
-  StringLiteral(std::string _value, utils::FilePlacement _filePlacement);
+  StringLiteral(std::string _value, utils::FileRange _filePlacement);
 
   /**
    *  Get the value of the string
@@ -44,7 +43,7 @@ public:
 
   nuo::Json toJson() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

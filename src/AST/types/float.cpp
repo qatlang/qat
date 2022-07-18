@@ -4,7 +4,7 @@
 namespace qat::AST {
 
 FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable,
-                     const utils::FilePlacement _filePlacement)
+                     const utils::FileRange _filePlacement)
     : kind(_kind), QatType(_variable, _filePlacement) {}
 
 IR::QatType *FloatType::emit(IR::Context *ctx) {

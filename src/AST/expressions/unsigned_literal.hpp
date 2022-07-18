@@ -4,8 +4,7 @@
 #include "../../IR/context.hpp"
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 class UnsignedLiteral : public Expression {
 private:
@@ -22,7 +21,7 @@ public:
    * @param _value String representation of the integer
    * @param _filePlacement
    */
-  UnsignedLiteral(std::string _value, utils::FilePlacement _filePlacement);
+  UnsignedLiteral(std::string _value, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -33,7 +32,6 @@ public:
   NodeType nodeType() { return qat::AST::NodeType::unsignedLiteral; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

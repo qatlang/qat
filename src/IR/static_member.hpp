@@ -7,8 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class CoreType;
 class QatModule;
@@ -51,7 +50,6 @@ public:
   unsigned getReferCount() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

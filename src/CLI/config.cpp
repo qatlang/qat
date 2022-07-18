@@ -2,8 +2,7 @@
 #include "error.hpp"
 #include <vector>
 
-namespace qat {
-namespace CLI {
+namespace qat::CLI {
 
 Config *Config::instance = nullptr;
 
@@ -151,9 +150,8 @@ bool Config::shouldShowReport() const { return showReport; }
 
 bool Config::shouldLexerEmitTokens() const { return lexer_emit_tokens; }
 
-bool Config::isVerbose() const {return verbose;}
+bool Config::isVerbose() const { return verbose; }
 
 CompileTarget Config::getTarget() const { return target; }
 
-} // namespace CLI
-} // namespace qat
+} // namespace qat::CLI

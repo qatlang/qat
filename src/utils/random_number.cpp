@@ -1,7 +1,6 @@
 #include "./random_number.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 uint64_t random_number() {
   std::random_device dev;
@@ -11,5 +10,4 @@ uint64_t random_number() {
   return dist(rng);
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

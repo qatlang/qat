@@ -3,8 +3,7 @@
 
 #include "./qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 // Unsigned integer datatype in the language
 class UnsignedType : public QatType {
@@ -23,7 +22,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

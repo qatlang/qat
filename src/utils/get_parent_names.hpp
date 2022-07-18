@@ -4,12 +4,10 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<std::string> get_parent_names(std::string name);
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils
 
 #endif

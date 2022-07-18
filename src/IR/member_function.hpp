@@ -8,8 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class CoreType;
 
@@ -48,7 +47,7 @@ private:
   MemberFunction(bool _isVariation, CoreType *_parent, std::string _name,
                  QatType *returnType, bool isReturnTypeVariable, bool _is_async,
                  std::vector<Argument> _args, bool has_variadic_arguments,
-                 bool _is_static, utils::FilePlacement _placement,
+                 bool _is_static, utils::FileRange _placement,
                  utils::VisibilityInfo _visibility_info);
 
 public:
@@ -69,11 +68,11 @@ public:
   Create(CoreType *parent, const bool is_variation, const std::string name,
          QatType *return_type, const bool isReturnTypeVariable,
          const bool is_async, const std::vector<Argument> args,
-         const bool has_variadic_args, const utils::FilePlacement placement,
+         const bool has_variadic_args, const utils::FileRange placement,
          const utils::VisibilityInfo visib_info);
 
   static MemberFunction *CreateDestructor(CoreType *parent,
-                                          const utils::FilePlacement placement);
+                                          const utils::FileRange placement);
 
   /**
    *  Create a static member function for the provided parent type
@@ -91,7 +90,7 @@ public:
   CreateStatic(CoreType *parent, const std::string name, QatType *return_type,
                const bool is_return_type_variable, const bool is_async,
                const std::vector<Argument> args, const bool has_variadic_args,
-               const utils::FilePlacement placement,
+               const utils::FileRange placement,
                const utils::VisibilityInfo visib_info);
 
   /**
@@ -110,7 +109,6 @@ public:
   bool isMemberFunction() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

@@ -1,7 +1,6 @@
 #include "./reference.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 ReferenceType::ReferenceType(QatType *_type) : subType(_type) {}
 
@@ -11,5 +10,4 @@ std::string ReferenceType::toString() const {
   return "@" + subType->toString();
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

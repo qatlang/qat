@@ -1,12 +1,11 @@
 #include "./bring_paths.hpp"
 #include <filesystem>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 BringPaths::BringPaths(std::vector<StringLiteral> _paths,
                        utils::VisibilityInfo _visibility,
-                       utils::FilePlacement _filePlacement)
+                       utils::FileRange _filePlacement)
     : paths(_paths), visibility(_visibility), Sentence(_filePlacement) {}
 
 IR::Value *BringPaths::emit(IR::Context *ctx) {
@@ -19,12 +18,12 @@ IR::Value *BringPaths::emit(IR::Context *ctx) {
       } else if (fs::is_regular_file(path)) {
         // TODO - Implement this
       } else {
-        ctx->throw_error("Cannot bring this file type", pathstr.file_placement);
+        ctx->throw_error("Cannot bring this file type", pathstr.fileRange);
       }
     } else {
       ctx->throw_error("The path provided does not exist: " + path +
                            " and cannot be brought in.",
-                       pathstr.file_placement);
+                       pathstr.fileRange);
     }
   }
   return nullptr;
@@ -32,7 +31,7 @@ IR::Value *BringPaths::emit(IR::Context *ctx) {
 
 void BringPaths::emitCPP(backend::cpp::File &file, bool isHeader) const {
   if (isHeader) {
-    auto base = file_placement.file;
+    auto base = fileRange.file;
     for (auto pathVal : paths) {
       auto path = pathVal.get_value();
       if (fs::is_regular_file(path) &&
@@ -66,8 +65,7 @@ nuo::Json BringPaths::toJson() const {
       ._("nodeType", "bringPaths")
       ._("paths", pths)
       ._("visibility", visibility)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

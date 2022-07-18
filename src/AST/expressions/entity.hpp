@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Entity represents either a variable or constant. The name of the
@@ -32,7 +31,7 @@ public:
    * @param _filePlacement FilePLacement instance that represents the range
    * spanned by the tokens making up this AST member
    */
-  Entity(std::string _name, utils::FilePlacement _filePlacement)
+  Entity(std::string _name, utils::FileRange _filePlacement)
       : name(_name), Expression(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);
@@ -44,7 +43,6 @@ public:
   NodeType nodeType() const { return qat::AST::NodeType::entity; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

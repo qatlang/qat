@@ -8,8 +8,8 @@
 #include "./types/qat_type.hpp"
 #include <optional>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 /**
  *  This AST element handles declaring Global variables in the language
  *
@@ -30,7 +30,7 @@ private:
 public:
   GlobalDeclaration(std::string _name, std::optional<QatType *> _type,
                     Expression *_value, bool _isVariable,
-                    utils::FilePlacement _filePlacement);
+                    utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -40,7 +40,7 @@ public:
 
   NodeType nodeType() const { return NodeType::globalDeclaration; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

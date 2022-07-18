@@ -1,8 +1,7 @@
 #ifndef QAT_AST_TYPES_TYPE_KIND_HPP
 #define QAT_AST_TYPES_TYPE_KIND_HPP
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  The kind of type of the QatType instance.
@@ -30,7 +29,6 @@ enum class TypeKind {
   templateArray,     // Template array
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

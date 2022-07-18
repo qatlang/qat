@@ -7,7 +7,7 @@ IR::Value *ExposeBoxes::emit(IR::Context *ctx) {
   for (auto existing : ctx->exposed) {
     for (auto candidate : boxes) {
       if (existing == candidate) {
-        Errors::AST4(candidate, (boxes.size() > 1), file_placement);
+        Errors::AST4(candidate, (boxes.size() > 1), fileRange);
         break;
         // NOTE - This break is currently unnecessary, but in the future, when
         // compilation is not stopped on the first encounter of an error,
@@ -63,7 +63,7 @@ nuo::Json ExposeBoxes::toJson() const {
       ._("nodeType", "exposeBoxes")
       ._("boxes", boxs)
       ._("sentences", sntcs)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

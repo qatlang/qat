@@ -1,8 +1,6 @@
 #include "./display.hpp"
 
-namespace qat {
-namespace CLI {
-namespace display {
+namespace qat::CLI::display {
 
 void version() {
   std::cout << "qat " << colors::bold::green << "v" << VERSION_STRING
@@ -40,6 +38,4 @@ void websites() {
 
 void errors() { std::cout << "Work in progress..." << std::endl; }
 
-} // namespace display
-} // namespace CLI
-} // namespace qat
+} // namespace qat::CLI::display

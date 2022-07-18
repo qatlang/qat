@@ -5,8 +5,7 @@
 #include "./local_value.hpp"
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class Function;
 
@@ -44,7 +43,6 @@ public:
   LocalValue *getLocalValue(std::string name);
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

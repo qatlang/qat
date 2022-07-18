@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include "../types/qat_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  SizeOfType is used to find the size of a type specified
@@ -26,7 +25,7 @@ public:
    * @param _type
    * @param _filePlacement
    */
-  SizeOfType(QatType *_type, utils::FilePlacement _filePlacement);
+  SizeOfType(QatType *_type, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -37,7 +36,6 @@ public:
   NodeType nodeType() const { return NodeType::sizeOfType; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

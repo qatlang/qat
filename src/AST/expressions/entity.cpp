@@ -1,7 +1,6 @@
 #include "./entity.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *Entity::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -23,8 +22,7 @@ nuo::Json Entity::toJson() const {
   return nuo::Json()
       ._("nodeType", "entity")
       ._("name", name)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

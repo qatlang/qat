@@ -3,10 +3,10 @@
 
 #include <string>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
+
 bool isInteger(std::string value);
-}
-} // namespace qat
+
+} // namespace qat::utils
 
 #endif

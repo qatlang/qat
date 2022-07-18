@@ -3,7 +3,7 @@
 
 #include "../../IR/context.hpp"
 #include "../../backend/cpp.hpp"
-#include "../../utils/file_placement.hpp"
+#include "../../utils/file_range.hpp"
 #include "./type_kind.hpp"
 
 #include <string>
@@ -19,7 +19,7 @@ private:
   bool variable;
 
 public:
-  QatType(const bool _variable, const utils::FilePlacement _filePlacement)
+  QatType(const bool _variable, const utils::FileRange _filePlacement)
       : variable(_variable), filePlacement(_filePlacement) {}
 
   virtual ~QatType(){};
@@ -43,9 +43,9 @@ public:
   // This generates JSON to represent the type
   virtual nuo::Json toJson() const {};
 
-  // FilePlacement representing the range in the file this type was
+  // FileRange representing the range in the file this type was
   // parsed from
-  utils::FilePlacement filePlacement;
+  utils::FileRange filePlacement;
 
   virtual std::string toString() const {};
 };

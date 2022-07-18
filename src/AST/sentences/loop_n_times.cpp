@@ -4,7 +4,7 @@
 namespace qat::AST {
 
 LoopNTimes::LoopNTimes(Expression *_count, Block *_block, Block *_after,
-                       utils::FilePlacement _filePlacement)
+                       utils::FileRange _filePlacement)
     : Sentence(_filePlacement), block(_block), after(_after), count(_count) {}
 
 unsigned LoopNTimes::new_loop_index_id(llvm::BasicBlock *bb) {

@@ -26,7 +26,7 @@ public:
    * @param _filePlacement
    */
   FloatType(const IR::FloatTypeKind _kind, const bool _variable,
-            const utils::FilePlacement _filePlacement);
+            const utils::FileRange _filePlacement);
 
   static std::string kindToString(IR::FloatTypeKind kind);
 

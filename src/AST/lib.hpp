@@ -6,8 +6,7 @@
 #include "./node.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 // Library in the language
 class Lib : public Node {
@@ -23,7 +22,7 @@ private:
 
 public:
   Lib(std::string _name, std::vector<Node *> _members,
-      utils::VisibilityInfo _visibility, utils::FilePlacement _file_placement);
+      utils::VisibilityInfo _visibility, utils::FileRange _file_range);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -33,7 +32,7 @@ public:
 
   NodeType nodeType() const { return NodeType::lib; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

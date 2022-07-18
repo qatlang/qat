@@ -1,7 +1,6 @@
 #include "./member_function_call.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -34,8 +33,7 @@ nuo::Json MemberFunctionCall::toJson() const {
       ._("function", memberName)
       ._("arguments", args)
       ._("isVariation", variation)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

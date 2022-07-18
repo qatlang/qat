@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class MemberFunctionCall : public Expression {
 private:
   Expression *instance;
@@ -19,7 +19,7 @@ private:
 public:
   MemberFunctionCall(Expression *_instance, std::string _memberName,
                      std::vector<Expression *> _arguments, bool _variation,
-                     utils::FilePlacement _filePlacement)
+                     utils::FileRange _filePlacement)
       : instance(_instance), memberName(_memberName), arguments(_arguments),
         variation(_variation), Expression(_filePlacement) {}
 
@@ -31,7 +31,7 @@ public:
 
   NodeType nodeType() const { return qat::AST::NodeType::memberFunctionCall; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

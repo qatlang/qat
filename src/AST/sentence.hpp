@@ -3,11 +3,11 @@
 
 #include "./node.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class Sentence : public Node {
 public:
-  Sentence(utils::FilePlacement _filePlacement) : Node(_filePlacement) {}
+  Sentence(utils::FileRange _filePlacement) : Node(_filePlacement) {}
 
   virtual IR::Value *emit(IR::Context *ctx){};
 
@@ -17,7 +17,7 @@ public:
 
   virtual ~Sentence(){};
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

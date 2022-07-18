@@ -5,14 +5,14 @@
 
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class TupleValue : public Expression {
   std::vector<Expression *> members;
 
 public:
   TupleValue(std::vector<Expression *> _members,
-             utils::FilePlacement _filePlacement);
+             utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -22,7 +22,7 @@ public:
 
   NodeType nodeType() const { return NodeType::tupleValue; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

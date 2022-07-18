@@ -74,19 +74,23 @@ message(STATUS "Found LLVM version ${LLVM_VERSION}")
 message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 
 # Compiler Flags for different build types
-#
+# -IC:\\msys64\\mingw64\\include\\c++\\12.1.0\\x86_64-w64-mingw32
 #
 if(WIN32)
         if(IS_RELEASE)
-                SET(CMAKE_CXX_FLAGS "-Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -IC:\\msys64\\mingw64\\include\\c++\\12.1.0\\x86_64-w64-mingw32 -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
+                SET(CMAKE_CXX_FLAGS "-Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
         else()
-                SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld -flto -w -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -IC:\\msys64\\mingw64\\include\\c++\\12.1.0\\x86_64-w64-mingw32 -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
+                SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld -w -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
+
+                # SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
         endif()
 else()
         if(IS_RELEASE)
                 SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
         else()
-                SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -flto -w -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+                SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -w -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+
+                # SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
         endif()
 endif()
 
@@ -124,7 +128,8 @@ target_link_directories(${PROJECT_NAME}
         PRIVATE utils/
         PRIVATE CLI/
         PRIVATE IR/
-        PRIVATE backend/)
+        PRIVATE backend/
+        PRIVATE /usr/local/lib/)
 
 if(WIN32)
         target_link_directories(${PROJECT_NAME} PRIVATE C:\\msys64\\clang64\\lib)
@@ -174,7 +179,8 @@ else()
                 QAT_IR
                 QAT_UTILS
                 QAT_CLI
-                QAT_BACKEND)
+                QAT_BACKEND
+                nuo)
 endif()
 
 if(NOT WIN32)

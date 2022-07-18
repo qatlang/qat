@@ -1,9 +1,8 @@
 #include "./loop_index.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-LoopIndex::LoopIndex(utils::FilePlacement _filePlacement)
+LoopIndex::LoopIndex(utils::FileRange _filePlacement)
     : Expression(_filePlacement) {}
 
 IR::Value *LoopIndex::emit(IR::Context *ctx) {
@@ -20,5 +19,4 @@ nuo::Json LoopIndex::toJson() const {
   return nuo::Json()._("nodeType", "loopIndex");
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

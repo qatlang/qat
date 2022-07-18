@@ -1,15 +1,13 @@
 #include "./float_literal.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
-FloatLiteral::FloatLiteral(std::string _value,
-                           utils::FilePlacement _filePlacement)
+FloatLiteral::FloatLiteral(std::string _value, utils::FileRange _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
 IR::Value *FloatLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
-    ctx->throw_error("Float literals are not assignable", file_placement);
+    ctx->throw_error("Float literals are not assignable", fileRange);
   }
   //
 }
@@ -24,8 +22,7 @@ nuo::Json FloatLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "floatLiteral")
       ._("value", value)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

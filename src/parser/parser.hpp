@@ -49,8 +49,7 @@
 
 #include "../AST/types/reference.hpp"
 
-namespace qat {
-namespace parser {
+namespace qat::parser {
 
 /**
  *  Parser handles parsing of all tokens analysed by the lexer
@@ -331,9 +330,9 @@ public:
    * @param filePlacement Position in the file corresponding to the error
    */
   void throw_error(const std::string message,
-                   const utils::FilePlacement filePlacement);
+                   const utils::FileRange filePlacement);
 };
-} // namespace parser
-} // namespace qat
+
+} // namespace qat::parser
 
 #endif

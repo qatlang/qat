@@ -1,15 +1,14 @@
 #include "./integer_literal.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IntegerLiteral::IntegerLiteral(std::string _value,
-                               utils::FilePlacement _filePlacement)
+                               utils::FileRange _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
 IR::Value *IntegerLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("Integer literals are not assignable", file_placement);
+    ctx->throw_error("Integer literals are not assignable", fileRange);
   }
   // TODO - Implement this
 }
@@ -24,8 +23,7 @@ nuo::Json IntegerLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "integerLiteral")
       ._("value", value)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

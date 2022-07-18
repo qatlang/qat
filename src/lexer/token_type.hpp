@@ -1,8 +1,8 @@
 #ifndef QAT_LEXER_TOKEN_TYPE_HPP
 #define QAT_LEXER_TOKEN_TYPE_HPP
 
-namespace qat {
-namespace lexer {
+namespace qat::lexer {
+
 /**
  *  Type of the token recognised by the Lexer.
  * This does not necessarily have to mean anything as
@@ -93,7 +93,7 @@ enum class TokenType {
   super,
   variadic
 };
-} // namespace lexer
-} // namespace qat
+
+} // namespace qat::lexer
 
 #endif

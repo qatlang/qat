@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 ExpressionSentence::ExpressionSentence(Expression *_exp,
-                                       utils::FilePlacement _filePlacement)
+                                       utils::FileRange _filePlacement)
     : Sentence(_filePlacement), expr(_exp) {}
 
 IR::Value *ExpressionSentence::emit(IR::Context *ctx) {
@@ -22,7 +22,7 @@ nuo::Json ExpressionSentence::toJson() const {
   return nuo::Json()
       ._("nodeType", "expressionSentence")
       ._("value", expr->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

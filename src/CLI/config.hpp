@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace CLI {
+namespace qat::CLI {
 
 namespace fs = std::filesystem;
 
@@ -159,7 +158,6 @@ public:
   ~Config();
 };
 
-} // namespace CLI
-} // namespace qat
+} // namespace qat::CLI
 
 #endif

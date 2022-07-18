@@ -1,7 +1,6 @@
 #include "./string_to_callingconv.hpp"
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 llvm::CallingConv::ID qat::utils::stringToCallingConv(std::string name) {
   namespace CallingConv = llvm::CallingConv;
@@ -113,5 +112,4 @@ llvm::CallingConv::ID qat::utils::stringToCallingConv(std::string name) {
   }
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

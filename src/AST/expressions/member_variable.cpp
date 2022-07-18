@@ -1,7 +1,6 @@
 #include "./member_variable.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *MemberVariable::emit(IR::Context *ctx) {
   // FIXME - Implement this
@@ -21,8 +20,7 @@ nuo::Json MemberVariable::toJson() const {
       ._("instance", instance->toJson())
       ._("isPointerAccess", isPointerAccess)
       ._("member", memberName)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

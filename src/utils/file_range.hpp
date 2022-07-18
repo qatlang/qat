@@ -7,13 +7,13 @@
 
 namespace fs = std::filesystem;
 
-namespace qat {
-namespace utils {
-// Position indicates a line and character number in a file
-struct Position {
-  Position(nuo::Json);
+namespace qat::utils {
 
-  Position(uint64_t line, uint64_t character);
+// Position indicates a line and character number in a file
+struct FilePos {
+  FilePos(nuo::Json);
+
+  FilePos(uint64_t line, uint64_t character);
 
   // Number of the line of this position. This will never be negative
   uint64_t line;
@@ -25,24 +25,24 @@ struct Position {
   operator nuo::Json() const;
 };
 
-/** FilePlacement represents a particular range in a file */
-class FilePlacement {
+/** FileRange represents a particular range in a file */
+class FileRange {
 public:
   /**
-   *  FilePlacement represents a particular range in a file
+   *  FileRange represents a particular range in a file
    *
    * @param file The file this placement belongs to
    * @param start The beginning position of the placement
    * @param end The ending position of the placement
    */
-  FilePlacement(fs::path _file, Position _start, Position _end);
+  FileRange(fs::path _file, FilePos _start, FilePos _end);
 
-  FilePlacement(nuo::Json json);
+  FileRange(nuo::Json json);
 
   /**
-   *  FilePlacement represents a partivular range in a file
+   *  FileRange represents a partivular range in a file
    *
-   * This creates a FilePlacement from two other FilePlacements. The beginning
+   * This creates a FileRange from two other FileRanges. The beginning
    * of the first one will be the beginning of the new one. The end of the
    * second one will be the end of the new one, unless the files of the provided
    * placements are different
@@ -50,25 +50,25 @@ public:
    * @param first The placement from which the start of the new placement
    * is obtained
    * @param second The placement from which the end of the new placement
-   * is obtained. This argument is ignored if the files of both FilePlacements
+   * is obtained. This argument is ignored if the files of both FileRanges
    * don't match
    */
-  FilePlacement(FilePlacement first, FilePlacement second);
+  FileRange(FileRange first, FileRange second);
 
   /** Path to the corresponding file */
   fs::path file;
 
   /** Starting position of the range */
-  Position start;
+  FilePos start;
 
   /** Ending position of the range */
-  Position end;
+  FilePos end;
 
   operator nuo::Json() const;
 
   operator nuo::JsonValue() const;
 };
-} // namespace utils
-} // namespace qat
+
+} // namespace qat::utils
 
 #endif

@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 LoopWhile::LoopWhile(Expression *_condition, Block *_block, Block *_after,
-                     utils::FilePlacement _filePlacement)
+                     utils::FileRange _filePlacement)
     : Sentence(_filePlacement), block(_block), after(_after),
       condition(_condition) {}
 
@@ -26,7 +26,7 @@ nuo::Json LoopWhile::toJson() const {
       ._("condition", condition->toJson())
       ._("block", block->toJson())
       ._("after", after->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
 } // namespace qat::AST

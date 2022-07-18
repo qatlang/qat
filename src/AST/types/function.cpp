@@ -1,7 +1,6 @@
 #include "./function.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 ArgumentType::ArgumentType(QatType *_type) : type(_type) {}
 
@@ -23,7 +22,7 @@ nuo::Json ArgumentType::toJson() const {
 
 FunctionType::FunctionType(QatType *_retType,
                            std::vector<ArgumentType *> _argTypes,
-                           utils::FilePlacement _placement)
+                           utils::FileRange _placement)
     : returnType(_retType), argTypes(_argTypes), QatType(false, _placement) {}
 
 TypeKind FunctionType::typeKind() const { return TypeKind::function; }
@@ -39,5 +38,4 @@ nuo::Json FunctionType::toJson() const {
       ._("arguments", args);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

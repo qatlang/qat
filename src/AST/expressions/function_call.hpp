@@ -3,8 +3,7 @@
 
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  FunctionCall represents a normal call to a function in the language
@@ -35,7 +34,7 @@ public:
    * @param _filePlacement
    */
   FunctionCall(std::string _name, std::vector<Expression *> _arguments,
-               utils::FilePlacement _filePlacement)
+               utils::FileRange _filePlacement)
       : name(_name), arguments(_arguments), Expression(_filePlacement) {}
 
   IR::Value *emit(IR::Context *ctx);
@@ -46,7 +45,7 @@ public:
 
   NodeType nodeType() const { return qat::AST::NodeType::functionCall; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

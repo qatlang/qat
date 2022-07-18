@@ -1,6 +1,5 @@
 #include "./get_parent_names.hpp"
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<std::string> get_parent_names(std::string name) {
   std::vector<std::string> result;
@@ -12,5 +11,4 @@ std::vector<std::string> get_parent_names(std::string name) {
   return result;
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

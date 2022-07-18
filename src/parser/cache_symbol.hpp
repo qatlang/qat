@@ -1,11 +1,11 @@
 #ifndef QAT_PARSER_CACHE_SYMBOL_HPP
 #define QAT_PARSER_CACHE_SYMBOL_HPP
 
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include <string>
 
-namespace qat {
-namespace parser {
+namespace qat::parser {
+
 /**
  *  CacheSymbol is used to represent a symbol/group of identifiers that
  * represents an entity, type name or a value in the language
@@ -14,15 +14,15 @@ namespace parser {
 class CacheSymbol {
 public:
   CacheSymbol(std::string _name, std::size_t _tokenIndex,
-              utils::FilePlacement _filePlacement);
+              utils::FileRange _filePlacement);
 
   std::string name;
-  utils::FilePlacement filePlacement;
+  utils::FileRange filePlacement;
   std::size_t tokenIndex;
 
-  utils::FilePlacement extend_placement(utils::FilePlacement to);
+  utils::FileRange extend_placement(utils::FileRange to);
 };
-} // namespace parser
-} // namespace qat
+
+} // namespace qat::parser
 
 #endif

@@ -4,8 +4,7 @@
 #include "../../IR/context.hpp"
 #include "qat_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Unsigned integer datatype in the language
@@ -28,7 +27,7 @@ public:
    * @param _filePlacement
    */
   UnsignedType(const unsigned int _bitWidth, const bool _variable,
-               const utils::FilePlacement _filePlacement);
+               const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 
@@ -43,7 +42,7 @@ public:
 
   std::string toString() const;
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

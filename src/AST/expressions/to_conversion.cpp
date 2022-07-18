@@ -1,7 +1,6 @@
 #include "./to_conversion.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *ToConversion::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -12,8 +11,7 @@ nuo::Json ToConversion::toJson() const {
       ._("nodeType", "toConversion")
       ._("instance", source->toJson())
       ._("targetType", destinationType->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

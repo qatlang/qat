@@ -5,7 +5,7 @@
 
 #include "../IR/context.hpp"
 #include "../backend/cpp.hpp"
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "./errors.hpp"
 #include "./node_type.hpp"
 #include "nuo/json.hpp"
@@ -13,18 +13,18 @@
 namespace qat::AST {
 
 //  Node is the base class for all AST members of the language, and it
-// requires a FilePlacement instance that indicates its position in the
+// requires a FileRange instance that indicates its position in the
 // corresponding file
 class Node {
 public:
   // Node is the base class for all AST members of the language, and it
-  // requires a FilePlacement instance that indicates its position in the
+  // requires a FileRange instance that indicates its position in the
   // corresponding file
   //
-  // `_filePlacement` FilePlacement instance that represents the range
+  // `_filePlacement` FileRange instance that represents the range
   // spanned by the tokens that made up this AST member
-  explicit Node(utils::FilePlacement _filePlacement)
-      : file_placement(std::move(_filePlacement)) {}
+  explicit Node(utils::FileRange _filePlacement)
+      : fileRange(std::move(_filePlacement)) {}
 
   virtual ~Node() = default;
 
@@ -45,7 +45,7 @@ public:
    * the tokens that made up this AST member
    *
    */
-  utils::FilePlacement file_placement;
+  utils::FileRange fileRange;
 
   // Destroy all owned objects in the heap
   virtual void destroy(){};

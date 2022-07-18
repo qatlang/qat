@@ -26,7 +26,7 @@ public:
    * @param _exp Expression in the sentence
    * @param _filePlacement
    */
-  ExpressionSentence(Expression *_expr, utils::FilePlacement _filePlacement);
+  ExpressionSentence(Expression *_expr, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

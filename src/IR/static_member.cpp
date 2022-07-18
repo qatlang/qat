@@ -1,8 +1,7 @@
 #include "./static_member.hpp"
 #include "./types/core_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 StaticMember::StaticMember(CoreType *_parent, std::string _name, QatType *_type,
                            bool _isVariable, Value *_initial,
@@ -30,5 +29,4 @@ unsigned StaticMember::getStoreCount() const { return stores; }
 
 unsigned StaticMember::getReferCount() const { return refers; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

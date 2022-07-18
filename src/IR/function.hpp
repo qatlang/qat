@@ -1,7 +1,7 @@
 #ifndef QAT_IR_FUNCTION_HPP
 #define QAT_IR_FUNCTION_HPP
 
-#include "../utils/file_placement.hpp"
+#include "../utils/file_range.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./block.hpp"
@@ -10,8 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class QatModule;
 
@@ -32,8 +31,8 @@ protected:
   // Information about the visibility of this function
   utils::VisibilityInfo visibility_info;
 
-  // FilePlacement of this function
-  utils::FilePlacement placement;
+  // FileRange of this function
+  utils::FileRange placement;
 
   //  Whether this function is async or not
   bool is_async;
@@ -52,20 +51,18 @@ protected:
   unsigned refers;
 
   // Private constructor for Function
-  Function(QatModule *mod, std::string _name,
-           QatType *returnType, bool _isReturnValueVariable, bool _is_async,
+  Function(QatModule *mod, std::string _name, QatType *returnType,
+           bool _isReturnValueVariable, bool _is_async,
            std::vector<Argument> _args, bool has_variadic_arguments,
-           utils::FilePlacement placement,
-           utils::VisibilityInfo _visibility_info);
+           utils::FileRange placement, utils::VisibilityInfo _visibility_info);
 
 public:
   // Create a member function for the provided parent type
-  static Function *Create(QatModule *mod,
-                          const std::string name, QatType *return_type,
-                          bool isReturnValueVariable, bool is_async,
-                          const std::vector<Argument> args,
+  static Function *Create(QatModule *mod, const std::string name,
+                          QatType *return_type, bool isReturnValueVariable,
+                          bool is_async, const std::vector<Argument> args,
                           const bool has_variadic_args,
-                          const utils::FilePlacement placement,
+                          const utils::FileRange placement,
                           const utils::VisibilityInfo visib_info);
 
   virtual bool isMemberFunction() const;
@@ -109,7 +106,6 @@ public:
   utils::VisibilityInfo getVisibility() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

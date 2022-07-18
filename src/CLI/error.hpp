@@ -6,10 +6,10 @@
 #include <iostream>
 #include <string>
 
-namespace qat {
-namespace CLI {
+namespace qat::CLI {
+
 void throw_error(std::string message, std::filesystem::path path);
-} // namespace CLI
-} // namespace qat
+
+} // namespace qat::CLI
 
 #endif

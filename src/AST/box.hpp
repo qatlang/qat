@@ -7,15 +7,12 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace AST {
-/**
- * Box is a container for objects in the
- * QAT language. It is not a structural container,
- * but exists merely to avoid conflict between
- * libraries
- *
- */
+namespace qat::AST {
+
+// Box is a container for objects in the
+// QAT language. It is not a structural container,
+// but exists merely to avoid conflict between
+// libraries
 class Box : public Node {
   std::string name;
 
@@ -26,7 +23,7 @@ class Box : public Node {
 public:
   Box(std::string _name, std::vector<Node *> _members,
       std::optional<utils::VisibilityInfo> _visibility,
-      utils::FilePlacement _filePlacement)
+      utils::FileRange _filePlacement)
       : name(_name), members(_members), visibility(_visibility),
         Node(_filePlacement) {}
 
@@ -38,7 +35,7 @@ public:
 
   NodeType nodeType() const { return NodeType::box; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

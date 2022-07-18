@@ -43,7 +43,7 @@ public:
    * spanned by the tokens making up this AST member
    */
   Assignment(Expression *_lhs, Expression *_value,
-             utils::FilePlacement _filePlacement);
+             utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 

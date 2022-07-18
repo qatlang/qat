@@ -1,7 +1,6 @@
 #include "./binary_expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -23,8 +22,7 @@ nuo::Json BinaryExpression::toJson() const {
       ._("operator", op)
       ._("lhs", lhs->toJson())
       ._("rhs", rhs->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

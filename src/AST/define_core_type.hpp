@@ -15,13 +15,13 @@ public:
   class Member {
   public:
     Member(QatType *_type, std::string _name, bool _variability,
-           utils::VisibilityInfo _visibility, utils::FilePlacement _placement);
+           utils::VisibilityInfo _visibility, utils::FileRange _placement);
 
     QatType *type;
     std::string name;
     bool variability;
     utils::VisibilityInfo visibility;
-    utils::FilePlacement placement;
+    utils::FileRange placement;
 
     nuo::Json toJson() const;
   };
@@ -31,14 +31,14 @@ public:
   public:
     StaticMember(QatType *_type, std::string _name, bool _variability,
                  Expression *_value, utils::VisibilityInfo _visibility,
-                 utils::FilePlacement _placement);
+                 utils::FileRange _placement);
 
     QatType *type;
     std::string name;
     bool variability;
     Expression *value;
     utils::VisibilityInfo visibility;
-    utils::FilePlacement placement;
+    utils::FileRange placement;
 
     nuo::Json toJson() const;
   };
@@ -63,7 +63,7 @@ public:
   DefineCoreType(std::string _name, std::vector<Member *> _members,
                  std::vector<StaticMember *> _staticMembers,
                  utils::VisibilityInfo _visibility,
-                 utils::FilePlacement _filePlacement, bool _isPacked = false);
+                 utils::FileRange _filePlacement, bool _isPacked = false);
 
   IR::Value *emit(IR::Context *ctx);
 

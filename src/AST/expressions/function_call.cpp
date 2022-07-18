@@ -1,7 +1,6 @@
 #include "./function_call.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *qat::AST::FunctionCall::emit(qat::IR::Context *ctx) {
   // TODO - Implement this
@@ -29,8 +28,7 @@ nuo::Json FunctionCall::toJson() const {
       ._("nodeType", "functionCall")
       ._("function", name)
       ._("arguments", args)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

@@ -1,12 +1,11 @@
 #include "./global_declaration.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 GlobalDeclaration::GlobalDeclaration(std::string _name,
                                      std::optional<QatType *> _type,
                                      Expression *_value, bool _isVariable,
-                                     utils::FilePlacement _filePlacement)
+                                     utils::FileRange _filePlacement)
     : Node(_filePlacement), name(_name), type(_type), value(_value),
       isVariable(_isVariable) {}
 
@@ -38,8 +37,7 @@ nuo::Json GlobalDeclaration::toJson() const {
       ._("type", (type.has_value() ? type.value()->toJson() : nuo::Json()))
       ._("value", value->toJson())
       ._("variability", isVariable)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

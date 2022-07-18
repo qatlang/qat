@@ -4,8 +4,7 @@
 #include "./qat_type.hpp"
 #include <string>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 /**
  *  A reference type in the language
@@ -31,7 +30,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

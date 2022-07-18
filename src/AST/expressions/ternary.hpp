@@ -4,8 +4,7 @@
 #include "../expression.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  TernaryExpression represents an expression created by the ternary
@@ -48,7 +47,7 @@ public:
    */
   TernaryExpression(Expression *_condition, Expression *_ifExpression,
                     Expression *_elseExpression,
-                    utils::FilePlacement _filePlacement);
+                    utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -59,7 +58,6 @@ public:
   NodeType nodeType() { return NodeType::ternaryExpression; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

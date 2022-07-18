@@ -1,7 +1,6 @@
 #include "./pointer.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 PointerType::PointerType(QatType *_type) : subType(_type) {}
 
@@ -13,5 +12,4 @@ std::string PointerType::toString() const {
   return "#[" + subType->toString() + "]";
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

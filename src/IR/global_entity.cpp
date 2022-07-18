@@ -1,8 +1,7 @@
 #include "./global_entity.hpp"
 #include "./qat_module.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 GlobalEntity::GlobalEntity(QatModule *_parent, std::string _name,
                            QatType *_type, bool _is_variable, Value *_value,
@@ -28,5 +27,4 @@ unsigned GlobalEntity::getStoreCount() const { return stores; }
 
 unsigned GlobalEntity::getReferCount() const { return refers; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

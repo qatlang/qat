@@ -1,8 +1,7 @@
 #include "./block.hpp"
 #include "./function.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 Block::Block(Function *_fn, Block *_parent)
     : id(utils::unique_id()), fn(_fn), parent(_parent) {}
@@ -11,7 +10,7 @@ bool Block::hasParent() const { return (parent != nullptr); }
 
 Block *Block::getParent() { return parent; }
 
-Block *Block::getEntryBlock() { fn->getEntryBlock(); }
+Block *Block::getEntryBlock() { return fn->getEntryBlock(); }
 
 void Block::setParent(Block *value) { parent = value; }
 
@@ -43,7 +42,7 @@ LocalValue *Block::getLocalValue(std::string name) {
   if (hasParent()) {
     return parent->getLocalValue(name);
   }
+  return nullptr;
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

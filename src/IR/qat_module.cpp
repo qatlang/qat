@@ -6,8 +6,7 @@
 #include "types/qat_type.hpp"
 #include "value.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 QatModule::QatModule(std::string _name, fs::path _filepath, ModuleType _type,
                      utils::VisibilityInfo _visibility)
@@ -81,7 +80,7 @@ Function *QatModule::createFunction(const std::string name, QatType *returnType,
                                     const bool isAsync,
                                     const std::vector<Argument> args,
                                     const bool isVariadic,
-                                    const utils::FilePlacement placement,
+                                    const utils::FileRange placement,
                                     const utils::VisibilityInfo visibility) {
   SHOW("Creating IR function")
   auto fn = Function::Create(this, name, returnType, isReturnTypeVariable,
@@ -531,5 +530,4 @@ QatModule::getGlobalEntity(const std::string name,
   return nullptr;
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

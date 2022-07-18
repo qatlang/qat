@@ -1,8 +1,7 @@
 #include "lexer.hpp"
 #include "token_type.hpp"
 
-namespace qat {
-namespace lexer {
+namespace qat::lexer {
 
 bool Lexer::emit_tokens = false;
 
@@ -43,10 +42,10 @@ void Lexer::read() {
   }
 }
 
-utils::FilePlacement Lexer::getPosition(unsigned long long length) {
-  utils::Position end = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
-  utils::Position start = {line_num, end.character - length};
-  return utils::FilePlacement(fs::path(filePath), start, end);
+utils::FileRange Lexer::getPosition(unsigned long long length) {
+  utils::FilePos end = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
+  utils::FilePos start = {line_num, end.character - length};
+  return utils::FileRange(fs::path(filePath), start, end);
 }
 
 void Lexer::analyse() {
@@ -862,5 +861,4 @@ void Lexer::throw_error(std::string message) {
   exit(0);
 }
 
-} // namespace lexer
-} // namespace qat
+} // namespace qat::lexer

@@ -1,10 +1,9 @@
 #include "./string_literal.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 StringLiteral::StringLiteral(std::string _value,
-                             utils::FilePlacement _filePlacement)
+                             utils::FileRange _filePlacement)
     : value(_value), Expression(_filePlacement) {}
 
 std::string StringLiteral::get_value() const { return value; }
@@ -23,8 +22,7 @@ nuo::Json StringLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "stringLiteral")
       ._("value", value)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

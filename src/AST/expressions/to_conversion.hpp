@@ -4,8 +4,8 @@
 #include "../expression.hpp"
 #include "../types/qat_type.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class ToConversion : public Expression {
 private:
   Expression *source;
@@ -18,7 +18,7 @@ public:
 
   NodeType nodeType();
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

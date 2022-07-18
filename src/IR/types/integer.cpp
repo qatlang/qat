@@ -1,7 +1,6 @@
 #include "./integer.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 IntegerType::IntegerType(const unsigned int _bitWidth) : bitWidth(_bitWidth) {}
 
@@ -17,5 +16,4 @@ std::string IntegerType::toString() const {
   return "i" + std::to_string(bitWidth);
 }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

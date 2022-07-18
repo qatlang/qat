@@ -41,7 +41,7 @@ public:
    * @param _filePlacement
    */
   LoopNTimes(Expression *_count, Block *_block, Block *_after,
-             utils::FilePlacement _filePlacement);
+             utils::FileRange _filePlacement);
 
   /**
    *  Get the index name for the loop index for this sentence

@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 /**
  *  Generate a unique id. This is almost UUID
@@ -13,7 +12,6 @@ namespace utils {
  */
 std::string unique_id();
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils
 
 #endif

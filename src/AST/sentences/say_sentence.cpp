@@ -1,7 +1,6 @@
 #include "./say_sentence.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *Say::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -29,8 +28,7 @@ nuo::Json Say::toJson() const {
   return nuo::Json()
       ._("nodeType", "saySentence")
       ._("values", exps)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

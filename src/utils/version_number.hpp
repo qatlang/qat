@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
+
 class VersionNumber {
 public:
   VersionNumber(const std::string version);
@@ -37,7 +37,7 @@ public:
   std::optional<std::string> prerelease;
   std::optional<std::string> build;
 };
-} // namespace utils
-} // namespace qat
+
+} // namespace qat::utils
 
 #endif

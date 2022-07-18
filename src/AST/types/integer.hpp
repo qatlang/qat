@@ -26,7 +26,7 @@ public:
    * @param _filePlacement
    */
   IntegerType(const unsigned int _bitWidth, const bool _variable,
-              const utils::FilePlacement _filePlacement);
+              const utils::FileRange _filePlacement);
 
   IR::QatType *emit(IR::Context *ctx);
 

@@ -5,12 +5,10 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::vector<fs::path> get_directory_contents(fs::path path, bool recursive);
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils
 
 #endif

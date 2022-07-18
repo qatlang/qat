@@ -1,13 +1,11 @@
 #include "./lib.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 Lib::Lib(std::string _name, std::vector<Node *> _members,
-         utils::VisibilityInfo _visibility,
-         utils::FilePlacement _file_placement)
+         utils::VisibilityInfo _visibility, utils::FileRange _file_range)
     : name(_name), members(_members), visibility(_visibility),
-      Node(_file_placement) {}
+      Node(_file_range) {}
 
 IR::Value *Lib::emit(IR::Context *ctx) {
   // TODO - Check imports
@@ -15,12 +13,12 @@ IR::Value *Lib::emit(IR::Context *ctx) {
     ctx->throw_error(
         "A library named " + name +
             " exists already in this scope. Please change name of this library",
-        file_placement);
+        fileRange);
   } else if (ctx->mod->hasBox(name)) {
     ctx->throw_error(
         "A box named " + name +
             " exists already in this scope. Please change name of this library",
-        file_placement);
+        fileRange);
   }
   return nullptr;
 }
@@ -45,8 +43,7 @@ nuo::Json Lib::toJson() {
       ._("nodeType", "lib")
       ._("members", mems)
       ._("visibility", visibility)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

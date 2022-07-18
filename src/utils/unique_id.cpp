@@ -3,8 +3,7 @@
 #include <random>
 #include <sstream>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
 
 std::string unique_id() {
   char hex_vals[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
@@ -25,5 +24,4 @@ std::string unique_id() {
   return result;
 }
 
-} // namespace utils
-} // namespace qat
+} // namespace qat::utils

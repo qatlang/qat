@@ -4,10 +4,10 @@
 #include "llvm/IR/CallingConv.h"
 #include <string>
 
-namespace qat {
-namespace utils {
+namespace qat::utils {
+
 llvm::CallingConv::ID stringToCallingConv(std::string name);
-}
-} // namespace qat
+
+} // namespace qat::utils
 
 #endif

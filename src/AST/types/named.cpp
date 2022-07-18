@@ -3,7 +3,7 @@
 namespace qat::AST {
 
 NamedType::NamedType(const std::string _name, const bool _variable,
-                     const utils::FilePlacement _filePlacement)
+                     const utils::FileRange _filePlacement)
     : name(_name), QatType(_variable, _filePlacement) {}
 
 IR::QatType *NamedType::emit(IR::Context *ctx) {

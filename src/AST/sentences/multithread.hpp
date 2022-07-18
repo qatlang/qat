@@ -9,8 +9,7 @@
 #include <optional>
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  Multithread represents a sentence that allows spawning n number of
@@ -65,7 +64,7 @@ public:
    * @param _filePlacement
    */
   Multithread(Expression *_count, Block *_main, Block *_after,
-              utils::FilePlacement _filePlacement);
+              utils::FileRange _filePlacement);
 
   /**
    *  Multithread represents a sentence that allows spawning n number
@@ -83,7 +82,7 @@ public:
    * @param _filePlacement
    */
   Multithread(Expression *_count, std::string _name, QatType *_type,
-              Block *_main, Block *_after, utils::FilePlacement _filePlacement);
+              Block *_main, Block *_after, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -92,7 +91,6 @@ public:
   NodeType nodeType() const { return NodeType::multithread; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

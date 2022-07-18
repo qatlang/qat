@@ -1,8 +1,7 @@
 #include "./value.hpp"
 #include "./types/qat_type.hpp"
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 Value::Value(IR::QatType *_type, bool _isVariable, Kind _kind)
     : type(_type), variable(_isVariable), kind(_kind) {}
@@ -21,5 +20,4 @@ bool Value::isVariable() const { return variable; }
 
 Kind Value::getKind() const { return kind; }
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR

@@ -1,7 +1,6 @@
 #include "./member_index_access.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 IR::Value *MemberIndexAccess::emit(IR::Context *ctx) {
   // TODO - Implement this
@@ -22,8 +21,7 @@ nuo::Json MemberIndexAccess::toJson() const {
       ._("nodeType", "memberIndexAccess")
       ._("instance", instance->toJson())
       ._("index", index->toJson())
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

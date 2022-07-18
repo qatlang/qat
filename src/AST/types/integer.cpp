@@ -5,7 +5,7 @@
 namespace qat::AST {
 
 IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
-                         const utils::FilePlacement _filePlacement)
+                         const utils::FileRange _filePlacement)
     : bitWidth(_bitWidth), QatType(_variable, _filePlacement) {}
 
 IR::QatType *IntegerType::emit(qat::IR::Context *ctx) {

@@ -1,8 +1,7 @@
 #include "./bring_entities.hpp"
 #include <vector>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 BroughtGroup::BroughtGroup(StringLiteral *_parent)
     : parent(_parent), members({}) {}
@@ -29,7 +28,7 @@ nuo::Json BroughtGroup::toJson() const {
 
 BringEntities::BringEntities(std::vector<BroughtGroup *> _entities,
                              utils::VisibilityInfo _visibility,
-                             utils::FilePlacement _filePlacement)
+                             utils::FileRange _filePlacement)
     : entities(_entities), visibility(_visibility), Node(_filePlacement) {}
 
 IR::Value *BringEntities::emit(IR::Context *ctx) {
@@ -69,8 +68,7 @@ nuo::Json BringEntities::toJson() const {
       ._("nodeType", "bringEntities")
       ._("entities", ents)
       ._("visibility", visibility)
-      ._("filePlacement", file_placement);
+      ._("filePlacement", fileRange);
 }
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST

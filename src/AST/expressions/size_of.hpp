@@ -3,8 +3,7 @@
 
 #include "../expression.hpp"
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
 
 /**
  *  SizeOf is used to find the size of the type of the provided Expression
@@ -26,7 +25,7 @@ public:
    * @param _expression Expression to be used to find the size of the type
    * @param _filePlacement
    */
-  SizeOf(Expression *_expression, utils::FilePlacement _filePlacement);
+  SizeOf(Expression *_expression, utils::FileRange _filePlacement);
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -37,7 +36,6 @@ public:
   NodeType nodeType() const { return NodeType::sizeOf; }
 };
 
-} // namespace AST
-} // namespace qat
+} // namespace qat::AST
 
 #endif

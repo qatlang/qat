@@ -9,8 +9,8 @@
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 
-namespace qat {
-namespace AST {
+namespace qat::AST {
+
 class FunctionPrototype : public Node {
 protected:
   friend class FunctionDefinition;
@@ -28,7 +28,7 @@ public:
                     bool _isVariadic, QatType *_returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType,
                     std::string _callingConv, utils::VisibilityInfo _visibility,
-                    utils::FilePlacement _filePlacement)
+                    utils::FileRange _filePlacement)
       : name(_name), isAsync(_is_async), arguments(_arguments),
         isVariadic(_isVariadic), returnType(_returnType),
         linkageType(_linkageType), callingConv(_callingConv),
@@ -38,7 +38,7 @@ public:
       : name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments),
         isVariadic(ref.isVariadic), returnType(ref.returnType),
         linkageType(ref.linkageType), callingConv(ref.callingConv),
-        visibility(ref.visibility), Node(ref.file_placement) {}
+        visibility(ref.visibility), Node(ref.fileRange) {}
 
   IR::Value *emit(IR::Context *ctx);
 
@@ -48,7 +48,7 @@ public:
 
   NodeType nodeType() const { return NodeType::functionPrototype; }
 };
-} // namespace AST
-} // namespace qat
+
+} // namespace qat::AST
 
 #endif

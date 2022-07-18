@@ -7,8 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace qat {
-namespace IR {
+namespace qat::IR {
 
 class ArgumentType {
 private:
@@ -61,7 +60,6 @@ public:
   std::string toString() const;
 };
 
-} // namespace IR
-} // namespace qat
+} // namespace qat::IR
 
 #endif

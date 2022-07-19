@@ -30,7 +30,7 @@ void Config::destroy() {
   }
 }
 
-bool Config::isCompile() const { return !paths.empty(); }
+bool Config::isCompile() const { return (compile && !paths.empty()); }
 
 bool Config::hasInstance() { return Config::instance != nullptr; }
 
@@ -38,7 +38,7 @@ bool Config::shouldExit() const { return exitAfter; }
 
 Config *Config::get() { return Config::instance; }
 
-CompileTarget Config::getCompileTarget(std::string val) {
+CompileTarget Config::parseCompileTarget(std::string val) {
   if (val == "cpp") {
     return CompileTarget::cpp;
   } else if (val == "json") {
@@ -69,11 +69,12 @@ Config::Config(u64 count, const char **args) {
       buildCommit = res;
     }
 
-    std::string command = args[1];
-    int proceed = 2;
+    std::string command(args[1]);
+    unsigned proceed = 2;
     if (command == "run") {
       // TODO - Implement this after implementing Compile and Run
-    } else if (command == "build") {
+    } else if (command == "compile") {
+      compile = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
         return;
@@ -103,6 +104,7 @@ Config::Config(u64 count, const char **args) {
       }
       exitAfter = true;
     } else if (command == "export-ast") {
+      export_ast = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
       }
@@ -111,12 +113,12 @@ Config::Config(u64 count, const char **args) {
       std::string arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
       } else if (std::string(arg).find("-t=") == 0) {
-        target = getCompileTarget(std::string(arg).substr(3));
+        target = parseCompileTarget(std::string(arg).substr(3));
       } else if (std::string(arg).find("--target=") == 0) {
-        target = getCompileTarget(std::string(arg).substr(9));
+        target = parseCompileTarget(std::string(arg).substr(9));
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
-          target = getCompileTarget(args[i + 1]);
+          target = parseCompileTarget(args[i + 1]);
         } else {
           throw_error("Expected a target after " + arg + " flag", invokePath);
         }
@@ -142,7 +144,6 @@ Config::Config(u64 count, const char **args) {
         }
       } else if (arg == "--report") {
         showReport = true;
-        // TODO - Set parser report option here once that is implemented
       } else if (arg == "--emit-tokens") {
         lexer_emit_tokens = true;
       } else if (arg == "--save-docs") {
@@ -171,7 +172,11 @@ bool Config::shouldSaveDocs() const { return saveDocs; }
 
 bool Config::hasOutputPath() const { return outputPath.has_value(); }
 
+fs::path Config::getOutputPath() const { return outputPath.value(); }
+
 bool Config::shouldShowReport() const { return showReport; }
+
+bool Config::shouldExportAST() const { return export_ast; }
 
 bool Config::shouldLexerEmitTokens() const { return lexer_emit_tokens; }
 

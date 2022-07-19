@@ -15,25 +15,16 @@ namespace fs = std::filesystem;
 
 enum class CompileTarget { normal, cpp, json };
 
-/**
- *  CLI Configuration -
- *
- * This is a singleton and the instance is dynamically allocated. It is freed
- * automatically when the program exits, but can also be freed by calling
- * Config::destroy()
- *
- */
+// CLI Configuration -
+//
+// This is a singleton and the instance is dynamically allocated. It is freed
+// automatically when the program exits, but can also be freed by calling
+// Config::destroy()
 class Config {
-  // TODO - Add support for output paths
 private:
-  /**
-   *  Construct a new Config object
-   * This expects the number of arguments passed to the compiler and the
-   * arguments, and it initialises the members and sets corresponding values
-   *
-   * @param count
-   * @param args
-   */
+  // Construct a new Config object
+  // This expects the number of arguments passed to the compiler and the
+  // arguments, and it initialises the members and sets corresponding values
   Config(u64 count, const char **args);
 
   // The first CLI argument. Indicates the path specified to invoke the compiler
@@ -72,6 +63,9 @@ private:
   // Whether AST should be exported
   bool export_ast;
 
+  // Whether user has chosen to compile
+  bool compile;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -98,8 +92,8 @@ public:
    */
   static Config *get();
 
-  // Get the CompileTarget from the argument
-  static CompileTarget getCompileTarget(std::string val);
+  // Parse the CompileTarget from the argument
+  static CompileTarget parseCompileTarget(std::string val);
 
   /**
    *  Whether there is an instance of Config that has been initialised
@@ -144,8 +138,13 @@ public:
   // Whether an output path is provided to the compiler
   bool hasOutputPath() const;
 
+  // Get the output path provided to the compiler
+  fs::path getOutputPath() const;
+
+  // Whether compiler outputs should be verbose
   bool isVerbose() const;
 
+  // Whether the AST should be exported
   bool shouldExportAST() const;
 
   // Get the compile-target provided by the user

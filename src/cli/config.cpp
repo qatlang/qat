@@ -1,4 +1,5 @@
 #include "./config.hpp"
+#include "../show.hpp"
 #include "error.hpp"
 #include <filesystem>
 #include <vector>
@@ -127,20 +128,26 @@ Config::Config(u64 count, const char **args) {
           std::string out(args[i + 1]);
           if (fs::exists(out)) {
             if (fs::is_directory(out)) {
-              paths.push_back(fs::path(out));
+              outputPath = out;
             } else {
               std::cout
-                  << "Provided output path " << out
+                  << "Provided output path " << HLIGHT(yellow, out)
                   << " is not a directory! Please provide path to a directory"
                   << std::endl;
               exitAfter = true;
             }
           } else {
-            std::cout << "Provided output path " << out
+            std::cout << "Provided output path " << HLIGHT(yellow, out)
                       << " does not exist! Please provide path to a directory"
                       << std::endl;
             exitAfter = true;
           }
+          i++;
+        } else {
+          std::cout << "Output path is not provided! Please provide path to a "
+                       "directory for output"
+                    << std::endl;
+          exitAfter = true;
         }
       } else if (arg == "--report") {
         showReport = true;

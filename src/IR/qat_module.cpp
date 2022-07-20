@@ -1,24 +1,28 @@
 #include "./qat_module.hpp"
+#include "../ast/node.hpp"
+#include "../cli/config.hpp"
 #include "../show.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "value.hpp"
+#include <filesystem>
+#include <fstream>
 
 namespace qat::IR {
 
-QatModule::QatModule(std::string _name, fs::path _filepath, ModuleType _type,
-                     utils::VisibilityInfo _visibility)
-    : parent(nullptr), name(_name), moduleType(_type),
-      filePath(_filepath.string()), visibility(_visibility), active(nullptr) {}
+QatModule::QatModule(std::string _name, fs::path _filepath, fs::path _basePath,
+                     ModuleType _type, utils::VisibilityInfo _visibility)
+    : parent(nullptr), name(_name), moduleType(_type), filePath(_filepath),
+      basePath(_basePath), visibility(_visibility), active(nullptr) {}
 
 QatModule::~QatModule() {}
 
 QatModule *QatModule::Create(std::string name, fs::path filepath,
-                             ModuleType type,
+                             fs::path basePath, ModuleType type,
                              utils::VisibilityInfo visib_info) {
-  return new QatModule(name, filepath, type, visib_info);
+  return new QatModule(name, filepath, basePath, type, visib_info);
 }
 
 const utils::VisibilityInfo &QatModule::getVisibility() const {
@@ -90,12 +94,29 @@ Function *QatModule::createFunction(const std::string name, QatType *returnType,
   return fn;
 }
 
-QatModule *QatModule::CreateSubmodule(QatModule *parent, std::string filename,
-                                      std::string name, ModuleType type,
+QatModule *QatModule::CreateSubmodule(QatModule *parent, fs::path filepath,
+                                      fs::path basePath, std::string name,
+                                      ModuleType type,
                                       utils::VisibilityInfo visib_info) {
-  auto sub = new QatModule(name, filename, type, visib_info);
-  sub->parent = parent;
-  parent->submodules.push_back(sub);
+  auto sub = new QatModule(name, filepath, basePath, type, visib_info);
+  if (parent) {
+    sub->parent = parent;
+    parent->submodules.push_back(sub);
+  }
+  return sub;
+}
+
+QatModule *QatModule::CreateFile(QatModule *parent, fs::path filepath,
+                                 fs::path basePath, std::string name,
+                                 std::vector<ast::Node *> nodes,
+                                 utils::VisibilityInfo visibility) {
+  auto sub =
+      new QatModule(name, filepath, basePath, ModuleType::file, visibility);
+  if (parent) {
+    sub->parent = parent;
+    parent->submodules.push_back(sub);
+  }
+  sub->nodes = std::move(nodes);
   return sub;
 }
 
@@ -127,7 +148,7 @@ bool QatModule::isSubmodule() const { return parent != nullptr; }
 void QatModule::addSubmodule(std::string name, std::string filename,
                              ModuleType type,
                              utils::VisibilityInfo visib_info) {
-  active = CreateSubmodule(active, name, filename, type, visib_info);
+  active = CreateSubmodule(active, name, filename, basePath, type, visib_info);
 }
 
 void QatModule::closeSubmodule() { active = nullptr; }
@@ -528,6 +549,44 @@ QatModule::getGlobalEntity(const std::string name,
     }
   }
   return nullptr;
+}
+
+void QatModule::emitNodes(IR::Context *ctx) const {
+  if (!isEmitted) {
+    for (auto node : nodes) {
+      node->emit(ctx);
+    }
+  }
+}
+
+void QatModule::exportJsonFromAST() const {
+  if (moduleType == ModuleType::file) {
+    auto result = nuo::Json();
+    std::vector<nuo::JsonValue> contents;
+    for (auto node : nodes) {
+      contents.push_back(node->toJson());
+    }
+    result["contents"] = contents;
+    std::fstream jsonStream;
+    auto config = cli::Config::get();
+    auto fPath = filePath;
+    auto out = fPath.replace_extension(".json");
+    if (config->hasOutputPath()) {
+      out = (config->getOutputPath() /
+             filePath.lexically_relative(basePath).remove_filename());
+      fs::create_directories(out);
+      out = out / fPath.filename().string();
+    }
+    jsonStream.open(out, std::ios_base::out);
+    if (jsonStream.is_open()) {
+      jsonStream << result;
+      jsonStream.close();
+    } else {
+      std::cout << "File could not be opened for writing. Outputting the "
+                   "JSON representation of AST...\n\n";
+      std::cout << result << "\n";
+    }
+  }
 }
 
 } // namespace qat::IR

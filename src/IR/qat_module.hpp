@@ -13,14 +13,18 @@
 #include "./types/void.hpp"
 #include <vector>
 
+namespace qat::ast {
+class Node;
+}
+
 namespace qat::IR {
 
 enum class ModuleType { lib, box, file, folder };
 
 class QatModule {
 public:
-  QatModule(std::string _name, fs::path _filepath, ModuleType _type,
-            utils::VisibilityInfo _visibility);
+  QatModule(std::string _name, fs::path _filePath, fs::path _basePath,
+            ModuleType _type, utils::VisibilityInfo _visibility);
 
 private:
   // Name of the module. This will contribute to the names of its
@@ -31,7 +35,10 @@ private:
   ModuleType moduleType;
 
   // Path of the file of the module
-  std::string filePath;
+  fs::path filePath;
+
+  // The base path
+  fs::path basePath;
 
   // Visibility of the module
   utils::VisibilityInfo visibility;
@@ -58,10 +65,6 @@ private:
 
   std::vector<Brought<GlobalEntity>> broughtGlobalEntities;
 
-  static QatModule *CreateSubmodule(QatModule *parent, std::string _filepath,
-                                    std::string name, ModuleType type,
-                                    utils::VisibilityInfo visib_info);
-
   bool shouldPrefixName() const;
 
   void addSubmodule(std::string name, std::string _filename, ModuleType type,
@@ -69,11 +72,26 @@ private:
 
   void closeSubmodule();
 
+  std::vector<ast::Node *> nodes;
+
+  bool isEmitted = false;
+
 public:
   ~QatModule();
 
-  static QatModule *Create(std::string name, fs::path filepath, ModuleType type,
+  static QatModule *Create(std::string name, fs::path filepath,
+                           fs::path basePath, ModuleType type,
                            utils::VisibilityInfo visib_info);
+
+  static QatModule *CreateSubmodule(QatModule *parent, fs::path _filepath,
+                                    fs::path basePath, std::string name,
+                                    ModuleType type,
+                                    utils::VisibilityInfo visib_info);
+
+  static QatModule *CreateFile(QatModule *parent, fs::path _filepath,
+                               fs::path basePath, std::string name,
+                               std::vector<ast::Node *>,
+                               utils::VisibilityInfo visib_info);
 
   std::string getFullName() const;
 
@@ -203,6 +221,10 @@ public:
 
   llvm::GlobalVariable *get_global_variable(std::string name,
                                             utils::RequesterInfo &req_info);
+
+  void emitNodes(IR::Context *ctx) const;
+
+  void exportJsonFromAST() const;
 
   void throw_error(std::string message, utils::FileRange fileRange);
 };

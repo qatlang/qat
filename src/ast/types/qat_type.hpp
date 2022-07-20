@@ -37,9 +37,6 @@ public:
 
   bool isConstant() const { return !variable; }
 
-  // This is the ctx function for C++
-  virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {}
-
   // This generates JSON to represent the type
   virtual nuo::Json toJson() const {}
 

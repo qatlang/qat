@@ -8,16 +8,6 @@ IR::Value *Box::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void Box::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  file += ("namespace " + name + " ");
-  file.addEnclosedComment("box");
-  file += " {\n";
-  for (auto mem : members) {
-    mem->emitCPP(file, isHeader);
-  }
-  file += "} // namespace " + name + " (box)\n";
-}
-
 nuo::Json Box::toJson() const {
   std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {

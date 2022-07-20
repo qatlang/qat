@@ -26,19 +26,16 @@ public:
   explicit Node(utils::FileRange _fileRange)
       : fileRange(std::move(_fileRange)) {}
 
-  virtual ~Node() { destroy(); };
+  virtual ~Node() { destroy(); }
 
   // This is the code emitter function that handles Qat IR
-  virtual IR::Value *emit(IR::Context *ctx){};
+  virtual IR::Value *emit(IR::Context *ctx) {}
 
   // This is the emitter function that handles the generation of JSON
-  virtual nuo::Json toJson() const {};
-
-  // This is the emitter function for C++
-  virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {}
+  virtual nuo::Json toJson() const {}
 
   // Type of the node represented by this AST member
-  virtual NodeType nodeType() const {};
+  virtual NodeType nodeType() const {}
 
   /**
    *  A range present in a file that represents the fileRange spanned by

@@ -13,23 +13,6 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void LocalDeclaration::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    if (variability) {
-      file += "const ";
-    }
-    if (type) {
-      type->emitCPP(file, isHeader);
-    } else {
-      file += "auto ";
-    }
-    file += name;
-    file += " = ";
-    value->emitCPP(file, isHeader);
-    file += ";\n";
-  }
-}
-
 void LocalDeclaration::set_origin_block(llvm::LLVMContext &ctx,
                                         llvm::AllocaInst *alloca,
                                         llvm::BasicBlock *bb) {

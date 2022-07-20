@@ -10,20 +10,6 @@ IR::Value *TupleValue::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void TupleValue::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file.addInclude("<tuple>");
-    file += "std::tuple(";
-    for (std::size_t i = 0; i < members.size(); i++) {
-      members.at(i)->emitCPP(file, isHeader);
-      if (i != (members.size() - 1)) {
-        file += ", ";
-      }
-    }
-    file += ") ";
-  }
-}
-
 nuo::Json TupleValue::toJson() const {
   std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {

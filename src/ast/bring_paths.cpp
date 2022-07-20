@@ -29,33 +29,6 @@ IR::Value *BringPaths::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-void BringPaths::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (isHeader) {
-    auto base = fileRange.file;
-    for (auto pathVal : paths) {
-      auto path = pathVal.get_value();
-      if (fs::is_regular_file(path) &&
-          (fs::path(pathVal.get_value()).extension().string() == ".qat")) {
-        file.addInclude(fs::path(path)
-                            .lexically_relative(base)
-                            .replace_extension(".hpp")
-                            .string());
-        file.addSingleLineComment(
-            "Brought file " + fs::path(path).lexically_relative(base).string());
-      } else if (fs::is_directory(path)) {
-        file.addSingleLineComment("Brought folder " + path);
-        for (auto mem : fs::path(path)) {
-          if (fs::is_regular_file(mem) && (mem.extension() == ".qat")) {
-            file.addInclude(mem.lexically_relative(base)
-                                .replace_extension(".hpp")
-                                .string());
-          }
-        }
-      }
-    }
-  }
-}
-
 nuo::Json BringPaths::toJson() const {
   std::vector<nuo::JsonValue> pths;
   for (auto path : paths) {

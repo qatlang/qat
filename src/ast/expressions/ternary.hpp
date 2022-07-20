@@ -50,8 +50,6 @@ public:
 
   IR::Value *emit(IR::Context *ctx);
 
-  void emitCPP(backend::cpp::File &file, bool isHeader) const;
-
   nuo::Json toJson() const;
 
   NodeType nodeType() { return NodeType::ternaryExpression; }

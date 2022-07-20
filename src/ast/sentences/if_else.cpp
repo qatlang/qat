@@ -17,21 +17,6 @@ IR::Value *IfElse::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void IfElse::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "if (";
-    condition->emitCPP(file, isHeader);
-    file += ") ";
-    if_block->emitCPP(file, isHeader);
-    if (else_block.has_value()) {
-      file += " else ";
-      else_block.value()->emitCPP(file, isHeader);
-    }
-    file.setOpenBlock(true);
-    merge_block->emitCPP(file, isHeader);
-  }
-}
-
 nuo::Json IfElse::toJson() const {
   return nuo::Json()
       ._("nodeType", "ifElse")

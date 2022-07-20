@@ -13,18 +13,6 @@ IR::Value *TernaryExpression::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void TernaryExpression::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "((";
-    condition->emitCPP(file, isHeader);
-    file += ") ? (";
-    if_expr->emitCPP(file, isHeader);
-    file += ") : (";
-    else_expr->emitCPP(file, isHeader);
-    file += ")) ";
-  }
-}
-
 nuo::Json TernaryExpression::toJson() const {
   return nuo::Json()
       ._("nodeType", "ternaryExpression")

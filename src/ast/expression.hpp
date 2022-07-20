@@ -32,13 +32,11 @@ public:
 
   bool isExpectedKind(ExpressionKind _kind);
 
-  virtual IR::Value *emit(IR::Context *ctx){};
+  virtual IR::Value *emit(IR::Context *ctx) {}
 
-  virtual void emitCPP(backend::cpp::File &file, bool isHeader) const {};
+  virtual NodeType nodeType() const {}
 
-  virtual NodeType nodeType() const {};
-
-  virtual nuo::Json toJson() const {};
+  virtual nuo::Json toJson() const {}
 };
 
 } // namespace qat::ast

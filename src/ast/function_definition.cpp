@@ -12,19 +12,6 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void FunctionDefinition::emitCPP(backend::cpp::File &file,
-                                 bool isHeader) const {
-  prototype->emitCPP(file, isHeader);
-  if (!isHeader) {
-    file += " {\n";
-    for (auto snt : sentences) {
-      file += "  ";
-      snt->emitCPP(file, isHeader);
-    }
-    file += "\n}\n";
-  }
-}
-
 nuo::Json FunctionDefinition::toJson() const {
   std::vector<nuo::JsonValue> sntcs;
   for (auto sentence : sentences) {

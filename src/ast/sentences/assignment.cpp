@@ -10,13 +10,6 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void Assignment::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  lhs->emitCPP(file, isHeader);
-  file += " = ";
-  value->emitCPP(file, isHeader);
-  file += ";\n";
-}
-
 nuo::Json Assignment::toJson() const {
   return nuo::Json()
       ._("nodeType", "assignment")

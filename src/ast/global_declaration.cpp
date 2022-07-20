@@ -13,22 +13,6 @@ IR::Value *GlobalDeclaration::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void GlobalDeclaration::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (isHeader) {
-    if (type.has_value() ? false : (!isVariable)) {
-      file += "const ";
-    }
-    if (type.has_value()) {
-      type.value()->emitCPP(file, isHeader);
-    } else {
-      file += "auto ";
-    }
-    file += (name + " = ");
-    value->emitCPP(file, isHeader);
-    file += ";\n";
-  }
-}
-
 nuo::Json GlobalDeclaration::toJson() const {
   return nuo::Json()
       ._("nodeType", "globalDeclaration")

@@ -11,12 +11,6 @@ IR::Value *StringLiteral::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void StringLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "\"" + value + "\" ";
-  }
-}
-
 nuo::Json StringLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "stringLiteral")

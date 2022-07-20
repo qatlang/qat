@@ -37,8 +37,6 @@ public:
 
   IR::QatType *emit(IR::Context *ctx);
 
-  void emitCPP(backend::cpp::File &file, bool isHeader) const;
-
   // Get the name of the type
   std::string get_name() const;
 

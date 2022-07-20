@@ -10,14 +10,6 @@ IR::Value *ExpressionSentence::emit(IR::Context *ctx) {
   return expr->emit(ctx);
 }
 
-void ExpressionSentence::emitCPP(backend::cpp::File &file,
-                                 bool isHeader) const {
-  if (!isHeader) {
-    expr->emitCPP(file, isHeader);
-    file += ";\n";
-  }
-}
-
 nuo::Json ExpressionSentence::toJson() const {
   return nuo::Json()
       ._("nodeType", "expressionSentence")

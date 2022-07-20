@@ -210,7 +210,7 @@ public:
 
   void defineLLVM(llvmHelper helper) const override;
 
-  void defineCPP(backend::cpp::File &file) const override;
+  void defineCPP(cpp::File &file) const override;
 
   nuo::Json toJson() const override;
 };

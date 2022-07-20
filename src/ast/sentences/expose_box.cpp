@@ -36,20 +36,6 @@ IR::Value *ExposeBoxes::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-void ExposeBoxes::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "{\n";
-    for (auto box : boxes) {
-      // TODO - Resolve relative named boxes
-      file += "   using namespace " + box + ";\n";
-    }
-    for (auto snt : sentences) {
-      snt->emitCPP(file, isHeader);
-    }
-    file += "}\n";
-  }
-}
-
 nuo::Json ExposeBoxes::toJson() const {
   std::vector<nuo::JsonValue> boxs;
   std::vector<nuo::JsonValue> sntcs;

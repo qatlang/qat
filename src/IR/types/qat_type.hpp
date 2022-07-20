@@ -32,7 +32,7 @@ public:
 
   virtual llvm::Type *emitLLVM(llvmHelper helper) const {}
 
-  virtual void emitCPP(backend::cpp::File &file) const {}
+  virtual void emitCPP(cpp::File &file) const {}
 
   // Converters
 

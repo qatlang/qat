@@ -150,7 +150,7 @@ void CoreType::defineLLVM(llvmHelper helper) const {
   // TODO - Implement this
 }
 
-void CoreType::defineCPP(backend::cpp::File &file) const {
+void CoreType::defineCPP(cpp::File &file) const {
   // TODO - Implement this
 }
 

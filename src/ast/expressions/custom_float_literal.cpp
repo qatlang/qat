@@ -13,19 +13,6 @@ IR::Value *CustomFloatLiteral::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void CustomFloatLiteral::emitCPP(backend::cpp::File &file,
-                                 bool isHeader) const {
-  std::string val = "((";
-  if (kind == "f32" || kind == "fhalf" || kind == "fbrain") {
-    val += "float";
-  } else if (kind == "f64") {
-    val += "double";
-  } else {
-    val += "long double";
-  }
-  val += ")" + value + ")";
-}
-
 nuo::Json CustomFloatLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "customFloatLiteral")

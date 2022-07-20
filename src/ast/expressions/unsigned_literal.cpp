@@ -13,12 +13,6 @@ IR::Value *UnsignedLiteral::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void UnsignedLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += value + "u";
-  }
-}
-
 nuo::Json UnsignedLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "unsignedLiteral")

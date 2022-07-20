@@ -20,21 +20,6 @@ IR::QatType *TupleType::emit(IR::Context *ctx) {
   return new IR::TupleType(irTypes, isPacked);
 }
 
-void TupleType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  file.addInclude("<tuple>");
-  if (isConstant()) {
-    file += "const ";
-  }
-  file += "std::tuple<";
-  for (std::size_t i = 0; i < types.size(); i++) {
-    types.at(i)->emitCPP(file, isHeader);
-    if (i != (types.size() - 1)) {
-      file += ", ";
-    }
-  }
-  file += "> ";
-}
-
 TypeKind TupleType::typeKind() { return TypeKind::tuple; }
 
 nuo::Json TupleType::toJson() const {

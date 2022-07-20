@@ -12,14 +12,6 @@ IR::QatType *PointerType::emit(IR::Context *ctx) {
   return new IR::PointerType(type->emit(ctx));
 }
 
-void PointerType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  type->emitCPP(file, isHeader);
-  if (isConstant()) {
-    file += " const";
-  }
-  file += "* ";
-}
-
 TypeKind PointerType::typeKind() { return TypeKind::pointer; }
 
 nuo::Json PointerType::toJson() const {

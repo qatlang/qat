@@ -11,12 +11,6 @@ IR::Value *Self::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void Self::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "this";
-  }
-}
-
 nuo::Json Self::toJson() const {
   return nuo::Json()._("nodeType", "selfExpression")._("fileRange", fileRange);
 }

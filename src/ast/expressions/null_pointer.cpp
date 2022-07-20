@@ -15,12 +15,6 @@ IR::Value *NullPointer::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void NullPointer::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "nullptr";
-  }
-}
-
 nuo::Json NullPointer::toJson() const {
   return nuo::Json()._("nodeType", "nullPointer");
 }

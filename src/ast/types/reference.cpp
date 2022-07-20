@@ -11,14 +11,6 @@ IR::QatType *ReferenceType::emit(IR::Context *ctx) {
   return new IR::ReferenceType(type->emit(ctx));
 }
 
-void ReferenceType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  type->emitCPP(file, isHeader);
-  if (isConstant()) {
-    file += " const ";
-  }
-  file += "& ";
-}
-
 TypeKind ReferenceType::typeKind() { return TypeKind::reference; }
 
 nuo::Json ReferenceType::toJson() const {

@@ -26,8 +26,6 @@ public:
 
   IR::Value *emit(IR::Context *ctx);
 
-  void emitCPP(backend::cpp::File &file, bool isHeader) const;
-
   nuo::Json toJson();
 
   NodeType nodeType() const { return NodeType::lib; }

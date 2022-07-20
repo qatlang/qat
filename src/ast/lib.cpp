@@ -23,16 +23,6 @@ IR::Value *Lib::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-void Lib::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  file += ("namespace " + name + " ");
-  file.addEnclosedComment("lib");
-  file += " {\n";
-  for (auto mem : members) {
-    mem->emitCPP(file, isHeader);
-  }
-  file += "\n} // namespace " + name + " (lib)\n";
-}
-
 nuo::Json Lib::toJson() {
   std::vector<nuo::JsonValue> mems;
   for (auto mem : members) {

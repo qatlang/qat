@@ -12,12 +12,6 @@ IR::Value *FloatLiteral::emit(IR::Context *ctx) {
   //
 }
 
-void FloatLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += (value + " ");
-  }
-}
-
 nuo::Json FloatLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "floatLiteral")

@@ -46,16 +46,6 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   }
 }
 
-void DefineCoreType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (isHeader) {
-    file += "\nclass " + name + " {";
-    // FIXME
-    file += "};\n";
-  } else {
-    // FIXME
-  }
-}
-
 nuo::Json DefineCoreType::toJson() const {
   std::vector<nuo::JsonValue> mems;
   std::vector<nuo::JsonValue> staticMems;

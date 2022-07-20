@@ -28,18 +28,4 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void LoopNTimes::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    auto loopID = "loop_" + utils::unique_id();
-    file.addLoopID(loopID);
-    file += ("for (std::size " + loopID + " = 0; " + loopID + " < (");
-    count->emitCPP(file, isHeader);
-    file += ("); ++" + loopID + ") ");
-    block->emitCPP(file, isHeader);
-    file.popLastLoopIndex();
-    file.setOpenBlock(true);
-    after->emitCPP(file, isHeader);
-  }
-}
-
 } // namespace qat::ast

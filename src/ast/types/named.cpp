@@ -17,13 +17,6 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
   // return structType;
 }
 
-void NamedType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (isConstant()) {
-    file += "const ";
-  }
-  file += (name + " ");
-}
-
 std::string NamedType::get_name() const { return name; }
 
 TypeKind NamedType::typeKind() { return TypeKind::Float; }

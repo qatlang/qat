@@ -11,15 +11,6 @@ IR::Value *LoopWhile::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void LoopWhile::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  file += "while (";
-  condition->emitCPP(file, isHeader);
-  file += ")";
-  block->emitCPP(file, isHeader);
-  file.setOpenBlock(true);
-  after->emitCPP(file, isHeader);
-}
-
 nuo::Json LoopWhile::toJson() const {
   return nuo::Json()
       ._("nodeType", "loopWhile")

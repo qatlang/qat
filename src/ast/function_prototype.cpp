@@ -45,31 +45,6 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   return function;
 }
 
-void FunctionPrototype::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if ((name == "main") && (arguments.size() == 2)) {
-    file += "int main(int " + arguments.at(0)->getName() + ", char** " +
-            arguments.at(1)->getName() + ")";
-  } else {
-    returnType->emitCPP(file, isHeader);
-    file += (" " + name + "(");
-    for (std::size_t i = 0; i < arguments.size(); i++) {
-      if (arguments.at(i)->getType()) {
-        arguments.at(i)->getType()->emitCPP(file, isHeader);
-      } else {
-        file += "auto ";
-      }
-      file += (" " + arguments.at(i)->getName());
-      if (i != (arguments.size() - 1)) {
-        file += ", ";
-      }
-    }
-    file += ")";
-  }
-  if (isHeader) {
-    file += ";\n";
-  }
-}
-
 nuo::Json FunctionPrototype::toJson() const {
   std::vector<nuo::JsonValue> args;
   for (auto arg : arguments) {

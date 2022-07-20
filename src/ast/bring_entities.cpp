@@ -36,29 +36,6 @@ IR::Value *BringEntities::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-void BringEntities::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (isHeader) {
-    for (auto bGroup : entities) {
-      if (bGroup->is_all_brought()) {
-        file.addSingleLineComment("Brought " +
-                                  bGroup->get_parent()->get_value());
-      } else {
-        std::string val =
-            "Brought members " + bGroup->get_parent()->get_value() + " { ";
-        auto mems = bGroup->get_members();
-        for (std::size_t i = 0; i < mems.size(); i++) {
-          val += mems.at(i)->get_value();
-          if (i != (mems.size() - 1)) {
-            val += ", ";
-          }
-        }
-        val += " } ";
-        file.addSingleLineComment(val);
-      }
-    }
-  }
-}
-
 nuo::Json BringEntities::toJson() const {
   std::vector<nuo::JsonValue> ents;
   for (auto ent : entities) {

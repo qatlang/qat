@@ -12,14 +12,6 @@ IR::QatType *ArrayType::emit(IR::Context *ctx) {
   return new IR::ArrayType(element_type->emit(ctx), length);
 }
 
-void ArrayType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  element_type->emitCPP(file, isHeader);
-  if (isConstant()) {
-    file += " const";
-  }
-  file += "* ";
-}
-
 TypeKind ArrayType::typeKind() { return TypeKind::array; }
 
 nuo::Json ArrayType::toJson() const {

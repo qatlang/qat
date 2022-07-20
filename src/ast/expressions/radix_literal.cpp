@@ -26,22 +26,6 @@ IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void RadixLiteral::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    std::string val;
-    if (radix == 2) {
-      val = "0b" + value;
-    } else if (radix == 8) {
-      val = "0" + value;
-    } else if (radix == 16) {
-      val = "0x" + value;
-    } else {
-      val = value;
-    }
-    file += (val + " ");
-  }
-}
-
 nuo::Json RadixLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "radixLiteral")

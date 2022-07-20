@@ -9,16 +9,6 @@ IR::Value *GiveSentence::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-void GiveSentence::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  if (!isHeader) {
-    file += "return ";
-    if (give_expr.has_value()) {
-      give_expr.value()->emitCPP(file, isHeader);
-    }
-    file += ";";
-  }
-}
-
 nuo::Json GiveSentence::toJson() const {
   return nuo::Json()
       ._("nodeType", "giveSentence")

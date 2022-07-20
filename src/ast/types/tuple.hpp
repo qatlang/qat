@@ -26,8 +26,6 @@ public:
 
   IR::QatType *emit(IR::Context *ctx);
 
-  void emitCPP(backend::cpp::File &file, bool isHeader) const;
-
   TypeKind typeKind();
 
   nuo::Json toJson() const;

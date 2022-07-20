@@ -40,7 +40,7 @@ public:
 
   virtual llvm::Value *emitLLVM(llvmHelper helper) const {}
 
-  virtual void emitCPP(backend::cpp::File &file) const {}
+  virtual void emitCPP(cpp::File &file) const {}
 
   virtual nuo::Json toJson() const {}
 };

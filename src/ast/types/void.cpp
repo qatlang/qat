@@ -8,10 +8,6 @@ VoidType::VoidType(const bool _variable, const utils::FileRange _fileRange)
 
 IR::QatType *VoidType::emit(IR::Context *ctx) { return new IR::VoidType(); }
 
-void VoidType::emitCPP(backend::cpp::File &file, bool isHeader) const {
-  file += "void ";
-}
-
 TypeKind VoidType::typeKind() { return TypeKind::Void; }
 
 nuo::Json VoidType::toJson() const {

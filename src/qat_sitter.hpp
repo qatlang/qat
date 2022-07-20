@@ -19,11 +19,7 @@ namespace fs = std::filesystem;
 
 class QatSitter {
 private:
-  // Top level modules found.
-  std::vector<IR::QatModule *> top_modules;
-
-  // All modules found during the compilation phase
-  std::vector<IR::QatModule *> modules;
+  std::vector<IR::QatModule *> fileEntities;
 
   // The Context instance used by this class to control IR generation
   IR::Context *Context;
@@ -40,7 +36,7 @@ public:
   // Initialise QatSitter
   void init();
 
-  std::vector<IR::QatModule *> handle_top_modules(fs::path path);
+  void handlePath(fs::path path);
 
   ~QatSitter();
 };

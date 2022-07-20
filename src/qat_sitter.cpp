@@ -1,6 +1,10 @@
 #include "./qat_sitter.hpp"
 #include "./show.hpp"
+#include "IR/qat_module.hpp"
+#include "cli/config.hpp"
+#include "utils/visibility.hpp"
 #include <filesystem>
+#include <nuo/json.hpp>
 
 namespace qat {
 
@@ -10,133 +14,86 @@ QatSitter::QatSitter()
 
 void QatSitter::init() {
   auto config = cli::Config::get();
-  if (config->isCompile()) {
-    if (config->getPaths().size() == 1) {
-      auto path = config->getPaths().at(0);
-      if (fs::is_regular_file(path)) {
-        SHOW("Lexer Setup")
-        Lexer->changeFile(path.string());
-        Lexer->analyse();
-        SHOW("Parser setTokens")
-        Parser->setTokens(Lexer->get_tokens());
-        SHOW("Parsing")
-        auto nodes = Parser->parse();
-        SHOW("Parsing complete")
-        //
-        // {
-        //   // QAT IR
-        //   SHOW("Creating QatModule")
-        //   auto *mod = new IR::QatModule(
-        //       path.filename().string(), fs::absolute(path),
-        //       IR::ModuleType::file, utils::VisibilityInfo::pub());
-        //   SHOW("QatModule created")
-        //   modules.push_back(mod);
-        //   SHOW("Pushed to modules")
-        //   top_modules.push_back(mod);
-        //   SHOW("Pushed to Top modules")
-        //   Context->mod = mod;
-        //   SHOW("QatModule initialised in ctx")
-        //   SHOW("Number of nodes " << nodes.size())
-        //   for (std::size_t i = 0; i < nodes.size(); i++) {
-        //     SHOW("Node at " << (i + 1))
-        //     nodes.at(i)->emit(Context);
-        //     i++;
-        //   }
-        //   SHOW("Module Output")
-        //   return;
-        // }
-
-        // {
-        //   // CPP
-        //   std::string headerFileName =
-        //       path.replace_extension(".hpp").filename().string();
-        //   auto headerFile = backend::cpp::File::Header(
-        //       path.replace_extension(".hpp").string());
-        //   auto sourceFile = backend::cpp::File::Source(
-        //       path.replace_extension(".cpp").string());
-        //   sourceFile.addInclude("./" + headerFileName);
-        //   for (auto node : nodes) {
-        //     node->emitCPP(headerFile, true);
-        //   }
-        //   sourceFile.updateHeaderIncludes(headerFile.getIncludes());
-        //   for (auto node : nodes) {
-        //     node->emitCPP(sourceFile, false);
-        //   }
-        //   headerFile.write();
-        //   sourceFile.write();
-        //   return;
-        // }
-
-        {
-          // JSON
-          std::fstream jsonStream;
-          auto filepath = path.replace_extension(".json").string();
-          jsonStream.open(filepath, std::ios_base::out);
-          if (jsonStream.is_open()) {
-            jsonStream << "{\n\"contents\" : [";
-            for (std::size_t j = 0; j < nodes.size(); j++) {
-              auto nJson = nodes.at(j)->toJson();
-              jsonStream << nJson.toString();
-              if (j != (nodes.size() - 1)) {
-                jsonStream << ",\n";
-              }
-            }
-            jsonStream << "]\n}";
-            jsonStream.close();
-          }
-        }
-      }
+  for (auto path : config->getPaths()) {
+    handlePath(path);
+  }
+  if (config->shouldExportAST()) {
+    for (auto entity : fileEntities) {
+      entity->exportJsonFromAST();
     }
-    // for (auto path : config->get_paths()) {
-    //   auto mods = this->handle_top_modules(path);
-    //   for (auto mod : mods) {
-    //     top_modules.push_back(mod);
-    //   }
-    // }
+  } else if (config->isCompile()) {
+    switch (config->getTarget()) {
+    case cli::CompileTarget::normal: {
+    }
+    case cli::CompileTarget::json: {
+    }
+    case cli::CompileTarget::cpp: {
+    }
+    }
   }
 }
 
-std::vector<IR::QatModule *> QatSitter::handle_top_modules(fs::path path) {
-  std::vector<IR::QatModule *> result;
+void QatSitter::handlePath(fs::path path) {
+  std::function<void(IR::QatModule *, fs::path)> recursiveModuleCreator =
+      [&](IR::QatModule *folder, fs::path path) {
+        for (auto &item : path) {
+          if (fs::is_directory(item)) {
+            if (fs::exists(item / "lib.qat")) {
+              Lexer->changeFile(item / "lib.qat");
+              Lexer->analyse();
+              Parser->setTokens(Lexer->get_tokens());
+              fileEntities.push_back(IR::QatModule::CreateFile(
+                  folder, fs::absolute(item / "lib.qat"), path, "lib.qat",
+                  Parser->parse(), utils::VisibilityInfo::pub()));
+            } else {
+              auto subfolder = IR::QatModule::CreateSubmodule(
+                  folder, item, path, item.filename(), IR::ModuleType::folder,
+                  utils::VisibilityInfo::pub());
+              fileEntities.push_back(subfolder);
+              recursiveModuleCreator(subfolder, item);
+            }
+          } else if (fs::is_regular_file(item)) {
+            Lexer->changeFile(item.string());
+            Lexer->analyse();
+            Parser->setTokens(Lexer->get_tokens());
+            fileEntities.push_back(IR::QatModule::CreateFile(
+                folder, item, path, item.filename().string(), Parser->parse(),
+                utils::VisibilityInfo::pub()));
+          }
+        }
+      };
   if (fs::is_directory(path)) {
     auto libpath = path / "lib.qat";
     if (fs::exists(libpath) && fs::is_regular_file(libpath)) {
-      result.push_back(IR::QatModule::Create("lib.qat", fs::absolute(libpath),
-                                             IR::ModuleType::file,
-                                             utils::VisibilityInfo::pub()));
+      Lexer->changeFile(libpath);
+      Lexer->analyse();
+      Parser->setTokens(Lexer->get_tokens());
+      fileEntities.push_back(IR::QatModule::CreateFile(
+          nullptr, libpath, path, "lib.qat", Parser->parse(),
+          utils::VisibilityInfo::pub()));
     } else {
-      for (auto sub : path) {
-        auto subres = handle_top_modules(sub);
-        for (auto submod : subres) {
-          result.push_back(submod);
-        }
-      }
+      auto subfolder = IR::QatModule::Create(
+          path.filename().string(), path, path.parent_path(),
+          IR::ModuleType::folder, utils::VisibilityInfo::pub());
+      fileEntities.push_back(subfolder);
+      recursiveModuleCreator(subfolder, path);
     }
   } else if (fs::is_regular_file(path)) {
-    auto mod = IR::QatModule::Create(path.string(), fs::absolute(path),
-                                     IR::ModuleType::file,
-                                     utils::VisibilityInfo::pub());
-    modules.push_back(mod);
-    top_modules.push_back(mod);
-
-    Lexer->changeFile(path.string());
+    Lexer->changeFile(path);
     Lexer->analyse();
     Parser->setTokens(Lexer->get_tokens());
-    auto nodes = Parser->parse();
-    Context->mod = mod;
-    for (auto node : nodes) {
-      node->emit(Context);
-    }
+    fileEntities.push_back(IR::QatModule::CreateFile(
+        nullptr, fs::absolute(path), path.parent_path(),
+        path.filename().string(), Parser->parse(),
+        utils::VisibilityInfo::pub()));
   }
-  return result;
 }
 
 QatSitter::~QatSitter() {
-  for (auto mod : modules) {
+  for (auto mod : fileEntities) {
     delete mod;
   }
-  modules.clear();
-  top_modules.clear();
+  fileEntities.clear();
   delete Context;
   Context = nullptr;
   delete Parser;

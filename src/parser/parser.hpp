@@ -1,38 +1,10 @@
 #ifndef QAT_PARSER_PARSER_HPP
 #define QAT_PARSER_PARSER_HPP
 
+#include "../ast/argument.hpp"
 #include "../ast/box.hpp"
 #include "../ast/expression.hpp"
-#include "../ast/expressions/binary_expression.hpp"
-#include "../ast/expressions/custom_float_literal.hpp"
-#include "../ast/expressions/custom_integer_literal.hpp"
-#include "../ast/expressions/entity.hpp"
-#include "../ast/expressions/float_literal.hpp"
-#include "../ast/expressions/function_call.hpp"
-#include "../ast/expressions/integer_literal.hpp"
-#include "../ast/expressions/member_function_call.hpp"
-#include "../ast/expressions/null_pointer.hpp"
-#include "../ast/expressions/string_literal.hpp"
-#include "../ast/expressions/to_conversion.hpp"
-#include "../ast/expressions/tuple_value.hpp"
-#include "../ast/expressions/unsigned_literal.hpp"
-#include "../ast/function_definition.hpp"
-#include "../ast/function_prototype.hpp"
-#include "../ast/node.hpp"
-#include "../ast/sentences/assignment.hpp"
-#include "../ast/sentences/expression_sentence.hpp"
-#include "../ast/sentences/give_sentence.hpp"
-#include "../ast/sentences/local_declaration.hpp"
-#include "../ast/sentences/say_sentence.hpp"
-#include "../ast/types/array.hpp"
-#include "../ast/types/float.hpp"
-#include "../ast/types/integer.hpp"
-#include "../ast/types/named.hpp"
-#include "../ast/types/pointer.hpp"
-#include "../ast/types/qat_type.hpp"
-#include "../ast/types/reference.hpp"
-#include "../ast/types/tuple.hpp"
-#include "../ast/types/unsigned.hpp"
+#include "../ast/sentence.hpp"
 #include "../cli/color.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
@@ -139,7 +111,7 @@ public:
   parseType(ParserContext &prev_ctx, const std::size_t from,
             const std::optional<std::size_t> to);
 
-  // NOTE - Change to accept a range so as for container-like contexts
+  // Top-level parsing function
   std::vector<ast::Node *> parse(ParserContext prevCtx = ParserContext(),
                                  std::size_t from = -1, std::size_t to = -1);
 

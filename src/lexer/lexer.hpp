@@ -28,7 +28,7 @@ private:
    *  Path to the current file
    *
    */
-  std::string filePath;
+  fs::path filePath;
 
   /**
    *  The current file that is being analysed by the lexer.
@@ -160,7 +160,7 @@ public:
    * lexer next
    */
 
-  void changeFile(std::string newFile);
+  void changeFile(fs::path newFile);
 
   /**
    *  Most important part of the Lexer. This emits tokens one at a

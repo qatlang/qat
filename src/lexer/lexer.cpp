@@ -68,7 +68,7 @@ void Lexer::analyse() {
   printStatus();
 }
 
-void Lexer::changeFile(std::string newFilePath) {
+void Lexer::changeFile(fs::path newFilePath) {
   tokens.clear();
   filePath = newFilePath;
   prev_ctx = "";

@@ -7,6 +7,7 @@ add_library(QAT_IR_TYPES
     reference.cpp
     pointer.cpp
     qat_type.cpp
+    sum.cpp
     tuple.cpp
     unsigned.cpp
     void.cpp)

@@ -7,9 +7,15 @@ namespace qat::cpp {
 
 Content::Content() : value() {}
 
-void Content::operator+=(std::string content) { value += content; }
+Content &Content::operator<<(std::string content) {
+  value += content;
+  return *this;
+}
 
-void Content::operator+=(const char *content) { value += content; }
+Content &Content::operator<<(const char *content) {
+  value += content;
+  return *this;
+}
 
 std::string Content::getContent() const { return value; }
 
@@ -43,11 +49,11 @@ Namespace *Namespace::addChild(std::string name) {
 }
 
 void Namespace::addEnclosedComment(const std::string comment) {
-  *this += (" /** " + comment + " */ ");
+  *this << (" /** " + comment + " */ ");
 }
 
 void Namespace::addSingleLineComment(const std::string comment) {
-  *this += ("// " + comment + "\n");
+  *this << ("// " + comment + "\n");
 }
 
 void Namespace::closeChild() { active = nullptr; }

@@ -190,7 +190,8 @@ else()
                 QAT_IR
                 QAT_UTILS
                 QAT_CLI
-                QAT_BACKEND)
+                QAT_BACKEND
+                nuo)
 endif()
 
 if(IS_UNIX)

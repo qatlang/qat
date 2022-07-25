@@ -20,9 +20,9 @@ protected:
 public:
   Content();
 
-  void operator+=(std::string content);
+  Content &operator<<(std::string content);
 
-  void operator+=(const char *content);
+  Content &operator<<(const char *content);
 
   std::string getContent() const;
 };

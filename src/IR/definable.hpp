@@ -10,9 +10,8 @@ namespace qat::IR {
 
 class Definable {
 public:
-  virtual void defineLLVM(llvmHelper helper) const {}
+  virtual void defineLLVM(llvmHelper &helper) const {}
   virtual void defineCPP(cpp::File &file) const {}
-  virtual nuo::Json toJson() const {}
 };
 
 } // namespace qat::IR

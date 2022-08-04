@@ -1,12 +1,12 @@
 add_library(QAT_UTILS
-    box_possibilities.cpp
-    file_range.cpp
-    get_directory_contents.cpp
-    get_parent_names.cpp
-    is_integer.cpp
-    parse_boxes_identifier.cpp
-    random_number.cpp
-    string_to_callingconv.cpp
-    unique_id.cpp
-    version_number.cpp
-    visibility.cpp)
+        box_possibilities.cpp
+        file_range.cpp
+        get_directory_contents.cpp
+        get_parent_names.cpp
+        is_integer.cpp
+        parse_boxes_identifier.cpp
+        random_number.cpp
+        string_to_callingconv.cpp
+        unique_id.cpp
+        version_number.cpp
+        visibility.cpp)

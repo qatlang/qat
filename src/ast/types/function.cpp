@@ -4,12 +4,12 @@ namespace qat::ast {
 
 ArgumentType::ArgumentType(QatType *_type) : type(_type) {}
 
-ArgumentType::ArgumentType(std::string _name, QatType *_type)
+ArgumentType::ArgumentType(String _name, QatType *_type)
     : name(_name), type(_type) {}
 
 bool ArgumentType::hasName() const { return name.has_value(); }
 
-std::string ArgumentType::getName() const { return name.value_or(""); }
+String ArgumentType::getName() const { return name.value_or(""); }
 
 QatType *ArgumentType::getType() { return type; }
 
@@ -20,15 +20,14 @@ nuo::Json ArgumentType::toJson() const {
       ._("name", name.value_or(""));
 }
 
-FunctionType::FunctionType(QatType *_retType,
-                           std::vector<ArgumentType *> _argTypes,
+FunctionType::FunctionType(QatType *_retType, Vec<ArgumentType *> _argTypes,
                            utils::FileRange _fileRange)
     : returnType(_retType), argTypes(_argTypes), QatType(false, _fileRange) {}
 
 TypeKind FunctionType::typeKind() const { return TypeKind::function; }
 
 nuo::Json FunctionType::toJson() const {
-  std::vector<nuo::JsonValue> args;
+  Vec<nuo::JsonValue> args;
   for (auto argTy : argTypes) {
     args.push_back(argTy->toJson());
   }

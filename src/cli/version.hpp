@@ -14,7 +14,7 @@
 #define BUILD_BRANCH STRINGIFY(QAT_BUILD_BRANCH)
 
 #define VERSION_STRING                                                         \
-  std::string(STRINGIFY(QAT_VERSION)) +                                        \
+  String(STRINGIFY(QAT_VERSION)) +                                             \
       (QAT_IS_PRERELEASE ? "-" STRINGIFY(QAT_PRERELEASE) : "")
 
 #endif

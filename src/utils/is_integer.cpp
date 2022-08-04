@@ -2,11 +2,11 @@
 
 namespace qat::utils {
 
-bool isInteger(std::string value) {
-  bool result = true;
-  std::string digits = "0123456789";
-  for (std::size_t i = 0; i < value.length(); i++) {
-    if (digits.find_first_of(value.substr(i, 1)) == std::string::npos) {
+bool isInteger(const String &value) {
+  bool   result = true;
+  String digits = "0123456789";
+  for (usize i = 0; i < value.length(); i++) {
+    if (digits.find_first_of(value.substr(i, 1)) == String::npos) {
       return false;
     }
   }

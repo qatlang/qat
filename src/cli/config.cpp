@@ -1,8 +1,6 @@
 #include "./config.hpp"
 #include "../show.hpp"
 #include "error.hpp"
-#include <filesystem>
-#include <vector>
 
 namespace qat::cli {
 
@@ -15,7 +13,7 @@ Config::~Config() {
   }
 }
 
-Config *Config::init(u64 count, const char **args) {
+Config *Config::init(u64 count, char *args[]) {
   if (!Config::instance) {
     return new Config(count, args);
   } else {
@@ -25,7 +23,7 @@ Config *Config::init(u64 count, const char **args) {
 
 void Config::destroy() {
   if (Config::instance) {
-    auto inst = Config::instance;
+    auto inst        = Config::instance;
     Config::instance = nullptr;
     delete inst;
   }
@@ -39,7 +37,7 @@ bool Config::shouldExit() const { return exitAfter; }
 
 Config *Config::get() { return Config::instance; }
 
-CompileTarget Config::parseCompileTarget(std::string val) {
+CompileTarget Config::parseCompileTarget(const String &val) {
   if (val == "cpp") {
     return CompileTarget::cpp;
   } else if (val == "json") {
@@ -49,19 +47,21 @@ CompileTarget Config::parseCompileTarget(std::string val) {
   }
 }
 
-Config::Config(u64 count, const char **args) {
+Config::Config(u64 count, char **args)
+    : exitAfter(false), verbose(false), saveDocs(false), showReport(false),
+      lexer_emit_tokens(false), export_ast(false), compile(false) {
   target = CompileTarget::normal;
   if (!hasInstance()) {
     Config::instance = this;
-    invokePath = args[0];
-    exitAfter = false;
+    invokePath       = args[0];
+    exitAfter        = false;
     if (count <= 1) {
       std::cout << "No commands or arguments provided" << std::endl;
       exit(0);
     }
     buildCommit = BUILD_COMMIT_QUOTED;
-    if (buildCommit.find('"') != std::string::npos) {
-      std::string res;
+    if (buildCommit.find('"') != String::npos) {
+      String res;
       for (auto ch : buildCommit) {
         if (ch != '"') {
           res += ch;
@@ -70,8 +70,8 @@ Config::Config(u64 count, const char **args) {
       buildCommit = res;
     }
 
-    std::string command(args[1]);
-    unsigned proceed = 2;
+    String command(args[1]);
+    u64    proceed = 2;
     if (command == "run") {
       // TODO - Implement this after implementing Compile and Run
     } else if (command == "compile") {
@@ -93,7 +93,7 @@ Config::Config(u64 count, const char **args) {
       if (count == 2) {
         std::cout << "Nothing to show here" << std::endl;
       } else {
-        std::string candidate = args[2];
+        String candidate = args[2];
         if (candidate == "build-info") {
           display::build_info(buildCommit);
         } else if (candidate == "web") {
@@ -110,13 +110,14 @@ Config::Config(u64 count, const char **args) {
         paths.push_back(fs::current_path());
       }
     }
-    for (std::size_t i = proceed; i < count; i++) {
-      std::string arg = args[i];
+    for (usize i = proceed; i < count; i++) {
+      String arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
-      } else if (std::string(arg).find("-t=") == 0) {
-        target = parseCompileTarget(std::string(arg).substr(3));
-      } else if (std::string(arg).find("--target=") == 0) {
-        target = parseCompileTarget(std::string(arg).substr(9));
+        verbose = true;
+      } else if (String(arg).find("-t=") == 0) {
+        target = parseCompileTarget(String(arg).substr(3));
+      } else if (String(arg).find("--target=") == 0) {
+        target = parseCompileTarget(String(arg).substr(9));
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
           target = parseCompileTarget(args[i + 1]);
@@ -125,7 +126,7 @@ Config::Config(u64 count, const char **args) {
         }
       } else if (arg == "-o" || arg == "--output") {
         if ((i + 1) < count) {
-          std::string out(args[i + 1]);
+          String out(args[i + 1]);
           if (fs::exists(out)) {
             if (fs::is_directory(out)) {
               outputPath = out;
@@ -173,7 +174,7 @@ Config::Config(u64 count, const char **args) {
   }
 }
 
-std::vector<fs::path> Config::getPaths() const { return paths; }
+Vec<fs::path> Config::getPaths() const { return paths; }
 
 bool Config::shouldSaveDocs() const { return saveDocs; }
 

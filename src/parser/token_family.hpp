@@ -2,15 +2,15 @@
 #define QAT_PARSER_TOKEN_FAMILY_HPP
 
 #include "../lexer/token_type.hpp"
-#include <vector>
+#include "../utils/helpers.hpp"
 
 namespace qat::parser {
 
 class TokenFamily {
 public:
-  static std::vector<lexer::TokenType> templateTypeSpecifiers;
-  static std::vector<lexer::TokenType> functionArgs;
-  static std::vector<lexer::TokenType> scopeLimiters;
+  static Vec<lexer::TokenType> templateTypeSpecifiers;
+  static Vec<lexer::TokenType> functionArgs;
+  static Vec<lexer::TokenType> scopeLimiters;
 };
 
 } // namespace qat::parser

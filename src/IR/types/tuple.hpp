@@ -15,25 +15,25 @@ namespace qat::IR {
  */
 class TupleType : public QatType {
 private:
-  std::vector<QatType *> types;
+  Vec<QatType *> types;
 
   // Whether this tuple should be packed
   bool isPacked;
 
 public:
-  TupleType(const std::vector<QatType *> _types, const bool _isPacked);
+  TupleType(const Vec<QatType *> _types, const bool _isPacked);
 
-  std::vector<QatType *> getSubTypes() const;
+  Vec<QatType *> getSubTypes() const;
 
-  QatType *getSubtypeAt(unsigned index);
+  QatType *getSubtypeAt(u64 index);
 
-  unsigned getSubTypeCount() const;
+  u64 getSubTypeCount() const;
 
   bool isPackedTuple() const;
 
   TypeKind typeKind() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::IR

@@ -7,39 +7,24 @@
 
 namespace qat::ast {
 
-/**
- *  StringLiteral is used to represent literal strings
- *
- */
+// StringLiteral is used to represent literal strings
 class StringLiteral : public Expression {
 private:
-  /**
-   *  Value of the string
-   *
-   */
-  std::string value;
+  // Value of the string
+  String value;
 
 public:
-  /**
-   *  StringLiteral is used to represent literal strings
-   *
-   * @param _value Value of the string
-   * @param _fileRange
-   */
-  StringLiteral(std::string _value, utils::FileRange _fileRange);
+  // StringLiteral is used to represent literal strings
+  StringLiteral(String _value, utils::FileRange _fileRange);
 
-  /**
-   *  Get the value of the string
-   *
-   * @return std::string Value of the string
-   */
-  std::string get_value() const;
+  // Get the value of the string
+  useit String get_value() const;
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  NodeType nodeType() { return NodeType::stringLiteral; }
+  useit NodeType nodeType() const override { return NodeType::stringLiteral; }
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 };
 
 } // namespace qat::ast

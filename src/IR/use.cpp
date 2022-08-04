@@ -1,26 +1,27 @@
 #include "./use.hpp"
+#include <algorithm>
 
 namespace qat::IR {
 
-Use::Use(User *_user, std::string _purpose)
-    : user(user), uses(1), purposes({_purpose}) {}
+Use::Use(User *_user, String _purpose)
+    : user(user), uses(1), purposes({std::move(_purpose)}) {}
 
 User *Use::getUser() { return user; }
 
 bool Use::isUser(User *_user) const { return (user == _user); }
 
-unsigned Use::getUses() const { return uses; }
+u64 Use::getUses() const { return uses; }
 
-void Use::addUse(std::string purpose) {
+void Use::addUse(const String &purpose) {
   uses++;
   purposes.push_back(purpose);
 }
 
-std::vector<std::string> Use::getPurposes() { return purposes; }
+Vec<String> Use::getPurposes() { return purposes; }
 
-Usable::Usable() {}
+Usable::Usable() = default;
 
-unsigned Usable::getUses(User *user) const {
+u64 Usable::getUses(User *user) const {
   for (auto use : data) {
     if (use->isUser(user)) {
       return use->getUses();
@@ -29,7 +30,7 @@ unsigned Usable::getUses(User *user) const {
   return 0;
 }
 
-void Usable::addUse(User *user, std::string purpose) {
+void Usable::addUse(User *user, const String &purpose) {
   for (auto use : data) {
     if (use->isUser(user)) {
       use->addUse(purpose);
@@ -48,25 +49,21 @@ void Usable::removeUser(User *user) {
   }
 }
 
-unsigned Usable::getTotalUses() const {
-  unsigned result = 0;
+u64 Usable::getTotalUses() const {
+  u64 result = 0;
   for (auto use : data) {
     result += use->getUses();
   }
   return result;
 }
 
-bool Usable::hasUsers() const { return (data.size() > 0); }
+bool Usable::hasUsers() const { return !data.empty(); }
 
-User::User() {}
+User::User() = default;
 
 bool User::hasUsable(Usable *other) const {
-  for (auto use : uses) {
-    if (use == other) {
-      return true;
-    }
-  }
-  return false;
+  return std::ranges::any_of(uses.begin(), uses.end(),
+                             [&](Usable *e) { return e == other; });
 }
 
 void User::addUsable(Usable *other) { uses.push_back(other); }

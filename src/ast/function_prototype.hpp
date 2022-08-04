@@ -14,20 +14,20 @@ namespace qat::ast {
 class FunctionPrototype : public Node {
 protected:
   friend class FunctionDefinition;
-  std::string name;
-  bool isAsync;
-  std::vector<Argument *> arguments;
-  bool isVariadic;
-  QatType *returnType;
+  String                          name;
+  bool                            isAsync;
+  Vec<Argument *>                 arguments;
+  bool                            isVariadic;
+  QatType                        *returnType;
   llvm::GlobalValue::LinkageTypes linkageType;
-  std::string callingConv;
-  utils::VisibilityInfo visibility;
+  String                          callingConv;
+  utils::VisibilityInfo           visibility;
 
 public:
-  FunctionPrototype(std::string _name, std::vector<Argument *> _arguments,
-                    bool _isVariadic, QatType *_returnType, bool _is_async,
+  FunctionPrototype(String _name, Vec<Argument *> _arguments, bool _isVariadic,
+                    QatType *_returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType,
-                    std::string _callingConv, utils::VisibilityInfo _visibility,
+                    String _callingConv, utils::VisibilityInfo _visibility,
                     utils::FileRange _fileRange)
       : name(_name), isAsync(_is_async), arguments(_arguments),
         isVariadic(_isVariadic), returnType(_returnType),

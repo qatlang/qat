@@ -7,7 +7,7 @@ IR::Value *Say::emit(IR::Context *ctx) {
 }
 
 nuo::Json Say::toJson() const {
-  std::vector<nuo::JsonValue> exps;
+  Vec<nuo::JsonValue> exps;
   for (auto exp : expressions) {
     exps.push_back(exp->toJson());
   }

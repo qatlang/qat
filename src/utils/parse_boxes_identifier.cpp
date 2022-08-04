@@ -2,10 +2,10 @@
 
 namespace qat::utils {
 
-std::vector<std::string> parseSectionsFromIdentifier(std::string fullname) {
-  std::vector<std::string> spaces;
-  int lastIndex = 0;
-  for (std::size_t i = 0; i < fullname.length(); i++) {
+Vec<String> parseSectionsFromIdentifier(String fullname) {
+  Vec<String> spaces;
+  usize       lastIndex = 0;
+  for (usize i = 0; i < fullname.length(); i++) {
     if (fullname[i] == ':') {
       spaces.push_back(fullname.substr(lastIndex, i - lastIndex));
       lastIndex = i + 1;

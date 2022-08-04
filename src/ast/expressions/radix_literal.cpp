@@ -2,15 +2,16 @@
 
 namespace qat::ast {
 
-RadixLiteral::RadixLiteral(std::string _value, unsigned _radix,
+RadixLiteral::RadixLiteral(String _value, u64 _radix,
                            utils::FileRange _fileRange)
-    : value(_value), radix(_radix), Expression(_fileRange) {}
+    : value(std::move(_value)), radix(_radix),
+      Expression(std::move(_fileRange)) {}
 
 IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("This expression is not assignable", fileRange);
+    ctx->Error("This expression is not assignable", fileRange);
   }
-  unsigned bitWidth = 0;
+  u64 bitWidth = 0;
   if (radix == 2) {
     bitWidth = value.length() - 2;
   } else if (radix == 8) {
@@ -18,10 +19,10 @@ IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   } else if (radix == 16) {
     bitWidth = (value.length() - 2) * 4;
   } else {
-    ctx->throw_error("Unsupported radix", fileRange);
+    ctx->Error("Unsupported radix", fileRange);
   }
   if (bitWidth == 0) {
-    ctx->throw_error("No numbers provided for radix string", fileRange);
+    ctx->Error("No numbers provided for radix string", fileRange);
   }
   // TODO - Implement this
 }

@@ -15,13 +15,13 @@ namespace qat::ast {
  */
 class TupleType : public QatType {
 private:
-  std::vector<QatType *> types;
+  Vec<QatType *> types;
 
   // Whether this tuple should be packed
   bool isPacked;
 
 public:
-  TupleType(const std::vector<QatType *> _types, const bool _isPacked,
+  TupleType(const Vec<QatType *> _types, const bool _isPacked,
             const bool _variable, const utils::FileRange _fileRange);
 
   IR::QatType *emit(IR::Context *ctx);
@@ -30,7 +30,7 @@ public:
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

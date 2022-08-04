@@ -8,18 +8,18 @@ namespace qat::IR {
 // Unsigned integer datatype in the language
 class UnsignedType : public QatType {
 private:
-  const unsigned int bitWidth;
+  const u32 bitWidth;
 
 public:
-  UnsignedType(const unsigned int _bitWidth);
+  UnsignedType(const u32 _bitWidth);
 
   TypeKind typeKind() const;
 
-  unsigned getBitwidth() const;
+  u64 getBitwidth() const;
 
-  bool isBitWidth(const unsigned int width) const;
+  bool isBitWidth(const u32 width) const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::IR

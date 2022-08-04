@@ -7,17 +7,17 @@ namespace qat::ast {
 
 class Sentence : public Node {
 public:
-  Sentence(utils::FileRange _fileRange) : Node(_fileRange) {}
+  Sentence(utils::FileRange _fileRange) : Node(std::move(_fileRange)) {}
 
-  virtual IR::Value *emit(IR::Context *ctx) {}
+  useit IR::Value *emit(IR::Context *ctx) override = 0;
 
-  virtual NodeType nodeType() const {}
+  useit NodeType nodeType() const override = 0;
 
-  virtual nuo::Json toJson() const {}
+  useit nuo::Json toJson() const override = 0;
 
-  virtual void destroy() {}
+  void destroy() override = 0;
 
-  virtual ~Sentence() { this->destroy(); }
+  ~Sentence() override = default;
 };
 
 } // namespace qat::ast

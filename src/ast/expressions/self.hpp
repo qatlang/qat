@@ -18,13 +18,13 @@ public:
    *
    * @param _fileRange
    */
-  Self(utils::FileRange _fileRange);
+  explicit Self(utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::selfExpression; }
+  useit NodeType nodeType() const override { return NodeType::selfExpression; }
 };
 
 } // namespace qat::ast

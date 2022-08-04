@@ -12,30 +12,21 @@ namespace qat::ast {
 // compilable scope
 class BringPaths : public Sentence {
 private:
-  /**
-   *  All paths specified to be brought into the scope
-   *
-   */
-  std::vector<StringLiteral> paths;
-
-  utils::VisibilityInfo visibility;
+  Vec<StringLiteral> paths; // All paths specified to be brought into the scope
+  utils::VisibilityInfo visibility; // Visibility of the brought paths
 
 public:
-  /**
-   *  BringPaths represents importing of files or folders into the
-   * current compilable scope
-   *
-   * @param _paths
-   * @param _fileRange
-   */
-  BringPaths(std::vector<StringLiteral> _paths,
-             utils::VisibilityInfo _visibility, utils::FileRange _fileRange);
+  // BringPaths represents importing of files or folders into the
+  // current compilable scope
+  BringPaths(Vec<StringLiteral>           _paths,
+             const utils::VisibilityInfo &_visibility,
+             utils::FileRange             _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::bringPaths; }
+  useit NodeType nodeType() const override { return NodeType::bringPaths; }
 };
 
 } // namespace qat::ast

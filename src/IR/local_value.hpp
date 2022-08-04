@@ -16,33 +16,35 @@ class Context;
 class LocalValue : public Value {
 private:
   // Name of the value
-  std::string name;
+  String name;
 
   Value *initial;
 
   Block *parent;
 
-  unsigned loads;
+  u64 loads;
 
-  unsigned stores;
+  u64 stores;
 
-  unsigned refers;
+  u64 refers;
 
 public:
-  LocalValue(std::string _name, IR::QatType *_type, bool _isVariable,
+  LocalValue(String _name, IR::QatType *_type, bool _isVariable,
              Value *_initial, Block *block);
 
-  std::string getName() const { return name; }
+  String getName() const;
 
   Block *getParent();
 
-  unsigned getLoads() const { return loads; }
+  u64 getLoads() const;
 
-  unsigned getStores() const { return stores; }
+  u64 getStores() const;
 
-  unsigned getRefers() const { return refers; }
+  u64 getRefers() const;
 
   bool isRemovable() const;
+
+  nuo::Json toJson() const;
 };
 
 } // namespace qat::IR

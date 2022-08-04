@@ -19,7 +19,7 @@ private:
    *  Name of the entity
    *
    */
-  std::string name;
+  String name;
 
 public:
   /**
@@ -28,11 +28,10 @@ public:
    * entity is present in the global constant
    *
    * @param _name Name of the entity
-   * @param _fileRange FilePLacement instance that represents the range
+   * @param _fileRange FilePlacement instance that represents the range
    * spanned by the tokens making up this AST member
    */
-  Entity(std::string _name, utils::FileRange _fileRange)
-      : name(_name), Expression(_fileRange) {}
+  Entity(String _name, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

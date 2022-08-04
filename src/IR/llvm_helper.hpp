@@ -9,9 +9,9 @@ namespace qat::IR {
 
 class llvmHelper {
 public:
-  llvmHelper() : llctx(), builder(llctx) {}
+  llvmHelper() : builder(llctx) {}
 
-  llvm::LLVMContext llctx;
+  llvm::LLVMContext                                                     llctx;
   llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter> builder;
 };
 

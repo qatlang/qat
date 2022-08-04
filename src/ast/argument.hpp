@@ -2,6 +2,7 @@
 #define QAT_AST_ARGUMENT_HPP
 
 #include "../utils/file_range.hpp"
+#include "../utils/macros.hpp"
 #include "./types/qat_type.hpp"
 #include <optional>
 #include <string>
@@ -10,7 +11,7 @@ namespace qat::ast {
 
 class Argument {
 private:
-  std::string name;
+  String name;
 
   utils::FileRange fileRange;
 
@@ -18,23 +19,23 @@ private:
 
   bool isMember;
 
-  Argument(std::string _name, utils::FileRange _fileRange, QatType *_type,
+  Argument(String _name, utils::FileRange _fileRange, QatType *_type,
            bool _isMember);
 
 public:
-  static Argument *Normal(std::string name, utils::FileRange fileRange,
+  static Argument *Normal(String name, utils::FileRange fileRange,
                           QatType *type);
 
-  static Argument *ForConstructor(std::string name, utils::FileRange fileRange,
+  static Argument *ForConstructor(String name, utils::FileRange fileRange,
                                   QatType *type, bool isMember);
 
-  std::string getName() const;
+  useit String getName() const;
 
-  utils::FileRange getFileRange() const;
+  useit auto getFileRange() -> utils::FileRange const;
 
-  QatType *getType();
+  auto getType() -> QatType *;
 
-  bool isTypeMember() const;
+  useit bool isTypeMember() const;
 };
 
 } // namespace qat::ast

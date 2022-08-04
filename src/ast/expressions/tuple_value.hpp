@@ -8,10 +8,10 @@
 namespace qat::ast {
 
 class TupleValue : public Expression {
-  std::vector<Expression *> members;
+  Vec<Expression *> members;
 
 public:
-  TupleValue(std::vector<Expression *> _members, utils::FileRange _fileRange);
+  TupleValue(Vec<Expression *> _members, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

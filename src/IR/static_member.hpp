@@ -14,40 +14,36 @@ class QatModule;
 
 class StaticMember : public Value {
 private:
-  std::string name;
+  String name;
 
   CoreType *parent;
 
   Value *initial;
 
-  unsigned loads;
+  u64 loads;
 
-  unsigned stores;
+  u64 stores;
 
-  unsigned refers;
+  u64 refers;
 
   utils::VisibilityInfo visibility;
 
 public:
-  StaticMember(CoreType *_parent, std::string name, QatType *_type,
+  StaticMember(CoreType *_parent, String name, QatType *_type,
                bool _is_variable, Value *_initial,
-               utils::VisibilityInfo _visibility);
+               const utils::VisibilityInfo &_visibility);
 
-  CoreType *getParentType();
-
-  std::string getName() const;
-
-  std::string getFullName() const;
-
-  const utils::VisibilityInfo &getVisibility() const;
-
-  bool hasInitial() const;
-
-  unsigned getLoadCount() const;
-
-  unsigned getStoreCount() const;
-
-  unsigned getReferCount() const;
+  CoreType    *getParentType();
+  useit String getName() const;
+  useit String getFullName() const;
+  useit const utils::VisibilityInfo &getVisibility() const;
+  useit bool                         hasInitial() const;
+  useit u64                          getLoadCount() const;
+  useit u64                          getStoreCount() const;
+  useit u64                          getReferCount() const;
+  llvm::Value *emitLLVM(llvmHelper &helper) const override;
+  void         emitCPP(cpp::File &file) const override;
+  nuo::Json    toJson() const override;
 };
 
 } // namespace qat::IR

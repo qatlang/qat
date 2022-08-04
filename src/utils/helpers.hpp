@@ -1,0 +1,32 @@
+#ifndef QAT_UTILS_HELPERS_HPP
+#define QAT_UTILS_HELPERS_HPP
+
+#include <cstdint>
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace qat {
+
+using i64                                    = int64_t;
+using i32                                    = int32_t;
+using i16                                    = int16_t;
+using i8                                     = int8_t;
+using u64                                    = uint64_t;
+using u32                                    = uint32_t;
+using u16                                    = uint16_t;
+using u8                                     = uint8_t;
+using f32                                    = float;
+using f64                                    = double;
+using usize                                  = std::size_t;
+using String                                 = std::string;
+template <typename T> using Maybe            = std::optional<T>;
+template <typename T> using Vec              = std::vector<T>;
+template <typename F, typename S> using Pair = std::pair<F, S>;
+namespace fs                                 = std::filesystem;
+const std::nullopt_t None                    = std::nullopt;
+
+} // namespace qat
+
+#endif

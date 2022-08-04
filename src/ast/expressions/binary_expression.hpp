@@ -3,25 +3,29 @@
 
 #include "../expression.hpp"
 #include <string>
+#include <utility>
 
 namespace qat::ast {
 
 class BinaryExpression : public Expression {
 private:
-  std::string op;
+  String      op;
   Expression *lhs;
   Expression *rhs;
 
 public:
-  BinaryExpression(Expression *_lhs, std::string _binaryOperator,
-                   Expression *_rhs, utils::FileRange _fileRange)
-      : lhs(_lhs), op(_binaryOperator), rhs(_rhs), Expression(_fileRange) {}
+  BinaryExpression(Expression *_lhs, String _binaryOperator, Expression *_rhs,
+                   utils::FileRange _fileRange)
+      : lhs(_lhs), op(std::move(_binaryOperator)), rhs(_rhs),
+        Expression(std::move(_fileRange)) {}
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::binaryExpression; }
+  useit NodeType nodeType() const override {
+    return NodeType::binaryExpression;
+  }
 };
 
 } // namespace qat::ast

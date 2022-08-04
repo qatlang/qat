@@ -2,12 +2,12 @@
 
 namespace qat::ast {
 
-IntegerLiteral::IntegerLiteral(std::string _value, utils::FileRange _fileRange)
-    : value(_value), Expression(_fileRange) {}
+IntegerLiteral::IntegerLiteral(String _value, utils::FileRange _fileRange)
+    : value(std::move(_value)), Expression(std::move(_fileRange)) {}
 
 IR::Value *IntegerLiteral::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("Integer literals are not assignable", fileRange);
+    ctx->Error("Integer literals are not assignable", fileRange);
   }
   // TODO - Implement this
 }

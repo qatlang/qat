@@ -7,7 +7,7 @@
 
 namespace qat::utils {
 
-std::vector<std::string> boxPossibilities(std::string value);
+Vec<String> boxPossibilities(String value);
 
 } // namespace qat::utils
 

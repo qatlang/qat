@@ -5,20 +5,18 @@
 
 namespace qat::IR {
 
-SumType::SumType(std::string _name, std::vector<QatType *> _subTypes)
-    : name(_name), subTypes(_subTypes) {}
+SumType::SumType(String _name, Vec<QatType *> _subTypes)
+    : name(std::move(_name)), subTypes(std::move(_subTypes)) {}
 
-std::string SumType::getName() const { return name; }
+String SumType::getName() const { return name; }
 
-std::string SumType::getFullName() const {
+String SumType::getFullName() const {
   return parent->getFullName() + ":" + name;
 }
 
-unsigned SumType::getSubtypeCount() const { return subTypes.size(); }
+u32 SumType::getSubtypeCount() const { return subTypes.size(); }
 
-QatType *SumType::getSubtypeAt(unsigned int index) {
-  return subTypes.at(index);
-}
+QatType *SumType::getSubtypeAt(usize index) { return subTypes.at(index); }
 
 bool SumType::isCompatible(QatType *other) const {
   if (isSame(other)) {
@@ -36,6 +34,6 @@ bool SumType::isCompatible(QatType *other) const {
   return false;
 }
 
-std::string SumType::toString() const { return name; }
+String SumType::toString() const { return name; }
 
 } // namespace qat::IR

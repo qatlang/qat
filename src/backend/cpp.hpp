@@ -1,9 +1,8 @@
 #ifndef QAT_BACKEND_CPP_HPP
 #define QAT_BACKEND_CPP_HPP
 
-#include <filesystem>
-#include <string>
-#include <vector>
+#include "../utils/helpers.hpp"
+#include "../utils/macros.hpp"
 
 namespace qat::cpp {
 
@@ -11,102 +10,82 @@ class File;
 
 class Content {
 private:
-  std::string value;
+  String value;
 
 protected:
   friend class File;
-  void setContent(std::string val);
+  auto setContent(String val) -> void;
 
 public:
   Content();
 
-  Content &operator<<(std::string content);
+  Content &operator<<(const String &content);
 
   Content &operator<<(const char *content);
 
-  std::string getContent() const;
+  useit String getContent() const;
 };
 
 class File;
 
 class Namespace : public Content {
 private:
-  std::string name;
+  String name;
 
   Namespace *parent;
 
   Namespace *active;
 
-  std::vector<Namespace *> children;
+  Vec<Namespace *> children;
 
   bool isFile;
 
 public:
-  Namespace(std::string _name, Namespace *parent, bool isFile);
+  Namespace(String _name, Namespace *parent, bool isFile);
 
-  std::string getName() const;
-
-  std::string getFullName() const;
-
-  bool hasParent() const;
-
-  Namespace *getActive();
-
-  Namespace *addChild(const std::string name);
-
-  void addEnclosedComment(const std::string name);
-
-  void addSingleLineComment(const std::string name);
-
-  void closeChild();
-
-  File *getFile();
+  useit String     getName() const;
+  useit String     getFullName() const;
+  useit bool       hasParent() const;
+  useit Namespace *getActive();
+  useit Namespace *addChild(const String &name);
+  useit File      *getFile();
+  void             addEnclosedComment(const String &name);
+  void             addSingleLineComment(const String &name);
+  void             closeChild();
 };
 
 class File : public Namespace {
 private:
-  bool isHeader;
+  File(String _path, bool _isHeader);
 
-  std::string path;
-
-  std::vector<std::string> includes;
-
-  std::vector<std::string> headerIncludes;
-
-  std::vector<std::string> loopIndices;
-
-  File(std::string _path, bool _isHeader);
-
-  bool openBlock;
+  bool          isHeader;
+  String        path;
+  Vec<String>   includes;
+  Vec<String>   headerIncludes;
+  Vec<String>   loopIndices;
+  Maybe<String> parent;
+  bool          openBlock;
+  bool          isArrayBracketSyntax;
 
 public:
-  static File Header(std::string path);
-
-  static File Source(std::string path);
-
-  void addInclude(const std::string unit);
-
-  std::vector<std::string> getIncludes() const;
-
-  void updateHeaderIncludes(std::vector<std::string> values);
-
-  void moveIncludes(File &other);
-
-  bool isHeaderFile() const;
-
-  bool isSourceFile() const;
-
-  void addLoopID(std::string ID);
-
-  std::string getLoopIndex() const;
-
-  void popLastLoopIndex();
-
-  void setOpenBlock(bool val);
-
-  bool getOpenBlock() const;
-
-  void write();
+  useit static File Header(String path);
+  useit static File Source(String path);
+  void              addInclude(const String &unit);
+  void              updateHeaderIncludes(const Vec<String> &values);
+  void              moveIncludes(File &other);
+  void              addLoopID(String IDVal);
+  void              setParent(String val);
+  void              popLastLoopIndex();
+  void              setOpenBlock(bool val);
+  void              setArraySyntax(bool val);
+  void              write();
+  useit Vec<String> getIncludes() const;
+  useit bool        isHeaderFile() const;
+  useit bool        isSourceFile() const;
+  useit String      getLoopIndex() const;
+  useit bool        getArraySyntaxIsBracket() const;
+  useit bool        getOpenBlock() const;
+  useit String      getParent();
 };
 
 } // namespace qat::cpp

@@ -12,13 +12,14 @@ private:
   FloatTypeKind kind;
 
 public:
-  FloatType(const FloatTypeKind _kind);
+  FloatType(FloatTypeKind _kind);
 
-  FloatTypeKind getKind() const;
-
-  TypeKind typeKind() const;
-
-  std::string toString() const;
+  useit FloatTypeKind getKind() const;
+  useit TypeKind      typeKind() const final;
+  useit String        toString() const override;
+  useit nuo::Json toJson() const override;
+  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
+  void              emitCPP(cpp::File &file) const override;
 };
 
 } // namespace qat::IR

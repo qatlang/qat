@@ -2,7 +2,7 @@
 #define QAT_PARSER_CACHE_SYMBOL_HPP
 
 #include "../utils/file_range.hpp"
-#include <string>
+#include "../utils/helpers.hpp"
 
 namespace qat::parser {
 
@@ -13,12 +13,11 @@ namespace qat::parser {
  */
 class CacheSymbol {
 public:
-  CacheSymbol(std::string _name, std::size_t _tokenIndex,
-              utils::FileRange _fileRange);
+  CacheSymbol(String _name, usize _tokenIndex, utils::FileRange _fileRange);
 
-  std::string name;
+  String           name;
   utils::FileRange fileRange;
-  std::size_t tokenIndex;
+  usize            tokenIndex;
 
   utils::FileRange extend_fileRange(utils::FileRange to);
 };

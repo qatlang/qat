@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType *_type, std::string _name,
+LocalDeclaration::LocalDeclaration(QatType *_type, String _name,
                                    Expression *_value, bool _variability,
                                    utils::FileRange _fileRange)
     : Sentence(_fileRange), type(_type), name(_name), value(_value),
@@ -14,8 +14,8 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
 }
 
 void LocalDeclaration::set_origin_block(llvm::LLVMContext &ctx,
-                                        llvm::AllocaInst *alloca,
-                                        llvm::BasicBlock *bb) {
+                                        llvm::AllocaInst * alloca,
+                                        llvm::BasicBlock * bb) {
 
   alloca->setMetadata(
       "origin_block",

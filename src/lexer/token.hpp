@@ -2,28 +2,29 @@
 #define QAT_LEXER_TOKEN_HPP
 
 #include "../utils/file_range.hpp"
+#include "../utils/helpers.hpp"
 #include "./token_type.hpp"
 #include <string>
 
 namespace qat::lexer {
 
-/**
- *  Token constitutes of a symbol encountered by the Lexer
- * during file analysis. All tokens are later parsed through, by
- * the QAT Parser to obtain an abstract syntax tree.
- */
+// Token consists of a symbol encountered by the Lexer
+// during file analysis. All tokens are later parsed through, by
+// the QAT Parser to obtain an abstract syntax tree.
 class Token {
 private:
   Token(TokenType _type, utils::FileRange _fileRange)
-      : type(_type), value(""), hasValue(false), fileRange(_fileRange) {}
+      : type(_type), value(), hasValue(false),
+        fileRange(std::move(_fileRange)) {}
 
-  Token(TokenType _type, std::string _value, utils::FileRange _fileRange)
-      : type(_type), value(_value), hasValue(true), fileRange(_fileRange) {}
+  Token(TokenType _type, String _value, utils::FileRange _fileRange)
+      : type(_type), value(std::move(_value)), hasValue(true),
+        fileRange(std::move(_fileRange)) {}
 
 public:
   /**
    *  Tokens that represents a value. Integer literal, Double literal,
-   * Identifiers are some examples of this kind of token
+   * Identifiers are some examples of this nature of token
    *
    * @param _type Type of the token - In the case of an Identifier token,
    * this is TokenType::identifier
@@ -33,7 +34,7 @@ public:
    * numbers
    * @return Token
    */
-  static Token valued(TokenType _type, std::string _value,
+  static Token valued(TokenType _type, String _value,
                       utils::FileRange fileRange);
 
   /**
@@ -58,11 +59,11 @@ public:
    *  Value of the token. This will be empty for all tokens
    * that are part of the language
    */
-  std::string value;
+  String value;
 
   /**
    *  Whether this token represents a value. This is necessary as the
-   * value can just be an empty string and cannot be considerd as no value in
+   * value can just be an empty string and cannot be considered as no value in
    * that case.
    */
   bool hasValue = false;

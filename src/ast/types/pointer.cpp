@@ -22,7 +22,7 @@ nuo::Json PointerType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string PointerType::toString() const {
+String PointerType::toString() const {
   return (isVariable() ? "var #[" : "#[") + type->toString() + "]";
 }
 

@@ -3,10 +3,10 @@
 
 namespace qat::IR {
 
-LocalValue::LocalValue(std::string _name, QatType *_type, bool is_variable,
+LocalValue::LocalValue(String _name, QatType *_type, bool is_variable,
                        Value *_initial, Block *block)
     : name(_name), initial(_initial), parent(block), loads(0), stores(0),
-      refers(0), Value(_type, is_variable, Kind::assignable) {}
+      refers(0), Value(_type, is_variable, Nature::assignable) {}
 
 bool LocalValue::isRemovable() const {
   if (getType()->typeKind() != IR::TypeKind::reference) {
@@ -17,6 +17,14 @@ bool LocalValue::isRemovable() const {
     return (loads == 0) && (stores == 0) && (refers == 0);
   }
 }
+
+String LocalValue::getName() const { return name; }
+
+u64 LocalValue::getLoads() const { return loads; }
+
+u64 LocalValue::getStores() const { return stores; }
+
+u64 LocalValue::getRefers() const { return refers; }
 
 Block *LocalValue::getParent() { return parent; }
 

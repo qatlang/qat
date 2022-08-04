@@ -2,7 +2,7 @@
 
 namespace qat::parser {
 
-CacheSymbol::CacheSymbol(std::string _name, std::size_t _tokenIndex,
+CacheSymbol::CacheSymbol(String _name, usize _tokenIndex,
                          qat::utils::FileRange _fileRange)
     : name(_name), tokenIndex(_tokenIndex), fileRange(_fileRange) {}
 

@@ -15,15 +15,15 @@ private:
   llvm::Type *type;
 
 public:
-  NullPointer(utils::FileRange _fileRange);
+  explicit NullPointer(utils::FileRange _fileRange);
 
   NullPointer(llvm::Type *_type, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::nullPointer; }
+  useit NodeType nodeType() const override { return NodeType::nullPointer; }
 };
 
 } // namespace qat::ast

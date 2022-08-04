@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-Block::Block(std::vector<Sentence *> _sentences, utils::FileRange _fileRange)
+Block::Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange)
     : Sentence(_fileRange), sentences(_sentences) {}
 
 IR::Value *Block::emit(IR::Context *ctx) {
@@ -10,7 +10,7 @@ IR::Value *Block::emit(IR::Context *ctx) {
 }
 
 nuo::Json Block::toJson() const {
-  std::vector<nuo::JsonValue> snts;
+  Vec<nuo::JsonValue> snts;
   for (auto sentence : sentences) {
     snts.push_back(sentence->toJson());
   }

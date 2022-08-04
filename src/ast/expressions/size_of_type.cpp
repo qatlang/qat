@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 SizeOfType::SizeOfType(QatType *_type, utils::FileRange _fileRange)
-    : type(_type), Expression(_fileRange) {}
+    : type(_type), Expression(std::move(_fileRange)) {}
 
 IR::Value *SizeOfType::emit(IR::Context *ctx) {
   // TODO - Implement this

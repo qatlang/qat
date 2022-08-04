@@ -11,28 +11,28 @@ class QatModule;
 
 class SumType : public QatType {
 private:
-  std::string name;
+  String name;
 
-  std::vector<QatType *> subTypes;
+  Vec<QatType *> subTypes;
 
   QatModule *parent;
 
 public:
-  SumType(std::string _name, std::vector<QatType *> _subTypes);
+  SumType(String _name, Vec<QatType *> _subTypes);
 
-  std::string getName() const;
+  useit String getName() const;
 
-  std::string getFullName() const;
+  useit String getFullName() const;
 
-  unsigned getSubtypeCount() const;
+  useit u32 getSubtypeCount() const;
 
-  QatType *getSubtypeAt(unsigned index);
+  QatType *getSubtypeAt(usize index);
 
   bool isCompatible(QatType *other) const;
 
-  TypeKind typeKind() const { return TypeKind::sumType; }
+  useit TypeKind typeKind() const override { return TypeKind::sumType; }
 
-  std::string toString() const;
+  useit String toString() const override;
 };
 
 } // namespace qat::IR

@@ -7,32 +7,31 @@ ParserContext::ParserContext() : aliases(), type_aliases() {}
 ParserContext::ParserContext(ParserContext &other)
     : aliases(other.aliases), type_aliases(other.type_aliases) {}
 
-void ParserContext::add_alias(const std::string name, const std::string value) {
+void ParserContext::add_alias(const String name, const String value) {
   if (!aliases.contains(name)) {
     aliases.insert({name, value});
   }
 }
 
-std::string ParserContext::get_alias(const std::string name) const {
+String ParserContext::get_alias(const String name) const {
   return aliases.find(name)->second;
 }
 
-ast::QatType *ParserContext::get_type_alias(const std::string name) const {
+ast::QatType *ParserContext::get_type_alias(const String name) const {
   return type_aliases.find(name)->second;
 }
 
-void ParserContext::add_type_alias(const std::string name,
-                                   ast::QatType *value) {
+void ParserContext::add_type_alias(const String name, ast::QatType *value) {
   if (!type_aliases.contains(name)) {
     type_aliases.insert({name, value});
   }
 }
 
-bool ParserContext::has_alias(const std::string name) const {
+bool ParserContext::has_alias(const String name) const {
   return aliases.contains(name);
 }
 
-bool ParserContext::has_type_alias(const std::string name) const {
+bool ParserContext::has_type_alias(const String name) const {
   return type_aliases.contains(name);
 }
 
@@ -76,8 +75,8 @@ void ParserContext::add_unsigned_bitwidth(const u64 value) {
   }
 }
 
-bool ParserContext::has_template_typename(const std::string name) const {
-  for (std::string tname : template_typenames) {
+bool ParserContext::has_template_typename(const String name) const {
+  for (String tname : template_typenames) {
     if (tname == name) {
       return true;
     }
@@ -85,7 +84,7 @@ bool ParserContext::has_template_typename(const std::string name) const {
   return false;
 }
 
-void ParserContext::add_template_typename(const std::string name) {
+void ParserContext::add_template_typename(const String name) {
   if (!has_template_typename(name)) {
     template_typenames.push_back(name);
   }

@@ -3,12 +3,12 @@
 namespace qat::ast {
 
 IfElse::IfElse(Expression *_condition, Block *_if_block,
-               std::optional<Block *> _else_block,
-               std::optional<Block *> _merge_block, utils::FileRange _fileRange)
+               Maybe<Block *> _else_block, Maybe<Block *> _merge_block,
+               utils::FileRange _fileRange)
     : Sentence(_fileRange), condition(_condition), if_block(_if_block),
       else_block(_else_block),
       merge_block(_merge_block.value_or(new Block(
-          std::vector<Sentence *>(),
+          Vec<Sentence *>(),
           utils::FileRange(_else_block.value_or(_if_block)->fileRange.file,
                            _else_block.value_or(_if_block)->fileRange.end,
                            _else_block.value_or(_if_block)->fileRange.end)))) {}

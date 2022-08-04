@@ -11,7 +11,7 @@ IR::QatType *FloatType::emit(IR::Context *ctx) {
   return new IR::FloatType(kind);
 }
 
-std::string FloatType::kindToString(IR::FloatTypeKind kind) {
+String FloatType::kindToString(IR::FloatTypeKind kind) {
   switch (kind) {
   case IR::FloatTypeKind::_half: {
     return "fhalf";
@@ -47,7 +47,7 @@ nuo::Json FloatType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string FloatType::toString() const {
+String FloatType::toString() const {
   return (isVariable() ? "var " : "") + kindToString(kind);
 }
 

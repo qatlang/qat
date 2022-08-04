@@ -5,33 +5,22 @@
 
 namespace qat::ast {
 
-/**
- *  SizeOf is used to find the size of the type of the provided Expression
- *
- */
+// SizeOf is used to find the size of the type of the provided Expression
 class SizeOf : public Expression {
 private:
-  /**
-   *  Expression for which the size of the type has to be calculated
-   *
-   */
+  // Expression for which the size of the type has to be calculated
   Expression *expression;
 
 public:
-  /**
-   *  SizeOf is used to find the size of the type of the provided
-   * Expression
-   *
-   * @param _expression Expression to be used to find the size of the type
-   * @param _fileRange
-   */
+  // SizeOf is used to find the size of the type of the provided
+  // Expression
   SizeOf(Expression *_expression, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::sizeOf; }
+  useit NodeType nodeType() const override { return NodeType::sizeOf; }
 };
 
 } // namespace qat::ast

@@ -1,10 +1,10 @@
 #ifndef QAT_UTILS_VISIBILITY_HPP
 #define QAT_UTILS_VISIBILITY_HPP
 
+#include "./helpers.hpp"
+#include "./macros.hpp"
 #include <map>
 #include <nuo/json.hpp>
-#include <optional>
-#include <string>
 
 namespace qat::utils {
 
@@ -21,185 +21,98 @@ namespace qat::utils {
  *
  *
  */
+// TODO - Think about extension functions and how this should behave for those
 
-/**
- *  VisibilityKind tells where a type, global variable,
- * function, library or box can be accessed
- *
- */
+// VisibilityKind tells where a type, global variable,
+// function, library or box can be accessed
 enum class VisibilityKind {
-  // TODO - Think about extension functions and how this should behave for those
-  /**
-   *  Visibility is public only inside the parent type
-   *
-   */
-  type,
-  /**
-   *  Visibility is public, but will attain the most strict visibility of
-   * any of its parent entities
-   *
-   */
-  pub,
-  /**
-   *  Visibility is public only inside the parent library
-   *
-   */
-  lib,
-  /**
-   *  Visibility is public only inside the parent file
-   *
-   */
-  file,
-  /**
-   *  Visibility is public only inside the parent directory/folder
-   *
-   */
-  folder,
-  /**
-   *  Visibility is public only inside the parent box
-   *
-   */
-  box
+  type,   // Visibility is public only inside the parent type
+  pub,    // Visibility is public, but attains the most strict parent
+  lib,    // Visibility is public only inside the parent library
+  file,   // Visibility is public only inside the parent file
+  folder, // Visibility is public only inside the parent directory/folder
+  box     // Visibility is public only inside the parent box
 };
 
 class RequesterInfo;
 
 /**
- *  VisibilityInfo is used to store details about the visibility kind of
+ *  VisibilityInfo is used to store details about the visibility nature of
  * an entity. Some kinds require a value to be complete, others don't.
  *
  */
 class VisibilityInfo {
 private:
-  VisibilityInfo(VisibilityKind _kind, std::string _value)
-      : kind(_kind), value(_value) {}
+  VisibilityInfo(VisibilityKind _kind, String _value)
+      : kind(_kind), value(std::move(_value)) {}
 
 public:
-  /**
-   *  VisibilityInfo with Private kind
-   *
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo type() {
-    return VisibilityInfo(VisibilityKind::type, "");
-  }
-
-  /**
-   *  VisibilityInfo with Public kind
-   *
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo pub() {
-    return VisibilityInfo(VisibilityKind::pub, "");
-  }
-
-  /**
-   *  VisibilityInfo with Library kind
-   *
-   * @param name Name of the library
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo lib(std::string name) {
-    return VisibilityInfo(VisibilityKind::lib, name);
-  }
-
-  /**
-   *  VisibilityInfo with File kind
-   *
-   * @param path Absolute path to the file
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo file(std::string path) {
-    return VisibilityInfo(VisibilityKind::file, path);
-  }
-
-  /**
-   *  VisibilityInfo
-   *
-   * @param path
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo folder(std::string path) {
-    return VisibilityInfo(VisibilityKind::folder, path);
-  }
-
-  /**
-   *  VisibilityInfo with Box kind
-   *
-   * @param name Name of the box
-   * @return VisibilityInfo
-   */
-  static VisibilityInfo box(std::string name) {
-    return VisibilityInfo(VisibilityKind::box, name);
-  }
-
-  bool isAccessible(const RequesterInfo &reqInfo) const;
-
-  /**
-   *  Kind of the Visibility of the entity
-   *
-   */
+  // Nature of the Visibility of the entity
   VisibilityKind kind;
-
-  /**
-   *  Value related to the VisibilityKind. If not empty, this is either a
-   * library name, box name or file path.
-   *
-   */
-  std::string value;
-
-  bool operator==(VisibilityInfo other) const;
-
-  operator nuo::Json() const;
-
-  operator nuo::JsonValue() const;
+  // Value related to the VisibilityKind. If not empty, this is either a
+  // library name, box name or file path.
+  String value;
 
   VisibilityInfo(const VisibilityInfo &other);
+
+  static VisibilityInfo type(std::string typeName) {
+    return {VisibilityKind::type, std::move(typeName)};
+  }
+  static VisibilityInfo pub() { return {VisibilityKind::pub, ""}; }
+  static VisibilityInfo lib(String name) {
+    return {VisibilityKind::lib, std::move(name)};
+  }
+  static VisibilityInfo file(String path) {
+    return {VisibilityKind::file, std::move(path)};
+  }
+  static VisibilityInfo folder(String path) {
+    return {VisibilityKind::folder, std::move(path)};
+  }
+  static VisibilityInfo box(String name) {
+    return {VisibilityKind::box, std::move(name)};
+  }
+
+  useit bool isAccessible(const RequesterInfo &reqInfo) const;
+
+  useit bool operator==(const VisibilityInfo &other) const;
+             operator nuo::Json() const;
+             operator nuo::JsonValue() const;
 };
 
-/**
- *  Information about the entity requesting access
- *
- */
+// Information about the entity requesting access
 class RequesterInfo {
+private:
+  // Parent library of the entity requesting for access
+  Maybe<String> lib;
+  // Parent box of the entity requesting for access
+  Maybe<String> box;
+  // Compulsory parent file of the entity requesting for access
+  String file;
+  // Parent type of the entity requesting for access
+  Maybe<String> type;
+
 public:
-  /**
-   *  Parent library of the entity requesting for access.
-   *
-   */
-  std::optional<std::string> lib;
+  RequesterInfo(Maybe<String> _lib, Maybe<String> _box, String _file,
+                Maybe<String> _type);
 
-  /**
-   *  Parent box of the entity requesting for access.
-   *
-   */
-  std::optional<std::string> box;
-
-  /**
-   *  Parent file of the entity requesting for access. This will never be
-   * a null-value. This is also used for the parent folder
-   *
-   */
-  std::string file;
-
-  /**
-   *  Parent type of the entity requesting for access.
-   *
-   */
-  std::optional<std::string> type;
+  useit bool   hasLib() const;
+  useit bool   hasBox() const;
+  useit bool   hasType() const;
+  useit String getLib() const;
+  useit String getBox() const;
+  useit String getType() const;
+  useit String getFile() const;
 };
 
 class Visibility {
 public:
-  static const std::map<VisibilityKind, std::string> kind_value_map;
+  static const std::map<VisibilityKind, String> kind_value_map;
+  static const std::map<String, VisibilityKind> value_kind_map;
 
-  static const std::map<std::string, VisibilityKind> value_kind_map;
-
-  static std::string getValue(VisibilityKind kind);
-
-  static VisibilityKind getKind(std::string value);
-
-  static bool isAccessible(VisibilityInfo visibility, RequesterInfo reqInfo);
+  useit static String         getValue(VisibilityKind kind);
+  useit static VisibilityKind getKind(const String &value);
+  useit static bool           isAccessible(const VisibilityInfo &visibility,
+                                           const RequesterInfo  &reqInfo);
 };
 
 } // namespace qat::utils

@@ -21,7 +21,7 @@ nuo::Json ReferenceType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string ReferenceType::toString() const {
+String ReferenceType::toString() const {
   return (isVariable() ? "var @" : "@") + type->toString();
 }
 

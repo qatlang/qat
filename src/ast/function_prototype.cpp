@@ -5,15 +5,14 @@
 namespace qat::ast {
 
 IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
-  IR::Function *function;
-  std::vector<IR::QatType *> generatedTypes;
+  IR::Function      *function;
+  Vec<IR::QatType *> generatedTypes;
   if (ctx->mod->hasFunction(name)) {
-    ctx->throw_error("A function named " + name +
-                         " exists already in this scope",
-                     fileRange);
+    ctx->Error("A function named " + name + " exists already in this scope",
+               fileRange);
   }
   SHOW("Generating types")
-  int i = 1;
+  i32 i = 1;
   for (auto arg : arguments) {
     auto genType = arg->getType()->emit(ctx);
     generatedTypes.push_back(genType);
@@ -21,9 +20,9 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
     i++;
   }
   SHOW("Types generated")
-  std::vector<IR::Argument> args;
+  Vec<IR::Argument> args;
   SHOW("Setting variability of arguments")
-  for (std::size_t i = 0; i < generatedTypes.size(); i++) {
+  for (usize i = 0; i < generatedTypes.size(); i++) {
     args.push_back(arguments.at(i)->getType()->isVariable()
                        ? IR::Argument::CreateVariable(
                              arguments.at(i)->getName(),
@@ -46,7 +45,7 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
 }
 
 nuo::Json FunctionPrototype::toJson() const {
-  std::vector<nuo::JsonValue> args;
+  Vec<nuo::JsonValue> args;
   for (auto arg : arguments) {
     auto aJson =
         nuo::Json()

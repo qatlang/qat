@@ -22,7 +22,7 @@ private:
    *  Name of the type
    *
    */
-  std::string name;
+  String name;
 
 public:
   /**
@@ -32,19 +32,19 @@ public:
    * @param _name Name of the type
    * @param _fileRange
    */
-  NamedType(const std::string _name, const bool _variable,
+  NamedType(const String _name, const bool _variable,
             const utils::FileRange _fileRange);
 
   IR::QatType *emit(IR::Context *ctx);
 
   // Get the name of the type
-  std::string get_name() const;
+  String getName() const;
 
   TypeKind typeKind();
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

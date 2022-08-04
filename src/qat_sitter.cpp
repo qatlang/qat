@@ -36,7 +36,7 @@ void QatSitter::init() {
 void QatSitter::handlePath(fs::path path) {
   std::function<void(IR::QatModule *, fs::path)> recursiveModuleCreator =
       [&](IR::QatModule *folder, fs::path path) {
-        for (auto &item : path) {
+        for (auto const &item : path) {
           if (fs::is_directory(item)) {
             if (fs::exists(item / "lib.qat")) {
               Lexer->changeFile(item / "lib.qat");
@@ -47,8 +47,8 @@ void QatSitter::handlePath(fs::path path) {
                   Parser->parse(), utils::VisibilityInfo::pub()));
             } else {
               auto subfolder = IR::QatModule::CreateSubmodule(
-                  folder, item, path, item.filename(), IR::ModuleType::folder,
-                  utils::VisibilityInfo::pub());
+                  folder, item, path, item.filename().string(),
+                  IR::ModuleType::folder, utils::VisibilityInfo::pub());
               fileEntities.push_back(subfolder);
               recursiveModuleCreator(subfolder, item);
             }

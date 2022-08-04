@@ -21,9 +21,9 @@ public:
 
   // All the boxes exposed in the current scope. This will automatically
   // be populated and de-populated when the expose scope starts and ends
-  std::vector<std::string> exposed;
+  Vec<String> exposed;
 
-  void throw_error(const std::string message, const utils::FileRange fileRange);
+  static void Error(const String &message, const utils::FileRange &fileRange);
 };
 
 } // namespace qat::IR

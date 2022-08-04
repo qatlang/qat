@@ -1,8 +1,8 @@
 #include "./give_sentence.hpp"
 namespace qat::ast {
 
-GiveSentence::GiveSentence(std::optional<Expression *> _given_expr,
-                           utils::FileRange _fileRange)
+GiveSentence::GiveSentence(Maybe<Expression *> _given_expr,
+                           utils::FileRange    _fileRange)
     : Sentence(_fileRange), give_expr(_given_expr) {}
 
 IR::Value *GiveSentence::emit(IR::Context *ctx) {

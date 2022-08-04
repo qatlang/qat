@@ -2,28 +2,30 @@
 #define QAT_AST_EXPRESSIONS_CUSTOM_INTEGER_LITERAL_HPP
 
 #include "../../IR/context.hpp"
-#include "../../utils/types.hpp"
+#include "../../utils/helpers.hpp"
 #include "../expression.hpp"
 
 namespace qat::ast {
 
 class CustomIntegerLiteral : public Expression {
 private:
-  std::string value;
+  String value;
 
   u64 bitWidth;
 
   bool isUnsigned;
 
 public:
-  CustomIntegerLiteral(std::string _value, bool _isUnsigned,
-                       unsigned int _bitWidth, utils::FileRange _fileRange);
+  CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth,
+                       utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::customIntegerLiteral; }
+  useit NodeType nodeType() const override {
+    return NodeType::customIntegerLiteral;
+  }
 };
 
 } // namespace qat::ast

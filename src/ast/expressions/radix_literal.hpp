@@ -9,10 +9,10 @@ namespace qat::ast {
 class RadixLiteral : public Expression {
 private:
   // String representation of the integer
-  std::string value;
+  String value;
 
   // Radix value
-  unsigned radix;
+  u64 radix;
 
 public:
   /**
@@ -22,14 +22,13 @@ public:
    * @param _radix Radix value
    * @param _fileRange
    */
-  RadixLiteral(std::string _value, unsigned _radix,
-               utils::FileRange _fileRange);
+  RadixLiteral(String _value, u64 _radix, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::radixLiteral; }
+  useit NodeType nodeType() const override { return NodeType::radixLiteral; }
 };
 
 } // namespace qat::ast

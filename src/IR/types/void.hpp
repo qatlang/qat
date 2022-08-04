@@ -7,11 +7,17 @@ namespace qat::IR {
 
 class VoidType : public QatType {
 public:
-  VoidType() {}
+  VoidType() = default;
 
-  TypeKind typeKind() const;
+  useit TypeKind typeKind() const override;
 
-  std::string toString() const;
+  useit String toString() const override;
+
+  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
+
+  void emitCPP(cpp::File &file) const override;
+
+  useit nuo::Json toJson() const override;
 };
 
 } // namespace qat::IR

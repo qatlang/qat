@@ -9,7 +9,7 @@ namespace qat::IR {
 // Brought Entity
 template <class T> class Brought {
   // Optional name of the entity
-  std::optional<std::string> name;
+  Maybe<String> name;
 
   // The entity brought
   T *entity;
@@ -18,14 +18,14 @@ template <class T> class Brought {
   utils::VisibilityInfo visibility;
 
 public:
-  Brought(std::string _name, T *_entity, utils::VisibilityInfo _visibility)
+  Brought(String _name, T *_entity, utils::VisibilityInfo _visibility)
       : name(_name), entity(_entity), visibility(_visibility) {}
 
   Brought(T *_entity, utils::VisibilityInfo _visibility)
       : name(), entity(_entity), visibility(_visibility) {}
 
   // Get the name if the brought entity is named
-  std::string getName() const { return name.value_or(""); }
+  String getName() const { return name.value_or(""); }
 
   // Is entity named
   bool isNamed() { name.has_value(); }

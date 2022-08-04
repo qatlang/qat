@@ -12,11 +12,10 @@ namespace qat::ast {
 
 class FunctionDefinition : public Node {
 private:
-  std::vector<Sentence *> sentences;
+  Vec<Sentence *> sentences;
 
 public:
-  FunctionDefinition(FunctionPrototype *_prototype,
-                     std::vector<Sentence *> _sentences,
+  FunctionDefinition(FunctionPrototype *_prototype, Vec<Sentence *> _sentences,
                      utils::FileRange _fileRange);
 
   FunctionPrototype *prototype;

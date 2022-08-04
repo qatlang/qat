@@ -47,9 +47,9 @@ public:
    *  Get the index name for the loop index for this sentence
    *
    * @param bb Any BasicBlock inside the parent function
-   * @return unsigned The new index id
+   * @return u64 The new index id
    */
-  unsigned new_loop_index_id(llvm::BasicBlock *bb);
+  static u64 new_loop_index_id(llvm::BasicBlock *bb);
 
   IR::Value *emit(IR::Context *ctx);
 

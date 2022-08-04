@@ -27,7 +27,7 @@ public:
 
   TypeKind typeKind() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::IR

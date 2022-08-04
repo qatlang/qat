@@ -1,10 +1,10 @@
 #include "./block.hpp"
 #include "./function.hpp"
+#include "llvm_helper.hpp"
 
 namespace qat::IR {
 
-Block::Block(Function *_fn, Block *_parent)
-    : id(utils::unique_id()), fn(_fn), parent(_parent) {}
+Block::Block(Function *_fn, Block *_parent) : fn(_fn), parent(_parent) {}
 
 bool Block::hasParent() const { return (parent != nullptr); }
 
@@ -18,7 +18,7 @@ Function *Block::getFunction() { return fn; }
 
 void Block::setActive() { fn->setCurrentBlock(this); }
 
-bool Block::hasLocalValue(std::string name) const {
+bool Block::hasLocalValue(String name) const {
   for (auto val : locals) {
     if (val->getName() == name) {
       return true;
@@ -31,10 +31,10 @@ bool Block::hasLocalValue(std::string name) const {
   }
 }
 
-bool Block::isSame(Block *other) const { return (this->id == other->id); }
+bool Block::isSame(Block *other) const { return (this->isID(other->getID())); }
 
-LocalValue *Block::getLocalValue(std::string name) {
-  for (std::size_t i = 0; i < locals.size(); i++) {
+LocalValue *Block::getLocalValue(String name) {
+  for (usize i = 0; i < locals.size(); i++) {
     if (locals.at(i)->getName() == name) {
       return locals.at(i);
     }
@@ -44,5 +44,26 @@ LocalValue *Block::getLocalValue(std::string name) {
   }
   return nullptr;
 }
+
+void Block::defineLLVM(llvmHelper &help) const {}
+
+void Block::defineCPP(cpp::File &file) const {}
+
+llvm::Value *Block::emitLLVM(llvmHelper &help) const {}
+
+void Block::emitCPP(cpp::File &file) const {
+  if (file.isSourceFile()) {
+    if (!file.getOpenBlock()) {
+      file << "{\n";
+    }
+    // FIXME
+    if (!file.getOpenBlock()) {
+      file << "\n}\n";
+      file.setOpenBlock(false);
+    }
+  }
+}
+
+nuo::Json Block::toJson() const {}
 
 } // namespace qat::IR

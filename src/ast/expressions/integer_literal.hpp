@@ -7,16 +7,16 @@ namespace qat::ast {
 
 class IntegerLiteral : public Expression {
 private:
-  std::string value;
+  String value;
 
 public:
-  IntegerLiteral(std::string _value, utils::FileRange _fileRange);
+  IntegerLiteral(String _value, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() { return NodeType::integerLiteral; }
+  useit NodeType nodeType() const override { return NodeType::integerLiteral; }
 };
 
 } // namespace qat::ast

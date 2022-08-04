@@ -22,7 +22,7 @@ nuo::Json ArrayType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string ArrayType::toString() const {
+String ArrayType::toString() const {
   return (isVariable() ? "var " : "") + element_type->toString() + "[" +
          std::to_string(length) + "]";
 }

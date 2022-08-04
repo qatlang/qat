@@ -19,18 +19,17 @@ namespace qat::ast {
  */
 class GlobalDeclaration : public Node {
 private:
-  std::string name;
+  String name;
 
-  std::optional<QatType *> type;
+  Maybe<QatType *> type;
 
   Expression *value;
 
   bool isVariable;
 
 public:
-  GlobalDeclaration(std::string _name, std::optional<QatType *> _type,
-                    Expression *_value, bool _isVariable,
-                    utils::FileRange _fileRange);
+  GlobalDeclaration(String _name, Maybe<QatType *> _type, Expression *_value,
+                    bool _isVariable, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

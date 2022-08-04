@@ -2,7 +2,7 @@
 
 namespace qat::utils {
 
-llvm::CallingConv::ID qat::utils::stringToCallingConv(std::string name) {
+llvm::CallingConv::ID qat::utils::stringToCallingConv(const String &name) {
   namespace CallingConv = llvm::CallingConv;
 
   if (name == "C") {

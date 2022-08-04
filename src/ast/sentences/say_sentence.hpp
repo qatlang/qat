@@ -8,10 +8,10 @@ namespace qat::ast {
 
 class Say : public Sentence {
 private:
-  std::vector<Expression *> expressions;
+  Vec<Expression *> expressions;
 
 public:
-  Say(std::vector<Expression *> _expressions, utils::FileRange _fileRange)
+  Say(Vec<Expression *> _expressions, utils::FileRange _fileRange)
       : expressions(_expressions), Sentence(_fileRange) {}
 
   IR::Value *emit(IR::Context *ctx);

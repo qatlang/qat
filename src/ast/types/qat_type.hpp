@@ -22,7 +22,7 @@ public:
   QatType(const bool _variable, const utils::FileRange _fileRange)
       : variable(_variable), fileRange(_fileRange) {}
 
-  virtual ~QatType() {}
+  virtual ~QatType() = default;
 
   // This is the code ctx function that handles the generation of
   // LLVM IR
@@ -44,7 +44,7 @@ public:
   // parsed from
   utils::FileRange fileRange;
 
-  virtual std::string toString() const {}
+  virtual String toString() const {}
 
   virtual void destroy() {}
 };

@@ -8,7 +8,7 @@ QatType *PointerType::getSubType() const { return subType; }
 
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
-std::string PointerType::toString() const {
+String PointerType::toString() const {
   return "#[" + subType->toString() + "]";
 }
 

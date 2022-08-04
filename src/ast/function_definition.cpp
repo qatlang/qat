@@ -4,8 +4,8 @@
 namespace qat::ast {
 
 FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
-                                       std::vector<Sentence *> _sentences,
-                                       utils::FileRange _fileRange)
+                                       Vec<Sentence *>    _sentences,
+                                       utils::FileRange   _fileRange)
     : prototype(_prototype), sentences(_sentences), Node(_fileRange) {}
 
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
@@ -13,7 +13,7 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
 }
 
 nuo::Json FunctionDefinition::toJson() const {
-  std::vector<nuo::JsonValue> sntcs;
+  Vec<nuo::JsonValue> sntcs;
   for (auto sentence : sentences) {
     auto sjson = sentence->toJson();
     sntcs.push_back(sjson);

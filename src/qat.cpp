@@ -5,25 +5,25 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#endif
 
 void setTerminalColors() {
-#if PLATFORM_IS_WINDOWS
   HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  DWORD consoleMode;
-  GetConsoleMode(handleOut, &consoleMode);
+  DWORD  consoleMode;
+  GetConsoleMode(handle, &consoleMode);
   consoleMode |= 0x0004;
   consoleMode |= 0x0008;
-  SetConsoleMode(handleOut, consoleMode);
-#endif
+  SetConsoleMode(handle, consoleMode);
 }
+#endif
 
-int main(int count, const char **args) {
+int main(int count, char *args[]) {
   using qat::cli::Config;
 
+#if PLATFORM_IS_WINDOWS
   setTerminalColors();
+#endif
 
-  auto cli = Config::init(count, args);
+  auto *cli = Config::init(count, args);
   if (cli->shouldExit()) {
     return 0;
   }

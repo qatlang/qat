@@ -3,14 +3,14 @@
 namespace qat::ast {
 
 NullPointer::NullPointer(utils::FileRange _fileRange)
-    : type(nullptr), Expression(_fileRange) {}
+    : type(nullptr), Expression(std::move(_fileRange)) {}
 
 NullPointer::NullPointer(llvm::Type *_type, utils::FileRange _fileRange)
-    : type(_type), Expression(_fileRange) {}
+    : type(_type), Expression(std::move(_fileRange)) {}
 
 IR::Value *NullPointer::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->throw_error("Null pointer is not assignable", fileRange);
+    ctx->Error("Null pointer is not assignable", fileRange);
   }
   // TODO - Implement this
 }

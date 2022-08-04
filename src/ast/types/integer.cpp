@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-IntegerType::IntegerType(const unsigned int _bitWidth, const bool _variable,
+IntegerType::IntegerType(const u32 _bitWidth, const bool _variable,
                          const utils::FileRange _fileRange)
     : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
 
@@ -12,7 +12,7 @@ IR::QatType *IntegerType::emit(IR::Context *ctx) {
   return new IR::IntegerType(bitWidth);
 }
 
-bool IntegerType::isBitWidth(const unsigned int width) const {
+bool IntegerType::isBitWidth(const u32 width) const {
   return bitWidth == width;
 }
 
@@ -26,7 +26,7 @@ nuo::Json IntegerType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string IntegerType::toString() const {
+String IntegerType::toString() const {
   return (isVariable() ? "var i" : "i") + std::to_string(bitWidth);
 }
 

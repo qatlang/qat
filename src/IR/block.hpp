@@ -3,44 +3,45 @@
 
 #include "../utils/unique_id.hpp"
 #include "./local_value.hpp"
+#include "definable.hpp"
+#include "emittable.hpp"
+#include "uniq.hpp"
 #include <vector>
 
 namespace qat::IR {
 
 class Function;
 
-class Block {
+class Block : public Definable, public Emittable, public Uniq {
 private:
-  std::string id;
-
   Function *fn;
 
   Block *parent;
 
-  std::vector<LocalValue *> locals;
+  Vec<LocalValue *> locals;
 
 public:
   Block(Function *_fn, Block *_parent);
 
-  std::string getID() const;
-
+  // Get the parent function of this block
   Function *getFunction();
 
-  bool hasParent() const;
+  // Whether this block is the child of another Block
+  useit bool hasParent() const;
 
-  Block *getParent();
-
-  Block *getEntryBlock();
-
-  void setParent(Block *value);
-
-  void setActive();
-
-  bool hasLocalValue(std::string name) const;
-
-  bool isSame(Block *other) const;
-
-  LocalValue *getLocalValue(std::string name);
+  // Get the parent block of this block, if any
+  void              setParent(Block *value);
+  void              setActive();
+  void              defineLLVM(llvmHelper &help) const final;
+  void              defineCPP(cpp::File &file) const final;
+  void              emitCPP(cpp::File &file) const final;
+  useit Block      *getParent();
+  useit Block      *getEntryBlock();
+  useit bool        hasLocalValue(String name) const;
+  useit bool        isSame(Block *other) const;
+  useit LocalValue *getLocalValue(String name);
+  useit llvm::Value *emitLLVM(llvmHelper &help) const final;
+  useit nuo::Json toJson() const;
 };
 
 } // namespace qat::IR

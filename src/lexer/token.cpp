@@ -2,7 +2,7 @@
 
 namespace qat::lexer {
 
-Token Token::valued(TokenType _type, std::string _value,
+Token Token::valued(TokenType _type, String _value,
                     utils::FileRange _fileRange //
 ) {
   return Token(_type, _value, _fileRange);

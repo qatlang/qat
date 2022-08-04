@@ -7,18 +7,18 @@ namespace qat::IR {
 
 class IntegerType : public QatType {
 private:
-  const unsigned int bitWidth;
+  const u32 bitWidth;
 
 public:
-  IntegerType(const unsigned int _bitWidth);
+  IntegerType(const u32 _bitWidth);
 
-  bool isBitWidth(const unsigned int width) const;
+  bool isBitWidth(const u32 width) const;
 
-  unsigned getBitwidth() const;
+  u64 getBitwidth() const;
 
   TypeKind typeKind() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::IR

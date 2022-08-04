@@ -7,13 +7,13 @@ namespace qat::ast {
 
 class LoopIndex : public Expression {
 public:
-  LoopIndex(utils::FileRange _fileRange);
+  explicit LoopIndex(utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::loopIndex; }
+  useit NodeType nodeType() const override { return NodeType::loopIndex; }
 };
 
 } // namespace qat::ast

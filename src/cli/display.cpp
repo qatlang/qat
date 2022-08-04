@@ -7,7 +7,7 @@ void version() {
             << colors::reset << std::endl;
 }
 
-void about(std::string buildCommit) {
+void about(String buildCommit) {
   std::cout << "Version: " << colors::bold::green << VERSION_STRING
             << colors::reset << "\nCreator: " << colors::bold::green
             << "Aldrin Mathew" << colors::reset
@@ -19,7 +19,7 @@ void about(std::string buildCommit) {
             << "\nWebsite: https://qat.dev" << colors::reset << std::endl;
 }
 
-void build_info(std::string buildCommit) {
+void build_info(String buildCommit) {
   std::cout << "Build Info\n  Version: " << colors::bold::green
             << VERSION_STRING << "+" << buildCommit << colors::reset
             << "\n  Commit: " << colors::bold::green << buildCommit

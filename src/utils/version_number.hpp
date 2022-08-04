@@ -1,41 +1,37 @@
 #ifndef QAT_UTILS_VERSION_NUMBER_HPP
 #define QAT_UTILS_VERSION_NUMBER_HPP
 
-#include <optional>
-#include <string>
-#include <vector>
+#include "./helpers.hpp"
 
 namespace qat::utils {
 
 class VersionNumber {
 public:
-  VersionNumber(const std::string version);
+  explicit VersionNumber(const String &version);
 
-  VersionNumber(const unsigned int _major, const unsigned int _minor,
-                const unsigned int _patch, const std::string _prerelease,
-                const std::string _build)
+  VersionNumber(const u32 _major, const u32 _minor, const u32 _patch,
+                const String &_prerelease, const String &_build)
       : major(_major), minor(_minor), patch(_patch), prerelease(_prerelease),
         build(_build) {}
 
-  VersionNumber(const unsigned int _major, const unsigned int _minor,
-                const unsigned int _patch, const std::string _prerelease)
+  VersionNumber(const u32 _major, const u32 _minor, const u32 _patch,
+                const String &_prerelease)
       : major(_major), minor(_minor), patch(_patch), prerelease(_prerelease),
-        build(std::nullopt) {}
+        build(None) {}
 
-  VersionNumber(const unsigned int _major, const unsigned int _minor,
-                const unsigned int _patch)
-      : major(_major), minor(_minor), patch(_patch), prerelease(std::nullopt),
-        build(std::nullopt) {}
+  VersionNumber(const u32 _major, const u32 _minor, const u32 _patch)
+      : major(_major), minor(_minor), patch(_patch), prerelease(None),
+        build(None) {}
 
-  VersionNumber(const unsigned int _major, const unsigned int _minor)
-      : major(_major), minor(_minor), patch(std::nullopt),
-        prerelease(std::nullopt), build(std::nullopt) {}
+  VersionNumber(const u32 _major, const u32 _minor)
+      : major(_major), minor(_minor), patch(None), prerelease(None),
+        build(None) {}
 
-  unsigned int major;
-  unsigned int minor;
-  std::optional<unsigned int> patch;
-  std::optional<std::string> prerelease;
-  std::optional<std::string> build;
+  u32           major;
+  u32           minor;
+  Maybe<u32>    patch;
+  Maybe<String> prerelease;
+  Maybe<String> build;
 };
 
 } // namespace qat::utils

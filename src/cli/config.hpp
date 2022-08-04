@@ -1,17 +1,12 @@
 #ifndef QAT_CLI_CONFIG_HPP
 #define QAT_CLI_CONFIG_HPP
 
-#include "../utils/types.hpp"
+#include "../utils/helpers.hpp"
+#include "../utils/macros.hpp"
 #include "./display.hpp"
-#include <filesystem>
 #include <iostream>
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace qat::cli {
-
-namespace fs = std::filesystem;
 
 enum class CompileTarget { normal, cpp, json };
 
@@ -25,22 +20,22 @@ private:
   // Construct a new Config object
   // This expects the number of arguments passed to the compiler and the
   // arguments, and it initialises the members and sets corresponding values
-  Config(u64 count, const char **args);
+  Config(u64 count, char **args);
 
   // The first CLI argument. Indicates the path specified to invoke the compiler
-  std::string invokePath;
+  String invokePath;
 
   // All paths provided to the compiler for compilation of qat source code
-  std::vector<fs::path> paths;
+  Vec<fs::path> paths;
 
   // Path to be used for outputs
-  std::optional<fs::path> outputPath;
+  Maybe<fs::path> outputPath;
 
   // Compile target value
   CompileTarget target;
 
   // The latest commit at the time of the build of the compiler
-  std::string buildCommit;
+  String buildCommit;
 
   // Whether the compiler should exit after initialisation of Config is
   // complete and arguments have been handled
@@ -82,7 +77,8 @@ public:
    * @param args The arguments provided to the compiler
    * @return Config
    */
-  static Config *init(u64 count, const char **args);
+  static Config *init(u64   count,
+                      char *args[]); // NOLINT(modernize-avoid-c-arrays)
 
   /**
    *  This is technically the proper function to get the existing instance
@@ -93,62 +89,54 @@ public:
   static Config *get();
 
   // Parse the CompileTarget from the argument
-  static CompileTarget parseCompileTarget(std::string val);
+  static CompileTarget parseCompileTarget(const String &val);
 
-  /**
-   *  Whether there is an instance of Config that has been initialised
-   *
-   * @return true
-   * @return false
-   */
+  // Whether there is an instance of Config that has been initialised
   static bool hasInstance();
 
-  /**
-   *  Function that destroys/deletes the single instance of Config
-   *
-   */
+  // Function that destroys/deletes the single instance of Config
   static void destroy();
 
   /** Behaviour specific functions */
 
   // Whether there are paths provided in the CLI and the compilation step
   // should proceed
-  bool isCompile() const;
+  useit bool isCompile() const;
 
   // Whether compiler should exit after arguments are handled by Config
   //
   // This is usually true for simple actions like version display, about... and
   // if there were errors during Config initialisation
-  bool shouldExit() const;
+  useit bool shouldExit() const;
 
   // Get paths provided to the compiler for the compilation stage
-  std::vector<fs::path> getPaths() const;
+  useit Vec<fs::path> getPaths() const;
 
   //  Whether comments in source code files should be saved to be used for
   // documentation
-  bool shouldSaveDocs() const;
+  useit bool shouldSaveDocs() const;
 
   //  Whether different parts of the compiler should show reports about
   // the performance and timing statistics
-  bool shouldShowReport() const;
+  useit bool shouldShowReport() const;
 
   //  Whether lexer should display the analysed tokens in the console
-  bool shouldLexerEmitTokens() const;
+  useit bool shouldLexerEmitTokens() const;
 
   // Whether an output path is provided to the compiler
-  bool hasOutputPath() const;
+  useit bool hasOutputPath() const;
 
   // Get the output path provided to the compiler
-  fs::path getOutputPath() const;
+  useit fs::path getOutputPath() const;
 
   // Whether compiler outputs should be verbose
-  bool isVerbose() const;
+  useit bool isVerbose() const;
 
   // Whether the AST should be exported
-  bool shouldExportAST() const;
+  useit bool shouldExportAST() const;
 
   // Get the compile-target provided by the user
-  CompileTarget getTarget() const;
+  useit CompileTarget getTarget() const;
 
   ~Config();
 };

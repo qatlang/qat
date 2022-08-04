@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 SizeOf::SizeOf(Expression *_expression, utils::FileRange _fileRange)
-    : expression(_expression), Expression(_fileRange) {}
+    : expression(_expression), Expression(std::move(_fileRange)) {}
 
 IR::Value *SizeOf::emit(IR::Context *ctx) {
   // TODO - Implement this

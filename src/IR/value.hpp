@@ -12,37 +12,28 @@ namespace qat::IR {
 
 class QatType;
 
-enum class Kind { assignable, temporary, pure, expired };
+enum class Nature { assignable, temporary, pure, expired };
 
 class Value {
 protected:
   // Type representation of the value
   IR::QatType *type;
-
-  // The kind/nature of the value
-  Kind kind;
-
+  // The nature of the value
+  Nature nature;
   // Variability nature
   bool variable;
 
 public:
-  Value(IR::QatType *_type, bool _isVariable, Kind kind);
+  Value(IR::QatType *_type, bool _isVariable, Nature kind);
 
-  const IR::QatType *getType() const;
-
-  bool isReference() const;
-
-  bool isPointer() const;
-
-  bool isVariable() const;
-
-  Kind getKind() const;
-
-  virtual llvm::Value *emitLLVM(llvmHelper helper) const {}
-
-  virtual void emitCPP(cpp::File &file) const {}
-
-  virtual nuo::Json toJson() const {}
+  useit QatType          *getType() const; // Type of the value
+  useit bool              isReference() const;
+  useit bool              isPointer() const;
+  useit bool              isVariable() const;
+  useit Nature            getKind() const;
+  virtual llvm::Value    *emitLLVM(llvmHelper &helper) const = 0;
+  virtual void            emitCPP(cpp::File &file) const     = 0;
+  useit virtual nuo::Json toJson() const                     = 0;
 };
 
 } // namespace qat::IR

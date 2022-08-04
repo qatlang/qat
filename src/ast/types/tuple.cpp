@@ -4,16 +4,15 @@
 
 namespace qat::ast {
 
-TupleType::TupleType(const std::vector<ast::QatType *> _types,
-                     const bool _isPacked, const bool _variable,
-                     const utils::FileRange _fileRange)
+TupleType::TupleType(const Vec<ast::QatType *> _types, const bool _isPacked,
+                     const bool _variable, const utils::FileRange _fileRange)
     : types(_types), isPacked(_isPacked), QatType(_variable, _fileRange) {}
 
 IR::QatType *TupleType::emit(IR::Context *ctx) {
-  std::vector<IR::QatType *> irTypes;
+  Vec<IR::QatType *> irTypes;
   for (auto &type : types) {
     if (type->typeKind() == ast::TypeKind::Void) {
-      ctx->throw_error("Tuple member type cannot be `void`", fileRange);
+      ctx->Error("Tuple member type cannot be `void`", fileRange);
     }
     irTypes.push_back(type->emit(ctx));
   }
@@ -23,7 +22,7 @@ IR::QatType *TupleType::emit(IR::Context *ctx) {
 TypeKind TupleType::typeKind() { return TypeKind::tuple; }
 
 nuo::Json TupleType::toJson() const {
-  std::vector<nuo::JsonValue> mems;
+  Vec<nuo::JsonValue> mems;
   for (auto mem : types) {
     mems.push_back(mem->toJson());
   }
@@ -35,14 +34,14 @@ nuo::Json TupleType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string TupleType::toString() const {
-  std::string result;
+String TupleType::toString() const {
+  String result;
   if (isVariable()) {
     result = "var (";
   } else {
     result = "(";
   }
-  for (std::size_t i = 0; i < types.size(); i++) {
+  for (usize i = 0; i < types.size(); i++) {
     result += types.at(i)->toString();
     if (i != (types.size() - 1)) {
       result += ", ";

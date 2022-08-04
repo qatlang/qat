@@ -11,7 +11,7 @@ private:
    *  String representation of the floating point number
    *
    */
-  std::string value;
+  String value;
 
 public:
   /**
@@ -20,13 +20,13 @@ public:
    * @param _value String representation of the floating point number
    * @param _fileRange
    */
-  FloatLiteral(std::string _value, utils::FileRange _fileRange);
+  FloatLiteral(String _value, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::floatLiteral; }
+  useit NodeType nodeType() const override { return NodeType::floatLiteral; }
 };
 
 } // namespace qat::ast

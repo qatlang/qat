@@ -1,16 +1,16 @@
 #ifndef QAT_UTILS_UNIQUE_ID_HPP
 #define QAT_UTILS_UNIQUE_ID_HPP
 
-#include <string>
+#include "./helpers.hpp"
 
 namespace qat::utils {
 
 /**
  *  Generate a unique id. This is almost UUID
  *
- * @return std::string The Unique ID
+ * @return String The Unique ID
  */
-std::string unique_id();
+String unique_id();
 
 } // namespace qat::utils
 

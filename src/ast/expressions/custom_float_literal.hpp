@@ -9,20 +9,21 @@ namespace qat::ast {
 class CustomFloatLiteral : public Expression {
 private:
   // Numerical value of the float
-  std::string value;
+  String value;
 
-  // Kind of the float
-  std::string kind;
+  // Nature of the float
+  String kind;
 
 public:
-  CustomFloatLiteral(std::string _value, std::string _kind,
-                     utils::FileRange _fileRange);
+  CustomFloatLiteral(String _value, String _kind, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::customFloatLiteral; }
+  useit NodeType nodeType() const override {
+    return NodeType::customFloatLiteral;
+  }
 };
 
 } // namespace qat::ast

@@ -12,11 +12,16 @@ class MemberIndexAccess : public Expression {
   Expression *index;
 
 public:
-  IR::Value *emit(IR::Context *ctx);
+  MemberIndexAccess(Expression *_instance, Expression *_index,
+                    utils::FileRange _fileRange);
 
-  nuo::Json toJson() const;
+  IR::Value *emit(IR::Context *ctx) override;
 
-  NodeType nodeType() const { return NodeType::memberIndexAccess; }
+  useit nuo::Json toJson() const override;
+
+  useit NodeType nodeType() const override {
+    return NodeType::memberIndexAccess;
+  }
 };
 
 } // namespace qat::ast

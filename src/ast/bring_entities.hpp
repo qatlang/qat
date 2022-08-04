@@ -12,45 +12,50 @@ namespace qat::ast {
 class BroughtGroup {
 private:
   // The parent entity of the group
-  StringLiteral *parent;
+  String parent;
 
   // All the members of the parent that should be brought in
-  std::vector<StringLiteral *> members;
+  Vec<String> members;
+
+  // FileRange spanned by this group
+  utils::FileRange fileRange;
 
 public:
-  BroughtGroup(StringLiteral *_parent, std::vector<StringLiteral *> _members);
+  BroughtGroup(String _parent, Vec<String> _members,
+               utils::FileRange _fileRange);
 
-  explicit BroughtGroup(StringLiteral *_parent);
+  BroughtGroup(String _parent, utils::FileRange _range);
 
   // Get the parent entity
-  StringLiteral *get_parent() const;
+  useit String getParent() const;
 
   // Get the members of the parent entity
-  std::vector<StringLiteral *> get_members() const;
+  useit Vec<String> getMembers() const;
 
   // Whether the entire entity should be brought into the scope
-  bool is_all_brought() const;
+  useit bool is_all_brought() const;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const;
 };
 
 class BringEntities : public Node {
 private:
   // All entities to be brought in
-  std::vector<BroughtGroup *> entities;
+  Vec<BroughtGroup *> entities;
 
   // Visibility of the brought entities
   utils::VisibilityInfo visibility;
 
 public:
-  BringEntities(std::vector<BroughtGroup *> _entities,
-                utils::VisibilityInfo _visibility, utils::FileRange _fileRange);
+  BringEntities(Vec<BroughtGroup *>          _entities,
+                const utils::VisibilityInfo &_visibility,
+                utils::FileRange             _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::bringEntities; }
+  useit NodeType nodeType() const override { return NodeType::bringEntities; }
 };
 
 } // namespace qat::ast

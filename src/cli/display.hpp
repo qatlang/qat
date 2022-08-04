@@ -1,7 +1,7 @@
 #ifndef QAT_CLI_DISPLAY_HPP
 #define QAT_CLI_DISPLAY_HPP
 
-#include "../utils/types.hpp"
+#include "../utils/helpers.hpp"
 #include "./color.hpp"
 #include "./version.hpp"
 #include <iostream>
@@ -14,20 +14,21 @@ namespace qat::cli::display {
  *
  */
 void version();
+
 /**
  *  Displays details about the compiler, like version build info,
  * website...
  *
  * @param buildCommit
  */
-void about(std::string buildCommit);
+void about(String buildCommit);
 
 /**
  *  Displays the build info
  *
  * @param buildCommit
  */
-void build_info(std::string buildCommit);
+void build_info(String buildCommit);
 
 /**
  *  Displays detailed information on how to use the CLI of the compiler.

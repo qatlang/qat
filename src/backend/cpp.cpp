@@ -1,5 +1,4 @@
 #include "./cpp.hpp"
-#include <filesystem>
 #include <fstream>
 #include <ios>
 
@@ -7,7 +6,7 @@ namespace qat::cpp {
 
 Content::Content() : value() {}
 
-Content &Content::operator<<(std::string content) {
+Content &Content::operator<<(const String &content) {
   value += content;
   return *this;
 }
@@ -17,16 +16,17 @@ Content &Content::operator<<(const char *content) {
   return *this;
 }
 
-std::string Content::getContent() const { return value; }
+String Content::getContent() const { return value; }
 
-void Content::setContent(std::string val) { value = val; }
+void Content::setContent(String val) { value = std::move(val); }
 
-Namespace::Namespace(std::string _name, Namespace *_parent, bool _isFile)
-    : name(_name), parent(_parent), isFile(_isFile), children(), Content() {}
+Namespace::Namespace(String _name, Namespace *_parent, bool _isFile)
+    : name(std::move(_name)), parent(_parent), isFile(_isFile),
+      active(nullptr) {}
 
-std::string Namespace::getName() const { return name; }
+String Namespace::getName() const { return name; }
 
-std::string Namespace::getFullName() const {
+String Namespace::getFullName() const {
   if (parent) {
     return parent->getFullName() + "::" + name;
   } else {
@@ -42,23 +42,23 @@ bool Namespace::hasParent() const { return parent != nullptr; }
 
 Namespace *Namespace::getActive() { return active ? active : this; }
 
-Namespace *Namespace::addChild(std::string name) {
+Namespace *Namespace::addChild(const String &name) {
   children.push_back(new Namespace(name, this, false));
   active = children.back();
   return active;
 }
 
-void Namespace::addEnclosedComment(const std::string comment) {
+void Namespace::addEnclosedComment(const String &comment) {
   *this << (" /** " + comment + " */ ");
 }
 
-void Namespace::addSingleLineComment(const std::string comment) {
+void Namespace::addSingleLineComment(const String &comment) {
   *this << ("// " + comment + "\n");
 }
 
 void Namespace::closeChild() { active = nullptr; }
 
-File *Namespace::getFile() {
+File *Namespace::getFile() { // NOLINT(misc-no-recursion)
   if (isFile) {
     return (File *)this;
   } else if (hasParent()) {
@@ -66,22 +66,23 @@ File *Namespace::getFile() {
   }
 }
 
-File::File(std::string _path, bool _isHeader)
-    : path(_path), isHeader(_isHeader), Namespace("", nullptr, true) {}
+File::File(String _path, bool _isHeader)
+    : path(std::move(_path)), isHeader(_isHeader), openBlock(false),
+      isArrayBracketSyntax(false), Namespace("", nullptr, true) {}
 
-File File::Header(std::string path) { return File(path, false); }
+File File::Header(String path) { return {std::move(path), false}; }
 
-File File::Source(std::string path) { return File(path, true); }
+File File::Source(String path) { return {std::move(path), true}; }
 
-void File::addInclude(const std::string unit) {
+void File::addInclude(const String &unit) {
   bool exists = false;
-  for (auto val : includes) {
+  for (auto const &val : includes) {
     if (val == unit) {
       exists = true;
       break;
     }
   }
-  for (auto val : headerIncludes) {
+  for (auto const &val : headerIncludes) {
     if (val == unit) {
       exists = true;
       break;
@@ -92,24 +93,24 @@ void File::addInclude(const std::string unit) {
   }
 }
 
-std::vector<std::string> File::getIncludes() const { return includes; }
+Vec<String> File::getIncludes() const { return includes; }
 
 void File::moveIncludes(File &other) {
-  for (auto inc : includes) {
+  for (auto const &inc : includes) {
     other.addInclude(inc);
   }
   includes.clear();
 }
 
-void File::updateHeaderIncludes(std::vector<std::string> values) {
-  for (auto val : values) {
+void File::updateHeaderIncludes(const Vec<String> &values) {
+  for (auto const &val : values) {
     headerIncludes.push_back(val);
   }
 }
 
-void File::addLoopID(std::string ID) { loopIndices.push_back(ID); }
+void File::addLoopID(String idVal) { loopIndices.push_back(std::move(idVal)); }
 
-std::string File::getLoopIndex() const { return loopIndices.back(); }
+String File::getLoopIndex() const { return loopIndices.back(); }
 
 void File::popLastLoopIndex() { loopIndices.pop_back(); }
 
@@ -117,27 +118,43 @@ void File::setOpenBlock(bool val) { openBlock = val; }
 
 bool File::getOpenBlock() const { return openBlock; }
 
+bool File::getArraySyntaxIsBracket() const { return isArrayBracketSyntax; }
+
+void File::setArraySyntax(bool val) { isArrayBracketSyntax = val; }
+
 bool File::isHeaderFile() const { return isHeader; }
 
 bool File::isSourceFile() const { return !isHeader; }
 
+void File::setParent(String val) { parent = std::move(val); }
+
+String File::getParent() { return parent.value_or(""); }
+
 void File::write() {
-  std::string includePart;
-  for (auto inc : includes) {
+  String includePart = "// Transpiled by QAT compiler\n\n";
+  for (auto const &inc : includes) {
     if (inc.find("<") == 0 && inc.find_last_of('>')) {
       includePart += ("#include " + inc + "\n");
     } else {
       includePart += ("#include \"" + inc + "\"\n");
     }
   }
-  setContent(includePart + "\n" + getContent());
+  includePart += "\n";
+  if (parent) {
+    includePart += ("// qat lib\nnamespace " + parent.value() + " {\n\n");
+  }
+  includePart += getContent();
+  if (parent) {
+    includePart += "\n} // qat lib " + parent.value() + "\n";
+  }
 
   std::fstream outputStream;
-  auto filepath = std::filesystem::path(path);
+  auto         filepath = fs::path(path);
   outputStream.open(filepath, std::ios_base::out);
   if (outputStream.is_open()) {
     outputStream << getContent();
     outputStream.close();
+  } else {
   }
 }
 

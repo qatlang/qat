@@ -16,7 +16,7 @@ private:
    *  Bitwidth of the integer
    *
    */
-  const unsigned int bitWidth;
+  const u32 bitWidth;
 
 public:
   /**
@@ -26,7 +26,7 @@ public:
    * @param _variable Variability
    * @param _fileRange
    */
-  UnsignedType(const unsigned int _bitWidth, const bool _variable,
+  UnsignedType(const u32 _bitWidth, const bool _variable,
                const utils::FileRange _fileRange);
 
   IR::QatType *emit(IR::Context *ctx);
@@ -34,11 +34,11 @@ public:
   TypeKind typeKind();
 
   //  Whether the provided integer is the bitwidth of the UnsignedType
-  bool isBitWidth(const unsigned int width) const;
+  bool isBitWidth(const u32 width) const;
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

@@ -12,27 +12,25 @@ namespace qat::ast {
 class Lib : public Node {
 private:
   // Name of the library
-  std::string name;
+  String name;
 
   // All node members of this library
-  std::vector<Node *> members;
+  Vec<Node *> members;
 
   // Visibility of this library
   utils::VisibilityInfo visibility;
 
 public:
-  Lib(std::string _name, std::vector<Node *> _members,
-      utils::VisibilityInfo _visibility, utils::FileRange _file_range);
+  Lib(String _name, Vec<Node *> _members,
+      const utils::VisibilityInfo &_visibility, utils::FileRange _file_range);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
   nuo::Json toJson();
 
-  NodeType nodeType() const { return NodeType::lib; }
+  useit NodeType nodeType() const override { return NodeType::lib; }
 
-  void destroy();
-
-  ~Lib() noexcept;
+  void destroy() override;
 };
 
 } // namespace qat::ast

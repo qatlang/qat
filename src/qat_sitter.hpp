@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 
 class QatSitter {
 private:
-  std::vector<IR::QatModule *> fileEntities;
+  Vec<IR::QatModule *> fileEntities;
 
   // The Context instance used by this class to control IR generation
   IR::Context *Context;

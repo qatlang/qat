@@ -10,18 +10,18 @@ namespace qat::ast {
 
 class ArgumentType {
 private:
-  std::optional<std::string> name;
+  Maybe<String> name;
 
   QatType *type;
 
 public:
   ArgumentType(QatType *type);
 
-  ArgumentType(std::string name, QatType *type);
+  ArgumentType(String name, QatType *type);
 
   bool hasName() const;
 
-  std::string getName() const;
+  String getName() const;
 
   QatType *getType();
 
@@ -32,10 +32,10 @@ class FunctionType : public QatType {
 private:
   QatType *returnType;
 
-  std::vector<ArgumentType *> argTypes;
+  Vec<ArgumentType *> argTypes;
 
 public:
-  FunctionType(QatType *_retType, std::vector<ArgumentType *> _argTypes,
+  FunctionType(QatType *_retType, Vec<ArgumentType *> _argTypes,
                utils::FileRange _fileRange);
 
   IR::QatType *emit(IR::Context *ctx);
@@ -44,7 +44,7 @@ public:
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

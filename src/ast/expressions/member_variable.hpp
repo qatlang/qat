@@ -10,21 +10,21 @@ namespace qat::ast {
 class MemberVariable : public Expression {
   Expression *instance;
 
-  std::string memberName;
+  String memberName;
 
   bool isPointerAccess;
 
 public:
   MemberVariable(Expression *_instance, bool _isPointerAccess,
-                 std::string _memberName, utils::FileRange _fileRange)
-      : instance(_instance), isPointerAccess(_isPointerAccess),
-        memberName(_memberName), Expression(_fileRange) {}
+                 String _memberName, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::memberVariableExpression; }
+  useit NodeType nodeType() const override {
+    return NodeType::memberVariableExpression;
+  }
 };
 
 } // namespace qat::ast

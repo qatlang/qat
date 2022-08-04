@@ -2,13 +2,14 @@
 
 namespace qat::ast {
 
-CustomFloatLiteral::CustomFloatLiteral(std::string _value, std::string _kind,
+CustomFloatLiteral::CustomFloatLiteral(String _value, String _kind,
                                        utils::FileRange _fileRange)
-    : value(_value), kind(_kind), Expression(_fileRange) {}
+    : value(std::move(_value)), kind(std::move(_kind)),
+      Expression(std::move(_fileRange)) {}
 
 IR::Value *CustomFloatLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
-    ctx->throw_error("Float literals are not assignable", fileRange);
+    ctx->Error("Float literals are not assignable", fileRange);
   }
   // TODO - Implement this
 }
@@ -16,7 +17,7 @@ IR::Value *CustomFloatLiteral::emit(IR::Context *ctx) {
 nuo::Json CustomFloatLiteral::toJson() const {
   return nuo::Json()
       ._("nodeType", "customFloatLiteral")
-      ._("kind", kind)
+      ._("nature", kind)
       ._("value", value)
       ._("fileRange", fileRange);
 }

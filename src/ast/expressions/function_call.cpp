@@ -7,9 +7,9 @@ IR::Value *FunctionCall::emit(IR::Context *ctx) {
 }
 
 nuo::Json FunctionCall::toJson() const {
-  std::vector<nuo::JsonValue> args;
+  Vec<nuo::JsonValue> args;
   for (auto arg : arguments) {
-    args.push_back(arg->toJson());
+    args.emplace_back(arg->toJson());
   }
   return nuo::Json()
       ._("nodeType", "functionCall")

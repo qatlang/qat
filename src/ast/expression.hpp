@@ -5,10 +5,10 @@
 
 namespace qat::ast {
 
-// Kind of the expression
+// Nature of the expression
 //
-// "assignable" & "temporary" can be grouped to the generalised kind glvalue
-// "pure" and "temporary" can be grouped to the generalsied kind rvalue
+// "assignable" & "temporary" can be grouped to the generalised nature glvalue
+// "pure" and "temporary" can be grouped to the generalsied nature rvalue
 //
 // Assignable expressions can be assigned to
 enum class ExpressionKind {
@@ -24,7 +24,7 @@ private:
 public:
   Expression(utils::FileRange _fileRange);
 
-  virtual ~Expression() {}
+  ~Expression() override = default;
 
   void setExpectedKind(ExpressionKind _kind);
 
@@ -32,11 +32,11 @@ public:
 
   bool isExpectedKind(ExpressionKind _kind);
 
-  virtual IR::Value *emit(IR::Context *ctx) {}
+  IR::Value *emit(IR::Context *ctx) override = 0;
 
-  virtual NodeType nodeType() const {}
+  NodeType nodeType() const override = 0;
 
-  virtual nuo::Json toJson() const {}
+  nuo::Json toJson() const override = 0;
 };
 
 } // namespace qat::ast

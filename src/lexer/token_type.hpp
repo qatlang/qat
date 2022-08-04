@@ -9,22 +9,20 @@ namespace qat::lexer {
  * far as language semantics goes.
  */
 enum class TokenType {
-  null = -1, // null represents an empty value
-  FALSE = 0, // false
-  TRUE = 1,
+  null  = -1, // null represents an empty value
+  FALSE = 0,  // false
+  TRUE  = 1,
   startOfFile,
   give,
   Public,
   stop,
   voidType,
   boolType,
-  file,
   bring,
   from,
   to,
   child,
   external,
-  function,
   Type,
   model,
   identifier,
@@ -62,6 +60,7 @@ enum class TokenType {
   packed,
   var,
   pointerAccess,
+  pointerVariation,
   obtainPointer,
   givenTypeSeparator,
   binaryOperator,

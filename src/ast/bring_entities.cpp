@@ -1,35 +1,40 @@
 #include "./bring_entities.hpp"
+#include <utility>
 #include <vector>
 
 namespace qat::ast {
 
-BroughtGroup::BroughtGroup(StringLiteral *_parent)
-    : parent(_parent), members({}) {}
+BroughtGroup::BroughtGroup(String _parent, utils::FileRange _fileRange)
+    : parent(std::move(_parent)), members({}),
+      fileRange(std::move(_fileRange)) {}
 
-BroughtGroup::BroughtGroup(StringLiteral *_parent,
-                           std::vector<StringLiteral *> _members)
-    : parent(_parent), members(_members) {}
+BroughtGroup::BroughtGroup(String _parent, Vec<String> _members,
+                           utils::FileRange _fileRange)
+    : parent(std::move(_parent)), members(std::move(_members)),
+      fileRange(std::move(_fileRange)) {}
 
-StringLiteral *BroughtGroup::get_parent() const { return parent; }
+String BroughtGroup::getParent() const { return parent; }
 
-std::vector<StringLiteral *> BroughtGroup::get_members() const {
-  return members;
-}
+Vec<String> BroughtGroup::getMembers() const { return members; }
 
 bool BroughtGroup::is_all_brought() const { return members.empty(); }
 
 nuo::Json BroughtGroup::toJson() const {
-  std::vector<nuo::JsonValue> mems;
-  for (auto mem : members) {
-    mems.push_back(mem->toJson());
+  Vec<nuo::JsonValue> membersJson;
+  for (auto const &mem : members) {
+    membersJson.emplace_back(mem);
   }
-  return nuo::Json()._("parent", parent->toJson())._("members", mems);
+  return nuo::Json()
+      ._("parent", parent)
+      ._("members", membersJson)
+      ._("fileRange", fileRange);
 }
 
-BringEntities::BringEntities(std::vector<BroughtGroup *> _entities,
-                             utils::VisibilityInfo _visibility,
-                             utils::FileRange _fileRange)
-    : entities(_entities), visibility(_visibility), Node(_fileRange) {}
+BringEntities::BringEntities(Vec<BroughtGroup *>          _entities,
+                             const utils::VisibilityInfo &_visibility,
+                             utils::FileRange             _fileRange)
+    : entities(std::move(_entities)), visibility(_visibility),
+      Node(std::move(_fileRange)) {}
 
 IR::Value *BringEntities::emit(IR::Context *ctx) {
   // FIXME - Implement this
@@ -37,13 +42,13 @@ IR::Value *BringEntities::emit(IR::Context *ctx) {
 }
 
 nuo::Json BringEntities::toJson() const {
-  std::vector<nuo::JsonValue> ents;
+  Vec<nuo::JsonValue> entitiesJson;
   for (auto ent : entities) {
-    ents.push_back(ent->toJson());
+    entitiesJson.emplace_back(ent->toJson());
   }
   return nuo::Json()
       ._("nodeType", "bringEntities")
-      ._("entities", ents)
+      ._("entities", entitiesJson)
       ._("visibility", visibility)
       ._("fileRange", fileRange);
 }

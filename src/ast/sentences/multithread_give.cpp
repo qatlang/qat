@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-MultithreadGive::MultithreadGive(Expression *_expression,
+MultithreadGive::MultithreadGive(Expression *     _expression,
                                  utils::FileRange _fileRange)
     : Sentence(_fileRange), expression(_expression) {}
 

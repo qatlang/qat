@@ -2,19 +2,16 @@
 
 namespace qat::IR {
 
-UnsignedType::UnsignedType(const unsigned int _bitWidth)
-    : bitWidth(_bitWidth) {}
+UnsignedType::UnsignedType(const u32 _bitWidth) : bitWidth(_bitWidth) {}
 
-unsigned UnsignedType::getBitwidth() const { return bitWidth; }
+u64 UnsignedType::getBitwidth() const { return bitWidth; }
 
-bool UnsignedType::isBitWidth(const unsigned int width) const {
+bool UnsignedType::isBitWidth(const u32 width) const {
   return bitWidth == width;
 }
 
 TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
-std::string UnsignedType::toString() const {
-  return "u" + std::to_string(bitWidth);
-}
+String UnsignedType::toString() const { return "u" + std::to_string(bitWidth); }
 
 } // namespace qat::IR

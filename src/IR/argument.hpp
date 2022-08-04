@@ -12,90 +12,46 @@ namespace qat::IR {
  *
  */
 class Argument {
-  /**
-   *  Name of the argument
-   *
-   */
-  std::string name;
-
-  /**
-   *  Type of the argument
-   *
-   */
+  // Name of the argument
+  String name;
+  // Type of the argument
   QatType *type;
 
-  /**
-   *  Variability of the argument
-   *
-   */
+  // Variability of the argument
   bool variability;
 
-  /**
-   *  Index of the argument in the function
-   *
-   */
-  unsigned arg_index;
+  // Index of the argument in the function
+  u64 argIndex;
 
-  /**
-   *  Construct a new Argument
-   *
-   * @param _name Name of the argument
-   * @param _type LLVM Type of the argument
-   * @param _variability Variability of the argument
-   * @param _arg_index Index of the argument in the function
-   */
-  Argument(std::string _name, QatType *_type, bool _variability,
-           unsigned _arg_index)
-      : name(_name), type(_type), variability(_variability),
-        arg_index(_arg_index) {}
+  // Construct a new Argument
+  Argument(String _name, QatType *_type, bool _variability, u64 _arg_index)
+      : name(std::move(_name)), type(_type), variability(_variability),
+        argIndex(_arg_index) {}
 
 public:
-  /**
-   *  This constructs an immutable argument
-   *
-   * @param name Name of the argument
-   * @param type LLVM Type of the argument
-   * @param arg_index Index of the argument in the function
-   * @return Argument
-   */
-  static Argument Create(std::string name, QatType *type, unsigned arg_index) {
-    return Argument(name, type, false, arg_index);
+  // This constructs an immutable argument
+  useit static Argument Create(const String &name, QatType *type,
+                               u64 arg_index) {
+    return {std::move(name), type, false, arg_index};
   }
 
-  /**
-   *  This constructs a variable argument
-   *
-   * @param name Name of the argument
-   * @param type LLVM Type of the argument
-   * @param arg_index Index of the argument in the function
-   * @return Argument
-   */
-  static Argument CreateVariable(std::string name, QatType *type,
-                                 unsigned arg_index) {
-    return Argument(name, type, true, arg_index);
+  // This constructs a variable argument
+  useit static Argument CreateVariable(const String &name, QatType *type,
+                                       u64 arg_index) {
+    return {std::move(name), type, true, arg_index};
   }
 
-  /**
-   *  Get the name of the argument
-   *
-   * @return std::string
-   */
-  std::string get_name() const { return name; }
+  // Get the name of the argument
+  useit String getName() const { return name; }
 
-  /**
-   *  Get the LLVM type of the argument
-   *
-   * @return llvm::Type*
-   */
-  QatType *getType() const { return type; }
+  // Get the LLVM type of the argument
+  useit QatType *getType() const { return type; }
 
-  /**
-   *  Get the variability of the argument
-   *
-   * @return true
-   * @return false
-   */
-  bool get_variability() const { return variability; }
+  // Get the variability of the argument
+  useit bool get_variability() const { return variability; }
+
+  // Get the index of the argument
+  useit u64 getArgIndex() const { return argIndex; }
 };
 } // namespace qat::IR
 

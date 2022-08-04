@@ -6,11 +6,15 @@ namespace qat::ast {
 IR::Value *Box::emit(IR::Context *ctx) {
   // FIXME - Perform name checks
   // TODO - Implement this
+  if (ctx) {
+    std::cout << "";
+  }
+  return nullptr;
 }
 
 nuo::Json Box::toJson() const {
-  std::vector<nuo::JsonValue> mems;
-  for (auto mem : members) {
+  Vec<nuo::JsonValue> mems;
+  for (auto *mem : members) {
     mems.push_back(mem->toJson());
   }
   return nuo::Json()

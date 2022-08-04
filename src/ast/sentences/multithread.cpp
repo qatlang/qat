@@ -1,19 +1,19 @@
 #include "./multithread.hpp"
 
-#define MULTITHREAD_INDEX "multithread'index"
+#define MULTITHREAD_INDEX  "multithread'index"
 #define MULTITHREAD_RESULT "multithread:result"
 
 namespace qat::ast {
 
 Multithread::Multithread(Expression *_count, Block *_main, Block *_after,
                          utils::FileRange _fileRange)
-    : count(_count), Sentence(_fileRange), name(std::nullopt),
+    : count(_count), Sentence(_fileRange), name(None),
       cache_block(new Block({}, count->fileRange)),
       call_block(new Block({}, count->fileRange)),
       join_block(new Block({}, count->fileRange)), block(_main), after(_after),
-      type(std::nullopt) {}
+      type(None) {}
 
-Multithread::Multithread(Expression *_count, std::string _name, QatType *_type,
+Multithread::Multithread(Expression *_count, String _name, QatType *_type,
                          Block *_main, Block *_after,
                          utils::FileRange _fileRange)
     : count(_count), name(_name), type(_type),

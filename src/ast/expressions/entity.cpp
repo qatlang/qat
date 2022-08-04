@@ -1,6 +1,11 @@
+#include <utility>
+
 #include "./entity.hpp"
 
 namespace qat::ast {
+
+Entity::Entity(String _name, utils::FileRange _fileRange)
+    : name(std::move(_name)), Expression(std::move(_fileRange)) {}
 
 IR::Value *Entity::emit(IR::Context *ctx) {
   // TODO - Implement this

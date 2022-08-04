@@ -42,7 +42,7 @@ private:
    * token emitted by the Lexer
    *
    */
-  std::string prev_ctx;
+  String prev_ctx;
 
   /**
    *  Previous character read by the `read` function. This
@@ -58,35 +58,35 @@ private:
    * file
    *
    */
-  char curr;
+  char current;
 
   /**
    *  Vector of all tokens found during lexical analysis. This is
    * updated after each invocation of the `tokeniser` function.
    *
    */
-  std::vector<Token> tokens;
+  Vec<Token> tokens;
 
   /**
    *  A temporary buffer for tokens that have not yet been added to
    * the `tokens` vector
    *
    */
-  std::vector<Token> buffer;
+  Vec<Token> buffer;
 
   /**
    *  Number of templateTypeStart tokens encountered that haven't been
    * closed by a templateTypeEnd token
    *
    */
-  unsigned int template_type_start_count = 0;
+  u32 template_type_start_count = 0;
 
   /**
    *  Total number of characters found in the file. This is for
    * reporting purposes
    *
    */
-  unsigned long long total_char_count = 0;
+  u64 total_char_count = 0;
 
   /**
    *  Time taken by the lexer to analyse the entire file, in
@@ -94,7 +94,7 @@ private:
    * depending on the value
    *
    */
-  unsigned long long timeInNS = 0;
+  u64 timeInNS = 0;
 
 public:
   Lexer();
@@ -118,9 +118,9 @@ public:
   /**
    *  Get the tokens that has been obtained so far from the analysis
    *
-   * @return std::vector<Token>
+   * @return Vec<Token>
    */
-  std::vector<Token> &get_tokens();
+  Vec<Token> &get_tokens();
 
   /**
    *  Clear all the tokens obtained from the analysis so far
@@ -133,13 +133,13 @@ public:
    *
    * @param message A meaningful message about the type of error
    */
-  void throw_error(std::string message);
+  void throw_error(const String &message);
 
   /**
    *  Analyses the current file and emit tokens as identified
    * by the language
    *
-   * @return std::vector<Token> Returns all tokens identified during
+   * @return Vec<Token> Returns all tokens identified during
    * analysis.
    */
   void analyse();
@@ -175,7 +175,7 @@ public:
    * the End of Line is encountered
    *
    */
-  unsigned long long line_num = 1;
+  u64 line_num = 1;
 
   /**
    *  The number pertaining to the current character read by the
@@ -184,14 +184,14 @@ public:
    * of Line is encountered
    *
    */
-  unsigned long long char_num = 0;
+  u64 char_num = 0;
 
   /**
    *  Get the FilePosition object for a token
    *
    * @return utilities::FilePosition
    */
-  utils::FileRange getPosition(unsigned long long length);
+  utils::FileRange getPosition(u64 length);
 
   /**
    *  Prints all status about the lexical analysis to the standard

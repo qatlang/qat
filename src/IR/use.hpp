@@ -1,9 +1,8 @@
 #ifndef QAT_IR_PROPERTIES_HPP
 #define QAT_IR_PROPERTIES_HPP
 
+#include "../utils/helpers.hpp"
 #include <list>
-#include <string>
-#include <vector>
 
 namespace qat::IR {
 
@@ -12,17 +11,17 @@ class User;
 // A use
 class Use {
 private:
-  User *user;
-  unsigned uses;
-  std::vector<std::string> purposes;
+  User       *user;
+  u64         uses;
+  Vec<String> purposes;
 
 public:
-  Use(User *_user, std::string purpose);
-  User *getUser();
-  bool isUser(User *) const;
-  unsigned getUses() const;
-  void addUse(std::string purpose);
-  std::vector<std::string> getPurposes();
+  Use(User *_user, String purpose);
+  User       *getUser();
+  useit bool  isUser(User *) const;
+  useit u64   getUses() const;
+  void        addUse(const String &purpose);
+  Vec<String> getPurposes();
 };
 
 // A usable entity
@@ -32,17 +31,17 @@ private:
 
 public:
   Usable();
-  unsigned getUses(User *user) const;
-  void addUse(User *user, std::string purpose);
-  void removeUser(User *user);
-  unsigned getTotalUses() const;
-  bool hasUsers() const;
+  u64        getUses(User *user) const;
+  void       addUse(User *user, const String &purpose);
+  void       removeUser(User *user);
+  useit u64  getTotalUses() const;
+  useit bool hasUsers() const;
 };
 
 // A user entity
 class User {
 private:
-  std::vector<Usable *> uses;
+  Vec<Usable *> uses;
 
 public:
   User();

@@ -26,7 +26,7 @@ public:
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

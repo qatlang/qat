@@ -15,10 +15,10 @@ namespace qat::IR {
 
 QatType::QatType() { types.push_back(this); }
 
-std::vector<QatType *> QatType::types = {};
+Vec<QatType *> QatType::types = {};
 
-bool QatType::checkTypeExists(const std::string name) {
-  for (auto typ : types) {
+bool QatType::checkTypeExists(const String &name) {
+  return std::ranges::any_of(types.begin(), types.end(), [&](QatType *typ) {
     if (typ->typeKind() == TypeKind::sumType) {
       if (((SumType *)typ)->getFullName() == name) {
         return true;
@@ -28,10 +28,11 @@ bool QatType::checkTypeExists(const std::string name) {
         return true;
       }
     }
-  }
+    return false;
+  });
 }
 
-bool QatType::isSame(QatType *other) const {
+bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
   if (typeKind() != other->typeKind()) {
     return false;
   } else {
@@ -59,7 +60,7 @@ bool QatType::isSame(QatType *other) const {
               ((FloatType *)other)->getKind());
     }
     case TypeKind::array: {
-      auto thisVal = (ArrayType *)this;
+      auto thisVal  = (ArrayType *)this;
       auto otherVal = (ArrayType *)other;
       if (thisVal->getLength() == otherVal->getLength()) {
         return thisVal->getElementType()->isSame(otherVal->getElementType());
@@ -68,10 +69,10 @@ bool QatType::isSame(QatType *other) const {
       }
     }
     case TypeKind::tuple: {
-      auto thisVal = (TupleType *)this;
+      auto thisVal  = (TupleType *)this;
       auto otherVal = (TupleType *)other;
       if (thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
-        for (std::size_t i = 0; i < thisVal->getSubTypeCount(); i++) {
+        for (usize i = 0; i < thisVal->getSubTypeCount(); i++) {
           if (!(thisVal->getSubtypeAt(i)->isSame(otherVal->getSubtypeAt(i)))) {
             return false;
           }
@@ -82,16 +83,16 @@ bool QatType::isSame(QatType *other) const {
       }
     }
     case TypeKind::core: {
-      auto thisVal = (CoreType *)this;
+      auto thisVal  = (CoreType *)this;
       auto otherVal = (CoreType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
     case TypeKind::sumType: {
-      auto thisVal = (SumType *)this;
+      auto thisVal  = (SumType *)this;
       auto otherVal = (SumType *)other;
       if (thisVal->getFullName() == otherVal->getFullName()) {
         if (thisVal->getSubtypeCount() == otherVal->getSubtypeCount()) {
-          for (std::size_t i = 0; i < thisVal->getSubtypeCount(); i++) {
+          for (usize i = 0; i < thisVal->getSubtypeCount(); i++) {
             if (!thisVal->getSubtypeAt(i)->isSame(otherVal->getSubtypeAt(i))) {
               return false;
             }
@@ -105,12 +106,12 @@ bool QatType::isSame(QatType *other) const {
       }
     }
     case TypeKind::function: {
-      auto thisVal = (FunctionType *)this;
+      auto thisVal  = (FunctionType *)this;
       auto otherVal = (FunctionType *)other;
       if (thisVal->getArgumentCount() == otherVal->getArgumentCount()) {
         if (thisVal->getReturnType()->isSame(otherVal->getReturnType())) {
-          for (std::size_t i = 0; i < thisVal->getArgumentCount(); i++) {
-            auto thisArg = thisVal->getArgumentTypeAt(i);
+          for (usize i = 0; i < thisVal->getArgumentCount(); i++) {
+            auto thisArg  = thisVal->getArgumentTypeAt(i);
             auto otherArg = otherVal->getArgumentTypeAt(i);
             if (thisArg->isVariable() != otherArg->isVariable()) {
               return false;
@@ -130,6 +131,31 @@ bool QatType::isSame(QatType *other) const {
     }
     }
   }
+}
+
+bool QatType::isInteger() const { return typeKind() == TypeKind::integer; }
+
+bool QatType::isUnsignedInteger() const {
+  return typeKind() == TypeKind::unsignedInteger;
+}
+
+bool QatType::isFloat() const { return typeKind() == TypeKind::Float; }
+
+bool QatType::isReference() const { return typeKind() == TypeKind::reference; }
+
+bool QatType::isPointer() const { return typeKind() == TypeKind::pointer; }
+
+bool QatType::isArray() const { return typeKind() == TypeKind::array; }
+
+bool QatType::isTuple() const { return typeKind() == TypeKind::tuple; }
+
+bool QatType::isFunction() const { return typeKind() == TypeKind::function; }
+
+bool QatType::isTemplate() const {
+  return ((typeKind() == TypeKind::templateCoreType) ||
+          (typeKind() == TypeKind::templatePointer) ||
+          (typeKind() == TypeKind::templateSumType) ||
+          (typeKind() == TypeKind::templateTuple));
 }
 
 } // namespace qat::IR

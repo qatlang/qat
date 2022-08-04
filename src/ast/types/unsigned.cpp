@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-UnsignedType::UnsignedType(const unsigned int _bitWidth, const bool _variable,
+UnsignedType::UnsignedType(const u32 _bitWidth, const bool _variable,
                            const utils::FileRange _fileRange)
     : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
 
@@ -11,7 +11,7 @@ IR::QatType *UnsignedType::emit(IR::Context *ctx) {
   return new IR::UnsignedType(bitWidth);
 }
 
-bool UnsignedType::isBitWidth(const unsigned int width) const {
+bool UnsignedType::isBitWidth(const u32 width) const {
   return bitWidth == width;
 }
 
@@ -25,7 +25,7 @@ nuo::Json UnsignedType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string UnsignedType::toString() const {
+String UnsignedType::toString() const {
   return (isVariable() ? "var u" : "u") + std::to_string(bitWidth);
 }
 

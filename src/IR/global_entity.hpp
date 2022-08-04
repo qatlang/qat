@@ -2,6 +2,7 @@
 #define QAT_IR_GLOBAL_ENTITY_HPP
 
 #include "../utils/visibility.hpp"
+#include "./definable.hpp"
 #include "./value.hpp"
 
 #include <optional>
@@ -11,10 +12,10 @@ namespace qat::IR {
 
 class QatModule;
 
-class GlobalEntity : public Value {
+class GlobalEntity : public Value, public Definable {
 private:
   // Name of this GlobalEntity
-  std::string name;
+  String name;
 
   // Details about the visibility of this global
   utils::VisibilityInfo visibility;
@@ -24,30 +25,36 @@ private:
   // Parent of this GlobalEntity
   QatModule *parent;
 
-  unsigned loads;
+  u64 loads;
 
-  unsigned stores;
+  u64 stores;
 
-  unsigned refers;
+  u64 refers;
 
 public:
-  GlobalEntity(QatModule *_parent, std::string name, QatType *type,
+  GlobalEntity(QatModule *_parent, String name, QatType *type,
                bool _is_variable, Value *_value,
                utils::VisibilityInfo _visibility);
 
-  std::string getName() const;
+  String getName() const;
 
-  std::string getFullName() const;
+  String getFullName() const;
 
   const utils::VisibilityInfo &getVisibility() const;
 
   bool hasInitial() const;
 
-  unsigned getLoadCount() const;
+  u64 getLoadCount() const;
 
-  unsigned getStoreCount() const;
+  u64 getStoreCount() const;
 
-  unsigned getReferCount() const;
+  u64 getReferCount() const;
+
+  void defineLLVM(llvmHelper &help) const;
+
+  void defineCPP(cpp::File &file) const;
+
+  nuo::Json toJson() const;
 };
 
 } // namespace qat::IR

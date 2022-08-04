@@ -2,8 +2,8 @@
 
 namespace qat::utils {
 
-std::vector<fs::path> qatget_directory_contents(fs::path path, bool recursive) {
-  std::vector<fs::path> result;
+Vec<fs::path> qatget_directory_contents(fs::path path, bool recursive) {
+  Vec<fs::path> result;
   for (auto item : fs::directory_iterator(path)) {
     if (fs::is_directory(item)) {
       if (recursive) {

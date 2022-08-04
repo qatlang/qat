@@ -6,32 +6,21 @@
 
 namespace qat::ast {
 
-/**
- *  SizeOfType is used to find the size of a type specified
- *
- */
+// SizeOfType is used to find the size of a type specified
 class SizeOfType : public Expression {
 private:
-  /**
-   *  Type to find the size of
-   *
-   */
+  // Type to find the size of
   QatType *type;
 
 public:
-  /**
-   *  SizeOfType is used to find the size of a type specified
-   *
-   * @param _type
-   * @param _fileRange
-   */
+  // SizeOfType is used to find the size of a type specified
   SizeOfType(QatType *_type, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::sizeOfType; }
+  useit NodeType nodeType() const override { return NodeType::sizeOfType; }
 };
 
 } // namespace qat::ast

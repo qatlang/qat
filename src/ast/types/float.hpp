@@ -13,7 +13,7 @@ namespace qat::ast {
 class FloatType : public QatType {
 private:
   /**
-   *  Kind of the floating point number
+   *  Nature of the floating point number
    *
    */
   IR::FloatTypeKind kind;
@@ -22,13 +22,13 @@ public:
   /**
    *  FloatType represents a floating point number in the language
    *
-   * @param _kind Kind of the float
+   * @param _kind Nature of the float
    * @param _fileRange
    */
   FloatType(const IR::FloatTypeKind _kind, const bool _variable,
             const utils::FileRange _fileRange);
 
-  static std::string kindToString(IR::FloatTypeKind kind);
+  static String kindToString(IR::FloatTypeKind kind);
 
   IR::QatType *emit(IR::Context *ctx);
 
@@ -36,7 +36,7 @@ public:
 
   nuo::Json toJson() const;
 
-  std::string toString() const;
+  String toString() const;
 };
 
 } // namespace qat::ast

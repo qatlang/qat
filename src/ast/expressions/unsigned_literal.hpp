@@ -12,7 +12,7 @@ private:
    *  String representation of the integer
    *
    */
-  std::string value;
+  String value;
 
 public:
   /**
@@ -21,7 +21,7 @@ public:
    * @param _value String representation of the integer
    * @param _fileRange
    */
-  UnsignedLiteral(std::string _value, utils::FileRange _fileRange);
+  UnsignedLiteral(String _value, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

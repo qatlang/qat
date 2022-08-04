@@ -20,7 +20,7 @@ private:
   Block *if_block;
 
   //  The optional block belonging to the else section
-  std::optional<Block *> else_block;
+  Maybe<Block *> else_block;
 
   //  The block after the if-else case
   Block *merge_block;
@@ -39,9 +39,8 @@ public:
    * @param _fileRange
    *
    */
-  IfElse(Expression *_condition, Block *_if_block,
-         std::optional<Block *> _else_block,
-         std::optional<Block *> _merge_block, utils::FileRange _fileRange);
+  IfElse(Expression *_condition, Block *_if_block, Maybe<Block *> _else_block,
+         Maybe<Block *> _merge_block, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

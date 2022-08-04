@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 /**
- *  TernaryExpression represents an expression created by the ternary
+ * TernaryExpression represents an expression created by the ternary
  * operator. This requires 3 expressions. The first one is the condition on
  * which the operation takes place. If the condition is true, the second
  * expression is the result. If the condition is false, the third expression is
@@ -16,43 +16,28 @@ namespace qat::ast {
  */
 class TernaryExpression : public Expression {
 private:
-  /**
-   *  The condition that determines the result of this expression
-   *
-   */
+  // The condition that determines the result of this expression
   Expression *condition;
 
-  /**
-   *  The expression to be used if the provided condition is true
-   *
-   */
+  // The expression to be used if the provided condition is true
   Expression *if_expr;
 
-  /**
-   *  The expression to be used if the provided condition is false
-   *
-   */
+  // The expression to be used if the provided condition is false
   Expression *else_expr;
 
 public:
-  /**
-   *  Construct a new Ternary Expression object.
-   *
-   * This represents a ternary expression in the language
-   *
-   * @param _condition Condition that determines the result of the operation
-   * @param _ifExpression Expression returned if the condition is true
-   * @param _elseExpression Expression returned if the condition is false
-   * @param _fileRange
-   */
+  // Construct a new Ternary Expression object.
+  // This represents a ternary expression in the language
   TernaryExpression(Expression *_condition, Expression *_ifExpression,
                     Expression *_elseExpression, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() { return NodeType::ternaryExpression; }
+  useit NodeType nodeType() const override {
+    return NodeType::ternaryExpression;
+  }
 };
 
 } // namespace qat::ast

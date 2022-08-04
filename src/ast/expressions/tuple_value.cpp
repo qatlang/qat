@@ -2,8 +2,7 @@
 
 namespace qat::ast {
 
-TupleValue::TupleValue(std::vector<Expression *> _members,
-                       utils::FileRange _fileRange)
+TupleValue::TupleValue(Vec<Expression *> _members, utils::FileRange _fileRange)
     : members(_members), Expression(_fileRange) {}
 
 IR::Value *TupleValue::emit(IR::Context *ctx) {
@@ -11,7 +10,7 @@ IR::Value *TupleValue::emit(IR::Context *ctx) {
 }
 
 nuo::Json TupleValue::toJson() const {
-  std::vector<nuo::JsonValue> mems;
+  Vec<nuo::JsonValue> mems;
   for (auto mem : members) {
     mems.push_back(mem->toJson());
   }

@@ -2,12 +2,12 @@
 
 namespace qat::utils {
 
-VersionNumber::VersionNumber(const std::string version)
-    : major(0), minor(0), patch(std::nullopt), build(std::nullopt) {
-  const bool hasV = (version[0] == 'v');
-  std::vector<std::string> nums;
-  std::string cache;
-  for (std::size_t i = hasV; i < version.length(); i++) {
+VersionNumber::VersionNumber(const String &version)
+    : major(0), minor(0), patch(None), build(None) {
+  const bool  hasV = (version[0] == 'v');
+  Vec<String> nums;
+  String      cache;
+  for (usize i = hasV; i < version.length(); i++) {
     if (nums.size() == 3) {
       if (version[i] == '-') {
         cache = "";
@@ -49,25 +49,25 @@ VersionNumber::VersionNumber(const std::string version)
     major = std::stoi(nums.at(0));
     if (nums.size() < 2) {
       minor = 0;
-      patch = std::nullopt;
-      build = std::nullopt;
+      patch = None;
+      build = None;
     } else {
       minor = std::stoi(nums.at(1));
       if (nums.size() < 3) {
-        patch = std::nullopt;
-        prerelease = std::nullopt;
-        build = std::nullopt;
+        patch      = None;
+        prerelease = None;
+        build      = None;
       } else {
         patch = std::stoi(nums.at(2));
         if (nums.size() < 4) {
-          prerelease = std::nullopt;
-          build = std::nullopt;
+          prerelease = None;
+          build      = None;
         } else {
-          prerelease = std::string(nums.at(3));
+          prerelease = String(nums.at(3));
           if (nums.size() < 5) {
-            build = std::nullopt;
+            build = None;
           } else {
-            build = std::string(nums.at(4));
+            build = String(nums.at(4));
           }
         }
       }

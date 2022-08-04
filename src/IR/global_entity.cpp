@@ -3,15 +3,15 @@
 
 namespace qat::IR {
 
-GlobalEntity::GlobalEntity(QatModule *_parent, std::string _name,
-                           QatType *_type, bool _is_variable, Value *_value,
+GlobalEntity::GlobalEntity(QatModule *_parent, String _name, QatType *_type,
+                           bool _is_variable, Value *_value,
                            utils::VisibilityInfo _visibility)
     : parent(_parent), name(_name), initial(_value), visibility(_visibility),
-      Value(_type, _is_variable, Kind::assignable) {}
+      Value(_type, _is_variable, Nature::assignable) {}
 
-std::string GlobalEntity::getName() const { return name; }
+String GlobalEntity::getName() const { return name; }
 
-std::string GlobalEntity::getFullName() const {
+String GlobalEntity::getFullName() const {
   return parent->getFullNameWithChild(name);
 }
 
@@ -21,10 +21,33 @@ const utils::VisibilityInfo &GlobalEntity::getVisibility() const {
 
 bool GlobalEntity::hasInitial() const { return (initial != nullptr); }
 
-unsigned GlobalEntity::getLoadCount() const { return loads; }
+u64 GlobalEntity::getLoadCount() const { return loads; }
 
-unsigned GlobalEntity::getStoreCount() const { return stores; }
+u64 GlobalEntity::getStoreCount() const { return stores; }
 
-unsigned GlobalEntity::getReferCount() const { return refers; }
+u64 GlobalEntity::getReferCount() const { return refers; }
+
+void GlobalEntity::defineLLVM(llvmHelper &help) const {}
+
+void GlobalEntity::defineCPP(cpp::File &file) const {
+  if (file.isHeaderFile()) {
+    if (!isVariable()) {
+      file << "const ";
+    }
+    type->emitCPP(file);
+    file << (" " + name + ";\n");
+  } else {
+    if (initial) {
+      if (!isVariable()) {
+        file << "const ";
+      }
+      type->emitCPP(file);
+      file << (" " + name + " = ");
+      initial->emitCPP(file);
+    }
+  }
+}
+
+nuo::Json GlobalEntity::toJson() const {}
 
 } // namespace qat::IR

@@ -5,27 +5,17 @@
 
 namespace qat::ast {
 
-/**
- *  FunctionCall represents a normal call to a function in the language
- *
- */
+// FunctionCall represents a normal call to a function in the language
 class FunctionCall : public Expression {
 private:
-  /**
-   *  Name of the function to call
-   *
-   */
-  std::string name;
-
-  /**
-   *  Expressions for the arguments to be passed
-   *
-   */
-  std::vector<Expression *> arguments;
+  // Name of the function to call
+  String name;
+  // Expressions for the arguments to be passed
+  Vec<Expression *> arguments;
 
 public:
   /**
-   *  FunctionCall represents a normal/static function call in the
+   * FunctionCall represents a normal/static function call in the
    * language
    *
    * @param _name Name of the function to call
@@ -33,15 +23,16 @@ public:
    * passed
    * @param _fileRange
    */
-  FunctionCall(std::string _name, std::vector<Expression *> _arguments,
+  FunctionCall(String _name, Vec<Expression *> _arguments,
                utils::FileRange _fileRange)
-      : name(_name), arguments(_arguments), Expression(_fileRange) {}
+      : name(std::move(_name)), arguments(std::move(_arguments)),
+        Expression(std::move(_fileRange)) {}
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value *emit(IR::Context *ctx) override;
 
-  nuo::Json toJson() const;
+  useit nuo::Json toJson() const override;
 
-  NodeType nodeType() const { return NodeType::functionCall; }
+  useit NodeType nodeType() const override { return NodeType::functionCall; }
 };
 
 } // namespace qat::ast

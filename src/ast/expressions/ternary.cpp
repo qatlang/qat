@@ -2,12 +2,12 @@
 
 namespace qat::ast {
 
-TernaryExpression::TernaryExpression(Expression *_condition,
-                                     Expression *_ifExpression,
-                                     Expression *_elseExpression,
+TernaryExpression::TernaryExpression(Expression *     _condition,
+                                     Expression *     _ifExpression,
+                                     Expression *     _elseExpression,
                                      utils::FileRange _fileRange)
     : condition(_condition), if_expr(_ifExpression), else_expr(_elseExpression),
-      Expression(_fileRange) {}
+      Expression(std::move(_fileRange)) {}
 
 IR::Value *TernaryExpression::emit(IR::Context *ctx) {
   // TODO - Implement this

@@ -9,14 +9,19 @@ namespace qat::ast {
 class ToConversion : public Expression {
 private:
   Expression *source;
-  QatType *destinationType;
+  QatType    *destinationType;
 
 public:
-  IR::Value *emit(IR::Context *ctx);
+  ToConversion(Expression *_source, QatType *_destinationType,
+               utils::FileRange _fileRange)
+      : source(_source), destinationType(_destinationType),
+        Expression(std::move(_fileRange)) {}
 
-  nuo::Json toJson() const;
+  IR::Value *emit(IR::Context *ctx) override;
 
-  NodeType nodeType();
+  useit nuo::Json toJson() const override;
+
+  useit NodeType nodeType() const override { return NodeType::toConversion; };
 };
 
 } // namespace qat::ast

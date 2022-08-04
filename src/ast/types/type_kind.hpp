@@ -4,7 +4,7 @@
 namespace qat::ast {
 
 /**
- *  The kind of type of the QatType instance.
+ *  The nature of type of the QatType instance.
  *
  * I almost named this TypeType
  *

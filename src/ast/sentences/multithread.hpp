@@ -24,11 +24,11 @@ private:
 
   // The optional type of the entity to store the results of the
   // execution of the threads
-  std::optional<QatType *> type;
+  Maybe<QatType *> type;
 
   // The optional name of the entity to store the results of the
   // execution of the threads
-  std::optional<std::string> name;
+  Maybe<String> name;
 
   // Main block of the multithread sentence. This is executed successfully in
   // each thread spawned if the number of threads specified is greater than 0.
@@ -81,8 +81,8 @@ public:
    * @param _after Block present after the multithread block
    * @param _fileRange
    */
-  Multithread(Expression *_count, std::string _name, QatType *_type,
-              Block *_main, Block *_after, utils::FileRange _fileRange);
+  Multithread(Expression *_count, String _name, QatType *_type, Block *_main,
+              Block *_after, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

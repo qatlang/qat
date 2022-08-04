@@ -16,7 +16,7 @@ private:
    *  Expression that should be returned/given
    *
    */
-  std::optional<Expression *> give_expr;
+  Maybe<Expression *> give_expr;
 
 public:
   /**
@@ -24,8 +24,7 @@ public:
    *
    * @param _fileRange
    */
-  GiveSentence(std::optional<Expression *> _given_expr,
-               utils::FileRange _fileRange);
+  GiveSentence(Maybe<Expression *> _given_expr, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

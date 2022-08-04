@@ -1,7 +1,7 @@
 #ifndef QAT_IR_TYPES_ARRAY_HPP
 #define QAT_IR_TYPES_ARRAY_HPP
 
-#include "../../utils/types.hpp"
+#include "../../utils/helpers.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::IR {
@@ -18,15 +18,19 @@ private:
   u64 length;
 
 public:
-  ArrayType(QatType *_element_type, const uint64_t _length);
+  ArrayType(QatType *_element_type, u64 _length);
 
   QatType *getElementType();
 
-  u64 getLength() const;
+  useit u64 getLength() const;
 
-  TypeKind typeKind() const;
+  useit TypeKind typeKind() const override;
 
-  std::string toString() const;
+  useit String toString() const override;
+
+  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
+
+  void emitCPP(cpp::File &file) const override;
 };
 
 } // namespace qat::IR

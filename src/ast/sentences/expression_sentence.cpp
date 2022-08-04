@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-ExpressionSentence::ExpressionSentence(Expression *_exp,
+ExpressionSentence::ExpressionSentence(Expression *     _exp,
                                        utils::FileRange _fileRange)
     : Sentence(_fileRange), expr(_exp) {}
 

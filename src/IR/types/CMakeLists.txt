@@ -1,15 +1,15 @@
 add_library(QAT_IR_TYPES
-    array.cpp
-    core_type.cpp
-    float.cpp
-    function.cpp
-    integer.cpp
-    reference.cpp
-    pointer.cpp
-    qat_type.cpp
-    sum.cpp
-    tuple.cpp
-    unsigned.cpp
-    void.cpp)
+        array.cpp
+        core_type.cpp
+        float.cpp
+        function.cpp
+        integer.cpp
+        reference.cpp
+        pointer.cpp
+        qat_type.cpp
+        sum.cpp
+        tuple.cpp
+        unsigned.cpp
+        void.cpp)
 
 target_link_libraries(QAT_IR_TYPES QAT_UTILS)

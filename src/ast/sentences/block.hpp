@@ -17,7 +17,7 @@ private:
    *  All sentences in the block
    *
    */
-  std::vector<Sentence *> sentences;
+  Vec<Sentence *> sentences;
 
 public:
   /**
@@ -26,7 +26,7 @@ public:
    * @param _sentences All sentences in the block
    * @param _fileRange
    */
-  Block(std::vector<Sentence *> _sentences, utils::FileRange _fileRange);
+  Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange);
 
   IR::Value *emit(IR::Context *ctx);
 

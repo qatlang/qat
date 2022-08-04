@@ -8,8 +8,7 @@ Context::Context() : mod(nullptr) {}
 
 QatModule *Context::getActive() { return mod->getActive(); }
 
-void Context::throw_error(const std::string message,
-                          const utils::FileRange fileRange) {
+void Context::Error(const String &message, const utils::FileRange &fileRange) {
   std::cout << colors::red << "[ COMPILER ERROR ] " << colors::bold::green
             << fileRange.file.string() << ":" << fileRange.start.line << ":"
             << fileRange.start.character << "-" << fileRange.end.line << ":"

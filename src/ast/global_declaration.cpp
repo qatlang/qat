@@ -2,8 +2,7 @@
 
 namespace qat::ast {
 
-GlobalDeclaration::GlobalDeclaration(std::string _name,
-                                     std::optional<QatType *> _type,
+GlobalDeclaration::GlobalDeclaration(String _name, Maybe<QatType *> _type,
                                      Expression *_value, bool _isVariable,
                                      utils::FileRange _fileRange)
     : Node(_fileRange), name(_name), type(_type), value(_value),

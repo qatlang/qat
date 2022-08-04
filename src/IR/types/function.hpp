@@ -12,52 +12,42 @@ namespace qat::IR {
 class ArgumentType {
 private:
   // Name of the argument
-  std::optional<std::string> name;
-
+  Maybe<String> name;
   // Type of the argument
   QatType *type;
-
   // Variability of the argument
   bool variability;
 
 public:
   ArgumentType(QatType *_type, bool _variability);
-  ArgumentType(std::string _name, QatType *_type, bool _variability);
+  ArgumentType(String _name, QatType *_type, bool _variability);
 
-  bool hasName() const;
-
-  std::string getName() const;
-
-  QatType *getType();
-
-  bool isVariable() const;
-
-  std::string toString() const;
+  useit bool     hasName() const;
+  useit String   getName() const;
+  useit QatType *getType();
+  useit bool     isVariable() const;
+  useit String   toString() const;
 };
 
 class FunctionType : public QatType {
-  QatType *returnType;
-  bool isReturnVariable;
-
-  std::vector<ArgumentType *> argTypes;
+  QatType            *returnType;
+  bool                isReturnVariable;
+  Vec<ArgumentType *> argTypes;
 
 public:
   FunctionType(QatType *_retType, bool _isReturnValueVariable,
-               std::vector<ArgumentType *> _argTypes);
+               Vec<ArgumentType *> _argTypes);
 
-  QatType *getReturnType();
-
-  bool isReturnTypeVariable() const;
-
-  ArgumentType *getArgumentTypeAt(unsigned int index);
-
-  std::vector<ArgumentType *> getArgumentTypes() const;
-
-  unsigned getArgumentCount() const;
-
-  TypeKind typeKind() const { return TypeKind::function; }
-
-  std::string toString() const;
+  useit QatType      *getReturnType();
+  useit bool          isReturnTypeVariable() const;
+  useit ArgumentType *getArgumentTypeAt(u32 index);
+  useit Vec<ArgumentType *> getArgumentTypes() const;
+  useit u64                 getArgumentCount() const;
+  useit TypeKind typeKind() const override { return TypeKind::function; }
+  useit String   toString() const override;
+  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
+  useit nuo::Json toJson() const override;
+  void            emitCPP(cpp::File &file) const override;
 };
 
 } // namespace qat::IR

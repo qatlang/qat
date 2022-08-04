@@ -27,7 +27,7 @@ private:
    *  Name of the entity
    *
    */
-  std::string name;
+  String name;
 
   /**
    *  Value to assign to the entity
@@ -53,7 +53,7 @@ public:
    * @param _variability Whether the entity is a variable or not
    * @param _fileRange
    */
-  LocalDeclaration(QatType *_type, std::string _name, Expression *_value,
+  LocalDeclaration(QatType *_type, String _name, Expression *_value,
                    bool _variability, utils::FileRange _fileRange);
 
   /**

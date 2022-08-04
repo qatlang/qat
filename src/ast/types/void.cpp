@@ -17,8 +17,6 @@ nuo::Json VoidType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-std::string VoidType::toString() const {
-  return isVariable() ? "var void" : "void";
-}
+String VoidType::toString() const { return isVariable() ? "var void" : "void"; }
 
 } // namespace qat::ast

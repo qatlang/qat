@@ -11,6 +11,7 @@ add_library(QAT_AST_EXPRESSIONS
         member_index_access.cpp
         member_variable.cpp
         null_pointer.cpp
+        operator.cpp
         radix_literal.cpp
         self.cpp
         size_of_type.cpp

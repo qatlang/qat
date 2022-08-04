@@ -23,11 +23,9 @@ public:
    */
   UnsignedLiteral(String _value, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() { return NodeType::unsignedLiteral; }
+  useit IR::Value *emit(IR::Context *ctx) override;
+  useit nuo::Json toJson() const override;
+  useit NodeType nodeType() const override { return NodeType::unsignedLiteral; }
 };
 
 } // namespace qat::ast

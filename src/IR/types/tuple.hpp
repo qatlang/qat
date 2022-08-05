@@ -3,6 +3,7 @@
 
 #include "../../IR/context.hpp"
 #include "./qat_type.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 #include <vector>
 
@@ -15,25 +16,22 @@ namespace qat::IR {
  */
 class TupleType : public QatType {
 private:
-  Vec<QatType *> types;
+  Vec<QatType *> subTypes;
+  bool           isPacked;
 
-  // Whether this tuple should be packed
-  bool isPacked;
+  TupleType(Vec<QatType *> _types, bool _isPacked, llvm::LLVMContext &ctx);
 
 public:
-  TupleType(const Vec<QatType *> _types, const bool _isPacked);
+  useit static TupleType *get(Vec<QatType *> types, bool isPacked,
+                              llvm::LLVMContext &ctx);
 
-  Vec<QatType *> getSubTypes() const;
-
-  QatType *getSubtypeAt(u64 index);
-
-  u64 getSubTypeCount() const;
-
-  bool isPackedTuple() const;
-
-  TypeKind typeKind() const;
-
-  String toString() const;
+  useit Vec<QatType *> getSubTypes() const;
+  useit QatType       *getSubtypeAt(u64 index);
+  useit u64            getSubTypeCount() const;
+  useit bool           isPackedTuple() const;
+  useit TypeKind       typeKind() const override;
+  useit String         toString() const override;
+  useit nuo::Json toJson() const override;
 };
 
 } // namespace qat::IR

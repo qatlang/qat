@@ -6,7 +6,9 @@ namespace qat::ast {
 VoidType::VoidType(const bool _variable, const utils::FileRange _fileRange)
     : QatType(_variable, _fileRange) {}
 
-IR::QatType *VoidType::emit(IR::Context *ctx) { return new IR::VoidType(); }
+IR::QatType *VoidType::emit(IR::Context *ctx) {
+  return IR::VoidType::get(ctx->llctx);
+}
 
 TypeKind VoidType::typeKind() { return TypeKind::Void; }
 

@@ -60,8 +60,8 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
               ((FloatType *)other)->getKind());
     }
     case TypeKind::array: {
-      auto thisVal  = (ArrayType *)this;
-      auto otherVal = (ArrayType *)other;
+      auto *thisVal  = (ArrayType *)this;
+      auto *otherVal = (ArrayType *)other;
       if (thisVal->getLength() == otherVal->getLength()) {
         return thisVal->getElementType()->isSame(otherVal->getElementType());
       } else {
@@ -69,8 +69,8 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
       }
     }
     case TypeKind::tuple: {
-      auto thisVal  = (TupleType *)this;
-      auto otherVal = (TupleType *)other;
+      auto *thisVal  = (TupleType *)this;
+      auto *otherVal = (TupleType *)other;
       if (thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
         for (usize i = 0; i < thisVal->getSubTypeCount(); i++) {
           if (!(thisVal->getSubtypeAt(i)->isSame(otherVal->getSubtypeAt(i)))) {
@@ -83,13 +83,13 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
       }
     }
     case TypeKind::core: {
-      auto thisVal  = (CoreType *)this;
-      auto otherVal = (CoreType *)other;
+      auto *thisVal  = (CoreType *)this;
+      auto *otherVal = (CoreType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
     case TypeKind::sumType: {
-      auto thisVal  = (SumType *)this;
-      auto otherVal = (SumType *)other;
+      auto *thisVal  = (SumType *)this;
+      auto *otherVal = (SumType *)other;
       if (thisVal->getFullName() == otherVal->getFullName()) {
         if (thisVal->getSubtypeCount() == otherVal->getSubtypeCount()) {
           for (usize i = 0; i < thisVal->getSubtypeCount(); i++) {
@@ -106,13 +106,13 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
       }
     }
     case TypeKind::function: {
-      auto thisVal  = (FunctionType *)this;
-      auto otherVal = (FunctionType *)other;
+      auto *thisVal  = (FunctionType *)this;
+      auto *otherVal = (FunctionType *)other;
       if (thisVal->getArgumentCount() == otherVal->getArgumentCount()) {
         if (thisVal->getReturnType()->isSame(otherVal->getReturnType())) {
           for (usize i = 0; i < thisVal->getArgumentCount(); i++) {
-            auto thisArg  = thisVal->getArgumentTypeAt(i);
-            auto otherArg = otherVal->getArgumentTypeAt(i);
+            auto *thisArg  = thisVal->getArgumentTypeAt(i);
+            auto *otherArg = otherVal->getArgumentTypeAt(i);
             if (thisArg->isVariable() != otherArg->isVariable()) {
               return false;
             } else {
@@ -135,21 +135,39 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
 
 bool QatType::isInteger() const { return typeKind() == TypeKind::integer; }
 
+IntegerType *QatType::asInteger() const { return (IntegerType *)this; }
+
 bool QatType::isUnsignedInteger() const {
   return typeKind() == TypeKind::unsignedInteger;
 }
 
+UnsignedType *QatType::asUnsignedInteger() const {
+  return (UnsignedType *)this;
+}
+
 bool QatType::isFloat() const { return typeKind() == TypeKind::Float; }
+
+FloatType *QatType::asFloat() const { return (FloatType *)this; }
 
 bool QatType::isReference() const { return typeKind() == TypeKind::reference; }
 
+ReferenceType *QatType::asReference() const { return (ReferenceType *)this; }
+
 bool QatType::isPointer() const { return typeKind() == TypeKind::pointer; }
+
+PointerType *QatType::asPointer() const { return (PointerType *)this; }
 
 bool QatType::isArray() const { return typeKind() == TypeKind::array; }
 
+ArrayType *QatType::asArray() const { return (ArrayType *)this; }
+
 bool QatType::isTuple() const { return typeKind() == TypeKind::tuple; }
 
+TupleType *QatType::asTuple() const { return (TupleType *)this; }
+
 bool QatType::isFunction() const { return typeKind() == TypeKind::function; }
+
+FunctionType *QatType::asFunction() const { return (FunctionType *)this; }
 
 bool QatType::isTemplate() const {
   return ((typeKind() == TypeKind::templateCoreType) ||

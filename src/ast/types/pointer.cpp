@@ -9,7 +9,7 @@ PointerType::PointerType(QatType *_type, const bool _variable,
     : type(_type), QatType(_variable, _fileRange) {}
 
 IR::QatType *PointerType::emit(IR::Context *ctx) {
-  return new IR::PointerType(type->emit(ctx));
+  return IR::PointerType::get(type->emit(ctx), ctx->llctx);
 }
 
 TypeKind PointerType::typeKind() { return TypeKind::pointer; }

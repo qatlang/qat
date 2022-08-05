@@ -3,6 +3,7 @@
 
 #include "../../utils/helpers.hpp"
 #include "./qat_type.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
@@ -14,23 +15,19 @@ namespace qat::IR {
 class ArrayType : public QatType {
 private:
   QatType *element_type;
+  u64      length;
 
-  u64 length;
+  ArrayType(QatType *_element_type, u64 _length, llvm::LLVMContext &ctx);
 
 public:
-  ArrayType(QatType *_element_type, u64 _length);
+  useit static ArrayType *get(QatType *elementType, u64 length,
+                              llvm::LLVMContext &ctx);
 
-  QatType *getElementType();
-
-  useit u64 getLength() const;
-
+  useit QatType *getElementType();
+  useit u64      getLength() const;
   useit TypeKind typeKind() const override;
-
-  useit String toString() const override;
-
-  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
-
-  void emitCPP(cpp::File &file) const override;
+  useit String   toString() const override;
+  useit nuo::Json toJson() const override;
 };
 
 } // namespace qat::IR

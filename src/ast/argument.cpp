@@ -17,7 +17,7 @@ Argument *Argument::ForConstructor(String name, utils::FileRange fileRange,
   return new Argument(std::move(name), std::move(fileRange), type, isMember);
 }
 
-auto Argument::getName() -> String const { return name; }
+String Argument::getName() const { return name; }
 
 utils::FileRange Argument::getFileRange() const { return fileRange; }
 

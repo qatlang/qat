@@ -1,15 +1,50 @@
 #include "./tuple.hpp"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-TupleType::TupleType(const Vec<QatType *> _types, const bool _isPacked)
-    : types(_types), isPacked(_isPacked) {}
+TupleType::TupleType(Vec<QatType *> _types, bool _isPacked,
+                     llvm::LLVMContext &ctx)
+    : subTypes(std::move(_types)), isPacked(_isPacked) {
+  Vec<llvm::Type *> subTypes;
+  for (auto *typ : types) {
+    subTypes.push_back(typ->getLLVMType());
+  }
+  llvmType = llvm::StructType::get(ctx, subTypes, isPacked);
+}
 
-Vec<QatType *> TupleType::getSubTypes() const { return types; }
+TupleType *TupleType::get(Vec<QatType *> newSubTypes, bool isPacked,
+                          llvm::LLVMContext &ctx) {
+  for (auto *typ : types) {
+    if (typ->isTuple()) {
+      auto subTys = typ->asTuple()->getSubTypes();
+      bool isSame = true;
+      if (typ->asTuple()->isPackedTuple() != isPacked) {
+        isSame = false;
+      } else if (newSubTypes.size() != subTys.size()) {
+        isSame = false;
+      } else {
+        for (usize i = 0; i < subTys.size(); i++) {
+          if (!subTys.at(i)->isSame(newSubTypes.at(i))) {
+            isSame = false;
+            break;
+          }
+        }
+      }
+      if (isSame) {
+        return typ->asTuple();
+      }
+    }
+  }
+  return new TupleType(newSubTypes, isPacked, ctx);
+}
 
-QatType *TupleType::getSubtypeAt(u64 index) { return types.at(index); }
+Vec<QatType *> TupleType::getSubTypes() const { return subTypes; }
 
-u64 TupleType::getSubTypeCount() const { return types.size(); }
+QatType *TupleType::getSubtypeAt(u64 index) { return subTypes.at(index); }
+
+u64 TupleType::getSubTypeCount() const { return subTypes.size(); }
 
 bool TupleType::isPackedTuple() const { return isPacked; }
 
@@ -24,6 +59,15 @@ String TupleType::toString() const {
     }
   }
   result += ")";
+  return result;
+}
+
+nuo::Json TupleType::toJson() const {
+  Vec<nuo::JsonValue> jsonValues;
+  for (auto *typ : types) {
+    jsonValues.push_back(typ->getID());
+  }
+  return nuo::Json()._("type", "tuple")._("subTypes", jsonValues);
 }
 
 } // namespace qat::IR

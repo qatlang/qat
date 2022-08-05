@@ -17,14 +17,15 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
     ctx->Error("Super token can be used only at the start", fileRange);
   } else {
     if (relative == 0) {
-      if (ctx->getActive()->hasNthParent(relative)) {
-        auto *mod     = ctx->getActive()->getNthParent(relative);
+      if (ctx->getMod()->hasNthParent(relative)) {
+        auto *mod     = ctx->getMod()->getNthParent(relative);
         auto  newName = name.substr(index);
         if (mod->hasCoreType(newName)) {
           auto reqInfo =
               utils::RequesterInfo(None, None, fileRange.file.string(), None);
-          mod->getCoreType(name, reqInfo);
+          return mod->getCoreType(name, reqInfo);
         }
+        // FIXME - Implement remaining logic
       } else {
         ctx->Error("The active scope does not have " +
                        std::to_string(relative) + " parents",

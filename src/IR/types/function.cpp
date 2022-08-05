@@ -1,5 +1,6 @@
 #include "./function.hpp"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
@@ -22,9 +23,16 @@ String ArgumentType::toString() const {
 }
 
 FunctionType::FunctionType(QatType *_retType, bool _isRetTypeVariable,
-                           Vec<ArgumentType *> _argTypes)
+                           Vec<ArgumentType *> _argTypes,
+                           llvm::LLVMContext  &ctx)
     : returnType(_retType), isReturnVariable(_isRetTypeVariable),
-      argTypes(std::move(_argTypes)) {}
+      argTypes(std::move(_argTypes)) {
+  Vec<llvm::Type *> argTys;
+  for (auto *arg : argTypes) {
+    argTys.push_back(arg->getType()->getLLVMType());
+  }
+  llvmType = llvm::FunctionType::get(returnType->getLLVMType(), argTys, false);
+}
 
 QatType *FunctionType::getReturnType() { return returnType; }
 
@@ -37,18 +45,6 @@ ArgumentType *FunctionType::getArgumentTypeAt(u32 index) {
 Vec<ArgumentType *> FunctionType::getArgumentTypes() const { return argTypes; }
 
 u64 FunctionType::getArgumentCount() const { return argTypes.size(); }
-
-llvm::Type *FunctionType::emitLLVM(llvmHelper &help) const {
-  Vec<llvm::Type *> argTys;
-  for (auto *arg : argTypes) {
-    argTys.push_back(arg->getType()->emitLLVM(help));
-  }
-  return llvm::FunctionType::get(returnType->emitLLVM(help), argTys, false);
-}
-
-void FunctionType::emitCPP(cpp::File &file) const {
-  //
-}
 
 String FunctionType::toString() const {
   String result("(");

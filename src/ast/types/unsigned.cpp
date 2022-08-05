@@ -8,7 +8,7 @@ UnsignedType::UnsignedType(const u32 _bitWidth, const bool _variable,
     : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
 
 IR::QatType *UnsignedType::emit(IR::Context *ctx) {
-  return new IR::UnsignedType(bitWidth);
+  return IR::UnsignedType::get(bitWidth, ctx->llctx);
 }
 
 bool UnsignedType::isBitWidth(const u32 width) const {

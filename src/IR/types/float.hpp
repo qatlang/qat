@@ -2,6 +2,7 @@
 #define QAT_IR_TYPES_FLOAT_HPP
 
 #include "./qat_type.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
@@ -11,15 +12,15 @@ class FloatType : public QatType {
 private:
   FloatTypeKind kind;
 
+  FloatType(FloatTypeKind _kind, llvm::LLVMContext &ctx);
+
 public:
-  FloatType(FloatTypeKind _kind);
+  useit static FloatType *get(FloatTypeKind _kind, llvm::LLVMContext &ctx);
 
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;
   useit String        toString() const override;
   useit nuo::Json toJson() const override;
-  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
-  void              emitCPP(cpp::File &file) const override;
 };
 
 } // namespace qat::IR

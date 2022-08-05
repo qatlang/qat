@@ -8,7 +8,7 @@ ReferenceType::ReferenceType(QatType *_type, bool _variable,
     : type(_type), QatType(_variable, _fileRange) {}
 
 IR::QatType *ReferenceType::emit(IR::Context *ctx) {
-  return new IR::ReferenceType(type->emit(ctx));
+  return IR::ReferenceType::get(type->emit(ctx), ctx->llctx);
 }
 
 TypeKind ReferenceType::typeKind() { return TypeKind::reference; }

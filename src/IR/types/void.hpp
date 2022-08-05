@@ -2,21 +2,19 @@
 #define QAT_IR_TYPES_VOID_HPP
 
 #include "./qat_type.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
 class VoidType : public QatType {
+private:
+  VoidType(llvm::LLVMContext &ctx);
+
 public:
-  VoidType() = default;
+  useit static VoidType *get(llvm::LLVMContext &ctx);
 
   useit TypeKind typeKind() const override;
-
-  useit String toString() const override;
-
-  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
-
-  void emitCPP(cpp::File &file) const override;
-
+  useit String   toString() const override;
   useit nuo::Json toJson() const override;
 };
 

@@ -4,11 +4,11 @@
 namespace qat::ast {
 
 FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable,
-                     const utils::FileRange _fileRange)
-    : kind(_kind), QatType(_variable, _fileRange) {}
+                     utils::FileRange _fileRange)
+    : kind(_kind), QatType(_variable, std::move(_fileRange)) {}
 
 IR::QatType *FloatType::emit(IR::Context *ctx) {
-  return new IR::FloatType(kind);
+  return IR::FloatType::get(kind, ctx->llctx);
 }
 
 String FloatType::kindToString(IR::FloatTypeKind kind) {

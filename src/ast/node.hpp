@@ -4,6 +4,16 @@
 #include <utility>
 
 #include "../IR/context.hpp"
+#include "../IR/types/array.hpp"
+#include "../IR/types/core_type.hpp"
+#include "../IR/types/float.hpp"
+#include "../IR/types/function.hpp"
+#include "../IR/types/integer.hpp"
+#include "../IR/types/pointer.hpp"
+#include "../IR/types/reference.hpp"
+#include "../IR/types/sum.hpp"
+#include "../IR/types/tuple.hpp"
+#include "../IR/types/unsigned.hpp"
 #include "../backend/cpp.hpp"
 #include "../utils/file_range.hpp"
 #include "./errors.hpp"

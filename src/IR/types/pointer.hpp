@@ -2,6 +2,7 @@
 #define QAT_IR_TYPES_POINTER_HPP
 
 #include "./qat_type.hpp"
+#include "llvm/IR/LLVMContext.h"
 #include <string>
 
 namespace qat::IR {
@@ -14,20 +15,15 @@ class PointerType : public QatType {
 private:
   QatType *subType;
 
+  PointerType(QatType *_type, llvm::LLVMContext &ctx);
+
 public:
-  /**
-   *  Create a pointer to the provided datatype
-   *
-   * @param _type Datatype to which the pointer is pointing to
-   * @param _fileRange
-   */
-  PointerType(QatType *_type);
+  useit static PointerType *get(QatType *_type, llvm::LLVMContext &ctx);
 
-  QatType *getSubType() const;
-
-  TypeKind typeKind() const;
-
-  String toString() const;
+  useit QatType *getSubType() const;
+  useit TypeKind typeKind() const override;
+  useit String   toString() const override;
+  useit nuo::Json toJson() const override;
 };
 
 } // namespace qat::IR

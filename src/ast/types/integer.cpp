@@ -9,7 +9,7 @@ IntegerType::IntegerType(const u32 _bitWidth, const bool _variable,
     : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
 
 IR::QatType *IntegerType::emit(IR::Context *ctx) {
-  return new IR::IntegerType(bitWidth);
+  return IR::IntegerType::get(bitWidth, ctx->llctx);
 }
 
 bool IntegerType::isBitWidth(const u32 width) const {

@@ -9,7 +9,7 @@ ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
       QatType(_variable, _fileRange) {}
 
 IR::QatType *ArrayType::emit(IR::Context *ctx) {
-  return new IR::ArrayType(element_type->emit(ctx), length);
+  return IR::ArrayType::get(element_type->emit(ctx), length, ctx->llctx);
 }
 
 TypeKind ArrayType::typeKind() { return TypeKind::array; }

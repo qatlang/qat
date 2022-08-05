@@ -23,7 +23,7 @@ IR::Value *Lib::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Lib::toJson() {
+nuo::Json Lib::toJson() const {
   Vec<nuo::JsonValue> membersJsonValue;
   for (auto mem : members) {
     membersJsonValue.emplace_back(mem->toJson());

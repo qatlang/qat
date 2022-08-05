@@ -30,12 +30,9 @@ public:
                                   QatType *type, bool isMember);
 
   useit String getName() const;
-
-  useit auto getFileRange() -> utils::FileRange const;
-
-  auto getType() -> QatType *;
-
-  useit bool isTypeMember() const;
+  useit utils::FileRange getFileRange() const;
+  useit QatType         *getType();
+  useit bool             isTypeMember() const;
 };
 
 } // namespace qat::ast

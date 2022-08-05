@@ -3,6 +3,7 @@
 
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
+#include "llvm/IR/LLVMContext.h"
 #include <optional>
 #include <string>
 #include <vector>
@@ -36,7 +37,7 @@ class FunctionType : public QatType {
 
 public:
   FunctionType(QatType *_retType, bool _isReturnValueVariable,
-               Vec<ArgumentType *> _argTypes);
+               Vec<ArgumentType *> _argTypes, llvm::LLVMContext &ctx);
 
   useit QatType      *getReturnType();
   useit bool          isReturnTypeVariable() const;
@@ -45,9 +46,7 @@ public:
   useit u64                 getArgumentCount() const;
   useit TypeKind typeKind() const override { return TypeKind::function; }
   useit String   toString() const override;
-  useit llvm::Type *emitLLVM(llvmHelper &help) const override;
   useit nuo::Json toJson() const override;
-  void            emitCPP(cpp::File &file) const override;
 };
 
 } // namespace qat::IR

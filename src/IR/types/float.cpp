@@ -1,52 +1,49 @@
 #include "./float.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-FloatType::FloatType(const FloatTypeKind _kind) : kind(_kind) {}
+FloatType::FloatType(const FloatTypeKind _kind, llvm::LLVMContext &ctx)
+    : kind(_kind) {
+  switch (kind) {
+  case FloatTypeKind::_brain: {
+    llvmType = llvm::Type::getBFloatTy(ctx);
+  }
+  case FloatTypeKind::_half: {
+    llvmType = llvm::Type::getHalfTy(ctx);
+  }
+  case FloatTypeKind::_32: {
+    llvmType = llvm::Type::getFloatTy(ctx);
+  }
+  case FloatTypeKind::_64: {
+    llvmType = llvm::Type::getDoubleTy(ctx);
+  }
+  case FloatTypeKind::_80: {
+    llvmType = llvm::Type::getX86_FP80Ty(ctx);
+  }
+  case FloatTypeKind::_128PPC: {
+    llvmType = llvm::Type::getPPC_FP128Ty(ctx);
+  }
+  case FloatTypeKind::_128: {
+    llvmType = llvm::Type::getFP128Ty(ctx);
+  }
+  }
+}
+
+FloatType *FloatType::get(FloatTypeKind _kind, llvm::LLVMContext &ctx) {
+  for (auto *typ : types) {
+    if (typ->isFloat()) {
+      if (typ->asFloat()->getKind() == _kind) {
+        return typ->asFloat();
+      }
+    }
+  }
+  return new FloatType(_kind, ctx);
+}
 
 TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
 FloatTypeKind FloatType::getKind() const { return kind; }
-
-llvm::Type *FloatType::emitLLVM(llvmHelper &help) const {
-  switch (kind) {
-  case FloatTypeKind::_brain: {
-    return llvm::Type::getBFloatTy(help.llctx);
-  }
-  case FloatTypeKind::_half: {
-    return llvm::Type::getHalfTy(help.llctx);
-  }
-  case FloatTypeKind::_32: {
-    return llvm::Type::getFloatTy(help.llctx);
-  }
-  case FloatTypeKind::_64: {
-    return llvm::Type::getDoubleTy(help.llctx);
-  }
-  case FloatTypeKind::_80: {
-    return llvm::Type::getX86_FP80Ty(help.llctx);
-  }
-  case FloatTypeKind::_128PPC: {
-    return llvm::Type::getPPC_FP128Ty(help.llctx);
-  }
-  case FloatTypeKind::_128: {
-    return llvm::Type::getFP128Ty(help.llctx);
-  }
-  }
-}
-
-void FloatType::emitCPP(cpp::File &file) const {
-  switch (kind) {
-  case FloatTypeKind::_brain:
-  case FloatTypeKind::_half:
-  case FloatTypeKind::_32: {
-    file << "float ";
-    break;
-  }
-  default: {
-    file << "double ";
-  }
-  }
-}
 
 String FloatType::toString() const {
   switch (kind) {

@@ -6,31 +6,17 @@
 #include <optional>
 
 namespace qat::ast {
-/**
- *  GiveSentence represents a return statement in the language
- *
- */
+
 class GiveSentence : public Sentence {
 private:
-  /**
-   *  Expression that should be returned/given
-   *
-   */
   Maybe<Expression *> give_expr;
 
 public:
-  /**
-   *  GiveSentence represents a return statement in the language
-   *
-   * @param _fileRange
-   */
   GiveSentence(Maybe<Expression *> _given_expr, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::giveSentence; }
+  useit IR::Value *emit(IR::Context *ctx) override;
+  useit nuo::Json toJson() const override;
+  useit NodeType  nodeType() const override { return NodeType::giveSentence; }
 };
 
 } // namespace qat::ast

@@ -16,7 +16,7 @@ enum class TypeKind {
   Float,           // Floating point number
   integer,         // Signed integer
   unsignedInteger, // Unsigned integer
-  vector,          // Vector of elements of another QatType type
+  stringSlice,     // String slice
   tuple,           // Tuple is a product type of multiple types
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type

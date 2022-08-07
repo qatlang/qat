@@ -6,6 +6,7 @@
 #include "./integer.hpp"
 #include "./pointer.hpp"
 #include "./reference.hpp"
+#include "./string_slice.hpp"
 #include "./sum.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
@@ -58,6 +59,12 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
     case TypeKind::Float: {
       return (((FloatType *)this)->getKind() ==
               ((FloatType *)other)->getKind());
+    }
+    case TypeKind::stringSlice: {
+      return true;
+    }
+    case TypeKind::Void: {
+      return true;
     }
     case TypeKind::array: {
       auto *thisVal  = (ArrayType *)this;
@@ -174,6 +181,14 @@ bool QatType::isTemplate() const {
           (typeKind() == TypeKind::templatePointer) ||
           (typeKind() == TypeKind::templateSumType) ||
           (typeKind() == TypeKind::templateTuple));
+}
+
+bool QatType::isStringSlice() const {
+  return typeKind() == TypeKind::stringSlice;
+}
+
+StringSliceType *QatType::asStringSlice() const {
+  return (StringSliceType *)this;
 }
 
 } // namespace qat::IR

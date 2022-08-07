@@ -6,8 +6,8 @@ namespace qat::ast {
 
 TupleType::TupleType(Vec<ast::QatType *> _types, bool _isPacked, bool _variable,
                      utils::FileRange _fileRange)
-    : types(std::move(_types)), isPacked(_isPacked),
-      QatType(_variable, std::move(_fileRange)) {}
+    : QatType(_variable, std::move(_fileRange)), types(std::move(_types)),
+      isPacked(_isPacked) {}
 
 IR::QatType *TupleType::emit(IR::Context *ctx) {
   Vec<IR::QatType *> irTypes;
@@ -20,7 +20,7 @@ IR::QatType *TupleType::emit(IR::Context *ctx) {
   return IR::TupleType::get(irTypes, isPacked, ctx->llctx);
 }
 
-TypeKind TupleType::typeKind() { return TypeKind::tuple; }
+TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 
 nuo::Json TupleType::toJson() const {
   Vec<nuo::JsonValue> mems;
@@ -49,6 +49,7 @@ String TupleType::toString() const {
     }
   }
   result += ")";
+  return result;
 }
 
 } // namespace qat::ast

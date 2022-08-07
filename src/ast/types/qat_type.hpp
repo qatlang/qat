@@ -10,43 +10,23 @@
 
 namespace qat::ast {
 
-/**
- *  This is the base class representing a type in the language
- *
- */
 class QatType {
 private:
   bool variable;
 
 public:
-  QatType(const bool _variable, const utils::FileRange _fileRange)
-      : variable(_variable), fileRange(_fileRange) {}
-
-  virtual ~QatType() = default;
-
-  // This is the code ctx function that handles the generation of
-  // LLVM IR
-  virtual IR::QatType *emit(IR::Context *ctx) {}
-
-  // TypeKind is used to detect variants of the QatType
-  virtual TypeKind typeKind() {}
-
-  // Whether this type was accompanied by the var keyword, which
-  // represents variability for the value in context
-  bool isVariable() const { return variable; }
-
-  bool isConstant() const { return !variable; }
-
-  // This generates JSON to represent the type
-  virtual nuo::Json toJson() const {}
-
-  // FileRange representing the range in the file this type was
-  // parsed from
+  QatType(bool _variable, utils::FileRange _fileRange)
+      : variable(_variable), fileRange(std::move(_fileRange)) {}
   utils::FileRange fileRange;
 
-  virtual String toString() const {}
-
-  virtual void destroy() {}
+  virtual ~QatType() = default;
+  useit bool                 isConstant() const { return !variable; }
+  useit bool                 isVariable() const { return variable; }
+  useit virtual IR::QatType *emit(IR::Context *ctx) = 0;
+  useit virtual TypeKind     typeKind() const       = 0;
+  useit virtual nuo::Json    toJson() const         = 0;
+  useit virtual String       toString() const       = 0;
+  virtual void               destroy() {}
 };
 
 } // namespace qat::ast

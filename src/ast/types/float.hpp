@@ -32,7 +32,7 @@ public:
 
   IR::QatType *emit(IR::Context *ctx);
 
-  TypeKind typeKind();
+  TypeKind typeKind() const;
 
   nuo::Json toJson() const;
 

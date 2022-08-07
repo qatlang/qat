@@ -21,16 +21,12 @@ public:
    * @param _type Datatype to which the pointer is pointing to
    * @param _fileRange
    */
-  ReferenceType(QatType *_type, const bool _variable,
-                const utils::FileRange _fileRange);
+  ReferenceType(QatType *_type, bool _variable, utils::FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
-
-  TypeKind typeKind();
-
-  nuo::Json toJson() const;
-
-  String toString() const;
+  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit TypeKind     typeKind() const final;
+  useit nuo::Json toJson() const final;
+  useit String    toString() const final;
 };
 
 } // namespace qat::ast

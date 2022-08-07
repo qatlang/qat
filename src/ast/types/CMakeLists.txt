@@ -5,6 +5,7 @@ add_library(QAT_AST_TYPES
         named.cpp
         reference.cpp
         pointer.cpp
+        string_slice.cpp
         tuple.cpp
         unsigned.cpp
         void.cpp)

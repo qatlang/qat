@@ -22,6 +22,7 @@ class PointerType;
 class ArrayType;
 class TupleType;
 class FunctionType;
+class StringSliceType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -51,6 +52,8 @@ public:
   useit TupleType        *asTuple() const;
   useit bool              isFunction() const;
   useit FunctionType     *asFunction() const;
+  useit bool              isStringSlice() const;
+  useit StringSliceType  *asStringSlice() const;
   useit bool              isTemplate() const;
   useit virtual TypeKind  typeKind() const = 0;
   useit virtual String    toString() const = 0;

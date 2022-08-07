@@ -6,7 +6,11 @@ namespace qat::IR {
 
 PointerType::PointerType(QatType *_type, llvm::LLVMContext &ctx)
     : subType(_type) {
-  llvmType = llvm::PointerType::get(subType->getLLVMType(), 0U);
+  llvmType = llvm::PointerType::get(
+      subType->getLLVMType()->isVoidTy()
+          ? llvm::Type::getInt8Ty(subType->getLLVMType()->getContext())
+          : subType->getLLVMType(),
+      0U);
 }
 
 PointerType *PointerType::get(QatType *_type, llvm::LLVMContext &ctx) {

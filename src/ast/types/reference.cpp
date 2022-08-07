@@ -5,13 +5,13 @@ namespace qat::ast {
 
 ReferenceType::ReferenceType(QatType *_type, bool _variable,
                              utils::FileRange _fileRange)
-    : type(_type), QatType(_variable, _fileRange) {}
+    : QatType(_variable, std::move(_fileRange)), type(_type) {}
 
 IR::QatType *ReferenceType::emit(IR::Context *ctx) {
   return IR::ReferenceType::get(type->emit(ctx), ctx->llctx);
 }
 
-TypeKind ReferenceType::typeKind() { return TypeKind::reference; }
+TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
 
 nuo::Json ReferenceType::toJson() const {
   return nuo::Json()

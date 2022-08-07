@@ -12,7 +12,7 @@ IR::QatType *PointerType::emit(IR::Context *ctx) {
   return IR::PointerType::get(type->emit(ctx), ctx->llctx);
 }
 
-TypeKind PointerType::typeKind() { return TypeKind::pointer; }
+TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
 nuo::Json PointerType::toJson() const {
   return nuo::Json()

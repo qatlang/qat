@@ -39,7 +39,7 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
 
 String NamedType::getName() const { return name; }
 
-TypeKind NamedType::typeKind() { return TypeKind::Float; }
+TypeKind NamedType::typeKind() const { return TypeKind::Float; }
 
 nuo::Json NamedType::toJson() const {
   return nuo::Json()

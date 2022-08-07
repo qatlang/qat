@@ -37,7 +37,7 @@ String FloatType::kindToString(IR::FloatTypeKind kind) {
   }
 }
 
-TypeKind FloatType::typeKind() { return TypeKind::Float; }
+TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
 nuo::Json FloatType::toJson() const {
   return nuo::Json()

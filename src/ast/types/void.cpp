@@ -10,7 +10,7 @@ IR::QatType *VoidType::emit(IR::Context *ctx) {
   return IR::VoidType::get(ctx->llctx);
 }
 
-TypeKind VoidType::typeKind() { return TypeKind::Void; }
+TypeKind VoidType::typeKind() const { return TypeKind::Void; }
 
 nuo::Json VoidType::toJson() const {
   return nuo::Json()

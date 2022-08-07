@@ -12,7 +12,7 @@ IR::QatType *ArrayType::emit(IR::Context *ctx) {
   return IR::ArrayType::get(element_type->emit(ctx), length, ctx->llctx);
 }
 
-TypeKind ArrayType::typeKind() { return TypeKind::array; }
+TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
 nuo::Json ArrayType::toJson() const {
   return nuo::Json()

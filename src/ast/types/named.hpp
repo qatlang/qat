@@ -40,7 +40,7 @@ public:
   // Get the name of the type
   String getName() const;
 
-  TypeKind typeKind();
+  TypeKind typeKind() const;
 
   nuo::Json toJson() const;
 

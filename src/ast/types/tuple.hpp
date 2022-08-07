@@ -24,13 +24,10 @@ public:
   TupleType(const Vec<QatType *> _types, const bool _isPacked,
             const bool _variable, const utils::FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
-
-  TypeKind typeKind();
-
-  nuo::Json toJson() const;
-
-  String toString() const;
+  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit TypeKind     typeKind() const final;
+  useit nuo::Json toJson() const final;
+  useit String    toString() const final;
 };
 
 } // namespace qat::ast

@@ -31,7 +31,7 @@ public:
 
   IR::QatType *emit(IR::Context *ctx);
 
-  TypeKind typeKind();
+  TypeKind typeKind() const final;
 
   //  Whether the provided integer is the bitwidth of the UnsignedType
   bool isBitWidth(const u32 width) const;

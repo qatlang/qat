@@ -16,7 +16,7 @@ bool IntegerType::isBitWidth(const u32 width) const {
   return bitWidth == width;
 }
 
-TypeKind IntegerType::typeKind() { return TypeKind::integer; }
+TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
 
 nuo::Json IntegerType::toJson() const {
   return nuo::Json()

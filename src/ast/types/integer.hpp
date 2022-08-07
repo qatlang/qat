@@ -30,7 +30,7 @@ public:
 
   IR::QatType *emit(IR::Context *ctx);
 
-  TypeKind typeKind();
+  TypeKind typeKind() const;
 
   /**
    *  Whether the provided integer is the bitwidth of the IntegerType

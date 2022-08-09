@@ -1,72 +1,191 @@
 #include "./function.hpp"
 #include "../show.hpp"
+#include "./context.hpp"
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
+#include "./types/pointer.hpp"
+#include "types/qat_type.hpp"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/LLVMContext.h"
 #include <vector>
 
 namespace qat::IR {
 
-Function::Function(QatModule *_mod, std::string _name, QatType *returnType,
-                   bool _isRetTypeVariable, bool _is_async,
-                   std::vector<Argument> _args, bool is_variable_arguments,
-                   utils::FileRange fileRange,
-                   utils::VisibilityInfo _visibility_info)
-    : arguments(_args), name(_name), isReturnValueVariable(_isRetTypeVariable),
-      is_async(_is_async), mod(_mod), fileRange(fileRange),
-      has_variadic_args(is_variable_arguments),
-      visibility_info(_visibility_info), Value(nullptr, false, Kind::pure) //
-{
-  std::vector<ArgumentType *> argTypes;
-  for (auto arg : _args) {
-    argTypes.push_back(
-        new ArgumentType(arg.get_name(), arg.getType(), arg.get_variability()));
+LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
+                       Function *fn)
+    : Value(nullptr, _type, _isVar, Nature::assignable) {
+  SHOW("Type is " << _type->toString())
+  SHOW("Creating llvm::AllocaInst")
+  ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
+                            &fn->getLLVMFunction()->getEntryBlock());
+}
+
+String LocalValue::getName() const {
+  return ((llvm::AllocaInst *)ll)->getName().str();
+}
+
+llvm::AllocaInst *LocalValue::getAlloca() const {
+  return (llvm::AllocaInst *)ll;
+}
+
+Block::Block(Function *_fn, Block *_parent)
+    : parent(_parent), fn(_fn), index(0) {
+  SHOW("Starting block creation")
+  fn->blocks.push_back(this);
+  SHOW("Block pushed the block-list in function")
+  index = fn->blocks.size() - 1;
+  SHOW("Index of block set")
+  name = std::to_string(fn->blocks.size() - 1);
+  SHOW("Name of the block set")
+  bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name,
+                                fn->getLLVMFunction());
+  SHOW("Created llvm::BasicBlock")
+}
+
+String Block::getName() const { return name; }
+
+llvm::BasicBlock *Block::getBB() const { return bb; }
+
+bool Block::hasParent() const { return (parent != nullptr); }
+
+Block *Block::getParent() const { return parent; }
+
+Function *Block::getFn() const { return fn; }
+
+bool Block::hasValue(const String &name) const {
+  for (auto *val : values) {
+    if (val->getName() == name) {
+      return true;
+    }
   }
-  type = new FunctionType(returnType, _isRetTypeVariable, argTypes);
+  if (hasParent()) {
+    return parent->hasValue(name);
+  }
+  return false;
 }
 
-Function *Function::Create(QatModule *mod, const std::string name,
-                           QatType *returnTy, const bool isReturnTypeVariable,
-                           const bool is_async,
-                           const std::vector<Argument> args,
-                           const bool has_variadic_args,
-                           const utils::FileRange fileRange,
-                           const utils::VisibilityInfo visibilityInfo) {
-  return new Function(mod, name, returnTy, isReturnTypeVariable, is_async, args,
-                      has_variadic_args, fileRange, visibilityInfo);
+LocalValue *Block::getValue(const String &name) const {
+  for (auto *val : values) {
+    if (val->getName() == name) {
+      return val;
+    }
+  }
+  if (hasParent()) {
+    return parent->getValue(name);
+  }
+  return nullptr;
 }
 
-bool Function::hasVariadicArgs() const { return has_variadic_args; }
+LocalValue *Block::newValue(String name, IR::QatType *type, bool isVar) {
+  SHOW("About to heap allocate LocalValue")
+  return new LocalValue(name, type, isVar, fn);
+}
+
+void Block::setActive(
+    llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
+        &builder) const {
+  fn->setActiveBlock(index);
+  builder.SetInsertPoint(bb);
+}
+
+Function::Function(QatModule *_mod, String _name, QatType *returnType,
+                   bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
+                   bool _isVariadicArguments, utils::FileRange fileRange,
+                   const utils::VisibilityInfo &_visibility_info,
+                   llvm::LLVMContext           &ctx)
+    : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)),
+      isReturnValueVariable(_isRetTypeVariable), mod(_mod),
+      arguments(std::move(_args)), visibility_info(_visibility_info),
+      fileRange(std::move(fileRange)), is_async(_is_async),
+      hasVariadicArguments(_isVariadicArguments) //
+{
+  Vec<ArgumentType *> argTypes;
+  for (auto const &arg : arguments) {
+    argTypes.push_back(
+        new ArgumentType(arg.getName(), arg.getType(), arg.get_variability()));
+  }
+  type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
+  ll   = llvm::Function::Create((llvm::FunctionType *)getType()->getLLVMType(),
+                                llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                                0U, mod->getFullNameWithChild(name),
+                                mod->getLLVMModule());
+}
+
+IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
+                          QatModule *destMod) {
+  SHOW("Linking function if it is external")
+  // Linking the function if it is external
+  auto *llvmFunction = (llvm::Function *)ll;
+  if (destMod->getLLVMModule()->getFunction(getFullName()) == nullptr) {
+    llvm::Function::Create((llvm::FunctionType *)getType()->getLLVMType(),
+                           llvmFunction->getLinkage(),
+                           llvmFunction->getAddressSpace(), getFullName(),
+                           destMod->getLLVMModule());
+  }
+  SHOW("Getting return type")
+  auto *retType = ((FunctionType *)getType())->getReturnType();
+  SHOW("Getting function type")
+  auto *fnTy = (llvm::FunctionType *)getType()->asFunction()->getLLVMType();
+  SHOW("Got function type")
+  SHOW("Creating LLVM call")
+  return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues),
+                       retType, isReturnValueVariable,
+                       (retType->isReference() || retType->isPointer())
+                           ? Nature::assignable
+                           : Nature::temporary);
+}
+
+Function *Function::Create(QatModule *mod, String name, QatType *returnTy,
+                           const bool isReturnTypeVariable, const bool is_async,
+                           Vec<Argument> args, const bool hasvariadicargs,
+                           utils::FileRange             fileRange,
+                           const utils::VisibilityInfo &visibilityInfo,
+                           llvm::LLVMContext           &ctx) {
+  return new Function(mod, std::move(name), returnTy, isReturnTypeVariable,
+                      is_async, std::move(args), hasvariadicargs,
+                      std::move(fileRange), visibilityInfo, ctx);
+}
+
+bool Function::hasVariadicArgs() const { return hasVariadicArguments; }
 
 bool Function::isAsyncFunction() const { return is_async; }
 
-std::string Function::argumentNameAt(unsigned int index) const {
-  return arguments.at(index).get_name();
+String Function::argumentNameAt(u32 index) const {
+  return arguments.at(index).getName();
 }
 
-std::string Function::getName() const { return name; }
+String Function::getName() const { return name; }
 
-std::string Function::getFullName() const {
-  return mod->getFullNameWithChild(name);
-}
+String Function::getFullName() const { return mod->getFullNameWithChild(name); }
 
-bool Function::isAccessible(const utils::RequesterInfo req_info) const {
+bool Function::isAccessible(const utils::RequesterInfo &req_info) const {
   return utils::Visibility::isAccessible(visibility_info, req_info);
 }
-
-Block *Function::getEntryBlock() { return blocks.front(); }
-
-Block *Function::addBlock(bool isSub) {
-  return new Block(this, isSub ? getCurrentBlock() : nullptr);
-}
-
-Block *Function::getCurrentBlock() { return current; }
-
-void Function::setCurrentBlock(Block *block) { current = block; }
 
 utils::VisibilityInfo Function::getVisibility() const {
   return visibility_info;
 }
 
 bool Function::isMemberFunction() const { return false; }
+
+bool Function::isReturnTypeReference() const {
+  return ((FunctionType *)type)->getReturnType()->typeKind() ==
+         TypeKind::reference;
+}
+
+bool Function::isReturnTypePointer() const {
+  return ((FunctionType *)type)->getReturnType()->typeKind() ==
+         TypeKind::pointer;
+}
+
+llvm::Function *Function::getLLVMFunction() { return (llvm::Function *)ll; }
+
+void Function::setActiveBlock(usize index) const { activeBlock = index; }
+
+Block *Function::getBlock() const { return blocks.at(activeBlock); }
 
 } // namespace qat::IR

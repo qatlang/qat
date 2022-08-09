@@ -2,10 +2,16 @@
 #define QAT_IR_FUNCTION_HPP
 
 #include "../utils/file_range.hpp"
+#include "../utils/helpers.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
-#include "./block.hpp"
+#include "./value.hpp"
 #include "types/qat_type.hpp"
+#include "uniq.hpp"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/LLVMContext.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -13,97 +19,88 @@
 namespace qat::IR {
 
 class QatModule;
+class FunctionCall;
+class Context;
+class Function;
 
-// Function represents a normal function in the language
-class Function : public Value {
-protected:
-  // Name of the function
-  std::string name;
+class LocalValue : public Value {
+public:
+  LocalValue(String name, IR::QatType *type, bool isVariable, Function *fun);
+  useit String getName() const;
+  useit llvm::AllocaInst *getAlloca() const;
+};
 
-  bool isReturnValueVariable;
-
-  // Parent module of the function
-  QatModule *mod;
-
-  // Arguments of the function
-  std::vector<Argument> arguments;
-
-  // Information about the visibility of this function
-  utils::VisibilityInfo visibility_info;
-
-  // FileRange of this function
-  utils::FileRange fileRange;
-
-  //  Whether this function is async or not
-  bool is_async;
-
-  bool has_variadic_args;
-
-  // All blocks in the function
-  std::vector<Block *> blocks;
-
-  // Current block
-  Block *current;
-
-  // Number of calls made to this function
-  unsigned calls;
-
-  unsigned refers;
-
-  // Private constructor for Function
-  Function(QatModule *mod, std::string _name, QatType *returnType,
-           bool _isReturnValueVariable, bool _is_async,
-           std::vector<Argument> _args, bool has_variadic_arguments,
-           utils::FileRange fileRange, utils::VisibilityInfo _visibility_info);
+class Block {
+private:
+  String            name;
+  llvm::BasicBlock *bb;
+  Vec<LocalValue *> values;
+  Block            *parent;
+  Function         *fn;
+  usize             index;
 
 public:
-  // Create a member function for the provided parent type
-  static Function *Create(QatModule *mod, const std::string name,
-                          QatType *return_type, bool isReturnValueVariable,
-                          bool is_async, const std::vector<Argument> args,
-                          const bool has_variadic_args,
-                          const utils::FileRange fileRange,
-                          const utils::VisibilityInfo visib_info);
+  Block(Function *_fn, Block *_parent);
 
-  virtual bool isMemberFunction() const;
+  useit String getName() const;
+  useit llvm::BasicBlock *getBB() const;
+  useit bool              hasParent() const;
+  useit Block            *getParent() const;
+  useit Function         *getFn() const;
+  useit bool              hasValue(const String &name) const;
+  useit LocalValue       *getValue(const String &name) const;
+  useit LocalValue       *newValue(String name, IR::QatType *type, bool isVar);
+  void                    setActive(
+                         llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
+                             &builder) const;
+};
 
-  //  Whether this function has variadic arguments
-  bool hasVariadicArgs() const;
+// Function represents a normal function in the language
+class Function : public Value, public Uniq {
+  friend class Block;
 
-  // Whether this function is async or not
-  bool isAsyncFunction() const;
+protected:
+  String                name;
+  bool                  isReturnValueVariable;
+  QatModule            *mod;
+  Vec<Argument>         arguments;
+  utils::VisibilityInfo visibility_info;
+  utils::FileRange      fileRange;
+  bool                  is_async;
+  bool                  hasVariadicArguments;
+  Vec<Block *>          blocks;
 
-  // The name of the argument at the provided index
-  std::string argumentNameAt(unsigned int index) const;
+  mutable usize activeBlock = 0;
+  mutable u64   calls;
+  mutable u64   refers;
 
-  // Short name of the function, without the prefix of the parent
-  std::string getName() const;
+  Function(QatModule *mod, String _name, QatType *returnType,
+           bool _isReturnValueVariable, bool _is_async, Vec<Argument> _args,
+           bool has_variadic_arguments, utils::FileRange fileRange,
+           const utils::VisibilityInfo &_visibility_info,
+           llvm::LLVMContext           &ctx);
 
-  // Full name of the function, with the name of the parent prefixed
-  virtual std::string getFullName() const;
-
-  // Whether this function returns reference to another entity
-  bool isReturnTypeReference() const;
-
-  // Whether this function returns data of pointer type
-  bool isReturnTypePointer() const;
-
-  // Whether this function is accessible by the requester
-  bool isAccessible(const utils::RequesterInfo req_info) const;
-
-  Block *getEntryBlock();
-
-  // Add a new block
-  Block *addBlock(bool isSub);
-
-  // Get the current block
-  Block *getCurrentBlock();
-
-  // Set the current block
-  void setCurrentBlock(Block *block);
-
-  // Get the visibility of this function
-  utils::VisibilityInfo getVisibility() const;
+public:
+  static Function   *Create(QatModule *mod, String name, QatType *return_type,
+                            bool isReturnValueVariable, bool is_async,
+                            Vec<Argument> args, bool has_variadic_args,
+                            utils::FileRange             fileRange,
+                            const utils::VisibilityInfo &visibilityInfo,
+                            llvm::LLVMContext           &ctx);
+  useit Value       *call(IR::Context *ctx, Vec<llvm::Value *>, QatModule *mod);
+  useit virtual bool isMemberFunction() const;
+  useit bool         hasVariadicArgs() const;
+  useit bool         isAsyncFunction() const;
+  useit String       argumentNameAt(u32 index) const;
+  useit String       getName() const;
+  useit virtual String getFullName() const;
+  useit bool           isReturnTypeReference() const;
+  useit bool           isReturnTypePointer() const;
+  useit bool           isAccessible(const utils::RequesterInfo &req_info) const;
+  useit utils::VisibilityInfo getVisibility() const;
+  useit llvm::Function *getLLVMFunction();
+  void                  setActiveBlock(usize index) const;
+  Block                *getBlock() const;
 };
 
 } // namespace qat::IR

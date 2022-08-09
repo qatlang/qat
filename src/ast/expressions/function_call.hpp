@@ -25,8 +25,8 @@ public:
    */
   FunctionCall(String _name, Vec<Expression *> _arguments,
                utils::FileRange _fileRange)
-      : name(std::move(_name)), arguments(std::move(_arguments)),
-        Expression(std::move(_fileRange)) {}
+      : Expression(std::move(_fileRange)), name(std::move(_name)),
+        arguments(std::move(_arguments)) {}
 
   IR::Value *emit(IR::Context *ctx) override;
 

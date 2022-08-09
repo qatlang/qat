@@ -1,41 +1,95 @@
 #include "./qat_sitter.hpp"
 #include "./show.hpp"
+#include "IR/llvm_helper.hpp"
 #include "IR/qat_module.hpp"
 #include "cli/config.hpp"
+#include "cli/error.hpp"
+#include "cli/version.hpp"
 #include "utils/visibility.hpp"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/Target/TargetMachine.h"
 #include <filesystem>
 #include <nuo/json.hpp>
+
+#define OUTPUT_OBJECT_NAME "output"
 
 namespace qat {
 
 QatSitter::QatSitter()
-    : Context(new IR::Context()), Parser(new parser::Parser()),
-      Lexer(new lexer::Lexer()) {}
+    : Context(new IR::Context()), Lexer(new lexer::Lexer()),
+      Parser(new parser::Parser()) {}
 
 void QatSitter::init() {
-  auto config = cli::Config::get();
-  for (auto path : config->getPaths()) {
-    handlePath(path);
+  auto *config = cli::Config::get();
+  auto *ctx    = new IR::Context();
+  for (const auto &path : config->getPaths()) {
+    handlePath(path, ctx->llctx);
   }
   if (config->shouldExportAST()) {
-    for (auto entity : fileEntities) {
+    for (auto *entity : fileEntities) {
       entity->exportJsonFromAST();
     }
   } else if (config->isCompile()) {
     switch (config->getTarget()) {
     case cli::CompileTarget::normal: {
+      for (auto *entity : fileEntities) {
+        ctx->mod = entity;
+        entity->emitNodes(ctx);
+      }
+      if (checkExecutableExists("clang++")) {
+        String compileCommand = "clang++ -fuse-ld=lld ";
+        for (const auto &llPath : ctx->llvmOutputPaths) {
+          compileCommand += (fs::absolute(llPath).string() + " ");
+        }
+        if (config->hasOutputPath()) {
+          compileCommand +=
+              "-o " + (config->getOutputPath() / OUTPUT_OBJECT_NAME).string();
+        } else {
+          compileCommand += ("-o " OUTPUT_OBJECT_NAME);
+        }
+        if (system(compileCommand.c_str())) {
+          SHOW("Compilation failed")
+        } else {
+          SHOW("Compiled successfully")
+        }
+#if IS_RELEASE
+        for (const auto &llPath : ctx->llvmOutputPaths) {
+          fs::remove(llPath);
+        }
+#endif
+        if (config->isRun() && ctx->hasMain) {
+          SHOW("Executing the program")
+          if (config->hasOutputPath()) {
+            system((String(".") +
+                    ((config->getOutputPath().string().find('/') == 0) ? ""
+                                                                       : "/") +
+                    (config->getOutputPath() / OUTPUT_OBJECT_NAME).string())
+                       .c_str());
+          }
+        }
+      } else {
+        cli::Error("qat cannot find clang on path. Please make sure that you "
+                   "have clang installed and the path to clang is available in "
+                   "the environment",
+                   None);
+      }
+      break;
     }
     case cli::CompileTarget::json: {
+      // TODO - Implement
     }
     case cli::CompileTarget::cpp: {
+      // TODO - Implement
     }
     }
   }
+  delete ctx;
 }
 
-void QatSitter::handlePath(fs::path path) {
-  std::function<void(IR::QatModule *, fs::path)> recursiveModuleCreator =
-      [&](IR::QatModule *folder, fs::path path) {
+void QatSitter::handlePath(const fs::path &path, llvm::LLVMContext &llctx) {
+  std::function<void(IR::QatModule *, const fs::path &)>
+      recursiveModuleCreator = [&](IR::QatModule  *folder,
+                                   const fs::path &path) {
         for (auto const &item : path) {
           if (fs::is_directory(item)) {
             if (fs::exists(item / "lib.qat")) {
@@ -44,11 +98,12 @@ void QatSitter::handlePath(fs::path path) {
               Parser->setTokens(Lexer->get_tokens());
               fileEntities.push_back(IR::QatModule::CreateFile(
                   folder, fs::absolute(item / "lib.qat"), path, "lib.qat",
-                  Parser->parse(), utils::VisibilityInfo::pub()));
+                  Lexer->getContent(), Parser->parse(),
+                  utils::VisibilityInfo::pub(), llctx));
             } else {
-              auto subfolder = IR::QatModule::CreateSubmodule(
+              auto *subfolder = IR::QatModule::CreateSubmodule(
                   folder, item, path, item.filename().string(),
-                  IR::ModuleType::folder, utils::VisibilityInfo::pub());
+                  IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
               fileEntities.push_back(subfolder);
               recursiveModuleCreator(subfolder, item);
             }
@@ -57,8 +112,9 @@ void QatSitter::handlePath(fs::path path) {
             Lexer->analyse();
             Parser->setTokens(Lexer->get_tokens());
             fileEntities.push_back(IR::QatModule::CreateFile(
-                folder, item, path, item.filename().string(), Parser->parse(),
-                utils::VisibilityInfo::pub()));
+                folder, item, path, item.filename().string(),
+                Lexer->getContent(), Parser->parse(),
+                utils::VisibilityInfo::pub(), llctx));
           }
         }
       };
@@ -69,12 +125,12 @@ void QatSitter::handlePath(fs::path path) {
       Lexer->analyse();
       Parser->setTokens(Lexer->get_tokens());
       fileEntities.push_back(IR::QatModule::CreateFile(
-          nullptr, libpath, path, "lib.qat", Parser->parse(),
-          utils::VisibilityInfo::pub()));
+          nullptr, libpath, path, "lib.qat", Lexer->getContent(),
+          Parser->parse(), utils::VisibilityInfo::pub(), llctx));
     } else {
-      auto subfolder = IR::QatModule::Create(
+      auto *subfolder = IR::QatModule::Create(
           path.filename().string(), path, path.parent_path(),
-          IR::ModuleType::folder, utils::VisibilityInfo::pub());
+          IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
       fileEntities.push_back(subfolder);
       recursiveModuleCreator(subfolder, path);
     }
@@ -84,13 +140,30 @@ void QatSitter::handlePath(fs::path path) {
     Parser->setTokens(Lexer->get_tokens());
     fileEntities.push_back(IR::QatModule::CreateFile(
         nullptr, fs::absolute(path), path.parent_path(),
-        path.filename().string(), Parser->parse(),
-        utils::VisibilityInfo::pub()));
+        path.filename().string(), Lexer->getContent(), Parser->parse(),
+        utils::VisibilityInfo::pub(), llctx));
   }
 }
 
+bool QatSitter::checkExecutableExists(const String &name) {
+#if PLATFORM_IS_WINDOWS
+  LPSTR lpFilePart;
+  char  fileName[2000];
+  if (!SearchPath(NULL, name, ".exe", 2000, fileName, &lpFilePart)) {
+    return false;
+  }
+  return true;
+#else
+  if (system(("which " + name).c_str())) {
+    return false;
+  } else {
+    return true;
+  }
+#endif
+}
+
 QatSitter::~QatSitter() {
-  for (auto mod : fileEntities) {
+  for (auto *mod : fileEntities) {
     delete mod;
   }
   fileEntities.clear();

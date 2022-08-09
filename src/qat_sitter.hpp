@@ -6,6 +6,8 @@
 #include "./cli/config.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
+#include "utils/helpers.hpp"
+#include "llvm/IR/LLVMContext.h"
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -20,15 +22,9 @@ namespace fs = std::filesystem;
 class QatSitter {
 private:
   Vec<IR::QatModule *> fileEntities;
-
-  // The Context instance used by this class to control IR generation
-  IR::Context *Context;
-
-  // The lexer instance used to manage lexical analysis of files
-  lexer::Lexer *Lexer;
-
-  // The parser instance that converts tokens to AST representation
-  parser::Parser *Parser;
+  IR::Context         *Context;
+  lexer::Lexer        *Lexer;
+  parser::Parser      *Parser;
 
 public:
   QatSitter();
@@ -36,7 +32,9 @@ public:
   // Initialise QatSitter
   void init();
 
-  void handlePath(fs::path path);
+  void handlePath(const fs::path &path, llvm::LLVMContext &llctx);
+
+  useit static bool checkExecutableExists(const String &name);
 
   ~QatSitter();
 };

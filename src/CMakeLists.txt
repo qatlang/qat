@@ -7,8 +7,10 @@ PROJECT(qat
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
     SET(IS_RELEASE ON)
+    add_compile_definitions(IS_RELEASE=true)
 else()
     SET(IS_RELEASE OFF)
+    add_compile_definitions(IS_RELEASE=false)
 endif()
 
 if(WIN32)
@@ -90,7 +92,7 @@ if(IS_UNIX)
     if(IS_RELEASE)
         SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/")
     else()
-        SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -analyze -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/")
+        SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/")
 
         # SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
     endif()
@@ -98,7 +100,7 @@ else()
     if(IS_RELEASE)
         SET(CMAKE_CXX_FLAGS "-Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
     else()
-        SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld -w -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
+        SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
 
         # SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
     endif()
@@ -158,6 +160,7 @@ if(IS_UNIX)
     target_link_libraries(${PROJECT_NAME}
         ${LLVM_LIBRARIES}
         LLVMBitWriter
+        LLVMLinker
         stdc++
         stdc++fs
         rt

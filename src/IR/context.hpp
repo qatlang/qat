@@ -3,27 +3,39 @@
 
 #include "../utils/file_range.hpp"
 #include "./qat_module.hpp"
-
+#include "function.hpp"
+#include "llvm/IR/ConstantFolder.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
 #include <string>
 #include <vector>
 
 namespace qat::IR {
 
 class Context {
+private:
+  using IRBuilderTy =
+      llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
+
 public:
   Context();
 
-  // The IR module
-  QatModule *mod;
+  llvm::LLVMContext llctx;
+  IRBuilderTy       builder;
+  QatModule        *mod;
+  IR::Function     *fn;
+  Vec<String>       exposed;
+  bool              hasMain;
 
-  // Get the active IR module
-  QatModule *getActive();
+  // META
 
-  // All the boxes exposed in the current scope. This will automatically
-  // be populated and de-populated when the expose scope starts and ends
-  Vec<String> exposed;
+  Vec<fs::path> llvmOutputPaths;
+  Vec<String>   nativeLibsToLink;
+
+  useit QatModule *getMod() const; // Get the active IR module
 
   static void Error(const String &message, const utils::FileRange &fileRange);
+  static void Warning(const String &message, const utils::FileRange &fileRange);
 };
 
 } // namespace qat::IR

@@ -1,5 +1,6 @@
 #include "./function_prototype.hpp"
 #include "../show.hpp"
+#include "llvm/IR/GlobalValue.h"
 #include <vector>
 
 namespace qat::ast {
@@ -11,10 +12,13 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
     ctx->Error("A function named " + name + " exists already in this scope",
                fileRange);
   }
+  if (name == "main") {
+    linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
+  }
   SHOW("Generating types")
   i32 i = 1;
-  for (auto arg : arguments) {
-    auto genType = arg->getType()->emit(ctx);
+  for (auto *arg : arguments) {
+    auto *genType = arg->getType()->emit(ctx);
     generatedTypes.push_back(genType);
     SHOW("Type number " << i)
     i++;
@@ -32,9 +36,9 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create function")
-  function = ctx->mod->createFunction(name, returnType->emit(ctx),
-                                      returnType->isVariable(), isAsync, args,
-                                      isVariadic, fileRange, visibility);
+  function = ctx->mod->createFunction(
+      name, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
+      isVariadic, fileRange, visibility, linkageType, ctx->llctx);
   SHOW("Function created!!")
   if ((linkageType == llvm::GlobalValue::ExternalLinkage) &&
       (utils::stringToCallingConv(callingConv) != 1024)) {
@@ -46,7 +50,7 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
 
 nuo::Json FunctionPrototype::toJson() const {
   Vec<nuo::JsonValue> args;
-  for (auto arg : arguments) {
+  for (auto *arg : arguments) {
     auto aJson =
         nuo::Json()
             ._("name", arg->getName())

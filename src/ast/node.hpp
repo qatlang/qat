@@ -15,6 +15,7 @@
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
 #include "../backend/cpp.hpp"
+#include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "./errors.hpp"
 #include "./node_type.hpp"

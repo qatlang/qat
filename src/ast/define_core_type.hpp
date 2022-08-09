@@ -15,7 +15,8 @@ public:
   class Member {
   public:
     Member(QatType *_type, String _name, bool _variability,
-           utils::VisibilityInfo _visibility, utils::FileRange _fileRange);
+           const utils::VisibilityInfo &_visibility,
+           utils::FileRange             _fileRange);
 
     QatType              *type;
     String                name;

@@ -5,9 +5,9 @@ namespace qat::ast {
 
 DefineCoreType::Member::Member( //
     QatType *_type, String _name, bool _variability,
-    utils::VisibilityInfo _visibility, utils::FileRange _fileRange)
-    : type(_type), name(_name), variability(_variability),
-      visibility(_visibility), fileRange(_fileRange) {}
+    const utils::VisibilityInfo &_visibility, utils::FileRange _fileRange)
+    : type(_type), name(std::move(_name)), variability(_variability),
+      visibility(_visibility), fileRange(std::move(_fileRange)) {}
 
 nuo::Json DefineCoreType::Member::toJson() const {
   return nuo::Json()
@@ -40,40 +40,42 @@ DefineCoreType::DefineCoreType(String _name, Vec<Member *> _members,
                                Vec<StaticMember *>          _staticMembers,
                                const utils::VisibilityInfo &_visibility,
                                utils::FileRange _fileRange, bool _isPacked)
-    : name(std::move(_name)), isPacked(_isPacked), members(std::move(_members)),
-      staticMembers(std::move(_staticMembers)), visibility(_visibility),
-      Node(std::move(_fileRange)) {}
+    : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked),
+      members(std::move(_members)), staticMembers(std::move(_staticMembers)),
+      visibility(_visibility) {}
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
-  auto mod = ctx->getActive();
+  auto *mod = ctx->getMod();
   if (!IR::QatType::checkTypeExists(mod->getFullNameWithChild(name))) {
     Vec<IR::CoreType::Member *> mems;
-    for (auto mem : members) {
+    for (auto *mem : members) {
       mems.push_back(new IR::CoreType::Member(
           mem->name, mem->type->emit(ctx), mem->variability, mem->visibility));
     }
-    auto coreType = new IR::CoreType(mod, name, mems, {}, visibility);
-    for (auto st : staticMembers) {
-      coreType->addStaticMember(st->name, st->type->emit(ctx), st->variability,
-                                st->value ? st->value->emit(ctx) : nullptr,
-                                st->visibility);
+    auto *coreType = new IR::CoreType(mod, name, mems, visibility, ctx->llctx);
+    for (auto *stm : staticMembers) {
+      coreType->addStaticMember(stm->name, stm->type->emit(ctx),
+                                stm->variability,
+                                stm->value ? stm->value->emit(ctx) : nullptr,
+                                stm->visibility, ctx->llctx);
     }
-    return nullptr;
+    return nullptr; // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
   } else {
-    ctx->Error("Type " + mod->getFullNameWithChild(name) +
-                   " exists already. Please change name of this type or "
-                   "check the codebase",
-               fileRange);
+    ctx->Error(
+        "Type " + mod->getFullNameWithChild(name) +
+            " exists in this scope already. Please change name of this type or "
+            "check the codebase",
+        fileRange);
   }
 }
 
 nuo::Json DefineCoreType::toJson() const {
   Vec<nuo::JsonValue> membersJsonValue;
   Vec<nuo::JsonValue> staticMembersJsonValue;
-  for (auto mem : members) {
+  for (auto *mem : members) {
     membersJsonValue.emplace_back(mem->toJson());
   }
-  for (auto mem : staticMembers) {
+  for (auto *mem : staticMembers) {
     staticMembersJsonValue.emplace_back(mem->toJson());
   }
   return nuo::Json()

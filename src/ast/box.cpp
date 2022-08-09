@@ -6,9 +6,7 @@ namespace qat::ast {
 IR::Value *Box::emit(IR::Context *ctx) {
   // FIXME - Perform name checks
   // TODO - Implement this
-  if (ctx) {
-    std::cout << "";
-  }
+  ctx->getMod()->openBox(name, utils::VisibilityInfo::pub());
   return nullptr;
 }
 

@@ -1,6 +1,7 @@
 add_library(QAT_IR_TYPES
         array.cpp
         core_type.cpp
+        cstring.cpp
         float.cpp
         function.cpp
         integer.cpp

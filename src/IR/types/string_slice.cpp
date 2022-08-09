@@ -6,7 +6,14 @@
 namespace qat::IR {
 
 StringSliceType::StringSliceType(llvm::LLVMContext &ctx) {
-  llvmType = llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0U);
+  if (llvm::StructType::getTypeByName(ctx, "str")) {
+    llvmType = llvm::StructType::getTypeByName(ctx, "str");
+  } else {
+    llvmType = llvm::StructType::create(
+        {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0U),
+         llvm::Type::getInt64Ty(ctx)},
+        "str");
+  }
 }
 
 StringSliceType *StringSliceType::get(llvm::LLVMContext &ctx) {

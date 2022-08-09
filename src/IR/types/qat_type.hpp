@@ -23,6 +23,7 @@ class ArrayType;
 class TupleType;
 class FunctionType;
 class StringSliceType;
+class CStringType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -54,7 +55,10 @@ public:
   useit FunctionType     *asFunction() const;
   useit bool              isStringSlice() const;
   useit StringSliceType  *asStringSlice() const;
+  useit bool              isCString() const;
+  useit CStringType      *asCString() const;
   useit bool              isTemplate() const;
+  useit bool              isVoid() const;
   useit virtual TypeKind  typeKind() const = 0;
   useit virtual String    toString() const = 0;
   useit virtual nuo::Json toJson() const   = 0;

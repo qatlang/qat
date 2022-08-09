@@ -8,10 +8,10 @@ namespace qat::IR {
 CoreType::CoreType(QatModule *mod, String _name, Vec<Member *> _members,
                    const utils::VisibilityInfo &_visibility,
                    llvm::LLVMContext           &ctx)
-    : name(std::move(_name)), members(std::move(_members)),
+    : name(std::move(_name)), parent(mod), members(std::move(_members)),
       destructor(MemberFunction::CreateDestructor(
           this, utils::FileRange("", {0u, 0u}, {0u, 0u}), ctx)),
-      visibility(_visibility), parent(mod) {
+      visibility(_visibility) {
   Vec<llvm::Type *> subtypes;
   for (auto *mem : members) {
     subtypes.push_back(mem->type->getLLVMType());

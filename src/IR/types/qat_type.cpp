@@ -63,6 +63,9 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
     case TypeKind::stringSlice: {
       return true;
     }
+    case TypeKind::cstring: {
+      return true;
+    }
     case TypeKind::Void: {
       return true;
     }
@@ -176,6 +179,8 @@ bool QatType::isFunction() const { return typeKind() == TypeKind::function; }
 
 FunctionType *QatType::asFunction() const { return (FunctionType *)this; }
 
+bool QatType::isVoid() const { return typeKind() == TypeKind::Void; }
+
 bool QatType::isTemplate() const {
   return ((typeKind() == TypeKind::templateCoreType) ||
           (typeKind() == TypeKind::templatePointer) ||
@@ -190,5 +195,9 @@ bool QatType::isStringSlice() const {
 StringSliceType *QatType::asStringSlice() const {
   return (StringSliceType *)this;
 }
+
+bool QatType::isCString() const { return typeKind() == TypeKind::cstring; }
+
+CStringType *QatType::asCString() const { return (CStringType *)this; }
 
 } // namespace qat::IR

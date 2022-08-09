@@ -37,6 +37,8 @@ private:
    */
   std::fstream file;
 
+  Vec<String> content;
+
   /**
    *  Context that can provide information about the previous
    * token emitted by the Lexer
@@ -121,6 +123,8 @@ public:
    * @return Vec<Token>
    */
   Vec<Token> &get_tokens();
+
+  useit Vec<String> getContent() const;
 
   /**
    *  Clear all the tokens obtained from the analysis so far

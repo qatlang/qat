@@ -19,6 +19,8 @@ Lexer::Lexer() {
 
 Vec<Token> &Lexer::get_tokens() { return tokens; }
 
+Vec<String> Lexer::getContent() const { return content; }
+
 void Lexer::read() {
   try {
     if (file.eof()) {
@@ -27,16 +29,36 @@ void Lexer::read() {
     } else {
       prev = current;
       file.get(current);
+      if (current != -1) {
+        if (content.empty()) {
+          content.push_back("");
+        }
+        if (current != '\n' || current != '\r') {
+          content.back() += current;
+        }
+      }
       char_num++;
       total_char_count++;
     }
     if (current == '\n') {
       line_num++;
       char_num = 0;
+      content.push_back("");
     } else if (current == '\r') {
-      line_num++;
       prev = current;
       file.get(current);
+      if (current != -1) {
+        if (current == '\n') {
+          line_num++;
+          char_num = 0;
+          total_char_count++;
+          content.push_back("");
+        } else {
+          char_num++;
+          total_char_count++;
+          content.back() += ("\r" + current);
+        }
+      }
       total_char_count++;
       char_num = (current == '\n') ? 0 : 1;
     }
@@ -49,7 +71,7 @@ void Lexer::read() {
 utils::FileRange Lexer::getPosition(u64 length) {
   utils::FilePos end   = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
   utils::FilePos start = {line_num, end.character - length};
-  return utils::FileRange(fs::path(filePath), start, end);
+  return {fs::path(filePath), start, end};
 }
 
 void Lexer::analyse() {
@@ -74,6 +96,7 @@ void Lexer::analyse() {
 
 void Lexer::changeFile(fs::path newFilePath) {
   tokens.clear();
+  content.clear();
   filePath         = std::move(newFilePath);
   prev_ctx         = "";
   prev             = -1;
@@ -402,9 +425,7 @@ Token Lexer::tokeniser() {
     while (escape ? !file.eof() : (current != '"' && !file.eof())) {
       if (escape) {
         escape = false;
-        if (current == '\'') {
-          str_val += '\'';
-        } else if (current == '"') {
+        if (current == '"') {
           str_val += '"';
         } else if (current == '\\') {
           str_val += "\\\\";
@@ -425,12 +446,12 @@ Token Lexer::tokeniser() {
         } else if (current == 'v') {
           str_val += "\v";
         }
-        read();
-      }
-      if (current == '\\' && prev != '\\') {
-        escape = true;
       } else {
-        str_val += current;
+        if (current == '\\' && prev != '\\') {
+          escape = true;
+        } else {
+          str_val += current;
+        }
       }
       read();
     }
@@ -577,6 +598,11 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::lib, this->getPosition(3));
       } else if (value == "bool") {
         return Token::normal(TokenType::boolType, this->getPosition(4));
+      } else if (value == "usize") {
+        return Token::valued(TokenType::unsignedIntegerType, "usize",
+                             this->getPosition(4));
+      } else if (value == "cstring") {
+        return Token::normal(TokenType::cstringType, this->getPosition(7));
       } else if (value == "await") {
         return Token::normal(TokenType::Await, this->getPosition(5));
       } else if (value == "async") {
@@ -617,7 +643,7 @@ Token Lexer::tokeniser() {
       } else if (value == "f128") {
         return Token::valued(TokenType::floatType, "128", this->getPosition(4));
       } else if (value == "str") {
-        return Token::normal(TokenType::stringType, this->getPosition(3));
+        return Token::normal(TokenType::stringSliceType, this->getPosition(3));
       } else if (value == "alias") {
         return Token::normal(TokenType::alias, this->getPosition(5));
       } else if (value == "for") {
@@ -819,8 +845,8 @@ void Lexer::printStatus() {
       case TokenType::stop:
         std::cout << " .\n";
         break;
-      case TokenType::stringType:
-        std::cout << " string ";
+      case TokenType::stringSliceType:
+        std::cout << " str ";
         break;
       case TokenType::StringLiteral:
         std::cout << " \"" << tokens.at(i).value << "\" ";
@@ -859,10 +885,10 @@ void Lexer::printStatus() {
 }
 
 void Lexer::throw_error(const String &message) {
-  std::cout << colors::red << "[ LEXER ERROR ] " << colors::bold::green
-            << filePath << ":" << line_num << ":" << char_num << colors::reset
-            << "\n";
-  std::cout << "   " << message << "\n";
+  std::cout << colors::highIntensityBackground::red << " lexer error "
+            << colors::reset << " " << colors::bold::red << message
+            << colors::reset << " | " << colors::underline::green << filePath
+            << ":" << line_num << ":" << char_num << colors::reset << "\n";
   exit(0);
 }
 

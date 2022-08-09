@@ -61,6 +61,10 @@ private:
   // Whether user has chosen to compile
   bool compile;
 
+  bool run;
+
+  bool outputInTemporaryPath;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -103,6 +107,10 @@ public:
   // should proceed
   useit bool isCompile() const;
 
+  // Whether the program should be run after building. This is valid only if
+  // there is a valid main function present
+  useit bool isRun() const;
+
   // Whether compiler should exit after arguments are handled by Config
   //
   // This is usually true for simple actions like version display, about... and
@@ -137,6 +145,8 @@ public:
 
   // Get the compile-target provided by the user
   useit CompileTarget getTarget() const;
+
+  useit bool outputToTempDir() const;
 
   ~Config();
 };

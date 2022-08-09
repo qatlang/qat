@@ -1,8 +1,25 @@
 #include "./error.hpp"
+#include "color.hpp"
+#include "config.hpp"
 
-void qat::cli::throw_error(String message, std::filesystem::path path) {
-  std::cout << colors::red << "[ CLI ERROR ] " << colors::bold::green
-            << path.string() << "\n"
-            << colors::reset << "   " << message << std::endl;
-  exit(0);
+namespace qat::cli {
+
+void Error(const String &message, Maybe<fs::path> path) {
+  std::cout << colors::highIntensityBackground::red << " cli error "
+            << colors::reset << (path ? colors::green : colors::reset)
+            << (path ? (" " + path.value().string()) : "")
+            << colors::bold::white << " " << message << colors::reset
+            << std::endl;
+  cli::Config::destroy();
+  exit(1);
 }
+
+void Warning(const String &message, Maybe<fs::path> path) {
+  std::cout << colors::highIntensityBackground::purple << " cli warning "
+            << colors::reset << (path ? colors::green : colors::reset)
+            << (path ? (" " + path.value().string()) : "")
+            << colors::bold::purple << " " << message << colors::reset
+            << std::endl;
+}
+
+} // namespace qat::cli

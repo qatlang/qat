@@ -1,6 +1,9 @@
 #include "./config.hpp"
 #include "../show.hpp"
+#include "../utils/unique_id.hpp"
+#include "color.hpp"
 #include "error.hpp"
+#include <filesystem>
 
 namespace qat::cli {
 
@@ -13,7 +16,8 @@ Config::~Config() {
   }
 }
 
-Config *Config::init(u64 count, char *args[]) {
+Config *Config::init(u64   count,
+                     char *args[]) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
     return new Config(count, args);
   } else {
@@ -23,7 +27,7 @@ Config *Config::init(u64 count, char *args[]) {
 
 void Config::destroy() {
   if (Config::instance) {
-    auto inst        = Config::instance;
+    auto *inst       = Config::instance;
     Config::instance = nullptr;
     delete inst;
   }
@@ -48,23 +52,23 @@ CompileTarget Config::parseCompileTarget(const String &val) {
 }
 
 Config::Config(u64 count, char **args)
-    : exitAfter(false), verbose(false), saveDocs(false), showReport(false),
-      lexer_emit_tokens(false), export_ast(false), compile(false) {
-  target = CompileTarget::normal;
+    : target(CompileTarget::normal), exitAfter(false), verbose(false),
+      saveDocs(false), showReport(false), lexer_emit_tokens(false),
+      export_ast(false), compile(false), run(false),
+      outputInTemporaryPath(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
     exitAfter        = false;
     if (count <= 1) {
-      std::cout << "No commands or arguments provided" << std::endl;
-      exit(0);
+      cli::Error("Meow!! No commands or arguments provided", None);
     }
     buildCommit = BUILD_COMMIT_QUOTED;
     if (buildCommit.find('"') != String::npos) {
       String res;
-      for (auto ch : buildCommit) {
-        if (ch != '"') {
-          res += ch;
+      for (auto chr : buildCommit) {
+        if (chr != '"') {
+          res += chr;
         }
       }
       buildCommit = res;
@@ -73,8 +77,13 @@ Config::Config(u64 count, char **args)
     String command(args[1]);
     u64    proceed = 2;
     if (command == "run") {
-      // TODO - Implement this after implementing Compile and Run
-    } else if (command == "compile") {
+      compile = true;
+      run     = true;
+      if (count == 2) {
+        paths.push_back(fs::current_path());
+        return;
+      }
+    } else if (command == "build") {
       compile = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
@@ -91,7 +100,10 @@ Config::Config(u64 count, char **args)
       exitAfter = true;
     } else if (command == "show") {
       if (count == 2) {
-        std::cout << "Nothing to show here" << std::endl;
+        cli::Error(
+            "Nothing to show here. Please provide name of the information "
+            "to display",
+            None);
       } else {
         String candidate = args[2];
         if (candidate == "build-info") {
@@ -101,28 +113,29 @@ Config::Config(u64 count, char **args)
         } else if (candidate == "errors") {
           display::errors();
         }
-        proceed = 3;
+        proceed   = 3;
+        exitAfter = true;
       }
-      exitAfter = true;
     } else if (command == "export-ast") {
       export_ast = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
       }
     }
-    for (usize i = proceed; i < count; i++) {
+    for (usize i = proceed; ((i < count) && !exitAfter); i++) {
       String arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
         verbose = true;
       } else if (String(arg).find("-t=") == 0) {
         target = parseCompileTarget(String(arg).substr(3));
       } else if (String(arg).find("--target=") == 0) {
-        target = parseCompileTarget(String(arg).substr(9));
+        target = parseCompileTarget(
+            String(arg).substr(9)); // NOLINT(readability-magic-numbers)
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
           target = parseCompileTarget(args[i + 1]);
         } else {
-          throw_error("Expected a target after " + arg + " flag", invokePath);
+          cli::Error("Expected a target after " + arg + " flag", None);
         }
       } else if (arg == "-o" || arg == "--output") {
         if ((i + 1) < count) {
@@ -131,24 +144,21 @@ Config::Config(u64 count, char **args)
             if (fs::is_directory(out)) {
               outputPath = out;
             } else {
-              std::cout
-                  << "Provided output path " << HLIGHT(yellow, out)
-                  << " is not a directory! Please provide path to a directory"
-                  << std::endl;
-              exitAfter = true;
+              cli::Error("Provided output path is not a directory! Please "
+                         "provide path to a directory",
+                         out);
             }
           } else {
-            std::cout << "Provided output path " << HLIGHT(yellow, out)
-                      << " does not exist! Please provide path to a directory"
-                      << std::endl;
-            exitAfter = true;
+            cli::Error("Provided output path does not exist! Please provide "
+                       "path to an existing directory",
+                       out);
           }
           i++;
         } else {
-          std::cout << "Output path is not provided! Please provide path to a "
-                       "directory for output"
-                    << std::endl;
-          exitAfter = true;
+          cli::Error(
+              "Output path is not provided! Please provide path to a directory "
+              "for output, or don't mention the output flag at all.",
+              None);
         }
       } else if (arg == "--report") {
         showReport = true;
@@ -156,20 +166,29 @@ Config::Config(u64 count, char **args)
         lexer_emit_tokens = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
+      } else if (arg == "--tmp-dir") {
+        outputInTemporaryPath = true;
       } else {
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
         } else {
-          std::cout
-              << "Provided path " << fs::path(arg).string()
-              << " does not exist! Please provide path to a file or directory"
-              << std::endl;
-          exitAfter = true;
+          cli::Error("Provided path does not exist! Please provide path to a "
+                     "file or directory",
+                     arg);
         }
       }
     }
-    if (exitAfter && (proceed == 2) && (count > 2)) {
-      std::cout << "\nIgnoring additional arguments provided...\n";
+    if (exitAfter && ((count - 1) >= proceed)) {
+      cli::Warning("Ignoring additional arguments provided...", None);
+    }
+    if (!outputPath.has_value()) {
+      if (outputInTemporaryPath) {
+        outputPath =
+            fs::temp_directory_path() / ".qatcache" / utils::unique_id();
+        fs::create_directories(outputPath.value());
+      } else {
+        outputPath = fs::current_path();
+      }
     }
   }
 }
@@ -190,6 +209,10 @@ bool Config::shouldLexerEmitTokens() const { return lexer_emit_tokens; }
 
 bool Config::isVerbose() const { return verbose; }
 
+bool Config::isRun() const { return run; }
+
 CompileTarget Config::getTarget() const { return target; }
+
+bool Config::outputToTempDir() const { return outputInTemporaryPath; }
 
 } // namespace qat::cli

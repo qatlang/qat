@@ -26,8 +26,7 @@ public:
    * @param _variable Variability
    * @param _fileRange
    */
-  UnsignedType(const u32 _bitWidth, const bool _variable,
-               const utils::FileRange _fileRange);
+  UnsignedType(u64 _bitWidth, bool _variable, utils::FileRange _fileRange);
 
   IR::QatType *emit(IR::Context *ctx);
 

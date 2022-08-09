@@ -1,5 +1,6 @@
 add_library(QAT_AST_TYPES
         array.cpp
+        cstring.cpp
         float.cpp
         integer.cpp
         named.cpp

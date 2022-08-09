@@ -3,9 +3,9 @@
 
 namespace qat::ast {
 
-UnsignedType::UnsignedType(const u32 _bitWidth, const bool _variable,
-                           const utils::FileRange _fileRange)
-    : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
+UnsignedType::UnsignedType(u64 _bitWidth, bool _variable,
+                           utils::FileRange _fileRange)
+    : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth) {}
 
 IR::QatType *UnsignedType::emit(IR::Context *ctx) {
   return IR::UnsignedType::get(bitWidth, ctx->llctx);

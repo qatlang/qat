@@ -6,8 +6,10 @@ namespace qat::IR {
 GlobalEntity::GlobalEntity(QatModule *_parent, String _name, QatType *_type,
                            bool _is_variable, Value *_value,
                            utils::VisibilityInfo _visibility)
-    : parent(_parent), name(_name), initial(_value), visibility(_visibility),
-      Value(_type, _is_variable, Nature::assignable) {}
+    : Value(nullptr, _type, _is_variable, Nature::assignable), name(_name),
+      visibility(_visibility), initial(_value), parent(_parent) {
+  // TODO
+}
 
 String GlobalEntity::getName() const { return name; }
 
@@ -26,27 +28,6 @@ u64 GlobalEntity::getLoadCount() const { return loads; }
 u64 GlobalEntity::getStoreCount() const { return stores; }
 
 u64 GlobalEntity::getReferCount() const { return refers; }
-
-void GlobalEntity::defineLLVM(llvmHelper &help) const {}
-
-void GlobalEntity::defineCPP(cpp::File &file) const {
-  if (file.isHeaderFile()) {
-    if (!isVariable()) {
-      file << "const ";
-    }
-    type->emitCPP(file);
-    file << (" " + name + ";\n");
-  } else {
-    if (initial) {
-      if (!isVariable()) {
-        file << "const ";
-      }
-      type->emitCPP(file);
-      file << (" " + name + " = ");
-      initial->emitCPP(file);
-    }
-  }
-}
 
 nuo::Json GlobalEntity::toJson() const {}
 

@@ -33,17 +33,15 @@ public:
                bool _is_variable, Value *_initial,
                const utils::VisibilityInfo &_visibility);
 
-  CoreType    *getParentType();
-  useit String getName() const;
-  useit String getFullName() const;
+  useit CoreType *getParentType();
+  useit String    getName() const;
+  useit String    getFullName() const;
   useit const utils::VisibilityInfo &getVisibility() const;
   useit bool                         hasInitial() const;
   useit u64                          getLoadCount() const;
   useit u64                          getStoreCount() const;
   useit u64                          getReferCount() const;
-  llvm::Value *emitLLVM(llvmHelper &helper) const override;
-  void         emitCPP(cpp::File &file) const override;
-  nuo::Json    toJson() const override;
+  useit nuo::Json toJson() const;
 };
 
 } // namespace qat::IR

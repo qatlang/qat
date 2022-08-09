@@ -4,7 +4,7 @@
 namespace qat::IR {
 
 Use::Use(User *_user, String _purpose)
-    : user(user), uses(1), purposes({std::move(_purpose)}) {}
+    : user(_user), uses(1), purposes({std::move(_purpose)}) {}
 
 User *Use::getUser() { return user; }
 
@@ -22,7 +22,7 @@ Vec<String> Use::getPurposes() { return purposes; }
 Usable::Usable() = default;
 
 u64 Usable::getUses(User *user) const {
-  for (auto use : data) {
+  for (auto *use : data) {
     if (use->isUser(user)) {
       return use->getUses();
     }
@@ -31,7 +31,7 @@ u64 Usable::getUses(User *user) const {
 }
 
 void Usable::addUse(User *user, const String &purpose) {
-  for (auto use : data) {
+  for (auto *use : data) {
     if (use->isUser(user)) {
       use->addUse(purpose);
       return;
@@ -41,7 +41,7 @@ void Usable::addUse(User *user, const String &purpose) {
 }
 
 void Usable::removeUser(User *user) {
-  for (auto use : data) {
+  for (auto *use : data) {
     if (use->isUser(user)) {
       data.remove(use);
       return;
@@ -51,7 +51,7 @@ void Usable::removeUser(User *user) {
 
 u64 Usable::getTotalUses() const {
   u64 result = 0;
-  for (auto use : data) {
+  for (auto *use : data) {
     result += use->getUses();
   }
   return result;
@@ -63,13 +63,13 @@ User::User() = default;
 
 bool User::hasUsable(Usable *other) const {
   return std::ranges::any_of(uses.begin(), uses.end(),
-                             [&](Usable *e) { return e == other; });
+                             [&](Usable *elem) { return elem == other; });
 }
 
 void User::addUsable(Usable *other) { uses.push_back(other); }
 
 void User::dropAllUses() {
-  for (auto use : uses) {
+  for (auto *use : uses) {
     use->removeUser(this);
   }
 }

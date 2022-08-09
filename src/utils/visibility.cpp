@@ -22,6 +22,8 @@ String RequesterInfo::getBox() const { return box.value_or(""); }
 
 String RequesterInfo::getType() const { return type.value_or(""); }
 
+String RequesterInfo::getFile() const { return file; }
+
 bool Visibility::isAccessible(const VisibilityInfo &visibility,
                               const RequesterInfo  &req_info) {
   switch (visibility.kind) {

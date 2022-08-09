@@ -16,24 +16,21 @@ enum class Nature { assignable, temporary, pure, expired };
 
 class Value {
 protected:
-  // Type representation of the value
-  IR::QatType *type;
-  // The nature of the value
-  Nature nature;
-  // Variability nature
-  bool variable;
+  IR::QatType *type;     // Type representation of the value
+  Nature       nature;   // The nature of the value
+  bool         variable; // Variability nature
+  llvm::Value *ll;       // LLVM value
 
 public:
-  Value(IR::QatType *_type, bool _isVariable, Nature kind);
+  Value(llvm::Value *_llValue, IR::QatType *_type, bool _isVariable,
+        Nature kind);
 
-  useit QatType          *getType() const; // Type of the value
-  useit bool              isReference() const;
-  useit bool              isPointer() const;
-  useit bool              isVariable() const;
-  useit Nature            getKind() const;
-  virtual llvm::Value    *emitLLVM(llvmHelper &helper) const = 0;
-  virtual void            emitCPP(cpp::File &file) const     = 0;
-  useit virtual nuo::Json toJson() const                     = 0;
+  useit QatType *getType() const; // Type of the value
+  useit llvm::Value *getLLVM();
+  useit bool         isReference() const;
+  useit bool         isPointer() const;
+  useit bool         isVariable() const;
+  useit Nature       getNature() const;
 };
 
 } // namespace qat::IR

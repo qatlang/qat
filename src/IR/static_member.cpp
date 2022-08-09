@@ -6,9 +6,11 @@ namespace qat::IR {
 StaticMember::StaticMember(CoreType *_parent, String _name, QatType *_type,
                            bool _isVariable, Value *_initial,
                            const utils::VisibilityInfo &_visibility)
-    : parent(_parent), name(std::move(_name)), initial(_initial),
-      visibility(_visibility), Value(_type, _isVariable, Nature::assignable),
-      loads(0), stores(0), refers(0) {}
+    : Value(nullptr, _type, _isVariable, Nature::assignable),
+      name(std::move(_name)), parent(_parent), initial(_initial), loads(0),
+      stores(0), refers(0), visibility(_visibility) {
+  // TODO
+}
 
 CoreType *StaticMember::getParentType() { return parent; }
 
@@ -30,13 +32,6 @@ u64 StaticMember::getStoreCount() const { return stores; }
 
 u64 StaticMember::getReferCount() const { return refers; }
 
-llvm::Value *StaticMember::emitLLVM(llvmHelper &helper) const {
-  // TODO - Implement
-}
-
-void StaticMember::emitCPP(cpp::File &file) const {
-  // TODO - Implement
-}
 nuo::Json StaticMember::toJson() const {
   // TODO - Implement
 }

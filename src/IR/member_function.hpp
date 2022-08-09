@@ -4,6 +4,7 @@
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./function.hpp"
+#include "llvm/IR/LLVMContext.h"
 
 #include <string>
 #include <vector>
@@ -48,7 +49,8 @@ private:
                  QatType *returnType, bool isReturnTypeVariable, bool _is_async,
                  Vec<Argument> _args, bool has_variadic_arguments,
                  bool _is_static, utils::FileRange _fileRange,
-                 utils::VisibilityInfo _visibility_info);
+                 utils::VisibilityInfo _visibility_info,
+                 llvm::LLVMContext    &ctx);
 
 public:
   /**
@@ -64,16 +66,16 @@ public:
    * @param visib_info VisibilityInfo of the function
    * @return MemberFunction
    */
-  static MemberFunction *Create(CoreType *parent, const bool is_variation,
-                                const String name, QatType *return_type,
-                                const bool isReturnTypeVariable,
-                                const bool is_async, const Vec<Argument> args,
-                                const bool                  has_variadic_args,
-                                const utils::FileRange      fileRange,
-                                const utils::VisibilityInfo visib_info);
+  static MemberFunction *
+  Create(CoreType *parent, const bool is_variation, const String name,
+         QatType *return_type, const bool isReturnTypeVariable,
+         const bool is_async, const Vec<Argument> args,
+         const bool has_variadic_args, const utils::FileRange fileRange,
+         const utils::VisibilityInfo visib_info, llvm::LLVMContext &ctx);
 
   static MemberFunction *CreateDestructor(CoreType              *parent,
-                                          const utils::FileRange fileRange);
+                                          const utils::FileRange fileRange,
+                                          llvm::LLVMContext     &ctx);
 
   /**
    *  Create a static member function for the provided parent type
@@ -92,7 +94,7 @@ public:
                const bool is_return_type_variable, const bool is_async,
                const Vec<Argument> args, const bool has_variadic_args,
                const utils::FileRange      fileRange,
-               const utils::VisibilityInfo visib_info);
+               const utils::VisibilityInfo visib_info, llvm::LLVMContext &ctx);
 
   /**
    *  Whether this function is a variation or not. This only applies to
@@ -108,12 +110,6 @@ public:
   String getFullName() const;
 
   bool isMemberFunction() const;
-
-  void defineLLVM(llvmHelper &help) const;
-
-  void defineCPP(cpp::File &file) const;
-
-  llvm::Value *emitLLVM(llvmHelper &help) const;
 
   void emitCPP(cpp::File &file) const;
 

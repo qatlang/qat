@@ -2,6 +2,7 @@
 #define QAT_IR_PROPERTIES_HPP
 
 #include "../utils/helpers.hpp"
+#include "../utils/macros.hpp"
 #include <list>
 
 namespace qat::IR {

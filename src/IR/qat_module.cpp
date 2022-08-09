@@ -5,26 +5,42 @@
 #include "function.hpp"
 #include "global_entity.hpp"
 #include "member_function.hpp"
+#include "types/float.hpp"
 #include "types/qat_type.hpp"
 #include "value.hpp"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Type.h"
+#include "llvm/Linker/Linker.h"
+#include "llvm/Support/raw_ostream.h"
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <system_error>
 
 namespace qat::IR {
 
-QatModule::QatModule(const String &_name, const fs::path &_filepath,
-                     const fs::path &_basePath, ModuleType _type,
-                     const utils::VisibilityInfo &_visibility)
-    : name(_name), moduleType(_type), filePath(_filepath), basePath(_basePath),
-      visibility(_visibility), parent(nullptr), active(nullptr) {}
+QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath,
+                     ModuleType _type, const utils::VisibilityInfo &_visibility,
+                     llvm::LLVMContext &ctx)
+    : name(std::move(_name)), moduleType(_type), filePath(std::move(_filepath)),
+      basePath(std::move(_basePath)), visibility(_visibility), parent(nullptr),
+      active(nullptr) {
+  llvmModule = new llvm::Module(getFullName(), ctx);
+  llvmModule->setModuleIdentifier(getFullName());
+  llvmModule->setSourceFileName(filePath.string());
+  llvmModule->setCodeModel(llvm::CodeModel::Small);
+  llvmModule->setTargetTriple(LLVM_HOST_TRIPLE);
+}
 
 QatModule::~QatModule() = default;
 
 QatModule *QatModule::Create(const String &name, const fs::path &filepath,
                              const fs::path &basePath, ModuleType type,
-                             const utils::VisibilityInfo &visib_info) {
-  return new QatModule(name, filepath, basePath, type, visib_info);
+                             const utils::VisibilityInfo &visib_info,
+                             llvm::LLVMContext           &ctx) {
+  return new QatModule(name, filepath, basePath, type, visib_info, ctx);
 }
 
 const utils::VisibilityInfo &QatModule::getVisibility() const {
@@ -92,15 +108,16 @@ QatModule *QatModule::getNthParent(u32 n) { // NOLINT(misc-no-recursion)
 }
 
 Function *QatModule::createFunction(const String &name, QatType *returnType,
-                                    const bool          isReturnTypeVariable,
-                                    const bool          isAsync,
-                                    const Vec<Argument> args,
-                                    const bool          isVariadic,
-                                    const utils::FileRange      &fileRange,
-                                    const utils::VisibilityInfo &visibility) {
+                                    bool isReturnTypeVariable, bool isAsync,
+                                    Vec<Argument> args, bool isVariadic,
+                                    const utils::FileRange         &fileRange,
+                                    const utils::VisibilityInfo    &visibility,
+                                    llvm::GlobalValue::LinkageTypes linkage,
+                                    llvm::LLVMContext              &ctx) {
   SHOW("Creating IR function")
-  auto fn = Function::Create(this, name, returnType, isReturnTypeVariable,
-                             isAsync, args, isVariadic, fileRange, visibility);
+  auto fn =
+      Function::Create(this, name, returnType, isReturnTypeVariable, isAsync,
+                       std::move(args), isVariadic, fileRange, visibility, ctx);
   SHOW("Created function")
   functions.push_back(fn);
   return fn;
@@ -109,9 +126,10 @@ Function *QatModule::createFunction(const String &name, QatType *returnType,
 QatModule *
 QatModule::CreateSubmodule(QatModule *parent, fs::path filepath,
                            fs::path basePath, String name, ModuleType type,
-                           const utils::VisibilityInfo &visibilityInfo) {
+                           const utils::VisibilityInfo &visibilityInfo,
+                           llvm::LLVMContext           &ctx) {
   auto sub = new QatModule(std::move(name), std::move(filepath),
-                           std::move(basePath), type, visibilityInfo);
+                           std::move(basePath), type, visibilityInfo, ctx);
   if (parent) {
     sub->parent = parent;
     parent->submodules.push_back(sub);
@@ -121,10 +139,12 @@ QatModule::CreateSubmodule(QatModule *parent, fs::path filepath,
 
 QatModule *QatModule::CreateFile(QatModule *parent, fs::path filepath,
                                  fs::path basePath, String name,
-                                 Vec<ast::Node *>      nodes,
-                                 utils::VisibilityInfo visibilityInfo) {
-  auto sub =
-      new QatModule(name, filepath, basePath, ModuleType::file, visibilityInfo);
+                                 Vec<String> content, Vec<ast::Node *> nodes,
+                                 utils::VisibilityInfo visibilityInfo,
+                                 llvm::LLVMContext    &ctx) {
+  auto sub     = new QatModule(name, filepath, basePath, ModuleType::file,
+                               visibilityInfo, ctx);
+  sub->content = std::move(content);
   if (parent) {
     sub->parent = parent;
     parent->submodules.push_back(sub);
@@ -163,9 +183,10 @@ bool QatModule::isSubmodule() const { return parent != nullptr; }
 
 void QatModule::addSubmodule(const String &name, const String &filename,
                              ModuleType                   type,
-                             const utils::VisibilityInfo &visib_info) {
+                             const utils::VisibilityInfo &visib_info,
+                             llvm::LLVMContext           &ctx) {
   active = CreateSubmodule(active, name, filename, basePath.string(), type,
-                           visib_info);
+                           visib_info, ctx);
 }
 
 void QatModule::closeSubmodule() { active = nullptr; }
@@ -222,8 +243,11 @@ QatModule *QatModule::getLib(const String               &name,
 }
 
 void QatModule::openLib(const String &name, const String &filename,
-                        const utils::VisibilityInfo &visib_info) {
-  addSubmodule(name, filename, ModuleType::lib, visib_info);
+                        const utils::VisibilityInfo &visib_info,
+                        llvm::LLVMContext           &ctx) {
+  if (!hasLib(name)) {
+    addSubmodule(name, filename, ModuleType::lib, visib_info, ctx);
+  }
 }
 
 void QatModule::closeLib() { closeSubmodule(); }
@@ -314,23 +338,28 @@ QatModule *QatModule::getBox(const String               &name,
 
 void QatModule::openBox(const String                &name,
                         Maybe<utils::VisibilityInfo> visib_info) {
-  // FIXME - Change this
-  // for (auto sub : submodules) {
-  //   if (sub->name == name) {
-  //     if (sub->type == ModuleType::box) {
-  //       active = sub;
-  //       active->add_submodule(name, ModuleType::boxAddition, visib_info);
-  //     } else if (sub->type == ModuleType::lib) {
-  //     }
-  //   }
-  // }
+  if (hasBox(name)) {
+    for (auto *sub : submodules) {
+      if (sub->moduleType == ModuleType::box) {
+        if (sub->getName() == name) {
+          active = sub;
+          break;
+        }
+      }
+    }
+  } else {
+    addSubmodule(name, filePath, ModuleType::box, visib_info.value(),
+                 llvmModule->getContext());
+  }
 }
 
 void QatModule::closeBox() { closeSubmodule(); }
 
 bool QatModule::hasFunction(const String &name) const {
+  SHOW("Function count: " << functions.size())
   for (auto *function : functions) {
     if (function->getName() == name) {
+      SHOW("Found function")
       return true;
     }
   }
@@ -566,10 +595,47 @@ bool QatModule::areNodesEmitted() const { return isEmitted; }
 
 void QatModule::emitNodes(IR::Context *ctx) const {
   if (!isEmitted) {
+    SHOW("About to emit for module: " << getFullName())
     for (auto *node : nodes) {
-      node->emit(ctx);
+      (void)node->emit(ctx);
     }
+    SHOW("Emission for module complete")
     isEmitted = true;
+    for (auto *sub : submodules) {
+      SHOW("About to emit for submodule: " << sub->getFullName())
+      sub->emitNodes(ctx);
+      SHOW("Emission complete, linking LLVM modules")
+      llvm::Linker::linkModules(
+          *llvmModule, std::unique_ptr<llvm::Module>(sub->getLLVMModule()));
+    }
+    if (moduleType == ModuleType::file) {
+      SHOW("Module is a file")
+      auto *cfg = cli::Config::get();
+      SHOW("Creating llvm output path")
+      auto llPath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
+                    ".llvm" /
+                    filePath.lexically_relative(basePath)
+                        .replace_filename(filePath.filename())
+                        .replace_extension(".ll");
+      std::error_code errorCode;
+      SHOW("Creating all folders in llvm output path")
+      fs::create_directory(llPath.parent_path(), errorCode);
+      if (!errorCode) {
+        errorCode.clear();
+        llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
+        if (!errorCode) {
+          SHOW("Printing LLVM module")
+          llvmModule->print(fStream, nullptr);
+          SHOW("LLVM module printed")
+          ctx->llvmOutputPaths.push_back(llPath);
+        } else {
+          SHOW("Could not open file for writing")
+        }
+        fStream.flush();
+      } else {
+        SHOW("Error could not create directory")
+      }
+    }
   }
 }
 
@@ -607,49 +673,28 @@ void QatModule::exportJsonFromAST() const {
   }
 }
 
-void QatModule::addFunctionToLink(Function *fun) {
-  functionsToLink.push_back(fun);
-}
+llvm::Module *QatModule::getLLVMModule() const { return llvmModule; }
 
-void QatModule::defineLLVM(llvmHelper &help) const {
-  if (!llvmModule) {
-    llvmModule = new llvm::Module(getFullName(), help.llctx);
-    llvmModule->setSourceFileName(filePath.string());
-    llvmModule->setCodeModel(llvm::CodeModel::Small);
-    llvmModule->setTargetTriple(LLVM_HOST_TRIPLE);
+void QatModule::linkNative(NativeUnit nval) {
+  switch (nval) {
+  case NativeUnit::printf: {
+    if (!llvmModule->getFunction("printf")) {
+      llvm::Function::Create(
+          llvm::FunctionType::get(
+              llvm::Type::getInt32Ty(llvmModule->getContext()),
+              {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo()},
+              true),
+          llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "printf",
+          llvmModule);
+    }
+    break;
   }
-  // TODO - Implement
-}
-
-void QatModule::defineCPP(cpp::File &file) const { // NOLINT(misc-no-recursion)
-  if (moduleType == ModuleType::lib) {
-    for (auto *mod : submodules) {
-      auto resolvedPath = mod->filePath.lexically_relative(basePath);
-      if (mod->moduleType == ModuleType::file) {
-        auto headerFile =
-            cpp::File::Header(resolvedPath.replace_extension(".hpp").string());
-        mod->defineCPP(headerFile);
-      }
-    }
-  } else if (moduleType == ModuleType::box) {
-    file << ("namespace " + name + " {\n\n");
-    for (auto const &broughtModule : broughtModules) {
-      auto imPath =
-          broughtModule.get()->getParentFile()->getResolvedOutputPath(".hpp");
-    }
-    for (auto *coreType : coreTypes) {
-      coreType->defineCPP(file);
-    }
-    for (auto *globalEntity : globalEntities) {
-      globalEntity->defineCPP(file);
-    }
-    for (auto *function : functions) {
-      function->defineCPP(file);
-    }
-    for (auto *submodule : submodules) {
-      submodule->defineCPP(file);
-    }
-    file << "\n} // namespace " << name << "\n";
+  case NativeUnit::malloc: {
+    break;
+  }
+  case NativeUnit::pthread: {
+    break;
+  }
   }
 }
 
@@ -658,12 +703,96 @@ nuo::Json QatModule::toJson() const {
   return nuo::Json()._("name", name);
 }
 
-llvm::Module &QatModule::getLLVMModule(llvmHelper &) const {
-  return *llvmModule;
+// NOLINTBEGIN(readability-magic-numbers)
+
+bool QatModule::hasIntegerBitwidth(u64 bits) const {
+  if (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 ||
+      bits == 128) {
+    return true;
+  } else {
+    for (auto bitwidth : integerBitwidths) {
+      if (bitwidth == bits) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
-void QatModule::emitCPP(cpp::File &file) const {
-  // TODO - Implement
+void QatModule::addIntegerBitwidth(u64 bits) {
+  if (bits != 1 && bits != 8 && bits != 16 && bits != 32 && bits != 64 &&
+      bits != 128) {
+    bool exists = false;
+    for (auto bitw : integerBitwidths) {
+      if (bitw == bits) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
+      integerBitwidths.push_back(bits);
+    }
+  }
 }
+
+bool QatModule::hasUnsignedBitwidth(u64 bits) const {
+  if (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 ||
+      bits == 128) {
+    return true;
+  } else {
+    for (auto bitwidth : unsignedBitwidths) {
+      if (bitwidth == bits) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+void QatModule::addUnsignedBitwidth(u64 bits) {
+  if (bits != 1 && bits != 8 && bits != 16 && bits != 32 && bits != 64 &&
+      bits != 128) {
+    bool exists = false;
+    for (auto bitw : unsignedBitwidths) {
+      if (bitw == bits) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
+      unsignedBitwidths.push_back(bits);
+    }
+  }
+}
+
+bool QatModule::hasFloatKind(FloatTypeKind kind) const {
+  if (kind == FloatTypeKind::_32 || kind == FloatTypeKind::_64) {
+    return true;
+  } else {
+    for (auto kindvalue : floatKinds) {
+      if (kindvalue == kind) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+void QatModule::addFloatKind(FloatTypeKind kind) {
+  if (kind != FloatTypeKind::_32 && kind != FloatTypeKind::_64) {
+    bool exists = false;
+    for (auto kindv : floatKinds) {
+      if (kindv == kind) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
+      floatKinds.push_back(kind);
+    }
+  }
+}
+
+// NOLINTEND(readability-magic-numbers)
 
 } // namespace qat::IR

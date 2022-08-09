@@ -20,6 +20,8 @@ public:
   // Get the value of the string
   useit String get_value() const;
 
+  void addValue(String val, utils::FileRange fRange);
+
   IR::Value *emit(IR::Context *ctx) override;
 
   useit NodeType nodeType() const override { return NodeType::stringLiteral; }

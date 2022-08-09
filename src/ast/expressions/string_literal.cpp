@@ -8,6 +8,11 @@ StringLiteral::StringLiteral(String _value, utils::FileRange _fileRange)
 
 String StringLiteral::get_value() const { return value; }
 
+void StringLiteral::addValue(String val, utils::FileRange fRange) {
+  value += val;
+  fileRange = utils::FileRange(fileRange, fRange);
+}
+
 IR::Value *StringLiteral::emit(IR::Context *ctx) {
   return new IR::Value(ctx->builder.CreateGlobalStringPtr(
                            value, "str", 0U, ctx->getMod()->getLLVMModule()),

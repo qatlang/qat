@@ -8,7 +8,7 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
 
 nuo::Json MemberFunctionCall::toJson() const {
   Vec<nuo::JsonValue> args;
-  for (auto arg : arguments) {
+  for (auto *arg : arguments) {
     args.emplace_back(arg->toJson());
   }
   return nuo::Json()

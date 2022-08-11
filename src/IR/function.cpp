@@ -17,11 +17,38 @@ namespace qat::IR {
 
 LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
                        Function *fn)
-    : Value(nullptr, _type, _isVar, Nature::assignable) {
+    : Value(nullptr, _type, _isVar, Nature::assignable), name(_name) {
   SHOW("Type is " << _type->toString())
-  SHOW("Creating llvm::AllocaInst")
-  ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
-                            &fn->getLLVMFunction()->getEntryBlock());
+  SHOW("Creating llvm::AllocaInst for " << _name)
+  if (_type->getLLVMType()) {
+    SHOW("LLVM type is not null")
+  } else {
+    SHOW("LLVM type is null")
+  }
+  if (fn->getLLVMFunction()->getEntryBlock().getInstList().empty()) {
+    ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
+                              &fn->getLLVMFunction()->getEntryBlock());
+  } else {
+    llvm::Instruction *inst = nullptr;
+    // NOLINTNEXTLINE(modernize-loop-convert)
+    for (auto instr =
+             fn->getLLVMFunction()->getEntryBlock().getInstList().begin();
+         instr != fn->getLLVMFunction()->getEntryBlock().getInstList().end();
+         instr++) {
+      if (llvm::isa<llvm::AllocaInst>(&*instr)) {
+        continue;
+      } else {
+        inst = &*instr;
+        break;
+      }
+    }
+    if (inst) {
+      ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name, inst);
+    } else {
+      ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
+                                &fn->getLLVMFunction()->getEntryBlock());
+    }
+  }
 }
 
 String LocalValue::getName() const {
@@ -57,14 +84,18 @@ Block *Block::getParent() const { return parent; }
 Function *Block::getFn() const { return fn; }
 
 bool Block::hasValue(const String &name) const {
+  SHOW("Number of local values: " << values.size())
   for (auto *val : values) {
     if (val->getName() == name) {
+      SHOW("Has local with name")
       return true;
     }
   }
   if (hasParent()) {
+    SHOW("Has parent block")
     return parent->hasValue(name);
   }
+  SHOW("No local with name")
   return false;
 }
 
@@ -81,8 +112,9 @@ LocalValue *Block::getValue(const String &name) const {
 }
 
 LocalValue *Block::newValue(String name, IR::QatType *type, bool isVar) {
-  SHOW("About to heap allocate LocalValue")
-  return new LocalValue(name, type, isVar, fn);
+  values.push_back(new LocalValue(name, type, isVar, fn));
+  SHOW("Heap allocated LocalValue")
+  return values.back();
 }
 
 void Block::setActive(

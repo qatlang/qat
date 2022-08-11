@@ -24,6 +24,8 @@ class Context;
 class Function;
 
 class LocalValue : public Value {
+  String name;
+
 public:
   LocalValue(String name, IR::QatType *type, bool isVariable, Function *fun);
   useit String getName() const;

@@ -46,11 +46,9 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
   auto *newValue = block->newValue(name, declType, variability);
   if (expVal) {
     SHOW("Creating store")
-    if ((expVal->isAlloca() && !declType->isReference()) ||
+    if ((expVal->isImplicitPointer() && !declType->isReference()) ||
         (expVal->getType()->isReference() && declType->isReference())) {
-      expVal = new IR::Value(
-          ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()),
-          expVal->getType(), expVal->isVariable(), expVal->getNature());
+      expVal->loadImplicitPointer(ctx->builder);
     }
     ctx->builder.CreateStore(expVal->getLLVM(), newValue->getAlloca());
     SHOW("llvm::StoreInst created")

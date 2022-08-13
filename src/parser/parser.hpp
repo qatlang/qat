@@ -4,6 +4,7 @@
 #include "../ast/argument.hpp"
 #include "../ast/box.hpp"
 #include "../ast/bring_entities.hpp"
+#include "../ast/define_core_type.hpp"
 #include "../ast/expression.hpp"
 #include "../ast/expressions/string_literal.hpp"
 #include "../ast/sentence.hpp"
@@ -105,8 +106,8 @@ public:
    * @return Vec<ast::Node> Vector of nodes parsed within the
    * CoreType
    */
-  Vec<ast::Node *> parseCoreTypeContents(ParserContext &prev_ctx, usize from,
-                                         usize to, const String &name);
+  ast::DefineCoreType *parseCoreType(ParserContext &prev_ctx, usize from,
+                                     usize upto, ast::DefineCoreType *coreTy);
 
   /**
    *  Parse the parameters of a function

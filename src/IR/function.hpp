@@ -51,10 +51,10 @@ public:
   useit Function         *getFn() const;
   useit bool              hasValue(const String &name) const;
   useit LocalValue       *getValue(const String &name) const;
-  useit LocalValue       *newValue(String name, IR::QatType *type, bool isVar);
-  void                    setActive(
-                         llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
-                             &builder) const;
+  useit LocalValue *newValue(const String &name, IR::QatType *type, bool isVar);
+  void              setActive(
+                   llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
+                       &builder) const;
 };
 
 // Function represents a normal function in the language
@@ -80,7 +80,7 @@ protected:
            bool _isReturnValueVariable, bool _is_async, Vec<Argument> _args,
            bool has_variadic_arguments, utils::FileRange fileRange,
            const utils::VisibilityInfo &_visibility_info,
-           llvm::LLVMContext           &ctx);
+           llvm::LLVMContext &ctx, bool isMemberFn = false);
 
 public:
   static Function   *Create(QatModule *mod, String name, QatType *return_type,

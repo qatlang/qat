@@ -4,6 +4,7 @@
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
+#include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -111,7 +112,7 @@ LocalValue *Block::getValue(const String &name) const {
   return nullptr;
 }
 
-LocalValue *Block::newValue(String name, IR::QatType *type, bool isVar) {
+LocalValue *Block::newValue(const String &name, IR::QatType *type, bool isVar) {
   values.push_back(new LocalValue(name, type, isVar, fn));
   SHOW("Heap allocated LocalValue")
   return values.back();
@@ -128,7 +129,7 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
                    bool _isVariadicArguments, utils::FileRange fileRange,
                    const utils::VisibilityInfo &_visibility_info,
-                   llvm::LLVMContext           &ctx)
+                   llvm::LLVMContext &ctx, bool isMemberFn)
     : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)),
       isReturnValueVariable(_isRetTypeVariable), mod(_mod),
       arguments(std::move(_args)), visibility_info(_visibility_info),
@@ -141,10 +142,52 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
         new ArgumentType(arg.getName(), arg.getType(), arg.get_variability()));
   }
   type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
-  ll   = llvm::Function::Create((llvm::FunctionType *)getType()->getLLVMType(),
-                                llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                                0U, mod->getFullNameWithChild(name),
-                                mod->getLLVMModule());
+  if (isMemberFn) {
+    auto *memFn = (MemberFunction *)this;
+    ll =
+        llvm::Function::Create((llvm::FunctionType *)(getType()->getLLVMType()),
+                               llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                               0U, name, mod->getLLVMModule());
+    switch (memFn->getMemberFnType()) {
+    case MemberFnType::constructor: {
+      memFn->getParentType()->constructors.push_back(memFn);
+      break;
+    }
+    case MemberFnType::normal: {
+      memFn->getParentType()->memberFunctions.push_back(memFn);
+      break;
+    }
+    case MemberFnType::staticFn: {
+      memFn->getParentType()->staticFunctions.push_back(memFn);
+      break;
+    }
+    case MemberFnType::fromConvertor: {
+      memFn->getParentType()->fromConvertors.push_back(memFn);
+      break;
+    }
+    case MemberFnType::toConvertor: {
+      memFn->getParentType()->toConvertors.push_back(memFn);
+      break;
+    }
+    case MemberFnType::copyConstructor: {
+      memFn->getParentType()->copyConstructor = memFn;
+      break;
+    }
+    case MemberFnType::moveConstructor: {
+      memFn->getParentType()->moveConstructor = memFn;
+      break;
+    }
+    case MemberFnType::destructor: {
+      memFn->getParentType()->destructor = memFn;
+      break;
+    }
+    }
+  } else {
+    ll = llvm::Function::Create(
+        (llvm::FunctionType *)(getType()->getLLVMType()),
+        llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
+        mod->getFullNameWithChild(name), mod->getLLVMModule());
+  }
 }
 
 IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
@@ -166,7 +209,8 @@ IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
   SHOW("Creating LLVM call")
   return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues),
                        retType, isReturnValueVariable,
-                       (retType->isReference() || retType->isPointer())
+                       ((retType->isReference() || retType->isPointer()) &&
+                        isReturnValueVariable)
                            ? Nature::assignable
                            : Nature::temporary);
 }
@@ -179,7 +223,7 @@ Function *Function::Create(QatModule *mod, String name, QatType *returnTy,
                            llvm::LLVMContext           &ctx) {
   return new Function(mod, std::move(name), returnTy, isReturnTypeVariable,
                       is_async, std::move(args), hasvariadicargs,
-                      std::move(fileRange), visibilityInfo, ctx);
+                      std::move(fileRange), visibilityInfo, ctx, false);
 }
 
 bool Function::hasVariadicArgs() const { return hasVariadicArguments; }

@@ -27,14 +27,12 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
   for (usize i = 0; i < argIRTypes.size(); i++) {
     SHOW("Iteration run")
     SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-    if (argIRTypes.at(i)->isVariable()) {
-      SHOW("Argument is variable")
-      auto *argVal = block->newValue(argIRTypes.at(i)->getName(),
-                                     argIRTypes.at(i)->getType(), true);
-      SHOW("Created local value for the argument")
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i),
-                               argVal->getAlloca(), false);
-    }
+    auto *argVal = block->newValue(argIRTypes.at(i)->getName(),
+                                   argIRTypes.at(i)->getType(),
+                                   argIRTypes.at(i)->isVariable());
+    SHOW("Created local value for the argument")
+    ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i),
+                             argVal->getAlloca(), false);
   }
   for (auto *snt : sentences) {
     (void)snt->emit(ctx);

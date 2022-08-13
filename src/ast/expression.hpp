@@ -24,19 +24,13 @@ private:
 public:
   Expression(utils::FileRange _fileRange);
 
-  ~Expression() override = default;
-
-  void setExpectedKind(ExpressionKind _kind);
-
-  ExpressionKind getExpectedKind();
-
-  bool isExpectedKind(ExpressionKind _kind);
-
-  IR::Value *emit(IR::Context *ctx) override = 0;
-
-  NodeType nodeType() const override = 0;
-
-  nuo::Json toJson() const override = 0;
+  void                 setExpectedKind(ExpressionKind _kind);
+  useit ExpressionKind getExpectedKind();
+  useit bool           isExpectedKind(ExpressionKind _kind);
+  useit IR::Value *emit(IR::Context *ctx) override = 0;
+  useit NodeType   nodeType() const override       = 0;
+  useit nuo::Json toJson() const override          = 0;
+  ~Expression() override                           = default;
 };
 
 } // namespace qat::ast

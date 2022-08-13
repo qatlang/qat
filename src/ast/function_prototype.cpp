@@ -5,6 +5,23 @@
 
 namespace qat::ast {
 
+FunctionPrototype::FunctionPrototype(
+    const String &_name, Vec<Argument *> _arguments, bool _isVariadic,
+    QatType *_returnType, bool _is_async,
+    llvm::GlobalValue::LinkageTypes _linkageType, const String &_callingConv,
+    const utils::VisibilityInfo &_visibility,
+    const utils::FileRange      &_fileRange)
+    : name(_name), isAsync(_is_async), arguments(std::move(_arguments)),
+      isVariadic(_isVariadic), returnType(_returnType),
+      linkageType(_linkageType), callingConv(_callingConv),
+      visibility(_visibility), Node(_fileRange) {}
+
+FunctionPrototype::FunctionPrototype(const FunctionPrototype &ref)
+    : name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments),
+      isVariadic(ref.isVariadic), returnType(ref.returnType),
+      linkageType(ref.linkageType), callingConv(ref.callingConv),
+      visibility(ref.visibility), Node(ref.fileRange) {}
+
 IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   IR::Function      *function;
   Vec<IR::QatType *> generatedTypes;
@@ -16,12 +33,14 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
   }
   SHOW("Generating types")
-  i32 i = 1;
   for (auto *arg : arguments) {
+    if (arg->isTypeMember()) {
+      ctx->Error("Function is not a member function of a core type and cannot "
+                 "use member argument syntax",
+                 arg->getFileRange());
+    }
     auto *genType = arg->getType()->emit(ctx);
     generatedTypes.push_back(genType);
-    SHOW("Type number " << i)
-    i++;
   }
   SHOW("Types generated")
   Vec<IR::Argument> args;
@@ -40,11 +59,7 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
       name, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
       isVariadic, fileRange, visibility, linkageType, ctx->llctx);
   SHOW("Function created!!")
-  if ((linkageType == llvm::GlobalValue::ExternalLinkage) &&
-      (utils::stringToCallingConv(callingConv) != 1024)) {
-    // TODO - Set calling convention
-    SHOW("Linkage set")
-  }
+  // TODO - Set calling convention
   return function;
 }
 

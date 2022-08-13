@@ -2,10 +2,11 @@
 
 namespace qat::ast {
 
-Lib::Lib(String _name, Vec<Node *> _members,
-         const utils::VisibilityInfo &_visibility, utils::FileRange _file_range)
-    : name(std::move(_name)), members(std::move(_members)),
-      visibility(_visibility), Node(std::move(_file_range)) {}
+Lib::Lib(const String &_name, Vec<Node *> _members,
+         const utils::VisibilityInfo &_visibility,
+         const utils::FileRange      &_file_range)
+    : Node(std::move(_file_range)), name(_name), members(std::move(_members)),
+      visibility(_visibility) {}
 
 IR::Value *Lib::emit(IR::Context *ctx) {
   // TODO - Check imports
@@ -25,7 +26,7 @@ IR::Value *Lib::emit(IR::Context *ctx) {
 
 nuo::Json Lib::toJson() const {
   Vec<nuo::JsonValue> membersJsonValue;
-  for (auto mem : members) {
+  for (auto *mem : members) {
     membersJsonValue.emplace_back(mem->toJson());
   }
   return nuo::Json()
@@ -34,12 +35,6 @@ nuo::Json Lib::toJson() const {
       ._("members", membersJsonValue)
       ._("visibility", visibility)
       ._("fileRange", fileRange);
-}
-
-void Lib::destroy() {
-  for (auto elem : members) {
-    delete elem;
-  }
 }
 
 } // namespace qat::ast

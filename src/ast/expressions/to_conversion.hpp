@@ -14,10 +14,11 @@ private:
 public:
   ToConversion(Expression *_source, QatType *_destinationType,
                utils::FileRange _fileRange)
-      : source(_source), destinationType(_destinationType),
-        Expression(std::move(_fileRange)) {}
+      : Expression(_fileRange), source(_source),
+        destinationType(_destinationType){SHOW("Creating ToConversion")}
 
-  IR::Value *emit(IR::Context *ctx) override;
+            useit IR::Value
+            * emit(IR::Context * ctx) override;
 
   useit nuo::Json toJson() const override;
 

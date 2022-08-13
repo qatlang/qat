@@ -9,8 +9,8 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   auto *rhsEmit = rhs->emit(ctx);
 
   // FIXME - Change this when introducing operators for core types
-  lhsEmit->loadAlloca(ctx->builder);
-  rhsEmit->loadAlloca(ctx->builder);
+  lhsEmit->loadImplicitPointer(ctx->builder);
+  rhsEmit->loadImplicitPointer(ctx->builder);
 
   IR::QatType *lhsType = lhsEmit->getType();
   IR::QatType *rhsType = rhsEmit->getType();

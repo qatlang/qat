@@ -21,9 +21,14 @@ IR::Value *GiveSentence::emit(IR::Context *ctx) {
     }
   } else {
     if (give_expr.has_value()) {
-      auto *retVal = give_expr.value()->emit(ctx);
-      if (fun->getType()->asFunction()->getReturnType()->isSame(
-              retVal->getType())) {
+      auto *retVal  = give_expr.value()->emit(ctx);
+      auto *retType = fun->getType()->asFunction()->getReturnType();
+      if (retType->isReference()
+              ? retType->asReference()->getSubType()->isSame(retVal->getType())
+              : retType->isSame(retVal->getType())) {
+        if (retVal->isImplicitPointer() && !retType->isReference()) {
+          retVal->loadImplicitPointer(ctx->builder);
+        }
         return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()),
                              retVal->getType(), false, IR::Nature::pure);
       } else {

@@ -3,7 +3,7 @@
 
 namespace qat::IR {
 
-FloatType::FloatType(const FloatTypeKind _kind, llvm::LLVMContext &ctx)
+FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext &ctx)
     : kind(_kind) {
   switch (kind) {
   case FloatTypeKind::_brain: {

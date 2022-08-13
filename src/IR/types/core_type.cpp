@@ -1,3 +1,5 @@
+#include "core_type.hpp"
+#include "../../show.hpp"
 #include "../qat_module.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
@@ -9,31 +11,35 @@ CoreType::CoreType(QatModule *mod, String _name, Vec<Member *> _members,
                    const utils::VisibilityInfo &_visibility,
                    llvm::LLVMContext           &ctx)
     : name(std::move(_name)), parent(mod), members(std::move(_members)),
-      destructor(MemberFunction::CreateDestructor(
-          this, utils::FileRange("", {0u, 0u}, {0u, 0u}), ctx)),
       visibility(_visibility) {
+  SHOW("Generating LLVM Type for core type members")
   Vec<llvm::Type *> subtypes;
   for (auto *mem : members) {
     subtypes.push_back(mem->type->getLLVMType());
   }
-  llvmType = llvm::StructType::get(ctx, subtypes, false);
+  SHOW("All members' LLVM types obtained")
+  llvmType = llvm::StructType::create(subtypes, name, false);
+  if (mod) {
+    mod->coreTypes.push_back(this);
+  }
 }
 
 String CoreType::getFullName() const {
   return parent->getFullNameWithChild(name);
 }
 
-String CoreType::getName() const {
-  auto full_name = getFullName();
-  if (full_name.find(':') != String::npos) {
-    auto result = full_name.substr(full_name.find_last_of(':') + 1);
-    return result;
-  } else {
-    return getFullName();
-  }
-}
+String CoreType::getName() const { return name; }
 
 u64 CoreType::getMemberCount() const { return members.size(); }
+
+bool CoreType::hasMember(const String &member) const {
+  for (const auto &mem : members) {
+    if (mem->name == member) {
+      return true;
+    }
+  }
+  return false;
+}
 
 CoreType::Member *CoreType::getMemberAt(u64 index) { return members.at(index); }
 
@@ -107,34 +113,20 @@ const MemberFunction *CoreType::getStaticFunction(const String &fnName) const {
   return nullptr;
 }
 
-void CoreType::addMemberFunction(
-    const String &name, const bool is_variation, QatType *return_type,
-    const bool is_return_type_variable, const bool is_async, Vec<Argument> args,
-    const bool has_variadic_args, const utils::FileRange &fileRange,
-    const utils::VisibilityInfo &visibilityInfo, llvm::LLVMContext &ctx) {
-  memberFunctions.push_back(MemberFunction::Create(
-      this, is_variation, name, return_type, is_return_type_variable, is_async,
-      std::move(args), has_variadic_args, fileRange, visibilityInfo, ctx));
-}
-
-void CoreType::addStaticFunction(const String &name, QatType *return_type,
-                                 const bool is_return_type_variable,
-                                 const bool is_async, Vec<Argument> args,
-                                 const bool                   has_variadic_args,
-                                 const utils::FileRange      &fileRange,
-                                 const utils::VisibilityInfo &visibilityInfo,
-                                 llvm::LLVMContext           &ctx) {
-  staticFunctions.push_back(MemberFunction::CreateStatic(
-      this, name, return_type, is_return_type_variable, is_async,
-      std::move(args), has_variadic_args, fileRange, visibilityInfo, ctx));
-}
-
 void CoreType::addStaticMember(const String &name, QatType *type,
                                bool variability, Value *initial,
                                const utils::VisibilityInfo &visibility,
                                llvm::LLVMContext           &ctx) {
   staticMembers.push_back(
       new StaticMember(this, name, type, variability, initial, visibility));
+}
+
+bool CoreType::hasCopyConstructor() const {
+  return copyConstructor.has_value();
+}
+
+bool CoreType::hasMoveConstructor() const {
+  return moveConstructor.has_value();
 }
 
 utils::VisibilityInfo CoreType::getVisibility() const { return visibility; }

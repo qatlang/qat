@@ -5,10 +5,17 @@
 namespace qat::IR {
 
 ArgumentType::ArgumentType(QatType *_type, bool _variability)
-    : type(_type), variability(_variability) {}
+    : type(_type), variability(_variability), isMemberArg(false) {}
 
 ArgumentType::ArgumentType(String _name, QatType *_type, bool _variability)
-    : name(_name), type(_type), variability(_variability) {}
+    : name(_name), type(_type), variability(_variability), isMemberArg(false) {}
+
+ArgumentType::ArgumentType(String _name, QatType *_type, bool _isMemberArg,
+                           bool _variability)
+    : name(_name), type(_type), isMemberArg(_isMemberArg),
+      variability(_variability) {}
+
+bool ArgumentType::isMemberArgument() const { return isMemberArg; }
 
 bool ArgumentType::hasName() const { return name.has_value(); }
 

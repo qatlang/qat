@@ -179,6 +179,10 @@ bool QatType::isFunction() const { return typeKind() == TypeKind::function; }
 
 FunctionType *QatType::asFunction() const { return (FunctionType *)this; }
 
+bool QatType::isCoreType() const { return typeKind() == TypeKind::core; }
+
+CoreType *QatType::asCore() const { return (CoreType *)this; }
+
 bool QatType::isVoid() const { return typeKind() == TypeKind::Void; }
 
 bool QatType::isTemplate() const {

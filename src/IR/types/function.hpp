@@ -19,14 +19,19 @@ private:
   // Variability of the argument
   bool variability;
 
+  bool isMemberArg;
+
 public:
   ArgumentType(QatType *_type, bool _variability);
   ArgumentType(String _name, QatType *_type, bool _variability);
+  ArgumentType(String _name, QatType *type, bool isMemberArg,
+               bool _variability);
 
   useit bool     hasName() const;
   useit String   getName() const;
   useit QatType *getType();
   useit bool     isVariable() const;
+  useit bool     isMemberArgument() const;
   useit String   toString() const;
 };
 

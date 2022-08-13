@@ -24,6 +24,7 @@ class TupleType;
 class FunctionType;
 class StringSliceType;
 class CStringType;
+class CoreType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -53,6 +54,8 @@ public:
   useit TupleType        *asTuple() const;
   useit bool              isFunction() const;
   useit FunctionType     *asFunction() const;
+  useit bool              isCoreType() const;
+  useit CoreType         *asCore() const;
   useit bool              isStringSlice() const;
   useit StringSliceType  *asStringSlice() const;
   useit bool              isCString() const;

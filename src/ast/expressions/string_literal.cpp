@@ -1,5 +1,6 @@
 #include "./string_literal.hpp"
 #include "../../IR/types/string_slice.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
@@ -14,10 +15,15 @@ void StringLiteral::addValue(String val, utils::FileRange fRange) {
 }
 
 IR::Value *StringLiteral::emit(IR::Context *ctx) {
-  return new IR::Value(ctx->builder.CreateGlobalStringPtr(
-                           value, "str", 0U, ctx->getMod()->getLLVMModule()),
-                       IR::StringSliceType::get(ctx->llctx), false,
-                       IR::Nature::pure);
+  return new IR::Value(
+      llvm::ConstantStruct::get(
+          (llvm::StructType *)IR::StringSliceType::get(ctx->llctx)
+              ->getLLVMType(),
+          {ctx->builder.CreateGlobalStringPtr(value, "str", 0U,
+                                              ctx->getMod()->getLLVMModule()),
+           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                  value.length())}),
+      IR::StringSliceType::get(ctx->llctx), false, IR::Nature::pure);
 }
 
 nuo::Json StringLiteral::toJson() const {

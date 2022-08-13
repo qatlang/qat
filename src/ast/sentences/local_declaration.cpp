@@ -10,7 +10,13 @@ LocalDeclaration::LocalDeclaration(QatType *_type, String _name,
       value(_value), variability(_variability) {}
 
 IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
-  auto      *block  = ctx->fn->getBlock();
+  auto *block = ctx->fn->getBlock();
+  if (block->hasValue(name)) {
+    ctx->Error("A local value named " + ctx->highlightError(name) +
+                   " already exists in this scope. Please change name of this "
+                   "declaration or check the logic",
+               fileRange);
+  }
   IR::Value *expVal = nullptr;
   if (value) {
     expVal = value->emit(ctx);
@@ -20,13 +26,18 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
   IR::QatType *declType = nullptr;
   if (type) {
     declType = type->emit(ctx);
-    if (value && !declType->isSame(expVal->getType())) {
-      ctx->Error("Type of the local value " + name +
+    if (value &&
+        ((declType->isReference() && !expVal->isReference())
+             ? !declType->asReference()->getSubType()->isSame(expVal->getType())
+             : !declType->isSame(expVal->getType()))) {
+      ctx->Error("Type of the local value " + ctx->highlightError(name) +
                      " does not match the expression to be assigned",
                  fileRange);
     }
   } else {
+    SHOW("No type for decl. Getting type from value")
     if (expVal) {
+      SHOW("Getting type from expression")
       declType = expVal->getType();
     } else {
       ctx->Error("Type inference for declarations require a value", fileRange);
@@ -34,7 +45,15 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
   }
   auto *newValue = block->newValue(name, declType, variability);
   if (expVal) {
+    SHOW("Creating store")
+    if ((expVal->isAlloca() && !declType->isReference()) ||
+        (expVal->getType()->isReference() && declType->isReference())) {
+      expVal = new IR::Value(
+          ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()),
+          expVal->getType(), expVal->isVariable(), expVal->getNature());
+    }
     ctx->builder.CreateStore(expVal->getLLVM(), newValue->getAlloca());
+    SHOW("llvm::StoreInst created")
   }
   return nullptr;
 }

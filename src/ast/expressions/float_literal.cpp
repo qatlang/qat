@@ -1,4 +1,6 @@
 #include "./float_literal.hpp"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/IR/Instruction.h"
 
 namespace qat::ast {
 
@@ -9,8 +11,12 @@ IR::Value *FloatLiteral::emit(IR::Context *ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     ctx->Error("Float literals are not assignable", fileRange);
   }
-  // FIXME - Change
-  return nullptr;
+  SHOW("Generating float literal")
+  return new IR::Value(
+      (llvm::ConstantFP *)llvm::ConstantFP::get(
+          llvm::Type::getFloatTy(ctx->llctx), std::stof(value)),
+      IR::FloatType::get(IR::FloatTypeKind::_32, ctx->llctx), false,
+      IR::Nature::pure);
 }
 
 nuo::Json FloatLiteral::toJson() const {

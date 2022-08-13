@@ -363,6 +363,7 @@ bool QatModule::hasFunction(const String &name) const {
       return true;
     }
   }
+  SHOW("No functions named " + name + " found")
   return false;
 }
 
@@ -436,6 +437,7 @@ Function *QatModule::getFunction(const String               &name,
 }
 
 bool QatModule::hasCoreType(const String &name) const {
+  SHOW("CoreType count: " << coreTypes.size())
   for (auto *typ : coreTypes) {
     if (typ->getName() == name) {
       return true;
@@ -554,7 +556,10 @@ Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(
   return {false, ""};
 }
 
-GlobalEntity *QatModule::createGlobalEntity() { return nullptr; }
+GlobalEntity *QatModule::createGlobalEntity() {
+  // FIXME - Implement
+  return nullptr;
+}
 
 GlobalEntity *
 QatModule::getGlobalEntity(const String &name, // NOLINT(misc-no-recursion)
@@ -590,6 +595,56 @@ QatModule::getGlobalEntity(const String &name, // NOLINT(misc-no-recursion)
   }
   return nullptr;
 }
+
+bool QatModule::hasClosestParentBox() const {
+  if (moduleType == ModuleType::box) {
+    return true;
+  } else {
+    if (parent) {
+      return parent->hasClosestParentBox();
+    } else {
+      return false;
+    }
+  }
+}
+
+QatModule *QatModule::getClosestParentBox() {
+  if (moduleType == ModuleType::box) {
+    return this;
+  } else {
+    if (parent) {
+      return parent->getClosestParentBox();
+    } else {
+      return nullptr;
+    }
+  }
+}
+
+bool QatModule::hasClosestParentLib() const {
+  if (moduleType == ModuleType::lib) {
+    return true;
+  } else {
+    if (parent) {
+      return parent->hasClosestParentLib();
+    } else {
+      return false;
+    }
+  }
+}
+
+QatModule *QatModule::getClosestParentLib() {
+  if (moduleType == ModuleType::lib) {
+    return this;
+  } else {
+    if (parent) {
+      return parent->getClosestParentLib();
+    } else {
+      return nullptr;
+    }
+  }
+}
+
+String QatModule::getFilePath() const { return filePath; }
 
 bool QatModule::areNodesEmitted() const { return isEmitted; }
 

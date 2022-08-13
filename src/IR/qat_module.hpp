@@ -26,6 +26,8 @@ enum class ModuleType { lib, box, file, folder };
 enum class NativeUnit { printf, malloc, pthread };
 
 class QatModule {
+  friend class CoreType;
+
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
             ModuleType _type, const utils::VisibilityInfo &_visibility,
@@ -86,6 +88,12 @@ public:
   useit String     getFullNameWithChild(const String &name) const;
   useit QatModule *getActive();
   useit QatModule *getParentFile();
+  useit String     getFilePath() const;
+
+  useit bool       hasClosestParentLib() const;
+  useit QatModule *getClosestParentLib();
+  useit bool       hasClosestParentBox() const;
+  useit QatModule *getClosestParentBox();
   useit Pair<unsigned, String> resolveNthParent(const String &name) const;
   useit bool                   hasNthParent(u32 n) const;
   useit QatModule             *getNthParent(u32 n);

@@ -9,9 +9,12 @@ Entity::Entity(String _name, utils::FileRange _fileRange)
 
 IR::Value *Entity::emit(IR::Context *ctx) {
   auto *fun = ctx->fn;
+  SHOW("Entity name is " << name)
   if (name.find("..:") == std::string::npos) {
     if (fun) {
+      SHOW("Found function")
       if (fun->getBlock()->hasValue(name)) {
+        SHOW("Found local value: " << name)
         auto *local  = fun->getBlock()->getValue(name);
         auto *alloca = local->getAlloca();
         if (getExpectedKind() == ExpressionKind::assignable) {
@@ -19,16 +22,16 @@ IR::Value *Entity::emit(IR::Context *ctx) {
             return new IR::Value(alloca, local->getType(), local->isVariable(),
                                  IR::Nature::assignable);
           } else {
-            ctx->Error(name + " is not a variable and is not assignable",
+            ctx->Error(ctx->highlightError(name) +
+                           " is not a variable and is not assignable",
                        fileRange);
           }
         } else {
-          return new IR::Value(
-              ctx->builder.CreateLoad(local->getType()->getLLVMType(), alloca,
-                                      false),
-              local->getType(), false, IR::Nature::temporary);
+          return new IR::Value(alloca, local->getType(), local->isVariable(),
+                               IR::Nature::temporary);
         }
       } else {
+        SHOW("No local value with name: " << name)
         // Checking arguments
         auto argTypes = fun->getType()->asFunction()->getArgumentTypes();
         for (usize i = 0; i < argTypes.size(); i++) {
@@ -40,11 +43,13 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                          fileRange);
             } else {
               return new IR::Value(
-                  ((llvm::Function *)fun->getLLVM())->getArg(i),
+                  ((llvm::Function *)(fun->getLLVM()))->getArg(i),
                   argTypes.at(i)->getType(), false, IR::Nature::pure);
             }
           }
         }
+        ctx->Error("No value named " + ctx->highlightError(name) + " found",
+                   fileRange);
       }
     }
   }

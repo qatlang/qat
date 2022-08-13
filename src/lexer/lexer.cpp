@@ -50,13 +50,13 @@ void Lexer::read() {
       if (current != -1) {
         if (current == '\n') {
           line_num++;
-          char_num = 0;
+          char_num = 1;
           total_char_count++;
           content.push_back("");
         } else {
           char_num++;
           total_char_count++;
-          content.back() += ("\r" + current);
+          (content.back() += "\r") += current;
         }
       }
       total_char_count++;
@@ -69,7 +69,7 @@ void Lexer::read() {
 }
 
 utils::FileRange Lexer::getPosition(u64 length) {
-  utils::FilePos end   = {line_num, ((char_num > 0) ? (char_num - 1) : 0)};
+  utils::FilePos end   = {line_num, char_num};
   utils::FilePos start = {line_num, end.character - length};
   return {fs::path(filePath), start, end};
 }
@@ -481,7 +481,7 @@ Token Lexer::tokeniser() {
            !file.eof()) {
       if (current == '.') {
         read();
-        if (digits.find('.', 0) != String::npos) {
+        if (digits.find(current, 0) != String::npos) {
           is_float = true;
           numVal += '.';
         } else {
@@ -605,6 +605,10 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::cstringType, this->getPosition(7));
       } else if (value == "await") {
         return Token::normal(TokenType::Await, this->getPosition(5));
+      } else if (value == "default") {
+        return Token::normal(TokenType::Default, this->getPosition(7));
+      } else if (value == "static") {
+        return Token::normal(TokenType::Static, this->getPosition(6));
       } else if (value == "async") {
         return Token::normal(TokenType::Async, this->getPosition(5));
       } else if (value == "sizeOf") {

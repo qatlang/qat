@@ -43,6 +43,8 @@ enum class TokenType {
   alias,
   For,
   constant,
+  Static,
+  Default,
   let,
   assignment,
   separator,

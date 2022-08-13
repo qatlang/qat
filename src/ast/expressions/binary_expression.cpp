@@ -5,8 +5,13 @@
 namespace qat::ast {
 
 IR::Value *BinaryExpression::emit(IR::Context *ctx) {
-  auto        *lhsEmit = lhs->emit(ctx);
-  auto        *rhsEmit = rhs->emit(ctx);
+  auto *lhsEmit = lhs->emit(ctx);
+  auto *rhsEmit = rhs->emit(ctx);
+
+  // FIXME - Change this when introducing operators for core types
+  lhsEmit->loadAlloca(ctx->builder);
+  rhsEmit->loadAlloca(ctx->builder);
+
   IR::QatType *lhsType = lhsEmit->getType();
   IR::QatType *rhsType = rhsEmit->getType();
   llvm::Value *lhsVal  = lhsEmit->getLLVM();

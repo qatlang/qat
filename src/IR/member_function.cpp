@@ -1,4 +1,5 @@
 #include "./member_function.hpp"
+#include "argument.hpp"
 #include "function.hpp"
 #include "types/core_type.hpp"
 #include "types/pointer.hpp"
@@ -8,54 +9,101 @@
 
 namespace qat::IR {
 
-MemberFunction::MemberFunction(bool _isVariation, CoreType *_parent,
-                               String _name, QatType *returnType,
-                               bool _isReturnTypeVariable, bool _is_async,
-                               Vec<Argument> _args, bool is_variable_arguments,
-                               bool                   _is_static,
-                               const utils::FileRange _fileRange,
-                               utils::VisibilityInfo  _visibility_info,
-                               llvm::LLVMContext     &ctx)
-    : Function(_parent->getParent(), _name, returnType, _isReturnTypeVariable,
-               _is_async, std::move(_args), is_variable_arguments, _fileRange,
-               _visibility_info, ctx),
-      parent(_parent), isStatic(_is_static), isVariation(_isVariation) {}
+MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation,
+                               CoreType *_parent, const String &_name,
+                               QatType *returnType, bool _isReturnTypeVariable,
+                               bool _is_async, Vec<Argument> _args,
+                               bool is_variable_arguments, bool _is_static,
+                               const utils::FileRange      &_fileRange,
+                               const utils::VisibilityInfo &_visibility_info,
+                               llvm::LLVMContext           &ctx)
+    : Function(_parent->getParent(),
+               _parent->getFullName() + (_is_static ? ":" : "'") + _name,
+               returnType, _isReturnTypeVariable, _is_async, std::move(_args),
+               is_variable_arguments, _fileRange, _visibility_info, ctx, true),
+      parent(_parent), isStatic(_is_static), isVariation(_isVariation),
+      fnType(_fnType) {}
 
 MemberFunction *MemberFunction::Create(
-    CoreType *parent, const bool is_variation, const String name,
-    QatType *returnTy, const bool _isReturnTypeVariable, const bool _is_async,
-    const Vec<Argument> args, const bool has_variadic_args,
-    const utils::FileRange      fileRange,
-    const utils::VisibilityInfo visibilityInfo, llvm::LLVMContext &ctx) {
+    CoreType *parent, bool is_variation, const String &name, QatType *returnTy,
+    bool _isReturnTypeVariable, bool _is_async, const Vec<Argument> &args,
+    bool has_variadic_args, const utils::FileRange &fileRange,
+    const utils::VisibilityInfo &visibilityInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> args_info;
-  args_info.push_back(is_variation ? Argument::CreateVariable("self", parent, 0)
-                                   : Argument::Create("self", parent, 0));
-  for (auto arg : args) {
+  args_info.push_back(
+      is_variation
+          ? Argument::CreateVariable("self", PointerType::get(parent, ctx), 0)
+          : Argument::Create("self", PointerType::get(parent, ctx), 0));
+  for (const auto &arg : args) {
     args_info.push_back(arg);
   }
-  return new MemberFunction(
-      is_variation, parent, name, returnTy, _isReturnTypeVariable, _is_async,
-      args_info, has_variadic_args, false, fileRange, visibilityInfo, ctx);
+  return new MemberFunction(MemberFnType::normal, is_variation, parent, name,
+                            returnTy, _isReturnTypeVariable, _is_async,
+                            args_info, has_variadic_args, false, fileRange,
+                            visibilityInfo, ctx);
+}
+
+MemberFunction *MemberFunction::CreateConstructor(
+    CoreType *parent, const String &name, const Vec<Argument> &args,
+    bool hasVariadicArgs, const utils::FileRange &fileRange,
+    const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::CreateVariable("self", PointerType::get(parent, ctx), 0));
+  for (const auto &arg : args) {
+    argsInfo.push_back(arg);
+  }
+  return new MemberFunction(MemberFnType::constructor, true, parent, name,
+                            VoidType::get(ctx), false, false, argsInfo,
+                            hasVariadicArgs, false, fileRange, visibInfo, ctx);
+}
+
+MemberFunction *MemberFunction::CreateFromConvertor(
+    CoreType *parent, QatType *sourceType, const String &name,
+    const utils::FileRange &fileRange, const utils::VisibilityInfo &visibInfo,
+    llvm::LLVMContext &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::CreateVariable("self", PointerType::get(parent, ctx), 0));
+  argsInfo.push_back(Argument::Create(name, sourceType, 1));
+  return new MemberFunction(MemberFnType::fromConvertor, true, parent,
+                            "from'" + sourceType->toString(),
+                            VoidType::get(ctx), false, false, argsInfo, false,
+                            false, fileRange, visibInfo, ctx);
+}
+
+MemberFunction *MemberFunction::CreateToConvertor(
+    CoreType *parent, QatType *destType, const utils::FileRange &fileRange,
+    const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::Create("self", PointerType::get(parent, ctx), 0));
+  return new MemberFunction(MemberFnType::toConvertor, false, parent,
+                            "to'" + destType->toString(), destType, false,
+                            false, argsInfo, false, false, fileRange, visibInfo,
+                            ctx);
 }
 
 MemberFunction *MemberFunction::CreateStatic(
-    CoreType *parent, const String name, QatType *returnTy,
-    const bool isReturnTypeVariable, const bool is_async,
-    const Vec<Argument> args, const bool has_variadic_args,
-    const utils::FileRange fileRange, const utils::VisibilityInfo visib_info,
-    llvm::LLVMContext &ctx //
+    CoreType *parent, const String &name, QatType *returnTy,
+    bool isReturnTypeVariable, bool is_async, const Vec<Argument> &args,
+    bool has_variadic_args, const utils::FileRange &fileRange,
+    const utils::VisibilityInfo &visib_info,
+    llvm::LLVMContext           &ctx //
 ) {
-  return new MemberFunction(false, parent, name, returnTy, isReturnTypeVariable,
-                            is_async, args, has_variadic_args, true, fileRange,
-                            visib_info, ctx);
+  return new MemberFunction(MemberFnType::staticFn, false, parent, name,
+                            returnTy, isReturnTypeVariable, is_async, args,
+                            has_variadic_args, true, fileRange, visib_info,
+                            ctx);
 }
 
 MemberFunction *
-MemberFunction::CreateDestructor(CoreType              *parent,
-                                 const utils::FileRange fileRange,
-                                 llvm::LLVMContext     &ctx) {
+MemberFunction::CreateDestructor(CoreType               *parent,
+                                 const utils::FileRange &fileRange,
+                                 llvm::LLVMContext      &ctx) {
   return new MemberFunction(
-      parent->getParent(), parent, "end", VoidType::get(ctx), false, false,
+      MemberFnType::destructor, parent->getParent(), parent, "end",
+      VoidType::get(ctx), false, false,
       Vec<Argument>(
           {Argument::CreateVariable("self", PointerType::get(parent, ctx), 0)}),
       false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
@@ -73,8 +121,12 @@ bool MemberFunction::isStaticFunction() const { return isStatic; }
 
 bool MemberFunction::isMemberFunction() const { return true; }
 
+CoreType *MemberFunction::getParentType() { return parent; }
+
+MemberFnType MemberFunction::getMemberFnType() const { return fnType; }
+
 void MemberFunction::emitCPP(cpp::File &file) const {}
 
-nuo::Json MemberFunction::toJson() const {}
+nuo::Json MemberFunction::toJson() const { return nuo::Json(); }
 
 } // namespace qat::IR

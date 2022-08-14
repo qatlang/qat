@@ -4,12 +4,24 @@
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./function.hpp"
+#include "types/qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
 #include <string>
 #include <vector>
 
 namespace qat::IR {
+
+enum class MemberFnType {
+  normal,
+  staticFn,
+  fromConvertor,
+  toConvertor,
+  constructor,
+  copyConstructor,
+  moveConstructor,
+  destructor,
+};
 
 class CoreType;
 
@@ -20,100 +32,61 @@ class CoreType;
  */
 class MemberFunction : public Function {
 private:
-  /**
-   *  Parent type
-   *
-   */
-  CoreType *parent;
+  CoreType    *parent;
+  bool         isStatic;
+  bool         isVariation;
+  MemberFnType fnType;
 
-  //  Whether this is a static member function or not
-  bool isStatic;
-
-  bool isVariation;
-
-  /**
-   *  Private constructor for MemberFunction
-   *
-   * @param mod LLVM Module to insert the generated function to
-   * @param _name Name of the function
-   * @param returnType LLVM Type of the return value
-   * @param _arg_names Names of arguments
-   * @param _arg_types LLVM Types of the arguments
-   * @param _args_variability Variability values of the arguments
-   * @param has_variadic_arguments Whether the function has variable number of
-   * arguments
-   * @param _is_static Whether the function is a static member function
-   * @param _visibility_info VisibilityInfo of the function
-   */
-  MemberFunction(bool _isVariation, CoreType *_parent, String _name,
-                 QatType *returnType, bool isReturnTypeVariable, bool _is_async,
-                 Vec<Argument> _args, bool has_variadic_arguments,
-                 bool _is_static, utils::FileRange _fileRange,
-                 utils::VisibilityInfo _visibility_info,
-                 llvm::LLVMContext    &ctx);
+  MemberFunction(MemberFnType fnType, bool _isVariation, CoreType *_parent,
+                 const String &_name, QatType *returnType,
+                 bool isReturnTypeVariable, bool _is_async, Vec<Argument> _args,
+                 bool has_variadic_arguments, bool _is_static,
+                 const utils::FileRange      &_fileRange,
+                 const utils::VisibilityInfo &_visibility_info,
+                 llvm::LLVMContext           &ctx);
 
 public:
-  /**
-   *  Create a member function for the provided parent type
-   *
-   * @param mod LLVM Module to insert the generated LLVM Function to
-   * @param parent LLVM Type of the parent core type
-   * @param is_variation Whether this is a variation or not
-   * @param name Name of the function (short)
-   * @param return_type LLVM Type of the return type
-   * @param args Arguments of the function
-   * @param has_variadic_args Whether the function has variadic arguments
-   * @param visib_info VisibilityInfo of the function
-   * @return MemberFunction
-   */
   static MemberFunction *
-  Create(CoreType *parent, const bool is_variation, const String name,
-         QatType *return_type, const bool isReturnTypeVariable,
-         const bool is_async, const Vec<Argument> args,
-         const bool has_variadic_args, const utils::FileRange fileRange,
-         const utils::VisibilityInfo visib_info, llvm::LLVMContext &ctx);
+  Create(CoreType *parent, bool is_variation, const String &name,
+         QatType *return_type, bool isReturnTypeVariable, bool is_async,
+         const Vec<Argument> &args, bool has_variadic_args,
+         const utils::FileRange      &fileRange,
+         const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
-  static MemberFunction *CreateDestructor(CoreType              *parent,
-                                          const utils::FileRange fileRange,
-                                          llvm::LLVMContext     &ctx);
+  static MemberFunction *CreateConstructor(
+      CoreType *parent, const String &name, const Vec<Argument> &args,
+      bool hasVariadicArgs, const utils::FileRange &fileRange,
+      const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx);
 
-  /**
-   *  Create a static member function for the provided parent type
-   *
-   * @param mod LLVM Module to insert the generated LLVM function to
-   * @param parent LLVM Type of the parent core type
-   * @param name Name of the function (short)
-   * @param return_type LLVM Type of the return type
-   * @param args Arguments of the function
-   * @param has_variadic_args Whether the function has variadic arguments
-   * @param visib_info VisibilityInfo of the function
-   * @return MemberFunction
-   */
   static MemberFunction *
-  CreateStatic(CoreType *parent, const String name, QatType *return_type,
-               const bool is_return_type_variable, const bool is_async,
-               const Vec<Argument> args, const bool has_variadic_args,
-               const utils::FileRange      fileRange,
-               const utils::VisibilityInfo visib_info, llvm::LLVMContext &ctx);
+  CreateFromConvertor(CoreType *parent, QatType *sourceType, const String &name,
+                      const utils::FileRange      &fileRange,
+                      const utils::VisibilityInfo &visibInfo,
+                      llvm::LLVMContext           &ctx);
 
-  /**
-   *  Whether this function is a variation or not. This only applies to
-   * non-static member functions
-   *
-   * @return true
-   * @return false
-   */
-  bool isVariationFunction() const;
+  static MemberFunction *CreateToConvertor(
+      CoreType *parent, QatType *destType, const utils::FileRange &fileRange,
+      const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx);
 
-  bool isStaticFunction() const;
+  static MemberFunction *CreateDestructor(CoreType               *parent,
+                                          const utils::FileRange &fileRange,
+                                          llvm::LLVMContext      &ctx);
 
-  String getFullName() const;
+  static MemberFunction *
+  CreateStatic(CoreType *parent, const String &name, QatType *return_type,
+               bool is_return_type_variable, bool is_async,
+               const Vec<Argument> &args, bool has_variadic_args,
+               const utils::FileRange      &fileRange,
+               const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
-  bool isMemberFunction() const;
-
-  void emitCPP(cpp::File &file) const;
-
-  nuo::Json toJson() const;
+  useit MemberFnType getMemberFnType() const;
+  useit bool         isVariationFunction() const;
+  useit bool         isStaticFunction() const;
+  useit String       getFullName() const final;
+  useit bool         isMemberFunction() const final;
+  useit CoreType    *getParentType();
+  useit nuo::Json toJson() const;
+  void            emitCPP(cpp::File &file) const;
 };
 
 } // namespace qat::IR

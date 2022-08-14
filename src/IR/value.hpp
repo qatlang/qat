@@ -24,6 +24,7 @@ protected:
   Nature       nature;   // The nature of the value
   bool         variable; // Variability nature
   llvm::Value *ll;       // LLVM value
+  bool         isLocal;  // Is this value local to a function
 
 public:
   Value(llvm::Value *_llValue, IR::QatType *_type, bool _isVariable,
@@ -36,6 +37,8 @@ public:
   useit bool         isReference() const;
   useit bool         isPointer() const;
   useit bool         isVariable() const;
+  useit bool         isLocalToFn() const;
+  void               setIsLocalToFn(bool isLoc);
   useit Nature       getNature() const;
   useit IR::Value *createAlloca(llvm::IRBuilder<> &builder);
   useit bool       isImplicitPointer() const;

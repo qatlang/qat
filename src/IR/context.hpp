@@ -1,6 +1,7 @@
 #ifndef QAT_IR_CONTEXT_HPP
 #define QAT_IR_CONTEXT_HPP
 
+#include "../cli/color.hpp"
 #include "../utils/file_range.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
@@ -23,7 +24,8 @@ public:
   llvm::LLVMContext llctx;
   IRBuilderTy       builder;
   QatModule        *mod;
-  IR::Function     *fn;
+  IR::Function     *fn;         // Active function
+  IR::CoreType     *activeType; // Active core type
   Vec<String>       exposed;
   bool              hasMain;
 
@@ -34,8 +36,14 @@ public:
 
   useit QatModule *getMod() const; // Get the active IR module
 
+  useit utils::RequesterInfo getReqInfo() const;
+
   static void Error(const String &message, const utils::FileRange &fileRange);
   static void Warning(const String &message, const utils::FileRange &fileRange);
+  static String highlightError(const String &message,
+                               const char   *color = colors::yellow);
+  static String highlightWarning(const String &message,
+                                 const char   *color = colors::yellow);
 };
 
 } // namespace qat::IR

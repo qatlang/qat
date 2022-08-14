@@ -13,25 +13,33 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
     relative++;
     index += 3;
   }
-  if (name.find("..:", index) != String::npos) {
+  // FIXME - Implement remaining logic
+  // FIXME - Support type definitions and sum types too
+  if (name.find("..:", index) != std::string::npos) {
     ctx->Error("Super token can be used only at the start", fileRange);
   } else {
-    if (relative == 0) {
+    if (relative != 0) {
       if (ctx->getMod()->hasNthParent(relative)) {
         auto *mod     = ctx->getMod()->getNthParent(relative);
         auto  newName = name.substr(index);
-        if (mod->hasCoreType(newName)) {
-          auto reqInfo =
-              utils::RequesterInfo(None, None, fileRange.file.string(), None);
-          return mod->getCoreType(name, reqInfo);
+        if (mod->hasCoreType(newName) || mod->hasBroughtCoreType(name) ||
+            mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo())
+                .first) {
+          return mod->getCoreType(name, ctx->getReqInfo());
         }
-        // FIXME - Implement remaining logic
       } else {
         ctx->Error("The active scope does not have " +
                        std::to_string(relative) + " parents",
                    fileRange);
       }
     } else {
+      auto *mod = ctx->getMod();
+      if (mod->hasCoreType(name) || mod->hasBroughtCoreType(name) ||
+          mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo()).first) {
+        return mod->getCoreType(name, ctx->getReqInfo());
+      } else {
+        ctx->Error("No type named " + name + " found in scope", fileRange);
+      }
     }
   }
   return nullptr;

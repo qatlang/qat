@@ -29,6 +29,12 @@ IR::Value *GiveSentence::emit(IR::Context *ctx) {
         if (retVal->isImplicitPointer() && !retType->isReference()) {
           retVal->loadImplicitPointer(ctx->builder);
         }
+        if (retType->isReference() && retVal->isLocalToFn()) {
+          ctx->Warning("Returning reference to a local value. The value "
+                       "pointed to by the reference might be destroyed before "
+                       "the function call is complete",
+                       fileRange);
+        }
         return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()),
                              retVal->getType(), false, IR::Nature::pure);
       } else {

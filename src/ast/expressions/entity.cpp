@@ -1,6 +1,5 @@
-#include <utility>
-
 #include "./entity.hpp"
+#include <utility>
 
 namespace qat::ast {
 
@@ -19,16 +18,21 @@ IR::Value *Entity::emit(IR::Context *ctx) {
         auto *alloca = local->getAlloca();
         if (getExpectedKind() == ExpressionKind::assignable) {
           if (local->isVariable()) {
-            return new IR::Value(alloca, local->getType(), local->isVariable(),
-                                 IR::Nature::assignable);
+            auto *val =
+                new IR::Value(alloca, local->getType(), local->isVariable(),
+                              IR::Nature::assignable);
+            val->setIsLocalToFn(true);
+            return val;
           } else {
             ctx->Error(ctx->highlightError(name) +
                            " is not a variable and is not assignable",
                        fileRange);
           }
         } else {
-          return new IR::Value(alloca, local->getType(), local->isVariable(),
-                               IR::Nature::temporary);
+          auto *val = new IR::Value(alloca, local->getType(),
+                                    local->isVariable(), IR::Nature::temporary);
+          val->setIsLocalToFn(true);
+          return val;
         }
       } else {
         SHOW("No local value with name: " << name)

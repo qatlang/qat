@@ -23,14 +23,9 @@ IR::Value *Say::emit(IR::Context *ctx) {
     if (typ->isReference()) {
       val = new IR::Value(
           ctx->builder.CreateLoad(
-              typ->asReference()->getSubType()->getLLVMType()->getPointerTo(),
-              val->getLLVM()),
+              typ->asReference()->getSubType()->getLLVMType(), val->getLLVM()),
           typ->asReference()->getSubType(), false, IR::Nature::temporary);
-      val = new IR::Value(
-          ctx->builder.CreateLoad(
-              typ->asReference()->getSubType()->getLLVMType()->getPointerTo(),
-              val->getLLVM()),
-          typ->asReference()->getSubType(), false, IR::Nature::temporary);
+      typ = typ->asReference()->getSubType();
     }
     if (typ->isStringSlice()) {
       formatStr += "%.*s";

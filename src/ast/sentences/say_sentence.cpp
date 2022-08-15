@@ -13,6 +13,8 @@ IR::Value *Say::emit(IR::Context *ctx) {
   Vec<llvm::Value *> llvmValues;
   for (auto *exp : expressions) {
     valuesIR.push_back(exp->emit(ctx));
+    SHOW(
+        "Say sentence member type: " << valuesIR.back()->getType()->toString());
   }
   std::function<void(IR::Value *, usize)> formatter = [&](IR::Value *value,
                                                           usize      index) {
@@ -26,6 +28,7 @@ IR::Value *Say::emit(IR::Context *ctx) {
               typ->asReference()->getSubType()->getLLVMType(), val->getLLVM()),
           typ->asReference()->getSubType(), false, IR::Nature::temporary);
       typ = typ->asReference()->getSubType();
+      SHOW("Reference in say sentence of type " << typ->toString())
     }
     if (typ->isStringSlice()) {
       formatStr += "%.*s";

@@ -52,9 +52,7 @@ public:
   useit bool              hasValue(const String &name) const;
   useit LocalValue       *getValue(const String &name) const;
   useit LocalValue *newValue(const String &name, IR::QatType *type, bool isVar);
-  void              setActive(
-                   llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
-                       &builder) const;
+  void              setActive(llvm::IRBuilder<> &builder) const;
 };
 
 // Function represents a normal function in the language

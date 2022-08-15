@@ -118,9 +118,7 @@ LocalValue *Block::newValue(const String &name, IR::QatType *type, bool isVar) {
   return values.back();
 }
 
-void Block::setActive(
-    llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>
-        &builder) const {
+void Block::setActive(llvm::IRBuilder<> &builder) const {
   fn->setActiveBlock(index);
   builder.SetInsertPoint(bb);
 }

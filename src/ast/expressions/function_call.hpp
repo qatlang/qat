@@ -8,31 +8,16 @@ namespace qat::ast {
 // FunctionCall represents a normal call to a function in the language
 class FunctionCall : public Expression {
 private:
-  // Name of the function to call
-  String name;
-  // Expressions for the arguments to be passed
+  Expression       *fnExpr;
   Vec<Expression *> arguments;
 
 public:
-  /**
-   * FunctionCall represents a normal/static function call in the
-   * language
-   *
-   * @param _name Name of the function to call
-   * @param _arguments Expressions representing the value of the arguments to be
-   * passed
-   * @param _fileRange
-   */
-  FunctionCall(String _name, Vec<Expression *> _arguments,
-               utils::FileRange _fileRange)
-      : Expression(std::move(_fileRange)), name(std::move(_name)),
-        arguments(std::move(_arguments)) {}
+  FunctionCall(Expression *_fnExpr, Vec<Expression *> _arguments,
+               utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
-  useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::functionCall; }
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::functionCall; }
 };
 
 } // namespace qat::ast

@@ -1,5 +1,6 @@
 #include "./local_declaration.hpp"
 #include "../../show.hpp"
+#include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
 
@@ -43,7 +44,8 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
       ctx->Error("Type inference for declarations require a value", fileRange);
     }
   }
-  auto *newValue = block->newValue(name, declType, variability);
+  auto *newValue =
+      block->newValue(name, declType, type ? type->isVariable() : variability);
   if (expVal) {
     SHOW("Creating store")
     if ((expVal->isImplicitPointer() && !declType->isReference()) ||

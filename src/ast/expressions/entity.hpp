@@ -15,29 +15,15 @@ namespace qat::ast {
 class Entity : public Expression {
 
 private:
-  /**
-   *  Name of the entity
-   *
-   */
   String name;
+  u32    relative;
 
 public:
-  /**
-   *  Entity represents either a variable or constant. The name of the
-   * entity is mostly just an identifier, but it can be other values if the
-   * entity is present in the global constant
-   *
-   * @param _name Name of the entity
-   * @param _fileRange FilePlacement instance that represents the range
-   * spanned by the tokens making up this AST member
-   */
-  Entity(String _name, utils::FileRange _fileRange);
+  Entity(u32 relative, String _name, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::entity; }
+  useit IR::Value *emit(IR::Context *ctx);
+  useit nuo::Json toJson() const;
+  useit NodeType  nodeType() const { return NodeType::entity; }
 };
 
 } // namespace qat::ast

@@ -3,15 +3,15 @@
 
 namespace qat::ast {
 
-Entity::Entity(String _name, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), name(std::move(_name)) {}
+Entity::Entity(u32 _relative, String _name, utils::FileRange _fileRange)
+    : Expression(std::move(_fileRange)), name(std::move(_name)),
+      relative(_relative) {}
 
 IR::Value *Entity::emit(IR::Context *ctx) {
   auto *fun = ctx->fn;
   SHOW("Entity name is " << name)
-  if (name.find("..:") == std::string::npos) {
+  if (relative == 0) {
     if (fun) {
-      SHOW("Found function")
       if (fun->getBlock()->hasValue(name)) {
         SHOW("Found local value: " << name)
         auto *local  = fun->getBlock()->getValue(name);
@@ -37,6 +37,8 @@ IR::Value *Entity::emit(IR::Context *ctx) {
       } else {
         SHOW("No local value with name: " << name)
         // Checking arguments
+        // Currently this is unnecessary, since all arguments are allocated as
+        // local values first
         auto argTypes = fun->getType()->asFunction()->getArgumentTypes();
         for (usize i = 0; i < argTypes.size(); i++) {
           if (argTypes.at(i)->getName() == name) {
@@ -52,9 +54,26 @@ IR::Value *Entity::emit(IR::Context *ctx) {
             }
           }
         }
+        // Checking functions
+        auto *mod = ctx->getMod();
+        if (mod->hasFunction(name)) {
+          return mod->getFunction(name, ctx->getReqInfo());
+        }
         ctx->Error("No value named " + ctx->highlightError(name) + " found",
                    fileRange);
       }
+    }
+  } else {
+    if (ctx->getMod()->hasNthParent(relative)) {
+      auto *mod = ctx->getMod()->getNthParent(relative);
+      // TODO - Implement remaining logic
+    } else {
+      ctx->Error("The current scope do not have " +
+                     (relative == 1 ? "a" : std::to_string(relative)) +
+                     " parent" + (relative == 1 ? "" : "s") +
+                     ". Relative mentions of identifiers cannot be used here. "
+                     "Please check the logic.",
+                 fileRange);
     }
   }
 }
@@ -63,6 +82,7 @@ nuo::Json Entity::toJson() const {
   return nuo::Json()
       ._("nodeType", "entity")
       ._("name", name)
+      ._("relative", relative)
       ._("fileRange", fileRange);
 }
 

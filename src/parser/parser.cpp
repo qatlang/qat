@@ -36,7 +36,7 @@
 // functionality
 namespace qat::parser {
 
-Parser::Parser() : tokens() {}
+Parser::Parser() = default;
 
 void Parser::setTokens(const Vec<lexer::Token> &allTokens) {
   g_ctx  = ParserContext();
@@ -45,16 +45,15 @@ void Parser::setTokens(const Vec<lexer::Token> &allTokens) {
 
 void Parser::filterComments() {}
 
-ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx,
-                                                 const usize    from,
-                                                 const usize    to) {
+ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
+                                                 usize upto) {
   using lexer::TokenType;
   Vec<String>        result;
   Maybe<CacheSymbol> csym = None;
 
-  for (usize i = from + 1; i < to; i++) {
+  for (usize i = from + 1; i < upto; i++) {
     auto token = tokens.at(i);
-    switch (token.type) {
+    switch (token.type) { // NOLINT(clang-diagnostic-switch)
     case TokenType::identifier: {
       auto sym_res = parseSymbol(ctx, i);
       csym         = sym_res.first;
@@ -97,13 +96,13 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx,
     }
     }
   }
+  // FIXME - Return valid value
 }
 
-Vec<String> Parser::parseBroughtFilesOrFolders(const usize from,
-                                               const usize to) {
+Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
   using lexer::TokenType;
   Vec<String> result;
-  for (usize i = from + 1; (i < to) && (i < tokens.size()); i++) {
+  for (usize i = from + 1; (i < upto) && (i < tokens.size()); i++) {
     auto token = tokens.at(i);
     switch (token.type) {
     case TokenType::StringLiteral: {
@@ -143,9 +142,8 @@ Vec<String> Parser::parseBroughtFilesOrFolders(const usize from,
   return result;
 }
 
-Pair<ast::QatType *, usize> Parser::parseType(ParserContext     &prev_ctx,
-                                              const usize        from,
-                                              const Maybe<usize> to) {
+Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
+                                              usize from, Maybe<usize> upto) {
   using lexer::Token;
   using lexer::TokenType;
 
@@ -157,10 +155,11 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext     &prev_ctx,
   };
 
   auto                  ctx = ParserContext(prev_ctx);
-  usize                 i   = 0;
+  usize                 i   = 0; // NOLINT(readability-identifier-length)
   Maybe<ast::QatType *> cacheTy;
 
-  for (i = from + 1; i < (to.has_value() ? to.value() : tokens.size()); i++) {
+  for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens.size());
+       i++) {
     Token &token = tokens.at(i);
     switch (token.type) {
     case TokenType::var: {
@@ -191,7 +190,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext     &prev_ctx,
       if (!pCloseResult.has_value()) {
         throwError("Expected )", token.fileRange);
       }
-      if (to.has_value() && (pCloseResult.value() > to.value())) {
+      if (upto.has_value() && (pCloseResult.value() > upto.value())) {
         throwError("Invalid position for )",
                    tokens.at(pCloseResult.value()).fileRange);
       }
@@ -309,7 +308,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext     &prev_ctx,
       if (cacheTy.has_value()) {
         return {cacheTy.value(), i - 1};
       }
-      auto subRes = parseType(ctx, i, to);
+      auto subRes = parseType(ctx, i, upto);
       i           = subRes.second;
       cacheTy     = new ast::ReferenceType(
               subRes.first, getVariability(),
@@ -324,7 +323,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext     &prev_ctx,
         auto bCloseRes = getPairEnd(TokenType::bracketOpen,
                                     TokenType::bracketClose, i + 1, false);
         if (bCloseRes.has_value() &&
-            (!to.has_value() || (bCloseRes.value() < to.value()))) {
+            (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
           auto bClose     = bCloseRes.value();
           auto subTypeRes = parseType(ctx, i + 1, bClose);
           i               = bClose;
@@ -416,7 +415,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
 
   for (usize i = (from + 1); i < upto; i++) {
     Token &token = tokens.at(i);
-    switch (token.type) {
+    switch (token.type) { // NOLINT(clang-diagnostic-switch)
     case TokenType::endOfFile: {
       return result;
     }
@@ -435,7 +434,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       if (isNext(TokenType::identifier, i)) {
         auto endRes = firstPrimaryPosition(TokenType::stop, i);
         if (endRes.has_value()) {
-          auto broughtEntities = parseBroughtEntities(ctx, i, endRes.value());
+          auto *broughtEntities = parseBroughtEntities(ctx, i, endRes.value());
         }
       } else if (isNext(TokenType::StringLiteral, i)) {
         auto endRes = firstPrimaryPosition(TokenType::stop, i);
@@ -1183,7 +1182,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
   } else {
     return {cachedExpressions.back(), i};
   }
-}
+} // NOLINT(clang-diagnostic-return-type)
 
 Vec<ast::Expression *> Parser::
     parseSeparatedExpressions( // NOLINT(misc-no-recursion),
@@ -1275,10 +1274,10 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
     throwError("No identifier found for parsing the symbol",
                tokens.at(start).fileRange);
   }
-}
+} // NOLINT(clang-diagnostic-return-type)
 
-Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
-                                            const usize from, const usize to) {
+Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
+                                            usize upto) {
   using ast::FloatType;
   using ast::IntegerType;
   using IR::FloatTypeKind;
@@ -1293,14 +1292,12 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
   Vec<ast::QatType *>    cacheTy;
   Vec<ast::Expression *> cachedExpressions;
 
-  usize  index = 0;
   String context;
   String name_val;
 
   auto var = false;
 
-  for (usize i = from + 1; i < to; i++) {
-    index        = i;
+  for (usize i = from + 1; i < upto; i++) {
     Token &token = tokens.at(i);
     switch (token.type) {
     case TokenType::voidType:
@@ -1390,21 +1387,14 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
     }
     case TokenType::child: {
       if (cacheSymbol.has_value()) {
-        auto end = firstPrimaryPosition(TokenType::stop, i);
-        if (end.has_value()) {
-          auto *exp =
-              parseExpression(ctx, cacheSymbol.value(), i, end.value()).first;
-          cacheSymbol = None;
-          i           = end.value();
-        } else {
-          throwError("End of the sentence not found",
-                     cacheSymbol.value().fileRange);
-        }
+        auto expRes = parseExpression(ctx, cacheSymbol.value(), i, None);
+        cachedExpressions.push_back(expRes.first);
+        cacheSymbol = None;
+        i           = expRes.second;
       } else {
         throwError("No expression or entity found to access the child of",
                    token.fileRange);
       }
-
       break;
     }
     case TokenType::super: {
@@ -1422,7 +1412,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
         // user
         if (isNext(TokenType::assignment, i)) {
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
-          if (end_res.has_value() && (end_res.value() < to)) {
+          if (end_res.has_value() && (end_res.value() < upto)) {
             auto *exp = parseExpression(ctx, None, i, end_res.value()).first;
             result.push_back(new ast::LocalDeclaration(
                 (cacheTy.empty()
@@ -1461,7 +1451,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
         if (isNext(TokenType::assignment, i)) {
           auto end_res = firstPrimaryPosition(TokenType::stop, i + 1);
           SHOW("Found end of id sentence")
-          if (!end_res.has_value() || (end_res.value() >= to)) {
+          if (!end_res.has_value() || (end_res.value() >= upto)) {
             throwError("Invalid end for the inferred declaration",
                        token.fileRange);
           }
@@ -1490,7 +1480,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       } else if (isNext(TokenType::child, i)) {
         if (cacheSymbol.has_value()) {
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
-          if (end_res.has_value() && (end_res.value() <= to)) {
+          if (end_res.has_value() && (end_res.value() <= upto)) {
             auto  end   = end_res.value();
             auto *exp   = parseExpression(ctx, cacheSymbol, i - 1, end).first;
             cacheSymbol = None;
@@ -1516,7 +1506,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
       /* Assignment */
       if (cacheSymbol.has_value()) {
         auto end_res = firstPrimaryPosition(TokenType::stop, i);
-        if (!end_res.has_value() || (end_res.value() >= to)) {
+        if (!end_res.has_value() || (end_res.value() >= upto)) {
           throwError("Invalid end for the sentence", token.fileRange);
         }
         auto  end = end_res.value();
@@ -1542,7 +1532,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
     case TokenType::say: {
       context      = "SAY";
       auto end_res = firstPrimaryPosition(TokenType::stop, i);
-      if (!end_res.has_value() || (end_res.value() >= to)) {
+      if (!end_res.has_value() || (end_res.value() >= upto)) {
         throwError("Say sentence has invalid end", token.fileRange);
       }
       auto end  = end_res.value();

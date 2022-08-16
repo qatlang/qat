@@ -13,40 +13,16 @@ namespace qat::ast {
 // plain if sentence
 class IfElse : public Sentence {
 private:
-  //  Condition for this if sentence
-  Expression *condition;
-
-  //  The block belonging to the if section
-  Block *if_block;
-
-  //  The optional block belonging to the else section
-  Maybe<Block *> else_block;
-
-  //  The block after the if-else case
-  Block *merge_block;
+  Vec<Pair<Expression *, Vec<Sentence *>>> chain;
+  Maybe<Vec<Sentence *>>                   elseCase;
 
 public:
-  /**
-   *  IfElse is used to represent two kinds of conditional statements : If
-   * and If-Else. The Else block is optional and if omitted, this becomes a
-   * plain if sentence
-   *
-   * @param _condition Condition in the if sentence
-   * @param _if_block The Block of the if sentence
-   * @param _else_block The optional Block of the else sentence
-   * @param _merge_block The optional Block representing the remaining sentences
-   * not part of the conditional blocks
-   * @param _fileRange
-   *
-   */
-  IfElse(Expression *_condition, Block *_if_block, Maybe<Block *> _else_block,
-         Maybe<Block *> _merge_block, utils::FileRange _fileRange);
+  IfElse(Vec<Pair<Expression *, Vec<Sentence *>>> _chain,
+         Maybe<Vec<Sentence *>> _else, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::ifElse; }
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::ifElse; }
 };
 
 } // namespace qat::ast

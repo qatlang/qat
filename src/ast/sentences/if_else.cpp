@@ -2,30 +2,61 @@
 
 namespace qat::ast {
 
-IfElse::IfElse(Expression *_condition, Block *_if_block,
-               Maybe<Block *> _else_block, Maybe<Block *> _merge_block,
-               utils::FileRange _fileRange)
-    : Sentence(_fileRange), condition(_condition), if_block(_if_block),
-      else_block(_else_block),
-      merge_block(_merge_block.value_or(new Block(
-          Vec<Sentence *>(),
-          utils::FileRange(_else_block.value_or(_if_block)->fileRange.file,
-                           _else_block.value_or(_if_block)->fileRange.end,
-                           _else_block.value_or(_if_block)->fileRange.end)))) {}
+IfElse::IfElse(Vec<Pair<Expression *, Vec<Sentence *>>> _chain,
+               Maybe<Vec<Sentence *>> _else, utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), chain(std::move(_chain)),
+      elseCase(std::move(_else)) {}
 
 IR::Value *IfElse::emit(IR::Context *ctx) {
-  // TODO - Implement this
+  auto *restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  for (const auto &section : chain) {
+    auto *exp = section.first->emit(ctx);
+    if (!exp->getType()->isUnsignedInteger()) {
+      ctx->Error("Expression in if sentence should be of unsigned integer type",
+                 section.first->fileRange);
+    }
+    auto *trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    auto *falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(),
+                              falseBlock->getBB());
+    trueBlock->setActive(ctx->builder);
+    for (auto *snt : section.second) {
+      (void)snt->emit(ctx);
+    }
+    ctx->builder.CreateBr(restBlock->getBB());
+    falseBlock->setActive(ctx->builder);
+  }
+  if (elseCase.has_value()) {
+    for (auto *snt : elseCase.value()) {
+      (void)snt->emit(ctx);
+    }
+  }
+  ctx->builder.CreateBr(restBlock->getBB());
+  restBlock->setActive(ctx->builder);
+  return nullptr;
 }
 
 nuo::Json IfElse::toJson() const {
+  Vec<nuo::JsonValue> _chain;
+  for (const auto &elem : chain) {
+    Vec<nuo::JsonValue> snts;
+    for (auto *snt : elem.second) {
+      snts.push_back(snt->toJson());
+    }
+    _chain.push_back(
+        nuo::Json()._("expression", elem.first->toJson())._("sentences", snts));
+  }
+  Vec<nuo::JsonValue> elseSnts;
+  if (elseCase.has_value()) {
+    for (auto *snt : elseCase.value()) {
+      elseSnts.push_back(snt->toJson());
+    }
+  }
   return nuo::Json()
       ._("nodeType", "ifElse")
-      ._("condition", condition->toJson())
-      ._("ifBlock", if_block->toJson())
-      ._("hasElse", else_block.has_value())
-      ._("elseBlock",
-         else_block.has_value() ? else_block.value()->toJson() : nuo::Json())
-      ._("mergeBlock", merge_block->toJson())
+      ._("chain", _chain)
+      ._("hasElse", (elseCase.has_value()))
+      ._("else", elseSnts)
       ._("fileRange", fileRange);
 }
 

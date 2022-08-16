@@ -17,7 +17,7 @@ String BroughtGroup::getParent() const { return parent; }
 
 Vec<String> BroughtGroup::getMembers() const { return members; }
 
-bool BroughtGroup::is_all_brought() const { return members.empty(); }
+bool BroughtGroup::isAllBrought() const { return members.empty(); }
 
 nuo::Json BroughtGroup::toJson() const {
   Vec<nuo::JsonValue> membersJson;

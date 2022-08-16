@@ -8,7 +8,7 @@ add_library(QAT_AST_EXPRESSIONS
         integer_literal.cpp
         loop_index.cpp
         member_function_call.cpp
-        member_index_access.cpp
+        index_access.cpp
         member_variable.cpp
         null_pointer.cpp
         operator.cpp

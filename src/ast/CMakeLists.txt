@@ -3,13 +3,18 @@ add_library(QAT_AST
         box.cpp
         bring_paths.cpp
         bring_entities.cpp
+        convertor_definition.cpp
+        convertor_prototype.cpp
         define_core_type.cpp
         errors.cpp
         expression.cpp
         function_definition.cpp
         function_prototype.cpp
         global_declaration.cpp
-        lib.cpp)
+        lib.cpp
+        member_definition.cpp
+        member_prototype.cpp
+        node.cpp)
 
 add_subdirectory(types/)
 add_subdirectory(expressions/)

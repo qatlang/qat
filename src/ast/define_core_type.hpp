@@ -2,7 +2,9 @@
 #define QAT_AST_DEFINE_CORE_HPP
 
 #include "../utils/visibility.hpp"
+#include "./convertor_definition.hpp"
 #include "./expression.hpp"
+#include "./member_definition.hpp"
 #include "./types/qat_type.hpp"
 #include <optional>
 #include <string>
@@ -45,32 +47,25 @@ public:
   };
 
 private:
-  // Name of the core type
-  const String name;
-
-  // Whether the low-level structure is tightly packed
-  bool isPacked;
-
-  // Non-static fields in the core type
-  Vec<Member *> members;
-
-  // Static fields in the core type
-  Vec<StaticMember *> staticMembers;
-
-  // Visibility of the core type
-  utils::VisibilityInfo visibility;
+  String                     name;
+  bool                       isPacked;
+  Vec<Member *>              members;
+  Vec<StaticMember *>        staticMembers;
+  Vec<MemberDefinition *>    memberDefinitions;
+  Vec<ConvertorDefinition *> convertorDefinitions;
+  utils::VisibilityInfo      visibility;
 
 public:
-  DefineCoreType(String _name, Vec<Member *> _members,
-                 Vec<StaticMember *>          _staticMembers,
-                 const utils::VisibilityInfo &_visibility,
+  DefineCoreType(String _name, const utils::VisibilityInfo &_visibility,
                  utils::FileRange _fileRange, bool _isPacked = false);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
+  void  addMember(Member *mem);
+  void  addStaticMember(StaticMember *stm);
+  void  addMemberDefinition(MemberDefinition *mdef);
+  void  addConvertorDefinition(ConvertorDefinition *cdef);
+  useit IR::Value *emit(IR::Context *ctx) override;
   useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::defineCoreType; }
+  useit NodeType  nodeType() const override { return NodeType::defineCoreType; }
 };
 
 } // namespace qat::ast

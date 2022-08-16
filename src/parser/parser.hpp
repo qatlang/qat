@@ -134,9 +134,9 @@ public:
    * @param to The position before which the parsing ends
    * @return ast::Expression An expression obtained from the expression
    */
-  ast::Expression *parseExpression(ParserContext            &prev_ctx,
-                                   const Maybe<CacheSymbol> &symbol, usize from,
-                                   usize to);
+  Pair<ast::Expression *, usize>
+  parseExpression(ParserContext &prev_ctx, const Maybe<CacheSymbol> &symbol,
+                  usize from, Maybe<usize> to);
 
   /**
    *  Parse a series of expressions separated by a separator (comma).

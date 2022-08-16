@@ -1115,10 +1115,6 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       // FIXME - Handle this
       break;
     }
-    case TokenType::stop: {
-      throwError("Found . in an expression - please remove this",
-                 token.fileRange);
-    }
     default: {
       if (upto.has_value()) {
         if (!cachedExpressions.empty() && upto.value() == i) {
@@ -1568,6 +1564,71 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx,
     case TokenType::let: {
       context = "LET";
       SHOW("Found let")
+      break;
+    }
+    case TokenType::If: {
+      Vec<Pair<ast::Expression *, Vec<ast::Sentence *>>> chain;
+      Maybe<Vec<ast::Sentence *>>                        elseCase;
+      utils::FileRange fileRange = token.fileRange;
+      while (true) {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 1, false);
+          if (pCloseRes) {
+            auto *exp =
+                parseExpression(prev_ctx, None, i + 1, pCloseRes.value()).first;
+            if (isNext(TokenType::bracketOpen, pCloseRes.value())) {
+              auto bCloseRes =
+                  getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                             pCloseRes.value() + 1, false);
+              if (bCloseRes.has_value()) {
+                fileRange = utils::FileRange(
+                    fileRange, tokens.at(bCloseRes.value()).fileRange);
+                auto snts = parseSentences(prev_ctx, pCloseRes.value() + 1,
+                                           bCloseRes.value());
+                chain.push_back(
+                    Pair<ast::Expression *, Vec<ast::Sentence *>>(exp, snts));
+                if (isNext(TokenType::Else, bCloseRes.value())) {
+                  SHOW("Found else")
+                  if (isNext(TokenType::If, bCloseRes.value() + 1)) {
+                    i = bCloseRes.value() + 2;
+                    continue;
+                  } else if (isNext(TokenType::bracketOpen,
+                                    bCloseRes.value() + 1)) {
+                    SHOW("Else case begin")
+                    auto bOp = bCloseRes.value() + 2;
+                    auto bClRes =
+                        getPairEnd(TokenType::bracketOpen,
+                                   TokenType::bracketClose, bOp, false);
+                    if (bClRes) {
+                      fileRange = utils::FileRange(
+                          fileRange, tokens.at(bClRes.value()).fileRange);
+                      elseCase = parseSentences(prev_ctx, bOp, bClRes.value());
+                      i        = bClRes.value();
+                      break;
+                    } else {
+                      throwError("Expected end for [",
+                                 tokens.at(bOp).fileRange);
+                    }
+                  }
+                } else {
+                  i = bCloseRes.value();
+                  break;
+                }
+              } else {
+                throwError("Expected end for [",
+                           tokens.at(bCloseRes.value()).fileRange);
+              }
+            }
+            // FIXME - Support single sentence
+          } else {
+            throwError("Expected end for (", tokens.at(i + 1).fileRange);
+          }
+        }
+      }
+      result.push_back(new ast::IfElse(chain, elseCase, fileRange));
+
       break;
     }
     case TokenType::give: {

@@ -13,26 +13,16 @@ namespace qat::ast {
  */
 class Block : public Sentence {
 private:
-  /**
-   *  All sentences in the block
-   *
-   */
+  // All sentences in the block
   Vec<Sentence *> sentences;
+  IR::Block      *irBlock;
 
 public:
-  /**
-   *  Block represents a group of sentences
-   *
-   * @param _sentences All sentences in the block
-   * @param _fileRange
-   */
   Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::block; }
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::block; }
 };
 
 } // namespace qat::ast

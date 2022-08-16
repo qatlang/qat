@@ -53,7 +53,7 @@ public:
    * is obtained. This argument is ignored if the files of both FileRanges
    * don't match
    */
-  FileRange(FileRange first, FileRange second);
+  FileRange(const FileRange &first, const FileRange &second);
 
   /** Path to the corresponding file */
   fs::path file;

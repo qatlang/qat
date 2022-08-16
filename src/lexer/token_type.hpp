@@ -70,8 +70,6 @@ enum class TokenType {
   assignedBinaryOperator,
   If,
   Else,
-  lesserThan,
-  greaterThan,
   heap,
   sizeOf,
   unaryOperatorLeft,

@@ -358,6 +358,13 @@ Token Lexer::tokeniser() {
       read();
       return Token::valued(TokenType::assignedBinaryOperator, operatorValue,
                            this->getPosition(2));
+    } else if (current == '=' &&
+               (operatorValue == "<" || operatorValue == ">")) {
+      operatorValue += current;
+      read();
+      std::cout << "Binary operator found " << operatorValue << "\n";
+      return Token::valued(TokenType::binaryOperator, operatorValue,
+                           this->getPosition(2));
     } else if ((current == '<' && operatorValue == "<") ||
                (current == '>' && operatorValue == ">")) {
       operatorValue += current;
@@ -373,14 +380,16 @@ Token Lexer::tokeniser() {
       read();
       return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
     } else if (operatorValue == "<") {
-      return Token::normal(TokenType::lesserThan, this->getPosition(1));
+      return Token::valued(TokenType::binaryOperator, "<",
+                           this->getPosition(1));
     } else if (operatorValue == ">") {
       if (current == '-') {
         prev_ctx = "pointerAccess";
         read();
         return Token::normal(TokenType::pointerAccess, this->getPosition(2));
       }
-      return Token::normal(TokenType::greaterThan, this->getPosition(1));
+      return Token::valued(TokenType::binaryOperator, ">",
+                           this->getPosition(1));
     }
     return Token::valued(TokenType::binaryOperator, operatorValue,
                          this->getPosition(1));
@@ -598,9 +607,6 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::lib, this->getPosition(3));
       } else if (value == "bool") {
         return Token::normal(TokenType::boolType, this->getPosition(4));
-      } else if (value == "usize") {
-        return Token::valued(TokenType::unsignedIntegerType, "usize",
-                             this->getPosition(4));
       } else if (value == "cstring") {
         return Token::normal(TokenType::cstringType, this->getPosition(7));
       } else if (value == "await") {
@@ -762,9 +768,6 @@ void Lexer::printStatus() {
       case TokenType::givenTypeSeparator:
         std::cout << " -> ";
         break;
-      case TokenType::greaterThan:
-        std::cout << " > ";
-        break;
       case TokenType::pointerType:
         std::cout << " # ";
         break;
@@ -797,9 +800,6 @@ void Lexer::printStatus() {
         break;
       case TokenType::pointerVariation:
         std::cout << " ~> ";
-        break;
-      case TokenType::lesserThan:
-        std::cout << " < ";
         break;
       case TokenType::lib:
         std::cout << " lib ";

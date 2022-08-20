@@ -17,10 +17,11 @@ IR::Value *Entity::emit(IR::Context *ctx) {
         auto *local  = fun->getBlock()->getValue(name);
         auto *alloca = local->getAlloca();
         if (getExpectedKind() == ExpressionKind::assignable) {
-          if (local->isVariable()) {
-            auto *val =
-                new IR::Value(alloca, local->getType(), local->isVariable(),
-                              IR::Nature::assignable);
+          if (local->isVariable() ||
+              (local->getType()->isReference() &&
+               local->getType()->asReference()->isSubtypeVariable())) {
+            auto *val = new IR::Value(alloca, local->getType(), true,
+                                      IR::Nature::assignable);
             val->setIsLocalToFn(true);
             return val;
           } else {

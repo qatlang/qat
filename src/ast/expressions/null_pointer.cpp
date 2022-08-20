@@ -16,8 +16,8 @@ IR::Value *NullPointer::emit(IR::Context *ctx) {
   return new IR::Value(
       llvm::ConstantPointerNull::get(
           llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-      IR::PointerType::get(IR::VoidType::get(ctx->llctx), ctx->llctx), false,
-      IR::Nature::pure);
+      IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), ctx->llctx),
+      false, IR::Nature::pure);
 }
 
 nuo::Json NullPointer::toJson() const {

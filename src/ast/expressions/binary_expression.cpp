@@ -64,37 +64,27 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
         break;
       }
       case Op::notEqualTo: {
-        llRes = ctx->builder.CreateICmpNE(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateICmpNE(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
       case Op::lessThan: {
-        llRes = ctx->builder.CreateICmpSLT(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateICmpSLT(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
       case Op::greaterThan: {
-        llRes = ctx->builder.CreateICmpSGT(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateICmpSGT(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
       case Op::lessThanOrEqualTo: {
-        llRes = ctx->builder.CreateICmpSLE(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateICmpSLE(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
       case Op::greaterThanEqualTo: {
-        llRes = ctx->builder.CreateICmpSGE(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateICmpSGE(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
@@ -123,16 +113,12 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
         break;
       }
       case Op::And: {
-        llRes = ctx->builder.CreateAnd(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateAnd(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }
       case Op::Or: {
-        llRes = ctx->builder.CreateOr(lhsVal, rhsVal);
-        llRes = ctx->builder.CreateIntCast(
-            llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
+        llRes   = ctx->builder.CreateOr(lhsVal, rhsVal);
         resType = IR::UnsignedType::get(1, ctx->llctx);
         break;
       }

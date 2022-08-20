@@ -7,6 +7,13 @@
 
 namespace qat::IR {
 
+LoopInfo::LoopInfo(String _name, IR::Block *_mainB, IR::Block *_restB,
+                   IR::LocalValue *_index, LoopType _type)
+    : name(std::move(_name)), mainBlock(_mainB), restBlock(_restB),
+      index(_index), type(_type) {}
+
+bool LoopInfo::isTimes() const { return type == LoopType::times; }
+
 Context::Context() : builder(llctx), mod(nullptr), hasMain(false) {}
 
 QatModule *Context::getMod() const { return mod->getActive(); }

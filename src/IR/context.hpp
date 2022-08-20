@@ -13,6 +13,27 @@
 
 namespace qat::IR {
 
+enum class LoopType {
+  times,
+  While,
+  over,
+  infinite,
+};
+
+class LoopInfo {
+public:
+  LoopInfo(String _name, IR::Block *_mainB, IR::Block *_restB,
+           IR::LocalValue *_index, LoopType _type);
+
+  String          name;
+  IR::Block      *mainBlock;
+  IR::Block      *restBlock;
+  IR::LocalValue *index;
+  LoopType        type;
+
+  useit bool isTimes() const;
+};
+
 class Context {
 private:
   using IRBuilderTy =
@@ -28,6 +49,7 @@ public:
   IR::CoreType     *activeType; // Active core type
   Vec<String>       exposed;
   bool              hasMain;
+  Vec<LoopInfo *>   loopsInfo;
 
   // META
 

@@ -8,7 +8,8 @@ ReferenceType::ReferenceType(QatType *_type, bool _variable,
     : QatType(_variable, std::move(_fileRange)), type(_type) {}
 
 IR::QatType *ReferenceType::emit(IR::Context *ctx) {
-  return IR::ReferenceType::get(type->emit(ctx), ctx->llctx);
+  return IR::ReferenceType::get(type->isVariable(), type->emit(ctx),
+                                ctx->llctx);
 }
 
 TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }

@@ -1,4 +1,5 @@
 add_library(QAT_AST_EXPRESSIONS
+        array_literal.cpp
         binary_expression.cpp
         custom_float_literal.cpp
         custom_integer_literal.cpp

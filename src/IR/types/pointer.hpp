@@ -14,13 +14,15 @@ namespace qat::IR {
 class PointerType : public QatType {
 private:
   QatType *subType;
-
-  PointerType(QatType *_type, llvm::LLVMContext &ctx);
+  bool     isSubtypeVar;
+  PointerType(bool _isSubVar, QatType *_type, llvm::LLVMContext &ctx);
 
 public:
-  useit static PointerType *get(QatType *_type, llvm::LLVMContext &ctx);
+  useit static PointerType *get(bool _isSubtypeVariable, QatType *_type,
+                                llvm::LLVMContext &ctx);
 
   useit QatType *getSubType() const;
+  useit bool     isSubtypeVariable() const;
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   useit nuo::Json toJson() const override;

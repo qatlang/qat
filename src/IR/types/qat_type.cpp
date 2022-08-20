@@ -39,12 +39,16 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
   } else {
     switch (typeKind()) {
     case TypeKind::pointer: {
-      return (((PointerType *)this)
+      return (((PointerType *)this)->isSubtypeVariable() ==
+              ((PointerType *)other)->isSubtypeVariable()) &&
+             (((PointerType *)this)
                   ->getSubType()
                   ->isSame(((PointerType *)other)->getSubType()));
     }
     case TypeKind::reference: {
-      return (((ReferenceType *)this)
+      return (((ReferenceType *)this)->isSubtypeVariable() ==
+              ((ReferenceType *)other)->isSubtypeVariable()) &&
+             (((ReferenceType *)this)
                   ->getSubType()
                   ->isSame(((ReferenceType *)other)->getSubType()));
     }
@@ -60,12 +64,8 @@ bool QatType::isSame(QatType *other) const { // NOLINT(misc-no-recursion)
       return (((FloatType *)this)->getKind() ==
               ((FloatType *)other)->getKind());
     }
-    case TypeKind::stringSlice: {
-      return true;
-    }
-    case TypeKind::cstring: {
-      return true;
-    }
+    case TypeKind::stringSlice:
+    case TypeKind::cstring:
     case TypeKind::Void: {
       return true;
     }

@@ -10,12 +10,15 @@ namespace qat::IR {
 class ReferenceType : public QatType {
 private:
   QatType *subType;
-  ReferenceType(QatType *_type, llvm::LLVMContext &ctx);
+  bool     isSubVariable;
+  ReferenceType(bool isSubtypeVariable, QatType *_type, llvm::LLVMContext &ctx);
 
 public:
-  useit static ReferenceType *get(QatType *_subtype, llvm::LLVMContext &ctx);
+  useit static ReferenceType *get(bool _isSubtypeVariable, QatType *_subtype,
+                                  llvm::LLVMContext &ctx);
 
   useit QatType *getSubType() const;
+  useit bool     isSubtypeVariable() const;
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   useit nuo::Json toJson() const override;

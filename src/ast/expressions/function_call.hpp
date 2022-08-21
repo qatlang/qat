@@ -9,7 +9,7 @@ namespace qat::ast {
 class FunctionCall : public Expression {
 private:
   Expression       *fnExpr;
-  Vec<Expression *> arguments;
+  Vec<Expression *> values;
 
 public:
   FunctionCall(Expression *_fnExpr, Vec<Expression *> _arguments,

@@ -6,6 +6,9 @@
 #include "./types/pointer.hpp"
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
+#include "types/reference.hpp"
+#include "value.hpp"
+#include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
@@ -16,25 +19,25 @@
 
 namespace qat::IR {
 
-LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
-                       Function *fn)
+LocalValue::LocalValue(const String &_name, IR::QatType *_type, bool _isVar,
+                       Function *fun)
     : Value(nullptr, _type, _isVar, Nature::assignable), name(_name) {
   SHOW("Type is " << _type->toString())
-  SHOW("Creating llvm::AllocaInst for " << _name)
+  SHOW("Creating llvm::AllocaInst for " << name)
   if (_type->getLLVMType()) {
     SHOW("LLVM type is not null")
   } else {
     SHOW("LLVM type is null")
   }
-  if (fn->getLLVMFunction()->getEntryBlock().getInstList().empty()) {
-    ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
-                              &fn->getLLVMFunction()->getEntryBlock());
+  if (fun->getLLVMFunction()->getEntryBlock().getInstList().empty()) {
+    ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, name,
+                              &fun->getLLVMFunction()->getEntryBlock());
   } else {
     llvm::Instruction *inst = nullptr;
     // NOLINTNEXTLINE(modernize-loop-convert)
     for (auto instr =
-             fn->getLLVMFunction()->getEntryBlock().getInstList().begin();
-         instr != fn->getLLVMFunction()->getEntryBlock().getInstList().end();
+             fun->getLLVMFunction()->getEntryBlock().getInstList().begin();
+         instr != fun->getLLVMFunction()->getEntryBlock().getInstList().end();
          instr++) {
       if (llvm::isa<llvm::AllocaInst>(&*instr)) {
         continue;
@@ -47,7 +50,7 @@ LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
       ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name, inst);
     } else {
       ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
-                                &fn->getLLVMFunction()->getEntryBlock());
+                                &fun->getLLVMFunction()->getEntryBlock());
     }
   }
 }
@@ -67,7 +70,7 @@ Block::Block(Function *_fn, Block *_parent)
   SHOW("Block pushed the block-list in function")
   index = fn->blocks.size() - 1;
   SHOW("Index of block set")
-  name = std::to_string(fn->blocks.size() - 1);
+  name = std::to_string(fn->blocks.size() - 1) + "_bb";
   SHOW("Name of the block set")
   bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name,
                                 fn->getLLVMFunction());
@@ -91,6 +94,8 @@ bool Block::hasValue(const String &name) const {
       SHOW("Has local with name")
       return true;
     }
+    SHOW("Local value name is: " << val->getName())
+    SHOW("Local value type is: " << val->getType()->toString())
   }
   if (hasParent()) {
     SHOW("Has parent block")
@@ -205,12 +210,12 @@ IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
   auto *fnTy = (llvm::FunctionType *)getType()->asFunction()->getLLVMType();
   SHOW("Got function type")
   SHOW("Creating LLVM call")
-  return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues),
-                       retType, isReturnValueVariable,
-                       ((retType->isReference() || retType->isPointer()) &&
-                        isReturnValueVariable)
-                           ? Nature::assignable
-                           : Nature::temporary);
+  return new IR::Value(
+      ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType,
+      retType->isReference() && retType->asReference()->isSubtypeVariable(),
+      (retType->isReference() && retType->asReference()->isSubtypeVariable())
+          ? Nature::assignable
+          : Nature::temporary);
 }
 
 Function *Function::Create(QatModule *mod, String name, QatType *returnTy,

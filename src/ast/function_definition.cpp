@@ -24,8 +24,9 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
   auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+  SHOW("Iteration run for function is: " << fnEmit->getName())
   for (usize i = 0; i < argIRTypes.size(); i++) {
-    SHOW("Iteration run")
+    SHOW("Argument name is " << argIRTypes.at(i)->getName())
     SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
     auto *argVal = block->newValue(argIRTypes.at(i)->getName(),
                                    argIRTypes.at(i)->getType(),

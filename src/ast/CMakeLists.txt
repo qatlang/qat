@@ -14,7 +14,8 @@ add_library(QAT_AST
         lib.cpp
         member_definition.cpp
         member_prototype.cpp
-        node.cpp)
+        node.cpp
+        type_definition.cpp)
 
 add_subdirectory(types/)
 add_subdirectory(expressions/)

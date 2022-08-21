@@ -20,8 +20,9 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
-  auto *corePtrType = IR::PointerType::get(prototype->coreType, ctx->llctx);
-  auto *self        = block->newValue("self", corePtrType, true);
+  auto *corePtrType =
+      IR::PointerType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
+  auto *self = block->newValue("self", corePtrType, true);
   self->loadImplicitPointer(ctx->builder);
   if (prototype->isFrom) {
     auto *argTy  = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);

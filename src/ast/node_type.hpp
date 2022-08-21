@@ -8,6 +8,7 @@ enum class NodeType {
   block,
   bringEntities,
   bringPaths,
+  typeDefinition,
   functionPrototype,
   functionDefinition,
   memberPrototype,
@@ -58,7 +59,8 @@ enum class NodeType {
   radixLiteral,
   customFloatLiteral,
   box,
-  tupleValue
+  tupleValue,
+  arrayLiteral
 };
 
 } // namespace qat::ast

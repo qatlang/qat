@@ -14,6 +14,9 @@ LoopInfo::LoopInfo(String _name, IR::Block *_mainB, IR::Block *_restB,
 
 bool LoopInfo::isTimes() const { return type == LoopType::times; }
 
+Breakable::Breakable(Maybe<String> _tag, IR::Block *_restBlock)
+    : tag(std::move(_tag)), restBlock(_restBlock) {}
+
 Context::Context() : builder(llctx), mod(nullptr), hasMain(false) {}
 
 QatModule *Context::getMod() const { return mod->getActive(); }

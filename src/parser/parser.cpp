@@ -17,6 +17,7 @@
 #include "../ast/function_definition.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/sentences/assignment.hpp"
+#include "../ast/sentences/break.hpp"
 #include "../ast/sentences/expression_sentence.hpp"
 #include "../ast/sentences/give_sentence.hpp"
 #include "../ast/sentences/if_else.hpp"
@@ -1827,6 +1828,24 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       cachedExpressions.push_back(expRes.first);
       cacheSymbol = None;
       i           = expRes.second;
+      break;
+    }
+    case TokenType::Break: {
+      if (isNext(TokenType::child, i)) {
+        if (isNext(TokenType::identifier, i + 1)) {
+          result.push_back(
+              new ast::Break(tokens.at(i + 2).value, RangeSpan(i, i + 2)));
+          i += 2;
+        } else {
+          throwError("Expected an identifier after break'",
+                     RangeSpan(i, i + 2));
+        }
+      } else if (isNext(TokenType::stop, i)) {
+        result.push_back(new ast::Break(None, token.fileRange));
+        i++;
+      } else {
+        throwError("Unexpected token found after break", token.fileRange);
+      }
       break;
     }
     default: {

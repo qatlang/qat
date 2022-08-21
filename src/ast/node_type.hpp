@@ -6,6 +6,7 @@ namespace qat::ast {
 enum class NodeType {
   lib,
   block,
+  Break,
   bringEntities,
   bringPaths,
   typeDefinition,

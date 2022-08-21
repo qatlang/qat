@@ -95,7 +95,8 @@ enum class TokenType {
   assignToNullPointer,
   assignToNonNullPointer,
   super,
-  variadic
+  variadic,
+  Break
 };
 
 } // namespace qat::lexer

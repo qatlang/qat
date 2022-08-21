@@ -1,6 +1,7 @@
 add_library(QAT_AST_SENTENCES
         assignment.cpp
         block.cpp
+        break.cpp
         expose_box.cpp
         expression_sentence.cpp
         give_sentence.cpp

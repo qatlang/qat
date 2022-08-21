@@ -34,6 +34,19 @@ public:
   useit bool isTimes() const;
 };
 
+enum class BreakableType {
+  loop,
+  Switch,
+};
+
+class Breakable {
+public:
+  Breakable(Maybe<String> _tag, IR::Block *_restBlock);
+
+  Maybe<String> tag;
+  IR::Block    *restBlock;
+};
+
 class Context {
 private:
   using IRBuilderTy =
@@ -50,6 +63,7 @@ public:
   Vec<String>       exposed;
   bool              hasMain;
   Vec<LoopInfo *>   loopsInfo;
+  Vec<Breakable *>  breakables;
 
   // META
 

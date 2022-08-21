@@ -50,6 +50,7 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
         trueBlock->getBB(), restBlock->getBB());
     ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, restBlock,
                                               loopIndex, IR::LoopType::times));
+    ctx->breakables.push_back(new IR::Breakable(uniq, restBlock));
     trueBlock->setActive(ctx->builder);
     for (auto *snt : sentences) {
       (void)snt->emit(ctx);
@@ -72,6 +73,7 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
                    llCount)),
         trueBlock->getBB(), restBlock->getBB());
     ctx->loopsInfo.pop_back();
+    ctx->breakables.pop_back();
     restBlock->setActive(ctx->builder);
   } else {
     ctx->Error(

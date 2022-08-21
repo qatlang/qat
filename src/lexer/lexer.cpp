@@ -676,6 +676,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::If, this->getPosition(2));
       } else if (value == "else") {
         return Token::normal(TokenType::Else, this->getPosition(4));
+      } else if (value == "break") {
+        return Token::normal(TokenType::Break, this->getPosition(5));
       } else {
         prev_ctx = "identifier";
         return Token::valued(TokenType::identifier, value,

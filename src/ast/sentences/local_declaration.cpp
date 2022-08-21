@@ -1,16 +1,19 @@
 #include "./local_declaration.hpp"
 #include "../../show.hpp"
+#include "../expressions/array_literal.hpp"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType *_type, String _name,
+LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
                                    Expression *_value, bool _variability,
                                    utils::FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)),
-      value(_value), variability(_variability) {}
+      value(_value), variability(_variability),
+      isRef(_isRef){SHOW("Name for local declaration is " << name)}
 
-IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
+          IR::Value
+          * LocalDeclaration::emit(IR::Context * ctx) {
   auto *block = ctx->fn->getBlock();
   if (block->hasValue(name)) {
     ctx->Error("A local value named " + ctx->highlightError(name) +
@@ -18,15 +21,41 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
                    "declaration or check the logic",
                fileRange);
   }
+  IR::QatType *declType = nullptr;
+
+  // EDGE CASE -> The following code avoids multiple allocations for arrays
+  if (value && (value->nodeType() == NodeType::arrayLiteral)) {
+    auto *arr = (ast::ArrayLiteral *)value;
+    if (type) {
+      declType = type->emit(ctx);
+      if (!declType->isArray()) {
+        ctx->Error("The type for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       ", but the provided value is not compatible",
+                   value->fileRange);
+      }
+      auto *loc  = block->newValue(name, declType, variability);
+      arr->local = loc;
+      (void)arr->emit(ctx);
+      return nullptr;
+    } else {
+      arr->name  = name;
+      arr->isVar = variability;
+      (void)arr->emit(ctx);
+      return nullptr;
+    }
+  } // EDGE CASE ends here
+
   IR::Value *expVal = nullptr;
   if (value) {
     expVal = value->emit(ctx);
     SHOW("Type of value to be assigned to local value "
          << name << " is " << expVal->getType()->toString())
   }
-  IR::QatType *declType = nullptr;
   if (type) {
-    declType = type->emit(ctx);
+    if (!declType) {
+      declType = type->emit(ctx);
+    }
     if (value &&
         ((declType->isReference() && !expVal->isReference())
              ? !declType->asReference()->getSubType()->isSame(expVal->getType())
@@ -40,8 +69,31 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
     if (expVal) {
       SHOW("Getting type from expression")
       declType = expVal->getType();
+      if (expVal->getType()->isReference()) {
+        if (!isRef) {
+          declType = expVal->getType()->asReference()->getSubType();
+        }
+      }
     } else {
       ctx->Error("Type inference for declarations require a value", fileRange);
+    }
+  }
+  if (declType->isReference() &&
+      ((!expVal->getType()->isReference()) && expVal->isImplicitPointer())) {
+    if (declType->asReference()->isSubtypeVariable() &&
+        (!expVal->isVariable())) {
+      ctx->Error(
+          "The referred type of the left hand side has variability, but the "
+          "value provided for initialisation do not have variability",
+          value->fileRange);
+    }
+  } else if (declType->isReference() && expVal->getType()->isReference()) {
+    if (declType->asReference()->isSubtypeVariable() &&
+        (!expVal->getType()->asReference()->isSubtypeVariable())) {
+      ctx->Error("The reference on the left hand side refers to a value with "
+                 "variability, but the value provided for initialisation is a "
+                 "reference that refers to a value without variability",
+                 value->fileRange);
     }
   }
   auto *newValue =
@@ -49,8 +101,13 @@ IR::Value *LocalDeclaration::emit(IR::Context *ctx) {
   if (expVal) {
     SHOW("Creating store")
     if ((expVal->isImplicitPointer() && !declType->isReference()) ||
-        (expVal->getType()->isReference() && declType->isReference())) {
+        (expVal->isImplicitPointer() && declType->isReference() &&
+         expVal->getType()->isReference())) {
       expVal->loadImplicitPointer(ctx->builder);
+    } else if (!declType->isReference() && expVal->getType()->isReference()) {
+      expVal = new IR::Value(
+          ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()),
+          declType, false, IR::Nature::temporary);
     }
     ctx->builder.CreateStore(expVal->getLLVM(), newValue->getAlloca());
     SHOW("llvm::StoreInst created")

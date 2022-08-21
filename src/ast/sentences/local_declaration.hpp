@@ -14,9 +14,10 @@ private:
   String      name;
   Expression *value;
   bool        variability;
+  bool        isRef;
 
 public:
-  LocalDeclaration(QatType *_type, String _name, Expression *_value,
+  LocalDeclaration(QatType *_type, bool isRef, String _name, Expression *_value,
                    bool _variability, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) override;

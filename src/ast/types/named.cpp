@@ -9,13 +9,17 @@ NamedType::NamedType(u32 _relative, String _name, const bool _variable,
 
 IR::QatType *NamedType::emit(IR::Context *ctx) {
   // FIXME - Implement remaining logic
-  // FIXME - Support type definitions and sum types too
+  // FIXME - Support sum types
   if (relative != 0) {
     if (ctx->getMod()->hasNthParent(relative)) {
       auto *mod = ctx->getMod()->getNthParent(relative);
       if (mod->hasCoreType(name) || mod->hasBroughtCoreType(name) ||
           mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo()).first) {
         return mod->getCoreType(name, ctx->getReqInfo());
+      } else if (mod->hasTypeDef(name) || mod->hasBroughtTypeDef(name) ||
+                 mod->hasAccessibleTypeDefInImports(name, ctx->getReqInfo())
+                     .first) {
+        return mod->getTypeDef(name, ctx->getReqInfo());
       }
     } else {
       ctx->Error("The active scope does not have " + std::to_string(relative) +
@@ -27,6 +31,10 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
     if (mod->hasCoreType(name) || mod->hasBroughtCoreType(name) ||
         mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo()).first) {
       return mod->getCoreType(name, ctx->getReqInfo());
+    } else if (mod->hasTypeDef(name) || mod->hasBroughtTypeDef(name) ||
+               mod->hasAccessibleTypeDefInImports(name, ctx->getReqInfo())
+                   .first) {
+      return mod->getTypeDef(name, ctx->getReqInfo());
     } else {
       ctx->Error("No type named " + name + " found in scope", fileRange);
     }

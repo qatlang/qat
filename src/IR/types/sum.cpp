@@ -51,7 +51,7 @@ u32 SumType::getSubtypeCount() const { return subTypes.size(); }
 
 QatType *SumType::getSubtypeAt(usize index) { return subTypes.at(index); }
 
-bool SumType::isCompatible(QatType *other) const {
+bool SumType::isCompatible(QatType *other) {
   if (isSame(other)) {
     return true;
   }

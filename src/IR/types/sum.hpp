@@ -24,7 +24,7 @@ public:
   useit String   getFullName() const;
   useit u32      getSubtypeCount() const;
   useit QatType *getSubtypeAt(usize index);
-  useit bool     isCompatible(QatType *other) const;
+  useit bool     isCompatible(QatType *other);
   useit TypeKind typeKind() const override { return TypeKind::sumType; }
   useit String   toString() const override;
   useit nuo::Json toJson() const override;

@@ -25,6 +25,7 @@ class FunctionType;
 class StringSliceType;
 class CStringType;
 class CoreType;
+class DefinitionType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -37,7 +38,9 @@ public:
   virtual ~QatType() = default;
 
   useit static bool       checkTypeExists(const String &name);
-  useit bool              isSame(QatType *other) const;
+  useit bool              isSame(QatType *other);
+  useit bool              isDefinition() const;
+  useit DefinitionType   *asDefinition() const;
   useit bool              isInteger() const;
   useit IntegerType      *asInteger() const;
   useit bool              isUnsignedInteger() const;

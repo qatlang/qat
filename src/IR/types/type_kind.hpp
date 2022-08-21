@@ -23,6 +23,7 @@ enum class TypeKind {
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type
   function,
+  definition, // A type definition
   /* Template type kinds */
   templateCoreType, // Template struct type
   templateSumType,  // Template sum type

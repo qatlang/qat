@@ -621,6 +621,14 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::sizeOf, this->getPosition(6));
       } else if (value == "variadic") {
         return Token::normal(TokenType::variadic, this->getPosition(8));
+      } else if (value == "loop") {
+        return Token::normal(TokenType::loop, this->getPosition(4));
+      } else if (value == "while") {
+        return Token::normal(TokenType::While, this->getPosition(5));
+      } else if (value == "over") {
+        return Token::normal(TokenType::over, this->getPosition(4));
+      } else if (value == "times") {
+        return Token::normal(TokenType::times, this->getPosition(5));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))

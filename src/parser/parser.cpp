@@ -1,4 +1,5 @@
 #include "./parser.hpp"
+#include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/custom_float_literal.hpp"
 #include "../ast/expressions/custom_integer_literal.hpp"
@@ -7,6 +8,7 @@
 #include "../ast/expressions/function_call.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/integer_literal.hpp"
+#include "../ast/expressions/loop_index.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/null_pointer.hpp"
 #include "../ast/expressions/to_conversion.hpp"
@@ -19,7 +21,10 @@
 #include "../ast/sentences/give_sentence.hpp"
 #include "../ast/sentences/if_else.hpp"
 #include "../ast/sentences/local_declaration.hpp"
+#include "../ast/sentences/loop_n_times.hpp"
+#include "../ast/sentences/loop_while.hpp"
 #include "../ast/sentences/say_sentence.hpp"
+#include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
 #include "../ast/types/cstring.hpp"
 #include "../ast/types/float.hpp"
@@ -31,6 +36,11 @@
 #include "../ast/types/tuple.hpp"
 #include "../ast/types/unsigned.hpp"
 #include "../show.hpp"
+#include "cache_symbol.hpp"
+
+#define RangeAt(ind) tokens.at(ind).fileRange
+#define RangeSpan(ind1, ind2)                                                  \
+  { tokens.at(ind1).fileRange, tokens.at(ind2).fileRange }
 
 // NOTE - Check if file fileRange values are making use of the new merge
 // functionality
@@ -69,19 +79,17 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
           } else {
             showWarning("Expected multiple entities to be brought. Remove the "
                         "curly braces since only one entity is being brought.",
-                        utils::FileRange(tokens.at(i + 1).fileRange,
-                                         tokens.at(bClose).fileRange));
+                        utils::FileRange(RangeAt(i + 1), RangeAt(bClose)));
             if (isNext(TokenType::identifier, i + 1)) {
               entities.push_back(tokens.at(i + 2).value);
             } else {
               throwError("Expected the name of an entity in the bring sentence",
-                         tokens.at(i + 2).fileRange);
+                         RangeAt(i + 2));
             }
           }
 
         } else {
-          throwError("Expected } to close this curly brace",
-                     tokens.at(i + 1).fileRange);
+          throwError("Expected } to close this curly brace", RangeAt(i + 1));
         }
       } else if (isNext(TokenType::identifier, i)) {
       }
@@ -112,7 +120,7 @@ Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
             "supported in bring sentences, to avoid ambiguity and confusion. "
             "If this is supposed to be another file or folder to bring, then "
             "add a separator between these. Or else fix the sentence.",
-            tokens.at(i + 1).fileRange);
+            RangeAt(i + 1));
       }
       result.push_back(token.value);
       break;
@@ -126,16 +134,15 @@ Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
           throwError(
               "Multiple adjacent separators found. This is not supported to "
               "discourage code clutter. Please remove this",
-              tokens.at(i + 1).fileRange);
+              RangeAt(i + 1));
         } else {
-          throwError("Unexpected token in bring sentence",
-                     tokens.at(i).fileRange);
+          throwError("Unexpected token in bring sentence", RangeAt(i));
         }
       }
       break;
     }
     default: {
-      throwError("Unexpected token in bring sentence", tokens.at(i).fileRange);
+      throwError("Unexpected token in bring sentence", RangeAt(i));
     }
     }
   }
@@ -176,8 +183,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
           if (hasPrimary) {
             throwError(
                 "Tuple type found after another type",
-                utils::FileRange(token.fileRange,
-                                 tokens.at(pCloseRes.value()).fileRange));
+                utils::FileRange(token.fileRange, RangeAt(pCloseRes.value())));
           } else {
             return {cacheTy.value(), i - 1};
           }
@@ -191,8 +197,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
         throwError("Expected )", token.fileRange);
       }
       if (upto.has_value() && (pCloseResult.value() > upto.value())) {
-        throwError("Invalid position for )",
-                   tokens.at(pCloseResult.value()).fileRange);
+        throwError("Invalid position for )", RangeAt(pCloseResult.value()));
       }
       auto                pClose = pCloseResult.value();
       Vec<ast::QatType *> subTypes;
@@ -310,9 +315,9 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
       }
       auto subRes = parseType(ctx, i, upto);
       i           = subRes.second;
-      cacheTy     = new ast::ReferenceType(
-              subRes.first, getVariability(),
-              utils::FileRange(token.fileRange, tokens.at(i).fileRange));
+      cacheTy =
+          new ast::ReferenceType(subRes.first, getVariability(),
+                                 utils::FileRange(token.fileRange, RangeAt(i)));
       break;
     }
     case TokenType::pointerType: {
@@ -329,10 +334,10 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
           i               = bClose;
           cacheTy         = new ast::PointerType(
                       subTypeRes.first, getVariability(),
-                      utils::FileRange(token.fileRange, tokens.at(bClose).fileRange));
+                      utils::FileRange(token.fileRange, RangeAt(bClose)));
           break;
         } else {
-          throwError("Invalid end for pointer type", tokens.at(i).fileRange);
+          throwError("Invalid end for pointer type", RangeAt(i));
         }
       } else {
         throwError("Type of the pointer not specified", token.fileRange);
@@ -356,8 +361,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
           i       = i + 2;
           break;
         } else {
-          throwError("Expected ] after the array size",
-                     tokens.at(i + 1).fileRange);
+          throwError("Expected ] after the array size", RangeAt(i + 1));
         }
       } else {
         throwError("Expected non negative number of elements for the array",
@@ -367,14 +371,14 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
     }
     default: {
       if (!cacheTy.has_value()) {
-        throwError("No type found", tokens.at(from).fileRange);
+        throwError("No type found", RangeAt(from));
       }
       return {cacheTy.value(), i - 1};
     }
     }
   }
   if (!cacheTy.has_value()) {
-    throwError("No type found", tokens.at(from).fileRange);
+    throwError("No type found", RangeAt(from));
   }
   return {cacheTy.value(), i - 1};
 }
@@ -451,7 +455,18 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       // just identifiers
       if (isNext(TokenType::identifier, i)) {
         if (isNext(TokenType::assignment, i + 1)) {
-          // TODO: Add support for type definitions, sum types and more
+          SHOW("Parsing type definition")
+          auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
+          if (endRes.has_value()) {
+            auto *typ = parseType(prev_ctx, i + 2, endRes.value()).first;
+            result.push_back(new ast::TypeDefinition(
+                tokens.at(i + 1).value, typ, RangeSpan(i, endRes.value()),
+                utils::VisibilityKind::pub));
+            i = endRes.value();
+            break;
+          } else {
+            throwError("Invalid end of type definition", RangeSpan(i, i + 2));
+          }
         } else if (isNext(TokenType::curlybraceOpen, i + 1)) {
           auto bClose = getPairEnd(TokenType::curlybraceOpen,
                                    TokenType::curlybraceClose, i + 2, false);
@@ -461,13 +476,12 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
                 new ast::DefineCoreType(
                     tokens.at(i + 1).value, utils::VisibilityInfo::pub(),
                     utils::FileRange(token.fileRange,
-                                     tokens.at(bClose.value()).fileRange)));
+                                     RangeAt(bClose.value()))));
             result.push_back(tRes);
             i = bClose.value();
             break;
           } else {
-            throwError("Invalid end for declaring a type",
-                       tokens.at(i + 2).fileRange);
+            throwError("Invalid end for declaring a type", RangeAt(i + 2));
           }
         }
       } else if (isNext(TokenType::child, i)) {
@@ -491,19 +505,16 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
                   i = end_res.value();
                 } else {
                   throwError("Invalid end for the sentence",
-                             utils::FileRange(token.fileRange,
-                                              tokens.at(i + 4).fileRange));
+                             utils::FileRange(token.fileRange, RangeAt(i + 4)));
                 }
               } else {
                 throwError("Expected assignment after type alias name",
-                           utils::FileRange(token.fileRange,
-                                            tokens.at(i + 3).fileRange));
+                           utils::FileRange(token.fileRange, RangeAt(i + 3)));
               }
             }
           } else {
-            throwError(
-                "Expected name for the type alias",
-                utils::FileRange(token.fileRange, tokens.at(i + 2).fileRange));
+            throwError("Expected name for the type alias",
+                       utils::FileRange(token.fileRange, RangeAt(i + 2)));
           }
         }
       } else {
@@ -520,16 +531,13 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto contents = parse(ctx, i + 2, bClose.value());
             result.push_back(new ast::Lib(
                 tokens.at(i + 1).value, contents, utils::VisibilityInfo::pub(),
-                utils::FileRange(token.fileRange,
-                                 tokens.at(bClose.value()).fileRange)));
+                utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
             i = bClose.value();
           } else {
-            throwError("Expected } to close the lib",
-                       tokens.at(i + 2).fileRange);
+            throwError("Expected } to close the lib", RangeAt(i + 2));
           }
         } else {
-          throwError("Expected { after name for the lib",
-                     tokens.at(i + 1).fileRange);
+          throwError("Expected { after name for the lib", RangeAt(i + 1));
         }
       } else {
         throwError("Expected name for the lib", token.fileRange);
@@ -545,16 +553,13 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto contents = parse(ctx, i + 2, bClose.value());
             result.push_back(new ast::Box(
                 tokens.at(i + 1).value, contents, utils::VisibilityInfo::pub(),
-                utils::FileRange(token.fileRange,
-                                 tokens.at(bClose.value()).fileRange)));
+                utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
             i = bClose.value();
           } else {
-            throwError("Expected } to close the box",
-                       tokens.at(i + 2).fileRange);
+            throwError("Expected } to close the box", RangeAt(i + 2));
           }
         } else {
-          throwError("Expected { after name for the box",
-                     tokens.at(i + 1).fileRange);
+          throwError("Expected { after name for the box", RangeAt(i + 1));
         }
       } else {
         throwError("Expected name for the box", token.fileRange);
@@ -581,17 +586,15 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
               } else {
                 throwError("Expected an identifier representing an entity for "
                            "the alias",
-                           tokens.at(i + 2).fileRange);
+                           RangeAt(i + 2));
               }
             } else {
               throwError("Invalid end for the sentence",
-                         utils::FileRange(token.fileRange,
-                                          tokens.at(i + 2).fileRange));
+                         utils::FileRange(token.fileRange, RangeAt(i + 2)));
             }
           } else {
-            throwError(
-                "Expected assignment after alias name",
-                utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange));
+            throwError("Expected assignment after alias name",
+                       utils::FileRange(token.fileRange, RangeAt(i + 1)));
           }
         }
       } else {
@@ -604,9 +607,68 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       break;
     }
     case TokenType::identifier: {
+      auto start   = i;
       auto sym_res = parseSymbol(ctx, i);
       i            = sym_res.second;
-      setCachedSymbol(sym_res.first);
+      if (isNext(TokenType::parenthesisOpen, i)) {
+        SHOW("Function with void return type")
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes.has_value()) {
+          auto pClose    = pCloseRes.value();
+          auto argResult = parseFunctionParameters(prev_ctx, i + 1, pClose);
+          SHOW("Parsed arguments")
+          i = pClose;
+          String callConv;
+          if (isNext(TokenType::external, i)) {
+            SHOW("Function is extern")
+            if (isNext(TokenType::StringLiteral, i + 1)) {
+              SHOW("Calling convention found")
+              callConv = tokens.at(i + 2).value;
+              i += 2;
+            } else {
+              SHOW("No calling convention")
+              throwError("Expected calling convention string after extern",
+                         RangeAt(i + 1));
+            }
+          }
+          SHOW("Creating prototype")
+          auto *prototype = new ast::FunctionPrototype(
+              sym_res.first.name, argResult.first, argResult.second,
+              new ast::VoidType(false, RangeAt(start)), false,
+              llvm::GlobalValue::WeakAnyLinkage, callConv,
+              utils::VisibilityInfo::pub(), RangeSpan(start, pClose));
+          SHOW("Prototype created")
+          if (isNext(TokenType::bracketOpen, i)) {
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                        TokenType::bracketClose, i + 1, false);
+            if (bCloseRes.has_value()) {
+              auto  bClose     = bCloseRes.value();
+              auto  sentences  = parseSentences(prev_ctx, i + 1, bClose);
+              auto *definition = new ast::FunctionDefinition(
+                  prototype, sentences, RangeSpan(i + 1, bClose));
+              SHOW("Function definition created")
+              result.push_back((ast::Node *)definition);
+              SHOW("Parsing function complete")
+              i = bClose;
+              break;
+            } else {
+              // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+              throwError("Expected end for [", RangeAt(i + 1));
+            }
+          } else if (isNext(TokenType::stop, i)) {
+            result.push_back(prototype);
+            i++;
+            break;
+          } else {
+            // FIXME - Implement
+          }
+        } else {
+          throwError("Expected end for (", RangeAt(i + 1));
+        }
+      } else {
+        setCachedSymbol(sym_res.first);
+      }
       break;
     }
     case TokenType::givenTypeSeparator: {
@@ -625,18 +687,18 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose,
                        i + 1, false);
         if (!pCloseResult.has_value()) {
-          throwError("Expected )", tokens.at(i + 1).fileRange);
+          throwError("Expected )", RangeAt(i + 1));
         }
         SHOW("Found )")
         auto pClose = pCloseResult.value();
         SHOW("Parsing function parameters")
-        auto argResult = parseFunctionParameters(ctx, i + 1, (usize)pClose);
+        auto argResult = parseFunctionParameters(ctx, i + 1, pClose);
         SHOW("Fn Params complete")
         bool   isExternal = false;
         String callConv;
         if (isNext(TokenType::stop, pClose)) {
           throwError("Expected external keyword or a definition",
-                     tokens.at(pClose).fileRange);
+                     RangeAt(pClose));
         } else if (isNext(TokenType::external, pClose)) {
           isExternal = true;
           if (isNext(TokenType::StringLiteral, pClose + 1)) {
@@ -645,7 +707,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
               // TODO - Sync errors
               throwError("Expected the function declaration to end here. "
                          "Please add `.` here",
-                         tokens.at(pClose + 2).fileRange);
+                         RangeAt(pClose + 2));
             }
             i = pClose + 3;
           } else {
@@ -674,7 +736,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             if (!bCloseResult.has_value() ||
                 (bCloseResult.value() >= tokens.size())) {
               throwError("Expected ] at the end of the Function Definition",
-                         tokens.at(pClose + 1).fileRange);
+                         RangeAt(pClose + 1));
             }
             SHOW("HAS BCLOSE")
             auto bClose = bCloseResult.value();
@@ -683,8 +745,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             SHOW("Sentence parsing completed")
             auto *definition = new ast::FunctionDefinition(
                 prototype, sentences,
-                utils::FileRange(tokens.at(pClose + 1).fileRange,
-                                 tokens.at(bClose).fileRange));
+                utils::FileRange(RangeAt(pClose + 1), RangeAt(bClose)));
             SHOW("Function definition created")
             result.push_back(definition);
             i = bClose;
@@ -905,8 +966,20 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           cachedSymbol = None;
         }
         if (cachedExpressions.empty() || !cachedBinaryOps.empty()) {
-          // TODO - Array literal
-        } else {
+          auto bClose = bCloseRes.value();
+          if (bClose == i + 1) {
+            // Empty array literal
+            cachedExpressions.push_back(
+                new ast::ArrayLiteral({}, RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            auto vals = parseSeparatedExpressions(prev_ctx, i, bClose);
+            cachedExpressions.push_back(
+                new ast::ArrayLiteral(vals, RangeSpan(i, bClose)));
+            i = bClose;
+          }
+          break;
+        } else if (!cachedExpressions.empty()) {
           auto *exp =
               parseExpression(prev_ctx, cachedSymbol, i, bCloseRes.value())
                   .first;
@@ -948,21 +1021,20 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                 auto *ent =
                     new ast::Entity(cachedSymbol->relative, cachedSymbol->name,
                                     cachedSymbol->fileRange);
-                cachedExpressions.push_back(new ast::FunctionCall(
-                    ent, args,
-                    cachedSymbol.value().extend_fileRange(
-                        tokens.at(p_close.value()).fileRange)));
+                cachedExpressions.push_back(
+                    new ast::FunctionCall(ent, args,
+                                          cachedSymbol.value().extend_fileRange(
+                                              RangeAt(p_close.value()))));
                 cachedSymbol = None;
               } else {
                 auto varVal = getVar();
-                throwError(
-                    String("No expression found to be passed to the ") +
-                        (varVal ? "variation " : "") + "function call." +
-                        (varVal ? ""
-                                : " And no function name found for "
-                                  "the static function call"),
-                    utils::FileRange(token.fileRange,
-                                     tokens.at(p_close.value()).fileRange));
+                throwError(String("No expression found to be passed to the ") +
+                               (varVal ? "variation " : "") + "function call." +
+                               (varVal ? ""
+                                       : " And no function name found for "
+                                         "the static function call"),
+                           utils::FileRange(token.fileRange,
+                                            RangeAt(p_close.value())));
               }
             } else if (cachedSymbol.has_value()) {
               auto *instance = *cachedExpressions.end();
@@ -975,7 +1047,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               auto *funCall = new ast::FunctionCall(
                   cachedExpressions.back(), args,
                   utils::FileRange(cachedExpressions.back()->fileRange,
-                                   tokens.at(p_close.value()).fileRange));
+                                   RangeAt(p_close.value())));
               cachedExpressions.pop_back();
               cachedExpressions.push_back(funCall);
               cachedSymbol = None;
@@ -983,8 +1055,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               throwError(
                   String("No function name found for the ") + "variation " +
                       "function call",
-                  utils::FileRange(token.fileRange,
-                                   tokens.at(p_close.value()).fileRange));
+                  utils::FileRange(token.fileRange, RangeAt(p_close.value())));
             }
             i = p_close.value();
           }
@@ -1004,11 +1075,6 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         }
         auto p_close = p_close_res.value();
         if (isPrimaryWithin(TokenType::semiColon, i, p_close)) {
-          if (!cachedExpressions.empty()) {
-            throwError("Tuple expression found after another expression",
-                       utils::FileRange(token.fileRange,
-                                        tokens.at(p_close).fileRange));
-          }
           Vec<ast::Expression *> values;
           auto                   separations =
               primaryPositionsWithin(TokenType::semiColon, i, p_close);
@@ -1033,33 +1099,29 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                                  .first);
           }
           cachedExpressions.push_back(new ast::TupleValue(
-              values,
-              utils::FileRange(token.fileRange, tokens.at(p_close).fileRange)));
+              values, utils::FileRange(token.fileRange, RangeAt(p_close))));
+          i = p_close;
         } else {
           auto *exp = parseExpression(prev_ctx, None, i, p_close).first;
-          if (cachedUnaryOps.empty() && cachedBinaryOps.empty()) {
-          } else if (!cachedUnaryOps.empty()) {
-            if (pointerCount != 0) {
-              // TODO
-            }
-          } else if (!cachedBinaryOps.empty()) {
-            if (cachedExpressions.empty()) {
-              throwError("No expression found on the left side of the binary "
-                         "operator " +
-                             cachedBinaryOps.end()->value,
-                         token.fileRange);
-            }
-            auto *lhs = *cachedExpressions.end();
-            auto  opr = *cachedBinaryOps.end();
-            auto *binExp =
-                new ast::BinaryExpression(lhs, opr.value, exp, token.fileRange);
-            SHOW("Created binary expression")
-            cachedExpressions.pop_back();
-            cachedBinaryOps.pop_back();
-            cachedExpressions.push_back(binExp);
-          }
+          cachedExpressions.push_back(exp);
+          i = p_close;
         }
-        i = p_close;
+      }
+      break;
+    }
+    case TokenType::loop: {
+      if (isNext(TokenType::child, i)) {
+        if (isNext(TokenType::identifier, i + 1)) {
+          cachedExpressions.push_back(new ast::LoopIndex(
+              (tokens.at(i + 2).value == "index") ? "" : tokens.at(i + 2).value,
+              {token.fileRange, RangeAt(i + 2)}));
+          i = i + 2;
+        } else {
+          throwError("Unexpected token after loop'",
+                     {token.fileRange, RangeAt(i + 1)});
+        }
+      } else {
+        throwError("Invalid token after loop", token.fileRange);
       }
       break;
     }
@@ -1102,8 +1164,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         auto destTyRes = parseType(prev_ctx, i, upto);
         cachedExpressions.push_back(new ast::ToConversion(
             source, destTyRes.first,
-            utils::FileRange(source->fileRange,
-                             tokens.at(destTyRes.second).fileRange)));
+            utils::FileRange(source->fileRange, RangeAt(destTyRes.second))));
         i = destTyRes.second;
       } else {
         throwError("No expression found for conversion", token.fileRange);
@@ -1120,14 +1181,14 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           return {cachedExpressions.back(), i - 1};
         } else {
           throwError("Encountered an invalid token in the expression",
-                     tokens.at(i).fileRange);
+                     RangeAt(i));
         }
       } else {
         if (!cachedExpressions.empty()) {
           return {cachedExpressions.back(), i - 1};
         } else {
           throwError("No expression found and encountered invalid token",
-                     tokens.at(i).fileRange);
+                     RangeAt(i));
         }
       }
     }
@@ -1164,7 +1225,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                               cachedSymbol->fileRange),
               i};
     } else {
-      throwError("No expression found", tokens.at(from).fileRange);
+      throwError("No expression found", RangeAt(from));
     }
   } else if (!cachedBinaryOps.empty()) {
     if (cachedExpressions.size() >= 2) {
@@ -1193,8 +1254,7 @@ Vec<ast::Expression *> Parser::
     if (isPrimaryWithin(lexer::TokenType::separator, i - 1, to)) {
       auto endResult = firstPrimaryPosition(lexer::TokenType::separator, i);
       if (!endResult.has_value() || (endResult.value() >= to)) {
-        throwError("Invalid position for separator `,`",
-                   tokens.at(i).fileRange);
+        throwError("Invalid position for separator `,`", RangeAt(i));
       }
       auto end = endResult.value();
       result.push_back(parseExpression(prev_ctx, None, i - 1, end).first);
@@ -1230,11 +1290,11 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
     }
     if (prev == TokenType::super) {
       if (!isNext(TokenType::colon, i)) {
-        throwError("No : found after ..", tokens.at(i).fileRange);
+        throwError("No : found after ..", RangeAt(i));
       }
     } else if (prev == TokenType::colon) {
       if (!isNext(TokenType::identifier, i)) {
-        throwError("No identifier found after :", tokens.at(i).fileRange);
+        throwError("No identifier found after :", RangeAt(i));
       }
     }
     if (prev != TokenType::identifier) {
@@ -1247,7 +1307,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
           name += tok.value;
           prev = TokenType::identifier;
         } else {
-          throwError("Identifier found at an invalid position", tok.fileRange);
+          return {CacheSymbol(relative, name, start, RangeAt(start)), i - 1};
         }
       } else if (tok.type == TokenType::colon) {
         if (prev == TokenType::identifier) {
@@ -1266,13 +1326,11 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
     if (prev_ctx.has_alias(name)) {
       name = prev_ctx.get_alias(name);
     }
-    return {CacheSymbol(relative, name, start, tokens.at(start).fileRange),
-            i - 1};
+    return {CacheSymbol(relative, name, start, RangeAt(start)), i - 1};
   } else {
     // TODO - Change this, after verifying that this situation is never
     // encountered.
-    throwError("No identifier found for parsing the symbol",
-               tokens.at(start).fileRange);
+    throwError("No identifier found for parsing the symbol", RangeAt(start));
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -1306,6 +1364,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
     case TokenType::boolType:
     case TokenType::curlybraceOpen:
     case TokenType::unsignedIntegerType:
+    case TokenType::referenceType:
     case TokenType::var:
     case TokenType::pointerType: {
       if ((token.type == TokenType::var) && isPrev(TokenType::let, i)) {
@@ -1315,8 +1374,37 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         break;
       }
       auto typeRes = parseType(ctx, i - 1, None);
+      auto old     = i;
       i            = typeRes.second;
-      cacheTy.push_back(typeRes.first);
+      if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::assignment, i + 1)) {
+          auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
+          if (endRes.has_value()) {
+            auto *exp =
+                parseExpression(prev_ctx, None, i + 2, endRes.value()).first;
+            result.push_back(new ast::LocalDeclaration(
+                typeRes.first, false, tokens.at(i + 1).value, exp,
+                typeRes.first->isVariable(), RangeSpan(old, endRes.value())));
+            i = endRes.value();
+            break;
+          } else {
+            throwError("Invalid end for sentence", RangeSpan(old, i + 2));
+          }
+        } else if (isNext(TokenType::from, i + 1)) {
+          // TODO - Implement constructor calls
+        } else if (isNext(TokenType::stop, i + 1)) {
+          result.push_back(new ast::LocalDeclaration(
+              typeRes.first, false, tokens.at(i + 1).value, nullptr,
+              typeRes.first->isVariable(), RangeSpan(old, i + 1)));
+          i += 2;
+          break;
+        } else {
+          throwError("Invalid token found in local declaration",
+                     RangeAt(i + 1));
+        }
+      } else {
+        cacheTy.push_back(typeRes.first);
+      }
       break;
     }
     case TokenType::parenthesisOpen: {
@@ -1340,23 +1428,20 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                 cacheSymbol = None;
                 i           = endRes.value();
                 result.push_back(new ast::ExpressionSentence(
-                    exp,
-                    utils::FileRange(token.fileRange,
-                                     tokens.at(endRes.value()).fileRange)));
+                    exp, utils::FileRange(token.fileRange,
+                                          RangeAt(endRes.value()))));
                 break;
               } else {
-                throwError(
-                    "End for the sentence not found",
-                    utils::FileRange(token.fileRange,
-                                     tokens.at(bCloseRes.value()).fileRange));
+                throwError("End for the sentence not found",
+                           utils::FileRange(token.fileRange,
+                                            RangeAt(bCloseRes.value())));
               }
             } else {
               throwError("Invalid end for definition of closure",
-                         tokens.at(pClose + 2).fileRange);
+                         RangeAt(pClose + 2));
             }
           } else {
-            throwError("Definition for closure not found",
-                       tokens.at(pClose + 1).fileRange);
+            throwError("Definition for closure not found", RangeAt(pClose + 1));
           }
         } else if (isNext(TokenType::identifier, pClose)) {
           /* Tuple value declaration */
@@ -1373,8 +1458,8 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
             i           = endRes.value();
             cacheSymbol = None;
             result.push_back(new ast::ExpressionSentence(
-                exp, utils::FileRange(token.fileRange,
-                                      tokens.at(endRes.value()).fileRange)));
+                exp,
+                utils::FileRange(token.fileRange, RangeAt(endRes.value()))));
             break;
           } else {
             throwError("End of sentence not found", token.fileRange);
@@ -1411,81 +1496,41 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         // A normal declaration where the type of the entity is provided by the
         // user
         if (isNext(TokenType::assignment, i)) {
+          SHOW("Declaration encountered")
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
           if (end_res.has_value() && (end_res.value() < upto)) {
-            auto *exp = parseExpression(ctx, None, i, end_res.value()).first;
+            auto *exp =
+                parseExpression(ctx, None, i + 1, end_res.value()).first;
             result.push_back(new ast::LocalDeclaration(
                 (cacheTy.empty()
                      ? (new ast::NamedType(cacheSymbol.value().relative,
                                            cacheSymbol.value().name, false,
                                            cacheSymbol.value().fileRange))
                      : cacheTy.back()),
-                token.value, exp, var, token.fileRange));
+                false, token.value, exp, var, token.fileRange));
             var = false;
             cacheTy.clear();
             cacheSymbol = None;
             i           = end_res.value();
             break;
           } else {
-            throwError("Invalid end for declaration syntax",
-                       tokens.at(i + 1).fileRange);
+            throwError("Invalid end for declaration syntax", RangeAt(i + 1));
           }
         } else if (isNext(TokenType::from, i)) {
           // TODO - Handle constructor call
         }
         // FIXME - Handle this case
-      } else if (isPrev(TokenType::let, i) ||
-                 ((isPrev(TokenType::var, i) && i > 0 &&
-                   isPrev(TokenType::let, i - 1)))) {
-
-        SHOW("Inferred Declaration")
-
-        /**
-         *  Inferred Declaration
-         *
-         * The type of the declaration is inferred from the expression
-         *
-         */
-
-        auto isVar = isPrev(TokenType::var, i);
-        if (isNext(TokenType::assignment, i)) {
-          auto end_res = firstPrimaryPosition(TokenType::stop, i + 1);
-          SHOW("Found end of id sentence")
-          if (!end_res.has_value() || (end_res.value() >= upto)) {
-            throwError("Invalid end for the inferred declaration",
-                       token.fileRange);
-          }
-          auto end = end_res.value();
-          SHOW("Parsing expression")
-          auto *exp = parseExpression(ctx, None, i + 1, end).first;
-          SHOW("Expression parsed")
-          result.push_back(new ast::LocalDeclaration(nullptr, token.value, exp,
-                                                     isVar, token.fileRange));
-          var = false;
-          cacheTy.clear();
-          i = end;
-        } else if (isNext(TokenType::from, i)) {
-          throwError(
-              String("Expected an expression to be assigned to the ") +
-                  (isVar ? "variable" : "constant") +
-                  " since type inference requires an assignment. You cannot "
-                  "use a `from` expression if there is no type specified.",
-              tokens.at(i).fileRange);
-        } else {
-          throwError(String("Expected an expression to be assigned to the ") +
-                         (isVar ? "variable" : "constant") +
-                         " since type inference requires an assignment",
-                     tokens.at(i).fileRange);
-        }
       } else if (isNext(TokenType::child, i)) {
         if (cacheSymbol.has_value()) {
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
           if (end_res.has_value() && (end_res.value() <= upto)) {
-            auto  end   = end_res.value();
-            auto *exp   = parseExpression(ctx, cacheSymbol, i - 1, end).first;
+            auto  end = end_res.value();
+            auto *exp =
+                parseExpression(ctx, cacheSymbol, cacheSymbol->tokenIndex, end)
+                    .first;
             cacheSymbol = None;
             result.push_back(new ast::ExpressionSentence(
-                exp, {cacheSymbol->fileRange, tokens.at(end).fileRange}));
+                exp, {cacheSymbol->fileRange, RangeAt(end)}));
             i = end;
           } else {
             throwError("Invalid end of sentence", token.fileRange);
@@ -1513,16 +1558,28 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         auto *exp = parseExpression(ctx, None, i, end).first;
         auto *lhs = new ast::Entity(cacheSymbol->relative, cacheSymbol->name,
                                     cacheSymbol->fileRange);
-        result.push_back(
-            new ast::Assignment(lhs, exp,
-                                utils::FileRange(cacheSymbol.value().fileRange,
-                                                 tokens.at(end).fileRange)));
+        result.push_back(new ast::Assignment(
+            lhs, exp,
+            utils::FileRange(cacheSymbol.value().fileRange, RangeAt(end))));
         var = false;
         cacheTy.clear();
         cacheSymbol = None;
         i           = end;
       } else if (!cachedExpressions.empty()) {
-
+        auto endRes = firstPrimaryPosition(TokenType::stop, i);
+        if (endRes.has_value()) {
+          auto  end = endRes.value();
+          auto *exp = parseExpression(prev_ctx, None, i, end).first;
+          result.push_back(new ast::Assignment(
+              cachedExpressions.back(), exp,
+              {cachedExpressions.back()->fileRange, RangeAt(end)}));
+          cacheSymbol = None;
+          cachedExpressions.clear();
+          i = end;
+        } else {
+          throwError("Invalid end of sentence",
+                     {cachedExpressions.back()->fileRange, token.fileRange});
+        }
       } else {
         throwError("Expected an expression to assign the expression to",
                    token.fileRange);
@@ -1552,8 +1609,60 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       break;
     }
     case TokenType::let: {
-      context = "LET";
+      const auto start = i;
+      context          = "LET";
       SHOW("Found let")
+      bool isRef     = false;
+      bool isVarDecl = false;
+      if (isNext(TokenType::var, i)) {
+        isVarDecl = true;
+        if (isNext(TokenType::referenceType, i + 1)) {
+          isRef = true;
+          i += 2;
+        } else {
+          i += 1;
+        }
+      } else if (isNext(TokenType::referenceType, i)) {
+        isRef = true;
+        i += 1;
+      }
+      if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::assignment, i + 1)) {
+          auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
+          if (endRes.has_value()) {
+            auto  end = endRes.value();
+            auto *exp = parseExpression(prev_ctx, None, i + 2, end).first;
+            result.push_back(new ast::LocalDeclaration(
+                nullptr, isRef, tokens.at(i + 1).value, exp, isVarDecl,
+                RangeSpan(start, end)));
+            cacheSymbol = None;
+            cachedExpressions.clear();
+            i = end;
+          } else {
+            throwError("Invalid end for sentence", RangeSpan(start, i + 2));
+          }
+        } else if (isNext(TokenType::from, i + 1)) {
+          throwError("Initialisation via constructor or convertor can be used "
+                     "only if there is a type provided. This is an inferred "
+                     "declaration",
+                     RangeSpan(start, i + 2));
+        } else if (isNext(TokenType::stop, i + 1)) {
+          result.push_back(new ast::LocalDeclaration(
+              nullptr, isRef, tokens.at(i + 1).value, nullptr, isVarDecl,
+              RangeSpan(start, i + 2)));
+          cacheSymbol = None;
+          cachedExpressions.clear();
+          i += 2;
+        } else {
+          throwError("Unexpected token found after the beginning of inferred "
+                     "declaration",
+                     RangeAt(i + 1));
+        }
+      } else {
+        throwError("Expected an identifier for the name of the local value, in "
+                   "the inferred declaration",
+                   RangeSpan(start, i));
+      }
       break;
     }
     case TokenType::If: {
@@ -1573,8 +1682,8 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                   getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
                              pCloseRes.value() + 1, false);
               if (bCloseRes.has_value()) {
-                fileRange = utils::FileRange(
-                    fileRange, tokens.at(bCloseRes.value()).fileRange);
+                fileRange =
+                    utils::FileRange(fileRange, RangeAt(bCloseRes.value()));
                 auto snts = parseSentences(prev_ctx, pCloseRes.value() + 1,
                                            bCloseRes.value());
                 chain.push_back(
@@ -1592,14 +1701,13 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                         getPairEnd(TokenType::bracketOpen,
                                    TokenType::bracketClose, bOp, false);
                     if (bClRes) {
-                      fileRange = utils::FileRange(
-                          fileRange, tokens.at(bClRes.value()).fileRange);
+                      fileRange =
+                          utils::FileRange(fileRange, RangeAt(bClRes.value()));
                       elseCase = parseSentences(prev_ctx, bOp, bClRes.value());
                       i        = bClRes.value();
                       break;
                     } else {
-                      throwError("Expected end for [",
-                                 tokens.at(bOp).fileRange);
+                      throwError("Expected end for [", RangeAt(bOp));
                     }
                   }
                 } else {
@@ -1607,18 +1715,89 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                   break;
                 }
               } else {
-                throwError("Expected end for [",
-                           tokens.at(bCloseRes.value()).fileRange);
+                throwError("Expected end for [", RangeAt(bCloseRes.value()));
               }
             }
             // FIXME - Support single sentence
           } else {
-            throwError("Expected end for (", tokens.at(i + 1).fileRange);
+            throwError("Expected end for (", RangeAt(i + 1));
           }
         }
       }
       result.push_back(new ast::IfElse(chain, elseCase, fileRange));
-
+      break;
+    }
+    case TokenType::loop: {
+      if (isNext(TokenType::child, i)) {
+        auto expRes = parseExpression(prev_ctx, None, i > 0 ? i - 1 : 0, None);
+        cachedExpressions.push_back(expRes.first);
+        i = expRes.second;
+        break;
+      } else if (isNext(TokenType::parenthesisOpen, i)) {
+        // FIXME - Add
+      } else if (isNext(TokenType::While, i)) {
+        if (isNext(TokenType::parenthesisOpen, i + 1)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 2, false);
+          if (pCloseRes.has_value()) {
+            auto *cond =
+                parseExpression(prev_ctx, None, i + 2, pCloseRes.value()).first;
+            if (isNext(TokenType::bracketOpen, pCloseRes.value())) {
+              auto bCloseRes =
+                  getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                             pCloseRes.value() + 1, false);
+              if (bCloseRes.has_value()) {
+                auto snts = parseSentences(prev_ctx, pCloseRes.value() + 1,
+                                           bCloseRes.value());
+                result.push_back(new ast::LoopWhile(
+                    cond, snts, {token.fileRange, RangeAt(bCloseRes.value())}));
+                i = bCloseRes.value();
+                break;
+              } else {
+                throwError("Expected end for [",
+                           RangeAt(pCloseRes.value() + 1));
+              }
+            } else {
+              // FIXME - Implement single statement loop
+            }
+          } else {
+            throwError("Expected end for (", RangeAt(i + 2));
+          }
+        }
+      } else if (isNext(TokenType::over, i)) {
+        // TODO - Implement
+      } else if (firstPrimaryPosition(TokenType::times, i).has_value()) {
+        auto   tim = firstPrimaryPosition(TokenType::times, i).value();
+        auto   pos = tim;
+        String indexName;
+        if (isNext(TokenType::colon, tim)) {
+          if (isNext(TokenType::identifier, tim + 1)) {
+            indexName = tokens.at(tim + 2).value;
+            pos       = tim + 2;
+          } else {
+            throwError("Expected identifier for the name of the loop counter, "
+                       "after : ",
+                       RangeAt(tim + 1));
+          }
+        }
+        auto *count = parseExpression(prev_ctx, None, i, tim).first;
+        if (isNext(TokenType::bracketOpen, pos)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, pos + 1, false);
+          if (bCloseRes.has_value()) {
+            result.push_back(new ast::LoopNTimes(
+                count, parseSentences(prev_ctx, pos + 1, bCloseRes.value()),
+                indexName, {token.fileRange, RangeAt(bCloseRes.value())}));
+            i = bCloseRes.value();
+            break;
+          } else {
+            throwError("Expected end for [", RangeAt(pos + 1));
+          }
+        } else {
+          // FIXME - Implement single statement loops
+        }
+      }
       break;
     }
     case TokenType::give: {
@@ -1627,8 +1806,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       if (isNext(TokenType::stop, i)) {
         i++;
         result.push_back(new ast::GiveSentence(
-            None,
-            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange)));
+            None, utils::FileRange(token.fileRange, RangeAt(i + 1))));
       } else {
         auto end = firstPrimaryPosition(TokenType::stop, i);
         if (!end.has_value()) {
@@ -1640,13 +1818,18 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         i           = end.value();
         cacheSymbol = None;
         result.push_back(new ast::GiveSentence(
-            exp, utils::FileRange(token.fileRange,
-                                  tokens.at(end.value()).fileRange)));
+            exp, utils::FileRange(token.fileRange, RangeAt(end.value()))));
       }
       break;
     }
+    case TokenType::bracketOpen: {
+      auto expRes = parseExpression(prev_ctx, cacheSymbol, i - 1, None);
+      cachedExpressions.push_back(expRes.first);
+      cacheSymbol = None;
+      i           = expRes.second;
+      break;
+    }
     default: {
-
       throwError("Unexpected token found for parsing sentence: " +
                      std::to_string((int)token.type),
                  token.fileRange);
@@ -1697,6 +1880,12 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
       throwError("Arguments cannot have void type", token.fileRange);
       break;
     }
+    case TokenType::super: {
+      auto typeRes = parseType(prev_ctx, i - 1, None);
+      typ          = typeRes.first;
+      i            = typeRes.second;
+      break;
+    }
     case TokenType::identifier: {
       if (hasType() && (!hasName())) {
         name = token.value;
@@ -1743,8 +1932,7 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
       if (isNext(TokenType::identifier, i)) {
         args.push_back(ast::Argument::Normal(
             tokens.at(i + 1).value,
-            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange),
-            nullptr));
+            utils::FileRange(token.fileRange, RangeAt(i + 1)), nullptr));
         if (isNext(TokenType::parenthesisClose, i + 1) ||
             (isNext(TokenType::separator, i + 1) &&
              isNext(TokenType::parenthesisClose, i + 2))) {
@@ -1764,8 +1952,7 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
       if (isNext(TokenType::identifier, i)) {
         args.push_back(ast::Argument::ForConstructor(
             tokens.at(i + 1).value,
-            utils::FileRange(token.fileRange, tokens.at(i + 1).fileRange),
-            nullptr, true));
+            utils::FileRange(token.fileRange, RangeAt(i + 1)), nullptr, true));
         i++;
       } else {
         throwError("Expected name of the member to be initialised",
@@ -1820,8 +2007,8 @@ bool Parser::isNext(const lexer::TokenType type, const usize current) {
 }
 
 bool Parser::areOnlyPresentWithin(const Vec<lexer::TokenType> &kinds,
-                                  const usize from, const usize to) {
-  for (usize i = from + 1; i < to; i++) {
+                                  usize from, usize upto) {
+  for (usize i = from + 1; i < upto; i++) {
     for (auto const &kind : kinds) {
       if (kind != tokens.at(i).type) {
         return false;
@@ -1831,10 +2018,10 @@ bool Parser::areOnlyPresentWithin(const Vec<lexer::TokenType> &kinds,
   return true;
 }
 
-bool Parser::isPrimaryWithin(const lexer::TokenType candidate, const usize from,
-                             const usize to) {
+bool Parser::isPrimaryWithin(lexer::TokenType candidate, usize from,
+                             usize upto) {
   auto pos_res = firstPrimaryPosition(candidate, from);
-  return pos_res.has_value() && (pos_res.value() < to);
+  return pos_res.has_value() && (pos_res.value() < upto);
 }
 
 Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
@@ -1881,16 +2068,16 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
   return None;
 }
 
-Vec<usize> Parser::primaryPositionsWithin(const lexer::TokenType candidate,
-                                          const usize from, const usize to) {
+Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate,
+                                          usize from, usize upto) {
   Vec<usize> result;
   using lexer::TokenType;
-  for (usize i = from + 1; (i < to && i < tokens.size()); i++) {
+  for (usize i = from + 1; (i < upto && i < tokens.size()); i++) {
     auto tok = tokens.at(i);
     if (tok.type == TokenType::parenthesisOpen) {
       auto end_res = getPairEnd(TokenType::parenthesisOpen,
                                 TokenType::parenthesisClose, i, false);
-      if (end_res.has_value() && (end_res.value() < to)) {
+      if (end_res.has_value() && (end_res.value() < upto)) {
         i = end_res.value();
       } else {
         return result;
@@ -1898,7 +2085,7 @@ Vec<usize> Parser::primaryPositionsWithin(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::bracketOpen) {
       auto end_res =
           getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
-      if (end_res.has_value() && (end_res.value() < to)) {
+      if (end_res.has_value() && (end_res.value() < upto)) {
         i = end_res.value();
       } else {
         return result;
@@ -1906,7 +2093,7 @@ Vec<usize> Parser::primaryPositionsWithin(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::curlybraceOpen) {
       auto end_res = getPairEnd(TokenType::curlybraceOpen,
                                 TokenType::curlybraceClose, i, false);
-      if (end_res.has_value() && (end_res.value() < to)) {
+      if (end_res.has_value() && (end_res.value() < upto)) {
         i = end_res.value();
       } else {
         return result;
@@ -1914,7 +2101,7 @@ Vec<usize> Parser::primaryPositionsWithin(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::templateTypeStart) {
       auto end_res = getPairEnd(TokenType::templateTypeStart,
                                 TokenType::templateTypeEnd, i, false);
-      if (end_res.has_value() && (end_res.value() < to)) {
+      if (end_res.has_value() && (end_res.value() < upto)) {
         i = end_res.value();
       } else {
         return result;

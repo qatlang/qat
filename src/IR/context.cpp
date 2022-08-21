@@ -18,6 +18,56 @@ Context::Context() : builder(llctx), mod(nullptr), hasMain(false) {}
 
 QatModule *Context::getMod() const { return mod->getActive(); }
 
+utils::VisibilityInfo
+Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
+  if (kind.has_value()) {
+    switch (kind.value()) {
+    case utils::VisibilityKind::box: {
+      return utils::VisibilityInfo::box(
+          getMod()->getClosestParentBox()->getFullName());
+    }
+    case utils::VisibilityKind::lib: {
+      return utils::VisibilityInfo::lib(
+          getMod()->getClosestParentLib()->getFullName());
+    }
+    case utils::VisibilityKind::file: {
+      return utils::VisibilityInfo::file(getMod()->getFilePath());
+    }
+    case utils::VisibilityKind::folder: {
+      return utils::VisibilityInfo::folder(
+          fs::path(getMod()->getFilePath()).parent_path());
+    }
+    case utils::VisibilityKind::type: {
+      // TODO - Handle in case it is null
+      return utils::VisibilityInfo::type(activeType->getFullName());
+    }
+    case utils::VisibilityKind::pub: {
+      return utils::VisibilityInfo::pub();
+    }
+    }
+  } else {
+    if (activeType) {
+      return utils::VisibilityInfo::type(activeType->getFullName());
+    } else {
+      switch (getMod()->getModuleType()) {
+      case ModuleType::box: {
+        return utils::VisibilityInfo::box(getMod()->getFullName());
+      }
+      case ModuleType::file: {
+        return utils::VisibilityInfo::file(getMod()->getFilePath());
+      }
+      case ModuleType::lib: {
+        return utils::VisibilityInfo::lib(getMod()->getFullName());
+      }
+      case ModuleType::folder: {
+        return utils::VisibilityInfo::folder(
+            fs::path(getMod()->getParentFile()->getFilePath()).parent_path());
+      }
+      }
+    }
+  }
+}
+
 utils::RequesterInfo Context::getReqInfo() const {
   // TODO - Consider changing string value to pointer of the actual entities
   Maybe<String> lib  = None;

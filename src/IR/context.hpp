@@ -59,6 +59,8 @@ public:
   useit QatModule *getMod() const; // Get the active IR module
 
   useit utils::RequesterInfo getReqInfo() const;
+  useit                      utils::VisibilityInfo
+  getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
 
   static void Error(const String &message, const utils::FileRange &fileRange);
   static void Warning(const String &message, const utils::FileRange &fileRange);

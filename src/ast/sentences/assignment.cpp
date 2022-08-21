@@ -7,23 +7,31 @@ Assignment::Assignment(Expression *_lhs, Expression *_value,
     : Sentence(std::move(_fileRange)), lhs(_lhs), value(_value) {}
 
 IR::Value *Assignment::emit(IR::Context *ctx) {
-  lhs->setExpectedKind(ExpressionKind::assignable);
   auto *lhsVal = lhs->emit(ctx);
   auto *expVal = value->emit(ctx);
-  if (lhsVal->isVariable()) {
-    if (lhsVal->isImplicitPointer() || lhsVal->getType()->isReference() ||
-        lhsVal->getType()->isPointer() ||
-        lhsVal->getLLVM()->getType()->isPointerTy()) {
+  SHOW("Emitted lhs and rhs of Assignment")
+  if (lhsVal->isVariable() ||
+      (lhsVal->getType()->isReference() &&
+       lhsVal->getType()->asReference()->isSubtypeVariable())) {
+    SHOW("Is variable nature")
+    if (lhsVal->isImplicitPointer() || lhsVal->getType()->isReference()) {
+      SHOW("Getting IR types")
       auto *lhsType = lhsVal->getType();
       auto *expType = expVal->getType();
       if (lhsType->isSame(expType) ||
-          (lhsVal->isReference() &&
+          (lhsType->isReference() &&
            lhsType->asReference()->getSubType()->isSame(expType)) ||
-          (lhsVal->isPointer() &&
-           lhsType->asPointer()->getSubType()->isSame(expType)) ||
           (expType->isReference() &&
            expType->asReference()->getSubType()->isSame(lhsType))) {
-        if (expType->isReference() || expVal->isImplicitPointer()) {
+        SHOW("The general types are the same")
+        if (lhsVal->isImplicitPointer() &&
+            (lhsType->isReference() || lhsType->isPointer())) {
+          SHOW("LHS is implicit pointer")
+          lhsVal->loadImplicitPointer(ctx->builder);
+        }
+        SHOW("Loaded implicit pointer")
+        if (expType->isReference() ||
+            (!lhsVal->isReference() && expVal->isImplicitPointer())) {
           SHOW("Expression for assignment is of type "
                << expType->asReference()->getSubType()->toString())
           expVal = new IR::Value(
@@ -34,11 +42,30 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
                   expVal->getLLVM()),
               expVal->getType(), expVal->isVariable(), expVal->getNature());
         }
-        ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
+        SHOW("Creating store")
+        if (expVal->getType()->isReference() || expVal->isImplicitPointer()) {
+          SHOW("Loading reference exp")
+          ctx->builder.CreateStore(
+              ctx->builder.CreateLoad((expVal->isImplicitPointer()
+                                           ? expVal->getType()->getLLVMType()
+                                           : expVal->getType()
+                                                 ->asReference()
+                                                 ->getSubType()
+                                                 ->getLLVMType()),
+                                      expVal->getLLVM()),
+              lhsVal->getLLVM());
+        } else {
+          SHOW("Normal assignment store")
+          ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
+        }
         return nullptr;
       } else {
-        ctx->Error("Type of the left hand side and the right hand side of the "
-                   "assignment do not match. Please check the logic.",
+        ctx->Error("Type of the left hand side of the assignment is " +
+                       ctx->highlightError(lhsType->toString()) +
+                       " and the type of right hand side is " +
+                       ctx->highlightError(expType->toString()) +
+                       ". The types of both sides of the assignment are not "
+                       "compatible. Please check the logic.",
                    fileRange);
       }
     } else {
@@ -46,9 +73,23 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
                  fileRange);
     }
   } else {
-    ctx->Error("Left hand side of the assignment cannot be assigned to because "
-               "it is not a variable value",
-               fileRange);
+    if (lhsVal->getType()->isReference()) {
+      ctx->Error("Left hand side of the assignment cannot be assigned to "
+                 "because the referred type of the reference does not have "
+                 "variability",
+                 fileRange);
+    } else if (lhsVal->getType()->isPointer()) {
+      ctx->Error("Left hand side of the assignment cannot be assigned to "
+                 "because it is of pointer type. If you intend to change the "
+                 "value pointed to by this pointer, consider dereferencing it "
+                 "before assigning",
+                 fileRange);
+    } else {
+      ctx->Error(
+          "Left hand side of the assignment cannot be assigned to because "
+          "it is not a variable value",
+          fileRange);
+    }
   }
 }
 

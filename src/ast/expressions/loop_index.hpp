@@ -6,14 +6,16 @@
 namespace qat::ast {
 
 class LoopIndex : public Expression {
+private:
+  String indexName;
+
 public:
-  explicit LoopIndex(utils::FileRange _fileRange);
+  LoopIndex(String indexName, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
-  useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::loopIndex; }
+  useit bool hasName() const;
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::loopIndex; }
 };
 
 } // namespace qat::ast

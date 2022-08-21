@@ -31,9 +31,7 @@ MemberFunction *MemberFunction::Create(
     const utils::VisibilityInfo &visibilityInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> args_info;
   args_info.push_back(
-      is_variation
-          ? Argument::CreateVariable("self", PointerType::get(parent, ctx), 0)
-          : Argument::Create("self", PointerType::get(parent, ctx), 0));
+      Argument::Create("self", PointerType::get(is_variation, parent, ctx), 0));
   for (const auto &arg : args) {
     args_info.push_back(arg);
   }
@@ -49,7 +47,7 @@ MemberFunction *MemberFunction::CreateConstructor(
     const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::CreateVariable("self", PointerType::get(parent, ctx), 0));
+      Argument::Create("self", PointerType::get(true, parent, ctx), 0));
   for (const auto &arg : args) {
     argsInfo.push_back(arg);
   }
@@ -64,7 +62,7 @@ MemberFunction *MemberFunction::CreateFromConvertor(
     llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::CreateVariable("self", PointerType::get(parent, ctx), 0));
+      Argument::Create("self", PointerType::get(true, parent, ctx), 0));
   argsInfo.push_back(Argument::Create(name, sourceType, 1));
   return new MemberFunction(MemberFnType::fromConvertor, true, parent,
                             "from'" + sourceType->toString(),
@@ -77,7 +75,7 @@ MemberFunction *MemberFunction::CreateToConvertor(
     const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::Create("self", PointerType::get(parent, ctx), 0));
+      Argument::Create("self", PointerType::get(false, parent, ctx), 0));
   return new MemberFunction(MemberFnType::toConvertor, false, parent,
                             "to'" + destType->toString(), destType, false,
                             false, argsInfo, false, false, fileRange, visibInfo,
@@ -105,7 +103,7 @@ MemberFunction::CreateDestructor(CoreType               *parent,
       MemberFnType::destructor, parent->getParent(), parent, "end",
       VoidType::get(ctx), false, false,
       Vec<Argument>(
-          {Argument::CreateVariable("self", PointerType::get(parent, ctx), 0)}),
+          {Argument::Create("self", PointerType::get(true, parent, ctx), 0)}),
       false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
 }
 

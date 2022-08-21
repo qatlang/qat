@@ -11,6 +11,7 @@
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
 #include "./types/void.hpp"
+#include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <vector>
 
@@ -27,6 +28,7 @@ enum class NativeUnit { printf, malloc, pthread };
 
 class QatModule {
   friend class CoreType;
+  friend class DefinitionType;
 
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
@@ -34,21 +36,23 @@ public:
             llvm::LLVMContext &ctx);
 
 private:
-  String                     name;
-  ModuleType                 moduleType;
-  fs::path                   filePath;
-  fs::path                   basePath;
-  utils::VisibilityInfo      visibility;
-  QatModule                 *parent;
-  QatModule                 *active;
-  Vec<QatModule *>           submodules;
-  Vec<Brought<QatModule>>    broughtModules;
-  Vec<CoreType *>            coreTypes;
-  Vec<Brought<CoreType>>     broughtCoreTypes;
-  Vec<Function *>            functions;
-  Vec<Brought<Function>>     broughtFunctions;
-  Vec<GlobalEntity *>        globalEntities;
-  Vec<Brought<GlobalEntity>> broughtGlobalEntities;
+  String                       name;
+  ModuleType                   moduleType;
+  fs::path                     filePath;
+  fs::path                     basePath;
+  utils::VisibilityInfo        visibility;
+  QatModule                   *parent;
+  QatModule                   *active;
+  Vec<QatModule *>             submodules;
+  Vec<Brought<QatModule>>      broughtModules;
+  Vec<CoreType *>              coreTypes;
+  Vec<Brought<CoreType>>       broughtCoreTypes;
+  Vec<DefinitionType *>        typeDefs;
+  Vec<Brought<DefinitionType>> broughtTypeDefs;
+  Vec<Function *>              functions;
+  Vec<Brought<Function>>       broughtFunctions;
+  Vec<GlobalEntity *>          globalEntities;
+  Vec<Brought<GlobalEntity>>   broughtGlobalEntities;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -83,6 +87,7 @@ public:
                                      utils::VisibilityInfo visibilityInfo,
                                      llvm::LLVMContext    &ctx);
 
+  useit ModuleType getModuleType() const;
   useit String     getFullName() const;
   useit String     getName() const;
   useit String     getFullNameWithChild(const String &name) const;
@@ -158,6 +163,15 @@ public:
                                                  const utils::RequesterInfo &reqInfo) const;
   useit CoreType *getCoreType(const String               &name,
                               const utils::RequesterInfo &reqInfo) const;
+
+  // TYPEDEF
+  useit bool            hasTypeDef(const String &name) const;
+  useit bool            hasBroughtTypeDef(const String &name) const;
+  useit                 Pair<bool, String>
+                        hasAccessibleTypeDefInImports(const String               &name,
+                                                      const utils::RequesterInfo &reqInfo) const;
+  useit DefinitionType *getTypeDef(const String               &name,
+                                   const utils::RequesterInfo &reqInfo) const;
 
   // GLOBAL ENTITY
 

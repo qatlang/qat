@@ -43,6 +43,8 @@ QatModule *QatModule::Create(const String &name, const fs::path &filepath,
   return new QatModule(name, filepath, basePath, type, visib_info, ctx);
 }
 
+ModuleType QatModule::getModuleType() const { return moduleType; }
+
 const utils::VisibilityInfo &QatModule::getVisibility() const {
   return visibility;
 }
@@ -436,6 +438,8 @@ Function *QatModule::getFunction(const String               &name,
   return nullptr;
 }
 
+// CORE TYPE
+
 bool QatModule::hasCoreType(const String &name) const {
   SHOW("CoreType count: " << coreTypes.size())
   for (auto *typ : coreTypes) {
@@ -513,6 +517,89 @@ CoreType *QatModule::getCoreType(const String               &name,
   }
   return nullptr;
 }
+
+// TYPEDEF
+
+bool QatModule::hasTypeDef(const String &name) const {
+  SHOW("TypeDef count: " << typeDefs.size())
+  for (auto *typ : typeDefs) {
+    if (typ->getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasBroughtTypeDef(const String &name) const {
+  for (auto brought : broughtTypeDefs) {
+    if (!brought.isNamed()) {
+      auto *tDef = brought.get();
+      if (tDef->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleTypeDefInImports(
+    const String &name, const utils::RequesterInfo &reqInfo) const {
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName() &&
+          (bMod->hasTypeDef(name) || bMod->hasBroughtTypeDef(name) ||
+           bMod->hasAccessibleTypeDefInImports(name, reqInfo).first)) {
+        if (bMod->getTypeDef(name, reqInfo)
+                ->getVisibility()
+                .isAccessible(reqInfo)) {
+          return {true, bMod->filePath.string()};
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+DefinitionType *
+QatModule::getTypeDef(const String               &name,
+                      const utils::RequesterInfo &reqInfo) const {
+  for (auto *tDef : typeDefs) {
+    if (tDef->getName() == name) {
+      return tDef;
+    }
+  }
+  for (auto brought : broughtTypeDefs) {
+    if (!brought.isNamed()) {
+      auto *tDef = brought.get();
+      if (tDef->getName() == name) {
+        return tDef;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasTypeDef(name) || bMod->hasBroughtTypeDef(name) ||
+            bMod->hasAccessibleTypeDefInImports(name, reqInfo).first) {
+          if (bMod->getTypeDef(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getTypeDef(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+// GLOBAL ENTITY
 
 bool QatModule::hasGlobalEntity(const String &name) const {
   for (auto *entity : globalEntities) {

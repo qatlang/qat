@@ -11,12 +11,17 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
   // FIXME - Support references
   auto *destTy = destinationType->emit(ctx);
   if (val->getType()->isSame(destTy)) {
-    ctx->Warning(
-        "Unnecessary conversion here. The expression is already of type " +
-            ctx->highlightWarning(destTy->toString()) +
-            ". Please remove this to avoid clutter.",
-        fileRange);
-    return val;
+    if (val->getType()->isDefinition() || destTy->isDefinition()) {
+      return new IR::Value(val->getLLVM(), destTy, false,
+                           IR::Nature::temporary);
+    } else {
+      ctx->Warning(
+          "Unnecessary conversion here. The expression is already of type " +
+              ctx->highlightWarning(destTy->toString()) +
+              ". Please remove this to avoid clutter.",
+          fileRange);
+      return val;
+    }
   } else {
     auto *typ = val->getType();
     if (typ->isStringSlice()) {
@@ -42,11 +47,9 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
       // TODO - Implement
     } else if (typ->isInteger()) {
       if (destTy->isInteger()) {
-        return new IR::Value(
-            ctx->builder.CreateIntCast(val->getLLVM(), destTy->getLLVMType(),
-                                       true),
-            IR::IntegerType::get(typ->asInteger()->getBitwidth(), ctx->llctx),
-            val->isVariable(), val->getNature());
+        return new IR::Value(ctx->builder.CreateIntCast(
+                                 val->getLLVM(), destTy->getLLVMType(), true),
+                             destTy, val->isVariable(), val->getNature());
       } else if (destTy->isUnsignedInteger()) {
         ctx->Warning(
             "Conversion from signed integer to unsigned integers can be lossy",
@@ -67,12 +70,9 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
       // TODO - Implement
     } else if (typ->isUnsignedInteger()) {
       if (destTy->isUnsignedInteger()) {
-        return new IR::Value(
-            ctx->builder.CreateIntCast(val->getLLVM(), destTy->getLLVMType(),
-                                       false),
-            IR::UnsignedType::get(typ->asUnsignedInteger()->getBitwidth(),
-                                  ctx->llctx),
-            false, IR::Nature::temporary);
+        return new IR::Value(ctx->builder.CreateIntCast(
+                                 val->getLLVM(), destTy->getLLVMType(), false),
+                             destTy, false, IR::Nature::temporary);
       } else if (destTy->isInteger()) {
         ctx->Warning(
             "Conversion from unsigned integer to signed integers can be lossy",

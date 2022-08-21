@@ -13,47 +13,18 @@ namespace qat::ast {
  *
  */
 class LoopNTimes : public Sentence {
-  /**
-   *  The block that will be looped over
-   *
-   */
-  Block *block;
-
-  /**
-   *  The block that happens after the loop block
-   *
-   */
-  Block *after;
-
-  /**
-   *  Expression representing the number of times it should loop
-   *
-   */
-  Expression *count;
+  Vec<Sentence *> sentences;
+  Expression     *count;
+  String          indexName;
 
 public:
-  /**
-   *  LoopNTimes is used to loop a specified number of times
-   *
-   * @param _count The expression that gives the number of loop executions
-   * @param _block The main block of the loop
-   * @param _after The block after the loop, that is not part of the loop
-   * @param _fileRange
-   */
-  LoopNTimes(Expression *_count, Block *_block, Block *_after,
+  LoopNTimes(Expression *_count, Vec<Sentence *> _snts, String _indexName,
              utils::FileRange _fileRange);
 
-  /**
-   *  Get the index name for the loop index for this sentence
-   *
-   * @param bb Any BasicBlock inside the parent function
-   * @return u64 The new index id
-   */
-  static u64 new_loop_index_id(llvm::BasicBlock *bb);
-
-  IR::Value *emit(IR::Context *ctx);
-
-  NodeType nodeType() const { return NodeType::loopTimes; }
+  useit bool hasName() const;
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit NodeType   nodeType() const final { return NodeType::loopTimes; }
+  useit nuo::Json toJson() const final;
 };
 
 } // namespace qat::ast

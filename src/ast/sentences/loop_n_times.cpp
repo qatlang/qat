@@ -3,29 +3,94 @@
 
 namespace qat::ast {
 
-LoopNTimes::LoopNTimes(Expression *_count, Block *_block, Block *_after,
-                       utils::FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), block(_block), after(_after),
-      count(_count) {}
+LoopNTimes::LoopNTimes(Expression *_count, Vec<Sentence *> _snts,
+                       String _indexName, utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), sentences(std::move(_snts)),
+      count(_count), indexName(std::move(_indexName)) {}
 
-u64 LoopNTimes::new_loop_index_id(llvm::BasicBlock *bb) {
-  u64 result = 0;
-  bb         = &bb->getParent()->getEntryBlock();
-  for (auto &inst : *bb) {
-    if (llvm::isa<llvm::AllocaInst>(inst)) {
-      auto alloc = llvm::dyn_cast<llvm::AllocaInst>(&inst);
-      if (alloc->getName().str().find("loop:times:index:") != String::npos) {
-        result++;
-      }
-    } else {
-      break;
-    }
-  }
-  return result;
-}
+bool LoopNTimes::hasName() const { return !indexName.empty(); }
 
 IR::Value *LoopNTimes::emit(IR::Context *ctx) {
-  // TODO - Implement this
+  auto *limit   = count->emit(ctx);
+  auto *countTy = limit->getType();
+  limit->loadImplicitPointer(ctx->builder);
+  if (limit->getType()->isUnsignedInteger() ||
+      (limit->getType()->isReference() &&
+       limit->getType()->asReference()->getSubType()->isUnsignedInteger()) ||
+      limit->getType()->isInteger() ||
+      (limit->getType()->isReference() &&
+       limit->getType()->asReference()->getSubType()->isInteger())) {
+    auto *llCount = limit->getLLVM();
+    if (limit->getType()->isReference()) {
+      countTy = limit->getType()->asReference()->getSubType();
+      llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
+    }
+    auto  uniq = hasName() ? indexName : utils::unique_id();
+    auto *loopIndex =
+        ctx->fn->getBlock()->newValue("loop'index'" + uniq, countTy, false);
+    ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u),
+                             loopIndex->getAlloca());
+    auto *trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    auto *restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    ctx->builder.CreateCondBr(
+        (countTy->isUnsignedInteger()
+             ? ctx->builder.CreateICmpULT(
+                   ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(),
+                                           loopIndex->getAlloca()),
+                   llCount)
+             : ctx->builder.CreateAnd(
+                   ctx->builder.CreateICmpSGT(
+                       llCount, llvm::ConstantInt::get(
+                                    limit->getType()->getLLVMType(), 0u)),
+                   ctx->builder.CreateICmpSLT(
+                       ctx->builder.CreateLoad(
+                           loopIndex->getType()->getLLVMType(),
+                           loopIndex->getAlloca()),
+                       llCount))),
+        trueBlock->getBB(), restBlock->getBB());
+    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, restBlock,
+                                              loopIndex, IR::LoopType::times));
+    trueBlock->setActive(ctx->builder);
+    for (auto *snt : sentences) {
+      (void)snt->emit(ctx);
+    }
+    ctx->builder.CreateStore(
+        ctx->builder.CreateAdd(
+            ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(),
+                                    loopIndex->getAlloca()),
+            llvm::ConstantInt::get(loopIndex->getType()->getLLVMType(), 1u)),
+        loopIndex->getAlloca());
+    ctx->builder.CreateCondBr(
+        (countTy->isUnsignedInteger()
+             ? ctx->builder.CreateICmpULT(
+                   ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(),
+                                           loopIndex->getAlloca()),
+                   llCount)
+             : ctx->builder.CreateICmpSLT(
+                   ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(),
+                                           loopIndex->getAlloca()),
+                   llCount)),
+        trueBlock->getBB(), restBlock->getBB());
+    ctx->loopsInfo.pop_back();
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error(
+        "The count for loop should be of integer or unsigned integer type",
+        count->fileRange);
+  }
+  return nullptr;
+}
+
+nuo::Json LoopNTimes::toJson() const {
+  Vec<nuo::JsonValue> snts;
+  for (auto *snt : sentences) {
+    snts.push_back(snt->toJson());
+  }
+  return nuo::Json()
+      ._("nodeType", "loopTimes")
+      ._("count", count->toJson())
+      ._("sentences", snts)
+      ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

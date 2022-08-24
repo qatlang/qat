@@ -29,10 +29,9 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
         SHOW("Conversion from StringSlice to CString")
         if (llvm::isa<llvm::Constant>(val->getLLVM())) {
           SHOW("String slice is a constant struct")
-          return new IR::Value(
-              ((llvm::ConstantStruct *)val)->getAggregateElement(0u),
-              IR::CStringType::get(ctx->llctx), false, IR::Nature::temporary);
-        } else if (llvm::isa<llvm::AllocaInst>(val->getLLVM())) {
+          val = val->createAlloca(ctx->builder);
+        }
+        if (llvm::isa<llvm::AllocaInst>(val->getLLVM())) {
           return new IR::Value(
               ctx->builder.CreateLoad(
                   IR::CStringType::get(ctx->llctx)->getLLVMType(),
@@ -46,6 +45,7 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
       }
       // TODO - Implement
     } else if (typ->isInteger()) {
+      val->loadImplicitPointer(ctx->builder);
       if (destTy->isInteger()) {
         return new IR::Value(ctx->builder.CreateIntCast(
                                  val->getLLVM(), destTy->getLLVMType(), true),
@@ -69,6 +69,7 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
       }
       // TODO - Implement
     } else if (typ->isUnsignedInteger()) {
+      val->loadImplicitPointer(ctx->builder);
       if (destTy->isUnsignedInteger()) {
         return new IR::Value(ctx->builder.CreateIntCast(
                                  val->getLLVM(), destTy->getLLVMType(), false),
@@ -93,6 +94,7 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
       }
       // TODO - Implement
     } else if (typ->isFloat()) {
+      val->loadImplicitPointer(ctx->builder);
       if (destTy->isFloat()) {
         return new IR::Value(
             ctx->builder.CreateFPCast(val->getLLVM(), destTy->getLLVMType()),

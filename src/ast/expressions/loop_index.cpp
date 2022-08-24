@@ -26,7 +26,7 @@ IR::Value *LoopIndex::emit(IR::Context *ctx) {
                  fileRange);
     } else {
       const auto &info = ctx->loopsInfo.back();
-      if (info->type == IR::LoopType::times) {
+      if (info->type == IR::LoopType::nTimes) {
         return new IR::Value(
             ctx->builder.CreateLoad(info->index->getType()->getLLVMType(),
                                     info->index->getAlloca()),

@@ -15,10 +15,11 @@ namespace qat::ast {
 class LoopWhile : public Sentence {
   Expression     *condition;
   Vec<Sentence *> sentences;
+  Maybe<String>   tag;
 
 public:
   LoopWhile(Expression *_condition, Vec<Sentence *> _sentences,
-            utils::FileRange _fileRange);
+            Maybe<String> _tag, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;

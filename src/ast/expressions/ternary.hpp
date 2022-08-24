@@ -16,26 +16,17 @@ namespace qat::ast {
  */
 class TernaryExpression : public Expression {
 private:
-  // The condition that determines the result of this expression
   Expression *condition;
-
-  // The expression to be used if the provided condition is true
-  Expression *if_expr;
-
-  // The expression to be used if the provided condition is false
-  Expression *else_expr;
+  Expression *trueExpr;
+  Expression *falseExpr;
 
 public:
-  // Construct a new Ternary Expression object.
-  // This represents a ternary expression in the language
-  TernaryExpression(Expression *_condition, Expression *_ifExpression,
-                    Expression *_elseExpression, utils::FileRange _fileRange);
+  TernaryExpression(Expression *_condition, Expression *_trueExpr,
+                    Expression *_falseExpr, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
+  useit IR::Value *emit(IR::Context *ctx) override;
   useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const override {
+  useit NodeType  nodeType() const override {
     return NodeType::ternaryExpression;
   }
 };

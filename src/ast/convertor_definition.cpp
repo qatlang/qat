@@ -1,5 +1,6 @@
 #include "./convertor_definition.hpp"
 #include "../show.hpp"
+#include "sentence.hpp"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -31,9 +32,7 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1),
                              argVal->getLLVM());
   }
-  for (auto *snt : sentences) {
-    (void)snt->emit(ctx);
-  }
+  emitSentences(sentences, ctx);
   if (prototype->isFrom &&
       (block->getName() == fnEmit->getBlock()->getName())) {
     if (block->getBB()->getInstList().empty()) {

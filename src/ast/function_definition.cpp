@@ -1,5 +1,7 @@
 #include "./function_definition.hpp"
+#include "../IR/control_flow.hpp"
 #include "../show.hpp"
+#include "sentence.hpp"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -35,9 +37,7 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i),
                              argVal->getAlloca(), false);
   }
-  for (auto *snt : sentences) {
-    (void)snt->emit(ctx);
-  }
+  emitSentences(sentences, ctx);
   if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
       (block->getName() == fnEmit->getBlock()->getName())) {
     if (block->getBB()->getInstList().empty()) {

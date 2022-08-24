@@ -1,5 +1,6 @@
 #include "./member_definition.hpp"
 #include "../show.hpp"
+#include "sentence.hpp"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -44,9 +45,7 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
                                argVal->getAlloca(), false);
     }
   }
-  for (auto *snt : sentences) {
-    (void)snt->emit(ctx);
-  }
+  emitSentences(sentences, ctx);
   if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
       (block->getName() == fnEmit->getBlock()->getName())) {
     if (block->getBB()->getInstList().empty()) {

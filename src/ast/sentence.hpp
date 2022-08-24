@@ -15,6 +15,8 @@ public:
   ~Sentence() override                             = default;
 };
 
+void emitSentences(const Vec<Sentence *> &sentences, IR::Context *ctx);
+
 } // namespace qat::ast
 
 #endif

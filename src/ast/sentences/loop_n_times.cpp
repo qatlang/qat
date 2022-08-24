@@ -1,16 +1,33 @@
 #include "./loop_n_times.hpp"
+#include "../../IR/control_flow.hpp"
 #include "../../utils/unique_id.hpp"
 
 namespace qat::ast {
 
 LoopNTimes::LoopNTimes(Expression *_count, Vec<Sentence *> _snts,
-                       String _indexName, utils::FileRange _fileRange)
+                       Maybe<String> _tag, utils::FileRange _fileRange)
     : Sentence(std::move(_fileRange)), sentences(std::move(_snts)),
-      count(_count), indexName(std::move(_indexName)) {}
+      count(_count), tag(std::move(_tag)) {}
 
-bool LoopNTimes::hasName() const { return !indexName.empty(); }
+bool LoopNTimes::hasTag() const { return tag.has_value(); }
 
 IR::Value *LoopNTimes::emit(IR::Context *ctx) {
+  if (tag.has_value()) {
+    for (const auto &info : ctx->loopsInfo) {
+      if (info->name == tag.value()) {
+        ctx->Error(
+            "The tag provided for the loop is already used for another loop",
+            fileRange);
+      }
+    }
+    for (const auto &brek : ctx->breakables) {
+      if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
+        ctx->Error("The tag provided for the loop is already used by another "
+                   "loop or switch",
+                   fileRange);
+      }
+    }
+  }
   auto *limit   = count->emit(ctx);
   auto *countTy = limit->getType();
   limit->loadImplicitPointer(ctx->builder);
@@ -25,13 +42,20 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
       countTy = limit->getType()->asReference()->getSubType();
       llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
     }
-    auto  uniq = hasName() ? indexName : utils::unique_id();
-    auto *loopIndex =
-        ctx->fn->getBlock()->newValue("loop'index'" + uniq, countTy, false);
+    auto  uniq      = hasTag() ? tag.value() : utils::unique_id();
+    auto *loopIndex = ctx->fn->getBlock()->newValue(
+        "loop'index'" + utils::unique_id(), countTy, false);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u),
                              loopIndex->getAlloca());
     auto *trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    SHOW("loop times true block " << ctx->fn->getFullName() << "."
+                                  << trueBlock->getName())
+    auto *condBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    SHOW("loop times cond block " << ctx->fn->getFullName() << "."
+                                  << condBlock->getName())
     auto *restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    SHOW("loop times rest block " << ctx->fn->getFullName() << "."
+                                  << restBlock->getName())
     ctx->builder.CreateCondBr(
         (countTy->isUnsignedInteger()
              ? ctx->builder.CreateICmpULT(
@@ -48,13 +72,14 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
                            loopIndex->getAlloca()),
                        llCount))),
         trueBlock->getBB(), restBlock->getBB());
-    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, restBlock,
-                                              loopIndex, IR::LoopType::times));
+    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, condBlock,
+                                              restBlock, loopIndex,
+                                              IR::LoopType::nTimes));
     ctx->breakables.push_back(new IR::Breakable(uniq, restBlock));
     trueBlock->setActive(ctx->builder);
-    for (auto *snt : sentences) {
-      (void)snt->emit(ctx);
-    }
+    emitSentences(sentences, ctx);
+    (void)IR::addBranch(ctx->builder, condBlock->getBB());
+    condBlock->setActive(ctx->builder);
     ctx->builder.CreateStore(
         ctx->builder.CreateAdd(
             ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(),
@@ -77,7 +102,7 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
     restBlock->setActive(ctx->builder);
   } else {
     ctx->Error(
-        "The count for loop should be of integer or unsigned integer type",
+        "The count for loop should be of signed or unsigned integer type",
         count->fileRange);
   }
   return nullptr;

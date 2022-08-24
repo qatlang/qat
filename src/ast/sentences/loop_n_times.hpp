@@ -15,13 +15,13 @@ namespace qat::ast {
 class LoopNTimes : public Sentence {
   Vec<Sentence *> sentences;
   Expression     *count;
-  String          indexName;
+  Maybe<String>   tag;
 
 public:
-  LoopNTimes(Expression *_count, Vec<Sentence *> _snts, String _indexName,
+  LoopNTimes(Expression *_count, Vec<Sentence *> _snts, Maybe<String> _tag,
              utils::FileRange _fileRange);
 
-  useit bool hasName() const;
+  useit bool hasTag() const;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::loopTimes; }
   useit nuo::Json toJson() const final;

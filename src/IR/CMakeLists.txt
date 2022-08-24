@@ -3,6 +3,7 @@ add_library(QAT_IR
         function.cpp
         global_entity.cpp
         member_function.cpp
+        control_flow.cpp
         qat_module.cpp
         static_member.cpp
         use.cpp

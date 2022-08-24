@@ -1,4 +1,5 @@
 #include "./if_else.hpp"
+#include "../../IR/control_flow.hpp"
 
 namespace qat::ast {
 
@@ -9,29 +10,35 @@ IfElse::IfElse(Vec<Pair<Expression *, Vec<Sentence *>>> _chain,
 
 IR::Value *IfElse::emit(IR::Context *ctx) {
   auto *restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-  for (const auto &section : chain) {
-    auto *exp = section.first->emit(ctx);
+  for (usize i = 0; i < chain.size(); i++) {
+    const auto &section = chain.at(i);
+    auto       *exp     = section.first->emit(ctx);
     if (!exp->getType()->isUnsignedInteger()) {
       ctx->Error("Expression in if sentence should be of unsigned integer type",
                  section.first->fileRange);
     }
-    auto *trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    auto *falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(),
-                              falseBlock->getBB());
-    trueBlock->setActive(ctx->builder);
-    for (auto *snt : section.second) {
-      (void)snt->emit(ctx);
+    auto      *trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    IR::Block *falseBlock = nullptr;
+    if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
+      falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+      ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(),
+                                falseBlock->getBB());
+    } else {
+      ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(),
+                                restBlock->getBB());
     }
-    ctx->builder.CreateBr(restBlock->getBB());
-    falseBlock->setActive(ctx->builder);
+    trueBlock->setActive(ctx->builder);
+    emitSentences(section.second, ctx);
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+      falseBlock->setActive(ctx->builder);
+    }
   }
   if (elseCase.has_value()) {
-    for (auto *snt : elseCase.value()) {
-      (void)snt->emit(ctx);
-    }
+    emitSentences(elseCase.value(), ctx);
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
   }
-  ctx->builder.CreateBr(restBlock->getBB());
   restBlock->setActive(ctx->builder);
   return nullptr;
 }

@@ -15,6 +15,7 @@ add_library(QAT_AST
         member_definition.cpp
         member_prototype.cpp
         node.cpp
+        sentence.cpp
         type_definition.cpp)
 
 add_subdirectory(types/)

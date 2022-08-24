@@ -22,7 +22,33 @@ bool Value::isLocalToFn() const { return isLocal; }
 void Value::setIsLocalToFn(bool isLoc) { isLocal = isLoc; }
 
 IR::Value *Value::createAlloca(llvm::IRBuilder<> &builder) {
-  auto *alloc = builder.CreateAlloca(getType()->getLLVMType());
+  auto              name  = utils::unique_id();
+  auto             *cBB   = builder.GetInsertBlock();
+  auto             *llFun = builder.GetInsertBlock()->getParent();
+  llvm::AllocaInst *alloc = nullptr;
+  if (llFun->getEntryBlock().getInstList().empty()) {
+    alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name,
+                                 &(llFun->getEntryBlock()));
+  } else {
+    llvm::Instruction *inst = nullptr;
+    // NOLINTNEXTLINE(modernize-loop-convert)
+    for (auto instr = llFun->getEntryBlock().getInstList().begin();
+         instr != llFun->getEntryBlock().getInstList().end(); instr++) {
+      if (llvm::isa<llvm::AllocaInst>(&*instr)) {
+        continue;
+      } else {
+        inst = &*instr;
+        break;
+      }
+    }
+    if (inst) {
+      alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name, inst);
+    } else {
+      alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name,
+                                   &(llFun->getEntryBlock()));
+    }
+  }
+  builder.SetInsertPoint(cBB);
   builder.CreateStore(ll, alloc);
   return new IR::Value(alloc, getType(), variable, nature);
 }

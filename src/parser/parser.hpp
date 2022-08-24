@@ -160,7 +160,7 @@ public:
    * @return Vec<ast::Sentence>
    */
   Vec<ast::Sentence *> parseSentences(ParserContext &prev_ctx, usize from,
-                                      usize to);
+                                      usize to, bool onlyOne = false);
 
   /**
    *  Get the end token belonging to a token pair.

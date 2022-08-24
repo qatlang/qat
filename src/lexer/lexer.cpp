@@ -255,7 +255,7 @@ Token Lexer::tokeniser() {
     read();
     if (current == '=') {
       read();
-      return Token::valued(TokenType::assignedBinaryOperator,
+      return Token::valued(TokenType::binaryOperator,
                            "!=", this->getPosition(2));
     } else {
       return Token::valued(TokenType::unaryOperatorLeft, "!",
@@ -627,8 +627,6 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::While, this->getPosition(5));
       } else if (value == "over") {
         return Token::normal(TokenType::over, this->getPosition(4));
-      } else if (value == "times") {
-        return Token::normal(TokenType::times, this->getPosition(5));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))
@@ -678,6 +676,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::Else, this->getPosition(4));
       } else if (value == "break") {
         return Token::normal(TokenType::Break, this->getPosition(5));
+      } else if (value == "continue") {
+        return Token::normal(TokenType::Continue, this->getPosition(8));
       } else {
         prev_ctx = "identifier";
         return Token::valued(TokenType::identifier, value,

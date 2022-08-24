@@ -74,7 +74,6 @@ enum class TokenType {
   loop,
   While,
   over,
-  times,
   sizeOf,
   unaryOperatorLeft,
   unaryOperatorRight,
@@ -96,7 +95,8 @@ enum class TokenType {
   assignToNonNullPointer,
   super,
   variadic,
-  Break
+  Break,
+  Continue
 };
 
 } // namespace qat::lexer

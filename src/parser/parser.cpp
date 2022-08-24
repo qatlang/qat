@@ -11,6 +11,7 @@
 #include "../ast/expressions/loop_index.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/null_pointer.hpp"
+#include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
 #include "../ast/expressions/unsigned_literal.hpp"
@@ -18,10 +19,12 @@
 #include "../ast/lib.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
+#include "../ast/sentences/continue.hpp"
 #include "../ast/sentences/expression_sentence.hpp"
 #include "../ast/sentences/give_sentence.hpp"
 #include "../ast/sentences/if_else.hpp"
 #include "../ast/sentences/local_declaration.hpp"
+#include "../ast/sentences/loop_infinite.hpp"
 #include "../ast/sentences/loop_n_times.hpp"
 #include "../ast/sentences/loop_while.hpp"
 #include "../ast/sentences/say_sentence.hpp"
@@ -1172,13 +1175,62 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       }
       break;
     }
+    case TokenType::ternary: {
+      ast::Expression *cond = nullptr;
+      if (cachedExpressions.empty()) {
+        if (cachedSymbol.has_value()) {
+          cond = new ast::Entity(cachedSymbol->relative, cachedSymbol->name,
+                                 cachedSymbol->fileRange);
+          cachedSymbol = None;
+        } else {
+          throwError("No expression found before ternary operator", RangeAt(i));
+        }
+      } else {
+        cond = cachedExpressions.back();
+        cachedExpressions.pop_back();
+      }
+      if (isNext(TokenType::parenthesisOpen, i)) {
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes.has_value()) {
+          auto pClose = pCloseRes.value();
+          if (isPrimaryWithin(TokenType::separator, i + 1, pClose)) {
+            auto splitRes = firstPrimaryPosition(TokenType::separator, i + 1);
+            if (splitRes.has_value()) {
+              auto  split = splitRes.value();
+              auto *trueExpr =
+                  parseExpression(prev_ctx, None, i + 1, split).first;
+              auto *falseExpr =
+                  parseExpression(prev_ctx, None, split, pClose).first;
+              cachedExpressions.push_back(new ast::TernaryExpression(
+                  cond, trueExpr, falseExpr,
+                  {cond->fileRange, tokens.at(pClose).fileRange}));
+              i = pClose;
+            } else {
+              throwError("Expected 2 expressions here for true and false cases "
+                         "of the ternary expression",
+                         RangeSpan(i + 1, pClose));
+            }
+          } else {
+            throwError("Expected 2 expressions here for true and false cases "
+                       "of the ternary expression",
+                       RangeSpan(i + 1, pClose));
+          }
+        } else {
+          throwError("Expected end for (", RangeAt(i + 1));
+        }
+      } else {
+        throwError("Expected ( after ternary operator", RangeAt(i));
+      }
+      break;
+    }
     case TokenType::child: {
       // FIXME - Handle this
       break;
     }
     default: {
       if (upto.has_value()) {
-        if (!cachedExpressions.empty() && upto.value() == i) {
+        if ((!cachedExpressions.empty()) && (upto.value() == i)) {
           return {cachedExpressions.back(), i - 1};
         } else {
           throwError("Encountered an invalid token in the expression",
@@ -1336,7 +1388,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
 } // NOLINT(clang-diagnostic-return-type)
 
 Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
-                                            usize upto) {
+                                            usize upto, bool onlyOne) {
   using ast::FloatType;
   using ast::IntegerType;
   using IR::FloatTypeKind;
@@ -1734,30 +1786,112 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         cachedExpressions.push_back(expRes.first);
         i = expRes.second;
         break;
+      } else if (isNext(TokenType::colon, i) ||
+                 isNext(TokenType::bracketOpen, i)) {
+        SHOW("Infinite loop")
+        auto          pos = i;
+        Maybe<String> tag = None;
+        if (isNext(TokenType::colon, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            tag = tokens.at(i + 2).value;
+            pos = i + 2;
+          } else {
+            throwError("Expected identifier after : for the tag for the loop",
+                       RangeAt(i + 1));
+          }
+        }
+        if (isNext(TokenType::bracketOpen, pos)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, pos + 1, false);
+          if (bCloseRes.has_value()) {
+            auto bClose    = bCloseRes.value();
+            auto sentences = parseSentences(prev_ctx, pos + 1, bClose);
+            result.push_back(
+                new ast::LoopInfinite(sentences, tag, RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            throwError("Expected end for [", RangeAt(pos + 1));
+          }
+        }
       } else if (isNext(TokenType::parenthesisOpen, i)) {
-        // FIXME - Add
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes.has_value()) {
+          auto          pClose  = pCloseRes.value();
+          Maybe<String> loopTag = None;
+          auto *count = parseExpression(prev_ctx, None, i + 1, pClose).first;
+          auto  pos   = pClose;
+          if (isNext(TokenType::colon, pClose)) {
+            if (isNext(TokenType::identifier, pClose + 1)) {
+              loopTag = tokens.at(pClose + 2).value;
+              pos     = pClose + 2;
+            } else {
+              throwError("Expected an identifier for the tag for the loop",
+                         RangeAt(pClose + 1));
+            }
+          }
+          if (isNext(TokenType::bracketOpen, pos)) {
+            auto bCloseRes =
+                getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                           pos + 1, false);
+            if (bCloseRes.has_value()) {
+              auto snts = parseSentences(prev_ctx, pos + 1, bCloseRes.value());
+              result.push_back(new ast::LoopNTimes(
+                  count, parseSentences(prev_ctx, pos + 1, bCloseRes.value()),
+                  loopTag, RangeSpan(i, bCloseRes.value())));
+              i = bCloseRes.value();
+            } else {
+              throwError("Expected end for [", RangeAt(pos + 1));
+            }
+          }
+        } else {
+          throwError("Expected end for (", RangeAt(i + 1));
+        }
       } else if (isNext(TokenType::While, i)) {
         if (isNext(TokenType::parenthesisOpen, i + 1)) {
           auto pCloseRes =
               getPairEnd(TokenType::parenthesisOpen,
                          TokenType::parenthesisClose, i + 2, false);
           if (pCloseRes.has_value()) {
-            auto *cond =
-                parseExpression(prev_ctx, None, i + 2, pCloseRes.value()).first;
+            auto  pClose = pCloseRes.value();
+            auto *cond   = parseExpression(prev_ctx, None, i + 2, pClose).first;
             if (isNext(TokenType::bracketOpen, pCloseRes.value())) {
               auto bCloseRes =
                   getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
-                             pCloseRes.value() + 1, false);
+                             pClose + 1, false);
               if (bCloseRes.has_value()) {
-                auto snts = parseSentences(prev_ctx, pCloseRes.value() + 1,
-                                           bCloseRes.value());
+                auto snts =
+                    parseSentences(prev_ctx, pClose + 1, bCloseRes.value());
                 result.push_back(new ast::LoopWhile(
-                    cond, snts, {token.fileRange, RangeAt(bCloseRes.value())}));
+                    cond, snts, None, RangeSpan(i, bCloseRes.value())));
                 i = bCloseRes.value();
                 break;
               } else {
                 throwError("Expected end for [",
                            RangeAt(pCloseRes.value() + 1));
+              }
+            } else if (isNext(TokenType::colon, pClose)) {
+              if (isNext(TokenType::identifier, pClose + 1)) {
+                if (isNext(TokenType::bracketOpen, pClose + 2)) {
+                  auto bCloseRes =
+                      getPairEnd(TokenType::bracketOpen,
+                                 TokenType::bracketClose, pClose + 3, false);
+                  if (bCloseRes) {
+                    auto snts =
+                        parseSentences(prev_ctx, pClose + 3, bCloseRes.value());
+                    result.push_back(new ast::LoopWhile(
+                        cond, snts, tokens.at(pClose + 2).value,
+                        RangeSpan(i, bCloseRes.value())));
+                    i = bCloseRes.value();
+                  } else {
+                    throwError("Expected end for [", RangeAt(pClose + 3));
+                  }
+                } else {
+                  // FIXME - Implement single statement loop
+                }
+              } else {
+                throwError("Expected name for the tag for the loop",
+                           RangeAt(pCloseRes.value()));
               }
             } else {
               // FIXME - Implement single statement loop
@@ -1768,36 +1902,8 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         }
       } else if (isNext(TokenType::over, i)) {
         // TODO - Implement
-      } else if (firstPrimaryPosition(TokenType::times, i).has_value()) {
-        auto   tim = firstPrimaryPosition(TokenType::times, i).value();
-        auto   pos = tim;
-        String indexName;
-        if (isNext(TokenType::colon, tim)) {
-          if (isNext(TokenType::identifier, tim + 1)) {
-            indexName = tokens.at(tim + 2).value;
-            pos       = tim + 2;
-          } else {
-            throwError("Expected identifier for the name of the loop counter, "
-                       "after : ",
-                       RangeAt(tim + 1));
-          }
-        }
-        auto *count = parseExpression(prev_ctx, None, i, tim).first;
-        if (isNext(TokenType::bracketOpen, pos)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
-                                      TokenType::bracketClose, pos + 1, false);
-          if (bCloseRes.has_value()) {
-            result.push_back(new ast::LoopNTimes(
-                count, parseSentences(prev_ctx, pos + 1, bCloseRes.value()),
-                indexName, {token.fileRange, RangeAt(bCloseRes.value())}));
-            i = bCloseRes.value();
-            break;
-          } else {
-            throwError("Expected end for [", RangeAt(pos + 1));
-          }
-        } else {
-          // FIXME - Implement single statement loops
-        }
+      } else {
+        throwError("Unexpected token after loop", token.fileRange);
       }
       break;
     }
@@ -1848,11 +1954,35 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       }
       break;
     }
-    default: {
-      throwError("Unexpected token found for parsing sentence: " +
-                     std::to_string((int)token.type),
-                 token.fileRange);
+    case TokenType::Continue: {
+      if (isNext(TokenType::child, i)) {
+        if (isNext(TokenType::identifier, i + 1)) {
+          result.push_back(
+              new ast::Continue(tokens.at(i + 2).value, RangeSpan(i, i + 2)));
+          i += 2;
+        } else {
+          throwError("Expected an identifier after continue'",
+                     RangeSpan(i, i + 2));
+        }
+      } else if (isNext(TokenType::stop, i)) {
+        result.push_back(new ast::Continue(None, token.fileRange));
+        i++;
+      } else {
+        throwError("Unexpected token found after continue", token.fileRange);
+      }
+      break;
     }
+    default: {
+      auto expRes = parseExpression(prev_ctx, cacheSymbol, i - 1, None);
+      cachedExpressions.push_back(expRes.first);
+      cacheSymbol = None;
+      i           = expRes.second;
+    }
+    }
+    if (onlyOne) {
+      if (!result.empty()) {
+        return result;
+      }
     }
   }
   return result;

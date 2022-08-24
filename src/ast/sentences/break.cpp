@@ -1,4 +1,5 @@
 #include "./break.hpp"
+#include "../../IR/control_flow.hpp"
 
 namespace qat::ast {
 
@@ -11,11 +12,12 @@ IR::Value *Break::emit(IR::Context *ctx) {
                fileRange);
   } else {
     if (tag.has_value()) {
-      for (usize i = (ctx->breakables.size() - 1); i >= 0; i--) {
-        if (ctx->breakables.at(i)->tag.has_value()) {
-          if (tag.value() == ctx->breakables.at(i)->tag.value()) {
-            ctx->builder.CreateBr(ctx->breakables.at(i)->restBlock->getBB());
-            return nullptr;
+      for (auto *brk : ctx->breakables) {
+        if (brk->tag.has_value()) {
+          if (tag.value() == brk->tag.value()) {
+            return new IR::Value(
+                IR::addBranch(ctx->builder, brk->restBlock->getBB()),
+                IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
           }
         }
       }
@@ -24,8 +26,10 @@ IR::Value *Break::emit(IR::Context *ctx) {
                  fileRange);
     } else {
       if (ctx->breakables.size() == 1) {
-        ctx->builder.CreateBr(ctx->breakables.front()->restBlock->getBB());
-        return nullptr;
+        return new IR::Value(
+            IR::addBranch(ctx->builder,
+                          ctx->breakables.front()->restBlock->getBB()),
+            IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
       } else {
         ctx->Error(
             "It is compulsory to provide the tagged name of the loop or switch "
@@ -34,6 +38,7 @@ IR::Value *Break::emit(IR::Context *ctx) {
       }
     }
   }
+  return nullptr;
 }
 
 nuo::Json Break::toJson() const {

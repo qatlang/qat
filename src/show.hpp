@@ -2,6 +2,7 @@
 #define QAT_SHOW_HPP
 
 #include "./cli/color.hpp"
+#include <iostream>
 
 #define HLIGHT(col, val) colors::col << val << colors::reset
 #if NDEBUG

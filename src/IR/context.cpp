@@ -7,12 +7,12 @@
 
 namespace qat::IR {
 
-LoopInfo::LoopInfo(String _name, IR::Block *_mainB, IR::Block *_restB,
-                   IR::LocalValue *_index, LoopType _type)
-    : name(std::move(_name)), mainBlock(_mainB), restBlock(_restB),
-      index(_index), type(_type) {}
+LoopInfo::LoopInfo(String _name, IR::Block *_mainB, IR::Block *_condB,
+                   IR::Block *_restB, IR::LocalValue *_index, LoopType _type)
+    : name(std::move(_name)), mainBlock(_mainB), condBlock(_condB),
+      restBlock(_restB), index(_index), type(_type) {}
 
-bool LoopInfo::isTimes() const { return type == LoopType::times; }
+bool LoopInfo::isTimes() const { return type == LoopType::nTimes; }
 
 Breakable::Breakable(Maybe<String> _tag, IR::Block *_restBlock)
     : tag(std::move(_tag)), restBlock(_restBlock) {}

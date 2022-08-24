@@ -14,7 +14,7 @@
 namespace qat::IR {
 
 enum class LoopType {
-  times,
+  nTimes,
   While,
   over,
   infinite,
@@ -22,11 +22,12 @@ enum class LoopType {
 
 class LoopInfo {
 public:
-  LoopInfo(String _name, IR::Block *_mainB, IR::Block *_restB,
-           IR::LocalValue *_index, LoopType _type);
+  LoopInfo(String _name, IR::Block *_mainB, IR::Block *_condB,
+           IR::Block *_restB, IR::LocalValue *_index, LoopType _type);
 
   String          name;
   IR::Block      *mainBlock;
+  IR::Block      *condBlock;
   IR::Block      *restBlock;
   IR::LocalValue *index;
   LoopType        type;

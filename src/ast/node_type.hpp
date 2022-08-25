@@ -44,7 +44,7 @@ enum class NodeType {
   binaryExpression,
   allocateOnHeap,
   memberFunctionCall,
-  memberVariableExpression,
+  memberAccess,
   sizeOf,
   sizeOfType,
   memberIndexAccess,

@@ -9,6 +9,7 @@
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/integer_literal.hpp"
 #include "../ast/expressions/loop_index.hpp"
+#include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/null_pointer.hpp"
 #include "../ast/expressions/ternary.hpp"
@@ -1220,12 +1221,39 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           throwError("Expected end for (", RangeAt(i + 1));
         }
       } else {
+        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
         throwError("Expected ( after ternary operator", RangeAt(i));
       }
       break;
     }
     case TokenType::child: {
-      // FIXME - Handle this
+      SHOW("Expression parsing : Member access")
+      if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
+        if (cachedExpressions.empty() && cachedSymbol.has_value()) {
+          SHOW("Expression empty, using symbol")
+          cachedExpressions.push_back(new ast::Entity(cachedSymbol->relative,
+                                                      cachedSymbol->name,
+                                                      cachedSymbol->fileRange));
+          cachedSymbol = None;
+        }
+        if (isNext(TokenType::identifier, i)) {
+          if (isNext(TokenType::templateTypeStart, i + 1) ||
+              isNext(TokenType::parenthesisOpen, i + 1)) {
+            // FIXME - Implement member function calls
+          } else {
+            auto *exp = cachedExpressions.back();
+            cachedExpressions.pop_back();
+            cachedExpressions.push_back(
+                new ast::MemberAccess(exp, false, tokens.at(i + 1).value,
+                                      {exp->fileRange, RangeAt(i + 1)}));
+            i++;
+          }
+        } else {
+          throwError("Expected an identifier for member access", RangeAt(i));
+        }
+      } else {
+        throwError("No expression found for member access", RangeAt(i));
+      }
       break;
     }
     default: {

@@ -10,7 +10,7 @@ add_library(QAT_AST_EXPRESSIONS
         loop_index.cpp
         member_function_call.cpp
         index_access.cpp
-        member_variable.cpp
+        member_access.cpp
         null_pointer.cpp
         operator.cpp
         radix_literal.cpp

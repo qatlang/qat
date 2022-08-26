@@ -47,6 +47,7 @@ enum class TokenType {
   Default,
   let,
   assignment,
+  associatedAssignment,
   separator,
   integerLiteral,
   unsignedLiteral,

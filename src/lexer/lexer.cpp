@@ -199,6 +199,11 @@ Token Lexer::tokeniser() {
       read();
       template_type_start_count++;
       return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
+    } else if (current == '=') {
+      prev_ctx = "associatedAssignment";
+      read();
+      return Token::normal(TokenType::associatedAssignment,
+                           this->getPosition(2));
     } else {
       prev_ctx = "colon";
       return Token::normal(TokenType::colon, this->getPosition(1));

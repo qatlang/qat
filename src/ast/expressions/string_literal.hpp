@@ -17,16 +17,13 @@ public:
   // StringLiteral is used to represent literal strings
   StringLiteral(String _value, utils::FileRange _fileRange);
 
-  // Get the value of the string
-  useit String get_value() const;
-
   void addValue(String val, utils::FileRange fRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
-  useit NodeType nodeType() const override { return NodeType::stringLiteral; }
-
+  // Get the value of the string
+  useit String get_value() const;
+  useit IR::Value *emit(IR::Context *ctx) override;
   useit nuo::Json toJson() const override;
+  useit NodeType  nodeType() const override { return NodeType::stringLiteral; }
 };
 
 } // namespace qat::ast

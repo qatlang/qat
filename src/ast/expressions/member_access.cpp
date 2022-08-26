@@ -11,8 +11,28 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
   SHOW("Member variable emitting")
   auto *inst     = instance->emit(ctx);
   auto *instType = inst->getType();
+  bool  isVar    = inst->isVariable();
   if (instType->isReference()) {
+    inst->loadImplicitPointer(ctx->builder);
+    isVar    = instType->asReference()->isSubtypeVariable();
     instType = instType->asReference()->getSubType();
+  }
+  if (isPointer) {
+    if (instType->isPointer()) {
+      inst->loadImplicitPointer(ctx->builder);
+      isVar    = instType->asPointer()->isSubtypeVariable();
+      instType = instType->asPointer()->getSubType();
+    } else {
+      ctx->Error(
+          "The expression type has to be a pointer to use >- to access members",
+          instance->fileRange);
+    }
+  } else {
+    if (instType->isPointer()) {
+      ctx->Error(
+          "The expression is of pointer type. Please use >- to access members",
+          instance->fileRange);
+    }
   }
   if (instType->isArray()) {
     if (name == "length") {
@@ -25,6 +45,25 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
       ctx->Error("Invalid name for member access " + ctx->highlightError(name),
                  fileRange);
     }
+  } else if (instType->isCoreType()) {
+    if (!instType->asCore()->hasMember(name)) {
+      ctx->Error("Core type " +
+                     ctx->highlightError(instType->asCore()->toString()) +
+                     " does not have a member named " +
+                     ctx->highlightError(name) + ". Please check the logic",
+                 fileRange);
+    }
+    if (!inst->isImplicitPointer() && !inst->getType()->isReference() &&
+        !inst->getType()->isPointer()) {
+      inst = inst->createAlloca(ctx->builder);
+    }
+    return new IR::Value(
+        ctx->builder.CreateStructGEP(
+            instType->asCore()->getLLVMType(), inst->getLLVM(),
+            instType->asCore()->getIndexOf(name).value()),
+        IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name),
+                               ctx->llctx),
+        false, IR::Nature::temporary);
   } else {
     ctx->Error("Member access for this type is not supported", fileRange);
   }

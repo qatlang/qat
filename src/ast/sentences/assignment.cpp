@@ -70,25 +70,25 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
       }
     } else {
       ctx->Error("Left hand side of the assignment cannot be assigned to",
-                 fileRange);
+                 lhs->fileRange);
     }
   } else {
     if (lhsVal->getType()->isReference()) {
       ctx->Error("Left hand side of the assignment cannot be assigned to "
                  "because the referred type of the reference does not have "
                  "variability",
-                 fileRange);
+                 lhs->fileRange);
     } else if (lhsVal->getType()->isPointer()) {
       ctx->Error("Left hand side of the assignment cannot be assigned to "
                  "because it is of pointer type. If you intend to change the "
                  "value pointed to by this pointer, consider dereferencing it "
                  "before assigning",
-                 fileRange);
+                 lhs->fileRange);
     } else {
       ctx->Error(
           "Left hand side of the assignment cannot be assigned to because "
           "it is not a variable value",
-          fileRange);
+          lhs->fileRange);
     }
   }
 }

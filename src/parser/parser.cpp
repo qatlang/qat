@@ -1675,24 +1675,9 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         }
         // FIXME - Handle this case
       } else if (isNext(TokenType::child, i)) {
-        if (cacheSymbol.has_value()) {
-          auto end_res = firstPrimaryPosition(TokenType::stop, i);
-          if (end_res.has_value() && (end_res.value() <= upto)) {
-            auto  end = end_res.value();
-            auto *exp =
-                parseExpression(ctx, cacheSymbol, cacheSymbol->tokenIndex, end)
-                    .first;
-            cacheSymbol = None;
-            result.push_back(new ast::ExpressionSentence(
-                exp, {cacheSymbol->fileRange, RangeAt(end)}));
-            i = end;
-          } else {
-            throwError("Invalid end of sentence", token.fileRange);
-          }
-        } else {
-          throwError("Expected an expression before ' for correct access",
-                     token.fileRange);
-        }
+        auto expRes = parseExpression(prev_ctx, None, i - 1, None);
+        cachedExpressions.push_back(expRes.first);
+        i = expRes.second;
       } else {
         auto sym_res = parseSymbol(ctx, i);
         cacheSymbol  = sym_res.first;

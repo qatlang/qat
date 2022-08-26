@@ -5,6 +5,8 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
+#define MainFirstArgBitwidth 32u
+
 namespace qat::ast {
 
 FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
@@ -15,8 +17,48 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
 
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
   auto *fnEmit = (IR::Function *)prototype->emit(ctx);
-  if (fnEmit->getName() == "main") {
-    ctx->hasMain = true;
+  if (fnEmit->getName() == "main" &&
+      (ctx->getMod()->getFullNameWithChild("main") == "main")) {
+    if (ctx->hasMain) {
+      ctx->Error(ctx->highlightError("main") +
+                     " function already exists. Please check the codebase",
+                 prototype->fileRange);
+    } else {
+      auto args = fnEmit->getType()->asFunction()->getArgumentTypes();
+      if (args.size() == 2) {
+        if (args.at(0)->getType()->isUnsignedInteger() &&
+            (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() ==
+             MainFirstArgBitwidth)) {
+          if (args.at(1)->getType()->isPointer() &&
+              ((!args.at(1)->getType()->asPointer()->isSubtypeVariable()) &&
+               (args.at(1)
+                    ->getType()
+                    ->asPointer()
+                    ->getSubType()
+                    ->isCString()))) {
+            ctx->hasMain = true;
+          } else {
+            ctx->Error(
+                "The second argument of the " + ctx->highlightError("main") +
+                    " function should be " + ctx->highlightError("#[cstring]"),
+                prototype->arguments.at(1)->getFileRange());
+          }
+        } else {
+          ctx->Error("The first argument of the " +
+                         ctx->highlightError("main") + " function should be " +
+                         ctx->highlightError("u32"),
+                     prototype->arguments.at(0)->getFileRange());
+        }
+      } else {
+        ctx->Error(
+            "The " + ctx->highlightError("main") +
+                " function needs 2 arguments, the first argument should be " +
+                ctx->highlightError("u32") +
+                ", and the second argument should be " +
+                ctx->highlightError("#[cstring]"),
+            prototype->fileRange);
+      }
+    }
   }
   ctx->fn = fnEmit;
   SHOW("Set active function: " << fnEmit->getFullName())

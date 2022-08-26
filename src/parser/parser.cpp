@@ -12,6 +12,7 @@
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/null_pointer.hpp"
+#include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
@@ -959,6 +960,78 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       i               = symbol_res.second;
       break;
     }
+    case TokenType::curlybraceOpen: {
+      if (cachedSymbol.has_value()) {
+        auto cCloseRes = getPairEnd(TokenType::curlybraceOpen,
+                                    TokenType::curlybraceClose, i, false);
+        if (cCloseRes.has_value()) {
+          auto cClose = cCloseRes.value();
+          // FIXME - Maybe change associated assignment to assignment?
+          if (isPrimaryWithin(TokenType::associatedAssignment, i, cClose)) {
+            Vec<Pair<String, utils::FileRange>> fields;
+            Vec<ast::Expression *>              fieldValues;
+            for (usize j = i + 1; j < cClose; j++) {
+              if (isNext(TokenType::identifier, j - 1)) {
+                fields.push_back(Pair<String, utils::FileRange>(
+                    tokens.at(j).value, tokens.at(j).fileRange));
+                if (isNext(TokenType::associatedAssignment, j)) {
+                  if (isPrimaryWithin(TokenType::separator, j + 1, cClose)) {
+                    auto sepRes =
+                        firstPrimaryPosition(TokenType::separator, j + 1);
+                    if (sepRes) {
+                      auto sep = sepRes.value();
+                      if (sep == j + 2) {
+                        throwError("No expression for the member found",
+                                   RangeSpan(j + 1, j + 2));
+                      }
+                      fieldValues.push_back(
+                          parseExpression(prev_ctx, None, j + 1, sep).first);
+                      j = sep;
+                      continue;
+                    } else {
+                      throwError("Expected ,", RangeSpan(j + 1, cClose));
+                    }
+                  } else {
+                    if (cClose == j + 2) {
+                      throwError("No expression for the member found",
+                                 RangeSpan(j + 1, j + 2));
+                    }
+                    fieldValues.push_back(
+                        parseExpression(prev_ctx, None, j + 1, cClose).first);
+                    j = cClose;
+                  }
+                } else {
+                  throwError("Expected := after the name of the member",
+                             RangeAt(j));
+                }
+              } else {
+                throwError("Expected an identifier for the name of the member "
+                           "of the core type",
+                           RangeAt(j));
+              }
+            }
+            cachedExpressions.push_back(new ast::PlainInitialiser(
+                new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
+                                   false, cachedSymbol->fileRange),
+                fields, fieldValues, RangeSpan(i, cClose)));
+          } else {
+            auto exps = parseSeparatedExpressions(prev_ctx, i, cClose);
+            cachedExpressions.push_back(new ast::PlainInitialiser(
+                new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
+                                   false, cachedSymbol->fileRange),
+                {}, exps, RangeSpan(i + 1, cClose)));
+          }
+          cachedSymbol = None;
+          i            = cClose;
+        } else {
+          throwError("Expected end for {", RangeAt(i + 1));
+        }
+      } else {
+        // FIXME - Support maps
+        throwError("No type specified for plain initialisation", RangeAt(i));
+      }
+      break;
+    }
     case TokenType::bracketOpen: {
       SHOW("Found [")
       auto bCloseRes =
@@ -1333,7 +1406,7 @@ Vec<ast::Expression *> Parser::
   Vec<ast::Expression *> result;
   for (usize i = from + 1; i < to; i++) {
     if (isPrimaryWithin(lexer::TokenType::separator, i - 1, to)) {
-      auto endResult = firstPrimaryPosition(lexer::TokenType::separator, i);
+      auto endResult = firstPrimaryPosition(lexer::TokenType::separator, i - 1);
       if (!endResult.has_value() || (endResult.value() >= to)) {
         throwError("Invalid position for separator `,`", RangeAt(i));
       }

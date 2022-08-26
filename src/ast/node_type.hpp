@@ -36,6 +36,7 @@ enum class NodeType {
   closeBox,
   reassignment,
   entity,
+  plainInitialiser,
   selfExpression,
   toConversion,
   unaryExpression,

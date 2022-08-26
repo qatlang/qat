@@ -1,6 +1,7 @@
 #include "./local_declaration.hpp"
 #include "../../show.hpp"
 #include "../expressions/array_literal.hpp"
+#include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
@@ -23,7 +24,8 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
   }
   IR::QatType *declType = nullptr;
 
-  // EDGE CASE -> The following code avoids multiple allocations for arrays
+  // EDGE CASE -> The following code avoids multiple allocations for arrays and
+  // core types
   if (value && (value->nodeType() == NodeType::arrayLiteral)) {
     auto *arr = (ast::ArrayLiteral *)value;
     if (type) {
@@ -44,7 +46,47 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       (void)arr->emit(ctx);
       return nullptr;
     }
-  } // EDGE CASE ends here
+  } else if (value && (value->nodeType() == NodeType::plainInitialiser)) {
+    auto *plain = (ast::PlainInitialiser *)value;
+    if (type) {
+      declType = type->emit(ctx);
+      if (!declType->isCoreType()) {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       " and is not a core type. So the value provided cannot "
+                       "be a plain initialiser",
+                   value->fileRange);
+      }
+      if (!(plain->type)) {
+        if (type->typeKind() == TypeKind::named) {
+          plain->type = (NamedType *)type;
+        } else {
+          ctx->Error("Invalid type provided for plain initialisation",
+                     type->fileRange);
+        }
+      }
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+      auto *plainTy = plain->type->emit(ctx);
+      if (declType->isSame(plainTy)) {
+        auto *loc    = block->newValue(name, declType, variability);
+        plain->local = loc;
+        (void)plain->emit(ctx);
+        return nullptr;
+      } else {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       ", but the value provided is of type " +
+                       ctx->highlightError(plainTy->toString()),
+                   value->fileRange);
+      }
+    } else {
+      plain->irName = name;
+      plain->isVar  = variability;
+      (void)plain->emit(ctx);
+      return nullptr;
+    }
+  }
+  // EDGE CASE ends here
 
   IR::Value *expVal = nullptr;
   if (value) {

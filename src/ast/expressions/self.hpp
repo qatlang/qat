@@ -24,7 +24,7 @@ public:
 
   useit nuo::Json toJson() const override;
 
-  useit NodeType nodeType() const override { return NodeType::selfExpression; }
+  useit NodeType nodeType() const override { return NodeType::self; }
 };
 
 } // namespace qat::ast

@@ -79,7 +79,7 @@ public:
                const utils::FileRange      &fileRange,
                const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
-  useit MemberFnType getMemberFnType() const;
+  useit MemberFnType getMemberFnType();
   useit bool         isVariationFunction() const;
   useit bool         isStaticFunction() const;
   useit String       getFullName() const final;

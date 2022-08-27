@@ -1,4 +1,5 @@
 #include "./member_function.hpp"
+#include "../show.hpp"
 #include "argument.hpp"
 #include "function.hpp"
 #include "types/core_type.hpp"
@@ -22,7 +23,42 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation,
                returnType, _isReturnTypeVariable, _is_async, std::move(_args),
                is_variable_arguments, _fileRange, _visibility_info, ctx, true),
       parent(_parent), isStatic(_is_static), isVariation(_isVariation),
-      fnType(_fnType) {}
+      fnType(_fnType) {
+  switch (fnType) {
+  case MemberFnType::constructor: {
+    parent->constructors.push_back(this);
+    break;
+  }
+  case MemberFnType::normal: {
+    parent->memberFunctions.push_back(this);
+    break;
+  }
+  case MemberFnType::staticFn: {
+    parent->staticFunctions.push_back(this);
+    break;
+  }
+  case MemberFnType::fromConvertor: {
+    parent->fromConvertors.push_back(this);
+    break;
+  }
+  case MemberFnType::toConvertor: {
+    parent->toConvertors.push_back(this);
+    break;
+  }
+  case MemberFnType::copyConstructor: {
+    parent->copyConstructor = this;
+    break;
+  }
+  case MemberFnType::moveConstructor: {
+    parent->moveConstructor = this;
+    break;
+  }
+  case MemberFnType::destructor: {
+    parent->destructor = this;
+    break;
+  }
+  }
+}
 
 MemberFunction *MemberFunction::Create(
     CoreType *parent, bool is_variation, const String &name, QatType *returnTy,
@@ -62,8 +98,10 @@ MemberFunction *MemberFunction::CreateFromConvertor(
     llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::Create("self", PointerType::get(true, parent, ctx), 0));
+      Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  SHOW("Created parent pointer argument")
   argsInfo.push_back(Argument::Create(name, sourceType, 1));
+  SHOW("Created candidate type")
   return new MemberFunction(MemberFnType::fromConvertor, true, parent,
                             "from'" + sourceType->toString(),
                             VoidType::get(ctx), false, false, argsInfo, false,
@@ -75,7 +113,7 @@ MemberFunction *MemberFunction::CreateToConvertor(
     const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::Create("self", PointerType::get(false, parent, ctx), 0));
+      Argument::Create("''", PointerType::get(false, parent, ctx), 0));
   return new MemberFunction(MemberFnType::toConvertor, false, parent,
                             "to'" + destType->toString(), destType, false,
                             false, argsInfo, false, false, fileRange, visibInfo,
@@ -121,10 +159,13 @@ bool MemberFunction::isMemberFunction() const { return true; }
 
 CoreType *MemberFunction::getParentType() { return parent; }
 
-MemberFnType MemberFunction::getMemberFnType() const { return fnType; }
+MemberFnType MemberFunction::getMemberFnType() { return fnType; }
 
 void MemberFunction::emitCPP(cpp::File &file) const {}
 
-nuo::Json MemberFunction::toJson() const { return nuo::Json(); }
+nuo::Json MemberFunction::toJson() const {
+  // TODO - Implement remaining
+  return nuo::Json();
+}
 
 } // namespace qat::IR

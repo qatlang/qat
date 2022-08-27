@@ -13,6 +13,7 @@ namespace qat::ast {
 
 class ConvertorPrototype : public Node {
   friend class ConvertorDefinition;
+  friend class DefineCoreType;
 
 private:
   IR::CoreType         *coreType;

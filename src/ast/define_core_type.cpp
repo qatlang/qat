@@ -62,6 +62,10 @@ DefineCoreType::DefineCoreType(String                       _name,
                                 stm->value ? stm->value->emit(ctx) : nullptr,
                                 stm->visibility, ctx->llctx);
     }
+    for (auto *conv : convertorDefinitions) {
+      conv->setCoreType(coreType);
+      (void)conv->emit(ctx);
+    }
     return nullptr; // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
   } else {
     // TODO - Check type definitions

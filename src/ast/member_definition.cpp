@@ -23,8 +23,9 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
   auto *corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
-  auto *self = block->newValue("self", corePtrTy, prototype->isVariationFn);
-  self->loadImplicitPointer(ctx->builder);
+  auto *self       = block->newValue("''", corePtrTy, prototype->isVariationFn);
+  ctx->selfVal =
+      ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
   for (usize i = 1; i < argIRTypes.size(); i++) {
     SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
     if (argIRTypes.at(i)->isMemberArgument()) {
@@ -46,6 +47,7 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
     }
   }
   emitSentences(sentences, ctx);
+  ctx->selfVal = nullptr;
   if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
       (block->getName() == fnEmit->getBlock()->getName())) {
     if (block->getBB()->getInstList().empty()) {

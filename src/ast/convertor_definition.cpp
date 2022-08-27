@@ -23,8 +23,11 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   SHOW("About to allocate necessary arguments")
   auto *corePtrType =
       IR::PointerType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
-  auto *self = block->newValue("self", corePtrType, true);
-  self->loadImplicitPointer(ctx->builder);
+  auto *self = block->newValue("''", corePtrType, false);
+  ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0),
+                           self->getLLVM());
+  ctx->selfVal =
+      ctx->builder.CreateLoad(self->getType()->getLLVMType(), self->getLLVM());
   if (prototype->isFrom) {
     auto *argTy  = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);
     auto *argVal = block->newValue(argTy->getName(), argTy->getType(),
@@ -33,6 +36,7 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
                              argVal->getLLVM());
   }
   emitSentences(sentences, ctx);
+  ctx->selfVal = nullptr;
   if (prototype->isFrom &&
       (block->getName() == fnEmit->getBlock()->getName())) {
     if (block->getBB()->getInstList().empty()) {

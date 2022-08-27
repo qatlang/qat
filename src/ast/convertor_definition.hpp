@@ -11,6 +11,8 @@
 namespace qat::ast {
 
 class ConvertorDefinition : public Node {
+  friend class DefineCoreType;
+
 private:
   Vec<Sentence *>     sentences;
   ConvertorPrototype *prototype;

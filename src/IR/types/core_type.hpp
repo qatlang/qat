@@ -17,7 +17,7 @@ namespace qat::IR {
  *
  */
 class CoreType : public QatType {
-  friend class Function;
+  friend class MemberFunction;
 
 public:
   class Member {

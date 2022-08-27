@@ -146,45 +146,10 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
   }
   type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
   if (isMemberFn) {
-    auto *memFn = (MemberFunction *)this;
     ll =
         llvm::Function::Create((llvm::FunctionType *)(getType()->getLLVMType()),
                                llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                                0U, name, mod->getLLVMModule());
-    switch (memFn->getMemberFnType()) {
-    case MemberFnType::constructor: {
-      memFn->getParentType()->constructors.push_back(memFn);
-      break;
-    }
-    case MemberFnType::normal: {
-      memFn->getParentType()->memberFunctions.push_back(memFn);
-      break;
-    }
-    case MemberFnType::staticFn: {
-      memFn->getParentType()->staticFunctions.push_back(memFn);
-      break;
-    }
-    case MemberFnType::fromConvertor: {
-      memFn->getParentType()->fromConvertors.push_back(memFn);
-      break;
-    }
-    case MemberFnType::toConvertor: {
-      memFn->getParentType()->toConvertors.push_back(memFn);
-      break;
-    }
-    case MemberFnType::copyConstructor: {
-      memFn->getParentType()->copyConstructor = memFn;
-      break;
-    }
-    case MemberFnType::moveConstructor: {
-      memFn->getParentType()->moveConstructor = memFn;
-      break;
-    }
-    case MemberFnType::destructor: {
-      memFn->getParentType()->destructor = memFn;
-      break;
-    }
-    }
   } else {
     ll = llvm::Function::Create(
         (llvm::FunctionType *)(getType()->getLLVMType()),

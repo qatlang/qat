@@ -59,7 +59,8 @@ public:
   llvm::LLVMContext llctx;
   IRBuilderTy       builder;
   QatModule        *mod;
-  IR::Function     *fn;         // Active function
+  IR::Function     *fn; // Active function
+  llvm::Value      *selfVal;
   IR::CoreType     *activeType; // Active core type
   Vec<String>       exposed;
   bool              hasMain;

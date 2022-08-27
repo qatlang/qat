@@ -9,9 +9,8 @@ ConvertorPrototype::ConvertorPrototype(bool _isFrom, String _argName,
                                        QatType *_candidateType,
                                        const utils::VisibilityInfo &_visibility,
                                        const utils::FileRange      &_fileRange)
-    : isFrom(_isFrom), argName(std::move(_argName)),
-      candidateType(_candidateType), visibility(_visibility), Node(_fileRange) {
-}
+    : Node(_fileRange), argName(std::move(_argName)),
+      candidateType(_candidateType), visibility(_visibility), isFrom(_isFrom) {}
 
 ConvertorPrototype *
 ConvertorPrototype::From(const String &_argName, QatType *_candidateType,
@@ -43,9 +42,11 @@ IR::Value *ConvertorPrototype::emit(IR::Context *ctx) {
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
   if (isFrom) {
+    SHOW("Convertor is FROM")
     function = IR::MemberFunction::CreateFromConvertor(
         coreType, candidate, argName, fileRange, visibility, ctx->llctx);
   } else {
+    SHOW("Convertor is TO")
     function = IR::MemberFunction::CreateToConvertor(
         coreType, candidate, fileRange, visibility, ctx->llctx);
   }

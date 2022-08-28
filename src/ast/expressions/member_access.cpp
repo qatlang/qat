@@ -53,6 +53,14 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
                      ctx->highlightError(name) + ". Please check the logic",
                  fileRange);
     }
+    auto *cTy = instType->asCore();
+    auto *mem = cTy->getMemberAt(instType->asCore()->getIndexOf(name).value());
+    if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+      ctx->Error("Member " + ctx->highlightError(name) + " of core type " +
+                     ctx->highlightError(cTy->getFullName()) +
+                     " is not accessible here",
+                 fileRange);
+    }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() &&
         !inst->getType()->isPointer()) {
       inst = inst->createAlloca(ctx->builder);

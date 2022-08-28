@@ -18,14 +18,15 @@ IR::Value *SelfMember::emit(IR::Context *ctx) {
     }
     auto *cTy = mFn->getParentType();
     if (cTy->hasMember(name)) {
-      auto *childTy = cTy->getTypeOfMember(name);
       auto  index   = cTy->getIndexOf(name).value();
+      auto *mem     = cTy->getMemberAt(index);
       auto *selfVal = mFn->getBlock()->getValue("''");
       return new IR::Value(
           ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
           IR::ReferenceType::get(
-              selfVal->getType()->asPointer()->isSubtypeVariable(), childTy,
-              ctx->llctx),
+              selfVal->getType()->asPointer()->isSubtypeVariable() &&
+                  mem->variability,
+              mem->type, ctx->llctx),
           false, IR::Nature::temporary);
     } else {
       ctx->Error("The parent type of this member function does not have a "
@@ -40,6 +41,7 @@ IR::Value *SelfMember::emit(IR::Context *ctx) {
                    " is not a member function of any type",
                fileRange);
   }
+  return nullptr;
 }
 
 nuo::Json SelfMember::toJson() const {

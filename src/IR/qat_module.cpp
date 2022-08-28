@@ -181,6 +181,19 @@ bool QatModule::shouldPrefixName() const {
           (moduleType != ModuleType::folder));
 }
 
+Function *QatModule::getGlobalInitialiser(IR::Context *ctx) {
+  if (!globalInitialiser) {
+    globalInitialiser = IR::Function::Create(
+        this, "qat'global'initialiser", IR::VoidType::get(ctx->llctx), false,
+        false, {}, false,
+        utils::FileRange("", utils::FilePos{0u, 0u}, utils::FilePos{0u, 0u}),
+        utils::VisibilityInfo::pub(), ctx->llctx);
+    auto *entry = new IR::Block(globalInitialiser, nullptr);
+    entry->setActive(ctx->builder);
+  }
+  return globalInitialiser;
+}
+
 bool QatModule::isSubmodule() const { return parent != nullptr; }
 
 void QatModule::addSubmodule(const String &name, const String &filename,
@@ -643,11 +656,6 @@ Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(
   return {false, ""};
 }
 
-GlobalEntity *QatModule::createGlobalEntity() {
-  // FIXME - Implement
-  return nullptr;
-}
-
 GlobalEntity *
 QatModule::getGlobalEntity(const String &name, // NOLINT(misc-no-recursion)
                            const utils::RequesterInfo &reqInfo) const {
@@ -933,6 +941,10 @@ void QatModule::addFloatKind(FloatTypeKind kind) {
       floatKinds.push_back(kind);
     }
   }
+}
+
+void QatModule::finaliseModule() {
+  // FIXME - Implement
 }
 
 // NOLINTEND(readability-magic-numbers)

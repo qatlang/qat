@@ -29,6 +29,7 @@ enum class NativeUnit { printf, malloc, pthread };
 class QatModule {
   friend class CoreType;
   friend class DefinitionType;
+  friend class GlobalEntity;
 
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
@@ -53,6 +54,7 @@ private:
   Vec<Brought<Function>>       broughtFunctions;
   Vec<GlobalEntity *>          globalEntities;
   Vec<Brought<GlobalEntity>>   broughtGlobalEntities;
+  Function                    *globalInitialiser;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -94,6 +96,7 @@ public:
   useit QatModule *getActive();
   useit QatModule *getParentFile();
   useit String     getFilePath() const;
+  useit Function  *getGlobalInitialiser(IR::Context *ctx);
 
   useit bool       hasClosestParentLib() const;
   useit QatModule *getClosestParentLib();
@@ -180,10 +183,9 @@ public:
   useit      Pair<bool, String>
              hasAccessibleGlobalEntityInImports(const String               &name,
                                                 const utils::RequesterInfo &reqInfo) const;
-  useit GlobalEntity                     *
+  useit GlobalEntity *
   getGlobalEntity(const String               &name,
-                                      const utils::RequesterInfo &reqInfo) const;
-  useit GlobalEntity *createGlobalEntity();
+                  const utils::RequesterInfo &reqInfo) const;
 
   // IMPORT
 
@@ -211,6 +213,7 @@ public:
   void      emitNodes(IR::Context *ctx) const;
   void      exportJsonFromAST() const;
   void      linkNative(NativeUnit nval);
+  void      finaliseModule();
   nuo::Json toJson() const;
   void      throw_error(String message, utils::FileRange fileRange);
 };

@@ -19,23 +19,20 @@ namespace qat::ast {
  */
 class GlobalDeclaration : public Node {
 private:
-  String name;
-
-  Maybe<QatType *> type;
-
-  Expression *value;
-
-  bool isVariable;
+  String                name;
+  QatType              *type;
+  Expression           *value;
+  bool                  isVariable;
+  utils::VisibilityKind visibility;
 
 public:
-  GlobalDeclaration(String _name, Maybe<QatType *> _type, Expression *_value,
-                    bool _isVariable, utils::FileRange _fileRange);
+  GlobalDeclaration(String _name, QatType *_type, Expression *_value,
+                    bool _isVariable, utils::VisibilityKind _visibility,
+                    utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  nuo::Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::globalDeclaration; }
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::globalDeclaration; }
 };
 
 } // namespace qat::ast

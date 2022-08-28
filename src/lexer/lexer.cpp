@@ -407,10 +407,9 @@ Token Lexer::tokeniser() {
       return Token::valued(TokenType::binaryOperator,
                            "==", this->getPosition(2));
     } else if (current == '>') {
-      prev_ctx = "singleStatementMarker";
+      prev_ctx = "altArrow";
       read();
-      return Token::normal(TokenType::singleStatementMarker,
-                           this->getPosition(2));
+      return Token::normal(TokenType::altArrow, this->getPosition(2));
     } else {
       prev_ctx = "assignment";
       return Token::normal(TokenType::assignment, this->getPosition(1));
@@ -849,7 +848,7 @@ void Lexer::printStatus() {
       case TokenType::separator:
         std::cout << " , ";
         break;
-      case TokenType::singleStatementMarker:
+      case TokenType::altArrow:
         std::cout << " => ";
         break;
       case TokenType::super:

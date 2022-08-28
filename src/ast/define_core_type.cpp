@@ -5,9 +5,9 @@ namespace qat::ast {
 
 DefineCoreType::Member::Member( //
     QatType *_type, String _name, bool _variability,
-    const utils::VisibilityInfo &_visibility, utils::FileRange _fileRange)
+    utils::VisibilityKind _kind, utils::FileRange _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability),
-      visibility(_visibility), fileRange(std::move(_fileRange)) {}
+      visibilityKind(_kind), fileRange(std::move(_fileRange)) {}
 
 nuo::Json DefineCoreType::Member::toJson() const {
   return nuo::Json()
@@ -15,16 +15,17 @@ nuo::Json DefineCoreType::Member::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", visibility)
+      ._("visibility", utils::kindToJsonValue(visibilityKind))
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::StaticMember::StaticMember(
-    QatType *_type, String _name, bool _variability, Expression *_value,
-    const utils::VisibilityInfo &_visibility, utils::FileRange _fileRange)
+DefineCoreType::StaticMember::StaticMember(QatType *_type, String _name,
+                                           bool                  _variability,
+                                           Expression           *_value,
+                                           utils::VisibilityKind _kind,
+                                           utils::FileRange      _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability),
-      value(_value), visibility(_visibility), fileRange(std::move(_fileRange)) {
-}
+      value(_value), visibilityKind(_kind), fileRange(std::move(_fileRange)) {}
 
 nuo::Json DefineCoreType::StaticMember::toJson() const {
   return nuo::Json()
@@ -32,12 +33,12 @@ nuo::Json DefineCoreType::StaticMember::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", visibility)
+      ._("visibility", utils::kindToJsonValue(visibilityKind))
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::DefineCoreType(String                       _name,
-                               const utils::VisibilityInfo &_visibility,
+DefineCoreType::DefineCoreType(String                      _name,
+                               const utils::VisibilityKind _visibility,
                                utils::FileRange _fileRange, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked),
       visibility(_visibility){SHOW("Created core type " + name)}
@@ -46,48 +47,65 @@ DefineCoreType::DefineCoreType(String                       _name,
           * DefineCoreType::emit(IR::Context * ctx) {
   auto *mod = ctx->getMod();
   if (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
-      !mod->hasGlobalEntity(name) && !mod->hasBox(name)) {
+      !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
+      !mod->hasTypeDef(name)) {
     SHOW("Creating IR for CoreType members")
     Vec<IR::CoreType::Member *> mems;
     for (auto *mem : members) {
       mems.push_back(new IR::CoreType::Member(
-          mem->name, mem->type->emit(ctx), mem->variability, mem->visibility));
+          mem->name, mem->type->emit(ctx), mem->variability,
+          (mem->visibilityKind == utils::VisibilityKind::type)
+              ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name))
+              : ctx->getVisibInfo(mem->visibilityKind)));
     }
     SHOW("Emitted IR for all members")
-    auto *coreType = new IR::CoreType(mod, name, mems, visibility, ctx->llctx);
+    auto *coreType = new IR::CoreType(
+        mod, name, mems, ctx->getVisibInfo(visibility), ctx->llctx);
     SHOW("Created core type in IR")
+    ctx->activeType = coreType;
     for (auto *stm : staticMembers) {
-      coreType->addStaticMember(stm->name, stm->type->emit(ctx),
-                                stm->variability,
-                                stm->value ? stm->value->emit(ctx) : nullptr,
-                                stm->visibility, ctx->llctx);
+      coreType->addStaticMember(
+          stm->name, stm->type->emit(ctx), stm->variability,
+          stm->value ? stm->value->emit(ctx) : nullptr,
+          ctx->getVisibInfo(stm->visibilityKind), ctx->llctx);
     }
     for (auto *conv : convertorDefinitions) {
       conv->setCoreType(coreType);
       (void)conv->emit(ctx);
     }
+    ctx->activeType = nullptr;
     return nullptr; // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
   } else {
     // TODO - Check type definitions
     if (mod->hasCoreType(name)) {
-      ctx->Error(name + " is the name of an existing type in this scope. "
-                        "Please change name of this type or check the codebase",
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing core type in this scope. "
+                     "Please change name of this type or check the codebase",
                  fileRange);
+    } else if (mod->hasTypeDef(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasFunction(name)) {
-      ctx->Error(name + " is the name of an existing function in this scope. "
-                        "Please change name of this type or check the codebase",
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing function in this scope. "
+                     "Please change name of this type or check the codebase",
                  fileRange);
     } else if (mod->hasGlobalEntity(name)) {
-      ctx->Error(name +
+      ctx->Error(ctx->highlightError(name) +
                      " is the name of an existing global value in this scope. "
                      "Please change name of this type or check the codebase",
                  fileRange);
     } else if (mod->hasBox(name)) {
-      ctx->Error(name + " is the name of an existing box in this scope. "
-                        "Please change name of this type or check the codebase",
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing box in this scope. "
+                     "Please change name of this type or check the codebase",
                  fileRange);
     }
   }
+  return nullptr;
 }
 
 void DefineCoreType::addMember(Member *mem) {
@@ -121,7 +139,7 @@ nuo::Json DefineCoreType::toJson() const {
       ._("members", membersJsonValue)
       ._("staticMembers", staticMembersJsonValue)
       ._("isPacked", isPacked)
-      ._("visibility", visibility)
+      ._("visibility", utils::kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

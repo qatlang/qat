@@ -17,13 +17,12 @@ public:
   class Member {
   public:
     Member(QatType *_type, String _name, bool _variability,
-           const utils::VisibilityInfo &_visibility,
-           utils::FileRange             _fileRange);
+           utils::VisibilityKind _kind, utils::FileRange _fileRange);
 
     QatType              *type;
     String                name;
     bool                  variability;
-    utils::VisibilityInfo visibility;
+    utils::VisibilityKind visibilityKind;
     utils::FileRange      fileRange;
 
     useit nuo::Json toJson() const;
@@ -33,14 +32,14 @@ public:
   class StaticMember {
   public:
     StaticMember(QatType *_type, String _name, bool _variability,
-                 Expression *_value, const utils::VisibilityInfo &_visibility,
+                 Expression *_value, utils::VisibilityKind _kind,
                  utils::FileRange _fileRange);
 
     QatType              *type;
     String                name;
     bool                  variability;
     Expression           *value;
-    utils::VisibilityInfo visibility;
+    utils::VisibilityKind visibilityKind;
     utils::FileRange      fileRange;
 
     useit nuo::Json toJson() const;
@@ -53,10 +52,10 @@ private:
   Vec<StaticMember *>        staticMembers;
   Vec<MemberDefinition *>    memberDefinitions;
   Vec<ConvertorDefinition *> convertorDefinitions;
-  utils::VisibilityInfo      visibility;
+  utils::VisibilityKind      visibility;
 
 public:
-  DefineCoreType(String _name, const utils::VisibilityInfo &_visibility,
+  DefineCoreType(String _name, const utils::VisibilityKind _visibility,
                  utils::FileRange _fileRange, bool _isPacked = false);
 
   void  addMember(Member *mem);

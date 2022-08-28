@@ -47,26 +47,27 @@ void QatSitter::init() {
         } else {
           compileCommand += ("-o " OUTPUT_OBJECT_NAME);
         }
-        if (system(compileCommand.c_str())) {
-          SHOW("Compilation failed")
-        } else {
+        if (!system(compileCommand.c_str())) {
           SHOW("Compiled successfully")
+          if (config->isRun() && ctx->hasMain) {
+            SHOW("Executing the program")
+            if (config->hasOutputPath()) {
+              system(
+                  (String(".") +
+                   ((config->getOutputPath().string().find('/') == 0) ? ""
+                                                                      : "/") +
+                   (config->getOutputPath() / OUTPUT_OBJECT_NAME).string())
+                      .c_str());
+            }
+          }
+        } else {
+          cli::Error("Compilation failed", None);
         }
 #if IS_RELEASE
         for (const auto &llPath : ctx->llvmOutputPaths) {
           fs::remove(llPath);
         }
 #endif
-        if (config->isRun() && ctx->hasMain) {
-          SHOW("Executing the program")
-          if (config->hasOutputPath()) {
-            system((String(".") +
-                    ((config->getOutputPath().string().find('/') == 0) ? ""
-                                                                       : "/") +
-                    (config->getOutputPath() / OUTPUT_OBJECT_NAME).string())
-                       .c_str());
-          }
-        }
       } else {
         cli::Error("qat cannot find clang on path. Please make sure that you "
                    "have clang installed and the path to clang is available in "

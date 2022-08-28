@@ -774,6 +774,34 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
   return result;
 }
 
+Pair<utils::VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
+  using lexer::TokenType;
+  if (isNext(TokenType::child, from)) {
+    if (isNext(TokenType::Type, from + 1)) {
+      return {utils::VisibilityKind::type, from + 2};
+    } else if (isNext(TokenType::lib, from + 1)) {
+      return {utils::VisibilityKind::lib, from + 2};
+    } else if (isNext(TokenType::box, from + 1)) {
+      return {utils::VisibilityKind::box, from + 2};
+    } else if (isNext(TokenType::identifier, from + 1)) {
+      auto val = tokens.at(from + 2).value;
+      if (val == "file") {
+        return {utils::VisibilityKind::file, from + 2};
+      } else if (val == "folder") {
+        return {utils::VisibilityKind::folder, from + 2};
+      } else {
+        Error("Invalid identifier found after pub' for visibility",
+              RangeAt(from + 2));
+      }
+    } else {
+      Error("Invalid token found after pub' for visibility",
+            RangeSpan(from, from + 1));
+    }
+  } else {
+    return {utils::VisibilityKind::pub, from};
+  }
+} // NOLINT(clang-diagnostic-return-type)
+
 // FIXME - Finish functionality for parsing type contents
 ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
                                            usize                upto,

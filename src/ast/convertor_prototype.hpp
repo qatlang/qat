@@ -19,22 +19,22 @@ private:
   IR::CoreType         *coreType;
   String                argName;
   QatType              *candidateType;
-  utils::VisibilityInfo visibility;
+  utils::VisibilityKind visibility;
   bool                  isFrom;
 
   ConvertorPrototype(bool _isFrom, String _argName, QatType *_candidateType,
-                     const utils::VisibilityInfo &_visibility,
-                     const utils::FileRange      &_fileRange);
+                     utils::VisibilityKind   _visibility,
+                     const utils::FileRange &_fileRange);
 
 public:
-  static ConvertorPrototype *From(const String                &_argName,
-                                  QatType                     *_candidateType,
-                                  const utils::VisibilityInfo &_visibility,
-                                  const utils::FileRange      &_fileRange);
+  static ConvertorPrototype *From(const String           &_argName,
+                                  QatType                *_candidateType,
+                                  utils::VisibilityKind   _visibility,
+                                  const utils::FileRange &_fileRange);
 
-  static ConvertorPrototype *To(QatType                     *_candidateType,
-                                const utils::VisibilityInfo &visib,
-                                const utils::FileRange      &fileRange);
+  static ConvertorPrototype *To(QatType                *_candidateType,
+                                utils::VisibilityKind   visib,
+                                const utils::FileRange &fileRange);
 
   void setCoreType(IR::CoreType *_coreType);
 

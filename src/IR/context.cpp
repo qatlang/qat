@@ -23,7 +23,7 @@ QatModule *Context::getMod() const { return mod->getActive(); }
 
 utils::VisibilityInfo
 Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
-  if (kind.has_value()) {
+  if (kind.has_value() && (kind.value() != utils::VisibilityKind::parent)) {
     switch (kind.value()) {
     case utils::VisibilityKind::box: {
       return utils::VisibilityInfo::box(
@@ -41,12 +41,23 @@ Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
           fs::path(getMod()->getFilePath()).parent_path());
     }
     case utils::VisibilityKind::type: {
+      if (activeType) {
+        return utils::VisibilityInfo::type(activeType->getFullName());
+      } else {
+        if (fn && fn->isMemberFunction()) {
+          return utils::VisibilityInfo::type(
+              ((IR::MemberFunction *)fn)->getParentType()->getFullName());
+        } else {
+          return utils::VisibilityInfo::type("");
+        }
+      }
       // TODO - Handle in case it is null
-      return utils::VisibilityInfo::type(activeType->getFullName());
     }
     case utils::VisibilityKind::pub: {
       return utils::VisibilityInfo::pub();
     }
+    default:
+      break;
     }
   } else {
     if (activeType) {
@@ -69,7 +80,7 @@ Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
       }
     }
   }
-}
+} // NOLINT(clang-diagnostic-return-type)
 
 utils::RequesterInfo Context::getReqInfo() const {
   // TODO - Consider changing string value to pointer of the actual entities

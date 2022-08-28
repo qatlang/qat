@@ -18,13 +18,13 @@ class Box : public Node {
 
   Vec<Node *> members;
 
-  Maybe<utils::VisibilityInfo> visibility;
+  utils::VisibilityKind visibility;
 
 public:
-  Box(String _name, Vec<Node *> _members,
-      Maybe<utils::VisibilityInfo> _visibility, utils::FileRange _fileRange)
+  Box(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
+      utils::FileRange _fileRange)
       : Node(std::move(_fileRange)), name(std::move(_name)),
-        members(std::move(_members)), visibility(std::move(_visibility)) {}
+        members(std::move(_members)), visibility(_visibility) {}
 
   useit IR::Value *emit(IR::Context *ctx) override;
 

@@ -13,12 +13,11 @@ class Lib : public Node {
 private:
   String                name;
   Vec<Node *>           members;
-  utils::VisibilityInfo visibility;
+  utils::VisibilityKind visibility;
 
 public:
   Lib(const String &_name, Vec<Node *> _members,
-      const utils::VisibilityInfo &_visibility,
-      const utils::FileRange      &_file_range);
+      utils::VisibilityKind _visibility, const utils::FileRange &_file_range);
 
   useit IR::Value *emit(IR::Context *ctx) override;
   useit nuo::Json toJson() const override;

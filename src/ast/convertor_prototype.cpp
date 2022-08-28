@@ -6,24 +6,23 @@
 namespace qat::ast {
 
 ConvertorPrototype::ConvertorPrototype(bool _isFrom, String _argName,
-                                       QatType *_candidateType,
-                                       const utils::VisibilityInfo &_visibility,
-                                       const utils::FileRange      &_fileRange)
+                                       QatType                *_candidateType,
+                                       utils::VisibilityKind   _visibility,
+                                       const utils::FileRange &_fileRange)
     : Node(_fileRange), argName(std::move(_argName)),
       candidateType(_candidateType), visibility(_visibility), isFrom(_isFrom) {}
 
 ConvertorPrototype *
 ConvertorPrototype::From(const String &_argName, QatType *_candidateType,
-                         const utils::VisibilityInfo &_visibility,
-                         const utils::FileRange      &_fileRange) {
+                         utils::VisibilityKind   _visibility,
+                         const utils::FileRange &_fileRange) {
   return new ConvertorPrototype(true, _argName, _candidateType, _visibility,
                                 _fileRange);
 }
 
-ConvertorPrototype *
-ConvertorPrototype::To(QatType                     *_candidateType,
-                       const utils::VisibilityInfo &_visibility,
-                       const utils::FileRange      &_fileRange) {
+ConvertorPrototype *ConvertorPrototype::To(QatType              *_candidateType,
+                                           utils::VisibilityKind _visibility,
+                                           const utils::FileRange &_fileRange) {
   return new ConvertorPrototype(false, "", _candidateType, _visibility,
                                 _fileRange);
 }
@@ -44,11 +43,13 @@ IR::Value *ConvertorPrototype::emit(IR::Context *ctx) {
   if (isFrom) {
     SHOW("Convertor is FROM")
     function = IR::MemberFunction::CreateFromConvertor(
-        coreType, candidate, argName, fileRange, visibility, ctx->llctx);
+        coreType, candidate, argName, fileRange, ctx->getVisibInfo(visibility),
+        ctx->llctx);
   } else {
     SHOW("Convertor is TO")
     function = IR::MemberFunction::CreateToConvertor(
-        coreType, candidate, fileRange, visibility, ctx->llctx);
+        coreType, candidate, fileRange, ctx->getVisibInfo(visibility),
+        ctx->llctx);
   }
   SHOW("Function created!!")
   // TODO - Set calling convention
@@ -61,7 +62,7 @@ nuo::Json ConvertorPrototype::toJson() const {
       ._("isFrom", isFrom)
       ._("argumentName", argName)
       ._("candidateType", candidateType->toJson())
-      ._("visibilityInfo", visibility);
+      ._("visibility", utils::kindToJsonValue(visibility));
 }
 
 } // namespace qat::ast

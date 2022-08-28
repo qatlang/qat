@@ -24,6 +24,8 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
   auto *corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
   auto *self       = block->newValue("''", corePtrTy, prototype->isVariationFn);
+  ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u),
+                           self->getLLVM());
   ctx->selfVal =
       ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
   for (usize i = 1; i < argIRTypes.size(); i++) {

@@ -9,31 +9,30 @@ MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn,
                                  const String   &_name,
                                  Vec<Argument *> _arguments, bool _isVariadic,
                                  QatType *_returnType, bool _is_async,
-                                 const utils::VisibilityInfo &_visibility,
-                                 const utils::FileRange      &_fileRange)
+                                 utils::VisibilityKind   kind,
+                                 const utils::FileRange &_fileRange)
     : Node(_fileRange), isVariationFn(_isVariationFn), name(_name),
       isAsync(_is_async), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), visibility(_visibility),
+      isVariadic(_isVariadic), returnType(_returnType), kind(kind),
       isStatic(_isStatic) {}
 
-MemberPrototype *
-MemberPrototype::Normal(bool _isVariationFn, const String &_name,
-                        const Vec<Argument *> &_arguments, bool _isVariadic,
-                        QatType *_returnType, bool _is_async,
-                        const utils::VisibilityInfo &_visibility,
-                        const utils::FileRange      &_fileRange) {
-  return new MemberPrototype(false, _isVariationFn, name, _arguments,
-                             _isVariadic, _returnType, _is_async, _visibility,
+MemberPrototype *MemberPrototype::Normal(
+    bool _isVariationFn, const String &_name, const Vec<Argument *> &_arguments,
+    bool _isVariadic, QatType *_returnType, bool _is_async,
+    utils::VisibilityKind kind, const utils::FileRange &_fileRange) {
+  return new MemberPrototype(false, _isVariationFn, _name, _arguments,
+                             _isVariadic, _returnType, _is_async, kind,
                              _fileRange);
 }
 
-MemberPrototype *
-MemberPrototype::Static(const String &_name, const Vec<Argument *> &_arguments,
-                        bool _isVariadic, QatType *_returnType, bool _is_async,
-                        const utils::VisibilityInfo &_visibility,
-                        const utils::FileRange      &_fileRange) {
-  return new MemberPrototype(true, false, name, _arguments, _isVariadic,
-                             _returnType, _is_async, _visibility, _fileRange);
+MemberPrototype *MemberPrototype::Static(const String          &_name,
+                                         const Vec<Argument *> &_arguments,
+                                         bool _isVariadic, QatType *_returnType,
+                                         bool                    _is_async,
+                                         utils::VisibilityKind   kind,
+                                         const utils::FileRange &_fileRange) {
+  return new MemberPrototype(true, false, _name, _arguments, _isVariadic,
+                             _returnType, _is_async, kind, _fileRange);
 }
 
 IR::Value *MemberPrototype::emit(IR::Context *ctx) {
@@ -93,12 +92,13 @@ IR::Value *MemberPrototype::emit(IR::Context *ctx) {
   if (isStatic) {
     function = IR::MemberFunction::CreateStatic(
         coreType, name, returnType->emit(ctx), returnType->isVariable(),
-        isAsync, args, isVariadic, fileRange, visibility, ctx->llctx);
+        isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(kind),
+        ctx->llctx);
   } else {
     function = IR::MemberFunction::Create(
         coreType, isVariationFn, name, returnType->emit(ctx),
         returnType->isVariable(), isAsync, args, isVariadic, fileRange,
-        visibility, ctx->llctx);
+        ctx->getVisibInfo(kind), ctx->llctx);
   }
   SHOW("Function created!!")
   // TODO - Set calling convention

@@ -31,8 +31,11 @@ enum class VisibilityKind {
   lib,    // Visibility is public only inside the parent library
   file,   // Visibility is public only inside the parent file
   folder, // Visibility is public only inside the parent directory/folder
-  box     // Visibility is public only inside the parent box
+  box,    // Visibility is public only inside the parent box,
+  parent
 };
+
+nuo::JsonValue kindToJsonValue(VisibilityKind kind);
 
 class RequesterInfo;
 

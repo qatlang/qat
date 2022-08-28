@@ -21,28 +21,28 @@ private:
   Vec<Argument *>       arguments;
   bool                  isVariadic;
   QatType              *returnType;
-  utils::VisibilityInfo visibility;
+  utils::VisibilityKind kind;
   IR::CoreType         *coreType;
   bool                  isStatic;
 
   MemberPrototype(bool isStatic, bool _isVariationFn, const String &_name,
                   Vec<Argument *> _arguments, bool _isVariadic,
                   QatType *_returnType, bool _is_async,
-                  const utils::VisibilityInfo &_visibility,
-                  const utils::FileRange      &_fileRange);
+                  utils::VisibilityKind   kind,
+                  const utils::FileRange &_fileRange);
 
 public:
-  MemberPrototype *Normal(bool _isVariationFn, const String &_name,
-                          const Vec<Argument *> &_arguments, bool _isVariadic,
-                          QatType *_returnType, bool _is_async,
-                          const utils::VisibilityInfo &_visibility,
-                          const utils::FileRange      &_fileRange);
+  static MemberPrototype *Normal(bool _isVariationFn, const String &_name,
+                                 const Vec<Argument *> &_arguments,
+                                 bool _isVariadic, QatType *_returnType,
+                                 bool _is_async, utils::VisibilityKind _kind,
+                                 const utils::FileRange &_fileRange);
 
-  MemberPrototype *Static(const String          &_name,
-                          const Vec<Argument *> &_arguments, bool _isVariadic,
-                          QatType *_returnType, bool _is_async,
-                          const utils::VisibilityInfo &_visibility,
-                          const utils::FileRange      &_fileRange);
+  static MemberPrototype *Static(const String          &_name,
+                                 const Vec<Argument *> &_arguments,
+                                 bool _isVariadic, QatType *_returnType,
+                                 bool _is_async, utils::VisibilityKind _kind,
+                                 const utils::FileRange &_fileRange);
 
   void setCoreType(IR::CoreType *_coreType);
 

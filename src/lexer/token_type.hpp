@@ -80,7 +80,7 @@ enum class TokenType {
   unaryOperatorRight,
   lambda,
   comment,
-  singleStatementMarker,
+  altArrow,
   bitwiseOr,
   bitwiseAnd,
   bitwiseNot,

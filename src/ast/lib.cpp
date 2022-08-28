@@ -3,8 +3,7 @@
 namespace qat::ast {
 
 Lib::Lib(const String &_name, Vec<Node *> _members,
-         const utils::VisibilityInfo &_visibility,
-         const utils::FileRange      &_file_range)
+         utils::VisibilityKind _visibility, const utils::FileRange &_file_range)
     : Node(std::move(_file_range)), name(_name), members(std::move(_members)),
       visibility(_visibility) {}
 
@@ -33,7 +32,7 @@ nuo::Json Lib::toJson() const {
       ._("name", name)
       ._("nodeType", "lib")
       ._("members", membersJsonValue)
-      ._("visibility", visibility)
+      ._("visibility", utils::kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

@@ -21,14 +21,14 @@ private:
   QatType                        *returnType;
   llvm::GlobalValue::LinkageTypes linkageType;
   String                          callingConv;
-  utils::VisibilityInfo           visibility;
+  utils::VisibilityKind           visibility;
 
 public:
   FunctionPrototype(const String &_name, Vec<Argument *> _arguments,
                     bool _isVariadic, QatType *_returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType,
                     const String                   &_callingConv,
-                    const utils::VisibilityInfo    &_visibility,
+                    utils::VisibilityKind           _visibility,
                     const utils::FileRange         &_fileRange);
 
   FunctionPrototype(const FunctionPrototype &ref);

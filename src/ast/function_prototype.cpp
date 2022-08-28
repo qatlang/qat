@@ -9,8 +9,7 @@ FunctionPrototype::FunctionPrototype(
     const String &_name, Vec<Argument *> _arguments, bool _isVariadic,
     QatType *_returnType, bool _is_async,
     llvm::GlobalValue::LinkageTypes _linkageType, const String &_callingConv,
-    const utils::VisibilityInfo &_visibility,
-    const utils::FileRange      &_fileRange)
+    utils::VisibilityKind _visibility, const utils::FileRange &_fileRange)
     : name(_name), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType),
       linkageType(_linkageType), callingConv(_callingConv),
@@ -57,7 +56,8 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   SHOW("About to create function")
   function = ctx->mod->createFunction(
       name, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
-      isVariadic, fileRange, visibility, linkageType, ctx->llctx);
+      isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType,
+      ctx->llctx);
   SHOW("Function created!!")
   // TODO - Set calling convention
   return function;

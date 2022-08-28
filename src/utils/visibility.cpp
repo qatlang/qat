@@ -5,6 +5,25 @@ namespace qat::utils {
 #define VISIB_KIND  "visibility_kind"
 #define VISIB_VALUE "visibility_value"
 
+nuo::JsonValue kindToJsonValue(VisibilityKind kind) {
+  switch (kind) {
+  case VisibilityKind::type:
+    return "type";
+  case VisibilityKind::pub:
+    return "pub";
+  case VisibilityKind::lib:
+    return "lib";
+  case VisibilityKind::file:
+    return "file";
+  case VisibilityKind::folder:
+    return "folder";
+  case VisibilityKind::parent:
+    return "parent";
+  case VisibilityKind::box:
+    return "box";
+  }
+}
+
 RequesterInfo::RequesterInfo(Maybe<String> _lib, Maybe<String> _box,
                              String _file, Maybe<String> _type)
     : lib(std::move(_lib)), box(std::move(_box)), file(std::move(_file)),
@@ -54,6 +73,8 @@ bool Visibility::isAccessible(const VisibilityInfo &visibility,
     }
     return false;
   }
+  case VisibilityKind::parent:
+    return false;
   }
 }
 
@@ -74,18 +95,14 @@ VisibilityInfo::operator nuo::JsonValue() const { return {(nuo::Json)(*this)}; }
 VisibilityInfo::VisibilityInfo(const VisibilityInfo &other) = default;
 
 const std::map<VisibilityKind, String> Visibility::kind_value_map = {
-    {VisibilityKind::pub, "public"},
-    {VisibilityKind::type, "type"},
-    {VisibilityKind::lib, "library"},
-    {VisibilityKind::file, "file"},
-    {VisibilityKind::box, "box"}};
+    {VisibilityKind::pub, "public"},  {VisibilityKind::type, "type"},
+    {VisibilityKind::lib, "library"}, {VisibilityKind::file, "file"},
+    {VisibilityKind::box, "box"},     {VisibilityKind::parent, "parent"}};
 
 const std::map<String, VisibilityKind> Visibility::value_kind_map = {
-    {"public", VisibilityKind::pub},
-    {"type", VisibilityKind::type},
-    {"library", VisibilityKind::lib},
-    {"file", VisibilityKind::file},
-    {"box", VisibilityKind::box}};
+    {"public", VisibilityKind::pub},  {"type", VisibilityKind::type},
+    {"library", VisibilityKind::lib}, {"file", VisibilityKind::file},
+    {"box", VisibilityKind::box},     {"parent", VisibilityKind::parent}};
 
 String Visibility::getValue(VisibilityKind kind) {
   return kind_value_map.find(kind)->second;

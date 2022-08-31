@@ -14,6 +14,13 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
     auto *typeEmit = type->emit(ctx);
     if (typeEmit->isCoreType()) {
       auto *cTy = typeEmit->asCore();
+      if (cTy->hasAnyNormalConstructor()) {
+        ctx->Error(
+            "Core type " + ctx->highlightError(cTy->getFullName()) +
+                " has normal constructors and hence the plain initialiser "
+                "cannot be used for this type",
+            fileRange);
+      }
       if (cTy->getMemberCount() != fieldValues.size()) {
         ctx->Error(
             "Core type " + ctx->highlightError(cTy->toString()) + " has " +
@@ -25,21 +32,40 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
       }
       if (fields.empty()) {
         for (usize i = 0; i < fieldValues.size(); i++) {
+          auto *mem = cTy->getMemberAt(i);
+          if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+            ctx->Error("Member " + ctx->highlightError(mem->name) +
+                           " of core type " +
+                           ctx->highlightError(cTy->getFullName()) +
+                           " is not accessible here and hence plain "
+                           "initialiser cannot be used for this type",
+                       fieldValues.at(i)->fileRange);
+          }
           indices.push_back(i);
         }
       } else {
         for (usize i = 0; i < fields.size(); i++) {
-          for (usize j = 0; j != i; j++) {
-            if (fields.at(i).first == fields.at(j).first) {
-              ctx->Error("The value for member " +
-                             ctx->highlightError(fields.at(i).first) +
+          auto fName  = fields.at(i).first;
+          auto fRange = fields.at(i).second;
+          if (cTy->hasMember(fName)) {
+            auto *mem = cTy->getMemberAt(cTy->getIndexOf(fName).value());
+            if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+              ctx->Error("The member " + ctx->highlightError(fName) +
                              " of core type " +
-                             ctx->highlightError(cTy->toString()) +
-                             " is already provided. Please check logic",
-                         fields.at(i).second);
+                             ctx->highlightError(cTy->getFullName()) +
+                             " is not accessible here",
+                         fRange);
             }
-          }
-          if (cTy->hasMember(fields.at(i).first)) {
+            for (usize j = 0; j != i; j++) {
+              if (fields.at(i).first == fields.at(j).first) {
+                ctx->Error("The value for member " +
+                               ctx->highlightError(fields.at(i).first) +
+                               " of core type " +
+                               ctx->highlightError(cTy->toString()) +
+                               " is already provided. Please check logic",
+                           fields.at(i).second);
+              }
+            }
             indices.push_back(cTy->getIndexOf(fields.at(i).first).value());
           } else {
             ctx->Error("The core type " + ctx->highlightError(cTy->toString()) +

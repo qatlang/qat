@@ -1,6 +1,8 @@
 #include "core_type.hpp"
 #include "../../show.hpp"
 #include "../qat_module.hpp"
+#include "function.hpp"
+#include "reference.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include <utility>
@@ -84,9 +86,13 @@ bool CoreType::hasStatic(const String &_name) const {
 }
 
 bool CoreType::hasMemberFunction(const String &fnName) const {
-  return std::ranges::any_of(
-      memberFunctions.begin(), memberFunctions.end(),
-      [&](MemberFunction *fun) { return fun->getName() == fnName; });
+  for (auto *memberFunction : memberFunctions) {
+    SHOW("Found member function: " << memberFunction->getName())
+    if (memberFunction->getName() == fnName) {
+      return true;
+    }
+  }
+  return false;
 }
 
 MemberFunction *CoreType::getMemberFunction(const String &fnName) const {
@@ -104,7 +110,7 @@ bool CoreType::hasStaticFunction(const String &fnName) const {
       [&](MemberFunction *fun) { return fun->getName() == fnName; });
 }
 
-const MemberFunction *CoreType::getStaticFunction(const String &fnName) const {
+MemberFunction *CoreType::getStaticFunction(const String &fnName) const {
   for (auto *staticFunction : staticFunctions) {
     if (staticFunction->getName() == fnName) {
       return staticFunction;
@@ -119,6 +125,63 @@ void CoreType::addStaticMember(const String &name, QatType *type,
                                llvm::LLVMContext           &ctx) {
   staticMembers.push_back(
       new StaticMember(this, name, type, variability, initial, visibility));
+}
+
+bool CoreType::hasAnyNormalConstructor() const {
+  return (!constructors.empty());
+}
+
+bool CoreType::hasConstructorWithTypes(Vec<IR::QatType *> types) const {
+  for (auto *con : constructors) {
+    auto argTys = con->getType()->asFunction()->getArgumentTypes();
+    if (types.size() == (argTys.size() - 1)) {
+      bool result = true;
+      for (usize i = 1; i < argTys.size(); i++) {
+        auto *argType = argTys.at(i)->getType();
+        if ((!argType->isSame(types.at(i))) &&
+            (!(argType->isReference() &&
+               argType->asReference()->getSubType()->isSame(types.at(i)))) &&
+            (!(types.at(i)->isReference() &&
+               types.at(i)->asReference()->getSubType()->isSame(argType)))) {
+          result = false;
+          break;
+        }
+      }
+      if (result) {
+        return true;
+      }
+    } else {
+      continue;
+    }
+  }
+  return false;
+}
+
+MemberFunction *
+CoreType::getConstructorWithTypes(Vec<IR::QatType *> types) const {
+  for (auto *con : constructors) {
+    auto argTys = con->getType()->asFunction()->getArgumentTypes();
+    if (types.size() == (argTys.size() - 1)) {
+      bool result = true;
+      for (usize i = 1; i < argTys.size(); i++) {
+        auto *argType = argTys.at(i)->getType();
+        if ((!argType->isSame(types.at(i))) &&
+            (!(argType->isReference() &&
+               argType->asReference()->getSubType()->isSame(types.at(i)))) &&
+            (!(types.at(i)->isReference() &&
+               types.at(i)->asReference()->getSubType()->isSame(argType)))) {
+          result = false;
+          break;
+        }
+      }
+      if (result) {
+        return con;
+      }
+    } else {
+      continue;
+    }
+  }
+  return nullptr;
 }
 
 bool CoreType::hasCopyConstructor() const {

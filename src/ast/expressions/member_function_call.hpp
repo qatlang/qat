@@ -15,14 +15,15 @@ private:
   String            memberName;
   Vec<Expression *> arguments;
   bool              variation;
+  bool              isPointerCall;
 
 public:
-  MemberFunctionCall(Expression *_instance, String _memberName,
-                     Vec<Expression *> _arguments, bool _variation,
-                     utils::FileRange _fileRange)
-      : instance(_instance), memberName(std::move(_memberName)),
-        arguments(std::move(_arguments)), variation(_variation),
-        Expression(std::move(_fileRange)) {}
+  MemberFunctionCall(Expression *_instance, bool _isPointerCall,
+                     String _memberName, Vec<Expression *> _arguments,
+                     bool _variation, utils::FileRange _fileRange)
+      : Expression(std::move(_fileRange)), instance(_instance),
+        memberName(std::move(_memberName)), arguments(std::move(_arguments)),
+        variation(_variation), isPointerCall(_isPointerCall) {}
 
   IR::Value *emit(IR::Context *ctx) override;
 

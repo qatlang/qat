@@ -138,8 +138,7 @@ public:
   void Error(const String &message, const utils::FileRange &fileRange);
 
   // Shows warning to the user
-  static void showWarning(const String           &message,
-                          const utils::FileRange &fileRange);
+  static void Warning(const String &message, const utils::FileRange &fileRange);
 };
 
 } // namespace qat::parser

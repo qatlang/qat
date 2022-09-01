@@ -88,9 +88,9 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
           if (isPrimaryWithin(TokenType::separator, i, bClose)) {
             // TODO - Implement
           } else {
-            showWarning("Expected multiple entities to be brought. Remove the "
-                        "curly braces since only one entity is being brought.",
-                        utils::FileRange(RangeAt(i + 1), RangeAt(bClose)));
+            Warning("Expected multiple entities to be brought. Remove the "
+                    "curly braces since only one entity is being brought.",
+                    utils::FileRange(RangeAt(i + 1), RangeAt(bClose)));
             if (isNext(TokenType::identifier, i + 1)) {
               entities.push_back(tokens.at(i + 2).value);
             } else {
@@ -955,6 +955,7 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
       auto start = i;
       if (isNext(TokenType::givenTypeSeparator, i) ||
           isNext(TokenType::parenthesisOpen, i)) {
+        SHOW("Member function start")
         ast::QatType *retTy = isNext(TokenType::parenthesisOpen, i)
                                   ? new ast::VoidType(false, RangeAt(i))
                                   : nullptr;
@@ -977,6 +978,7 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
               if (bCloseRes.has_value()) {
                 auto bClose = bCloseRes.value();
                 auto snts   = parseSentences(prev_ctx, pClose + 1, bClose);
+                SHOW("Creating member function prototype")
                 coreTy->addMemberDefinition(new ast::MemberDefinition(
                     getStatic()
                         ? ast::MemberPrototype::Static(
@@ -995,7 +997,7 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
             Error("Expected end for (", RangeAt(i + 1));
           }
         } else {
-          Error("Expected ( for the arguments of the member functions",
+          Error("Expected ( for the arguments of the member function",
                 RangeSpan(start, i));
         }
       } else if (cacheTy.has_value()) {
@@ -1163,10 +1165,6 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
     }
     case TokenType::null: {
       cachedExpressions.push_back(new ast::NullPointer(token.fileRange));
-      break;
-    }
-    case TokenType::variationMarker: {
-      setVar();
       break;
     }
     case TokenType::super:
@@ -1343,14 +1341,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                       utils::FileRange(token.fileRange,
                                        RangeAt(p_close.value())));
               }
-            } else if (cachedSymbol.has_value()) {
-              auto *instance = *cachedExpressions.end();
-              cachedExpressions.pop_back();
-              cachedExpressions.push_back(new ast::MemberFunctionCall(
-                  instance, cachedSymbol.value().name, args, getVar(),
-                  cachedSymbol.value().fileRange));
-              cachedSymbol = None;
-            } else if (!cachedExpressions.empty()) {
+            } else {
               auto *funCall = new ast::FunctionCall(
                   cachedExpressions.back(), args,
                   utils::FileRange(cachedExpressions.back()->fileRange,
@@ -1358,11 +1349,6 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               cachedExpressions.pop_back();
               cachedExpressions.push_back(funCall);
               cachedSymbol = None;
-            } else {
-              Error(
-                  String("No function name found for the ") + "variation " +
-                      "function call",
-                  utils::FileRange(token.fileRange, RangeAt(p_close.value())));
             }
             i = p_close.value();
           }
@@ -1527,6 +1513,40 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       }
       break;
     }
+    case TokenType::variationMarker: {
+      if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
+        if (cachedExpressions.empty() && cachedSymbol.has_value()) {
+          SHOW("Expression empty, using symbol")
+          cachedExpressions.push_back(new ast::Entity(cachedSymbol->relative,
+                                                      cachedSymbol->name,
+                                                      cachedSymbol->fileRange));
+          cachedSymbol = None;
+        }
+        auto *exp = cachedExpressions.back();
+        cachedExpressions.pop_back();
+        if (isNext(TokenType::identifier, i)) {
+          if (isNext(TokenType::parenthesisOpen, i + 1)) {
+            auto pCloseRes =
+                getPairEnd(TokenType::parenthesisOpen,
+                           TokenType::parenthesisClose, i + 2, false);
+            if (pCloseRes.has_value()) {
+              auto pClose = pCloseRes.value();
+              auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
+              cachedExpressions.push_back(new ast::MemberFunctionCall(
+                  exp, false, tokens.at(i + 1).value, args, true,
+                  {exp->fileRange, RangeAt(pClose)}));
+              i = pClose;
+              break;
+            } else {
+              Error("Expected end for (", RangeAt(i + 2));
+            }
+          } else {
+            Error("Expected ( to start variation function call",
+                  RangeSpan(i, i + 1));
+          }
+        }
+      }
+    }
     case TokenType::child: {
       SHOW("Expression parsing : Member access")
       if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
@@ -1537,13 +1557,26 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                                                       cachedSymbol->fileRange));
           cachedSymbol = None;
         }
+        auto *exp = cachedExpressions.back();
+        cachedExpressions.pop_back();
         if (isNext(TokenType::identifier, i)) {
-          if (isNext(TokenType::templateTypeStart, i + 1) ||
-              isNext(TokenType::parenthesisOpen, i + 1)) {
-            // FIXME - Implement member function calls
+          // TODO - Support template function calls
+          if (isNext(TokenType::parenthesisOpen, i + 1)) {
+            auto pCloseRes =
+                getPairEnd(TokenType::parenthesisOpen,
+                           TokenType::parenthesisClose, i + 2, false);
+            if (pCloseRes.has_value()) {
+              auto pClose = pCloseRes.value();
+              auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
+              cachedExpressions.push_back(new ast::MemberFunctionCall(
+                  exp, false, tokens.at(i + 1).value, args, false,
+                  {exp->fileRange, RangeAt(pClose)}));
+              i = pClose;
+              break;
+            } else {
+              Error("Expected end for (", RangeAt(i + 2));
+            }
           } else {
-            auto *exp = cachedExpressions.back();
-            cachedExpressions.pop_back();
             cachedExpressions.push_back(
                 new ast::MemberAccess(exp, false, tokens.at(i + 1).value,
                                       {exp->fileRange, RangeAt(i + 1)}));
@@ -2571,7 +2604,7 @@ Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate,
 
 void Parser::Error(const String &message, const utils::FileRange &fileRange) {
   std::cout << colors::highIntensityBackground::red << " parser error "
-            << colors::reset << " " << colors::bold::red << message
+            << colors::reset << "▌ " << colors::bold::red << message
             << colors::reset << " | " << colors::underline::green
             << fileRange.file.string() << ":" << fileRange.start.line << ":"
             << fileRange.start.character << colors::reset << " >> "
@@ -2583,10 +2616,9 @@ void Parser::Error(const String &message, const utils::FileRange &fileRange) {
   exit(0);
 }
 
-void Parser::showWarning(const String           &message,
-                         const utils::FileRange &fileRange) {
+void Parser::Warning(const String &message, const utils::FileRange &fileRange) {
   std::cout << colors::highIntensityBackground::yellow << " parser warning "
-            << colors::reset << " " << colors::bold::yellow << message
+            << colors::reset << "▌ " << colors::bold::yellow << message
             << colors::reset << " | " << colors::underline::green
             << fileRange.file.string() << ":" << fileRange.start.line << ":"
             << fileRange.start.character << colors::reset << " >> "

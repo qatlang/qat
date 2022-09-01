@@ -907,7 +907,7 @@ void Lexer::throw_error(const String &message) {
             << colors::reset << " " << colors::bold::red << message
             << colors::reset << " | " << colors::underline::green << filePath
             << ":" << line_num << ":" << char_num << colors::reset << "\n";
-  exit(0);
+  exit(1);
 }
 
 } // namespace qat::lexer

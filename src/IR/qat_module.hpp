@@ -215,7 +215,6 @@ public:
   void      linkNative(NativeUnit nval);
   void      finaliseModule();
   nuo::Json toJson() const;
-  void      throw_error(String message, utils::FileRange fileRange);
 };
 
 } // namespace qat::IR

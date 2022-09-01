@@ -36,6 +36,7 @@ private:
   bool         isStatic;
   bool         isVariation;
   MemberFnType fnType;
+  String       selfName;
 
   MemberFunction(MemberFnType fnType, bool _isVariation, CoreType *_parent,
                  const String &_name, QatType *returnType,
@@ -53,10 +54,11 @@ public:
          const utils::FileRange      &fileRange,
          const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
-  static MemberFunction *CreateConstructor(
-      CoreType *parent, const String &name, const Vec<Argument> &args,
-      bool hasVariadicArgs, const utils::FileRange &fileRange,
-      const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx);
+  static MemberFunction *
+  CreateConstructor(CoreType *parent, const Vec<Argument> &args,
+                    bool hasVariadicArgs, const utils::FileRange &fileRange,
+                    const utils::VisibilityInfo &visibInfo,
+                    llvm::LLVMContext           &ctx);
 
   static MemberFunction *
   CreateFromConvertor(CoreType *parent, QatType *sourceType, const String &name,
@@ -79,6 +81,7 @@ public:
                const utils::FileRange      &fileRange,
                const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
+  useit String       getName() const;
   useit MemberFnType getMemberFnType();
   useit bool         isVariationFunction() const;
   useit bool         isStaticFunction() const;

@@ -94,7 +94,7 @@ public:
   useit bool         hasVariadicArgs() const;
   useit bool         isAsyncFunction() const;
   useit String       argumentNameAt(u32 index) const;
-  useit String       getName() const;
+  useit virtual String getName() const;
   useit virtual String getFullName() const;
   useit bool           isReturnTypeReference() const;
   useit bool           isReturnTypePointer() const;

@@ -30,10 +30,12 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation,
     break;
   }
   case MemberFnType::normal: {
+    selfName = _name;
     parent->memberFunctions.push_back(this);
     break;
   }
   case MemberFnType::staticFn: {
+    selfName = _name;
     parent->staticFunctions.push_back(this);
     break;
   }
@@ -67,7 +69,7 @@ MemberFunction *MemberFunction::Create(
     const utils::VisibilityInfo &visibilityInfo, llvm::LLVMContext &ctx) {
   Vec<Argument> args_info;
   args_info.push_back(
-      Argument::Create("self", PointerType::get(is_variation, parent, ctx), 0));
+      Argument::Create("''", PointerType::get(is_variation, parent, ctx), 0));
   for (const auto &arg : args) {
     args_info.push_back(arg);
   }
@@ -78,16 +80,18 @@ MemberFunction *MemberFunction::Create(
 }
 
 MemberFunction *MemberFunction::CreateConstructor(
-    CoreType *parent, const String &name, const Vec<Argument> &args,
-    bool hasVariadicArgs, const utils::FileRange &fileRange,
-    const utils::VisibilityInfo &visibInfo, llvm::LLVMContext &ctx) {
+    CoreType *parent, const Vec<Argument> &args, bool hasVariadicArgs,
+    const utils::FileRange &fileRange, const utils::VisibilityInfo &visibInfo,
+    llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
-      Argument::Create("self", PointerType::get(true, parent, ctx), 0));
+      Argument::Create("''", PointerType::get(true, parent, ctx), 0));
   for (const auto &arg : args) {
     argsInfo.push_back(arg);
   }
-  return new MemberFunction(MemberFnType::constructor, true, parent, name,
+  return new MemberFunction(MemberFnType::constructor, true, parent,
+                            "from'" +
+                                std::to_string(parent->constructors.size()),
                             VoidType::get(ctx), false, false, argsInfo,
                             hasVariadicArgs, false, fileRange, visibInfo, ctx);
 }
@@ -145,13 +149,27 @@ MemberFunction::CreateDestructor(CoreType               *parent,
       false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
 }
 
+String MemberFunction::getName() const {
+  switch (fnType) {
+  case MemberFnType::normal:
+  case MemberFnType::staticFn: {
+    return selfName;
+  }
+  case MemberFnType::fromConvertor:
+  case MemberFnType::toConvertor:
+  case MemberFnType::constructor:
+  case MemberFnType::copyConstructor:
+  case MemberFnType::moveConstructor:
+  case MemberFnType::destructor:
+    return name;
+  }
+}
+
 bool MemberFunction::isVariationFunction() const {
   return isStatic ? false : isVariation;
 }
 
-String MemberFunction::getFullName() const {
-  return parent->getFullName() + ":" + name;
-}
+String MemberFunction::getFullName() const { return name; }
 
 bool MemberFunction::isStaticFunction() const { return isStatic; }
 
@@ -165,7 +183,7 @@ void MemberFunction::emitCPP(cpp::File &file) const {}
 
 nuo::Json MemberFunction::toJson() const {
   // TODO - Implement remaining
-  return nuo::Json();
+  return nuo::Json()._("coreType", parent->getID());
 }
 
 } // namespace qat::IR

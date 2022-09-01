@@ -23,10 +23,17 @@ IR::Value *GiveSentence::emit(IR::Context *ctx) {
     if (give_expr.has_value()) {
       auto *retVal  = give_expr.value()->emit(ctx);
       auto *retType = fun->getType()->asFunction()->getReturnType();
-      if (retType->isReference()
-              ? retType->asReference()->getSubType()->isSame(retVal->getType())
-              : retType->isSame(retVal->getType())) {
-        if (retVal->isImplicitPointer() && !retType->isReference()) {
+      if (retType->isSame(retVal->getType()) ||
+          (retType->isReference() &&
+           retType->asReference()->getSubType()->isSame(retVal->getType()) &&
+           retVal->isImplicitPointer()) ||
+          (retVal->getType()->isReference() &&
+           retVal->getType()->asReference()->getSubType()->isSame(retType))) {
+        if (retVal->getType()->isReference() && !(retType->isReference())) {
+          retVal = new IR::Value(ctx->builder.CreateLoad(retType->getLLVMType(),
+                                                         retVal->getLLVM()),
+                                 retType, false, IR::Nature::temporary);
+        } else if (retVal->isImplicitPointer() && !retType->isReference()) {
           retVal->loadImplicitPointer(ctx->builder);
         }
         if (retType->isReference() && retVal->isLocalToFn()) {

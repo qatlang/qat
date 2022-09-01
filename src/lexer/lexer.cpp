@@ -568,9 +568,9 @@ Token Lexer::tokeniser() {
     if ((alphabets.find(current, 0) != String::npos) || current == '_') {
       const String digits = "0123456789";
       String       value;
-      while ((alphabets.find(current, 0) != String::npos) ||
-             (digits.find(current, 0) != String::npos) ||
-             (current == '_') && !file.eof()) {
+      while (((alphabets.find(current, 0) != String::npos) ||
+              (digits.find(current, 0) != String::npos) || (current == '_')) &&
+             !file.eof()) {
         value += current;
         read();
       }
@@ -609,8 +609,6 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::as, this->getPosition(2));
       } else if (value == "lib") {
         return Token::normal(TokenType::lib, this->getPosition(3));
-      } else if (value == "bool") {
-        return Token::normal(TokenType::boolType, this->getPosition(4));
       } else if (value == "cstring") {
         return Token::normal(TokenType::cstringType, this->getPosition(7));
       } else if (value == "await") {

@@ -17,7 +17,6 @@ enum class TokenType {
   Public,
   stop,
   voidType,
-  boolType,
   pointerType,
   referenceType,
   unsignedIntegerType,

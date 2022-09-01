@@ -105,6 +105,10 @@ IR::Value *MemberPrototype::emit(IR::Context *ctx) {
   return function;
 }
 
+void MemberPrototype::setCoreType(IR::CoreType *_coreType) {
+  coreType = _coreType;
+}
+
 nuo::Json MemberPrototype::toJson() const {
   Vec<nuo::JsonValue> args;
   for (auto *arg : arguments) {

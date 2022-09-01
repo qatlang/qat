@@ -73,6 +73,10 @@ DefineCoreType::DefineCoreType(String                      _name,
       conv->setCoreType(coreType);
       (void)conv->emit(ctx);
     }
+    for (auto *mFn : memberDefinitions) {
+      mFn->setCoreType(coreType);
+      (void)mFn->emit(ctx);
+    }
     ctx->activeType = nullptr;
     return nullptr; // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
   } else {

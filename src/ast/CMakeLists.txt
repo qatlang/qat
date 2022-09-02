@@ -3,13 +3,11 @@ add_library(QAT_AST
         box.cpp
         bring_paths.cpp
         bring_entities.cpp
-        convertor_definition.cpp
-        convertor_prototype.cpp
+        convertor.cpp
         define_core_type.cpp
         errors.cpp
         expression.cpp
-        function_definition.cpp
-        function_prototype.cpp
+        function.cpp
         global_declaration.cpp
         lib.cpp
         member_definition.cpp

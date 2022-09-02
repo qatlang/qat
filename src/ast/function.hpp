@@ -1,12 +1,11 @@
-#ifndef QAT_AST_FUNCTION_PROTOTYPE_HPP
-#define QAT_AST_FUNCTION_PROTOTYPE_HPP
+#ifndef QAT_AST_FUNCTION_HPP
+#define QAT_AST_FUNCTION_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/core_type.hpp"
 #include "./argument.hpp"
 #include "./node.hpp"
-#include "./types/qat_type.hpp"
-#include "llvm/IR/GlobalValue.h"
+#include "./sentence.hpp"
+#include <iostream>
 #include <string>
 
 namespace qat::ast {
@@ -36,6 +35,21 @@ public:
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::functionPrototype; }
+};
+
+class FunctionDefinition : public Node {
+private:
+  Vec<Sentence *> sentences;
+
+public:
+  FunctionDefinition(FunctionPrototype *_prototype, Vec<Sentence *> _sentences,
+                     utils::FileRange _fileRange);
+
+  FunctionPrototype *prototype;
+
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit NodeType nodeType() const final { return NodeType::functionDefinition; }
+  useit nuo::Json toJson() const final;
 };
 
 } // namespace qat::ast

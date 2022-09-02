@@ -2,7 +2,8 @@
 #define QAT_AST_DEFINE_CORE_HPP
 
 #include "../utils/visibility.hpp"
-#include "./convertor_definition.hpp"
+#include "./constructor.hpp"
+#include "./convertor.hpp"
 #include "./expression.hpp"
 #include "./member_definition.hpp"
 #include "./types/qat_type.hpp"

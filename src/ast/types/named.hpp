@@ -3,7 +3,7 @@
 
 #include "../../IR/context.hpp"
 #include "../box.hpp"
-#include "../function_definition.hpp"
+#include "../function.hpp"
 #include "./qat_type.hpp"
 
 #include <string>

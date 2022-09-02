@@ -127,24 +127,26 @@ Function *QatModule::createFunction(const String &name, QatType *returnType,
 
 QatModule *
 QatModule::CreateSubmodule(QatModule *parent, fs::path filepath,
-                           fs::path basePath, String name, ModuleType type,
+                           fs::path basePath, String sname, ModuleType type,
                            const utils::VisibilityInfo &visibilityInfo,
                            llvm::LLVMContext           &ctx) {
-  auto sub = new QatModule(std::move(name), std::move(filepath),
-                           std::move(basePath), type, visibilityInfo, ctx);
+  SHOW("Creating submodule: " << sname)
+  auto *sub = new QatModule(sname, std::move(filepath), std::move(basePath),
+                            type, visibilityInfo, ctx);
   if (parent) {
     sub->parent = parent;
     parent->submodules.push_back(sub);
+    SHOW("Created submodule")
   }
   return sub;
 }
 
 QatModule *QatModule::CreateFile(QatModule *parent, fs::path filepath,
-                                 fs::path basePath, String name,
+                                 fs::path basePath, String fname,
                                  Vec<String> content, Vec<ast::Node *> nodes,
                                  utils::VisibilityInfo visibilityInfo,
                                  llvm::LLVMContext    &ctx) {
-  auto sub     = new QatModule(name, filepath, basePath, ModuleType::file,
+  auto *sub    = new QatModule(fname, filepath, basePath, ModuleType::file,
                                visibilityInfo, ctx);
   sub->content = std::move(content);
   if (parent) {
@@ -159,17 +161,56 @@ String QatModule::getName() const { return name; }
 
 String QatModule::getFullName() const {
   if (parent) {
-    return parent->getFullName() +
-           (shouldPrefixName()
-                ? ((parent->shouldPrefixName() ? ":" : "") + name)
-                : "");
+    if (parent->shouldPrefixName()) {
+      if (shouldPrefixName()) {
+        return parent->getFullName() + ":" + name;
+      } else {
+        return parent->getFullName();
+      }
+    } else {
+      if (shouldPrefixName()) {
+        return name;
+      } else {
+        return "";
+      }
+    }
   } else {
     return shouldPrefixName() ? name : "";
   }
 }
 
+String QatModule::getWritableName() const {
+  String result;
+  if (parent) {
+    SHOW("Writable: has parent")
+    result = parent->getWritableName() + "_";
+    SHOW("Writable parent result is " << result)
+  }
+  switch (moduleType) {
+  case ModuleType::lib: {
+    result += ("lib-" + name);
+    break;
+  }
+  case ModuleType::box: {
+    result += ("box-" + name);
+    break;
+  }
+  case ModuleType::file: {
+    result += ("file-" + filePath.stem().string());
+    break;
+  }
+  case ModuleType::folder: {
+    result += ("folder-" + name);
+    break;
+  }
+  }
+  SHOW("Writable final result is " << result)
+  return result;
+}
+
 String QatModule::getFullNameWithChild(const String &child) const {
-  if (!getFullName().empty()) {
+  if (shouldPrefixName()) {
+    SHOW("Getting full name: " << getFullName())
     return getFullName() + ":" + child;
   } else {
     return child;
@@ -177,8 +218,7 @@ String QatModule::getFullNameWithChild(const String &child) const {
 }
 
 bool QatModule::shouldPrefixName() const {
-  return ((moduleType != ModuleType::file) &&
-          (moduleType != ModuleType::folder));
+  return (moduleType == ModuleType::box || moduleType == ModuleType::lib);
 }
 
 Function *QatModule::getGlobalInitialiser(IR::Context *ctx) {
@@ -196,11 +236,12 @@ Function *QatModule::getGlobalInitialiser(IR::Context *ctx) {
 
 bool QatModule::isSubmodule() const { return parent != nullptr; }
 
-void QatModule::addSubmodule(const String &name, const String &filename,
+void QatModule::addSubmodule(const String &sname, const String &filename,
                              ModuleType                   type,
                              const utils::VisibilityInfo &visib_info,
                              llvm::LLVMContext           &ctx) {
-  active = CreateSubmodule(active, name, filename, basePath.string(), type,
+  SHOW("Creating submodule: " << sname)
+  active = CreateSubmodule(this, filename, basePath.string(), sname, type,
                            visib_info, ctx);
 }
 
@@ -254,7 +295,40 @@ QatModule::hasAccessibleLibInImports( // NOLINT(misc-no-recursion)
 
 QatModule *QatModule::getLib(const String               &name,
                              const utils::RequesterInfo &reqInfo) {
-  // FIXME
+  for (auto *sub : submodules) {
+    if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name)) {
+      return sub;
+    }
+  }
+  for (auto brought : broughtModules) {
+    auto *bMod = brought.get();
+    if (bMod->moduleType == ModuleType::lib) {
+      if (!brought.isNamed()) {
+        if ((bMod->shouldPrefixName() && (bMod->getName() == name)) ||
+            (brought.getName() == name)) {
+          return bMod;
+        }
+      } else if (brought.getName() == name) {
+        return bMod;
+      }
+    }
+  }
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasLib(name) || bMod->hasBroughtLib(name) ||
+            bMod->hasAccessibleLibInImports(name, reqInfo).first) {
+          if (bMod->getLib(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getLib(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
 }
 
 void QatModule::openLib(const String &name, const String &filename,
@@ -351,19 +425,20 @@ QatModule *QatModule::getBox(const String               &name,
   return nullptr;
 }
 
-void QatModule::openBox(const String                &name,
+void QatModule::openBox(const String                &_name,
                         Maybe<utils::VisibilityInfo> visib_info) {
-  if (hasBox(name)) {
+  SHOW("Opening box: " << _name)
+  if (hasBox(_name)) {
     for (auto *sub : submodules) {
       if (sub->moduleType == ModuleType::box) {
-        if (sub->getName() == name) {
+        if (sub->getName() == _name) {
           active = sub;
           break;
         }
       }
     }
   } else {
-    addSubmodule(name, filePath, ModuleType::box, visib_info.value(),
+    addSubmodule(_name, filePath, ModuleType::box, visib_info.value(),
                  llvmModule->getContext());
   }
 }
@@ -371,6 +446,7 @@ void QatModule::openBox(const String                &name,
 void QatModule::closeBox() { closeSubmodule(); }
 
 bool QatModule::hasFunction(const String &name) const {
+  SHOW("Function to be checked: " << name)
   SHOW("Function count: " << functions.size())
   for (auto *function : functions) {
     if (function->getName() == name) {
@@ -750,42 +826,42 @@ void QatModule::emitNodes(IR::Context *ctx) const {
       (void)node->emit(ctx);
     }
     SHOW("Emission for module complete")
-    isEmitted = true;
     for (auto *sub : submodules) {
       SHOW("About to emit for submodule: " << sub->getFullName())
       sub->emitNodes(ctx);
       SHOW("Emission complete, linking LLVM modules")
-      llvm::Linker::linkModules(
-          *llvmModule, std::unique_ptr<llvm::Module>(sub->getLLVMModule()));
+      // llvm::Linker::linkModules(
+      //     *llvmModule, std::unique_ptr<llvm::Module>(sub->getLLVMModule()));
     }
-    if (moduleType == ModuleType::file) {
-      SHOW("Module is a file")
-      auto *cfg = cli::Config::get();
-      SHOW("Creating llvm output path")
-      auto llPath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
-                    ".llvm" /
-                    filePath.lexically_relative(basePath)
-                        .replace_filename(filePath.filename())
-                        .replace_extension(".ll");
-      std::error_code errorCode;
-      SHOW("Creating all folders in llvm output path")
-      fs::create_directory(llPath.parent_path(), errorCode);
+    isEmitted = true;
+    // if (moduleType == ModuleType::file) {
+    SHOW("Module type is: " << (int)moduleType)
+    auto *cfg = cli::Config::get();
+    SHOW("Creating llvm output path")
+    auto fileName = getWritableName() + ".ll";
+    auto llPath =
+        (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / ".llvm" /
+        filePath.lexically_relative(basePath).replace_filename(fileName);
+    std::error_code errorCode;
+    SHOW("Creating all folders in llvm output path: " << llPath)
+    fs::create_directory(llPath.parent_path(), errorCode);
+    if (!errorCode) {
+      errorCode.clear();
+      llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
       if (!errorCode) {
-        errorCode.clear();
-        llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
-        if (!errorCode) {
-          SHOW("Printing LLVM module")
-          llvmModule->print(fStream, nullptr);
-          SHOW("LLVM module printed")
-          ctx->llvmOutputPaths.push_back(llPath);
-        } else {
-          SHOW("Could not open file for writing")
-        }
-        fStream.flush();
+        SHOW("Printing LLVM module")
+        llvmModule->print(fStream, nullptr);
+        SHOW("LLVM module printed")
+        ctx->llvmOutputPaths.push_back(llPath);
+        SHOW("Number of llvm output paths is: " << ctx->llvmOutputPaths.size())
       } else {
-        SHOW("Error could not create directory")
+        SHOW("Could not open file for writing")
       }
+      fStream.flush();
+    } else {
+      SHOW("Error could not create directory")
     }
+    // }
   }
 }
 

@@ -26,7 +26,7 @@ class Context;
 enum class ModuleType { lib, box, file, folder };
 enum class NativeUnit { printf, malloc, pthread };
 
-class QatModule {
+class QatModule : public Uniq {
   friend class CoreType;
   friend class DefinitionType;
   friend class GlobalEntity;
@@ -91,6 +91,7 @@ public:
 
   useit ModuleType getModuleType() const;
   useit String     getFullName() const;
+  useit String     getWritableName() const;
   useit String     getName() const;
   useit String     getFullNameWithChild(const String &name) const;
   useit QatModule *getActive();

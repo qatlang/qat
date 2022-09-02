@@ -118,7 +118,9 @@ IR::Value *Say::emit(IR::Context *ctx) {
         formatter(
             new IR::Value(subVal, subType, val->isVariable(), val->getNature()),
             i);
-        formatStr += ", ";
+        if (i != (typ->asArray()->getLength() - 1)) {
+          formatStr += ", ";
+        }
       }
       formatStr += "]";
     } else {

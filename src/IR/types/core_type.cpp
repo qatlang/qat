@@ -20,7 +20,8 @@ CoreType::CoreType(QatModule *mod, String _name, Vec<Member *> _members,
     subtypes.push_back(mem->type->getLLVMType());
   }
   SHOW("All members' LLVM types obtained")
-  llvmType = llvm::StructType::create(subtypes, name, false);
+  llvmType = llvm::StructType::create(subtypes, mod->getFullNameWithChild(name),
+                                      false);
   if (mod) {
     mod->coreTypes.push_back(this);
   }

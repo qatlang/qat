@@ -8,18 +8,78 @@ Lib::Lib(const String &_name, Vec<Node *> _members,
       visibility(_visibility) {}
 
 IR::Value *Lib::emit(IR::Context *ctx) {
-  // TODO - Check imports
-  if (ctx->mod->hasLib(name)) {
+  auto *mod = ctx->getMod();
+  if (mod->hasLib(name)) {
     ctx->Error(
-        "A library named " + name +
-            " exists already in this scope. Please change name of this library",
+        "A lib named " + ctx->highlightError(name) +
+            " already exists in this module. Libs cannot be reopened like "
+            "boxes. Please change name of this lib or check the logic.",
         fileRange);
-  } else if (ctx->mod->hasBox(name)) {
+  } else if (mod->hasBroughtLib(name)) {
     ctx->Error(
-        "A box named " + name +
-            " exists already in this scope. Please change name of this library",
+        "A lib named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
+        fileRange);
+  } else if (mod->hasBox(name)) {
+    SHOW("HAS BOX WITH NAME")
+    ctx->Error("A box named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtBox(name)) {
+    ctx->Error(
+        "A box named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
+        fileRange);
+  } else if (mod->hasFunction(name)) {
+    ctx->Error("A function named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtFunction(name)) {
+    ctx->Error(
+        "A function named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
+        fileRange);
+  } else if (mod->hasCoreType(name)) {
+    ctx->Error("A core type named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtCoreType(name)) {
+    ctx->Error(
+        "A core type named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
+        fileRange);
+  } else if (mod->hasTypeDef(name)) {
+    ctx->Error("A type definition named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtTypeDef(name)) {
+    ctx->Error(
+        "A type definition named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
+        fileRange);
+  } else if (mod->hasGlobalEntity(name)) {
+    ctx->Error("A global entity named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtGlobalEntity(name)) {
+    ctx->Error(
+        "A global entity named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this lib.",
         fileRange);
   }
+  SHOW("Creating lib")
+  mod->openLib(name, fileRange.file, ctx->getVisibInfo(visibility), ctx->llctx);
+  SHOW("Emitting nodes of the lib")
+  for (auto *nod : members) {
+    (void)nod->emit(ctx);
+  }
+  SHOW("Closing lib")
+  mod->closeLib();
   return nullptr;
 }
 

@@ -131,7 +131,8 @@ IR::Value *Say::emit(IR::Context *ctx) {
   }
   formatStr += "\n";
   Vec<llvm::Value *> values;
-  values.push_back(ctx->builder.CreateGlobalStringPtr(formatStr, "str"));
+  values.push_back(ctx->builder.CreateGlobalStringPtr(
+      formatStr, ctx->getGlobalStringName()));
   for (auto *val : llvmValues) {
     values.push_back(val);
   }

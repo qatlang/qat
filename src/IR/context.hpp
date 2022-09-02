@@ -66,6 +66,7 @@ public:
   bool              hasMain;
   Vec<LoopInfo *>   loopsInfo;
   Vec<Breakable *>  breakables;
+  mutable u64       stringCount;
 
   // META
 
@@ -73,7 +74,7 @@ public:
   Vec<String>   nativeLibsToLink;
 
   useit QatModule *getMod() const; // Get the active IR module
-
+  useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;
   useit                      utils::VisibilityInfo
   getVisibInfo(Maybe<utils::VisibilityKind> kind) const;

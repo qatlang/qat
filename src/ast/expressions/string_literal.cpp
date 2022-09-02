@@ -19,7 +19,8 @@ IR::Value *StringLiteral::emit(IR::Context *ctx) {
       llvm::ConstantStruct::get(
           (llvm::StructType *)IR::StringSliceType::get(ctx->llctx)
               ->getLLVMType(),
-          {ctx->builder.CreateGlobalStringPtr(value, "str", 0U,
+          {ctx->builder.CreateGlobalStringPtr(value, ctx->getGlobalStringName(),
+                                              0U,
                                               ctx->getMod()->getLLVMModule()),
            llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
                                   value.length())}),

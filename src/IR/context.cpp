@@ -21,6 +21,12 @@ Context::Context() : builder(llctx), mod(nullptr), hasMain(false) {}
 
 QatModule *Context::getMod() const { return mod->getActive(); }
 
+String Context::getGlobalStringName() const {
+  auto res = "qat'str'" + std::to_string(stringCount);
+  stringCount++;
+  return res;
+}
+
 utils::VisibilityInfo
 Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
   if (kind.has_value() && (kind.value() != utils::VisibilityKind::parent)) {

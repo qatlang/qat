@@ -1,6 +1,4 @@
 #include "./parser.hpp"
-#include "../ast/convertor_definition.hpp"
-#include "../ast/convertor_prototype.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/custom_float_literal.hpp"
@@ -21,7 +19,8 @@
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
 #include "../ast/expressions/unsigned_literal.hpp"
-#include "../ast/function_definition.hpp"
+#include "../ast/function.hpp"
+#include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/member_definition.hpp"
 #include "../ast/sentences/assignment.hpp"
@@ -236,13 +235,6 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
       cacheTy = new ast::VoidType(getVariability(), token.fileRange);
       break;
     }
-    case TokenType::boolType: {
-      if (cacheTy.has_value()) {
-        return {cacheTy.value(), i - 1};
-      }
-      cacheTy = new ast::UnsignedType(1, getVariability(), token.fileRange);
-      break;
-    }
     case TokenType::stringSliceType: {
       if (cacheTy.has_value()) {
         return {cacheTy.value(), i - 1};
@@ -447,7 +439,6 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       break;
     }
     case TokenType::parenthesisOpen:
-    case TokenType::boolType:
     case TokenType::voidType:
     case TokenType::cstringType:
     case TokenType::stringSliceType:
@@ -465,12 +456,19 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
           if (endRes.has_value()) {
             auto end = endRes.value();
-
+            exp      = parseExpression(prev_ctx, None, i + 2, end).first;
+            result.push_back(new ast::GlobalDeclaration(
+                tokens.at(i + 1).value, typeResult.first, exp,
+                typeResult.first->isVariable(), getVisibility(),
+                RangeSpan(start, end)));
+            i = end;
           } else {
             Error("Expected . to end the declaration of the global entity",
                   RangeSpan(start, i + 2));
           }
         }
+      } else {
+        cacheTy.push_back(typeResult.first);
       }
       break;
     }
@@ -936,7 +934,6 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
       setAsync();
       break;
     }
-    case TokenType::boolType:
     case TokenType::voidType:
     case TokenType::pointerType:
     case TokenType::referenceType:
@@ -1726,6 +1723,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
       } else if (tok.type == TokenType::colon) {
         if (prev == TokenType::identifier) {
           name += ":";
+          prev = TokenType::colon;
         } else {
           Error("No identifier found before `:`. Anonymous boxes are "
                 "not allowed",
@@ -1776,7 +1774,6 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
     case TokenType::voidType:
     case TokenType::integerType:
     case TokenType::floatType:
-    case TokenType::boolType:
     case TokenType::curlybraceOpen:
     case TokenType::unsignedIntegerType:
     case TokenType::referenceType:
@@ -2405,7 +2402,6 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
     case TokenType::pointerType:
     case TokenType::referenceType:
     case TokenType::stringSliceType:
-    case TokenType::boolType:
     case TokenType::floatType:
     case TokenType::unsignedIntegerType:
     case TokenType::integerType: {

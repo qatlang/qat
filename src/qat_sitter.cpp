@@ -34,6 +34,7 @@ void QatSitter::init() {
     case cli::CompileTarget::normal: {
       for (auto *entity : fileEntities) {
         ctx->mod = entity;
+        SHOW("Calling emitNodes")
         entity->emitNodes(ctx);
       }
       if (checkExecutableExists("clang++")) {
@@ -87,7 +88,7 @@ void QatSitter::init() {
   delete ctx;
 }
 
-void QatSitter::handlePath(const fs::path &path, llvm::LLVMContext &llctx) {
+void QatSitter::handlePath(const fs::path &mainPath, llvm::LLVMContext &llctx) {
   std::function<void(IR::QatModule *, const fs::path &)>
       recursiveModuleCreator = [&](IR::QatModule  *folder,
                                    const fs::path &path) {
@@ -119,29 +120,29 @@ void QatSitter::handlePath(const fs::path &path, llvm::LLVMContext &llctx) {
           }
         }
       };
-  if (fs::is_directory(path)) {
-    auto libpath = path / "lib.qat";
+  if (fs::is_directory(mainPath)) {
+    auto libpath = mainPath / "lib.qat";
     if (fs::exists(libpath) && fs::is_regular_file(libpath)) {
       Lexer->changeFile(libpath);
       Lexer->analyse();
       Parser->setTokens(Lexer->get_tokens());
       fileEntities.push_back(IR::QatModule::CreateFile(
-          nullptr, libpath, path, "lib.qat", Lexer->getContent(),
+          nullptr, libpath, mainPath, "lib.qat", Lexer->getContent(),
           Parser->parse(), utils::VisibilityInfo::pub(), llctx));
     } else {
       auto *subfolder = IR::QatModule::Create(
-          path.filename().string(), path, path.parent_path(),
+          mainPath.filename().string(), mainPath, mainPath.parent_path(),
           IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
       fileEntities.push_back(subfolder);
-      recursiveModuleCreator(subfolder, path);
+      recursiveModuleCreator(subfolder, mainPath);
     }
-  } else if (fs::is_regular_file(path)) {
-    Lexer->changeFile(path);
+  } else if (fs::is_regular_file(mainPath)) {
+    Lexer->changeFile(mainPath);
     Lexer->analyse();
     Parser->setTokens(Lexer->get_tokens());
     fileEntities.push_back(IR::QatModule::CreateFile(
-        nullptr, fs::absolute(path), path.parent_path(),
-        path.filename().string(), Lexer->getContent(), Parser->parse(),
+        nullptr, fs::absolute(mainPath), mainPath.parent_path(),
+        mainPath.filename().string(), Lexer->getContent(), Parser->parse(),
         utils::VisibilityInfo::pub(), llctx));
   }
 }

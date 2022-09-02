@@ -161,11 +161,10 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
 IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
                           QatModule *destMod) {
   SHOW("Linking function if it is external")
-  // Linking the function if it is external
   auto *llvmFunction = (llvm::Function *)ll;
-  if (destMod->getLLVMModule()->getFunction(getFullName()) == nullptr) {
+  if (destMod->getID() != mod->getID()) {
     llvm::Function::Create((llvm::FunctionType *)getType()->getLLVMType(),
-                           llvmFunction->getLinkage(),
+                           llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage,
                            llvmFunction->getAddressSpace(), getFullName(),
                            destMod->getLLVMModule());
   }

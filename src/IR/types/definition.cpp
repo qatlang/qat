@@ -20,6 +20,10 @@ utils::VisibilityInfo DefinitionType::getVisibility() const {
 
 String DefinitionType::getName() const { return name; }
 
+String DefinitionType::getFullName() const {
+  return parent ? parent->getFullNameWithChild(name) : name;
+}
+
 QatModule *DefinitionType::getParent() { return parent; }
 
 QatType *DefinitionType::getSubType() { return subType; }

@@ -22,6 +22,7 @@ public:
                  const utils::VisibilityInfo &_visibInfo);
 
   useit String     getName() const;
+  useit String     getFullName() const;
   useit QatModule *getParent();
   useit QatType   *getSubType();
   useit utils::VisibilityInfo getVisibility() const;

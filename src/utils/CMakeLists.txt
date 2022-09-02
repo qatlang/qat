@@ -6,6 +6,7 @@ add_library(QAT_UTILS
         is_integer.cpp
         parse_boxes_identifier.cpp
         random_number.cpp
+        split_string.cpp
         string_to_callingconv.cpp
         unique_id.cpp
         version_number.cpp

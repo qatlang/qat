@@ -14,23 +14,17 @@ namespace qat::ast {
 // but exists merely to avoid conflict between
 // libraries
 class Box : public Node {
-  String name;
-
-  Vec<Node *> members;
-
+  String                name;
+  Vec<Node *>           members;
   utils::VisibilityKind visibility;
 
 public:
   Box(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
-      utils::FileRange _fileRange)
-      : Node(std::move(_fileRange)), name(std::move(_name)),
-        members(std::move(_members)), visibility(_visibility) {}
+      utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) override;
-
   useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const final { return NodeType::box; }
+  useit NodeType  nodeType() const final { return NodeType::box; }
 };
 
 } // namespace qat::ast

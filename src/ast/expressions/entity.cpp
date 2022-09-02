@@ -1,4 +1,5 @@
 #include "./entity.hpp"
+#include "../../utils/split_string.hpp"
 #include <utility>
 
 namespace qat::ast {
@@ -10,8 +11,9 @@ Entity::Entity(u32 _relative, String _name, utils::FileRange _fileRange)
 IR::Value *Entity::emit(IR::Context *ctx) {
   auto *fun = ctx->fn;
   SHOW("Entity name is " << name)
-  if (relative == 0) {
-    if (fun) {
+  if (fun) {
+    auto *mod = ctx->getMod();
+    if (name.find(':') == String::npos && (relative == 0)) {
       if (fun->getBlock()->hasValue(name)) {
         SHOW("Found local value: " << name)
         auto *local  = fun->getBlock()->getValue(name);
@@ -56,27 +58,126 @@ IR::Value *Entity::emit(IR::Context *ctx) {
           }
         }
         // Checking functions
-        auto *mod = ctx->getMod();
-        if (mod->hasFunction(name)) {
+        if (mod->hasFunction(name) || mod->hasBroughtFunction(name) ||
+            mod->hasAccessibleFunctionInImports(name, ctx->getReqInfo())
+                .first) {
           return mod->getFunction(name, ctx->getReqInfo());
+        } else if (mod->hasGlobalEntity(name) ||
+                   mod->hasBroughtGlobalEntity(name) ||
+                   mod->hasAccessibleGlobalEntityInImports(name,
+                                                           ctx->getReqInfo())
+                       .first) {
+          auto *gEnt = mod->getGlobalEntity(name, ctx->getReqInfo());
+          return new IR::Value(gEnt->getLLVM(), gEnt->getType(),
+                               gEnt->isVariable(), gEnt->getNature());
         }
         ctx->Error("No value named " + ctx->highlightError(name) + " found",
                    fileRange);
       }
+    } else {
+      if ((relative != 0)) {
+        if (ctx->getMod()->hasNthParent(relative)) {
+          mod = ctx->getMod()->getNthParent(relative);
+        } else {
+          ctx->Error(
+              "The current scope do not have " +
+                  (relative == 1 ? "a" : std::to_string(relative)) + " parent" +
+                  (relative == 1 ? "" : "s") +
+                  ". Relative mentions of identifiers cannot be used here. "
+                  "Please check the logic.",
+              fileRange);
+        }
+      }
+      auto entityName = name;
+      if (name.find(':') != String::npos) {
+        auto splits = utils::splitString(name, ":");
+        entityName  = splits.back();
+        for (usize i = 0; i < (splits.size() - 1); i++) {
+          auto split = splits.at(i);
+          if (mod->hasLib(split)) {
+            mod = mod->getLib(split, ctx->getReqInfo());
+            if (!mod->getVisibility().isAccessible(ctx->getReqInfo())) {
+              ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) +
+                             " is not accessible here",
+                         fileRange);
+            }
+          } else if (mod->hasBox(split)) {
+            mod = mod->getBox(split, ctx->getReqInfo());
+            if (!mod->getVisibility().isAccessible(ctx->getReqInfo())) {
+              ctx->Error("Box " + ctx->highlightError(mod->getFullName()) +
+                             " is not accessible here",
+                         fileRange);
+            }
+          } else {
+            ctx->Error("No box or lib named " + ctx->highlightError(split) +
+                           " found inside " +
+                           ctx->highlightError(mod->getFullName()),
+                       fileRange);
+          }
+        }
+      }
+      auto reqInfo = ctx->getReqInfo();
+      if (mod->hasFunction(entityName) || mod->hasBroughtFunction(entityName) ||
+          mod->hasAccessibleFunctionInImports(entityName, reqInfo).first) {
+        auto *fun = mod->getFunction(entityName, reqInfo);
+        if (!fun->isAccessible(reqInfo)) {
+          ctx->Error("Function " + ctx->highlightError(fun->getFullName()) +
+                         " is not accessible here",
+                     fileRange);
+        }
+        return fun;
+      } else if (mod->hasGlobalEntity(entityName) ||
+                 mod->hasBroughtGlobalEntity(entityName) ||
+                 mod->hasAccessibleGlobalEntityInImports(entityName, reqInfo)
+                     .first) {
+        auto *gEnt = mod->getGlobalEntity(entityName, reqInfo);
+        if (!gEnt->getVisibility().isAccessible(reqInfo)) {
+          ctx->Error("Global entity " +
+                         ctx->highlightError(gEnt->getFullName()) +
+                         " is not accessible here",
+                     fileRange);
+        }
+        return new IR::Value(gEnt->getLLVM(), gEnt->getType(),
+                             gEnt->isVariable(), gEnt->getNature());
+      } else {
+        if (mod->hasLib(entityName) || mod->hasBroughtLib(entityName) ||
+            mod->hasAccessibleLibInImports(entityName, reqInfo).first) {
+          ctx->Error(
+              mod->getLib(entityName, reqInfo)->getFullName() +
+                  " is a lib and cannot be used as a value in an expression",
+              fileRange);
+        } else if (mod->hasBox(entityName) || mod->hasBroughtBox(entityName) ||
+                   mod->hasAccessibleBoxInImports(entityName, reqInfo).first) {
+          ctx->Error(
+              mod->getBox(entityName, reqInfo)->getFullName() +
+                  " is a box and cannot be used as a value in an expression",
+              fileRange);
+        } else if (mod->hasCoreType(entityName) ||
+                   mod->hasBroughtCoreType(entityName) ||
+                   mod->hasAccessibleCoreTypeInImports(entityName, reqInfo)
+                       .first) {
+          ctx->Error(mod->getCoreType(entityName, reqInfo)->getFullName() +
+                         " is a core type and cannot be used as a value in "
+                         "an expression",
+                     fileRange);
+        } else if (mod->hasTypeDef(entityName) ||
+                   mod->hasBroughtTypeDef(entityName) ||
+                   mod->hasAccessibleTypeDefInImports(entityName, reqInfo)
+                       .first) {
+          ctx->Error(mod->getTypeDef(entityName, reqInfo)->getFullName() +
+                         " is a type definition and cannot be used as a "
+                         "value in an expression",
+                     fileRange);
+        } else {
+          ctx->Error("No entity named " + ctx->highlightError(name) + " found",
+                     fileRange);
+        }
+      }
     }
   } else {
-    if (ctx->getMod()->hasNthParent(relative)) {
-      auto *mod = ctx->getMod()->getNthParent(relative);
-      // TODO - Implement remaining logic
-    } else {
-      ctx->Error("The current scope do not have " +
-                     (relative == 1 ? "a" : std::to_string(relative)) +
-                     " parent" + (relative == 1 ? "" : "s") +
-                     ". Relative mentions of identifiers cannot be used here. "
-                     "Please check the logic.",
-                 fileRange);
-    }
+    ctx->Error("No active function here", fileRange);
   }
+  return nullptr;
 }
 
 nuo::Json Entity::toJson() const {

@@ -9,7 +9,8 @@ Entity::Entity(u32 _relative, String _name, utils::FileRange _fileRange)
       relative(_relative) {}
 
 IR::Value *Entity::emit(IR::Context *ctx) {
-  auto *fun = ctx->fn;
+  auto *fun     = ctx->fn;
+  auto  reqInfo = ctx->getReqInfo();
   SHOW("Entity name is " << name)
   if (fun) {
     auto *mod = ctx->getMod();
@@ -59,15 +60,13 @@ IR::Value *Entity::emit(IR::Context *ctx) {
         }
         // Checking functions
         if (mod->hasFunction(name) || mod->hasBroughtFunction(name) ||
-            mod->hasAccessibleFunctionInImports(name, ctx->getReqInfo())
-                .first) {
-          return mod->getFunction(name, ctx->getReqInfo());
+            mod->hasAccessibleFunctionInImports(name, reqInfo).first) {
+          return mod->getFunction(name, reqInfo);
         } else if (mod->hasGlobalEntity(name) ||
                    mod->hasBroughtGlobalEntity(name) ||
-                   mod->hasAccessibleGlobalEntityInImports(name,
-                                                           ctx->getReqInfo())
+                   mod->hasAccessibleGlobalEntityInImports(name, reqInfo)
                        .first) {
-          auto *gEnt = mod->getGlobalEntity(name, ctx->getReqInfo());
+          auto *gEnt = mod->getGlobalEntity(name, reqInfo);
           return new IR::Value(gEnt->getLLVM(), gEnt->getType(),
                                gEnt->isVariable(), gEnt->getNature());
         }
@@ -95,28 +94,26 @@ IR::Value *Entity::emit(IR::Context *ctx) {
         for (usize i = 0; i < (splits.size() - 1); i++) {
           auto split = splits.at(i);
           if (mod->hasLib(split)) {
-            mod = mod->getLib(split, ctx->getReqInfo());
-            if (!mod->getVisibility().isAccessible(ctx->getReqInfo())) {
+            mod = mod->getLib(split, reqInfo);
+            if (!mod->getVisibility().isAccessible(reqInfo)) {
               ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) +
                              " is not accessible here",
                          fileRange);
             }
           } else if (mod->hasBox(split)) {
-            mod = mod->getBox(split, ctx->getReqInfo());
-            if (!mod->getVisibility().isAccessible(ctx->getReqInfo())) {
+            mod = mod->getBox(split, reqInfo);
+            if (!mod->getVisibility().isAccessible(reqInfo)) {
               ctx->Error("Box " + ctx->highlightError(mod->getFullName()) +
                              " is not accessible here",
                          fileRange);
             }
           } else {
             ctx->Error("No box or lib named " + ctx->highlightError(split) +
-                           " found inside " +
-                           ctx->highlightError(mod->getFullName()),
+                           " found inside scope ",
                        fileRange);
           }
         }
       }
-      auto reqInfo = ctx->getReqInfo();
       if (mod->hasFunction(entityName) || mod->hasBroughtFunction(entityName) ||
           mod->hasAccessibleFunctionInImports(entityName, reqInfo).first) {
         auto *fun = mod->getFunction(entityName, reqInfo);

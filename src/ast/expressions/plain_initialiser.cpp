@@ -11,6 +11,7 @@ PlainInitialiser::PlainInitialiser(NamedType                          *_type,
 
 IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
   if (type) {
+    auto  reqInfo  = ctx->getReqInfo();
     auto *typeEmit = type->emit(ctx);
     if (typeEmit->isCoreType()) {
       auto *cTy = typeEmit->asCore();
@@ -33,7 +34,7 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
       if (fields.empty()) {
         for (usize i = 0; i < fieldValues.size(); i++) {
           auto *mem = cTy->getMemberAt(i);
-          if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+          if (!mem->visibility.isAccessible(reqInfo)) {
             ctx->Error("Member " + ctx->highlightError(mem->name) +
                            " of core type " +
                            ctx->highlightError(cTy->getFullName()) +
@@ -49,7 +50,7 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
           auto fRange = fields.at(i).second;
           if (cTy->hasMember(fName)) {
             auto *mem = cTy->getMemberAt(cTy->getIndexOf(fName).value());
-            if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+            if (!mem->visibility.isAccessible(reqInfo)) {
               ctx->Error("The member " + ctx->highlightError(fName) +
                              " of core type " +
                              ctx->highlightError(cTy->getFullName()) +

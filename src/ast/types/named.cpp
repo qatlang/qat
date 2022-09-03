@@ -1,4 +1,5 @@
 #include "./named.hpp"
+#include "../../utils/split_string.hpp"
 
 namespace qat::ast {
 
@@ -8,36 +9,71 @@ NamedType::NamedType(u32 _relative, String _name, const bool _variable,
       name(std::move(_name)) {}
 
 IR::QatType *NamedType::emit(IR::Context *ctx) {
-  // FIXME - Implement remaining logic
   // FIXME - Support sum types
+  auto *mod     = ctx->getMod();
+  auto  reqInfo = ctx->getReqInfo();
   if (relative != 0) {
     if (ctx->getMod()->hasNthParent(relative)) {
-      auto *mod = ctx->getMod()->getNthParent(relative);
-      if (mod->hasCoreType(name) || mod->hasBroughtCoreType(name) ||
-          mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo()).first) {
-        return mod->getCoreType(name, ctx->getReqInfo());
-      } else if (mod->hasTypeDef(name) || mod->hasBroughtTypeDef(name) ||
-                 mod->hasAccessibleTypeDefInImports(name, ctx->getReqInfo())
-                     .first) {
-        return mod->getTypeDef(name, ctx->getReqInfo());
-      }
+      mod = ctx->getMod()->getNthParent(relative);
     } else {
       ctx->Error("The active scope does not have " + std::to_string(relative) +
                      " parents",
                  fileRange);
     }
-  } else {
-    auto *mod = ctx->getMod();
-    if (mod->hasCoreType(name) || mod->hasBroughtCoreType(name) ||
-        mod->hasAccessibleCoreTypeInImports(name, ctx->getReqInfo()).first) {
-      return mod->getCoreType(name, ctx->getReqInfo());
-    } else if (mod->hasTypeDef(name) || mod->hasBroughtTypeDef(name) ||
-               mod->hasAccessibleTypeDefInImports(name, ctx->getReqInfo())
-                   .first) {
-      return mod->getTypeDef(name, ctx->getReqInfo());
-    } else {
-      ctx->Error("No type named " + name + " found in scope", fileRange);
+  }
+  auto entityName = name;
+  if (name.find(':') != String::npos) {
+    auto splits = utils::splitString(name, ":");
+    entityName  = splits.back();
+    for (usize i = 0; i < (splits.size() - 1); i++) {
+      auto split = splits.at(i);
+      if (mod->hasLib(split)) {
+        mod = mod->getLib(split, reqInfo);
+        if (!mod->getVisibility().isAccessible(reqInfo)) {
+          ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) +
+                         " is not accessible here",
+                     fileRange);
+        }
+      } else if (mod->hasBox(split)) {
+        mod = mod->getBox(split, reqInfo);
+        if (!mod->getVisibility().isAccessible(reqInfo)) {
+          ctx->Error("Box " + ctx->highlightError(mod->getFullName()) +
+                         " is not accessible here",
+                     fileRange);
+        }
+      } else {
+        ctx->Error("No box or lib named " + ctx->highlightError(split) +
+                       " found inside " +
+                       ctx->highlightError(mod->getFullName()),
+                   fileRange);
+      }
     }
+  }
+  if (mod->hasCoreType(entityName) || mod->hasBroughtCoreType(entityName) ||
+      mod->hasAccessibleCoreTypeInImports(entityName, reqInfo).first) {
+    auto *cTy = mod->getCoreType(entityName, reqInfo);
+    if (!cTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
+                     " inside module " +
+                     ctx->highlightError(mod->getFullName()) +
+                     " is not accessible here",
+                 fileRange);
+    }
+    return cTy;
+  } else if (mod->hasTypeDef(entityName) ||
+             mod->hasBroughtTypeDef(entityName) ||
+             mod->hasAccessibleTypeDefInImports(entityName, reqInfo).first) {
+    auto *dTy = mod->getTypeDef(entityName, reqInfo);
+    if (!dTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error("Type definition " + ctx->highlightError(dTy->getFullName()) +
+                     " inside module " +
+                     ctx->highlightError(mod->getFullName()) +
+                     " is not accessible here",
+                 fileRange);
+    }
+    return dTy;
+  } else {
+    ctx->Error("No type named " + name + " found in scope", fileRange);
   }
   return nullptr;
 }

@@ -2,12 +2,12 @@
 
 namespace qat::ast {
 
-Lib::Lib(const String &_name, Vec<Node *> _members,
-         utils::VisibilityKind _visibility, const utils::FileRange &_file_range)
+Lib::Lib(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
+         const utils::FileRange &_file_range)
     : Node(std::move(_file_range)), name(_name), members(std::move(_members)),
       visibility(_visibility) {}
 
-IR::Value *Lib::emit(IR::Context *ctx) {
+void Lib::createModule(IR::Context *ctx) const {
   auto *mod = ctx->getMod();
   if (mod->hasLib(name)) {
     ctx->Error(
@@ -74,14 +74,14 @@ IR::Value *Lib::emit(IR::Context *ctx) {
   }
   SHOW("Creating lib")
   mod->openLib(name, fileRange.file, ctx->getVisibInfo(visibility), ctx->llctx);
-  SHOW("Emitting nodes of the lib")
+  mod->getActive()->nodes = members;
   for (auto *nod : members) {
-    (void)nod->emit(ctx);
+    nod->createModule(ctx);
   }
-  SHOW("Closing lib")
   mod->closeLib();
-  return nullptr;
 }
+
+IR::Value *Lib::emit(IR::Context *ctx) { return nullptr; }
 
 nuo::Json Lib::toJson() const {
   Vec<nuo::JsonValue> membersJsonValue;

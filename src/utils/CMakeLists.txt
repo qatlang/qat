@@ -1,5 +1,4 @@
 add_library(QAT_UTILS
-        box_possibilities.cpp
         file_range.cpp
         get_directory_contents.cpp
         get_parent_names.cpp

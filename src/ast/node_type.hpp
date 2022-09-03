@@ -23,6 +23,7 @@ enum class NodeType {
   destructorDefinition,
   localDeclaration,
   globalDeclaration,
+  booleanLiteral,
   integerLiteral,
   unsignedLiteral,
   customIntegerLiteral,

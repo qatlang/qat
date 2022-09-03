@@ -25,11 +25,14 @@ private:
   bool                  isVariable;
   utils::VisibilityKind visibility;
 
+  mutable IR::GlobalEntity *globalEntity = nullptr;
+
 public:
   GlobalDeclaration(String _name, QatType *_type, Expression *_value,
                     bool _isVariable, utils::VisibilityKind _visibility,
                     utils::FileRange _fileRange);
 
+  void  define(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::globalDeclaration; }

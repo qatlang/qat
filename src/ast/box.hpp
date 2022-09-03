@@ -22,8 +22,9 @@ public:
   Box(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
       utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
+  void  createModule(IR::Context *ctx) const final;
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::box; }
 };
 

@@ -17,7 +17,9 @@
 
 namespace qat::ast {
 class Node;
-}
+class Lib;
+class Box;
+} // namespace qat::ast
 
 namespace qat::IR {
 
@@ -30,6 +32,8 @@ class QatModule : public Uniq {
   friend class CoreType;
   friend class DefinitionType;
   friend class GlobalEntity;
+  friend class ast::Lib;
+  friend class ast::Box;
 
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
@@ -211,7 +215,10 @@ public:
   useit llvm::Module *getLLVMModule() const;
 
   bool      areNodesEmitted() const;
-  void      emitNodes(IR::Context *ctx) const;
+  void      createModules(IR::Context *ctx);
+  void      defineTypes(IR::Context *ctx);
+  void      defineNodes(IR::Context *ctx);
+  void      emitNodes(IR::Context *ctx);
   void      exportJsonFromAST() const;
   void      linkNative(NativeUnit nval);
   void      finaliseModule();

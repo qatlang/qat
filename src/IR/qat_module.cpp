@@ -819,11 +819,48 @@ String QatModule::getFilePath() const { return filePath; }
 
 bool QatModule::areNodesEmitted() const { return isEmitted; }
 
-void QatModule::emitNodes(IR::Context *ctx) const {
+void QatModule::createModules(IR::Context *ctx) {
+  SHOW("Creating modules via nodes")
+  ctx->mod = this;
+  for (auto *node : nodes) {
+    node->createModule(ctx);
+  }
+  for (auto *sub : submodules) {
+    sub->createModules(ctx);
+  }
+}
+
+void QatModule::defineTypes(IR::Context *ctx) {
+  SHOW("Defining types")
+  ctx->mod = this;
+  for (auto *node : nodes) {
+    node->defineType(ctx);
+  }
+  for (auto *sub : submodules) {
+    sub->defineTypes(ctx);
+  }
+}
+
+void QatModule::defineNodes(IR::Context *ctx) {
+  SHOW("Defining nodes")
+  ctx->mod = this;
+  for (auto *node : nodes) {
+    node->define(ctx);
+  }
+  for (auto *sub : submodules) {
+    sub->defineNodes(ctx);
+  }
+}
+
+void QatModule::emitNodes(IR::Context *ctx) {
   if (!isEmitted) {
+    ctx->mod = this;
     SHOW("About to emit for module: " << getFullName())
     for (auto *node : nodes) {
-      (void)node->emit(ctx);
+      if (node) {
+        SHOW("Emitting node with type: " << (int)node->nodeType())
+        (void)node->emit(ctx);
+      }
     }
     SHOW("Emission for module complete")
     for (auto *sub : submodules) {
@@ -839,6 +876,9 @@ void QatModule::emitNodes(IR::Context *ctx) const {
     auto *cfg = cli::Config::get();
     SHOW("Creating llvm output path")
     auto fileName = getWritableName() + ".ll";
+    if (!cfg->hasOutputPath()) {
+      fs::remove_all(basePath / ".llvm");
+    }
     auto llPath =
         (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / ".llvm" /
         filePath.lexically_relative(basePath).replace_filename(fileName);

@@ -13,25 +13,27 @@ namespace qat::ast {
 class FunctionPrototype : public Node {
 private:
   friend class FunctionDefinition;
-  String                          name;
-  bool                            isAsync;
-  Vec<Argument *>                 arguments;
-  bool                            isVariadic;
-  QatType                        *returnType;
-  llvm::GlobalValue::LinkageTypes linkageType;
-  String                          callingConv;
-  utils::VisibilityKind           visibility;
+  String                name;
+  bool                  isAsync;
+  Vec<Argument *>       arguments;
+  bool                  isVariadic;
+  QatType              *returnType;
+  String                callingConv;
+  utils::VisibilityKind visibility;
+
+  mutable llvm::GlobalValue::LinkageTypes linkageType;
+  mutable IR::Function                   *function = nullptr;
 
 public:
-  FunctionPrototype(const String &_name, Vec<Argument *> _arguments,
-                    bool _isVariadic, QatType *_returnType, bool _is_async,
+  FunctionPrototype(String _name, Vec<Argument *> _arguments, bool _isVariadic,
+                    QatType *_returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType,
-                    const String                   &_callingConv,
-                    utils::VisibilityKind           _visibility,
-                    const utils::FileRange         &_fileRange);
+                    String _callingConv, utils::VisibilityKind _visibility,
+                    const utils::FileRange &_fileRange);
 
   FunctionPrototype(const FunctionPrototype &ref);
 
+  void  define(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::functionPrototype; }
@@ -47,6 +49,7 @@ public:
 
   FunctionPrototype *prototype;
 
+  void  define(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType nodeType() const final { return NodeType::functionDefinition; }
   useit nuo::Json toJson() const final;

@@ -40,7 +40,10 @@ public:
   // `_fileRange` FileRange instance that represents the range
   // spanned by the tokens that made up this AST member
   explicit Node(utils::FileRange _fileRange);
-  virtual ~Node()                                 = default;
+  virtual ~Node() = default;
+  virtual void             createModule(IR::Context *ctx) const {}
+  virtual void             defineType(IR::Context *ctx) const {}
+  virtual void             define(IR::Context *ctx) const {}
   useit virtual IR::Value *emit(IR::Context *ctx) = 0;
   useit virtual nuo::Json  toJson() const         = 0;
   useit virtual NodeType   nodeType() const       = 0;

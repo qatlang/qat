@@ -8,7 +8,7 @@ Box::Box(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
     : Node(std::move(_fileRange)), name(std::move(_name)),
       members(std::move(_members)), visibility(_visibility) {}
 
-IR::Value *Box::emit(IR::Context *ctx) {
+void Box::createModule(IR::Context *ctx) const {
   auto *mod = ctx->getMod();
   if (mod->hasLib(name)) {
     ctx->Error(
@@ -64,14 +64,14 @@ IR::Value *Box::emit(IR::Context *ctx) {
   }
   SHOW("Opening box")
   mod->openBox(name, ctx->getVisibInfo(visibility));
-  SHOW("Emitting nodes of the box")
+  mod->getActive()->nodes = members;
   for (auto *nod : members) {
-    (void)nod->emit(ctx);
+    nod->createModule(ctx);
   }
-  SHOW("Closing box")
   mod->closeBox();
-  return nullptr;
 }
+
+IR::Value *Box::emit(IR::Context *ctx) { return nullptr; }
 
 nuo::Json Box::toJson() const {
   Vec<nuo::JsonValue> mems;

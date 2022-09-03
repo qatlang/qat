@@ -16,12 +16,13 @@ private:
   utils::VisibilityKind visibility;
 
 public:
-  Lib(const String &_name, Vec<Node *> _members,
-      utils::VisibilityKind _visibility, const utils::FileRange &_file_range);
+  Lib(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
+      const utils::FileRange &_file_range);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
-  useit NodeType  nodeType() const override { return NodeType::lib; }
+  void  createModule(IR::Context *ctx) const final;
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::lib; }
 };
 
 } // namespace qat::ast

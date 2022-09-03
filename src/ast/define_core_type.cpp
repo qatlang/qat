@@ -41,10 +41,11 @@ DefineCoreType::DefineCoreType(String                      _name,
                                const utils::VisibilityKind _visibility,
                                utils::FileRange _fileRange, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked),
-      visibility(_visibility){SHOW("Created core type " + name)}
+      visibility(_visibility) {
+  SHOW("Created core type " + name)
+}
 
-          IR::Value
-          * DefineCoreType::emit(IR::Context * ctx) {
+void DefineCoreType::defineType(IR::Context *ctx) const {
   auto *mod = ctx->getMod();
   if (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
@@ -59,10 +60,9 @@ DefineCoreType::DefineCoreType(String                      _name,
               : ctx->getVisibInfo(mem->visibilityKind)));
     }
     SHOW("Emitted IR for all members")
-    auto *coreType = new IR::CoreType(
-        mod, name, mems, ctx->getVisibInfo(visibility), ctx->llctx);
+    coreType = new IR::CoreType(mod, name, mems, ctx->getVisibInfo(visibility),
+                                ctx->llctx);
     SHOW("Created core type in IR")
-    ctx->activeType = coreType;
     for (auto *stm : staticMembers) {
       coreType->addStaticMember(
           stm->name, stm->type->emit(ctx), stm->variability,
@@ -71,14 +71,10 @@ DefineCoreType::DefineCoreType(String                      _name,
     }
     for (auto *conv : convertorDefinitions) {
       conv->setCoreType(coreType);
-      (void)conv->emit(ctx);
     }
-    for (auto *mFn : memberDefinitions) {
-      mFn->setCoreType(coreType);
-      (void)mFn->emit(ctx);
+    for (auto *memDef : memberDefinitions) {
+      memDef->setCoreType(coreType);
     }
-    ctx->activeType = nullptr;
-    return nullptr; // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
   } else {
     // TODO - Check type definitions
     if (mod->hasCoreType(name)) {
@@ -109,6 +105,26 @@ DefineCoreType::DefineCoreType(String                      _name,
                  fileRange);
     }
   }
+}
+
+void DefineCoreType::define(IR::Context *ctx) const {
+  for (auto *conv : convertorDefinitions) {
+    conv->define(ctx);
+  }
+  for (auto *mFn : memberDefinitions) {
+    mFn->define(ctx);
+  }
+}
+
+IR::Value *DefineCoreType::emit(IR::Context *ctx) {
+  ctx->activeType = coreType;
+  for (auto *conv : convertorDefinitions) {
+    (void)conv->emit(ctx);
+  }
+  for (auto *mFn : memberDefinitions) {
+    (void)mFn->emit(ctx);
+  }
+  ctx->activeType = nullptr;
   return nullptr;
 }
 

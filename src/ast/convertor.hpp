@@ -17,11 +17,15 @@ class ConvertorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  IR::CoreType         *coreType;
   String                argName;
   QatType              *candidateType;
   utils::VisibilityKind visibility;
   bool                  isFrom;
+
+  mutable IR::CoreType       *coreType;
+  mutable IR::MemberFunction *memberFn;
+
+  void setCoreType(IR::CoreType *_coreType) const;
 
   ConvertorPrototype(bool _isFrom, String _argName, QatType *_candidateType,
                      utils::VisibilityKind   _visibility,
@@ -37,8 +41,7 @@ public:
                                 utils::VisibilityKind   visib,
                                 const utils::FileRange &fileRange);
 
-  void setCoreType(IR::CoreType *_coreType);
-
+  void  define(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType nodeType() const final { return NodeType::convertorPrototype; }
@@ -51,11 +54,13 @@ private:
   Vec<Sentence *>     sentences;
   ConvertorPrototype *prototype;
 
+  void setCoreType(IR::CoreType *coreType) const;
+
 public:
   ConvertorDefinition(ConvertorPrototype *_prototype,
                       Vec<Sentence *> _sentences, utils::FileRange _fileRange);
 
-  void  setCoreType(IR::CoreType *coreType);
+  void  define(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType nodeType() const final { return NodeType::functionDefinition; }

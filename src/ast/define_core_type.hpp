@@ -2,10 +2,9 @@
 #define QAT_AST_DEFINE_CORE_HPP
 
 #include "../utils/visibility.hpp"
-#include "./constructor.hpp"
 #include "./convertor.hpp"
 #include "./expression.hpp"
-#include "./member_definition.hpp"
+#include "./member_function.hpp"
 #include "./types/qat_type.hpp"
 #include <optional>
 #include <string>
@@ -55,17 +54,21 @@ private:
   Vec<ConvertorDefinition *> convertorDefinitions;
   utils::VisibilityKind      visibility;
 
+  mutable IR::CoreType *coreType = nullptr;
+
 public:
-  DefineCoreType(String _name, const utils::VisibilityKind _visibility,
+  DefineCoreType(String _name, utils::VisibilityKind _visibility,
                  utils::FileRange _fileRange, bool _isPacked = false);
 
   void  addMember(Member *mem);
   void  addStaticMember(StaticMember *stm);
   void  addMemberDefinition(MemberDefinition *mdef);
   void  addConvertorDefinition(ConvertorDefinition *cdef);
-  useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
-  useit NodeType  nodeType() const override { return NodeType::defineCoreType; }
+  void  defineType(IR::Context *ctx) const final;
+  void  define(IR::Context *ctx) const final;
+  useit IR::Value *emit(IR::Context *ctx) final;
+  useit nuo::Json toJson() const final;
+  useit NodeType  nodeType() const final { return NodeType::defineCoreType; }
 };
 
 } // namespace qat::ast

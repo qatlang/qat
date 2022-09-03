@@ -33,6 +33,19 @@ void QatSitter::init() {
     switch (config->getTarget()) {
     case cli::CompileTarget::normal: {
       for (auto *entity : fileEntities) {
+        entity->createModules(ctx);
+      }
+      for (auto *entity : fileEntities) {
+        entity->defineTypes(ctx);
+      }
+      for (auto *entity : fileEntities) {
+        entity->defineNodes(ctx);
+      }
+      auto *cfg = cli::Config::get();
+      if (cfg->hasOutputPath()) {
+        fs::remove_all(cfg->getOutputPath() / ".llvm");
+      }
+      for (auto *entity : fileEntities) {
         ctx->mod = entity;
         SHOW("Calling emitNodes")
         entity->emitNodes(ctx);
@@ -67,6 +80,9 @@ void QatSitter::init() {
 #if IS_RELEASE
         for (const auto &llPath : ctx->llvmOutputPaths) {
           fs::remove(llPath);
+        }
+        if (cfg->hasOutputPath()) {
+          fs::remove_all(cfg->getOutputPath() / ".llvm");
         }
 #endif
       } else {

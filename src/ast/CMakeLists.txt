@@ -10,8 +10,7 @@ add_library(QAT_AST
         function.cpp
         global_declaration.cpp
         lib.cpp
-        member_definition.cpp
-        member_prototype.cpp
+        member_function.cpp
         node.cpp
         sentence.cpp
         type_definition.cpp)

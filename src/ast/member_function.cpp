@@ -1,4 +1,4 @@
-#include "./member_prototype.hpp"
+#include "./member_function.hpp"
 #include "../show.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <vector>
@@ -6,12 +6,11 @@
 namespace qat::ast {
 
 MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn,
-                                 const String   &_name,
-                                 Vec<Argument *> _arguments, bool _isVariadic,
-                                 QatType *_returnType, bool _is_async,
-                                 utils::VisibilityKind   kind,
+                                 String _name, Vec<Argument *> _arguments,
+                                 bool _isVariadic, QatType *_returnType,
+                                 bool _is_async, utils::VisibilityKind kind,
                                  const utils::FileRange &_fileRange)
-    : Node(_fileRange), isVariationFn(_isVariationFn), name(_name),
+    : Node(_fileRange), isVariationFn(_isVariationFn), name(std::move(_name)),
       isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), kind(kind),
       isStatic(_isStatic) {}
@@ -35,12 +34,11 @@ MemberPrototype *MemberPrototype::Static(const String          &_name,
                              _returnType, _is_async, kind, _fileRange);
 }
 
-IR::Value *MemberPrototype::emit(IR::Context *ctx) {
+void MemberPrototype::define(IR::Context *ctx) const {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
-  IR::MemberFunction *function;
-  Vec<IR::QatType *>  generatedTypes;
+  Vec<IR::QatType *> generatedTypes;
   // TODO - Check existing member functions
   SHOW("Generating types")
   for (auto *arg : arguments) {
@@ -90,22 +88,21 @@ IR::Value *MemberPrototype::emit(IR::Context *ctx) {
   SHOW("Variability setting complete")
   SHOW("About to create function")
   if (isStatic) {
-    function = IR::MemberFunction::CreateStatic(
+    memberFn = IR::MemberFunction::CreateStatic(
         coreType, name, returnType->emit(ctx), returnType->isVariable(),
         isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(kind),
         ctx->llctx);
   } else {
-    function = IR::MemberFunction::Create(
+    memberFn = IR::MemberFunction::Create(
         coreType, isVariationFn, name, returnType->emit(ctx),
         returnType->isVariable(), isAsync, args, isVariadic, fileRange,
         ctx->getVisibInfo(kind), ctx->llctx);
   }
-  SHOW("Function created!!")
-  // TODO - Set calling convention
-  return function;
 }
 
-void MemberPrototype::setCoreType(IR::CoreType *_coreType) {
+IR::Value *MemberPrototype::emit(IR::Context *ctx) { return memberFn; }
+
+void MemberPrototype::setCoreType(IR::CoreType *_coreType) const {
   coreType = _coreType;
 }
 
@@ -129,6 +126,85 @@ nuo::Json MemberPrototype::toJson() const {
       ._("returnType", returnType->toJson())
       ._("arguments", args)
       ._("isVariadic", isVariadic);
+}
+
+MemberDefinition::MemberDefinition(MemberPrototype *_prototype,
+                                   Vec<Sentence *>  _sentences,
+                                   utils::FileRange _fileRange)
+    : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
+      prototype(_prototype) {}
+
+void MemberDefinition::define(IR::Context *ctx) const {
+  prototype->define(ctx);
+}
+
+IR::Value *MemberDefinition::emit(IR::Context *ctx) {
+  auto *fnEmit = (IR::MemberFunction *)prototype->emit(ctx);
+  ctx->fn      = fnEmit;
+  SHOW("Set active member function: " << fnEmit->getFullName())
+  auto *block = new IR::Block(fnEmit, nullptr);
+  SHOW("Created entry block")
+  block->setActive(ctx->builder);
+  SHOW("Set new block as the active block")
+  SHOW("About to allocate necessary arguments")
+  auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+  auto *corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
+  auto *self       = block->newValue("''", corePtrTy, prototype->isVariationFn);
+  ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u),
+                           self->getLLVM());
+  ctx->selfVal =
+      ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
+  for (usize i = 1; i < argIRTypes.size(); i++) {
+    SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+    if (argIRTypes.at(i)->isMemberArgument()) {
+      auto *memPtr = ctx->builder.CreateStructGEP(
+          corePtrTy->getSubType()->getLLVMType(), self->getLLVM(),
+          corePtrTy->getSubType()
+              ->asCore()
+              ->getIndexOf(argIRTypes.at(i)->getName())
+              .value());
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr,
+                               false);
+    } else {
+      SHOW("Argument is variable")
+      auto *argVal = block->newValue(argIRTypes.at(i)->getName(),
+                                     argIRTypes.at(i)->getType(), true);
+      SHOW("Created local value for the argument")
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i),
+                               argVal->getAlloca(), false);
+    }
+  }
+  emitSentences(sentences, ctx);
+  ctx->selfVal = nullptr;
+  if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
+      (block->getName() == fnEmit->getBlock()->getName())) {
+    if (block->getBB()->getInstList().empty()) {
+      ctx->builder.CreateRetVoid();
+    } else {
+      auto *lastInst = ((llvm::Instruction *)&block->getBB()->back());
+      if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
+        ctx->builder.CreateRetVoid();
+      }
+    }
+  }
+  SHOW("Sentences emitted")
+  return nullptr;
+}
+
+void MemberDefinition::setCoreType(IR::CoreType *coreType) const {
+  prototype->setCoreType(coreType);
+}
+
+nuo::Json MemberDefinition::toJson() const {
+  Vec<nuo::JsonValue> sntcs;
+  for (auto *sentence : sentences) {
+    sntcs.push_back(sentence->toJson());
+  }
+  return nuo::Json()
+      ._("nodeType", "memberDefinition")
+      ._("prototype", prototype->toJson())
+      ._("body", sntcs)
+      ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

@@ -11,7 +11,7 @@ GlobalDeclaration::GlobalDeclaration(String _name, QatType *_type,
     : Node(std::move(_fileRange)), name(std::move(_name)), type(_type),
       value(_value), isVariable(_isVariable), visibility(_kind) {}
 
-IR::Value *GlobalDeclaration::emit(IR::Context *ctx) {
+void GlobalDeclaration::define(IR::Context *ctx) const {
   auto *mod  = ctx->getMod();
   auto *init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;
@@ -35,11 +35,12 @@ IR::Value *GlobalDeclaration::emit(IR::Context *ctx) {
         llvm::Constant::getNullValue(typ->getLLVMType()));
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
-  auto *gEnt = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable,
-                                    gvar, ctx->getVisibInfo(visibility));
-  ctx->fn    = nullptr;
-  return gEnt;
+  globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable,
+                                      gvar, ctx->getVisibInfo(visibility));
+  ctx->fn      = nullptr;
 }
+
+IR::Value *GlobalDeclaration::emit(IR::Context *ctx) { return globalEntity; }
 
 nuo::Json GlobalDeclaration::toJson() const {
   return nuo::Json()

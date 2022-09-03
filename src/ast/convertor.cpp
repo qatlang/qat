@@ -28,34 +28,32 @@ ConvertorPrototype *ConvertorPrototype::To(QatType              *_candidateType,
                                 _fileRange);
 }
 
-void ConvertorPrototype::setCoreType(IR::CoreType *_coreType) {
+void ConvertorPrototype::setCoreType(IR::CoreType *_coreType) const {
   coreType = _coreType;
 }
 
-IR::Value *ConvertorPrototype::emit(IR::Context *ctx) {
+void ConvertorPrototype::define(IR::Context *ctx) const {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
-  IR::MemberFunction *function;
   SHOW("Generating candidate type")
   auto *candidate = candidateType->emit(ctx);
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
   if (isFrom) {
     SHOW("Convertor is FROM")
-    function = IR::MemberFunction::CreateFromConvertor(
+    memberFn = IR::MemberFunction::CreateFromConvertor(
         coreType, candidate, argName, fileRange, ctx->getVisibInfo(visibility),
         ctx->llctx);
   } else {
     SHOW("Convertor is TO")
-    function = IR::MemberFunction::CreateToConvertor(
+    memberFn = IR::MemberFunction::CreateToConvertor(
         coreType, candidate, fileRange, ctx->getVisibInfo(visibility),
         ctx->llctx);
   }
-  SHOW("Function created!!")
-  // TODO - Set calling convention
-  return function;
 }
+
+IR::Value *ConvertorPrototype::emit(IR::Context *ctx) { return memberFn; }
 
 nuo::Json ConvertorPrototype::toJson() const {
   return nuo::Json()
@@ -71,6 +69,10 @@ ConvertorDefinition::ConvertorDefinition(ConvertorPrototype *_prototype,
                                          utils::FileRange    _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
       prototype(_prototype) {}
+
+void ConvertorDefinition::define(IR::Context *ctx) const {
+  prototype->define(ctx);
+}
 
 IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   auto *fnEmit = (IR::MemberFunction *)prototype->emit(ctx);
@@ -112,7 +114,7 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-void ConvertorDefinition::setCoreType(IR::CoreType *coreType) {
+void ConvertorDefinition::setCoreType(IR::CoreType *coreType) const {
   prototype->setCoreType(coreType);
 }
 

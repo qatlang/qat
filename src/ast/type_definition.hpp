@@ -1,12 +1,12 @@
-#ifndef QAT_AST_TYPEDEF_HPP
-#define QAT_AST_TYPEDEF_HPP
+#ifndef QAT_AST_TYPE_DEFINITION_HPP
+#define QAT_AST_TYPE_DEFINITION_HPP
 
-#include "./expression.hpp"
+#include "./node.hpp"
 #include "types/qat_type.hpp"
 
 namespace qat::ast {
 
-class TypeDefinition : public Expression {
+class TypeDefinition : public Node {
 private:
   String                name;
   QatType              *subType;
@@ -16,7 +16,8 @@ public:
   TypeDefinition(String _name, QatType *_subType, utils::FileRange _fileRange,
                  utils::VisibilityKind _visibKind);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  defineType(IR::Context *ctx) const final;
+  useit IR::Value *emit(IR::Context *_) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::typeDefinition; }
   useit nuo::Json toJson() const final;
 };

@@ -1,6 +1,7 @@
 #include "./parser.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
+#include "../ast/expressions/boolean_literal.hpp"
 #include "../ast/expressions/custom_float_literal.hpp"
 #include "../ast/expressions/custom_integer_literal.hpp"
 #include "../ast/expressions/entity.hpp"
@@ -22,7 +23,7 @@
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
-#include "../ast/member_definition.hpp"
+#include "../ast/member_function.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
 #include "../ast/sentences/continue.hpp"
@@ -1164,6 +1165,12 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       cachedExpressions.push_back(new ast::NullPointer(token.fileRange));
       break;
     }
+    case TokenType::FALSE:
+    case TokenType::TRUE: {
+      cachedExpressions.push_back(
+          new ast::BooleanLiteral(token.type == TokenType::TRUE, RangeAt(i)));
+      break;
+    }
     case TokenType::super:
     case TokenType::identifier: {
       auto symbol_res = parseSymbol(prev_ctx, i);
@@ -1738,7 +1745,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
     if (prev_ctx.has_alias(name)) {
       name = prev_ctx.get_alias(name);
     }
-    return {CacheSymbol(relative, name, start, RangeAt(start)), i - 1};
+    return {CacheSymbol(relative, name, start, RangeSpan(start, i - 1)), i - 1};
   } else {
     // TODO - Change this, after verifying that this situation is never
     // encountered.

@@ -10,31 +10,33 @@
 namespace qat::ast {
 
 FunctionPrototype::FunctionPrototype(
-    const String &_name, Vec<Argument *> _arguments, bool _isVariadic,
+    String _name, Vec<Argument *> _arguments, bool _isVariadic,
     QatType *_returnType, bool _is_async,
-    llvm::GlobalValue::LinkageTypes _linkageType, const String &_callingConv,
+    llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
     utils::VisibilityKind _visibility, const utils::FileRange &_fileRange)
-    : name(_name), isAsync(_is_async), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType),
-      linkageType(_linkageType), callingConv(_callingConv),
-      visibility(_visibility), Node(_fileRange) {}
+    : Node(_fileRange), name(std::move(_name)), isAsync(_is_async),
+      arguments(std::move(_arguments)), isVariadic(_isVariadic),
+      returnType(_returnType), callingConv(std::move(_callingConv)),
+      visibility(_visibility), linkageType(_linkageType) {}
 
 FunctionPrototype::FunctionPrototype(const FunctionPrototype &ref)
-    : name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments),
-      isVariadic(ref.isVariadic), returnType(ref.returnType),
-      linkageType(ref.linkageType), callingConv(ref.callingConv),
-      visibility(ref.visibility), Node(ref.fileRange) {}
+    : Node(ref.fileRange), name(ref.name), isAsync(ref.isAsync),
+      arguments(ref.arguments), isVariadic(ref.isVariadic),
+      returnType(ref.returnType), callingConv(ref.callingConv),
+      visibility(ref.visibility), linkageType(ref.linkageType),
+      function(ref.function) {}
 
-IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
-  IR::Function      *function;
+void FunctionPrototype::define(IR::Context *ctx) const {
   Vec<IR::QatType *> generatedTypes;
-  auto              *mod = ctx->getMod();
+  auto              *mod      = ctx->getMod();
+  bool               isMainFn = false;
   if (mod->hasFunction(name)) {
     ctx->Error("A function named " + name + " exists already in this scope",
                fileRange);
   }
-  if (name == "main") {
+  if ((name == "main") && (mod->getFullNameWithChild("main") == "main")) {
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
+    isMainFn    = true;
   }
   SHOW("Generating types")
   for (auto *arg : arguments) {
@@ -63,10 +65,52 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
       name, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
       isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType,
       ctx->llctx);
-  SHOW("Function created!!")
-  // TODO - Set calling convention
-  return function;
+  if (isMainFn) {
+    if (ctx->hasMain) {
+      ctx->Error(ctx->highlightError("main") +
+                     " function already exists. Please check the codebase",
+                 fileRange);
+    } else {
+      auto args = function->getType()->asFunction()->getArgumentTypes();
+      if (args.size() == 2) {
+        if (args.at(0)->getType()->isUnsignedInteger() &&
+            (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() ==
+             MainFirstArgBitwidth)) {
+          if (args.at(1)->getType()->isPointer() &&
+              ((!args.at(1)->getType()->asPointer()->isSubtypeVariable()) &&
+               (args.at(1)
+                    ->getType()
+                    ->asPointer()
+                    ->getSubType()
+                    ->isCString()))) {
+            ctx->hasMain = true;
+          } else {
+            ctx->Error(
+                "The second argument of the " + ctx->highlightError("main") +
+                    " function should be " + ctx->highlightError("#[cstring]"),
+                arguments.at(1)->getFileRange());
+          }
+        } else {
+          ctx->Error("The first argument of the " +
+                         ctx->highlightError("main") + " function should be " +
+                         ctx->highlightError("u32"),
+                     arguments.at(0)->getFileRange());
+        }
+      } else {
+        ctx->Error(
+            "The " + ctx->highlightError("main") +
+                " function needs 2 arguments, the first argument should be " +
+                ctx->highlightError("u32") +
+                ", and the second argument should be " +
+                ctx->highlightError("#[cstring]"),
+            fileRange);
+      }
+    }
+  }
 }
+
+// NOLINTNEXTLINE(misc-unused-parameters)
+IR::Value *FunctionPrototype::emit(IR::Context *ctx) { return function; }
 
 nuo::Json FunctionPrototype::toJson() const {
   Vec<nuo::JsonValue> args;
@@ -94,52 +138,14 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
       prototype(_prototype) {}
 
+void FunctionDefinition::define(IR::Context *ctx) const {
+  prototype->define(ctx);
+}
+
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
-  auto *fnEmit = (IR::Function *)prototype->emit(ctx);
-  if (fnEmit->getName() == "main" &&
-      (ctx->getMod()->getFullNameWithChild("main") == "main")) {
-    if (ctx->hasMain) {
-      ctx->Error(ctx->highlightError("main") +
-                     " function already exists. Please check the codebase",
-                 prototype->fileRange);
-    } else {
-      auto args = fnEmit->getType()->asFunction()->getArgumentTypes();
-      if (args.size() == 2) {
-        if (args.at(0)->getType()->isUnsignedInteger() &&
-            (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() ==
-             MainFirstArgBitwidth)) {
-          if (args.at(1)->getType()->isPointer() &&
-              ((!args.at(1)->getType()->asPointer()->isSubtypeVariable()) &&
-               (args.at(1)
-                    ->getType()
-                    ->asPointer()
-                    ->getSubType()
-                    ->isCString()))) {
-            ctx->hasMain = true;
-          } else {
-            ctx->Error(
-                "The second argument of the " + ctx->highlightError("main") +
-                    " function should be " + ctx->highlightError("#[cstring]"),
-                prototype->arguments.at(1)->getFileRange());
-          }
-        } else {
-          ctx->Error("The first argument of the " +
-                         ctx->highlightError("main") + " function should be " +
-                         ctx->highlightError("u32"),
-                     prototype->arguments.at(0)->getFileRange());
-        }
-      } else {
-        ctx->Error(
-            "The " + ctx->highlightError("main") +
-                " function needs 2 arguments, the first argument should be " +
-                ctx->highlightError("u32") +
-                ", and the second argument should be " +
-                ctx->highlightError("#[cstring]"),
-            prototype->fileRange);
-      }
-    }
-  }
-  ctx->fn = fnEmit;
+  SHOW("Getting IR function from prototype")
+  auto *fnEmit = prototype->function;
+  ctx->fn      = fnEmit;
   SHOW("Set active function: " << fnEmit->getFullName())
   auto *block = new IR::Block((IR::Function *)fnEmit, nullptr);
   SHOW("Created entry block")

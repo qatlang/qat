@@ -22,12 +22,7 @@ enum class TypeKind {
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type
   function,
-  /* Template type kinds */
-  templateNamedType, // Template named type
-  templateSumType,   // Template sum type
-  templateTuple,     // Template tuple type
-  templatePointer,   // Template pointer
-  templateArray,     // Template array
+  templated, // Templated type
 };
 
 } // namespace qat::ast

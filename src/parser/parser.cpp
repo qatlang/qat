@@ -16,6 +16,7 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
 #include "../ast/expressions/self_member.hpp"
+#include "../ast/expressions/template_entity.hpp"
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
@@ -48,6 +49,7 @@
 #include "../ast/types/unsigned.hpp"
 #include "../show.hpp"
 #include "cache_symbol.hpp"
+#include "parser_context.hpp"
 
 #define RangeAt(ind) tokens.at(ind).fileRange
 #define RangeSpan(ind1, ind2)                                                  \
@@ -303,12 +305,23 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
         return {cacheTy.value(), i - 1};
       }
       auto symRes = parseSymbol(ctx, i);
-      i           = symRes.second;
-      if (isNext(TokenType::templateTypeStart, i)) {
-        // TODO - Implement template type parsing
+      auto name   = symRes.first.name;
+      SHOW("Checking templates for: " << name)
+      if (prev_ctx.hasTemplate(name)) {
+        cacheTy = new ast::TemplatedType(
+            prev_ctx.getTemplate(name)->getTemplateID(), name, getVariability(),
+            symRes.first.fileRange);
+        i = symRes.second;
+        break;
+      } else {
+        if (isNext(TokenType::templateTypeStart, i)) {
+          // TODO - Implement template type parsing
+        }
+        cacheTy = new ast::NamedType(symRes.first.relative, name,
+                                     getVariability(), symRes.first.fileRange);
+        i       = symRes.second;
       }
-      cacheTy = new ast::NamedType(symRes.first.relative, symRes.first.name,
-                                   getVariability(), token.fileRange);
+
       break;
     }
     case TokenType::referenceType: {
@@ -385,6 +398,30 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
   return {cacheTy.value(), i - 1};
 }
 
+Vec<ast::TemplatedType *> Parser::parseTemplateTypes(usize from, usize upto) {
+  using lexer::TokenType;
+
+  Vec<ast::TemplatedType *> result;
+  for (usize i = from + 1; i < upto; i++) {
+    auto token = tokens.at(i);
+    if (token.type == TokenType::identifier) {
+      result.push_back(new ast::TemplatedType(utils::unique_id(), token.value,
+                                              false, token.fileRange));
+      if (isNext(TokenType::separator, i)) {
+        i++;
+        continue;
+      } else if (isNext(TokenType::templateTypeEnd, i)) {
+        break;
+      } else {
+        Error(
+            "Unexpected token after identifier in template type specification",
+            token.fileRange);
+      }
+    }
+  }
+  return result;
+}
+
 Vec<ast::Node *>
 Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
               usize from, usize upto) {
@@ -410,14 +447,6 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
   std::deque<Token>          cacheT;
   std::deque<ast::QatType *> cacheTy;
   String                     context = "global";
-
-  bool isVar  = false;
-  auto getVar = [&isVar]() {
-    auto result = isVar;
-    isVar       = false;
-    return result;
-  };
-  auto setVar = [&isVar]() { isVar = true; };
 
   Maybe<utils::VisibilityKind> visibility;
   auto setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
@@ -523,39 +552,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             Error("Invalid end for declaring a type", RangeAt(i + 2));
           }
         }
-      } else if (isNext(TokenType::child, i)) {
-        if (isNext(TokenType::alias, i + 1)) {
-          /* Type alias declaration */
-          if (isNext(TokenType::identifier, i + 2)) {
-            auto t_ident = tokens.at(i + 3);
-            if (ctx.has_type_alias(t_ident.value) ||
-                ctx.has_alias(t_ident.value)) {
-              Error( //
-                  String(ctx.has_alias(t_ident.value) ? "An" : "A type") +
-                      "alias with the name `" + t_ident.value +
-                      "` already exists",
-                  t_ident.fileRange);
-            } else {
-              if (isNext(TokenType::assignment, i + 3)) {
-                auto end_res = firstPrimaryPosition(TokenType::stop, i + 4);
-                if (end_res.has_value()) {
-                  auto type_res = parseType(ctx, i + 4, end_res.value());
-                  ctx.add_type_alias(t_ident.value, type_res.first);
-                  i = end_res.value();
-                } else {
-                  Error("Invalid end for the sentence",
-                        utils::FileRange(token.fileRange, RangeAt(i + 4)));
-                }
-              } else {
-                Error("Expected assignment after type alias name",
-                      utils::FileRange(token.fileRange, RangeAt(i + 3)));
-              }
-            }
-          } else {
-            Error("Expected name for the type alias",
-                  utils::FileRange(token.fileRange, RangeAt(i + 2)));
-          }
-        }
+        // FIXME - Support union types
       } else {
         Error("Expected name for the type", token.fileRange);
       }
@@ -609,10 +606,8 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       /* Alias declaration */
       if (isNext(TokenType::identifier, i)) {
         auto t_ident = tokens.at(i + 1);
-        if (ctx.has_type_alias(t_ident.value) || ctx.has_alias(t_ident.value)) {
-          Error(String(ctx.has_alias(t_ident.value) ? "An" : "A type") +
-                    "alias with the name `" + t_ident.value +
-                    "` already exists",
+        if (ctx.has_alias(t_ident.value)) {
+          Error("An alias with the name " + t_ident.value + " already exists",
                 t_ident.fileRange);
         } else {
           if (isNext(TokenType::assignment, i + 1)) {
@@ -657,13 +652,51 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       auto start   = i;
       auto sym_res = parseSymbol(ctx, i);
       i            = sym_res.second;
-      if (isNext(TokenType::parenthesisOpen, i)) {
+      Vec<ast::TemplatedType *> templates;
+      auto                      ctx = ParserContext();
+      if (isNext(TokenType::templateTypeStart, i)) {
+        auto endRes = getPairEnd(TokenType::templateTypeStart,
+                                 TokenType::templateTypeEnd, i + 1, false);
+        if (endRes.has_value()) {
+          auto end  = endRes.value();
+          templates = parseTemplateTypes(i + 1, end);
+          for (auto *temp : templates) {
+            ctx.addTemplate(temp);
+          }
+          if (isNext(TokenType::givenTypeSeparator, end) ||
+              isNext(TokenType::parenthesisOpen, end)) {
+            i = end;
+          } else {
+            // FIXME - Template types in global declaration
+            if (isNext(TokenType::colon, end)) {
+              if (isNext(TokenType::identifier, end + 1)) {
+              }
+            }
+          }
+        } else {
+          Error("Expected end for template specification", RangeAt(i + 1));
+        }
+      }
+      if (isNext(TokenType::parenthesisOpen, i) ||
+          isNext(TokenType::givenTypeSeparator, i)) {
+        ast::QatType *retType = nullptr;
+        if (isNext(TokenType::givenTypeSeparator, i)) {
+          auto typRes = parseType(ctx, i + 1, None);
+          retType     = typRes.first;
+          i           = typRes.second;
+        } else {
+          retType = new ast::VoidType(false, RangeAt(start));
+        }
+        if (!isNext(TokenType::parenthesisOpen, i)) {
+          Error("Expected ( for arguments in function declaration",
+                RangeSpan(start, i));
+        }
         SHOW("Function with void return type")
         auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
                                     TokenType::parenthesisClose, i + 1, false);
         if (pCloseRes.has_value()) {
           auto pClose    = pCloseRes.value();
-          auto argResult = parseFunctionParameters(prev_ctx, i + 1, pClose);
+          auto argResult = parseFunctionParameters(ctx, i + 1, pClose);
           SHOW("Parsed arguments")
           i = pClose;
           String callConv;
@@ -681,21 +714,19 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           }
           SHOW("Creating prototype")
           auto *prototype = new ast::FunctionPrototype(
-              sym_res.first.name, argResult.first, argResult.second,
-              new ast::VoidType(false, RangeAt(start)), false,
-              llvm::GlobalValue::WeakAnyLinkage, callConv, getVisibility(),
-              RangeSpan(start, pClose));
+              tokens.at(start).value, argResult.first, argResult.second,
+              retType, false, llvm::GlobalValue::WeakAnyLinkage, callConv,
+              getVisibility(), RangeSpan(start, pClose), templates);
           SHOW("Prototype created")
           if (isNext(TokenType::bracketOpen, i)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen,
                                         TokenType::bracketClose, i + 1, false);
             if (bCloseRes.has_value()) {
-              auto  bClose     = bCloseRes.value();
-              auto  sentences  = parseSentences(prev_ctx, i + 1, bClose);
-              auto *definition = new ast::FunctionDefinition(
-                  prototype, sentences, RangeSpan(i + 1, bClose));
+              auto bClose    = bCloseRes.value();
+              auto sentences = parseSentences(ctx, i + 1, bClose);
               SHOW("Function definition created")
-              result.push_back((ast::Node *)definition);
+              result.push_back(new ast::FunctionDefinition(
+                  prototype, sentences, RangeSpan(i + 1, bClose)));
               SHOW("Parsing function complete")
               i = bClose;
               break;
@@ -1082,19 +1113,10 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
   using lexer::Token;
   using lexer::TokenType;
 
-  bool varCall = false;
-  auto setVar  = [&varCall]() { varCall = true; };
-  auto getVar  = [&varCall]() {
-    auto result = varCall;
-    varCall     = false;
-    return result;
-  };
-
   Maybe<CacheSymbol> cachedSymbol = symbol;
   Vec<Expression *>  cachedExpressions;
   Vec<Token>         cachedBinaryOps;
   Vec<Token>         cachedUnaryOps;
-  int                pointerCount = 0;
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
   for (; upto.has_value() ? (i < upto.value()) : (i < tokens.size()); i++) {
@@ -1149,16 +1171,18 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       break;
     }
     case TokenType::StringLiteral: {
-      if (!cachedExpressions.empty()) {
-        if (cachedExpressions.back()->nodeType() ==
-            ast::NodeType::stringLiteral) {
-          ((ast::StringLiteral *)cachedExpressions.back())
-              ->addValue(token.value, token.fileRange);
+      auto val    = token.value;
+      auto fRange = token.fileRange;
+      if (isNext(TokenType::StringLiteral, i)) {
+        auto pos = i;
+        while (isNext(TokenType::StringLiteral, pos)) {
+          val += tokens.at(pos + 1).value;
+          fRange = utils::FileRange(fRange, tokens.at(pos + 1).fileRange);
+          pos++;
         }
-      } else {
-        cachedExpressions.push_back(
-            new ast::StringLiteral(token.value, token.fileRange));
+        i = pos;
       }
+      cachedExpressions.push_back(new ast::StringLiteral(val, fRange));
       break;
     }
     case TokenType::null: {
@@ -1173,9 +1197,39 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
     }
     case TokenType::super:
     case TokenType::identifier: {
-      auto symbol_res = parseSymbol(prev_ctx, i);
-      cachedSymbol    = symbol_res.first;
-      i               = symbol_res.second;
+      auto start     = i;
+      auto symbolRes = parseSymbol(prev_ctx, i);
+      cachedSymbol   = symbolRes.first;
+      i              = symbolRes.second;
+      if (isNext(TokenType::templateTypeStart, i)) {
+        auto endRes = getPairEnd(TokenType::templateTypeStart,
+                                 TokenType::templateTypeEnd, i + 1, false);
+        if (endRes.has_value()) {
+          auto                end = endRes.value();
+          Vec<ast::QatType *> types;
+          if (isPrimaryWithin(TokenType::separator, i + 1, end)) {
+            auto positions =
+                primaryPositionsWithin(TokenType::separator, i + 1, end);
+            types.push_back(
+                parseType(prev_ctx, i + 1, positions.front()).first);
+            for (usize j = 0; j < (positions.size() - 1); j++) {
+              types.push_back(
+                  parseType(prev_ctx, positions.at(j), positions.at(j + 1))
+                      .first);
+            }
+            types.push_back(parseType(prev_ctx, positions.back(), end).first);
+          } else {
+            types.push_back(parseType(prev_ctx, i + 1, end).first);
+          }
+          cachedExpressions.push_back(new ast::TemplateEntity(
+              cachedSymbol->relative, cachedSymbol->name, types,
+              RangeSpan(start, end)));
+          i            = end;
+          cachedSymbol = None;
+        } else {
+          Error("Expected end for template type specification", RangeAt(i + 1));
+        }
+      }
       break;
     }
     case TokenType::self: {
@@ -1336,14 +1390,10 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                                               RangeAt(p_close.value()))));
                 cachedSymbol = None;
               } else {
-                auto varVal = getVar();
-                Error(String("No expression found to be passed to the ") +
-                          (varVal ? "variation " : "") + "function call." +
-                          (varVal ? ""
-                                  : " And no function name found for "
-                                    "the static function call"),
-                      utils::FileRange(token.fileRange,
-                                       RangeAt(p_close.value())));
+                Error("No expression found to be passed to the function call. "
+                      "And no function name found for "
+                      "the static function call",
+                      {token.fileRange, RangeAt(p_close.value())});
               }
             } else {
               auto *funCall = new ast::FunctionCall(
@@ -1762,7 +1812,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
   using lexer::Token;
   using lexer::TokenType;
 
-  auto                 ctx = ParserContext(prev_ctx);
+  auto                 ctx = prev_ctx;
   Vec<ast::Sentence *> result;
 
   Maybe<CacheSymbol> cacheSymbol = None;

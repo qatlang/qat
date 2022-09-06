@@ -41,7 +41,7 @@ public:
                                 utils::VisibilityKind   visib,
                                 const utils::FileRange &fileRange);
 
-  void  define(IR::Context *ctx) const final;
+  void  define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType nodeType() const final { return NodeType::convertorPrototype; }
@@ -60,7 +60,7 @@ public:
   ConvertorDefinition(ConvertorPrototype *_prototype,
                       Vec<Sentence *> _sentences, utils::FileRange _fileRange);
 
-  void  define(IR::Context *ctx) const final;
+  void  define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType nodeType() const final { return NodeType::functionDefinition; }

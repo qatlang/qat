@@ -34,6 +34,7 @@ class QatModule : public Uniq {
   friend class GlobalEntity;
   friend class ast::Lib;
   friend class ast::Box;
+  friend class TemplateFunction;
 
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
@@ -41,24 +42,26 @@ public:
             llvm::LLVMContext &ctx);
 
 private:
-  String                       name;
-  ModuleType                   moduleType;
-  fs::path                     filePath;
-  fs::path                     basePath;
-  utils::VisibilityInfo        visibility;
-  QatModule                   *parent;
-  QatModule                   *active;
-  Vec<QatModule *>             submodules;
-  Vec<Brought<QatModule>>      broughtModules;
-  Vec<CoreType *>              coreTypes;
-  Vec<Brought<CoreType>>       broughtCoreTypes;
-  Vec<DefinitionType *>        typeDefs;
-  Vec<Brought<DefinitionType>> broughtTypeDefs;
-  Vec<Function *>              functions;
-  Vec<Brought<Function>>       broughtFunctions;
-  Vec<GlobalEntity *>          globalEntities;
-  Vec<Brought<GlobalEntity>>   broughtGlobalEntities;
-  Function                    *globalInitialiser;
+  String                         name;
+  ModuleType                     moduleType;
+  fs::path                       filePath;
+  fs::path                       basePath;
+  utils::VisibilityInfo          visibility;
+  QatModule                     *parent;
+  QatModule                     *active;
+  Vec<QatModule *>               submodules;
+  Vec<Brought<QatModule>>        broughtModules;
+  Vec<CoreType *>                coreTypes;
+  Vec<Brought<CoreType>>         broughtCoreTypes;
+  Vec<DefinitionType *>          typeDefs;
+  Vec<Brought<DefinitionType>>   broughtTypeDefs;
+  Vec<Function *>                functions;
+  Vec<Brought<Function>>         broughtFunctions;
+  Vec<TemplateFunction *>        templateFunctions;
+  Vec<Brought<TemplateFunction>> broughtTemplateFunctions;
+  Vec<GlobalEntity *>            globalEntities;
+  Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
+  Function                      *globalInitialiser;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -161,6 +164,15 @@ public:
   useit           Pair<bool, String>
                   hasAccessibleFunctionInImports(const String               &name,
                                                  const utils::RequesterInfo &reqInfo) const;
+
+  // TEMPLATE FUNCTIONS
+
+  useit bool hasTemplateFunction(const String &name) const;
+  useit bool hasBroughtTemplateFunction(const String &name) const;
+  useit TemplateFunction *
+  getTemplateFunction(const String &name, const utils::RequesterInfo &reqInfo);
+  useit Pair<bool, String> hasAccessibleTemplateFunctionInImports(
+      const String &name, const utils::RequesterInfo &reqInfo) const;
 
   // CORE TYPE
 

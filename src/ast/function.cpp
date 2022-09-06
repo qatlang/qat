@@ -2,6 +2,7 @@
 #include "../IR/control_flow.hpp"
 #include "../show.hpp"
 #include "sentence.hpp"
+#include "types/templated.hpp"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -13,28 +14,40 @@ FunctionPrototype::FunctionPrototype(
     String _name, Vec<Argument *> _arguments, bool _isVariadic,
     QatType *_returnType, bool _is_async,
     llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
-    utils::VisibilityKind _visibility, const utils::FileRange &_fileRange)
+    utils::VisibilityKind _visibility, const utils::FileRange &_fileRange,
+    Vec<ast::TemplatedType *> _templates)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async),
       arguments(std::move(_arguments)), isVariadic(_isVariadic),
       returnType(_returnType), callingConv(std::move(_callingConv)),
-      visibility(_visibility), linkageType(_linkageType) {}
+      visibility(_visibility), linkageType(_linkageType),
+      templates(std::move(_templates)) {}
 
 FunctionPrototype::FunctionPrototype(const FunctionPrototype &ref)
     : Node(ref.fileRange), name(ref.name), isAsync(ref.isAsync),
       arguments(ref.arguments), isVariadic(ref.isVariadic),
       returnType(ref.returnType), callingConv(ref.callingConv),
       visibility(ref.visibility), linkageType(ref.linkageType),
-      function(ref.function) {}
+      function(ref.function), templates(ref.templates) {}
 
-void FunctionPrototype::define(IR::Context *ctx) const {
+bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
+
+Vec<TemplatedType *> FunctionPrototype::getTemplates() const {
+  return templates;
+}
+
+IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
   Vec<IR::QatType *> generatedTypes;
   auto              *mod      = ctx->getMod();
   bool               isMainFn = false;
-  if (mod->hasFunction(name)) {
-    ctx->Error("A function named " + name + " exists already in this scope",
+  String             fnName   = name;
+  if (templateFn) {
+    fnName = name + ":<" + std::to_string(templateFn->getVariantCount()) + ">";
+  }
+  if (mod->hasFunction(fnName)) {
+    ctx->Error("A function named " + fnName + " exists already in this scope",
                fileRange);
   }
-  if ((name == "main") && (mod->getFullNameWithChild("main") == "main")) {
+  if ((fnName == "main") && (mod->getFullNameWithChild("main") == "main")) {
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
     isMainFn    = true;
   }
@@ -61,8 +74,8 @@ void FunctionPrototype::define(IR::Context *ctx) const {
   }
   SHOW("Variability setting complete")
   SHOW("About to create function")
-  function = mod->createFunction(
-      name, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
+  auto *fn = mod->createFunction(
+      fnName, returnType->emit(ctx), returnType->isVariable(), isAsync, args,
       isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType,
       ctx->llctx);
   if (isMainFn) {
@@ -71,7 +84,7 @@ void FunctionPrototype::define(IR::Context *ctx) const {
                      " function already exists. Please check the codebase",
                  fileRange);
     } else {
-      auto args = function->getType()->asFunction()->getArgumentTypes();
+      auto args = fn->getType()->asFunction()->getArgumentTypes();
       if (args.size() == 2) {
         if (args.at(0)->getType()->isUnsignedInteger() &&
             (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() ==
@@ -107,10 +120,24 @@ void FunctionPrototype::define(IR::Context *ctx) const {
       }
     }
   }
+  return fn;
+}
+
+void FunctionPrototype::define(IR::Context *ctx) {
+  if (!isTemplate()) {
+    function = createFunction(ctx);
+  }
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
-IR::Value *FunctionPrototype::emit(IR::Context *ctx) { return function; }
+IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
+  if (!isTemplate()) {
+    return function;
+  } else {
+    function = createFunction(ctx);
+    return function;
+  }
+}
 
 nuo::Json FunctionPrototype::toJson() const {
   Vec<nuo::JsonValue> args;
@@ -138,11 +165,23 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype *_prototype,
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
       prototype(_prototype) {}
 
-void FunctionDefinition::define(IR::Context *ctx) const {
-  prototype->define(ctx);
+void FunctionDefinition::define(IR::Context *ctx) {
+  if (!prototype->isTemplate()) {
+    prototype->define(ctx);
+  } else {
+    auto *tempFn = new IR::TemplateFunction(
+        prototype->name, prototype->templates, this, ctx->getMod(),
+        ctx->getVisibInfo(prototype->visibility));
+    prototype->templateFn = tempFn;
+  }
 }
 
+bool FunctionDefinition::isTemplate() const { return prototype->isTemplate(); }
+
 IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
+  if (prototype->isTemplate()) {
+    (void)prototype->emit(ctx);
+  }
   SHOW("Getting IR function from prototype")
   auto *fnEmit = prototype->function;
   ctx->fn      = fnEmit;
@@ -177,7 +216,7 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
     }
   }
   SHOW("Sentences emitted")
-  return nullptr;
+  return fnEmit;
 }
 
 nuo::Json FunctionDefinition::toJson() const {

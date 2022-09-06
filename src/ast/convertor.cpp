@@ -32,7 +32,7 @@ void ConvertorPrototype::setCoreType(IR::CoreType *_coreType) const {
   coreType = _coreType;
 }
 
-void ConvertorPrototype::define(IR::Context *ctx) const {
+void ConvertorPrototype::define(IR::Context *ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
@@ -70,9 +70,7 @@ ConvertorDefinition::ConvertorDefinition(ConvertorPrototype *_prototype,
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
       prototype(_prototype) {}
 
-void ConvertorDefinition::define(IR::Context *ctx) const {
-  prototype->define(ctx);
-}
+void ConvertorDefinition::define(IR::Context *ctx) { prototype->define(ctx); }
 
 IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   auto *fnEmit = (IR::MemberFunction *)prototype->emit(ctx);

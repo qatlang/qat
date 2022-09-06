@@ -16,6 +16,11 @@
 #include <string>
 #include <vector>
 
+namespace qat::ast {
+class FunctionDefinition;
+class TemplatedType;
+} // namespace qat::ast
+
 namespace qat::IR {
 
 class QatModule;
@@ -103,6 +108,39 @@ public:
   useit llvm::Function *getLLVMFunction();
   void                  setActiveBlock(usize index) const;
   Block                *getBlock() const;
+};
+
+class TemplateVariant {
+  Function          *function;
+  Vec<IR::QatType *> types;
+
+public:
+  TemplateVariant(Function *_function, Vec<IR::QatType *> _types);
+
+  useit bool      check(Vec<IR::QatType *> _types) const;
+  useit Function *getFunction();
+};
+
+class TemplateFunction : public Uniq {
+private:
+  String                    name;
+  Vec<ast::TemplatedType *> templates;
+  ast::FunctionDefinition  *functionDefinition;
+  QatModule                *parent;
+  utils::VisibilityInfo     visibInfo;
+
+  mutable Vec<TemplateVariant> variants;
+
+public:
+  TemplateFunction(String name, Vec<ast::TemplatedType *> templates,
+                   ast::FunctionDefinition *functionDef, QatModule *parent,
+                   utils::VisibilityInfo _visibInfo);
+
+  useit String getName() const;
+  useit utils::VisibilityInfo getVisibility() const;
+  useit usize                 getTypeCount() const;
+  useit usize                 getVariantCount() const;
+  useit Function *fillTemplates(Vec<IR::QatType *> _types, IR::Context *ctx);
 };
 
 } // namespace qat::IR

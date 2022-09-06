@@ -134,6 +134,8 @@ public:
   useit Vec<usize> primaryPositionsWithin(lexer::TokenType candidate,
                                           usize from, usize upto);
 
+  useit Vec<ast::TemplatedType *> parseTemplateTypes(usize from, usize upto);
+
   // Throws error with a formatted error message and exits the program
   void Error(const String &message, const utils::FileRange &fileRange);
 

@@ -21,6 +21,7 @@ add_library(QAT_AST_EXPRESSIONS
         size_of_type.cpp
         size_of.cpp
         string_literal.cpp
+        template_entity.cpp
         ternary.cpp
         to_conversion.cpp
         tuple_value.cpp

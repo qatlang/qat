@@ -32,7 +32,7 @@ public:
                     bool _isVariable, utils::VisibilityKind _visibility,
                     utils::FileRange _fileRange);
 
-  void  define(IR::Context *ctx) const final;
+  void  define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::globalDeclaration; }

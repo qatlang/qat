@@ -25,7 +25,7 @@ IR::Value *FunctionCall::emit(IR::Context *ctx) {
     SHOW("Argument values generated")
     auto fnArgsTy = fnVal->getType()->asFunction()->getArgumentTypes();
     for (usize i = 0; i < fnArgsTy.size(); i++) {
-      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) &&
+      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) ||
           (argsEmit.at(i)->getType()->isReference() &&
            !fnArgsTy.at(i)->getType()->isSame(
                argsEmit.at(i)->getType()->asReference()->getSubType()))) {

@@ -1,4 +1,5 @@
 #include "./qat_module.hpp"
+#include "../ast/function.hpp"
 #include "../ast/node.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
@@ -527,6 +528,93 @@ Function *QatModule::getFunction(const String               &name,
   return nullptr;
 }
 
+// TEMPLATE FUNCTION
+
+bool QatModule::hasTemplateFunction(const String &name) const {
+  SHOW("Function to be checked: " << name)
+  SHOW("Function count: " << functions.size())
+  for (auto *function : templateFunctions) {
+    if (function->getName() == name) {
+      SHOW("Found function")
+      return true;
+    }
+  }
+  SHOW("No functions named " + name + " found")
+  return false;
+}
+
+bool QatModule::hasBroughtTemplateFunction(const String &name) const {
+  for (auto brought : broughtTemplateFunctions) {
+    if (!brought.isNamed()) {
+      auto *bFn = brought.get();
+      if (bFn->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleTemplateFunctionInImports(
+    const String &name, const utils::RequesterInfo &reqInfo) const {
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasTemplateFunction(name) ||
+            bMod->hasBroughtTemplateFunction(name) ||
+            bMod->hasAccessibleTemplateFunctionInImports(name, reqInfo).first) {
+          if (bMod->getTemplateFunction(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return {true, bMod->filePath.string()};
+          }
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+TemplateFunction *
+QatModule::getTemplateFunction(const String               &name,
+                               const utils::RequesterInfo &reqInfo) {
+  for (auto *function : templateFunctions) {
+    if (function->getName() == name) {
+      return function;
+    }
+  }
+  for (auto brought : broughtTemplateFunctions) {
+    if (!brought.isNamed()) {
+      auto *bFn = brought.get();
+      if (bFn->getName() == name) {
+        return bFn;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasTemplateFunction(name) ||
+            bMod->hasBroughtTemplateFunction(name) ||
+            bMod->hasAccessibleTemplateFunctionInImports(name, reqInfo).first) {
+          if (bMod->getTemplateFunction(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getTemplateFunction(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 // CORE TYPE
 
 bool QatModule::hasCoreType(const String &name) const {
@@ -844,8 +932,15 @@ void QatModule::defineTypes(IR::Context *ctx) {
 void QatModule::defineNodes(IR::Context *ctx) {
   SHOW("Defining nodes")
   ctx->mod = this;
-  for (auto *node : nodes) {
+  for (auto &node : nodes) {
     node->define(ctx);
+    if ((node->nodeType() == ast::NodeType::functionDefinition) &&
+        (((ast::FunctionDefinition *)node)->isTemplate())) {
+      node = new ast::HolderNode(node);
+    } else if ((node->nodeType() == ast::NodeType::functionPrototype) &&
+               (((ast::FunctionPrototype *)node)->isTemplate())) {
+      node = new ast::HolderNode(node);
+    }
   }
   for (auto *sub : submodules) {
     sub->defineNodes(ctx);

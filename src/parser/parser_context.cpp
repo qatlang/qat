@@ -1,11 +1,12 @@
 #include "./parser_context.hpp"
+#include "../ast/types/templated.hpp"
 
 namespace qat::parser {
 
-ParserContext::ParserContext() : aliases(), type_aliases() {}
+ParserContext::ParserContext() = default;
 
 ParserContext::ParserContext(ParserContext &other)
-    : aliases(other.aliases), type_aliases(other.type_aliases) {}
+    : aliases(other.aliases), templates(other.templates) {}
 
 void ParserContext::add_alias(const String name, const String value) {
   if (!aliases.contains(name)) {
@@ -17,77 +18,50 @@ String ParserContext::get_alias(const String name) const {
   return aliases.find(name)->second;
 }
 
-ast::QatType *ParserContext::get_type_alias(const String name) const {
-  return type_aliases.find(name)->second;
-}
-
-void ParserContext::add_type_alias(const String name, ast::QatType *value) {
-  if (!type_aliases.contains(name)) {
-    type_aliases.insert({name, value});
-  }
-}
-
 bool ParserContext::has_alias(const String name) const {
   return aliases.contains(name);
 }
 
-bool ParserContext::has_type_alias(const String name) const {
-  return type_aliases.contains(name);
-}
-
-void ParserContext::add_signed_bitwidth(const u64 value) {
-  if (value != 1 && value != 8 && value != 16 && value != 32 && value != 64 &&
-      value != 128) {
-    signed_bitwidths.push_back(value);
-  }
-}
-
-bool ParserContext::has_signed_bitwidth(const u64 value) const {
-  if (value == 1 || value == 8 || value == 16 || value == 32 || value == 64 ||
-      value == 128) {
-    return true;
-  }
-  for (auto item : signed_bitwidths) {
-    if (item == value) {
+bool ParserContext::hasTemplate(const String &name) const {
+  for (auto *tname : templates) {
+    if (tname->getName() == name) {
       return true;
     }
   }
   return false;
 }
 
-bool ParserContext::has_unsigned_bitwidth(const u64 value) const {
-  if (value == 1 || value == 8 || value == 16 || value == 32 || value == 64 ||
-      value == 128) {
-    return true;
-  }
-  for (auto item : unsigned_bitwidths) {
-    if (item == value) {
-      return true;
+void ParserContext::addTemplate(ast::TemplatedType *templateType) {
+  templates.push_back(templateType);
+}
+
+void ParserContext::removeTemplate(const String &name) {
+  for (auto temp = templates.begin(); temp != templates.end(); temp++) {
+    if ((*temp)->getName() == name) {
+      templates.erase(temp);
+      break;
     }
   }
-  return false;
 }
 
-void ParserContext::add_unsigned_bitwidth(const u64 value) {
-  if (value != 1 && value != 8 && value != 16 && value != 32 && value != 64 &&
-      value != 128) {
-    unsigned_bitwidths.push_back(value);
-  }
-}
-
-bool ParserContext::has_template_typename(const String name) const {
-  for (String tname : template_typenames) {
-    if (tname == name) {
-      return true;
+ast::TemplatedType *ParserContext::getTemplate(const String &name) {
+  for (auto *temp : templates) {
+    if (temp->getName() == name) {
+      return temp;
     }
   }
-  return false;
+  return nullptr;
 }
 
-void ParserContext::add_template_typename(const String name) {
-  if (!has_template_typename(name)) {
-    template_typenames.push_back(name);
+ast::TemplatedType *
+ParserContext::duplicateTemplate(const String &name, bool isVariable,
+                                 utils::FileRange fileRange) {
+  for (auto *temp : templates) {
+    if (temp->getName() == name) {
+      return new ast::TemplatedType(temp->getID(), name, isVariable, fileRange);
+    }
   }
+  return nullptr;
 }
 
 } // namespace qat::parser

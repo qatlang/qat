@@ -11,7 +11,7 @@ GlobalDeclaration::GlobalDeclaration(String _name, QatType *_type,
     : Node(std::move(_fileRange)), name(std::move(_name)), type(_type),
       value(_value), isVariable(_isVariable), visibility(_kind) {}
 
-void GlobalDeclaration::define(IR::Context *ctx) const {
+void GlobalDeclaration::define(IR::Context *ctx) {
   auto *mod  = ctx->getMod();
   auto *init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;

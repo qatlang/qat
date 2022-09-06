@@ -1,4 +1,6 @@
 #include "./function.hpp"
+#include "../ast/function.hpp"
+#include "../ast/types/templated.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
 #include "./qat_module.hpp"
@@ -230,5 +232,63 @@ llvm::Function *Function::getLLVMFunction() { return (llvm::Function *)ll; }
 void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
 Block *Function::getBlock() const { return blocks.at(activeBlock); }
+
+TemplateVariant::TemplateVariant(IR::Function *_fn, Vec<IR::QatType *> _types)
+    : function(_fn), types(std::move(_types)) {}
+
+bool TemplateVariant::check(Vec<IR::QatType *> _types) const {
+  if (types.size() != _types.size()) {
+    return false;
+  } else {
+    bool result = true;
+    for (usize i = 0; i < types.size(); i++) {
+      if (!types.at(i)->isSame(_types.at(i))) {
+        result = false;
+        break;
+      }
+    }
+    return result;
+  }
+}
+
+Function *TemplateVariant::getFunction() { return function; }
+
+TemplateFunction::TemplateFunction(String                    _name,
+                                   Vec<ast::TemplatedType *> _templates,
+                                   ast::FunctionDefinition  *_functionDef,
+                                   QatModule                *_parent,
+                                   utils::VisibilityInfo     _visibInfo)
+    : name(std::move(_name)), templates(std::move(_templates)),
+      functionDefinition(_functionDef), parent(_parent), visibInfo(_visibInfo) {
+  parent->templateFunctions.push_back(this);
+}
+
+String TemplateFunction::getName() const { return name; }
+
+utils::VisibilityInfo TemplateFunction::getVisibility() const {
+  return visibInfo;
+}
+
+usize TemplateFunction::getTypeCount() const { return templates.size(); }
+
+usize TemplateFunction::getVariantCount() const { return variants.size(); }
+
+Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
+                                          IR::Context       *ctx) {
+  for (auto var : variants) {
+    if (var.check(types)) {
+      return var.getFunction();
+    }
+  }
+  for (usize i = 0; i < templates.size(); i++) {
+    templates.at(i)->setType(types.at(i));
+  }
+  auto *fun = (IR::Function *)functionDefinition->emit(ctx);
+  variants.push_back(TemplateVariant(fun, types));
+  for (auto *temp : templates) {
+    temp->unsetType();
+  }
+  return fun;
+}
 
 } // namespace qat::IR

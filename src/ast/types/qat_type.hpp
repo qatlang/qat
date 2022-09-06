@@ -10,7 +10,12 @@
 
 namespace qat::ast {
 
+class TemplatedType;
+
 class QatType {
+protected:
+  static Vec<TemplatedType *> templates;
+
 private:
   bool variable;
 

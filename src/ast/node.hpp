@@ -43,11 +43,24 @@ public:
   virtual ~Node() = default;
   virtual void             createModule(IR::Context *ctx) const {}
   virtual void             defineType(IR::Context *ctx) const {}
-  virtual void             define(IR::Context *ctx) const {}
+  virtual void             define(IR::Context *ctx) {}
   useit virtual IR::Value *emit(IR::Context *ctx) = 0;
   useit virtual nuo::Json  toJson() const         = 0;
   useit virtual NodeType   nodeType() const       = 0;
   static void              clearAll();
+};
+
+class HolderNode : public Node {
+private:
+  Node *node;
+
+public:
+  explicit HolderNode(Node *_node) : Node(_node->fileRange), node(_node) {}
+
+  // NOLINTNEXTLINE(misc-unused-parameters)
+  useit IR::Value *emit(IR::Context *ctx) final { return nullptr; }
+  useit nuo::Json toJson() const final { return node->toJson(); }
+  useit NodeType  nodeType() const final { return NodeType::holder; }
 };
 
 } // namespace qat::ast

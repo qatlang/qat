@@ -34,7 +34,7 @@ MemberPrototype *MemberPrototype::Static(const String          &_name,
                              _returnType, _is_async, kind, _fileRange);
 }
 
-void MemberPrototype::define(IR::Context *ctx) const {
+void MemberPrototype::define(IR::Context *ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
@@ -134,9 +134,7 @@ MemberDefinition::MemberDefinition(MemberPrototype *_prototype,
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)),
       prototype(_prototype) {}
 
-void MemberDefinition::define(IR::Context *ctx) const {
-  prototype->define(ctx);
-}
+void MemberDefinition::define(IR::Context *ctx) { prototype->define(ctx); }
 
 IR::Value *MemberDefinition::emit(IR::Context *ctx) {
   auto *fnEmit = (IR::MemberFunction *)prototype->emit(ctx);

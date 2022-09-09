@@ -14,6 +14,7 @@ TemplateNamedType::TemplateNamedType(u32 _relative, String _name,
 IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
   SHOW("Template named type START")
   auto *mod     = ctx->getMod();
+  auto *oldMod  = mod;
   auto  reqInfo = ctx->getReqInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
@@ -61,6 +62,7 @@ IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
                      " is not accessible here",
                  fileRange);
     }
+    ctx->mod = tempCoreTy->getModule();
     if (tempCoreTy->getTypeCount() != templateTypes.size()) {
       ctx->Error(
           "Template core type " + ctx->highlightError(tempCoreTy->getName()) +
@@ -77,12 +79,13 @@ IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
     for (auto *typ : templateTypes) {
       types.push_back(typ->emit(ctx));
     }
-    auto *fnRes = tempCoreTy->fillTemplates(types, ctx);
+    auto *tyRes = tempCoreTy->fillTemplates(types, ctx);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);
     }
-    return fnRes;
+    ctx->mod = oldMod;
+    return tyRes;
   } else {
     // FIXME - Support static members of template types
     ctx->Error("No template core type named " + ctx->highlightError(name) +

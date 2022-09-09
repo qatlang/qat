@@ -228,6 +228,8 @@ usize TemplateCoreType::getTypeCount() const { return templates.size(); }
 
 usize TemplateCoreType::getVariantCount() const { return variants.size(); }
 
+QatModule *TemplateCoreType::getModule() const { return parent; }
+
 CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
                                           IR::Context   *ctx) {
   for (auto var : variants) {

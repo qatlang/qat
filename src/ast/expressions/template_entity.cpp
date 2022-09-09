@@ -11,6 +11,7 @@ TemplateEntity::TemplateEntity(u32 _relative, String _name,
 
 IR::Value *TemplateEntity::emit(IR::Context *ctx) {
   auto *mod     = ctx->getMod();
+  auto *oldMod  = mod;
   auto  reqInfo = ctx->getReqInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
@@ -57,6 +58,7 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
                      " is not accessible here",
                  fileRange);
     }
+    ctx->mod = tempFn->getModule();
     if (tempFn->getTypeCount() != templateTypes.size()) {
       ctx->Error(
           "Template function " + ctx->highlightError(tempFn->getName()) +
@@ -77,6 +79,7 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
     if (curr) {
       curr->setActive(ctx->builder);
     }
+    ctx->mod = oldMod;
     return fnRes;
   } else {
     // FIXME - Support static members of template types

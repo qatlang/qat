@@ -107,6 +107,7 @@ public:
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
   useit usize                 getVariantCount() const;
+  useit QatModule            *getModule() const;
   useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx);
 };
 

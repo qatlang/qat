@@ -6,6 +6,7 @@
 #include "../ast/bring_entities.hpp"
 #include "../ast/define_core_type.hpp"
 #include "../ast/expression.hpp"
+#include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/string_literal.hpp"
 #include "../ast/sentence.hpp"
 #include "../cli/color.hpp"
@@ -89,7 +90,8 @@ public:
   // expression
   useit Pair<ast::Expression *, usize>
   parseExpression(ParserContext &prev_ctx, const Maybe<CacheSymbol> &symbol,
-                  usize from, Maybe<usize> upto, bool isMemberFn = false);
+                  usize from, Maybe<usize> upto, bool isMemberFn = false,
+                  Vec<ast::Expression *> cachedExpressions = {});
 
   // Parse a series of expressions separated by a separator (comma).
   useit Vec<ast::Expression *>
@@ -135,6 +137,10 @@ public:
                                           usize from, usize upto);
 
   useit Vec<ast::TemplatedType *> parseTemplateTypes(usize from, usize upto);
+
+  useit ast::PlainInitialiser *parsePlainInitialiser(ParserContext &ctx,
+                                                     ast::QatType  *type,
+                                                     usize from, usize upto);
 
   // Throws error with a formatted error message and exits the program
   void Error(const String &message, const utils::FileRange &fileRange);

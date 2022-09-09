@@ -309,12 +309,12 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
       }
       auto symRes = parseSymbol(ctx, i);
       auto name   = symRes.first.name;
+      i           = symRes.second;
       SHOW("Checking templates for: " << name)
       if (prev_ctx.hasTemplate(name)) {
         cacheTy = new ast::TemplatedType(
             prev_ctx.getTemplate(name)->getTemplateID(), name, getVariability(),
             symRes.first.fileRange);
-        i = symRes.second;
         break;
       } else {
         if (isNext(TokenType::templateTypeStart, i)) {
@@ -322,21 +322,8 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
                                    TokenType::templateTypeEnd, i + 1, false);
           if (endRes.has_value()) {
             auto                end = endRes.value();
-            Vec<ast::QatType *> types;
-            if (isPrimaryWithin(TokenType::separator, i + 1, end)) {
-              auto positions =
-                  primaryPositionsWithin(TokenType::separator, i + 1, end);
-              types.push_back(
-                  parseType(prev_ctx, i + 1, positions.front()).first);
-              for (usize j = 0; j < (positions.size() - 1); j++) {
-                types.push_back(
-                    parseType(prev_ctx, positions.at(j), positions.at(j + 1))
-                        .first);
-              }
-              types.push_back(parseType(prev_ctx, positions.back(), end).first);
-            } else {
-              types.push_back(parseType(prev_ctx, i + 1, end).first);
-            }
+            Vec<ast::QatType *> types =
+                parseSeparatedTypes(prev_ctx, i + 1, end);
             cacheTy = new ast::TemplateNamedType(
                 symRes.first.relative, symRes.first.name, types,
                 getVariability(), RangeSpan(start, end));
@@ -1830,6 +1817,26 @@ Vec<ast::Expression *> Parser::
   return result;
 }
 
+Vec<ast::QatType *> Parser::parseSeparatedTypes(ParserContext &prev_ctx,
+                                                usize from, usize upto) {
+  Vec<ast::QatType *> result;
+  for (usize i = from + 1; i < upto; i++) {
+    if (isPrimaryWithin(lexer::TokenType::separator, i - 1, upto)) {
+      auto endResult = firstPrimaryPosition(lexer::TokenType::separator, i - 1);
+      if (!endResult.has_value() || (endResult.value() >= upto)) {
+        Error("Invalid position for separator `,`", RangeAt(i));
+      }
+      auto end = endResult.value();
+      result.push_back(parseType(prev_ctx, i - 1, end).first);
+      i = end;
+    } else {
+      result.push_back(parseType(prev_ctx, i - 1, upto).first);
+      i = upto;
+    }
+  }
+  return result;
+}
+
 Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
                                              const usize    start) {
   using lexer::TokenType;
@@ -1931,12 +1938,6 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
     case TokenType::referenceType:
     case TokenType::var:
     case TokenType::pointerType: {
-      if ((token.type == TokenType::var) && isPrev(TokenType::let, i)) {
-        // NOTE - This might cause some invalid type parsing
-        // This will be continued in the next run where the parser is supposed
-        // to encounter an identifier
-        break;
-      }
       auto typeRes = parseType(ctx, i - 1, None);
       auto old     = i;
       i            = typeRes.second;
@@ -1958,12 +1959,15 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         } else if (isNext(TokenType::from, i + 1)) {
           // TODO - Implement constructor calls
         } else if (isNext(TokenType::stop, i + 1)) {
-          result.push_back(new ast::LocalDeclaration(
-              typeRes.first, false, tokens.at(i + 1).value, nullptr,
-              typeRes.first->isVariable(), RangeSpan(old, i + 1)));
-          cacheTy.clear();
-          i += 2;
-          break;
+          Error("No value for initialisation in local declaration",
+                {typeRes.first->fileRange, RangeAt(i + 2)});
+          // FIXME - Support uninitialised declaration
+          // result.push_back(new ast::LocalDeclaration(
+          //     typeRes.first, false, tokens.at(i + 1).value, nullptr,
+          //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
+          // cacheTy.clear();
+          // i += 2;
+          // break;
         } else {
           Error("Invalid token found in local declaration", RangeAt(i + 1));
         }
@@ -2053,6 +2057,9 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       context = "IDENTIFIER";
       SHOW("Identifier encountered")
       if (cacheSymbol.has_value() || !cacheTy.empty()) {
+        if (token.type == TokenType::super) {
+          Error("Invalid token found in declaration", RangeAt(i));
+        }
         SHOW("Symbol or type found")
         if (cacheSymbol) {
           SHOW("Symbol: " << cacheSymbol->name)
@@ -2087,7 +2094,24 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
             Error("Invalid end for declaration syntax", RangeAt(i + 1));
           }
         } else if (isNext(TokenType::from, i)) {
-          // TODO - Handle constructor call
+          // FIXME - Handle constructor call
+        } else if (isNext(TokenType::stop, i)) {
+          Error("No value for initialisation in local declaration",
+                {(cacheSymbol.has_value() ? cacheSymbol.value().fileRange
+                                          : cacheTy.back()->fileRange),
+                 RangeAt(i + 1)});
+          // FIXME - Support uninitialised declarations?
+          // result.push_back(new ast::LocalDeclaration(
+          //     (cacheTy.empty()
+          //          ? (new ast::NamedType(cacheSymbol.value().relative,
+          //                                cacheSymbol.value().name, false,
+          //                                cacheSymbol.value().fileRange))
+          //          : cacheTy.back()),
+          //     false, token.value, nullptr, var, token.fileRange));
+          // var = false;
+          // cacheTy.clear();
+          // cacheSymbol = None;
+          // i++;
         }
         // FIXME - Handle this case
       } else {
@@ -2099,7 +2123,8 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                                     TokenType::templateTypeEnd, i + 1, false);
           if (tEndRes.has_value()) {
             auto                tEnd = tEndRes.value();
-            Vec<ast::QatType *> types;
+            Vec<ast::QatType *> types =
+                parseSeparatedTypes(prev_ctx, i + 1, tEnd);
             if (isNext(TokenType::identifier, tEnd)) {
               cacheTy.push_back(new ast::TemplateNamedType(
                   cacheSymbol->relative, cacheSymbol->name, types, false,
@@ -2111,6 +2136,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
               cachedExpressions.push_back(expRes.first);
               cacheSymbol = None;
               i           = expRes.second;
+              break;
             }
           } else {
             Error("Expected end for template type specification",

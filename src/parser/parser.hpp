@@ -138,6 +138,9 @@ public:
 
   useit Vec<ast::TemplatedType *> parseTemplateTypes(usize from, usize upto);
 
+  useit Vec<ast::QatType *> parseSeparatedTypes(ParserContext &prev_ctx,
+                                                usize from, usize upto);
+
   useit ast::PlainInitialiser *parsePlainInitialiser(ParserContext &ctx,
                                                      ast::QatType  *type,
                                                      usize from, usize upto);

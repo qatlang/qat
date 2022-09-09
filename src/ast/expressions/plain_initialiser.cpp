@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-PlainInitialiser::PlainInitialiser(NamedType                          *_type,
+PlainInitialiser::PlainInitialiser(QatType                            *_type,
                                    Vec<Pair<String, utils::FileRange>> _fields,
                                    Vec<Expression *> _fieldValues,
                                    utils::FileRange  _fileRange)

@@ -1,6 +1,9 @@
 #include "core_type.hpp"
+#include "../../ast/define_core_type.hpp"
+#include "../../ast/types/templated.hpp"
 #include "../../show.hpp"
 #include "../qat_module.hpp"
+#include "definition.hpp"
 #include "function.hpp"
 #include "reference.hpp"
 #include "llvm/IR/DerivedTypes.h"
@@ -203,6 +206,47 @@ String CoreType::toString() const { return getFullName(); }
 
 nuo::Json CoreType::toJson() const {
   return nuo::Json()._("id", getID())._("name", name);
+}
+
+TemplateCoreType::TemplateCoreType(String                    _name,
+                                   Vec<ast::TemplatedType *> _templates,
+                                   ast::DefineCoreType      *_defineCoreType,
+                                   QatModule                *_parent,
+                                   utils::VisibilityInfo     _visibInfo)
+    : name(_name), templates(_templates), defineCoreType(_defineCoreType),
+      parent(_parent), visibility(_visibInfo) {
+  parent->templateCoreTypes.push_back(this);
+}
+
+String TemplateCoreType::getName() const { return name; }
+
+utils::VisibilityInfo TemplateCoreType::getVisibility() const {
+  return visibility;
+}
+
+usize TemplateCoreType::getTypeCount() const { return templates.size(); }
+
+usize TemplateCoreType::getVariantCount() const { return variants.size(); }
+
+CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
+                                          IR::Context   *ctx) {
+  for (auto var : variants) {
+    if (var.check(types)) {
+      return var.get();
+    }
+  }
+  for (usize i = 0; i < templates.size(); i++) {
+    templates.at(i)->setType(types.at(i));
+  }
+  (void)defineCoreType->define(ctx);
+  (void)defineCoreType->emit(ctx);
+  auto *cTy = (IR::CoreType *)defineCoreType->getCoreType();
+  variants.push_back(TemplateVariant<CoreType>(cTy, types));
+  for (auto *temp : templates) {
+    temp->unsetType();
+  }
+  SHOW("Created variant for template core type: " << cTy->getFullName())
+  return cTy;
 }
 
 } // namespace qat::IR

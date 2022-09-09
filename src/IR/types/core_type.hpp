@@ -10,6 +10,10 @@
 #include <utility>
 #include <vector>
 
+namespace qat::ast {
+class DefineCoreType;
+}
+
 namespace qat::IR {
 
 /**
@@ -82,6 +86,28 @@ public:
   void addStaticMember(const String &name, QatType *type, bool variability,
                        Value *initial, const utils::VisibilityInfo &visibility,
                        llvm::LLVMContext &ctx);
+};
+
+class TemplateCoreType : public Uniq {
+private:
+  String                    name;
+  Vec<ast::TemplatedType *> templates;
+  ast::DefineCoreType      *defineCoreType;
+  QatModule                *parent;
+  utils::VisibilityInfo     visibility;
+
+  mutable Vec<TemplateVariant<CoreType>> variants;
+
+public:
+  TemplateCoreType(String name, Vec<ast::TemplatedType *> templates,
+                   ast::DefineCoreType *defineCoreType, QatModule *parent,
+                   utils::VisibilityInfo visibInfo);
+
+  useit String getName() const;
+  useit utils::VisibilityInfo getVisibility() const;
+  useit usize                 getTypeCount() const;
+  useit usize                 getVariantCount() const;
+  useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx);
 };
 
 } // namespace qat::IR

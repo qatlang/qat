@@ -6,6 +6,7 @@
 #include "./expression.hpp"
 #include "./member_function.hpp"
 #include "./types/qat_type.hpp"
+#include "types/templated.hpp"
 #include <optional>
 #include <string>
 #include <vector>
@@ -54,18 +55,25 @@ private:
   Vec<ConvertorDefinition *> convertorDefinitions;
   utils::VisibilityKind      visibility;
 
-  mutable IR::CoreType *coreType = nullptr;
+  Vec<ast::TemplatedType *>     templates;
+  mutable IR::CoreType         *coreType         = nullptr;
+  mutable IR::TemplateCoreType *templateCoreType = nullptr;
 
 public:
   DefineCoreType(String _name, utils::VisibilityKind _visibility,
-                 utils::FileRange _fileRange, bool _isPacked = false);
+                 utils::FileRange          _fileRange,
+                 Vec<ast::TemplatedType *> _templates, bool _isPacked = false);
+
+  useit bool isTemplate() const;
 
   void  addMember(Member *mem);
   void  addStaticMember(StaticMember *stm);
   void  addMemberDefinition(MemberDefinition *mdef);
   void  addConvertorDefinition(ConvertorDefinition *cdef);
-  void  defineType(IR::Context *ctx) const final;
-  void  define(IR::Context *ctx) const final;
+  void  createType(IR::Context *ctx) const;
+  void  defineType(IR::Context *ctx) final;
+  void  define(IR::Context *ctx) final;
+  useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
   useit NodeType  nodeType() const final { return NodeType::defineCoreType; }

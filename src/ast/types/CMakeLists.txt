@@ -8,6 +8,7 @@ add_library(QAT_AST_TYPES
         pointer.cpp
         qat_type.cpp
         string_slice.cpp
+        template_named_type.cpp
         templated.cpp
         tuple.cpp
         unsigned.cpp

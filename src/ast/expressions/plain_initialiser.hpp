@@ -10,7 +10,7 @@ class PlainInitialiser : public Expression {
   friend class LocalDeclaration;
 
 private:
-  NamedType                          *type;
+  QatType                            *type;
   Vec<Pair<String, utils::FileRange>> fields;
   Vec<u64>                            indices;
   Vec<Expression *>                   fieldValues;
@@ -20,8 +20,7 @@ private:
   bool            isVar = false;
 
 public:
-  PlainInitialiser(NamedType                          *_type,
-                   Vec<Pair<String, utils::FileRange>> _fields,
+  PlainInitialiser(QatType *_type, Vec<Pair<String, utils::FileRange>> _fields,
                    Vec<Expression *> _fieldValues, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;

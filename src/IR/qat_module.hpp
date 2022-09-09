@@ -35,6 +35,7 @@ class QatModule : public Uniq {
   friend class ast::Lib;
   friend class ast::Box;
   friend class TemplateFunction;
+  friend class TemplateCoreType;
 
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath,
@@ -59,6 +60,8 @@ private:
   Vec<Brought<Function>>         broughtFunctions;
   Vec<TemplateFunction *>        templateFunctions;
   Vec<Brought<TemplateFunction>> broughtTemplateFunctions;
+  Vec<TemplateCoreType *>        templateCoreTypes;
+  Vec<Brought<TemplateCoreType>> broughtTemplateCoreTypes;
   Vec<GlobalEntity *>            globalEntities;
   Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
   Function                      *globalInitialiser;
@@ -183,6 +186,15 @@ public:
                                                  const utils::RequesterInfo &reqInfo) const;
   useit CoreType *getCoreType(const String               &name,
                               const utils::RequesterInfo &reqInfo) const;
+
+  // TEMPLATE FUNCTIONS
+
+  useit bool hasTemplateCoreType(const String &name) const;
+  useit bool hasBroughtTemplateCoreType(const String &name) const;
+  useit Pair<bool, String> hasAccessibleTemplateCoreTypeInImports(
+      const String &name, const utils::RequesterInfo &reqInfo) const;
+  useit TemplateCoreType *
+  getTemplateCoreType(const String &name, const utils::RequesterInfo &reqInfo);
 
   // TYPEDEF
   useit bool            hasTypeDef(const String &name) const;

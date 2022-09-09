@@ -9,7 +9,7 @@ TypeDefinition::TypeDefinition(String _name, QatType *_subType,
     : Node(std::move(_fileRange)), name(std::move(_name)), subType(_subType),
       visibKind(_visibKind) {}
 
-void TypeDefinition::defineType(IR::Context *ctx) const {
+void TypeDefinition::defineType(IR::Context *ctx) {
   auto *mod     = ctx->getMod();
   auto  reqInfo = ctx->getReqInfo();
   if (mod->hasCoreType(name)) {

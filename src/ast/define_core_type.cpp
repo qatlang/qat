@@ -1,5 +1,6 @@
 #include "./define_core_type.hpp"
 #include "../IR/types/core_type.hpp"
+#include "types/templated.hpp"
 
 namespace qat::ast {
 
@@ -39,18 +40,24 @@ nuo::Json DefineCoreType::StaticMember::toJson() const {
 
 DefineCoreType::DefineCoreType(String                      _name,
                                const utils::VisibilityKind _visibility,
-                               utils::FileRange _fileRange, bool _isPacked)
+                               utils::FileRange            _fileRange,
+                               Vec<ast::TemplatedType *>   _templates,
+                               bool                        _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked),
-      visibility(_visibility) {
+      visibility(_visibility), templates(_templates) {
   SHOW("Created core type " + name)
 }
 
-void DefineCoreType::defineType(IR::Context *ctx) const {
+bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
+
+void DefineCoreType::createType(IR::Context *ctx) const {
   auto *mod = ctx->getMod();
-  if (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
+  if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
+      !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
       !mod->hasTypeDef(name)) {
-    SHOW("Creating IR for CoreType members")
+    SHOW("Creating IR for CoreType members. Count: "
+         << std::to_string(members.size()))
     Vec<IR::CoreType::Member *> mems;
     for (auto *mem : members) {
       mems.push_back(new IR::CoreType::Member(
@@ -60,8 +67,13 @@ void DefineCoreType::defineType(IR::Context *ctx) const {
               : ctx->getVisibInfo(mem->visibilityKind)));
     }
     SHOW("Emitted IR for all members")
-    coreType = new IR::CoreType(mod, name, mems, ctx->getVisibInfo(visibility),
-                                ctx->llctx);
+    auto cTyName = name;
+    if (isTemplate()) {
+      cTyName = name + ":<" +
+                std::to_string(templateCoreType->getVariantCount()) + ">";
+    }
+    coreType = new IR::CoreType(mod, cTyName, mems,
+                                ctx->getVisibInfo(visibility), ctx->llctx);
     SHOW("Created core type in IR")
     for (auto *stm : staticMembers) {
       coreType->addStaticMember(
@@ -77,7 +89,13 @@ void DefineCoreType::defineType(IR::Context *ctx) const {
     }
   } else {
     // TODO - Check type definitions
-    if (mod->hasCoreType(name)) {
+    if (mod->hasTemplateCoreType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. "
+              "Please change name of this type or check the codebase",
+          fileRange);
+    } else if (mod->hasCoreType(name)) {
       ctx->Error(ctx->highlightError(name) +
                      " is the name of an existing core type in this scope. "
                      "Please change name of this type or check the codebase",
@@ -107,7 +125,63 @@ void DefineCoreType::defineType(IR::Context *ctx) const {
   }
 }
 
-void DefineCoreType::define(IR::Context *ctx) const {
+IR::CoreType *DefineCoreType::getCoreType() { return coreType; }
+
+void DefineCoreType::defineType(IR::Context *ctx) {
+  auto *mod = ctx->getMod();
+  if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
+      !mod->hasCoreType(name) && !mod->hasFunction(name) &&
+      !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
+      !mod->hasTypeDef(name)) {
+    if (!isTemplate()) {
+      createType(ctx);
+    } else {
+      SHOW("Creating template core type: " << name)
+      templateCoreType = new IR::TemplateCoreType(
+          name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
+    }
+  } else {
+    // TODO - Check type definitions
+    if (mod->hasTemplateCoreType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. "
+              "Please change name of this type or check the codebase",
+          fileRange);
+    } else if (mod->hasCoreType(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing core type in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasTypeDef(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasFunction(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing function in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasGlobalEntity(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing global value in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasBox(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing box in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    }
+  }
+}
+
+void DefineCoreType::define(IR::Context *ctx) {
+  if (isTemplate()) {
+    createType(ctx);
+  }
   for (auto *conv : convertorDefinitions) {
     conv->define(ctx);
   }

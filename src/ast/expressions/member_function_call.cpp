@@ -87,16 +87,16 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
     }
     SHOW("Argument values generated")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
-      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) &&
-          (argsEmit.at(i)->getType()->isReference() &&
+      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
+          (argsEmit.at(i - 1)->getType()->isReference() &&
            !fnArgsTy.at(i)->getType()->isSame(
-               argsEmit.at(i)->getType()->asReference()->getSubType()))) {
+               argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument at " +
                        ctx->highlightError(std::to_string(i - 1)) +
                        " of the function " +
                        ctx->highlightError(memFn->getName()),
-                   arguments.at(i)->fileRange);
+                   arguments.at(i - 1)->fileRange);
       }
     }
     //
@@ -104,22 +104,23 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
     argVals.push_back(inst->getLLVM());
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       if (fnArgsTy.at(i)->getType()->isReference() &&
-          !argsEmit.at(i)->isReference()) {
-        if (!argsEmit.at(i)->isImplicitPointer()) {
+          !argsEmit.at(i - 1)->isReference()) {
+        if (!argsEmit.at(i - 1)->isImplicitPointer()) {
           ctx->Error(
               "Cannot pass a value for the argument that expects a reference",
-              arguments.at(i)->fileRange);
+              arguments.at(i - 1)->fileRange);
         }
-      } else if (argsEmit.at(i)->isReference()) {
-        argsEmit.at(i) = new IR::Value(
-            ctx->builder.CreateLoad(argsEmit.at(i)->getType()->getLLVMType(),
-                                    argsEmit.at(i)->getLLVM()),
-            argsEmit.at(i)->getType(), argsEmit.at(i)->isVariable(),
-            argsEmit.at(i)->getNature());
+      } else if (argsEmit.at(i - 1)->isReference()) {
+        argsEmit.at(i - 1) = new IR::Value(
+            ctx->builder.CreateLoad(
+                argsEmit.at(i - 1)->getType()->getLLVMType(),
+                argsEmit.at(i - 1)->getLLVM()),
+            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->isVariable(),
+            argsEmit.at(i - 1)->getNature());
       } else {
-        argsEmit.at(i)->loadImplicitPointer(ctx->builder);
+        argsEmit.at(i - 1)->loadImplicitPointer(ctx->builder);
       }
-      argVals.push_back(argsEmit.at(i)->getLLVM());
+      argVals.push_back(argsEmit.at(i - 1)->getLLVM());
     }
     return memFn->call(ctx, argVals, ctx->getMod());
   } else {

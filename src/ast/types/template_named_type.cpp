@@ -1,15 +1,18 @@
-#include "./template_entity.hpp"
+#include "./template_named_type.hpp"
+#include "../../show.hpp"
 #include "../../utils/split_string.hpp"
 
 namespace qat::ast {
 
-TemplateEntity::TemplateEntity(u32 _relative, String _name,
-                               Vec<ast::QatType *> _types,
-                               utils::FileRange    _fileRange)
-    : Expression(std::move(_fileRange)), relative(_relative),
+TemplateNamedType::TemplateNamedType(u32 _relative, String _name,
+                                     Vec<ast::QatType *> _types,
+                                     bool                _isVariable,
+                                     utils::FileRange    _fileRange)
+    : QatType(_isVariable, std::move(_fileRange)), relative(_relative),
       name(std::move(_name)), templateTypes(std::move(_types)) {}
 
-IR::Value *TemplateEntity::emit(IR::Context *ctx) {
+IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
+  SHOW("Template named type START")
   auto *mod     = ctx->getMod();
   auto  reqInfo = ctx->getReqInfo();
   if (relative != 0) {
@@ -46,24 +49,26 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
     entityName = splits.back();
   }
   auto *fun  = ctx->fn;
-  auto *curr = fun ? ctx->fn->getBlock() : nullptr;
-  if (mod->hasTemplateFunction(entityName) ||
-      mod->hasBroughtTemplateFunction(entityName) ||
-      mod->hasAccessibleTemplateFunctionInImports(entityName, ctx->getReqInfo())
+  auto *curr = fun ? fun->getBlock() : nullptr;
+  SHOW("Got current function and block")
+  if (mod->hasTemplateCoreType(entityName) ||
+      mod->hasBroughtTemplateCoreType(entityName) ||
+      mod->hasAccessibleTemplateCoreTypeInImports(entityName, ctx->getReqInfo())
           .first) {
-    auto *tempFn = mod->getTemplateFunction(entityName, ctx->getReqInfo());
-    if (!tempFn->getVisibility().isAccessible(ctx->getReqInfo())) {
-      ctx->Error("Template function " + ctx->highlightError(name) +
+    auto *tempCoreTy = mod->getTemplateCoreType(entityName, ctx->getReqInfo());
+    if (!tempCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
+      ctx->Error("Template core type " + ctx->highlightError(name) +
                      " is not accessible here",
                  fileRange);
     }
-    if (tempFn->getTypeCount() != templateTypes.size()) {
+    if (tempCoreTy->getTypeCount() != templateTypes.size()) {
       ctx->Error(
-          "Template function " + ctx->highlightError(tempFn->getName()) +
+          "Template core type " + ctx->highlightError(tempCoreTy->getName()) +
               " has " +
-              ctx->highlightError(std::to_string(tempFn->getTypeCount())) +
+              ctx->highlightError(std::to_string(tempCoreTy->getTypeCount())) +
               " type parameters. But " +
-              ((tempFn->getTypeCount() > templateTypes.size()) ? "only " : "") +
+              ((tempCoreTy->getTypeCount() > templateTypes.size()) ? "only "
+                                                                   : "") +
               ctx->highlightError(std::to_string(templateTypes.size())) +
               " types were provided",
           fileRange);
@@ -72,7 +77,7 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
     for (auto *typ : templateTypes) {
       types.push_back(typ->emit(ctx));
     }
-    auto *fnRes = tempFn->fillTemplates(types, ctx);
+    auto *fnRes = tempCoreTy->fillTemplates(types, ctx);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);
@@ -80,23 +85,34 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
     return fnRes;
   } else {
     // FIXME - Support static members of template types
-    ctx->Error("No template function named " + ctx->highlightError(name) +
+    ctx->Error("No template core type named " + ctx->highlightError(name) +
                    " found in the current scope",
                fileRange);
   }
   return nullptr;
 }
 
-nuo::Json TemplateEntity::toJson() const {
+nuo::Json TemplateNamedType::toJson() const {
   Vec<nuo::JsonValue> typs;
   for (auto *typ : templateTypes) {
     typs.push_back(typ->toJson());
   }
   return nuo::Json()
-      ._("nodeType", "templateEntity")
+      ._("typeKind", "templateNamed")
       ._("name", name)
       ._("types", typs)
       ._("fileRange", fileRange);
+}
+
+String TemplateNamedType::toString() const {
+  auto result = (isVariable() ? "var " : "") + name + ":<";
+  for (usize i = 0; i < templateTypes.size(); i++) {
+    result += templateTypes.at(i)->toString();
+    if (i != (templateTypes.size() - 1)) {
+      result += ", ";
+    }
+  }
+  return result;
 }
 
 } // namespace qat::ast

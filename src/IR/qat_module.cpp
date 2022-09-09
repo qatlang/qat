@@ -1,4 +1,5 @@
 #include "./qat_module.hpp"
+#include "../ast/define_core_type.hpp"
 #include "../ast/function.hpp"
 #include "../ast/node.hpp"
 #include "../cli/config.hpp"
@@ -6,6 +7,7 @@
 #include "function.hpp"
 #include "global_entity.hpp"
 #include "member_function.hpp"
+#include "types/core_type.hpp"
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
 #include "value.hpp"
@@ -535,7 +537,7 @@ bool QatModule::hasTemplateFunction(const String &name) const {
   SHOW("Function count: " << functions.size())
   for (auto *function : templateFunctions) {
     if (function->getName() == name) {
-      SHOW("Found function")
+      SHOW("Found template function")
       return true;
     }
   }
@@ -687,6 +689,92 @@ CoreType *QatModule::getCoreType(const String               &name,
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
             return bMod->getCoreType(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+// TEMPLATE CORE TYPE
+
+bool QatModule::hasTemplateCoreType(const String &name) const {
+  for (auto *tempCTy : templateCoreTypes) {
+    SHOW("Template core type: " << tempCTy->getName())
+    if (tempCTy->getName() == name) {
+      SHOW("Found template core type")
+      return true;
+    }
+  }
+  SHOW("No template core types named " + name + " found")
+  return false;
+}
+
+bool QatModule::hasBroughtTemplateCoreType(const String &name) const {
+  for (auto brought : broughtTemplateCoreTypes) {
+    if (!brought.isNamed()) {
+      auto *bFn = brought.get();
+      if (bFn->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleTemplateCoreTypeInImports(
+    const String &name, const utils::RequesterInfo &reqInfo) const {
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasTemplateCoreType(name) ||
+            bMod->hasBroughtTemplateCoreType(name) ||
+            bMod->hasAccessibleTemplateCoreTypeInImports(name, reqInfo).first) {
+          if (bMod->getTemplateCoreType(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return {true, bMod->filePath.string()};
+          }
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+TemplateCoreType *
+QatModule::getTemplateCoreType(const String               &name,
+                               const utils::RequesterInfo &reqInfo) {
+  for (auto *tempCore : templateCoreTypes) {
+    if (tempCore->getName() == name) {
+      return tempCore;
+    }
+  }
+  for (auto brought : broughtTemplateCoreTypes) {
+    if (!brought.isNamed()) {
+      auto *bCTy = brought.get();
+      if (bCTy->getName() == name) {
+        return bCTy;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasTemplateCoreType(name) ||
+            bMod->hasBroughtTemplateCoreType(name) ||
+            bMod->hasAccessibleTemplateCoreTypeInImports(name, reqInfo).first) {
+          if (bMod->getTemplateCoreType(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getTemplateCoreType(name, reqInfo);
           }
         }
       }
@@ -921,8 +1009,12 @@ void QatModule::createModules(IR::Context *ctx) {
 void QatModule::defineTypes(IR::Context *ctx) {
   SHOW("Defining types")
   ctx->mod = this;
-  for (auto *node : nodes) {
+  for (auto &node : nodes) {
     node->defineType(ctx);
+    if ((node->nodeType() == ast::NodeType::defineCoreType) &&
+        (((ast::DefineCoreType *)node)->isTemplate())) {
+      node = new ast::HolderNode(node);
+    }
   }
   for (auto *sub : submodules) {
     sub->defineTypes(ctx);

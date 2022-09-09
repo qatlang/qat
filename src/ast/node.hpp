@@ -42,7 +42,7 @@ public:
   explicit Node(utils::FileRange _fileRange);
   virtual ~Node() = default;
   virtual void             createModule(IR::Context *ctx) const {}
-  virtual void             defineType(IR::Context *ctx) const {}
+  virtual void             defineType(IR::Context *ctx) {}
   virtual void             define(IR::Context *ctx) {}
   useit virtual IR::Value *emit(IR::Context *ctx) = 0;
   useit virtual nuo::Json  toJson() const         = 0;

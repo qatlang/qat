@@ -233,26 +233,6 @@ void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
 Block *Function::getBlock() const { return blocks.at(activeBlock); }
 
-TemplateVariant::TemplateVariant(IR::Function *_fn, Vec<IR::QatType *> _types)
-    : function(_fn), types(std::move(_types)) {}
-
-bool TemplateVariant::check(Vec<IR::QatType *> _types) const {
-  if (types.size() != _types.size()) {
-    return false;
-  } else {
-    bool result = true;
-    for (usize i = 0; i < types.size(); i++) {
-      if (!types.at(i)->isSame(_types.at(i))) {
-        result = false;
-        break;
-      }
-    }
-    return result;
-  }
-}
-
-Function *TemplateVariant::getFunction() { return function; }
-
 TemplateFunction::TemplateFunction(String                    _name,
                                    Vec<ast::TemplatedType *> _templates,
                                    ast::FunctionDefinition  *_functionDef,
@@ -277,14 +257,14 @@ Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
                                           IR::Context       *ctx) {
   for (auto var : variants) {
     if (var.check(types)) {
-      return var.getFunction();
+      return var.get();
     }
   }
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
   auto *fun = (IR::Function *)functionDefinition->emit(ctx);
-  variants.push_back(TemplateVariant(fun, types));
+  variants.push_back(TemplateVariant<Function>(fun, types));
   for (auto *temp : templates) {
     temp->unsetType();
   }

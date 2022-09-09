@@ -10,9 +10,10 @@ namespace qat::ast {
  *
  */
 enum class TypeKind {
-  Void,            // Void type
-  array,           // Array of elements of QatType type
-  named,           // Struct type
+  Void,  // Void type
+  array, // Array of elements of QatType type
+  named, // Struct type
+  templateNamed,
   Float,           // Floating point number
   integer,         // Signed integer
   unsignedInteger, // Unsigned integer

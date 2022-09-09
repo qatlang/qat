@@ -6,6 +6,7 @@
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./value.hpp"
+#include "template_variant.hpp"
 #include "types/qat_type.hpp"
 #include "uniq.hpp"
 #include "llvm/IR/BasicBlock.h"
@@ -110,17 +111,6 @@ public:
   Block                *getBlock() const;
 };
 
-class TemplateVariant {
-  Function          *function;
-  Vec<IR::QatType *> types;
-
-public:
-  TemplateVariant(Function *_function, Vec<IR::QatType *> _types);
-
-  useit bool      check(Vec<IR::QatType *> _types) const;
-  useit Function *getFunction();
-};
-
 class TemplateFunction : public Uniq {
 private:
   String                    name;
@@ -129,7 +119,7 @@ private:
   QatModule                *parent;
   utils::VisibilityInfo     visibInfo;
 
-  mutable Vec<TemplateVariant> variants;
+  mutable Vec<TemplateVariant<Function>> variants;
 
 public:
   TemplateFunction(String name, Vec<ast::TemplatedType *> templates,

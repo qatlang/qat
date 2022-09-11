@@ -16,6 +16,7 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
 #include "../ast/expressions/self_member.hpp"
+#include "../ast/expressions/size_of_type.hpp"
 #include "../ast/expressions/template_entity.hpp"
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
@@ -1279,6 +1280,26 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         i = pos;
       }
       cachedExpressions.push_back(new ast::StringLiteral(val, fRange));
+      break;
+    }
+    case TokenType::sizeOf: {
+      if (isNext(TokenType::parenthesisOpen, i)) {
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes.has_value()) {
+          auto *type = parseType(prev_ctx, i + 1, pCloseRes.value()).first;
+          cachedExpressions.push_back(
+              new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value())));
+          i = pCloseRes.value();
+        } else {
+          Error("Expected end for (", RangeAt(i + 1));
+        }
+      } else {
+        Error(
+            "Expected ( to start the expression for sizeOf. Make sure that you "
+            "provide a value, so that the size of its type can be calculated",
+            RangeAt(i));
+      }
       break;
     }
     case TokenType::null: {

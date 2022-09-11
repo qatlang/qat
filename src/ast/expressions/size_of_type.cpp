@@ -2,11 +2,16 @@
 
 namespace qat::ast {
 
+#define LLVM_SIZEOF_RESULT_BITWIDTH 64
+
 SizeOfType::SizeOfType(QatType *_type, utils::FileRange _fileRange)
-    : type(_type), Expression(std::move(_fileRange)) {}
+    : Expression(std::move(_fileRange)), type(_type) {}
 
 IR::Value *SizeOfType::emit(IR::Context *ctx) {
-  // TODO - Implement this
+  return new IR::Value(
+      llvm::ConstantExpr::getSizeOf(type->emit(ctx)->getLLVMType()),
+      IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx), false,
+      IR::Nature::pure);
 }
 
 nuo::Json SizeOfType::toJson() const {

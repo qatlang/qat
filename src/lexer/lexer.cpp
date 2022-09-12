@@ -194,12 +194,7 @@ Token Lexer::tokeniser() {
   }
   case ':': {
     read();
-    if (current == '<') {
-      prev_ctx = "templateTypeStart";
-      read();
-      template_type_start_count++;
-      return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
-    } else if (current == '=') {
+    if (current == '=') {
       prev_ctx = "associatedAssignment";
       read();
       return Token::normal(TokenType::associatedAssignment,
@@ -417,7 +412,12 @@ Token Lexer::tokeniser() {
   }
   case '\'': {
     read();
-    if (current == '\'') {
+    if (current == '<') {
+      prev_ctx = "templateTypeStart";
+      read();
+      template_type_start_count++;
+      return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
+    } else if (current == '\'') {
       prev_ctx = "self";
       read();
       return Token::normal(TokenType::self, this->getPosition(2));
@@ -629,6 +629,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::While, this->getPosition(5));
       } else if (value == "over") {
         return Token::normal(TokenType::over, this->getPosition(4));
+      } else if (value == "heap") {
+        return Token::normal(TokenType::heap, this->getPosition(4));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))

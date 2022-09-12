@@ -7,6 +7,7 @@
 #include "../ast/expressions/entity.hpp"
 #include "../ast/expressions/float_literal.hpp"
 #include "../ast/expressions/function_call.hpp"
+#include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/integer_literal.hpp"
 #include "../ast/expressions/loop_index.hpp"
@@ -1384,6 +1385,78 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       } else {
         SHOW("Creating self in AST")
         cachedExpressions.push_back(new ast::Self(RangeAt(i)));
+      }
+      break;
+    }
+    case TokenType::heap: {
+      if (isNext(TokenType::child, i)) {
+        if (isNext(TokenType::identifier, i + 1)) {
+          if (tokens.at(i + 2).value == "get") {
+            if (isNext(TokenType::templateTypeStart, i + 2)) {
+              auto tEndRes =
+                  getPairEnd(TokenType::templateTypeStart,
+                             TokenType::templateTypeEnd, i + 3, false);
+              if (tEndRes.has_value()) {
+                auto  tEnd = tEndRes.value();
+                auto *type = parseType(prev_ctx, i + 3, tEnd).first;
+                if (isNext(TokenType::parenthesisOpen, tEnd)) {
+                  auto pCloseRes =
+                      getPairEnd(TokenType::parenthesisOpen,
+                                 TokenType::parenthesisClose, tEnd + 1, false);
+                  if (pCloseRes.has_value()) {
+                    auto  pClose = pCloseRes.value();
+                    auto *exp =
+                        parseExpression(prev_ctx, None, tEnd + 1, pClose).first;
+                    cachedExpressions.push_back(
+                        new ast::HeapGet(type, exp, RangeAt(i)));
+                    i = pClose;
+                    break;
+                  } else {
+                    Error("Expected end for (", RangeAt(tEnd + 1));
+                  }
+                } else {
+                  cachedExpressions.push_back(
+                      new ast::HeapGet(type, nullptr, RangeAt(i)));
+                  i = tEnd;
+                  break;
+                }
+              } else {
+                Error("Expected end for template type specification",
+                      RangeAt(i + 3));
+              }
+            } else {
+              Error("Expected template type specification for the type to "
+                    "allocate the memory for",
+                    RangeSpan(i, i + 2));
+            }
+          } else if (tokens.at(i + 2).value == "put") {
+            if (isNext(TokenType::parenthesisOpen, i + 2)) {
+              auto pCloseRes =
+                  getPairEnd(TokenType::parenthesisOpen,
+                             TokenType::parenthesisClose, i + 3, false);
+              if (pCloseRes.has_value()) {
+                auto *exp =
+                    parseExpression(prev_ctx, None, i + 3, pCloseRes.value())
+                        .first;
+                cachedExpressions.push_back(
+                    new ast::HeapPut(exp, RangeSpan(i, pCloseRes.value())));
+                i = pCloseRes.value();
+                break;
+              } else {
+                Error("Expected end for (", RangeAt(i + 3));
+              }
+            } else {
+              Error("Invalid expression. Expected a pointer expression to use "
+                    "for heap'put",
+                    RangeSpan(i, i + 2));
+            }
+          } else {
+            Error("Invalid identifier found after heap'", RangeAt(i + 2));
+          }
+        } else {
+        }
+      } else {
+        Error("Invalid expression", RangeAt(i));
       }
       break;
     }

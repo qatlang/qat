@@ -11,6 +11,7 @@
 #include "uniq.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include <iostream>
@@ -86,15 +87,21 @@ protected:
            bool _isReturnValueVariable, bool _is_async, Vec<Argument> _args,
            bool has_variadic_arguments, utils::FileRange fileRange,
            const utils::VisibilityInfo &_visibility_info,
-           llvm::LLVMContext &ctx, bool isMemberFn = false);
+           llvm::LLVMContext &ctx, bool isMemberFn = false,
+           llvm::GlobalValue::LinkageTypes _linkage =
+               llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+           bool ignoreParentName = false);
 
 public:
   static Function   *Create(QatModule *mod, String name, QatType *return_type,
                             bool isReturnValueVariable, bool is_async,
                             Vec<Argument> args, bool has_variadic_args,
-                            utils::FileRange             fileRange,
-                            const utils::VisibilityInfo &visibilityInfo,
-                            llvm::LLVMContext           &ctx);
+                            utils::FileRange                fileRange,
+                            const utils::VisibilityInfo    &visibilityInfo,
+                            llvm::LLVMContext              &ctx,
+                            llvm::GlobalValue::LinkageTypes linkage =
+                                llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                            bool ignoreParentName = false);
   useit Value       *call(IR::Context *ctx, Vec<llvm::Value *>, QatModule *mod);
   useit virtual bool isMemberFunction() const;
   useit bool         hasVariadicArgs() const;

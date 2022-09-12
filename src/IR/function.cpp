@@ -134,7 +134,9 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
                    bool _isVariadicArguments, utils::FileRange fileRange,
                    const utils::VisibilityInfo &_visibility_info,
-                   llvm::LLVMContext &ctx, bool isMemberFn)
+                   llvm::LLVMContext &ctx, bool isMemberFn,
+                   llvm::GlobalValue::LinkageTypes llvmLinkage,
+                   bool                            ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)),
       isReturnValueVariable(_isRetTypeVariable), mod(_mod),
       arguments(std::move(_args)), visibility_info(_visibility_info),
@@ -150,13 +152,12 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
   if (isMemberFn) {
     ll =
         llvm::Function::Create((llvm::FunctionType *)(getType()->getLLVMType()),
-                               llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                               0U, name, mod->getLLVMModule());
+                               llvmLinkage, 0U, name, mod->getLLVMModule());
   } else {
     ll = llvm::Function::Create(
-        (llvm::FunctionType *)(getType()->getLLVMType()),
-        llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
-        mod->getFullNameWithChild(name), mod->getLLVMModule());
+        (llvm::FunctionType *)(getType()->getLLVMType()), llvmLinkage, 0U,
+        (ignoreParentName ? name : mod->getFullNameWithChild(name)),
+        mod->getLLVMModule());
   }
 }
 
@@ -187,12 +188,15 @@ IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
 Function *Function::Create(QatModule *mod, String name, QatType *returnTy,
                            const bool isReturnTypeVariable, const bool is_async,
                            Vec<Argument> args, const bool hasvariadicargs,
-                           utils::FileRange             fileRange,
-                           const utils::VisibilityInfo &visibilityInfo,
-                           llvm::LLVMContext           &ctx) {
+                           utils::FileRange                fileRange,
+                           const utils::VisibilityInfo    &visibilityInfo,
+                           llvm::LLVMContext              &ctx,
+                           llvm::GlobalValue::LinkageTypes linkage,
+                           bool                            ignoreParentName) {
   return new Function(mod, std::move(name), returnTy, isReturnTypeVariable,
                       is_async, std::move(args), hasvariadicargs,
-                      std::move(fileRange), visibilityInfo, ctx, false);
+                      std::move(fileRange), visibilityInfo, ctx, false, linkage,
+                      ignoreParentName);
 }
 
 bool Function::hasVariadicArgs() const { return hasVariadicArguments; }

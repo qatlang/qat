@@ -7,6 +7,7 @@ add_library(QAT_AST_EXPRESSIONS
         entity.cpp
         float_literal.cpp
         function_call.cpp
+        heap.cpp
         integer_literal.cpp
         loop_index.cpp
         member_function_call.cpp

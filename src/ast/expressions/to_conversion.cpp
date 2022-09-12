@@ -24,7 +24,15 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
     }
   } else {
     auto *typ = val->getType();
-    if (typ->isStringSlice()) {
+    if (typ->isPointer()) {
+      if (destTy->isPointer()) {
+        return new IR::Value(ctx->builder.CreatePointerCast(
+                                 val->getLLVM(), destTy->getLLVMType()),
+                             destTy, false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Pointer to other types not supported as of now", fileRange);
+      }
+    } else if (typ->isStringSlice()) {
       if (destTy->isCString()) {
         SHOW("Conversion from StringSlice to CString")
         if (llvm::isa<llvm::Constant>(val->getLLVM())) {

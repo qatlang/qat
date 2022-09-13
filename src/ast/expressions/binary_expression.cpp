@@ -1,4 +1,4 @@
-#include "./binary_expression.hpp"
+#include "binary_expression.hpp"
 #include "../../IR/types/reference.hpp"
 #include "operator.hpp"
 
@@ -8,35 +8,42 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   auto *lhsEmit = lhs->emit(ctx);
   auto *rhsEmit = rhs->emit(ctx);
 
-  // FIXME - Change this when introducing operators for core types
-  lhsEmit->loadImplicitPointer(ctx->builder);
-  rhsEmit->loadImplicitPointer(ctx->builder);
+  SHOW("Operator is: " << OpToString(op))
 
-  IR::QatType *lhsType = lhsEmit->getType();
-  IR::QatType *rhsType = rhsEmit->getType();
-  llvm::Value *lhsVal  = lhsEmit->getLLVM();
-  llvm::Value *rhsVal  = rhsEmit->getLLVM();
-  if (lhsEmit->isReference()) {
-    auto *subTy = lhsType->asReference()->getSubType();
-    if (subTy->isInteger() || subTy->isFloat() || subTy->isUnsignedInteger()) {
+  IR::QatType *lhsType          = lhsEmit->getType();
+  IR::QatType *rhsType          = rhsEmit->getType();
+  llvm::Value *lhsVal           = lhsEmit->getLLVM();
+  llvm::Value *rhsVal           = rhsEmit->getLLVM();
+  auto         referenceHandler = [&]() {
+    lhsEmit->loadImplicitPointer(ctx->builder);
+    lhsVal = lhsEmit->getLLVM();
+    rhsEmit->loadImplicitPointer(ctx->builder);
+    rhsVal = rhsEmit->getLLVM();
+    if (lhsEmit->isReference()) {
+      SHOW("LHS is reference")
       lhsType = lhsType->asReference()->getSubType();
-      lhsVal  = ctx->builder.CreateLoad(lhsType->getLLVMType(), lhsVal, false);
+      SHOW("LHS type is: " << lhsType->toString())
+      lhsVal = ctx->builder.CreateLoad(lhsType->getLLVMType(), lhsVal, false);
     }
-  }
-  if (rhsEmit->isReference()) {
-    auto *subTy = rhsType->asReference()->getSubType();
-    if (subTy->isInteger() || subTy->isFloat() || subTy->isUnsignedInteger()) {
+    if (rhsEmit->isReference()) {
+      SHOW("RHS is reference")
       rhsType = rhsType->asReference()->getSubType();
-      rhsVal  = ctx->builder.CreateLoad(rhsType->getLLVMType(), rhsVal, false);
+      SHOW("RHS type is: " << rhsType->toString())
+      rhsVal = ctx->builder.CreateLoad(rhsType->getLLVMType(), rhsVal, false);
     }
-  }
-  if (lhsType->isInteger()) {
+  };
+  if (lhsType->isInteger() ||
+      (lhsType->isReference() &&
+       lhsType->asReference()->getSubType()->isInteger())) {
+    referenceHandler();
     SHOW("Integer binary operation: " << OpToString(op))
     if (lhsType->isSame(rhsType)) {
       llvm::Value *llRes;
       IR::QatType *resType = lhsType;
+      // NOLINTNEXTLINE(clang-diagnostic-switch)
       switch (op) {
       case Op::add: {
+        SHOW("Integer addition")
         llRes = ctx->builder.CreateAdd(lhsVal, rhsVal);
         break;
       }
@@ -142,6 +149,7 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
                    "side to the other type if this was intentional",
                    fileRange);
       } else {
+        // FIXME - Support side flipped operator
         ctx->Error(
             "No operator found that matches both operand types. The left hand "
             "side is a signed integer, and the right hand side is " +
@@ -149,10 +157,15 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
             fileRange);
       }
     }
-  } else if (lhsType->isUnsignedInteger()) {
+  } else if (lhsType->isUnsignedInteger() ||
+             (lhsType->isReference() &&
+              lhsType->asReference()->getSubType()->isUnsignedInteger())) {
+    SHOW("Unsigned integer binary operation")
+    referenceHandler();
     if (lhsType->isSame(rhsType)) {
       llvm::Value *llRes;
       IR::QatType *resType = lhsType;
+      // NOLINTNEXTLINE(clang-diagnostic-switch)
       switch (op) {
       case Op::add: {
         llRes = ctx->builder.CreateAdd(lhsVal, rhsVal);
@@ -239,6 +252,7 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
         break;
       }
       }
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       return new IR::Value(llRes, resType, false, IR::Nature::temporary);
     } else {
       if (rhsType->isUnsignedInteger()) {
@@ -260,6 +274,7 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
             "the other type if this was intentional",
             fileRange);
       } else {
+        // FIXME - Support side flipped operator
         ctx->Error(
             "No operator found that matches both operand types. The left hand "
             "side is an unsigned integer, and the right hand side is " +
@@ -267,10 +282,15 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
             fileRange);
       }
     }
-  } else if (lhsType->isFloat()) {
+  } else if (lhsType->isFloat() ||
+             (lhsType->isReference() &&
+              lhsType->asReference()->getSubType()->isFloat())) {
+    SHOW("Float binary operation")
+    referenceHandler();
     if (lhsType->isSame(rhsType)) {
       llvm::Value *llRes   = nullptr;
       IR::QatType *resType = lhsType;
+      // NOLINTNEXTLINE(clang-diagnostic-switch)
       switch (op) {
       case Op::add: {
         llRes = ctx->builder.CreateFAdd(lhsVal, rhsVal);
@@ -376,11 +396,82 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
             "Cast that value if this was intentional, or check logic",
             fileRange);
       } else {
-        ctx->Error("" + rhsType->toString(), fileRange);
+        // FIXME - Support flipped operator side
+        ctx->Error("Left hand side of the expression is of type " +
+                       ctx->highlightError(lhsType->toString()) +
+                       " and right hand side is of type " +
+                       rhsType->toString() + ". Please check the logic.",
+                   fileRange);
       }
     }
   } else {
-    // TODO - Implement
+    if (lhsType->isCoreType() ||
+        (lhsType->isReference() &&
+         lhsType->asReference()->getSubType()->isCoreType())) {
+      SHOW("Core type binary operation")
+      auto *cTy   = lhsType->isReference()
+                        ? lhsType->asReference()->getSubType()->asCore()
+                        : lhsType->asCore();
+      auto  OpStr = OpToString(op);
+      // FIXME - Incomplete logic?
+      if (cTy->hasBinaryOperator(OpStr, rhsType)) {
+        SHOW("RHS is matched exactly")
+        if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
+          lhsEmit = lhsEmit->createAlloca(ctx->builder);
+        }
+        auto *opFn = cTy->getBinaryOperator(OpStr, rhsType);
+        if (!opFn->isAccessible(ctx->getReqInfo())) {
+          ctx->Error(
+              "Binary operator " + ctx->highlightError(OpToString(op)) +
+                  " of core type " + ctx->highlightError(cTy->getFullName()) +
+                  " with RHS type " + ctx->highlightError(rhsType->toString()) +
+                  " is not accessible here",
+              fileRange);
+        }
+        rhsEmit->loadImplicitPointer(ctx->builder);
+        return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()},
+                          ctx->getMod());
+      } else if (rhsType->isReference() &&
+                 cTy->hasBinaryOperator(OpStr,
+                                        rhsType->asReference()->getSubType())) {
+        SHOW("RHS is matched as subtype of reference")
+        if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
+          lhsEmit = lhsEmit->createAlloca(ctx->builder);
+        }
+        auto *opFn =
+            cTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
+        if (!opFn->isAccessible(ctx->getReqInfo())) {
+          ctx->Error("Operator " + ctx->highlightError(OpToString(op)) +
+                         " of core type " +
+                         ctx->highlightError(cTy->getFullName()) +
+                         " with RHS type: " +
+                         ctx->highlightError(rhsType->toString()) +
+                         " is not accessible here",
+                     fileRange);
+        }
+        return opFn->call(
+            ctx,
+            {lhsEmit->getLLVM(),
+             ctx->builder.CreateLoad(
+                 rhsType->asReference()->getSubType()->getLLVMType(),
+                 rhsEmit->getLLVM())},
+            ctx->getMod());
+      } else {
+        ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) +
+                       " not defined for core type: " +
+                       ctx->highlightError(
+                           cTy->getFullName() + " that has RHS type: " +
+                           ctx->highlightError(rhsType->toString())),
+                   fileRange);
+      }
+    } else {
+      // TODO - Implement
+      ctx->Error("Invalid type of LHS for the operator " +
+                     ctx->highlightError(OpToString(op)) + ". LHS is " +
+                     ctx->highlightError(lhsType->toString()) + " and RHS is " +
+                     ctx->highlightError(rhsType->toString()),
+                 fileRange);
+    }
   }
 }
 

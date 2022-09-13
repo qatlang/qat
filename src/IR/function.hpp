@@ -93,20 +93,21 @@ protected:
            bool ignoreParentName = false);
 
 public:
-  static Function   *Create(QatModule *mod, String name, QatType *return_type,
-                            bool isReturnValueVariable, bool is_async,
-                            Vec<Argument> args, bool has_variadic_args,
-                            utils::FileRange                fileRange,
-                            const utils::VisibilityInfo    &visibilityInfo,
-                            llvm::LLVMContext              &ctx,
-                            llvm::GlobalValue::LinkageTypes linkage =
-                                llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                            bool ignoreParentName = false);
-  useit Value       *call(IR::Context *ctx, Vec<llvm::Value *>, QatModule *mod);
-  useit virtual bool isMemberFunction() const;
-  useit bool         hasVariadicArgs() const;
-  useit bool         isAsyncFunction() const;
-  useit String       argumentNameAt(u32 index) const;
+  static Function     *Create(QatModule *mod, String name, QatType *return_type,
+                              bool isReturnValueVariable, bool is_async,
+                              Vec<Argument> args, bool has_variadic_args,
+                              utils::FileRange                fileRange,
+                              const utils::VisibilityInfo    &visibilityInfo,
+                              llvm::LLVMContext              &ctx,
+                              llvm::GlobalValue::LinkageTypes linkage =
+                                  llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                              bool ignoreParentName = false);
+  useit Value         *call(IR::Context *ctx, const Vec<llvm::Value *> &args,
+                            QatModule *mod);
+  useit virtual bool   isMemberFunction() const;
+  useit bool           hasVariadicArgs() const;
+  useit bool           isAsyncFunction() const;
+  useit String         argumentNameAt(u32 index) const;
   useit virtual String getName() const;
   useit virtual String getFullName() const;
   useit bool           isReturnTypeReference() const;

@@ -22,6 +22,8 @@ enum class NodeType {
   constructorDefinition,
   destructorPrototype,
   destructorDefinition,
+  operatorPrototype,
+  operatorDefinition,
   localDeclaration,
   globalDeclaration,
   booleanLiteral,

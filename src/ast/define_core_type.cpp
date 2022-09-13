@@ -87,6 +87,9 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     for (auto *memDef : memberDefinitions) {
       memDef->setCoreType(coreType);
     }
+    for (auto *oprDef : operatorDefinitions) {
+      oprDef->setCoreType(coreType);
+    }
   } else {
     // TODO - Check type definitions
     if (mod->hasTemplateCoreType(name)) {
@@ -188,6 +191,9 @@ void DefineCoreType::define(IR::Context *ctx) {
   for (auto *mFn : memberDefinitions) {
     mFn->define(ctx);
   }
+  for (auto *oFn : operatorDefinitions) {
+    oFn->define(ctx);
+  }
 }
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
@@ -197,6 +203,9 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   }
   for (auto *mFn : memberDefinitions) {
     (void)mFn->emit(ctx);
+  }
+  for (auto *oFn : operatorDefinitions) {
+    (void)oFn->emit(ctx);
   }
   ctx->activeType = nullptr;
   return nullptr;
@@ -217,6 +226,10 @@ void DefineCoreType::addMemberDefinition(MemberDefinition *mdef) {
 }
 void DefineCoreType::addConvertorDefinition(ConvertorDefinition *cdef) {
   convertorDefinitions.push_back(cdef);
+}
+
+void DefineCoreType::addOperatorDefinition(OperatorDefinition *odef) {
+  operatorDefinitions.push_back(odef);
 }
 
 nuo::Json DefineCoreType::toJson() const {

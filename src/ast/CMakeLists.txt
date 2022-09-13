@@ -12,6 +12,7 @@ add_library(QAT_AST
         lib.cpp
         member_function.cpp
         node.cpp
+        operator_function.cpp
         sentence.cpp
         type_definition.cpp)
 

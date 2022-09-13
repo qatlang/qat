@@ -139,7 +139,7 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool                            ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)),
       isReturnValueVariable(_isRetTypeVariable), mod(_mod),
-      arguments(std::move(_args)), visibility_info(_visibility_info),
+      arguments(std::move(_args)), visibility_info(std::move(_visibility_info)),
       fileRange(std::move(fileRange)), is_async(_is_async),
       hasVariadicArguments(_isVariadicArguments) //
 {
@@ -161,7 +161,7 @@ Function::Function(QatModule *_mod, String _name, QatType *returnType,
   }
 }
 
-IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
+IR::Value *Function::call(IR::Context *ctx, const Vec<llvm::Value *> &argValues,
                           QatModule *destMod) {
   SHOW("Linking function if it is external")
   auto *llvmFunction = (llvm::Function *)ll;

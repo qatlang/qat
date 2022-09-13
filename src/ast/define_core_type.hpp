@@ -5,6 +5,7 @@
 #include "./convertor.hpp"
 #include "./expression.hpp"
 #include "./member_function.hpp"
+#include "./operator_function.hpp"
 #include "./types/qat_type.hpp"
 #include "types/templated.hpp"
 #include <optional>
@@ -53,6 +54,7 @@ private:
   Vec<StaticMember *>        staticMembers;
   Vec<MemberDefinition *>    memberDefinitions;
   Vec<ConvertorDefinition *> convertorDefinitions;
+  Vec<OperatorDefinition *>  operatorDefinitions;
   utils::VisibilityKind      visibility;
 
   Vec<ast::TemplatedType *>     templates;
@@ -70,6 +72,7 @@ public:
   void  addStaticMember(StaticMember *stm);
   void  addMemberDefinition(MemberDefinition *mdef);
   void  addConvertorDefinition(ConvertorDefinition *cdef);
+  void  addOperatorDefinition(OperatorDefinition *odef);
   void  createType(IR::Context *ctx) const;
   void  defineType(IR::Context *ctx) final;
   void  define(IR::Context *ctx) final;

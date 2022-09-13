@@ -35,7 +35,8 @@ IR::Value *Entity::emit(IR::Context *ctx) {
         } else {
           auto *val = new IR::Value(alloca, local->getType(),
                                     local->isVariable(), IR::Nature::temporary);
-          SHOW("Returning local value")
+          SHOW("Returning local value with alloca name: "
+               << alloca->getName().str())
           val->setIsLocalToFn(true);
           return val;
         }

@@ -25,8 +25,13 @@ enum class Op {
   greaterThan,
   greaterThanEqualTo,
   And,
-  Or
+  Or,
+  Index,
+  minus,
+  Not
 };
+
+useit bool isUnaryOp(Op opr);
 
 useit String OpToString(Op opr);
 

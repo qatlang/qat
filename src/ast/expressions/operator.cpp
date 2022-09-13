@@ -2,6 +2,16 @@
 
 namespace qat::ast {
 
+bool isUnaryOp(Op opr) {
+  switch (opr) {
+  case Op::minus:
+  case Op::Not:
+    return true;
+  default:
+    return false;
+  }
+}
+
 Op OpFromString(const String &str) {
   if (str == "+") {
     return Op::add;
@@ -41,6 +51,10 @@ Op OpFromString(const String &str) {
     return Op::And;
   } else if (str == "||") {
     return Op::Or;
+  } else if (str == "[]") {
+    return Op::Index;
+  } else if (str == "!") {
+    return Op::Not;
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -84,6 +98,12 @@ String OpToString(Op opr) {
     return "&&";
   case Op::Or:
     return "||";
+  case Op::Index:
+    return "[]";
+  case Op::minus:
+    return "-";
+  case Op::Not:
+    return "!";
   }
 }
 

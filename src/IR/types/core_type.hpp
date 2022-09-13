@@ -44,6 +44,8 @@ private:
   Vec<StaticMember *> staticMembers;
 
   Vec<MemberFunction *>   memberFunctions; // Normal
+  Vec<MemberFunction *>   binaryOperators; //
+  Vec<MemberFunction *>   unaryOperators;  //
   Vec<MemberFunction *>   constructors;    // Constructors
   Vec<MemberFunction *>   fromConvertors;  // From Convertors
   Vec<MemberFunction *>   toConvertors;    // To Convertors
@@ -73,6 +75,11 @@ public:
   useit MemberFunction *getMemberFunction(const String &fnName) const;
   useit bool            hasStaticFunction(const String &fnName) const;
   useit MemberFunction *getStaticFunction(const String &fnName) const;
+  useit bool            hasBinaryOperator(String opr, IR::QatType *type) const;
+  useit MemberFunction *getBinaryOperator(String opr, IR::QatType *type) const;
+  useit bool            hasUnaryOperator(String opr) const;
+  useit MemberFunction *getUnaryOperator(String opr) const;
+  useit u64             getOperatorVariantIndex(String opr) const;
   useit bool            hasConstructorWithTypes(Vec<IR::QatType *> types) const;
   useit MemberFunction *getConstructorWithTypes(Vec<IR::QatType *> types) const;
   useit bool            hasAnyNormalConstructor() const;

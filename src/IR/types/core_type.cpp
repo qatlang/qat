@@ -2,6 +2,7 @@
 #include "../../ast/define_core_type.hpp"
 #include "../../ast/types/templated.hpp"
 #include "../../show.hpp"
+#include "../../utils/split_string.hpp"
 #include "../qat_module.hpp"
 #include "definition.hpp"
 #include "function.hpp"
@@ -129,6 +130,65 @@ void CoreType::addStaticMember(const String &name, QatType *type,
                                llvm::LLVMContext           &ctx) {
   staticMembers.push_back(
       new StaticMember(this, name, type, variability, initial, visibility));
+}
+
+bool CoreType::hasBinaryOperator(String opr, IR::QatType *type) const {
+  for (auto *bin : binaryOperators) {
+    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+      auto *binArgTy =
+          bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
+      if (binArgTy->isSame(type) ||
+          (binArgTy->isReference() &&
+           binArgTy->asReference()->getSubType()->isSame(type))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+MemberFunction *CoreType::getBinaryOperator(String       opr,
+                                            IR::QatType *type) const {
+  for (auto *bin : binaryOperators) {
+    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+      auto *binArgTy =
+          bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
+      if (binArgTy->isSame(type) ||
+          (binArgTy->isReference() &&
+           binArgTy->asReference()->getSubType()->isSame(type))) {
+        return bin;
+      }
+    }
+  }
+  return nullptr;
+}
+
+bool CoreType::hasUnaryOperator(String opr) const {
+  for (auto *unr : unaryOperators) {
+    if (utils::splitString(unr->getName(), "'")[1] == opr) {
+      return true;
+    }
+  }
+  return false;
+}
+
+MemberFunction *CoreType::getUnaryOperator(String opr) const {
+  for (auto *unr : unaryOperators) {
+    if (utils::splitString(unr->getName(), "'")[1] == opr) {
+      return unr;
+    }
+  }
+  return nullptr;
+}
+
+u64 CoreType::getOperatorVariantIndex(String opr) const {
+  u64 index = 0;
+  for (auto *bin : binaryOperators) {
+    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+      index++;
+    }
+  }
+  return index;
 }
 
 bool CoreType::hasAnyNormalConstructor() const {

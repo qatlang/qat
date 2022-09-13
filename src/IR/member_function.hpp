@@ -21,6 +21,8 @@ enum class MemberFnType {
   copyConstructor,
   moveConstructor,
   destructor,
+  binaryOperator,
+  unaryOperator
 };
 
 class CoreType;
@@ -74,6 +76,14 @@ public:
                                           const utils::FileRange &fileRange,
                                           llvm::LLVMContext      &ctx);
 
+  static MemberFunction *CreateOperator(CoreType *parent, bool isBinary,
+                                        bool isVariationFn, const String &opr,
+                                        IR::QatType                 *returnType,
+                                        const Vec<Argument>         &args,
+                                        const utils::FileRange      &fileRange,
+                                        const utils::VisibilityInfo &visibInfo,
+                                        llvm::LLVMContext           &ctx);
+
   static MemberFunction *
   CreateStatic(CoreType *parent, const String &name, QatType *return_type,
                bool is_return_type_variable, bool is_async,
@@ -81,7 +91,7 @@ public:
                const utils::FileRange      &fileRange,
                const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
 
-  useit String       getName() const;
+  useit String       getName() const final;
   useit MemberFnType getMemberFnType();
   useit bool         isVariationFunction() const;
   useit bool         isStaticFunction() const;

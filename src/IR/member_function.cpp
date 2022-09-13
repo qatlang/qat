@@ -59,6 +59,16 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation,
     parent->destructor = this;
     break;
   }
+  case MemberFnType::binaryOperator: {
+    selfName = _name;
+    parent->binaryOperators.push_back(this);
+    break;
+  }
+  case MemberFnType::unaryOperator: {
+    selfName = _name;
+    parent->unaryOperators.push_back(this);
+    break;
+  }
   }
 }
 
@@ -145,13 +155,37 @@ MemberFunction::CreateDestructor(CoreType               *parent,
       MemberFnType::destructor, parent->getParent(), parent, "end",
       VoidType::get(ctx), false, false,
       Vec<Argument>(
-          {Argument::Create("self", PointerType::get(true, parent, ctx), 0)}),
+          {Argument::Create("''", PointerType::get(true, parent, ctx), 0)}),
       false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
+}
+
+MemberFunction *MemberFunction::CreateOperator(
+    CoreType *parent, bool isBinary, bool isVariationFn, const String &opr,
+    IR::QatType *returnType, const Vec<Argument> &args,
+    const utils::FileRange &fileRange, const utils::VisibilityInfo &visibInfo,
+    llvm::LLVMContext &ctx) {
+  Vec<Argument> args_info;
+  args_info.push_back(
+      Argument::Create("''", PointerType::get(isVariationFn, parent, ctx), 0));
+  for (const auto &arg : args) {
+    args_info.push_back(arg);
+  }
+  return new MemberFunction(
+      isBinary ? MemberFnType::binaryOperator : MemberFnType::unaryOperator,
+      isVariationFn, parent,
+      "operator'" + opr +
+          (isBinary
+               ? ("'" + std::to_string(parent->getOperatorVariantIndex(opr)))
+               : ""),
+      returnType, false, false, args_info, false, false, fileRange, visibInfo,
+      ctx);
 }
 
 String MemberFunction::getName() const {
   switch (fnType) {
   case MemberFnType::normal:
+  case MemberFnType::binaryOperator:
+  case MemberFnType::unaryOperator:
   case MemberFnType::staticFn: {
     return selfName;
   }

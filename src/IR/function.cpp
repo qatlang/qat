@@ -176,7 +176,7 @@ IR::Value *Function::call(IR::Context *ctx, Vec<llvm::Value *> argValues,
   SHOW("Getting function type")
   auto *fnTy = (llvm::FunctionType *)getType()->asFunction()->getLLVMType();
   SHOW("Got function type")
-  SHOW("Creating LLVM call")
+  SHOW("Creating LLVM call: " << getFullName())
   return new IR::Value(
       ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType,
       retType->isReference() && retType->asReference()->isSubtypeVariable(),

@@ -258,8 +258,7 @@ Token Lexer::tokeniser() {
       return Token::valued(TokenType::binaryOperator,
                            "!=", this->getPosition(2));
     } else {
-      return Token::valued(TokenType::unaryOperatorLeft, "!",
-                           this->getPosition(1));
+      return Token::valued(TokenType::unaryOperator, "!", this->getPosition(1));
     }
   }
   case '~': {
@@ -349,10 +348,8 @@ Token Lexer::tokeniser() {
       read();
       const String identifierStart =
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-      return Token::valued((identifierStart.find(current) != String::npos
-                                ? TokenType::unaryOperatorLeft
-                                : TokenType::unaryOperatorRight),
-                           operatorValue, this->getPosition(2));
+      return Token::valued(TokenType::unaryOperator, operatorValue,
+                           this->getPosition(2));
     } else if (current == '=' && operatorValue != "<" && operatorValue != ">") {
       operatorValue += current;
       read();
@@ -631,6 +628,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::over, this->getPosition(4));
       } else if (value == "heap") {
         return Token::normal(TokenType::heap, this->getPosition(4));
+      } else if (value == "operator") {
+        return Token::normal(TokenType::Operator, this->getPosition(8));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))
@@ -875,11 +874,8 @@ void Lexer::printStatus() {
       case TokenType::TRUE:
         std::cout << " true ";
         break;
-      case TokenType::unaryOperatorLeft:
+      case TokenType::unaryOperator:
         std::cout << " " << tokens.at(i).value;
-        break;
-      case TokenType::unaryOperatorRight:
-        std::cout << tokens.at(i).value << " ";
         break;
       case TokenType::variationMarker:
         std::cout << " <~ ";

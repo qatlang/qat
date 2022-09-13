@@ -27,6 +27,7 @@
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/member_function.hpp"
+#include "../ast/operator_function.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
 #include "../ast/sentences/continue.hpp"
@@ -989,10 +990,11 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
       break;
     }
     case TokenType::variationMarker: {
-      if (!isNext(TokenType::identifier, i) && !isNext(TokenType::Async, i)) {
-        Error(
-            "Expected identifier for the name of the member function after <~",
-            RangeAt(i));
+      if (!isNext(TokenType::identifier, i) && !isNext(TokenType::Async, i) &&
+          !isNext(TokenType::Operator, i)) {
+        Error("Expected `operator`, `async` or the identifier for the name of "
+              "the member function after <~",
+              RangeAt(i));
       }
       setVariation();
       break;
@@ -1135,6 +1137,95 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
       } else {
         Error("Expected identifier for the argument name of the convertor",
               typeRes.first->fileRange);
+      }
+      break;
+    }
+    case TokenType::Operator: {
+      auto          start = i;
+      String        opr;
+      bool          isUnary = false;
+      ast::QatType *returnTy =
+          new ast::VoidType(false, utils::FileRange{"", {0u, 0u}, {0u, 0u}});
+      Vec<ast::Argument *> args;
+      if (isNext(TokenType::binaryOperator, i)) {
+        SHOW("Binary operator for core type: " << tokens.at(i + 1).value)
+        if (tokens.at(i + 1).value == "-") {
+          if (isNext(TokenType::parenthesisOpen, i) &&
+              isNext(TokenType::parenthesisClose, i + 1)) {
+            isUnary = true;
+          } else if (isNext(TokenType::givenTypeSeparator, i)) {
+            auto typRes = parseType(prev_ctx, i + 1, None);
+            returnTy    = typRes.first;
+            i           = typRes.second;
+            if (isNext(TokenType::parenthesisOpen, i) &&
+                isNext(TokenType::parenthesisClose, i + 1)) {
+              isUnary = true;
+            }
+          }
+        }
+        opr = tokens.at(i + 1).value;
+        i++;
+      } else if (isNext(TokenType::unaryOperator, i)) {
+        isUnary = true;
+        opr     = tokens.at(i + 1).value;
+        i++;
+      } else if (isNext(TokenType::assignment, i)) {
+        opr = "=";
+        i++;
+      } else if (isNext(TokenType::bracketOpen, i)) {
+        if (isNext(TokenType::bracketClose, i + 1)) {
+          opr = "[]";
+          i += 2;
+        } else {
+          Error("[ is an invalid operator. Did you mean []",
+                RangeSpan(start, start + 1));
+        }
+      } else {
+        Error("Invalid operator", RangeAt(i));
+      }
+      if (isNext(TokenType::givenTypeSeparator, i)) {
+        auto typRes = parseType(prev_ctx, i + 1, None);
+        returnTy    = typRes.first;
+        i           = typRes.second;
+      }
+      if (!isUnary) {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 1, false);
+          if (pCloseRes.has_value()) {
+            auto pClose    = pCloseRes.value();
+            auto fnArgsRes = parseFunctionParameters(prev_ctx, i + 1, pClose);
+            if (fnArgsRes.second) {
+              Error("Operator functions cannot have variadic arguments",
+                    RangeSpan(start, pClose));
+            }
+            args = fnArgsRes.first;
+            i    = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
+          }
+        }
+      }
+      auto *prototype = new ast::OperatorPrototype(
+          getVariation(),
+          isUnary ? (opr == "-" ? ast::Op::minus : ast::OpFromString(opr))
+                  : ast::OpFromString(opr),
+          args, returnTy, getVisibility(), RangeSpan(start, i));
+      if (isNext(TokenType::bracketOpen, i)) {
+        auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                    TokenType::bracketClose, i + 1, false);
+        if (bCloseRes.has_value()) {
+          auto bClose = bCloseRes.value();
+          auto snts   = parseSentences(prev_ctx, i + 1, bClose);
+          coreTy->addOperatorDefinition(new ast::OperatorDefinition(
+              prototype, snts, RangeSpan(start, bClose)));
+          i = bClose;
+        } else {
+          Error("Expected end for [", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected definition for the operator", RangeSpan(start, i));
       }
       break;
     }

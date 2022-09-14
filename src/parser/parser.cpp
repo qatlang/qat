@@ -1,7 +1,9 @@
 #include "./parser.hpp"
+#include "../ast/constructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/boolean_literal.hpp"
+#include "../ast/expressions/constructor_call.hpp"
 #include "../ast/expressions/custom_float_literal.hpp"
 #include "../ast/expressions/custom_integer_literal.hpp"
 #include "../ast/expressions/entity.hpp"
@@ -1097,46 +1099,43 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
         auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
                                     TokenType::parenthesisClose, i + 1, false);
         if (pCloseRes.has_value()) {
-          auto pClose = pCloseRes.value();
-          if (!isPrimaryWithin(TokenType::semiColon, i + 1, pClose)) {
-            // Constructor
-            auto args = parseFunctionParameters(prev_ctx, i + 1, pClose);
-            // FIXME - Implement constructor support
+          auto pClose  = pCloseRes.value();
+          auto argsRes = parseFunctionParameters(prev_ctx, i + 1, pClose);
+          if (isNext(TokenType::bracketOpen, pClose)) {
+            auto bCloseRes =
+                getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                           pClose + 1, false);
+            if (bCloseRes.has_value()) {
+              auto bClose = bCloseRes.value();
+              auto snts   = parseSentences(prev_ctx, pClose + 1, bClose);
+              if (argsRes.first.size() == 1) {
+                // NOTE - Convertor
+                coreTy->addConvertorDefinition(new ast::ConvertorDefinition(
+                    ast::ConvertorPrototype::From(
+                        argsRes.first.front()->getName(),
+                        argsRes.first.front()->getType(),
+                        argsRes.first.front()->isTypeMember(), getVisibility(),
+                        RangeSpan(start, pClose)),
+                    snts, RangeSpan(start, bClose)));
+              } else {
+                // NOTE = Constructor
+                coreTy->addConstructorDefinition(new ast::ConstructorDefinition(
+                    new ast::ConstructorPrototype(argsRes.first,
+                                                  getVisibility(),
+                                                  RangeSpan(start, pClose)),
+                    snts, RangeSpan(start, bClose)));
+              }
+              i = bClose;
+            } else {
+              Error("Expected end for [", RangeAt(pClose + 1));
+            }
+          } else {
+            Error("Expected definition for constructor",
+                  RangeSpan(start, pClose));
           }
         } else {
           Error("Expected end for (", RangeAt(i + 1));
         }
-      }
-      auto typeRes = parseType(prev_ctx, i, upto);
-      i            = typeRes.second;
-      if (isNext(TokenType::identifier, i)) {
-        if (isNext(TokenType::altArrow, i + 1)) {
-          if (isNext(TokenType::bracketOpen, i + 2)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen,
-                                        TokenType::bracketClose, i + 3, false);
-            if (bCloseRes.has_value()) {
-              auto bClose = bCloseRes.value();
-              auto snts   = parseSentences(prev_ctx, i + 3, bClose);
-              coreTy->addConvertorDefinition(new ast::ConvertorDefinition(
-                  ast::ConvertorPrototype::From(tokens.at(i + 1).value,
-                                                typeRes.first, getVisibility(),
-                                                RangeSpan(start, i + 2)),
-                  snts, RangeSpan(start, bClose)));
-              i = bClose;
-            } else {
-              Error("Expected end for [", RangeAt(i + 3));
-            }
-          } else {
-            Error("Expected [ to start the body of the convertor",
-                  RangeSpan(start, i + 2));
-          }
-        } else {
-          Error("Expected => to start the definition of the convertor",
-                RangeSpan(start, i + 1));
-        }
-      } else {
-        Error("Expected identifier for the argument name of the convertor",
-              typeRes.first->fileRange);
       }
       break;
     }
@@ -1411,6 +1410,28 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       i              = symbolRes.second;
       break;
     }
+    case TokenType::from: {
+      if (cachedSymbol.has_value()) {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 1, false);
+          if (pCloseRes.has_value()) {
+            auto pClose = pCloseRes.value();
+            auto exps   = parseSeparatedExpressions(prev_ctx, i + 1, pClose);
+            cachedExpressions.push_back(new ast::ConstructorCall(
+                new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
+                                   false, cachedSymbol->fileRange),
+                exps, false, {cachedSymbol->fileRange, RangeAt(pClose)}));
+            cachedSymbol = None;
+            i            = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
+          }
+        }
+      }
+      break;
+    }
     case TokenType::templateTypeStart: {
       if (cachedSymbol.has_value()) {
         auto endRes = getPairEnd(TokenType::templateTypeStart,
@@ -1446,6 +1467,26 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
             } else {
               Error("Expected end for { in plain initialisation",
                     RangeAt(end + 1));
+            }
+          } else if (isNext(TokenType::from, end)) {
+            i = end;
+            if (isNext(TokenType::parenthesisOpen, i)) {
+              auto pCloseRes =
+                  getPairEnd(TokenType::parenthesisOpen,
+                             TokenType::parenthesisClose, i + 1, false);
+              if (pCloseRes.has_value()) {
+                auto pClose = pCloseRes.value();
+                auto exps = parseSeparatedExpressions(prev_ctx, i + 1, pClose);
+                cachedExpressions.push_back(new ast::ConstructorCall(
+                    new ast::TemplateNamedType(cachedSymbol->relative,
+                                               cachedSymbol->name, types, false,
+                                               cachedSymbol->fileRange),
+                    exps, false, {cachedSymbol->fileRange, RangeAt(pClose)}));
+                cachedSymbol = None;
+                i            = pClose;
+              } else {
+                Error("Expected end for (", RangeAt(i + 1));
+              }
             }
           } else {
             cachedExpressions.push_back(new ast::TemplateEntity(
@@ -1540,6 +1581,50 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               Error("Invalid expression. Expected a pointer expression to use "
                     "for heap'put",
                     RangeSpan(i, i + 2));
+            }
+          } else if (tokens.at(i + 2).value == "grow") {
+            // FIXME - Maybe provided type is not necessary
+            if (isNext(TokenType::templateTypeStart, i + 2)) {
+              auto tEndRes =
+                  getPairEnd(TokenType::templateTypeStart,
+                             TokenType::templateTypeEnd, i + 3, false);
+              if (tEndRes.has_value()) {
+                auto  tEnd = tEndRes.value();
+                auto *type = parseType(prev_ctx, i + 3, tEnd).first;
+                if (isNext(TokenType::parenthesisOpen, tEnd)) {
+                  auto pCloseRes =
+                      getPairEnd(TokenType::parenthesisOpen,
+                                 TokenType::parenthesisClose, tEnd + 1, false);
+                  if (pCloseRes.has_value()) {
+                    auto pClose = pCloseRes.value();
+                    if (isPrimaryWithin(TokenType::separator, tEnd + 1,
+                                        pClose)) {
+                      auto split =
+                          firstPrimaryPosition(TokenType::separator, tEnd + 1)
+                              .value();
+                      auto *exp =
+                          parseExpression(prev_ctx, None, tEnd + 1, split)
+                              .first;
+                      auto *count =
+                          parseExpression(prev_ctx, None, split, pClose).first;
+                      cachedExpressions.push_back(
+                          new ast::HeapGrow(type, exp, count, RangeAt(i)));
+                      i = pClose;
+                    } else {
+                      Error("Expected 2 argument values for heap'grow",
+                            RangeSpan(tEnd + 1, pClose));
+                    }
+                    break;
+                  } else {
+                    Error("Expected end for (", RangeAt(tEnd + 1));
+                  }
+                } else {
+                  Error("Expected arguments for heap'grow", RangeSpan(i, tEnd));
+                }
+              } else {
+                Error("Expected end for the template type specification",
+                      RangeAt(i + 3));
+              }
             }
           } else {
             Error("Invalid identifier found after heap'", RangeAt(i + 2));
@@ -2840,9 +2925,9 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
     }
     case TokenType::self: {
       if (isNext(TokenType::identifier, i)) {
+        SHOW("Creating member argument: " << tokens.at(i + 1).value)
         args.push_back(ast::Argument::ForConstructor(
-            tokens.at(i + 1).value,
-            utils::FileRange(token.fileRange, RangeAt(i + 1)), nullptr, true));
+            tokens.at(i + 1).value, RangeSpan(i, i + 1), nullptr, true));
         i++;
       } else {
         Error("Expected name of the member to be initialised", token.fileRange);

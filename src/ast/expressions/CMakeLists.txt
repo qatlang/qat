@@ -2,6 +2,7 @@ add_library(QAT_AST_EXPRESSIONS
         array_literal.cpp
         binary_expression.cpp
         boolean_literal.cpp
+        constructor_call.cpp
         custom_float_literal.cpp
         custom_integer_literal.cpp
         entity.cpp

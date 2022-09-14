@@ -1,6 +1,7 @@
 #include "./local_declaration.hpp"
 #include "../../show.hpp"
 #include "../expressions/array_literal.hpp"
+#include "../expressions/constructor_call.hpp"
 #include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
@@ -85,7 +86,38 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       (void)plain->emit(ctx);
       return nullptr;
     }
+  } else if (value && (value->nodeType() == NodeType::constructorCall)) {
+    auto *cons = (ast::ConstructorCall *)value;
+    if (type) {
+      declType = type->emit(ctx);
+      if (!declType->isCoreType()) {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       " and is not a core type",
+                   fileRange);
+      }
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+      auto *constrTy = cons->type->emit(ctx);
+      if (declType->isSame(constrTy)) {
+        auto *loc   = block->newValue(name, declType, variability);
+        cons->local = loc;
+        (void)cons->emit(ctx);
+        return nullptr;
+      } else {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       ", but the value provided is of type " +
+                       ctx->highlightError(constrTy->toString()),
+                   fileRange);
+      }
+    } else {
+      cons->irName = name;
+      cons->isVar  = variability;
+      (void)cons->emit(ctx);
+      return nullptr;
+    }
   }
+
   // EDGE CASE ends here
 
   IR::Value *expVal = nullptr;

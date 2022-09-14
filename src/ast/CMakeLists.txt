@@ -4,6 +4,7 @@ add_library(QAT_AST
         bring_paths.cpp
         bring_entities.cpp
         convertor.cpp
+        constructor.cpp
         define_core_type.cpp
         errors.cpp
         expression.cpp

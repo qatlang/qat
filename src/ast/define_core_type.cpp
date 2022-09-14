@@ -1,5 +1,6 @@
 #include "./define_core_type.hpp"
 #include "../IR/types/core_type.hpp"
+#include "constructor.hpp"
 #include "types/templated.hpp"
 
 namespace qat::ast {
@@ -83,6 +84,9 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     }
     for (auto *conv : convertorDefinitions) {
       conv->setCoreType(coreType);
+    }
+    for (auto *cons : constructorDefinitions) {
+      cons->setCoreType(coreType);
     }
     for (auto *memDef : memberDefinitions) {
       memDef->setCoreType(coreType);
@@ -185,6 +189,9 @@ void DefineCoreType::define(IR::Context *ctx) {
   if (isTemplate()) {
     createType(ctx);
   }
+  for (auto *cons : constructorDefinitions) {
+    cons->define(ctx);
+  }
   for (auto *conv : convertorDefinitions) {
     conv->define(ctx);
   }
@@ -198,6 +205,9 @@ void DefineCoreType::define(IR::Context *ctx) {
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   ctx->activeType = coreType;
+  for (auto *cons : constructorDefinitions) {
+    (void)cons->emit(ctx);
+  }
   for (auto *conv : convertorDefinitions) {
     (void)conv->emit(ctx);
   }
@@ -224,8 +234,13 @@ void DefineCoreType::addStaticMember(StaticMember *stm) {
 void DefineCoreType::addMemberDefinition(MemberDefinition *mdef) {
   memberDefinitions.push_back(mdef);
 }
+
 void DefineCoreType::addConvertorDefinition(ConvertorDefinition *cdef) {
   convertorDefinitions.push_back(cdef);
+}
+
+void DefineCoreType::addConstructorDefinition(ConstructorDefinition *cdef) {
+  constructorDefinitions.push_back(cdef);
 }
 
 void DefineCoreType::addOperatorDefinition(OperatorDefinition *odef) {

@@ -7,6 +7,7 @@
 #include "./member_function.hpp"
 #include "./operator_function.hpp"
 #include "./types/qat_type.hpp"
+#include "constructor.hpp"
 #include "types/templated.hpp"
 #include <optional>
 #include <string>
@@ -48,14 +49,15 @@ public:
   };
 
 private:
-  String                     name;
-  bool                       isPacked;
-  Vec<Member *>              members;
-  Vec<StaticMember *>        staticMembers;
-  Vec<MemberDefinition *>    memberDefinitions;
-  Vec<ConvertorDefinition *> convertorDefinitions;
-  Vec<OperatorDefinition *>  operatorDefinitions;
-  utils::VisibilityKind      visibility;
+  String                       name;
+  bool                         isPacked;
+  Vec<Member *>                members;
+  Vec<StaticMember *>          staticMembers;
+  Vec<MemberDefinition *>      memberDefinitions;
+  Vec<ConvertorDefinition *>   convertorDefinitions;
+  Vec<OperatorDefinition *>    operatorDefinitions;
+  Vec<ConstructorDefinition *> constructorDefinitions;
+  utils::VisibilityKind        visibility;
 
   Vec<ast::TemplatedType *>     templates;
   mutable IR::CoreType         *coreType         = nullptr;
@@ -72,6 +74,7 @@ public:
   void  addStaticMember(StaticMember *stm);
   void  addMemberDefinition(MemberDefinition *mdef);
   void  addConvertorDefinition(ConvertorDefinition *cdef);
+  void  addConstructorDefinition(ConstructorDefinition *cdef);
   void  addOperatorDefinition(OperatorDefinition *odef);
   void  createType(IR::Context *ctx) const;
   void  defineType(IR::Context *ctx) final;

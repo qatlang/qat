@@ -21,13 +21,23 @@ IR::Value *SelfMember::emit(IR::Context *ctx) {
       auto  index   = cTy->getIndexOf(name).value();
       auto *mem     = cTy->getMemberAt(index);
       auto *selfVal = mFn->getBlock()->getValue("''");
-      return new IR::Value(
-          ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
-          IR::ReferenceType::get(
-              selfVal->getType()->asPointer()->isSubtypeVariable() &&
-                  mem->variability,
-              mem->type, ctx->llctx),
-          false, IR::Nature::temporary);
+      auto *res     = new IR::Value(
+              ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
+              IR::ReferenceType::get(
+                  selfVal->getType()->asPointer()->isSubtypeVariable() &&
+                      mem->variability,
+                  mem->type, ctx->llctx),
+              false, IR::Nature::temporary);
+      while (res->getType()->isReference() &&
+             res->getType()->asReference()->getSubType()->isReference()) {
+        res = new IR::Value(
+            ctx->builder.CreateLoad(
+                res->getType()->asReference()->getSubType()->getLLVMType(),
+                res->getLLVM()),
+            res->getType()->asReference()->getSubType(), false,
+            IR::Nature::temporary);
+      }
+      return res;
     } else {
       ctx->Error("The parent type of this member function does not have a "
                  "member named " +

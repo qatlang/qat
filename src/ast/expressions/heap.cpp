@@ -3,6 +3,8 @@
 
 namespace qat::ast {
 
+#define MALLOC_ARG_BITWIDTH 64
+
 HeapGet::HeapGet(ast::QatType *_type, ast::Expression *_count,
                  utils::FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), count(_count) {}
@@ -21,9 +23,14 @@ IR::Value *HeapGet::emit(IR::Context *ctx) {
           IR::Nature::temporary);
     }
     if (!countRes->getType()->isUnsignedInteger()) {
-      ctx->Error(
-          "The number of units to allocate should be of unsigned integer type",
-          count->fileRange);
+      ctx->Error("The number of units to allocate should be of u64 type",
+                 count->fileRange);
+    } else {
+      if (countRes->getType()->asUnsignedInteger()->getBitwidth() !=
+          MALLOC_ARG_BITWIDTH) {
+        ctx->Error("The number of units to allocate should be of u64 type",
+                   count->fileRange);
+      }
     }
   }
   // FIXME - Check for zero values
@@ -98,6 +105,84 @@ nuo::Json HeapPut::toJson() const {
   return nuo::Json()
       ._("nodeType", "heapPut")
       ._("pointer", ptr->toJson())
+      ._("fileRange", fileRange);
+}
+
+HeapGrow::HeapGrow(QatType *_type, Expression *_ptr, Expression *_count,
+                   utils::FileRange _fileRange)
+    : Expression(std::move(_fileRange)), type(_type), ptr(_ptr), count(_count) {
+}
+
+IR::Value *HeapGrow::emit(IR::Context *ctx) {
+  auto *typ    = type->emit(ctx);
+  auto *ptrVal = ptr->emit(ctx);
+  if (ptrVal->isImplicitPointer()) {
+    if (ptrVal->getType()->isPointer()) {
+      ptrVal->loadImplicitPointer(ctx->builder);
+    } else {
+      ctx->Error("The first argument to heap'grow should be a pointer to " +
+                     ctx->highlightError(typ->toString()),
+                 ptr->fileRange);
+    }
+  } else if (ptrVal->isReference()) {
+    if (ptrVal->getType()->asReference()->getSubType()->isPointer()) {
+      ptrVal = new IR::Value(
+          ctx->builder.CreateLoad(
+              ptrVal->getType()->asReference()->getSubType()->getLLVMType(),
+              ptrVal->getLLVM()),
+          ptrVal->getType()->asReference()->getSubType(), false,
+          IR::Nature::temporary);
+      if (!ptrVal->getType()->asPointer()->getSubType()->isSame(typ)) {
+        ctx->Error("The first argument to heap'grow should be a pointer to " +
+                       ctx->highlightError(typ->toString()),
+                   ptr->fileRange);
+      }
+    } else {
+      ctx->Error("The first argument to heap'grow should be a pointer to " +
+                     ctx->highlightError(typ->toString()),
+                 ptr->fileRange);
+    }
+  }
+  auto *countVal = count->emit(ctx);
+  countVal->loadImplicitPointer(ctx->builder);
+  if (countVal->isReference()) {
+    countVal = new IR::Value(
+        ctx->builder.CreateLoad(
+            countVal->getType()->asReference()->getSubType()->getLLVMType(),
+            countVal->getLLVM()),
+        countVal->getType()->asReference()->getSubType(), false,
+        IR::Nature::temporary);
+  }
+  if (countVal->getType()->isUnsignedInteger() &&
+      (countVal->getType()->asUnsignedInteger()->getBitwidth() ==
+       MALLOC_ARG_BITWIDTH)) {
+    ctx->getMod()->linkNative(IR::NativeUnit::realloc);
+    auto *reallocFn = ctx->getMod()->getLLVMModule()->getFunction("realloc");
+    return new IR::Value(
+        ctx->builder.CreatePointerCast(
+            ctx->builder.CreateCall(
+                reallocFn->getFunctionType(), reallocFn,
+                {ctx->builder.CreatePointerCast(
+                     ptrVal->getLLVM(),
+                     llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
+                 ctx->builder.CreateMul(
+                     countVal->getLLVM(),
+                     llvm::ConstantExpr::getSizeOf(
+                         ptrVal->getType()->getLLVMType()))}),
+            ptrVal->getType()->asPointer()->getLLVMType()),
+        ptrVal->getType()->asPointer(), false, IR::Nature::temporary);
+  } else {
+    ctx->Error("The number of units to reallocate should of u64 type",
+               count->fileRange);
+  }
+}
+
+nuo::Json HeapGrow::toJson() const {
+  return nuo::Json()
+      ._("nodeType", "heapGrow")
+      ._("type", type->toJson())
+      ._("pointer", ptr->toJson())
+      ._("count", count->toJson())
       ._("fileRange", fileRange);
 }
 

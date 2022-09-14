@@ -1151,16 +1151,6 @@ void QatModule::linkNative(NativeUnit nval) {
               llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
               {llvm::Type::getInt64Ty(llvmModule->getContext())}, false),
           llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
-      // functions.push_back(Function::Create(
-      //     this, "malloc",
-      //     PointerType::get(true, VoidType::get(llvmModule->getContext()),
-      //                      llvmModule->getContext()),
-      //     false, false,
-      //     {Argument::Create(
-      //         "size", UnsignedType::get(64, llvmModule->getContext()), 0)},
-      //     false, utils::FileRange{"", {0u, 0u}, {0u, 0u}},
-      //     utils::VisibilityInfo::pub(), llvmModule->getContext(),
-      //     llvm::GlobalValue::ExternalWeakLinkage, true));
     }
     break;
   }
@@ -1172,6 +1162,19 @@ void QatModule::linkNative(NativeUnit nval) {
               {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo()},
               false),
           llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "free",
+          llvmModule);
+    }
+    break;
+  }
+  case NativeUnit::realloc: {
+    if (!llvmModule->getFunction("realloc")) {
+      llvm::Function::Create(
+          llvm::FunctionType::get(
+              llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
+              {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
+               llvm::Type::getInt64Ty(llvmModule->getContext())},
+              false),
+          llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "realloc",
           llvmModule);
     }
     break;

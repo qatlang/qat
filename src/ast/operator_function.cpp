@@ -154,7 +154,7 @@ IR::Value *OperatorDefinition::emit(IR::Context *ctx) {
     SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
     if (argIRTypes.at(i)->isMemberArgument()) {
       auto *memPtr = ctx->builder.CreateStructGEP(
-          corePtrTy->getSubType()->getLLVMType(), self->getLLVM(),
+          corePtrTy->getSubType()->getLLVMType(), ctx->selfVal,
           corePtrTy->getSubType()
               ->asCore()
               ->getIndexOf(argIRTypes.at(i)->getName())

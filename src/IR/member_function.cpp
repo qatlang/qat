@@ -94,6 +94,7 @@ MemberFunction *MemberFunction::CreateConstructor(
     const utils::FileRange &fileRange, const utils::VisibilityInfo &visibInfo,
     llvm::LLVMContext &ctx) {
   Vec<Argument> argsInfo;
+  // FIXME - Change parent pointer type to reference type?
   argsInfo.push_back(
       Argument::Create("''", PointerType::get(true, parent, ctx), 0));
   for (const auto &arg : args) {

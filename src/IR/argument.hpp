@@ -34,7 +34,7 @@ public:
   // This constructs an implicit member argument for constructors
   useit static Argument CreateMember(const String &name, QatType *type,
                                      u64 argIndex) {
-    return {name, nullptr, true, argIndex, true};
+    return {name, type, true, argIndex, true};
   }
 
   // This constructs a variable argument

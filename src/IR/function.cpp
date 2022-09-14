@@ -132,21 +132,22 @@ void Block::setActive(llvm::IRBuilder<> &builder) const {
 
 Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
-                   bool _isVariadicArguments, utils::FileRange fileRange,
+                   bool _isVariadicArguments, utils::FileRange _fileRange,
                    const utils::VisibilityInfo &_visibility_info,
                    llvm::LLVMContext &ctx, bool isMemberFn,
                    llvm::GlobalValue::LinkageTypes llvmLinkage,
                    bool                            ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)),
       isReturnValueVariable(_isRetTypeVariable), mod(_mod),
-      arguments(std::move(_args)), visibility_info(std::move(_visibility_info)),
-      fileRange(std::move(fileRange)), is_async(_is_async),
+      arguments(std::move(_args)), visibility_info(_visibility_info),
+      fileRange(std::move(_fileRange)), is_async(_is_async),
       hasVariadicArguments(_isVariadicArguments) //
 {
   Vec<ArgumentType *> argTypes;
   for (auto const &arg : arguments) {
-    argTypes.push_back(
-        new ArgumentType(arg.getName(), arg.getType(), arg.get_variability()));
+    argTypes.push_back(new ArgumentType(arg.getName(), arg.getType(),
+                                        arg.isMemberArg(),
+                                        arg.get_variability()));
   }
   type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
   if (isMemberFn) {
@@ -237,11 +238,11 @@ void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
 Block *Function::getBlock() const { return blocks.at(activeBlock); }
 
-TemplateFunction::TemplateFunction(String                    _name,
-                                   Vec<ast::TemplatedType *> _templates,
-                                   ast::FunctionDefinition  *_functionDef,
-                                   QatModule                *_parent,
-                                   utils::VisibilityInfo     _visibInfo)
+TemplateFunction::TemplateFunction(String                       _name,
+                                   Vec<ast::TemplatedType *>    _templates,
+                                   ast::FunctionDefinition     *_functionDef,
+                                   QatModule                   *_parent,
+                                   const utils::VisibilityInfo &_visibInfo)
     : name(std::move(_name)), templates(std::move(_templates)),
       functionDefinition(_functionDef), parent(_parent), visibInfo(_visibInfo) {
   parent->templateFunctions.push_back(this);

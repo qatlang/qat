@@ -24,8 +24,9 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
           (expType->isReference() &&
            expType->asReference()->getSubType()->isSame(lhsType))) {
         SHOW("The general types are the same")
-        if (lhsVal->isImplicitPointer() &&
-            (lhsType->isReference() || lhsType->isPointer())) {
+        if ((lhsVal->isImplicitPointer() &&
+             (lhsType->isReference() || lhsType->isPointer())) &&
+            !lhsType->isSame(expType)) {
           SHOW("LHS is implicit pointer")
           lhsVal->loadImplicitPointer(ctx->builder);
         }

@@ -26,7 +26,14 @@ namespace qat::IR {
 class Context;
 
 enum class ModuleType { lib, box, file, folder };
-enum class NativeUnit { printf, malloc, free, pthreadCreate, pthreadJoin };
+enum class NativeUnit {
+  printf,
+  malloc,
+  free,
+  realloc,
+  pthreadCreate,
+  pthreadJoin
+};
 
 class QatModule : public Uniq {
   friend class CoreType;

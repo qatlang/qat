@@ -74,9 +74,13 @@ void MemberPrototype::define(IR::Context *ctx) {
   SHOW("Setting variability of arguments")
   for (usize i = 0; i < generatedTypes.size(); i++) {
     if (arguments.at(i)->isTypeMember()) {
+      SHOW("Argument at " << i << " named " << arguments.at(i)->getName()
+                          << " is a type member")
       args.push_back(IR::Argument::CreateMember(arguments.at(i)->getName(),
                                                 generatedTypes.at(i), i));
     } else {
+      SHOW("Argument at " << i << " named " << arguments.at(i)->getName()
+                          << " is not a type member")
       args.push_back(arguments.at(i)->getType()->isVariable()
                          ? IR::Argument::CreateVariable(
                                arguments.at(i)->getName(),
@@ -152,11 +156,14 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
                            self->getLLVM());
   ctx->selfVal =
       ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
+  SHOW("Arguments size is " << argIRTypes.size())
   for (usize i = 1; i < argIRTypes.size(); i++) {
-    SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+    SHOW("Argument name in member function is " << argIRTypes.at(i)->getName())
+    SHOW("Argument type in member function is "
+         << argIRTypes.at(i)->getType()->toString())
     if (argIRTypes.at(i)->isMemberArgument()) {
       auto *memPtr = ctx->builder.CreateStructGEP(
-          corePtrTy->getSubType()->getLLVMType(), self->getLLVM(),
+          corePtrTy->getSubType()->getLLVMType(), ctx->selfVal,
           corePtrTy->getSubType()
               ->asCore()
               ->getIndexOf(argIRTypes.at(i)->getName())
@@ -166,7 +173,8 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
     } else {
       SHOW("Argument is variable")
       auto *argVal = block->newValue(argIRTypes.at(i)->getName(),
-                                     argIRTypes.at(i)->getType(), true);
+                                     argIRTypes.at(i)->getType(),
+                                     argIRTypes.at(i)->isVariable());
       SHOW("Created local value for the argument")
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i),
                                argVal->getAlloca(), false);

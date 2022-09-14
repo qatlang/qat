@@ -1,4 +1,5 @@
 #include "./function.hpp"
+#include "../../show.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
@@ -12,8 +13,8 @@ ArgumentType::ArgumentType(String _name, QatType *_type, bool _variability)
 
 ArgumentType::ArgumentType(String _name, QatType *_type, bool _isMemberArg,
                            bool _variability)
-    : name(_name), type(_type), isMemberArg(_isMemberArg),
-      variability(_variability) {}
+    : name(_name), type(_type), variability(_variability),
+      isMemberArg(_isMemberArg) {}
 
 bool ArgumentType::isMemberArgument() const { return isMemberArg; }
 
@@ -34,10 +35,12 @@ FunctionType::FunctionType(QatType *_retType, bool _isRetTypeVariable,
                            llvm::LLVMContext  &ctx)
     : returnType(_retType), isReturnVariable(_isRetTypeVariable),
       argTypes(std::move(_argTypes)) {
+  SHOW("Creating function type")
   Vec<llvm::Type *> argTys;
   for (auto *arg : argTypes) {
     argTys.push_back(arg->getType()->getLLVMType());
   }
+  SHOW("Got arg llvm types in FunctionType")
   llvmType = llvm::FunctionType::get(returnType->getLLVMType(), argTys, false);
 }
 

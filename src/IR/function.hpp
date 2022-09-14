@@ -132,7 +132,7 @@ private:
 public:
   TemplateFunction(String name, Vec<ast::TemplatedType *> templates,
                    ast::FunctionDefinition *functionDef, QatModule *parent,
-                   utils::VisibilityInfo _visibInfo);
+                   const utils::VisibilityInfo &_visibInfo);
 
   useit String getName() const;
   useit utils::VisibilityInfo getVisibility() const;

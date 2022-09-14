@@ -62,14 +62,16 @@ public:
   CoreType(QatModule *mod, String _name, Vec<Member *> _members,
            const utils::VisibilityInfo &_visibility, llvm::LLVMContext &ctx);
 
-  useit Maybe<usize>    getIndexOf(const String &member) const;
-  useit bool            hasMember(const String &member) const;
-  useit String          getFullName() const;
-  useit String          getName() const;
-  useit u64             getMemberCount() const;
-  useit Member         *getMemberAt(u64 index);
-  useit String          getMemberNameAt(u64 index) const;
-  useit QatType        *getTypeOfMember(const String &member) const;
+  useit Maybe<usize> getIndexOf(const String &member) const;
+  useit bool         hasMember(const String &member) const;
+  useit Member      *getMember(const String &name) const;
+  useit String       getFullName() const;
+  useit String       getName() const;
+  useit u64          getMemberCount() const;
+  useit Member      *getMemberAt(u64 index);
+  useit String       getMemberNameAt(u64 index) const;
+  useit QatType     *getTypeOfMember(const String &member) const;
+  useit Vec<Member *>  &getMembers();
   useit bool            hasStatic(const String &name) const;
   useit bool            hasMemberFunction(const String &fnName) const;
   useit MemberFunction *getMemberFunction(const String &fnName) const;
@@ -80,9 +82,14 @@ public:
   useit bool            hasUnaryOperator(String opr) const;
   useit MemberFunction *getUnaryOperator(String opr) const;
   useit u64             getOperatorVariantIndex(String opr) const;
+  useit bool            hasFromConvertor(IR::QatType *type) const;
+  useit MemberFunction *getFromConvertor(IR::QatType *type) const;
+  useit bool            hasToConvertor(IR::QatType *type) const;
+  useit MemberFunction *getToConvertor(IR::QatType *type) const;
   useit bool            hasConstructorWithTypes(Vec<IR::QatType *> types) const;
   useit MemberFunction *getConstructorWithTypes(Vec<IR::QatType *> types) const;
-  useit bool            hasAnyNormalConstructor() const;
+  useit bool            hasAnyFromConvertor() const;
+  useit bool            hasAnyConstructor() const;
   useit bool            hasCopyConstructor() const;
   useit bool            hasMoveConstructor() const;
   useit utils::VisibilityInfo getVisibility() const;
@@ -108,7 +115,7 @@ private:
 public:
   TemplateCoreType(String name, Vec<ast::TemplatedType *> templates,
                    ast::DefineCoreType *defineCoreType, QatModule *parent,
-                   utils::VisibilityInfo visibInfo);
+                   const utils::VisibilityInfo &visibInfo);
 
   useit String getName() const;
   useit utils::VisibilityInfo getVisibility() const;

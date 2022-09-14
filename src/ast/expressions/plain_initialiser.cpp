@@ -15,12 +15,21 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
     auto *typeEmit = type->emit(ctx);
     if (typeEmit->isCoreType()) {
       auto *cTy = typeEmit->asCore();
-      if (cTy->hasAnyNormalConstructor()) {
-        ctx->Error(
-            "Core type " + ctx->highlightError(cTy->getFullName()) +
-                " has normal constructors and hence the plain initialiser "
-                "cannot be used for this type",
-            fileRange);
+      if (ctx->fn->isMemberFunction()
+              ? (!((IR::MemberFunction *)ctx->fn)->getParentType()->isSame(cTy))
+              : true) {
+        if (cTy->hasAnyConstructor()) {
+          ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
+                         " have constructors and hence the plain initialiser "
+                         "cannot be used for this type",
+                     fileRange);
+        } else if (cTy->hasAnyFromConvertor()) {
+          ctx->Error(
+              "Core type " + ctx->highlightError(cTy->getFullName()) +
+                  " has convertor constructors and hence the plain initialiser "
+                  "syntax cannot be used for this type",
+              fileRange);
+        }
       }
       if (cTy->getMemberCount() != fieldValues.size()) {
         ctx->Error(

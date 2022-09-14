@@ -8,23 +8,25 @@ namespace qat::ast {
 
 ConvertorPrototype::ConvertorPrototype(bool _isFrom, String _argName,
                                        QatType                *_candidateType,
+                                       bool                    _isMemberArg,
                                        utils::VisibilityKind   _visibility,
                                        const utils::FileRange &_fileRange)
     : Node(_fileRange), argName(std::move(_argName)),
-      candidateType(_candidateType), visibility(_visibility), isFrom(_isFrom) {}
+      candidateType(_candidateType), isMemberArgument(_isMemberArg),
+      visibility(_visibility), isFrom(_isFrom) {}
 
 ConvertorPrototype *
 ConvertorPrototype::From(const String &_argName, QatType *_candidateType,
-                         utils::VisibilityKind   _visibility,
+                         bool _isMemberArg, utils::VisibilityKind _visibility,
                          const utils::FileRange &_fileRange) {
-  return new ConvertorPrototype(true, _argName, _candidateType, _visibility,
-                                _fileRange);
+  return new ConvertorPrototype(true, _argName, _candidateType, _isMemberArg,
+                                _visibility, _fileRange);
 }
 
 ConvertorPrototype *ConvertorPrototype::To(QatType              *_candidateType,
                                            utils::VisibilityKind _visibility,
                                            const utils::FileRange &_fileRange) {
-  return new ConvertorPrototype(false, "", _candidateType, _visibility,
+  return new ConvertorPrototype(false, "", _candidateType, false, _visibility,
                                 _fileRange);
 }
 
@@ -37,7 +39,16 @@ void ConvertorPrototype::define(IR::Context *ctx) {
     ctx->Error("No core type found for this member function", fileRange);
   }
   SHOW("Generating candidate type")
-  auto *candidate = candidateType->emit(ctx);
+  if (isMemberArgument) {
+    if (!coreType->hasMember(argName)) {
+      ctx->Error("No member field named " + ctx->highlightError(argName) +
+                     " found in core type " +
+                     ctx->highlightError(coreType->getFullName()),
+                 fileRange);
+    }
+  }
+  auto *candidate = isMemberArgument ? coreType->getTypeOfMember(argName)
+                                     : candidateType->emit(ctx);
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
   if (isFrom) {
@@ -81,6 +92,7 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
+  // FIXME - Implement member argument syntax support for from convertors
   auto *corePtrType =
       IR::PointerType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
   auto *self = block->newValue("''", corePtrType, false);
@@ -89,11 +101,22 @@ IR::Value *ConvertorDefinition::emit(IR::Context *ctx) {
   ctx->selfVal =
       ctx->builder.CreateLoad(self->getType()->getLLVMType(), self->getLLVM());
   if (prototype->isFrom) {
-    auto *argTy  = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);
-    auto *argVal = block->newValue(argTy->getName(), argTy->getType(),
-                                   argTy->isVariable());
-    ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1),
-                             argVal->getLLVM());
+    if (prototype->isMemberArgument) {
+      auto *memPtr = ctx->builder.CreateStructGEP(
+          corePtrType->getSubType()->getLLVMType(), ctx->selfVal,
+          corePtrType->getSubType()
+              ->asCore()
+              ->getIndexOf(prototype->argName)
+              .value());
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1), memPtr,
+                               false);
+    } else {
+      auto *argTy  = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);
+      auto *argVal = block->newValue(argTy->getName(), argTy->getType(),
+                                     argTy->isVariable());
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1),
+                               argVal->getLLVM());
+    }
   }
   emitSentences(sentences, ctx);
   ctx->selfVal = nullptr;

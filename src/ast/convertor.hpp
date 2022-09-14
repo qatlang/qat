@@ -19,6 +19,7 @@ class ConvertorPrototype : public Node {
 private:
   String                argName;
   QatType              *candidateType;
+  bool                  isMemberArgument;
   utils::VisibilityKind visibility;
   bool                  isFrom;
 
@@ -28,12 +29,12 @@ private:
   void setCoreType(IR::CoreType *_coreType) const;
 
   ConvertorPrototype(bool _isFrom, String _argName, QatType *_candidateType,
-                     utils::VisibilityKind   _visibility,
+                     bool _isMemberArg, utils::VisibilityKind _visibility,
                      const utils::FileRange &_fileRange);
 
 public:
-  static ConvertorPrototype *From(const String           &_argName,
-                                  QatType                *_candidateType,
+  static ConvertorPrototype *From(const String &_argName,
+                                  QatType *_candidateType, bool _isMemberArg,
                                   utils::VisibilityKind   _visibility,
                                   const utils::FileRange &_fileRange);
 

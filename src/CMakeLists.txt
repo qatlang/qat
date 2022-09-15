@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-    VERSION "0.3.0"
+    VERSION "0.3.5"
     DESCRIPTION "Qat Programming Language"
     HOMEPAGE_URL "https://qat.dev")
 

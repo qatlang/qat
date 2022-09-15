@@ -88,13 +88,11 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
     SHOW("Argument values generated")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
-          (argsEmit.at(i - 1)->getType()->isReference() &&
-           !fnArgsTy.at(i)->getType()->isSame(
-               argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
+          !(argsEmit.at(i - 1)->getType()->isReference() &&
+            fnArgsTy.at(i)->getType()->isSame(
+                argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
-                   "corresponding argument at " +
-                       ctx->highlightError(std::to_string(i - 1)) +
-                       " of the function " +
+                   "corresponding argument of the function " +
                        ctx->highlightError(memFn->getName()),
                    arguments.at(i - 1)->fileRange);
       }

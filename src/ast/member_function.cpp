@@ -46,7 +46,20 @@ void MemberPrototype::define(IR::Context *ctx) {
       if (!isStatic) {
         if (coreType->hasMember(arg->getName())) {
           if (isVariationFn) {
-            generatedTypes.push_back(coreType->getTypeOfMember(arg->getName()));
+            auto *memTy = coreType->getTypeOfMember(arg->getName());
+            if (memTy->isReference()) {
+              if (memTy->asReference()->isSubtypeVariable()) {
+                memTy = memTy->asReference()->getSubType();
+              } else {
+                ctx->Error("Member " + ctx->highlightError(arg->getName()) +
+                               " of core type " +
+                               ctx->highlightError(coreType->getFullName()) +
+                               " is not a variable reference and hence cannot "
+                               "be reassigned",
+                           arg->getFileRange());
+              }
+            }
+            generatedTypes.push_back(memTy);
           } else {
             ctx->Error("This member function is not marked as a variation. It "
                        "cannot use the member argument syntax",
@@ -168,6 +181,12 @@ IR::Value *MemberDefinition::emit(IR::Context *ctx) {
               ->asCore()
               ->getIndexOf(argIRTypes.at(i)->getName())
               .value());
+      auto *memTy = corePtrTy->getSubType()->asCore()->getTypeOfMember(
+          argIRTypes.at(i)->getName());
+      if (memTy->isReference()) {
+        memPtr = ctx->builder.CreateLoad(memTy->asReference()->getLLVMType(),
+                                         memPtr);
+      }
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr,
                                false);
     } else {

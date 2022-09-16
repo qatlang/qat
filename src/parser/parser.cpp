@@ -1,5 +1,6 @@
 #include "./parser.hpp"
 #include "../ast/constructor.hpp"
+#include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/boolean_literal.hpp"
@@ -1229,6 +1230,26 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
       break;
     }
     case TokenType::to: {
+      break;
+    }
+    case TokenType::end: {
+      if (coreTy->hasDestructor()) {
+        Error("A destructor is already defined for the core type", RangeAt(i));
+      }
+      if (isNext(TokenType::bracketOpen, i)) {
+        auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                    TokenType::bracketClose, i + 1, false);
+        if (bCloseRes) {
+          auto snts = parseSentences(prev_ctx, i + 1, bCloseRes.value());
+          coreTy->setDestructorDefinition(new ast::DestructorDefinition(
+              snts, RangeSpan(i, bCloseRes.value())));
+          i = bCloseRes.value();
+        } else {
+          Error("Expected end for [", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected definition of destructor", RangeAt(i));
+      }
       break;
     }
     default: {

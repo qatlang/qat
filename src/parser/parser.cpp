@@ -1812,6 +1812,50 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       }
       break;
     }
+    case TokenType::own: {
+      auto start = i;
+      // FIXME - Add heaped plain initialisation
+      auto symRes  = parseSymbol(prev_ctx, i + 1);
+      cachedSymbol = symRes.first;
+      i            = symRes.second;
+      ast::QatType *type;
+      if (isNext(TokenType::templateTypeStart, i)) {
+        auto tEndRes = getPairEnd(TokenType::templateTypeStart,
+                                  TokenType::templateTypeEnd, i + 1, false);
+        if (tEndRes.has_value()) {
+          auto tEnd  = tEndRes.value();
+          auto types = parseSeparatedTypes(prev_ctx, i + 1, tEnd);
+          type       = new ast::TemplateNamedType(cachedSymbol->relative,
+                                                  cachedSymbol->name, types, false,
+                                                  cachedSymbol->fileRange);
+          i          = tEnd;
+        } else {
+          Error("Expected end for the template type specification",
+                RangeAt(i + 1));
+        }
+      } else {
+        type = new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
+                                  false, cachedSymbol->fileRange);
+      }
+      if (isNext(TokenType::from, i)) {
+        if (isNext(TokenType::parenthesisOpen, i + 1)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 2, false);
+          if (pCloseRes) {
+            auto pClose = pCloseRes.value();
+            auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
+            cachedExpressions.push_back(new ast::ConstructorCall(
+                type, args, true, RangeSpan(start, pClose)));
+            i = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 2));
+          }
+        }
+      }
+      cachedSymbol = None;
+      break;
+    }
     case TokenType::pointerType: {
       // FIXME - Implement after reconsidering
       break;

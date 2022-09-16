@@ -572,6 +572,7 @@ Token Lexer::tokeniser() {
         read();
       }
       prev_ctx = "keyword";
+      // NOLINTBEGIN(readability-magic-numbers)
       if (value == "null") {
         return Token::normal(TokenType::null, this->getPosition(4));
       } else if (value == "bring") {
@@ -681,11 +682,18 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::Break, this->getPosition(5));
       } else if (value == "continue") {
         return Token::normal(TokenType::Continue, this->getPosition(8));
+      } else if (value == "own") {
+        return Token::normal(TokenType::own, this->getPosition(3));
+      } else if (value == "disown") {
+        return Token::normal(TokenType::disown, this->getPosition(6));
+      } else if (value == "end") {
+        return Token::normal(TokenType::end, this->getPosition(3));
       } else {
         prev_ctx = "identifier";
         return Token::valued(TokenType::identifier, value,
                              this->getPosition(value.length()));
       }
+      // NOLINTEND(readability-magic-numbers)
     } else {
       throw_error("Unrecognised character found: " + String(1, current));
       return Token::normal(TokenType::endOfFile, this->getPosition(0));

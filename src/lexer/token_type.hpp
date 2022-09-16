@@ -96,7 +96,10 @@ enum class TokenType {
   super,
   variadic,
   Break,
-  Continue
+  Continue,
+  own,
+  disown,
+  end
 };
 
 } // namespace qat::lexer

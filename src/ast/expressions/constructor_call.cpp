@@ -14,7 +14,7 @@ IR::Value *ConstructorCall::emit(IR::Context *ctx) {
     auto              *cTy = typ->asCore();
     Vec<IR::Value *>   valsIR;
     Vec<IR::QatType *> valsType;
-    // FIXME - Support default constructor calls and convertor calls
+    // FIXME - Support default constructor calls
     for (auto *arg : args) {
       auto *argVal = arg->emit(ctx);
       valsType.push_back(argVal->getType());
@@ -98,7 +98,6 @@ IR::Value *ConstructorCall::emit(IR::Context *ctx) {
         }
       }
     }
-    // FIXME - Optimise for local declarations
     llvm::Value *llAlloca;
     if (isHeaped) {
       ctx->getMod()->linkNative(IR::NativeUnit::malloc);

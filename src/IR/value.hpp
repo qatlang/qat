@@ -20,11 +20,11 @@ private:
   static Vec<IR::Value *> allValues;
 
 protected:
-  IR::QatType *type;     // Type representation of the value
-  Nature       nature;   // The nature of the value
-  bool         variable; // Variability nature
-  llvm::Value *ll;       // LLVM value
-  bool         isLocal;  // Is this value local to a function
+  IR::QatType  *type;     // Type representation of the value
+  Nature        nature;   // The nature of the value
+  bool          variable; // Variability nature
+  llvm::Value  *ll;       // LLVM value
+  Maybe<String> localID;  // ID of the local in a function
 
 public:
   Value(llvm::Value *_llValue, IR::QatType *_type, bool _isVariable,
@@ -38,7 +38,8 @@ public:
   useit bool         isPointer() const;
   useit bool         isVariable() const;
   useit bool         isLocalToFn() const;
-  void               setIsLocalToFn(bool isLoc);
+  useit String       getLocalID() const;
+  void               setLocalID(String id);
   useit Nature       getNature() const;
   useit IR::Value *createAlloca(llvm::IRBuilder<> &builder);
   useit bool       isImplicitPointer() const;

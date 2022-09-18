@@ -17,6 +17,7 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
+#include <algorithm>
 #include <vector>
 
 namespace qat::IR {
@@ -67,6 +68,9 @@ llvm::AllocaInst *LocalValue::getAlloca() const {
 
 Block::Block(Function *_fn, Block *_parent)
     : parent(_parent), fn(_fn), index(0) {
+  if (parent) {
+    parent->children.push_back(this);
+  }
   SHOW("Starting block creation")
   fn->blocks.push_back(this);
   SHOW("Block pushed the block-list in function")
@@ -125,10 +129,64 @@ LocalValue *Block::newValue(const String &name, IR::QatType *type, bool isVar) {
   return values.back();
 }
 
+void Block::setGhost(bool value) const { isGhost = value; }
+
+void Block::setHasGive() const { hasGive = true; }
+
+bool Block::hasGiveInAllControlPaths() const {
+  if (isGhost) {
+    return true;
+  } else {
+    if (hasGive) {
+      return true;
+    } else {
+      if (!children.empty()) {
+        bool result = true;
+        for (auto *child : children) {
+          if (!child->hasGiveInAllControlPaths()) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      } else {
+        return false;
+      }
+    }
+  }
+}
+
 void Block::setActive(llvm::IRBuilder<> &builder) const {
   fn->setActiveBlock(index);
   builder.SetInsertPoint(bb);
 }
+
+void Block::collectLocalValues(Vec<LocalValue *> &vals) const {
+  if (hasParent()) {
+    parent->collectLocalValues(vals);
+  } else {
+    for (auto *val : values) {
+      vals.push_back(val);
+    }
+  }
+}
+
+bool Block::isMoved(const String &locID) const {
+  if (hasParent()) {
+    auto parentRes = parent->isMoved(locID);
+    if (parentRes) {
+      return parentRes;
+    }
+  }
+  for (const auto &mov : movedValues) {
+    if (mov == locID) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void Block::addMovedValue(String locID) const { movedValues.push_back(locID); }
 
 Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
@@ -238,6 +296,10 @@ void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
 Block *Function::getBlock() const { return blocks.at(activeBlock); }
 
+usize &Function::getCopiedCounter() { return copiedCounter; }
+
+usize &Function::getMovedCounter() { return movedCounter; }
+
 TemplateFunction::TemplateFunction(String                       _name,
                                    Vec<ast::TemplatedType *>    _templates,
                                    ast::FunctionDefinition     *_functionDef,
@@ -276,6 +338,42 @@ Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
     temp->unsetType();
   }
   return fun;
+}
+
+void functionReturnHandler(IR::Context *ctx, IR::Function *fun,
+                           const utils::FileRange &fileRange) {
+  auto destructorCaller = [&]() {
+    Vec<IR::LocalValue *> locals;
+    fun->getBlock()->collectLocalValues(locals);
+    for (auto *loc : locals) {
+      if (loc->getType()->isCoreType()) {
+        auto *cTy        = loc->getType()->asCore();
+        auto *destructor = cTy->getDestructor();
+        (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
+      }
+    }
+    locals.clear();
+  };
+  auto *block = fun->getBlock();
+  auto *retTy = fun->getType()->asFunction()->getReturnType();
+  if (block->getBB()->getInstList().empty()) {
+    if (retTy->isVoid()) {
+      destructorCaller();
+      ctx->builder.CreateRetVoid();
+    } else {
+      ctx->Error("Missing given value in all control paths", fileRange);
+    }
+  } else {
+    auto *lastInst = ((llvm::Instruction *)&block->getBB()->back());
+    if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
+      if (retTy->isVoid()) {
+        destructorCaller();
+        ctx->builder.CreateRetVoid();
+      } else {
+        ctx->Error("Missing given value in all control paths", fileRange);
+      }
+    }
+  }
 }
 
 } // namespace qat::IR

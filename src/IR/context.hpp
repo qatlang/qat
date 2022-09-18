@@ -63,13 +63,13 @@ public:
   llvm::Value      *selfVal;
   IR::CoreType     *activeType; // Active core type
   Vec<String>       exposed;
-  bool              hasMain;
   Vec<LoopInfo *>   loopsInfo;
   Vec<Breakable *>  breakables;
-  mutable u64       stringCount;
 
   // META
 
+  bool          hasMain;
+  mutable u64   stringCount;
   Vec<fs::path> llvmOutputPaths;
   Vec<String>   nativeLibsToLink;
 

@@ -30,7 +30,7 @@ class FunctionCall;
 class Context;
 class Function;
 
-class LocalValue : public Value {
+class LocalValue : public Value, public Uniq {
   String name;
 
 public:
@@ -43,12 +43,16 @@ public:
 
 class Block {
 private:
-  String            name;
-  llvm::BasicBlock *bb;
-  Vec<LocalValue *> values;
-  Block            *parent;
-  Function         *fn;
-  usize             index;
+  String              name;
+  llvm::BasicBlock   *bb;
+  Vec<LocalValue *>   values;
+  Block              *parent;
+  Vec<Block *>        children;
+  Function           *fn;
+  usize               index;
+  mutable Vec<String> movedValues;
+  mutable bool        isGhost = false;
+  mutable bool        hasGive = false;
 
 public:
   Block(Function *_fn, Block *_parent);
@@ -61,7 +65,13 @@ public:
   useit bool              hasValue(const String &name) const;
   useit LocalValue       *getValue(const String &name) const;
   useit LocalValue *newValue(const String &name, IR::QatType *type, bool isVar);
+  useit bool        isMoved(const String &locID) const;
+  useit bool        hasGiveInAllControlPaths() const;
+  void              setGhost(bool value) const;
+  void              setHasGive() const;
+  void              addMovedValue(String locID) const;
   void              setActive(llvm::IRBuilder<> &builder) const;
+  void              collectLocalValues(Vec<LocalValue *> &vals) const;
 };
 
 // Function represents a normal function in the language
@@ -79,7 +89,9 @@ protected:
   bool                  hasVariadicArguments;
   Vec<Block *>          blocks;
 
-  mutable usize activeBlock = 0;
+  mutable usize activeBlock   = 0;
+  mutable usize copiedCounter = 0;
+  mutable usize movedCounter  = 0;
   mutable u64   calls;
   mutable u64   refers;
 
@@ -116,7 +128,9 @@ public:
   useit utils::VisibilityInfo getVisibility() const;
   useit llvm::Function *getLLVMFunction();
   void                  setActiveBlock(usize index) const;
-  Block                *getBlock() const;
+  useit Block          *getBlock() const;
+  useit usize          &getCopiedCounter();
+  useit usize          &getMovedCounter();
 };
 
 class TemplateFunction : public Uniq {
@@ -141,6 +155,9 @@ public:
   useit QatModule            *getModule() const;
   useit Function *fillTemplates(Vec<IR::QatType *> _types, IR::Context *ctx);
 };
+
+void functionReturnHandler(IR::Context *ctx, IR::Function *fn,
+                           const utils::FileRange &fileRange);
 
 } // namespace qat::IR
 

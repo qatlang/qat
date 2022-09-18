@@ -6,8 +6,7 @@ namespace qat::IR {
 
 Value::Value(llvm::Value *_llvmValue, IR::QatType *_type, bool _isVariable,
              Nature _kind)
-    : type(_type), nature(_kind), variable(_isVariable), ll(_llvmValue),
-      isLocal(false) {
+    : type(_type), nature(_kind), variable(_isVariable), ll(_llvmValue) {
   allValues.push_back(this);
 }
 
@@ -17,9 +16,11 @@ QatType *Value::getType() const { return type; }
 
 llvm::Value *Value::getLLVM() { return ll; }
 
-bool Value::isLocalToFn() const { return isLocal; }
+bool Value::isLocalToFn() const { return localID.has_value(); }
 
-void Value::setIsLocalToFn(bool isLoc) { isLocal = isLoc; }
+String Value::getLocalID() const { return localID.value(); }
+
+void Value::setLocalID(String locID) { localID = locID; }
 
 IR::Value *Value::createAlloca(llvm::IRBuilder<> &builder) {
   auto              name  = utils::unique_id();

@@ -1,6 +1,7 @@
 #include "./define_core_type.hpp"
 #include "../IR/types/core_type.hpp"
 #include "constructor.hpp"
+#include "destructor.hpp"
 #include "types/templated.hpp"
 
 namespace qat::ast {
@@ -93,6 +94,13 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     }
     for (auto *oprDef : operatorDefinitions) {
       oprDef->setCoreType(coreType);
+    }
+    if (destructorDefinition) {
+      destructorDefinition->setCoreType(coreType);
+    } else {
+      destructorDefinition =
+          new ast::DestructorDefinition({}, {"", {0u, 0u}, {0u, 0u}});
+      destructorDefinition->setCoreType(coreType);
     }
   } else {
     // TODO - Check type definitions
@@ -201,6 +209,9 @@ void DefineCoreType::define(IR::Context *ctx) {
   for (auto *oFn : operatorDefinitions) {
     oFn->define(ctx);
   }
+  if (destructorDefinition) {
+    destructorDefinition->define(ctx);
+  }
 }
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
@@ -216,6 +227,9 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   }
   for (auto *oFn : operatorDefinitions) {
     (void)oFn->emit(ctx);
+  }
+  if (destructorDefinition) {
+    (void)destructorDefinition->emit(ctx);
   }
   ctx->activeType = nullptr;
   return nullptr;
@@ -245,6 +259,14 @@ void DefineCoreType::addConstructorDefinition(ConstructorDefinition *cdef) {
 
 void DefineCoreType::addOperatorDefinition(OperatorDefinition *odef) {
   operatorDefinitions.push_back(odef);
+}
+
+void DefineCoreType::setDestructorDefinition(DestructorDefinition *ddef) {
+  destructorDefinition = ddef;
+}
+
+bool DefineCoreType::hasDestructor() const {
+  return destructorDefinition != nullptr;
 }
 
 nuo::Json DefineCoreType::toJson() const {

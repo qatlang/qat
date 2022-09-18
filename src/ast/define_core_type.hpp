@@ -8,6 +8,7 @@
 #include "./operator_function.hpp"
 #include "./types/qat_type.hpp"
 #include "constructor.hpp"
+#include "destructor.hpp"
 #include "types/templated.hpp"
 #include <optional>
 #include <string>
@@ -49,15 +50,16 @@ public:
   };
 
 private:
-  String                       name;
-  bool                         isPacked;
-  Vec<Member *>                members;
-  Vec<StaticMember *>          staticMembers;
-  Vec<MemberDefinition *>      memberDefinitions;
-  Vec<ConvertorDefinition *>   convertorDefinitions;
-  Vec<OperatorDefinition *>    operatorDefinitions;
-  Vec<ConstructorDefinition *> constructorDefinitions;
-  utils::VisibilityKind        visibility;
+  String                        name;
+  bool                          isPacked;
+  Vec<Member *>                 members;
+  Vec<StaticMember *>           staticMembers;
+  Vec<MemberDefinition *>       memberDefinitions;
+  Vec<ConvertorDefinition *>    convertorDefinitions;
+  Vec<OperatorDefinition *>     operatorDefinitions;
+  Vec<ConstructorDefinition *>  constructorDefinitions;
+  mutable DestructorDefinition *destructorDefinition = nullptr;
+  utils::VisibilityKind         visibility;
 
   Vec<ast::TemplatedType *>     templates;
   mutable IR::CoreType         *coreType         = nullptr;
@@ -70,15 +72,17 @@ public:
 
   useit bool isTemplate() const;
 
-  void  addMember(Member *mem);
-  void  addStaticMember(StaticMember *stm);
-  void  addMemberDefinition(MemberDefinition *mdef);
-  void  addConvertorDefinition(ConvertorDefinition *cdef);
-  void  addConstructorDefinition(ConstructorDefinition *cdef);
-  void  addOperatorDefinition(OperatorDefinition *odef);
-  void  createType(IR::Context *ctx) const;
-  void  defineType(IR::Context *ctx) final;
-  void  define(IR::Context *ctx) final;
+  void       addMember(Member *mem);
+  void       addStaticMember(StaticMember *stm);
+  void       addMemberDefinition(MemberDefinition *mdef);
+  void       addConvertorDefinition(ConvertorDefinition *cdef);
+  void       addConstructorDefinition(ConstructorDefinition *cdef);
+  void       addOperatorDefinition(OperatorDefinition *odef);
+  void       setDestructorDefinition(DestructorDefinition *ddef);
+  void       createType(IR::Context *ctx) const;
+  void       defineType(IR::Context *ctx) final;
+  void       define(IR::Context *ctx) final;
+  useit bool hasDestructor() const;
   useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;

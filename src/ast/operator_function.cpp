@@ -172,17 +172,8 @@ IR::Value *OperatorDefinition::emit(IR::Context *ctx) {
   }
   emitSentences(sentences, ctx);
   ctx->selfVal = nullptr;
-  if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
-      (block->getName() == fnEmit->getBlock()->getName())) {
-    if (block->getBB()->getInstList().empty()) {
-      ctx->builder.CreateRetVoid();
-    } else {
-      auto *lastInst = ((llvm::Instruction *)&block->getBB()->back());
-      if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
-        ctx->builder.CreateRetVoid();
-      }
-    }
-  }
+  IR::functionReturnHandler(
+      ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   return nullptr;
 }

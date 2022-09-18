@@ -25,7 +25,7 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                local->getType()->asReference()->isSubtypeVariable())) {
             auto *val = new IR::Value(alloca, local->getType(), true,
                                       IR::Nature::assignable);
-            val->setIsLocalToFn(true);
+            val->setLocalID(local->getID());
             return val;
           } else {
             ctx->Error(ctx->highlightError(name) +
@@ -37,7 +37,7 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                                     local->isVariable(), IR::Nature::temporary);
           SHOW("Returning local value with alloca name: "
                << alloca->getName().str())
-          val->setIsLocalToFn(true);
+          val->setLocalID(local->getID());
           return val;
         }
       } else {

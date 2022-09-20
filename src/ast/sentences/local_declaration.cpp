@@ -86,7 +86,8 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       (void)plain->emit(ctx);
       return nullptr;
     }
-  } else if (value && (value->nodeType() == NodeType::constructorCall)) {
+  } else if (value && (value->nodeType() == NodeType::constructorCall) &&
+             !((((ast::ConstructorCall *)value))->isHeaped)) {
     auto *cons = (ast::ConstructorCall *)value;
     if (type) {
       declType = type->emit(ctx);

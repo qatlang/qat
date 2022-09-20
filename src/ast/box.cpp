@@ -41,6 +41,16 @@ void Box::createModule(IR::Context *ctx) const {
         "A core type named " + ctx->highlightError(name) +
             " is brought into this module. Please change name of this box.",
         fileRange);
+  } else if (mod->hasUnionType(name)) {
+    ctx->Error("A union type named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "box or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtUnionType(name)) {
+    ctx->Error(
+        "A union type named " + ctx->highlightError(name) +
+            " is brought into this module. Please change name of this box.",
+        fileRange);
   } else if (mod->hasTypeDef(name)) {
     ctx->Error("A type definition named " + ctx->highlightError(name) +
                    " already exists in this module. Please change name of this "

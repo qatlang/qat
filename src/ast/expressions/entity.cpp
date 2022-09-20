@@ -159,6 +159,14 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                          " is a core type and cannot be used as a value in "
                          "an expression",
                      fileRange);
+        } else if (mod->hasUnionType(entityName) ||
+                   mod->hasBroughtUnionType(entityName) ||
+                   mod->hasAccessibleUnionTypeInImports(entityName, reqInfo)
+                       .first) {
+          ctx->Error(mod->getUnionType(entityName, reqInfo)->getFullName() +
+                         " is a union type and cannot be used as a value in an "
+                         "expression",
+                     fileRange);
         } else if (mod->hasTypeDef(entityName) ||
                    mod->hasBroughtTypeDef(entityName) ||
                    mod->hasAccessibleTypeDefInImports(entityName, reqInfo)

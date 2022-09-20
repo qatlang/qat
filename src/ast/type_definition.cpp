@@ -22,6 +22,16 @@ void TypeDefinition::defineType(IR::Context *ctx) {
                    " is brought into this module. Please change name of this "
                    "type or check the logic",
                fileRange);
+  } else if (mod->hasUnionType(name)) {
+    ctx->Error("A union type named " + ctx->highlightError(name) +
+                   " exists in this module. Please change name of this type "
+                   "definition or check the logic",
+               fileRange);
+  } else if (mod->hasBroughtUnionType(name)) {
+    ctx->Error("A union type named " + ctx->highlightError(name) +
+                   " is brought into this module. Please change name of this "
+                   "type or check the logic",
+               fileRange);
   } else if (mod->hasAccessibleCoreTypeInImports(name, reqInfo).first) {
     ctx->Error(
         "A core type named " + ctx->highlightError(name) +

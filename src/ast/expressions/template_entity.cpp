@@ -16,6 +16,11 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
       mod = mod->getNthParent(relative);
+    } else {
+      ctx->Error("The current scope does not have " +
+                     ctx->highlightError(std::to_string(relative)) +
+                     " parents. Please check the logic",
+                 fileRange);
     }
   }
   auto entityName = name;

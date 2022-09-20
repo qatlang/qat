@@ -10,6 +10,7 @@
 #include "./types/array.hpp"
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
+#include "./types/union.hpp"
 #include "./types/void.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
@@ -37,6 +38,7 @@ enum class NativeUnit {
 
 class QatModule : public Uniq {
   friend class CoreType;
+  friend class UnionType;
   friend class DefinitionType;
   friend class GlobalEntity;
   friend class ast::Lib;
@@ -61,6 +63,8 @@ private:
   Vec<Brought<QatModule>>        broughtModules;
   Vec<CoreType *>                coreTypes;
   Vec<Brought<CoreType>>         broughtCoreTypes;
+  Vec<UnionType *>               unionTypes;
+  Vec<Brought<UnionType>>        broughtUnionTypes;
   Vec<DefinitionType *>          typeDefs;
   Vec<Brought<DefinitionType>>   broughtTypeDefs;
   Vec<Function *>                functions;
@@ -193,6 +197,16 @@ public:
                                                  const utils::RequesterInfo &reqInfo) const;
   useit CoreType *getCoreType(const String               &name,
                               const utils::RequesterInfo &reqInfo) const;
+
+  // UNION TYPE
+
+  useit bool       hasUnionType(const String &name) const;
+  useit bool       hasBroughtUnionType(const String &name) const;
+  useit            Pair<bool, String>
+                   hasAccessibleUnionTypeInImports(const String               &name,
+                                                   const utils::RequesterInfo &reqInfo) const;
+  useit UnionType *getUnionType(const String               &name,
+                                const utils::RequesterInfo &reqInfo) const;
 
   // TEMPLATE FUNCTIONS
 

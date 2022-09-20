@@ -7,9 +7,9 @@
 #include "./pointer.hpp"
 #include "./reference.hpp"
 #include "./string_slice.hpp"
-#include "./sum.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
+#include "./union.hpp"
 #include "./unsigned.hpp"
 #include "cstring.hpp"
 #include "definition.hpp"
@@ -22,8 +22,8 @@ Vec<QatType *> QatType::types = {};
 
 bool QatType::checkTypeExists(const String &name) {
   return std::ranges::any_of(types.begin(), types.end(), [&](QatType *typ) {
-    if (typ->typeKind() == TypeKind::sumType) {
-      if (((SumType *)typ)->getFullName() == name) {
+    if (typ->typeKind() == TypeKind::unionType) {
+      if (((UnionType *)typ)->getFullName() == name) {
         return true;
       }
     } else if (typ->typeKind() == TypeKind::core) {
@@ -109,23 +109,10 @@ bool QatType::isSame(QatType *other) { // NOLINT(misc-no-recursion)
       auto *otherVal = (CoreType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
-    case TypeKind::sumType: {
-      auto *thisVal  = (SumType *)this;
-      auto *otherVal = (SumType *)other;
-      if (thisVal->getFullName() == otherVal->getFullName()) {
-        if (thisVal->getSubtypeCount() == otherVal->getSubtypeCount()) {
-          for (usize i = 0; i < thisVal->getSubtypeCount(); i++) {
-            if (!thisVal->getSubtypeAt(i)->isSame(otherVal->getSubtypeAt(i))) {
-              return false;
-            }
-          }
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        return false;
-      }
+    case TypeKind::unionType: {
+      auto *thisVal  = (UnionType *)this;
+      auto *otherVal = (UnionType *)other;
+      return (thisVal->getFullName() == otherVal->getFullName());
     }
     case TypeKind::function: {
       auto *thisVal  = (FunctionType *)this;

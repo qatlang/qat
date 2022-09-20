@@ -698,6 +698,84 @@ CoreType *QatModule::getCoreType(const String               &name,
   return nullptr;
 }
 
+// UNION TYPE
+
+bool QatModule::hasUnionType(const String &name) const {
+  SHOW("UnionType count: " << unionTypes.size())
+  for (auto *typ : unionTypes) {
+    if (typ->getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasBroughtUnionType(const String &name) const {
+  for (auto brought : broughtUnionTypes) {
+    if (!brought.isNamed()) {
+      auto *uType = brought.get();
+      if (uType->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleUnionTypeInImports(
+    const String &name, const utils::RequesterInfo &reqInfo) const {
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName() &&
+          (bMod->hasUnionType(name) || bMod->hasBroughtUnionType(name) ||
+           bMod->hasAccessibleUnionTypeInImports(name, reqInfo).first)) {
+        if (bMod->getUnionType(name, reqInfo)->isAccessible(reqInfo)) {
+          return {true, bMod->filePath.string()};
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+UnionType *QatModule::getUnionType(const String               &name,
+                                   const utils::RequesterInfo &reqInfo) const {
+  for (auto *unionTy : unionTypes) {
+    if (unionTy->getName() == name) {
+      return unionTy;
+    }
+  }
+  for (auto brought : broughtUnionTypes) {
+    if (!brought.isNamed()) {
+      auto *unionTy = brought.get();
+      if (unionTy->getName() == name) {
+        return unionTy;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (auto brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasUnionType(name) || bMod->hasBroughtUnionType(name) ||
+            bMod->hasAccessibleUnionTypeInImports(name, reqInfo).first) {
+          if (bMod->getUnionType(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getUnionType(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 // TEMPLATE CORE TYPE
 
 bool QatModule::hasTemplateCoreType(const String &name) const {

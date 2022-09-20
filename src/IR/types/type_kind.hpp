@@ -18,7 +18,7 @@ enum class TypeKind {
   unsignedInteger, // Unsigned integer
   stringSlice,     // String slice
   cstring,         // C string
-  sumType,         // Sum Type - Additions of different types (union)
+  unionType,       // Sum Type - Additions of different types (union)
   tuple,           // Tuple is a product type of multiple types
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type

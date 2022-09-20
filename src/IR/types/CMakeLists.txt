@@ -10,8 +10,8 @@ add_library(QAT_IR_TYPES
         pointer.cpp
         qat_type.cpp
         string_slice.cpp
-        sum.cpp
         tuple.cpp
+        union.cpp
         unsigned.cpp
         void.cpp)
 

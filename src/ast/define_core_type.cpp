@@ -46,7 +46,7 @@ DefineCoreType::DefineCoreType(String                      _name,
                                Vec<ast::TemplatedType *>   _templates,
                                bool                        _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked),
-      visibility(_visibility), templates(_templates) {
+      visibility(_visibility), templates(std::move(_templates)) {
   SHOW("Created core type " + name)
 }
 
@@ -57,7 +57,7 @@ void DefineCoreType::createType(IR::Context *ctx) const {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name)) {
+      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
     SHOW("Creating IR for CoreType members. Count: "
          << std::to_string(members.size()))
     Vec<IR::CoreType::Member *> mems;
@@ -103,7 +103,6 @@ void DefineCoreType::createType(IR::Context *ctx) const {
       destructorDefinition->setCoreType(coreType);
     }
   } else {
-    // TODO - Check type definitions
     if (mod->hasTemplateCoreType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
@@ -119,6 +118,12 @@ void DefineCoreType::createType(IR::Context *ctx) const {
       ctx->Error(
           ctx->highlightError(name) +
               " is the name of an existing type definition in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasUnionType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing union type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {
@@ -147,7 +152,7 @@ void DefineCoreType::defineType(IR::Context *ctx) {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name)) {
+      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -172,6 +177,12 @@ void DefineCoreType::defineType(IR::Context *ctx) {
       ctx->Error(
           ctx->highlightError(name) +
               " is the name of an existing type definition in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasUnionType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing union type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {

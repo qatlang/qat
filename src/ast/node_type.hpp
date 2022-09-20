@@ -74,7 +74,9 @@ enum class NodeType {
   customFloatLiteral,
   box,
   tupleValue,
-  arrayLiteral
+  arrayLiteral,
+  defineUnionType,
+  unionInitialiser,
 };
 
 } // namespace qat::ast

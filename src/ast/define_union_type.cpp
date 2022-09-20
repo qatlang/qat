@@ -1,0 +1,165 @@
+#include "./define_union_type.hpp"
+
+namespace qat::ast {
+
+DefineUnionType::DefineUnionType(String                              _name,
+                                 Vec<Pair<String, Maybe<QatType *>>> _subTypes,
+                                 Vec<utils::FileRange> _ranges, bool _isPacked,
+                                 utils::VisibilityKind _visibility,
+                                 utils::FileRange      _fileRange)
+    : Node(std::move(_fileRange)), name(std::move(_name)),
+      subtypes(std::move(_subTypes)), isPacked(_isPacked),
+      visibility(_visibility), fRanges(std::move(_ranges)) {}
+
+bool DefineUnionType::isTemplate() const { return !templates.empty(); }
+
+void DefineUnionType::createType(IR::Context *ctx) {
+  auto *mod = ctx->getMod();
+  if
+      //   ((isTemplate() || !mod->hasTemplateUnionType(name)) &&
+      (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
+       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
+       !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+    Vec<Pair<String, Maybe<IR::QatType *>>> subTypesIR;
+    for (usize i = 0; i < subtypes.size(); i++) {
+      for (usize j = i + 1; j < subtypes.size(); j++) {
+        if (subtypes.at(i).first == subtypes.at(j).first) {
+          ctx->Error(
+              "The name of the subtype of the union is repeating here. Please "
+              "check logic & make necessary changes",
+              fRanges.at(j));
+        }
+      }
+      subTypesIR.push_back(Pair<String, Maybe<IR::QatType *>>(
+          subtypes.at(i).first,
+          subtypes.at(i).second.has_value()
+              ? Maybe<IR::QatType *>(subtypes.at(i).second.value()->emit(ctx))
+              : None));
+    }
+    new IR::UnionType(name, mod, subTypesIR, ctx->llctx, isPacked,
+                      ctx->getVisibInfo(visibility));
+  } else {
+    if (mod->hasTemplateCoreType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasCoreType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing core type in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasTypeDef(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasUnionType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing union type in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasFunction(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing function in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasGlobalEntity(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing global value in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasBox(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing box in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    }
+  }
+}
+
+void DefineUnionType::defineType(IR::Context *ctx) {
+  auto *mod = ctx->getMod();
+  if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
+      !mod->hasCoreType(name) && !mod->hasFunction(name) &&
+      !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
+      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+    if (!isTemplate()) {
+      createType(ctx);
+    } else {
+      //   SHOW("Creating template union type: " << name)
+      //   templateUnionType = new IR::TemplateUnionType(
+      //       name, templates, this, ctx->getMod(),
+      //       ctx->getVisibInfo(visibility));
+    }
+  } else {
+    // TODO - Check type definitions
+    if (mod->hasTemplateCoreType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. "
+              "Please change name of this type or check the codebase",
+          fileRange);
+    } else if (mod->hasCoreType(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing core type in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasTypeDef(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasUnionType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing union type in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasFunction(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing function in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasGlobalEntity(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing global value in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    } else if (mod->hasBox(name)) {
+      ctx->Error(ctx->highlightError(name) +
+                     " is the name of an existing box in this scope. "
+                     "Please change name of this type or check the codebase",
+                 fileRange);
+    }
+  }
+}
+
+IR::Value *DefineUnionType::emit(IR::Context *ctx) { return nullptr; }
+
+nuo::Json DefineUnionType::toJson() const {
+  Vec<nuo::JsonValue> subTypesJson;
+  for (const auto &sub : subtypes) {
+    subTypesJson.push_back(nuo::Json()
+                               ._("name", sub.first)
+                               ._("hasType", sub.second.has_value())
+                               ._("type", sub.second.has_value()
+                                              ? sub.second.value()->toJson()
+                                              : nuo::JsonValue()));
+  }
+  return nuo::Json()
+      ._("nodeType", "defineUnionType")
+      ._("name", name)
+      ._("subTypes", subTypesJson)
+      ._("fileRange", fileRange);
+}
+
+} // namespace qat::ast

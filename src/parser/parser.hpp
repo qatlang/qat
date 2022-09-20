@@ -77,9 +77,12 @@ public:
                                              usize          start);
 
   // Parse the contents of a CoreType
-  useit ast::DefineCoreType *parseCoreType(ParserContext &prev_ctx, usize from,
-                                           usize                upto,
-                                           ast::DefineCoreType *coreTy);
+  void parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
+                     ast::DefineCoreType *coreTy);
+
+  void parseUnion(ParserContext &prev_ctx, usize from, usize upto,
+                  Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
+                  Vec<utils::FileRange>                    &fileRanges);
 
   // Parse the parameters of a function
   useit Pair<Vec<ast::Argument *>, bool>

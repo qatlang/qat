@@ -99,7 +99,9 @@ enum class TokenType {
   Continue,
   own,
   disown,
-  end
+  end,
+  Union,
+  unionSeparator,
 };
 
 } // namespace qat::lexer

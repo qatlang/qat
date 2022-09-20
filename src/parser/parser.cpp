@@ -1,5 +1,6 @@
 #include "./parser.hpp"
 #include "../ast/constructor.hpp"
+#include "../ast/define_union_type.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
@@ -25,6 +26,7 @@
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
+#include "../ast/expressions/union_initialiser.hpp"
 #include "../ast/expressions/unsigned_literal.hpp"
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
@@ -529,6 +531,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       break;
     }
     case TokenType::bring: {
+      // FIXME - Support bring sentences
       if (isNext(TokenType::identifier, i)) {
         auto endRes = firstPrimaryPosition(TokenType::stop, i);
         if (endRes.has_value()) {
@@ -541,6 +544,35 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
         } else {
           Error("Expected end of bring sentence", token.fileRange);
         }
+      }
+      break;
+    }
+    case TokenType::Union: {
+      if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::curlybraceOpen, i + 1)) {
+          auto bCloseRes = getPairEnd(TokenType::curlybraceOpen,
+                                      TokenType::curlybraceClose, i + 2, false);
+          if (bCloseRes.has_value()) {
+            auto                                     bClose = bCloseRes.value();
+            Vec<Pair<String, Maybe<ast::QatType *>>> subTypes;
+            Vec<utils::FileRange>                    fileRanges;
+            parseUnion(prev_ctx, i + 2, bClose, subTypes, fileRanges);
+            // FIXME - Support packing
+            result.push_back(new ast::DefineUnionType(
+                tokens.at(i + 1).value, std::move(subTypes),
+                std::move(fileRanges), false, getVisibility(),
+                RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            Error("Expected end for {", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected { to start the definition of the union type",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected an identifier for the name of the union type",
+              RangeAt(i));
       }
       break;
     }
@@ -583,11 +615,10 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           auto bClose = getPairEnd(TokenType::curlybraceOpen,
                                    TokenType::curlybraceClose, i + 1, false);
           if (bClose.has_value()) {
-            auto *tRes = parseCoreType(
-                ctx, i + 1, bClose.value(),
-                new ast::DefineCoreType(
-                    name, getVisibility(),
-                    {token.fileRange, RangeAt(bClose.value())}, templates));
+            auto *tRes = new ast::DefineCoreType(
+                name, getVisibility(),
+                {token.fileRange, RangeAt(bClose.value())}, templates);
+            parseCoreType(ctx, i + 1, bClose.value(), tRes);
             result.push_back(tRes);
             i = bClose.value();
             break;
@@ -917,9 +948,8 @@ Pair<utils::VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
 } // NOLINT(clang-diagnostic-return-type)
 
 // FIXME - Finish functionality for parsing type contents
-ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
-                                           usize                upto,
-                                           ast::DefineCoreType *coreTy) {
+void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
+                           ast::DefineCoreType *coreTy) {
   using lexer::Token;
   using lexer::TokenType;
 
@@ -1256,7 +1286,50 @@ ast::DefineCoreType *Parser::parseCoreType(ParserContext &prev_ctx, usize from,
     }
     }
   }
-  return coreTy;
+}
+
+void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
+                        Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
+                        Vec<utils::FileRange>                    &fileRanges) {
+  using lexer::TokenType;
+
+  for (auto i = from + 1; i < upto; i++) {
+    auto &token = tokens.at(i);
+    switch (token.type) {
+    case TokenType::identifier: {
+      auto start = i;
+      if (isNext(TokenType::separator, i) ||
+          (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
+        uRef.push_back(
+            Pair<String, Maybe<ast::QatType *>>(tokens.at(start).value, None));
+        fileRanges.push_back(RangeAt(start));
+        i++;
+      } else if (isNext(TokenType::unionSeparator, i)) {
+        ast::QatType *typ;
+        if (isPrimaryWithin(TokenType::separator, i + 1, upto)) {
+          auto sepPos =
+              firstPrimaryPosition(TokenType::separator, i + 1).value();
+          typ = parseType(prev_ctx, i + 1, sepPos).first;
+          i   = sepPos;
+        } else {
+          typ = parseType(prev_ctx, i + 1, upto).first;
+          i   = upto;
+        }
+        uRef.push_back(
+            Pair<String, Maybe<ast::QatType *>>(tokens.at(start).value, typ));
+        fileRanges.push_back(RangeAt(start));
+      } else {
+        Error("Invalid token found after identifier in union type definition",
+              RangeAt(i));
+      }
+      break;
+    }
+    default: {
+      Error("Invalid token found after identifier in union type definition",
+            RangeAt(i));
+    }
+    }
+  }
 }
 
 ast::PlainInitialiser *Parser::parsePlainInitialiser(ParserContext &prev_ctx,
@@ -2005,6 +2078,36 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           }
         }
       }
+    }
+    case TokenType::unionSeparator: {
+      if (cachedSymbol.has_value()) {
+        if (isNext(TokenType::identifier, i)) {
+          auto subName = tokens.at(i + 1).value;
+          if (isNext(TokenType::parenthesisOpen, i + 1)) {
+            auto pCloseRes =
+                getPairEnd(TokenType::parenthesisOpen,
+                           TokenType::parenthesisClose, i + 2, false);
+            if (pCloseRes) {
+              auto  pClose = pCloseRes.value();
+              auto *exp = parseExpression(prev_ctx, None, i + 2, pClose).first;
+              cachedExpressions.push_back(new ast::UnionInitialiser(
+                  cachedSymbol->relative, cachedSymbol->name, subName, exp,
+                  {cachedSymbol->fileRange, RangeAt(pClose)}));
+              i = pClose;
+            } else {
+              Error("Expected end for (", RangeAt(i + 2));
+            }
+          } else {
+            cachedExpressions.push_back(new ast::UnionInitialiser(
+                cachedSymbol->relative, cachedSymbol->name, subName, None,
+                {cachedSymbol->fileRange, RangeAt(i + 1)}));
+            i++;
+          }
+        }
+      } else {
+        Error("No name of the union type found", RangeAt(i));
+      }
+      break;
     }
     case TokenType::child: {
       SHOW("Expression parsing : Member access")

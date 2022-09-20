@@ -199,6 +199,10 @@ Token Lexer::tokeniser() {
       read();
       return Token::normal(TokenType::associatedAssignment,
                            this->getPosition(2));
+    } else if (current == ':') {
+      prev_ctx = "unionSeparator";
+      read();
+      return Token::normal(TokenType::unionSeparator, this->getPosition(2));
     } else {
       prev_ctx = "colon";
       return Token::normal(TokenType::colon, this->getPosition(1));
@@ -631,6 +635,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::heap, this->getPosition(4));
       } else if (value == "operator") {
         return Token::normal(TokenType::Operator, this->getPosition(8));
+      } else if (value == "union") {
+        return Token::normal(TokenType::Union, this->getPosition(5));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))

@@ -102,6 +102,7 @@ enum class TokenType {
   end,
   Union,
   unionSeparator,
+  match,
 };
 
 } // namespace qat::lexer

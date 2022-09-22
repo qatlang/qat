@@ -9,6 +9,7 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/string_literal.hpp"
 #include "../ast/sentence.hpp"
+#include "../ast/sentences/match.hpp"
 #include "../cli/color.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
@@ -83,6 +84,11 @@ public:
   void parseUnion(ParserContext &prev_ctx, usize from, usize upto,
                   Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
                   Vec<utils::FileRange>                    &fileRanges);
+
+  void
+  parseMatchContents(ParserContext &prev_ctx, usize from, usize upto,
+                     Vec<Pair<ast::MatchValue *, Vec<ast::Sentence *>>> &chain,
+                     Maybe<Vec<ast::Sentence *>> &elseCase, bool isTypeMatch);
 
   // Parse the parameters of a function
   useit Pair<Vec<ast::Argument *>, bool>

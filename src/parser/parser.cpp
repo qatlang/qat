@@ -376,8 +376,8 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
           auto subTypeRes = parseType(ctx, i + 1, bClose);
           i               = bClose;
           cacheTy         = new ast::PointerType(
-                      subTypeRes.first, getVariability(),
-                      utils::FileRange(token.fileRange, RangeAt(bClose)));
+              subTypeRes.first, getVariability(),
+              utils::FileRange(token.fileRange, RangeAt(bClose)));
           break;
         } else {
           Error("Invalid end for pointer type", RangeAt(i));
@@ -1332,6 +1332,137 @@ void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
   }
 }
 
+void Parser::parseMatchContents(
+    ParserContext &prev_ctx, usize from, usize upto,
+    Vec<Pair<ast::MatchValue *, Vec<ast::Sentence *>>> &chain,
+    Maybe<Vec<ast::Sentence *>> &elseCase, bool isTypeMatch) {
+  using lexer::TokenType;
+
+  for (usize i = from + 1; i < upto; i++) {
+    auto &token = tokens.at(i);
+    switch (token.type) {
+    case TokenType::unionSeparator: {
+      if (!isTypeMatch) {
+        Error("This is not a type match and hence cannot use union subtype "
+              "matching syntax",
+              RangeAt(i));
+      }
+      auto start = i;
+      if (isNext(TokenType::identifier, i)) {
+        Pair<String, utils::FileRange> fieldName = {tokens.at(i + 1).value,
+                                                    tokens.at(i + 1).fileRange};
+        Maybe<Pair<String, utils::FileRange>> valueName;
+        bool                                  isVar = false;
+        if (isNext(TokenType::parenthesisOpen, i + 1)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 2, false);
+          if (pCloseRes) {
+            if (isNext(TokenType::var, i + 2)) {
+              isVar = true;
+              i += 3;
+            } else {
+              i += 2;
+            }
+            if (isNext(TokenType::identifier, i)) {
+              SHOW("Value name is: " << tokens.at(i + 1).value)
+              valueName = Pair<String, utils::FileRange>(
+                  tokens.at(i + 1).value,
+                  isVar ? utils::FileRange(tokens.at(i).fileRange,
+                                           tokens.at(i + 1).fileRange)
+                        : tokens.at(i + 1).fileRange);
+              if (isNext(TokenType::parenthesisClose, i + 1)) {
+                i = pCloseRes.value();
+              } else {
+                Error("Unexpected token found after identifier in match case "
+                      "value name specification",
+                      RangeAt(i + 1));
+              }
+            } else {
+              Error("Expected value name for the union subfield",
+                    RangeSpan(start, i));
+            }
+          } else {
+            Error("Expected end for (", RangeAt(i + 2));
+          }
+        } else {
+          i++;
+        }
+        if (isNext(TokenType::bracketOpen, i)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, i + 1, false);
+          if (bCloseRes) {
+            auto snts = parseSentences(prev_ctx, i + 1, bCloseRes.value());
+            chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
+                new ast::UnionMatchValue(std::move(fieldName),
+                                         std::move(valueName), isVar),
+                std::move(snts)));
+            i = bCloseRes.value();
+          } else {
+            Error("Expected end of [", RangeAt(i + 1));
+          }
+        } else if (firstPrimaryPosition(TokenType::stop, i).has_value()) {
+          auto stop = firstPrimaryPosition(TokenType::stop, i).value();
+          auto snt  = parseSentences(prev_ctx, i, stop + 1);
+          chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
+              new ast::UnionMatchValue(std::move(fieldName),
+                                       std::move(valueName), isVar),
+              std::move(snt)));
+          i = stop;
+        } else {
+          Error("Expected [ to start the sentences in this match case block",
+                RangeAt(i));
+        }
+      } else {
+        Error("Expected name for the subfield of the union type to match",
+              RangeAt(i));
+      }
+      break;
+    }
+    case TokenType::child: {
+      if (!isTypeMatch) {
+        Error("This is not a type match and hence cannot use choice matching "
+              "syntax",
+              RangeAt(i));
+      }
+      break;
+    }
+    case TokenType::Else: {
+      if (elseCase.has_value()) {
+        Error("Else case for match sentence is already provided. Please check "
+              "logic and make neceassary changes",
+              RangeAt(i));
+      }
+      if (isNext(TokenType::bracketOpen, i)) {
+        auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                    TokenType::bracketClose, i + 1, false);
+        if (bCloseRes.has_value()) {
+          auto snts = parseSentences(prev_ctx, i + 1, bCloseRes.value());
+          elseCase  = std::move(snts);
+          i         = bCloseRes.value();
+          if (i + 1 != upto) {
+            Error(
+                "Expected match sentence to end after the else case. Make sure "
+                "that the else case is the last branch in a match sentence",
+                RangeSpan(i + 1, bCloseRes.value()));
+          }
+        } else {
+          Error("Expected end for [", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected sentences for the else case in match sentence",
+              RangeAt(i));
+      }
+      break;
+    }
+    default: {
+      SHOW("Token type: " << (int)token.type)
+      Error("Unexpected token found inside match block", token.fileRange);
+    }
+    }
+  }
+}
+
 ast::PlainInitialiser *Parser::parsePlainInitialiser(ParserContext &prev_ctx,
                                                      ast::QatType  *type,
                                                      usize from, usize upto) {
@@ -2081,6 +2212,9 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
     }
     case TokenType::unionSeparator: {
       if (cachedSymbol.has_value()) {
+        auto *typ =
+            new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
+                               false, cachedSymbol->fileRange);
         if (isNext(TokenType::identifier, i)) {
           auto subName = tokens.at(i + 1).value;
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
@@ -2091,16 +2225,14 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               auto  pClose = pCloseRes.value();
               auto *exp = parseExpression(prev_ctx, None, i + 2, pClose).first;
               cachedExpressions.push_back(new ast::UnionInitialiser(
-                  cachedSymbol->relative, cachedSymbol->name, subName, exp,
-                  {cachedSymbol->fileRange, RangeAt(pClose)}));
+                  typ, subName, exp, RangeSpan(i, pClose)));
               i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 2));
             }
           } else {
             cachedExpressions.push_back(new ast::UnionInitialiser(
-                cachedSymbol->relative, cachedSymbol->name, subName, None,
-                {cachedSymbol->fileRange, RangeAt(i + 1)}));
+                typ, subName, None, {cachedSymbol->fileRange, RangeAt(i + 1)}));
             i++;
           }
         }
@@ -2654,6 +2786,47 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
             cachedExpressions.back(),
             {cachedExpressions.back()->fileRange, token.fileRange}));
         cachedExpressions.pop_back();
+      }
+      break;
+    }
+    case TokenType::match: {
+      auto start       = i;
+      bool isTypeMatch = false;
+      if (isNext(TokenType::Type, i)) {
+        isTypeMatch = true;
+        i++;
+      }
+      if (isNext(TokenType::parenthesisOpen, i)) {
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes) {
+          auto *cand =
+              parseExpression(prev_ctx, None, i + 1, pCloseRes.value()).first;
+          i = pCloseRes.value();
+          if (isNext(TokenType::bracketOpen, i)) {
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                        TokenType::bracketClose, i + 1, false);
+            if (bCloseRes) {
+              Vec<Pair<ast::MatchValue *, Vec<ast::Sentence *>>> chain;
+              Maybe<Vec<ast::Sentence *>>                        elseCase;
+              parseMatchContents(prev_ctx, i + 1, bCloseRes.value(), chain,
+                                 elseCase, isTypeMatch);
+              result.push_back(new ast::Match(
+                  isTypeMatch, cand, std::move(chain), std::move(elseCase),
+                  RangeSpan(start, bCloseRes.value())));
+              i = bCloseRes.value();
+            } else {
+              Error("Expected end for [", RangeAt(i + 1));
+            }
+          } else {
+            Error("Expected sentences for this case of the match sentence",
+                  RangeSpan(start, i));
+          }
+        } else {
+          Error("Expected end for (", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected expression to match", RangeAt(start));
       }
       break;
     }

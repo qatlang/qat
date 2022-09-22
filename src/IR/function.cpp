@@ -22,18 +22,19 @@
 
 namespace qat::IR {
 
-LocalValue::LocalValue(const String &_name, IR::QatType *_type, bool _isVar,
+LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
                        Function *fun)
-    : Value(nullptr, _type, _isVar, Nature::assignable), name(_name) {
-  SHOW("Type is " << _type->toString())
+    : Value(nullptr, _type, _isVar, Nature::assignable),
+      name(std::move(_name)) {
+  SHOW("Type is " << type->toString())
   SHOW("Creating llvm::AllocaInst for " << name)
-  if (_type->getLLVMType()) {
+  if (type->getLLVMType()) {
     SHOW("LLVM type is not null")
   } else {
     SHOW("LLVM type is null")
   }
   if (fun->getLLVMFunction()->getEntryBlock().getInstList().empty()) {
-    ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, name,
+    ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name,
                               &fun->getLLVMFunction()->getEntryBlock());
   } else {
     llvm::Instruction *inst = nullptr;
@@ -50,37 +51,36 @@ LocalValue::LocalValue(const String &_name, IR::QatType *_type, bool _isVar,
       }
     }
     if (inst) {
-      ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name, inst);
+      ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name, inst);
     } else {
-      ll = new llvm::AllocaInst(_type->getLLVMType(), 0U, _name,
+      ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name,
                                 &fun->getLLVMFunction()->getEntryBlock());
     }
   }
+  SHOW("AllocaInst name is: " << ((llvm::AllocaInst *)ll)->getName().str());
 }
 
-String LocalValue::getName() const {
-  return ((llvm::AllocaInst *)ll)->getName().str();
-}
+String LocalValue::getName() const { return name; }
 
 llvm::AllocaInst *LocalValue::getAlloca() const {
   return (llvm::AllocaInst *)ll;
 }
 
 Block::Block(Function *_fn, Block *_parent)
-    : parent(_parent), fn(_fn), index(0) {
+    : parent(_parent), fn(_fn), index(0), active(0) {
   if (parent) {
+    index = parent->children.size();
     parent->children.push_back(this);
+  } else {
+    index = fn->blocks.size();
+    fn->blocks.push_back(this);
   }
-  SHOW("Starting block creation")
-  fn->blocks.push_back(this);
-  SHOW("Block pushed the block-list in function")
-  index = fn->blocks.size() - 1;
-  SHOW("Index of block set")
-  name = std::to_string(fn->blocks.size() - 1) + "_bb";
+  name = (hasParent() ? (parent->getName() + ".") : "") +
+         std::to_string(index) + "_bb";
   SHOW("Name of the block set")
   bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name,
                                 fn->getLLVMFunction());
-  SHOW("Created llvm::BasicBlock")
+  SHOW("Created llvm::BasicBlock" << name)
 }
 
 String Block::getName() const { return name; }
@@ -156,8 +156,14 @@ bool Block::hasGiveInAllControlPaths() const {
   }
 }
 
-void Block::setActive(llvm::IRBuilder<> &builder) const {
-  fn->setActiveBlock(index);
+void Block::setActive(llvm::IRBuilder<> &builder) {
+  active = None;
+  if (hasParent()) {
+    parent->setActive(builder);
+    parent->active = index;
+  } else {
+    fn->setActiveBlock(index);
+  }
   builder.SetInsertPoint(bb);
 }
 
@@ -186,7 +192,17 @@ bool Block::isMoved(const String &locID) const {
   return false;
 }
 
-void Block::addMovedValue(String locID) const { movedValues.push_back(locID); }
+void Block::addMovedValue(String locID) const {
+  movedValues.push_back(std::move(locID));
+}
+
+Block *Block::getActive() {
+  if (active) {
+    return children.at(active.value())->getActive();
+  } else {
+    return this;
+  }
+}
 
 Function::Function(QatModule *_mod, String _name, QatType *returnType,
                    bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args,
@@ -294,7 +310,9 @@ llvm::Function *Function::getLLVMFunction() { return (llvm::Function *)ll; }
 
 void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
-Block *Function::getBlock() const { return blocks.at(activeBlock); }
+Block *Function::getBlock() const {
+  return blocks.at(activeBlock)->getActive();
+}
 
 usize &Function::getCopiedCounter() { return copiedCounter; }
 

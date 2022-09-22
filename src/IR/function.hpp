@@ -34,8 +34,7 @@ class LocalValue : public Value, public Uniq {
   String name;
 
 public:
-  LocalValue(const String &name, IR::QatType *type, bool isVariable,
-             Function *fun);
+  LocalValue(String name, IR::QatType *type, bool isVariable, Function *fun);
 
   useit String getName() const;
   useit llvm::AllocaInst *getAlloca() const;
@@ -50,6 +49,7 @@ private:
   Vec<Block *>        children;
   Function           *fn;
   usize               index;
+  Maybe<usize>        active;
   mutable Vec<String> movedValues;
   mutable bool        isGhost = false;
   mutable bool        hasGive = false;
@@ -70,7 +70,8 @@ public:
   void              setGhost(bool value) const;
   void              setHasGive() const;
   void              addMovedValue(String locID) const;
-  void              setActive(llvm::IRBuilder<> &builder) const;
+  void              setActive(llvm::IRBuilder<> &builder);
+  useit Block      *getActive();
   void              collectLocalValues(Vec<LocalValue *> &vals) const;
 };
 
@@ -156,7 +157,7 @@ public:
   useit Function *fillTemplates(Vec<IR::QatType *> _types, IR::Context *ctx);
 };
 
-void functionReturnHandler(IR::Context *ctx, IR::Function *fn,
+void functionReturnHandler(IR::Context *ctx, IR::Function *fun,
                            const utils::FileRange &fileRange);
 
 } // namespace qat::IR

@@ -5,8 +5,7 @@
 namespace qat::ast {
 
 BroughtGroup::BroughtGroup(String _parent, utils::FileRange _fileRange)
-    : parent(std::move(_parent)), members({}),
-      fileRange(std::move(_fileRange)) {}
+    : parent(std::move(_parent)), fileRange(std::move(_fileRange)) {}
 
 BroughtGroup::BroughtGroup(String _parent, Vec<String> _members,
                            utils::FileRange _fileRange)
@@ -43,7 +42,7 @@ IR::Value *BringEntities::emit(IR::Context *ctx) {
 
 nuo::Json BringEntities::toJson() const {
   Vec<nuo::JsonValue> entitiesJson;
-  for (auto ent : entities) {
+  for (auto *ent : entities) {
     entitiesJson.emplace_back(ent->toJson());
   }
   return nuo::Json()

@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-BringPaths::BringPaths(Vec<StringLiteral>           _paths,
+BringPaths::BringPaths(Vec<StringLiteral *>         _paths,
                        const utils::VisibilityInfo &_visibility,
                        utils::FileRange             _fileRange)
     : paths(std::move(_paths)), visibility(_visibility),
@@ -11,19 +11,19 @@ BringPaths::BringPaths(Vec<StringLiteral>           _paths,
 
 IR::Value *BringPaths::emit(IR::Context *ctx) {
   for (auto const &pathString : paths) {
-    auto path = pathString.get_value();
+    auto path = pathString->get_value();
     if (fs::exists(path)) {
       if (fs::is_directory(path)) {
         // TODO - Implement this
       } else if (fs::is_regular_file(path)) {
         // TODO - Implement this
       } else {
-        ctx->Error("Cannot bring this file type", pathString.fileRange);
+        ctx->Error("Cannot bring this file type", pathString->fileRange);
       }
     } else {
       ctx->Error("The path provided does not exist: " + path +
                      " and cannot be brought in.",
-                 pathString.fileRange);
+                 pathString->fileRange);
     }
   }
   return nullptr;
@@ -31,12 +31,12 @@ IR::Value *BringPaths::emit(IR::Context *ctx) {
 
 nuo::Json BringPaths::toJson() const {
   Vec<nuo::JsonValue> pths;
-  for (auto path : paths) {
-    pths.push_back(path.toJson());
+  for (auto *path : paths) {
+    pths.push_back(path->toJson());
   }
   return nuo::Json()
       ._("nodeType", "bringPaths")
-      ._("paths", pths)
+      ._("paths", std::move(pths))
       ._("visibility", visibility)
       ._("fileRange", fileRange);
 }

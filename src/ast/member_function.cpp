@@ -38,6 +38,12 @@ void MemberPrototype::define(IR::Context *ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
+  if (coreType->hasMemberFunction(name)) {
+    ctx->Error("Member function named " + ctx->highlightError(name) +
+                   " already exists in core type " +
+                   ctx->highlightError(coreType->getFullName()),
+               fileRange);
+  }
   Vec<IR::QatType *> generatedTypes;
   // TODO - Check existing member functions
   SHOW("Generating types")

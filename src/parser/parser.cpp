@@ -61,9 +61,9 @@
 #include "parser_context.hpp"
 #include <utility>
 
-#define RangeAt(ind) tokens.at(ind).fileRange
+#define RangeAt(ind) tokens->at(ind).fileRange
 #define RangeSpan(ind1, ind2)                                                  \
-  { tokens.at(ind1).fileRange, tokens.at(ind2).fileRange }
+  { tokens->at(ind1).fileRange, tokens->at(ind2).fileRange }
 
 // NOTE - Check if file fileRange values are making use of the new merge
 // functionality
@@ -71,8 +71,9 @@ namespace qat::parser {
 
 Parser::Parser() = default;
 
-void Parser::setTokens(const Vec<lexer::Token> &allTokens) {
-  g_ctx  = ParserContext();
+void Parser::setTokens(Vec<lexer::Token> *allTokens) {
+  g_ctx = ParserContext();
+  delete tokens;
   tokens = allTokens;
 }
 
@@ -85,7 +86,7 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
   Maybe<CacheSymbol> csym = None;
 
   for (usize i = from + 1; i < upto; i++) {
-    auto token = tokens.at(i);
+    auto token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
     case TokenType::identifier: {
       auto sym_res = parseSymbol(ctx, i);
@@ -104,7 +105,7 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
                     "curly braces since only one entity is being brought.",
                     utils::FileRange(RangeAt(i + 1), RangeAt(bClose)));
             if (isNext(TokenType::identifier, i + 1)) {
-              entities.push_back(tokens.at(i + 2).value);
+              entities.push_back(tokens->at(i + 2).value);
             } else {
               Error("Expected the name of an entity in the bring sentence",
                     RangeAt(i + 2));
@@ -133,8 +134,8 @@ ast::BringEntities *Parser::parseBroughtEntities(ParserContext &ctx, usize from,
 Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
   using lexer::TokenType;
   Vec<String> result;
-  for (usize i = from + 1; (i < upto) && (i < tokens.size()); i++) {
-    auto token = tokens.at(i);
+  for (usize i = from + 1; (i < upto) && (i < tokens->size()); i++) {
+    auto token = tokens->at(i);
     switch (token.type) {
     case TokenType::StringLiteral: {
       if (isNext(TokenType::StringLiteral, i)) {
@@ -186,9 +187,9 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
   usize                 i   = 0; // NOLINT(readability-identifier-length)
   Maybe<ast::QatType *> cacheTy;
 
-  for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens.size());
+  for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size());
        i++) {
-    Token &token = tokens.at(i);
+    Token &token = tokens->at(i);
     switch (token.type) {
     case TokenType::var: {
       variable = true;
@@ -395,7 +396,7 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
           isNext(TokenType::integerLiteral, i)) {
         if (isNext(TokenType::bracketClose, i + 1)) {
           auto *subType      = cacheTy.value();
-          auto  numberString = tokens.at(i + 1).value;
+          auto  numberString = tokens->at(i + 1).value;
           if (numberString.find('_') != String::npos) {
             numberString = numberString.substr(0, numberString.find('_'));
           }
@@ -431,7 +432,7 @@ Vec<ast::TemplatedType *> Parser::parseTemplateTypes(usize from, usize upto) {
 
   Vec<ast::TemplatedType *> result;
   for (usize i = from + 1; i < upto; i++) {
-    auto token = tokens.at(i);
+    auto token = tokens->at(i);
     if (token.type == TokenType::identifier) {
       result.push_back(new ast::TemplatedType(utils::unique_id(), token.value,
                                               false, token.fileRange));
@@ -458,7 +459,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
   using lexer::TokenType;
 
   if (upto == -1) {
-    upto = tokens.size();
+    upto = tokens->size();
   }
 
   ParserContext ctx(prev_ctx);
@@ -485,7 +486,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
   };
 
   for (usize i = (from + 1); i < upto; i++) {
-    Token &token = tokens.at(i);
+    Token &token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
     case TokenType::endOfFile: {
       return result;
@@ -516,7 +517,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto end = endRes.value();
             exp      = parseExpression(prev_ctx, None, i + 2, end).first;
             result.push_back(new ast::GlobalDeclaration(
-                tokens.at(i + 1).value, typeResult.first, exp,
+                tokens->at(i + 1).value, typeResult.first, exp,
                 typeResult.first->isVariable(), getVisibility(),
                 RangeSpan(start, end)));
             i = end;
@@ -559,7 +560,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             parseUnion(prev_ctx, i + 2, bClose, subTypes, fileRanges);
             // FIXME - Support packing
             result.push_back(new ast::DefineUnionType(
-                tokens.at(i + 1).value, std::move(subTypes),
+                tokens->at(i + 1).value, std::move(subTypes),
                 std::move(fileRanges), false, getVisibility(),
                 RangeSpan(i, bClose)));
             i = bClose;
@@ -580,7 +581,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       // TODO - Consider other possible tokens and template types instead of
       // just identifiers
       if (isNext(TokenType::identifier, i)) {
-        auto                      name = tokens.at(i + 1).value;
+        auto                      name = tokens->at(i + 1).value;
         Vec<ast::TemplatedType *> templates;
         auto                      ctx = ParserContext();
         i++;
@@ -640,7 +641,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           if (bClose.has_value()) {
             auto contents = parse(ctx, i + 2, bClose.value());
             result.push_back(new ast::Lib(
-                tokens.at(i + 1).value, contents, getVisibility(),
+                tokens->at(i + 1).value, contents, getVisibility(),
                 utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
             i = bClose.value();
           } else {
@@ -662,7 +663,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           if (bClose.has_value()) {
             auto contents = parse(ctx, i + 2, bClose.value());
             result.push_back(new ast::Box(
-                tokens.at(i + 1).value, contents, getVisibility(),
+                tokens->at(i + 1).value, contents, getVisibility(),
                 utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
             i = bClose.value();
           } else {
@@ -679,7 +680,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
     case TokenType::alias: {
       /* Alias declaration */
       if (isNext(TokenType::identifier, i)) {
-        auto t_ident = tokens.at(i + 1);
+        auto t_ident = tokens->at(i + 1);
         if (ctx.has_alias(t_ident.value)) {
           Error("An alias with the name " + t_ident.value + " already exists",
                 t_ident.fileRange);
@@ -778,7 +779,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             SHOW("Function is extern")
             if (isNext(TokenType::StringLiteral, i + 1)) {
               SHOW("Calling convention found")
-              callConv = tokens.at(i + 2).value;
+              callConv = tokens->at(i + 2).value;
               i += 2;
             } else {
               SHOW("No calling convention")
@@ -788,7 +789,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
           }
           SHOW("Creating prototype")
           auto *prototype = new ast::FunctionPrototype(
-              tokens.at(start).value, argResult.first, argResult.second,
+              tokens->at(start).value, argResult.first, argResult.second,
               retType, false, llvm::GlobalValue::WeakAnyLinkage, callConv,
               getVisibility(), RangeSpan(start, pClose), templates);
           SHOW("Prototype created")
@@ -853,7 +854,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
         } else if (isNext(TokenType::external, pClose)) {
           isExternal = true;
           if (isNext(TokenType::StringLiteral, pClose + 1)) {
-            callConv = tokens.at(pClose + 2).value;
+            callConv = tokens->at(pClose + 2).value;
             if (!isNext(TokenType::stop, pClose + 2)) {
               // TODO - Sync errors
               Error("Expected the function declaration to end here. "
@@ -885,7 +886,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
                 getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
                            pClose + 1, false);
             if (!bCloseResult.has_value() ||
-                (bCloseResult.value() >= tokens.size())) {
+                (bCloseResult.value() >= tokens->size())) {
               Error("Expected ] at the end of the Function Definition",
                     RangeAt(pClose + 1));
             }
@@ -929,7 +930,7 @@ Pair<utils::VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
     } else if (isNext(TokenType::box, from + 1)) {
       return {utils::VisibilityKind::box, from + 2};
     } else if (isNext(TokenType::identifier, from + 1)) {
-      auto val = tokens.at(from + 2).value;
+      auto val = tokens->at(from + 2).value;
       if (val == "file") {
         return {utils::VisibilityKind::file, from + 2};
       } else if (val == "folder") {
@@ -998,7 +999,7 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
   Maybe<ast::QatType *> cacheTy;
 
   for (usize i = from + 1; i < upto; i++) {
-    Token &token = tokens.at(i);
+    Token &token = tokens->at(i);
     switch (token.type) {
     case TokenType::Public: {
       auto kindRes = parseVisibilityKind(i);
@@ -1086,11 +1087,11 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
                 coreTy->addMemberDefinition(new ast::MemberDefinition(
                     getStatic()
                         ? ast::MemberPrototype::Static(
-                              tokens.at(start).value, argsRes.first,
+                              tokens->at(start).value, argsRes.first,
                               argsRes.second, retTy, getAsync(),
                               getVisibility(), RangeSpan(start, pClose + 1))
                         : ast::MemberPrototype::Normal(
-                              getVariation(), tokens.at(start).value,
+                              getVariation(), tokens->at(start).value,
                               argsRes.first, argsRes.second, retTy, getAsync(),
                               getVisibility(), RangeSpan(start, pClose + 1)),
                     snts, RangeSpan(start, bClose)));
@@ -1151,9 +1152,9 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
               } else {
                 // NOTE = Constructor
                 coreTy->addConstructorDefinition(new ast::ConstructorDefinition(
-                    new ast::ConstructorPrototype(argsRes.first,
-                                                  getVisibility(),
-                                                  RangeSpan(start, pClose)),
+                    new ast::ConstructorPrototype(
+                        ast::ConstructorType::normal, argsRes.first,
+                        getVisibility(), RangeSpan(start, pClose)),
                     snts, RangeSpan(start, bClose)));
               }
               i = bClose;
@@ -1178,8 +1179,8 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
           new ast::VoidType(false, utils::FileRange{"", {0u, 0u}, {0u, 0u}});
       Vec<ast::Argument *> args;
       if (isNext(TokenType::binaryOperator, i)) {
-        SHOW("Binary operator for core type: " << tokens.at(i + 1).value)
-        if (tokens.at(i + 1).value == "-") {
+        SHOW("Binary operator for core type: " << tokens->at(i + 1).value)
+        if (tokens->at(i + 1).value == "-") {
           if (isNext(TokenType::parenthesisOpen, i) &&
               isNext(TokenType::parenthesisClose, i + 1)) {
             isUnary = true;
@@ -1193,11 +1194,11 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
             }
           }
         }
-        opr = tokens.at(i + 1).value;
+        opr = tokens->at(i + 1).value;
         i++;
       } else if (isNext(TokenType::unaryOperator, i)) {
         isUnary = true;
-        opr     = tokens.at(i + 1).value;
+        opr     = tokens->at(i + 1).value;
         i++;
       } else if (isNext(TokenType::assignment, i)) {
         opr = "=";
@@ -1294,14 +1295,14 @@ void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
   using lexer::TokenType;
 
   for (auto i = from + 1; i < upto; i++) {
-    auto &token = tokens.at(i);
+    auto &token = tokens->at(i);
     switch (token.type) {
     case TokenType::identifier: {
       auto start = i;
       if (isNext(TokenType::separator, i) ||
           (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
         uRef.push_back(
-            Pair<String, Maybe<ast::QatType *>>(tokens.at(start).value, None));
+            Pair<String, Maybe<ast::QatType *>>(tokens->at(start).value, None));
         fileRanges.push_back(RangeAt(start));
         i++;
       } else if (isNext(TokenType::unionSeparator, i)) {
@@ -1316,7 +1317,7 @@ void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
           i   = upto;
         }
         uRef.push_back(
-            Pair<String, Maybe<ast::QatType *>>(tokens.at(start).value, typ));
+            Pair<String, Maybe<ast::QatType *>>(tokens->at(start).value, typ));
         fileRanges.push_back(RangeAt(start));
       } else {
         Error("Invalid token found after identifier in union type definition",
@@ -1339,7 +1340,7 @@ void Parser::parseMatchContents(
   using lexer::TokenType;
 
   for (usize i = from + 1; i < upto; i++) {
-    auto &token = tokens.at(i);
+    auto &token = tokens->at(i);
     switch (token.type) {
     case TokenType::unionSeparator: {
       if (!isTypeMatch) {
@@ -1349,8 +1350,8 @@ void Parser::parseMatchContents(
       }
       auto start = i;
       if (isNext(TokenType::identifier, i)) {
-        Pair<String, utils::FileRange> fieldName = {tokens.at(i + 1).value,
-                                                    tokens.at(i + 1).fileRange};
+        Pair<String, utils::FileRange> fieldName = {
+            tokens->at(i + 1).value, tokens->at(i + 1).fileRange};
         Maybe<Pair<String, utils::FileRange>> valueName;
         bool                                  isVar = false;
         if (isNext(TokenType::parenthesisOpen, i + 1)) {
@@ -1365,12 +1366,12 @@ void Parser::parseMatchContents(
               i += 2;
             }
             if (isNext(TokenType::identifier, i)) {
-              SHOW("Value name is: " << tokens.at(i + 1).value)
+              SHOW("Value name is: " << tokens->at(i + 1).value)
               valueName = Pair<String, utils::FileRange>(
-                  tokens.at(i + 1).value,
-                  isVar ? utils::FileRange(tokens.at(i).fileRange,
-                                           tokens.at(i + 1).fileRange)
-                        : tokens.at(i + 1).fileRange);
+                  tokens->at(i + 1).value,
+                  isVar ? utils::FileRange(tokens->at(i).fileRange,
+                                           tokens->at(i + 1).fileRange)
+                        : tokens->at(i + 1).fileRange);
               if (isNext(TokenType::parenthesisClose, i + 1)) {
                 i = pCloseRes.value();
               } else {
@@ -1473,7 +1474,7 @@ ast::PlainInitialiser *Parser::parsePlainInitialiser(ParserContext &prev_ctx,
     for (usize j = from + 1; j < upto; j++) {
       if (isNext(TokenType::identifier, j - 1)) {
         fields.push_back(Pair<String, utils::FileRange>(
-            tokens.at(j).value, tokens.at(j).fileRange));
+            tokens->at(j).value, tokens->at(j).fileRange));
         if (isNext(TokenType::associatedAssignment, j)) {
           if (isPrimaryWithin(TokenType::separator, j + 1, upto)) {
             auto sepRes = firstPrimaryPosition(TokenType::separator, j + 1);
@@ -1532,8 +1533,8 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
   Vec<Token>         cachedUnaryOps;
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
-  for (; upto.has_value() ? (i < upto.value()) : (i < tokens.size()); i++) {
-    Token &token = tokens.at(i);
+  for (; upto.has_value() ? (i < upto.value()) : (i < tokens->size()); i++) {
+    Token &token = tokens->at(i);
     switch (token.type) {
     case TokenType::unsignedLiteral: {
       if ((token.value.find('_') != String::npos) &&
@@ -1589,8 +1590,8 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       if (isNext(TokenType::StringLiteral, i)) {
         auto pos = i;
         while (isNext(TokenType::StringLiteral, pos)) {
-          val += tokens.at(pos + 1).value;
-          fRange = utils::FileRange(fRange, tokens.at(pos + 1).fileRange);
+          val += tokens->at(pos + 1).value;
+          fRange = utils::FileRange(fRange, tokens->at(pos + 1).fileRange);
           pos++;
         }
         i = pos;
@@ -1735,8 +1736,8 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         if (isNext(TokenType::parenthesisOpen, i + 1)) {
           // FIXME - Self member function call
         } else {
-          cachedExpressions.push_back(
-              new ast::SelfMember(tokens.at(i + 1).value, RangeSpan(i, i + 1)));
+          cachedExpressions.push_back(new ast::SelfMember(
+              tokens->at(i + 1).value, RangeSpan(i, i + 1)));
           i++;
         }
       } else {
@@ -1748,7 +1749,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
     case TokenType::heap: {
       if (isNext(TokenType::child, i)) {
         if (isNext(TokenType::identifier, i + 1)) {
-          if (tokens.at(i + 2).value == "get") {
+          if (tokens->at(i + 2).value == "get") {
             if (isNext(TokenType::templateTypeStart, i + 2)) {
               auto tEndRes =
                   getPairEnd(TokenType::templateTypeStart,
@@ -1786,7 +1787,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                     "allocate the memory for",
                     RangeSpan(i, i + 2));
             }
-          } else if (tokens.at(i + 2).value == "put") {
+          } else if (tokens->at(i + 2).value == "put") {
             if (isNext(TokenType::parenthesisOpen, i + 2)) {
               auto pCloseRes =
                   getPairEnd(TokenType::parenthesisOpen,
@@ -1807,7 +1808,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                     "for heap'put",
                     RangeSpan(i, i + 2));
             }
-          } else if (tokens.at(i + 2).value == "grow") {
+          } else if (tokens->at(i + 2).value == "grow") {
             // FIXME - Maybe provided type is not necessary
             if (isNext(TokenType::templateTypeStart, i + 2)) {
               auto tEndRes =
@@ -2025,7 +2026,8 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       if (isNext(TokenType::child, i)) {
         if (isNext(TokenType::identifier, i + 1)) {
           cachedExpressions.push_back(new ast::LoopIndex(
-              (tokens.at(i + 2).value == "index") ? "" : tokens.at(i + 2).value,
+              (tokens->at(i + 2).value == "index") ? ""
+                                                   : tokens->at(i + 2).value,
               {token.fileRange, RangeAt(i + 2)}));
           i = i + 2;
         } else {
@@ -2155,7 +2157,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                   parseExpression(prev_ctx, None, split, pClose).first;
               cachedExpressions.push_back(new ast::TernaryExpression(
                   cond, trueExpr, falseExpr,
-                  {cond->fileRange, tokens.at(pClose).fileRange}));
+                  {cond->fileRange, tokens->at(pClose).fileRange}));
               i = pClose;
             } else {
               Error("Expected 2 expressions here for true and false cases "
@@ -2196,7 +2198,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
               cachedExpressions.push_back(new ast::MemberFunctionCall(
-                  exp, false, tokens.at(i + 1).value, args, true,
+                  exp, false, tokens->at(i + 1).value, args, true,
                   {exp->fileRange, RangeAt(pClose)}));
               i = pClose;
               break;
@@ -2216,7 +2218,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
             new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
                                false, cachedSymbol->fileRange);
         if (isNext(TokenType::identifier, i)) {
-          auto subName = tokens.at(i + 1).value;
+          auto subName = tokens->at(i + 1).value;
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
             auto pCloseRes =
                 getPairEnd(TokenType::parenthesisOpen,
@@ -2267,7 +2269,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
               cachedExpressions.push_back(new ast::MemberFunctionCall(
-                  exp, false, tokens.at(i + 1).value, args, false,
+                  exp, false, tokens->at(i + 1).value, args, false,
                   {exp->fileRange, RangeAt(pClose)}));
               i = pClose;
               break;
@@ -2276,7 +2278,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
             }
           } else {
             cachedExpressions.push_back(
-                new ast::MemberAccess(exp, false, tokens.at(i + 1).value,
+                new ast::MemberAccess(exp, false, tokens->at(i + 1).value,
                                       {exp->fileRange, RangeAt(i + 1)}));
             i++;
           }
@@ -2414,7 +2416,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
   if (isNext(TokenType::identifier, start - 1) ||
       isNext(TokenType::super, start - 1)) {
     u32  relative = isNext(TokenType::super, start - 1);
-    auto prev     = tokens.at(start).type;
+    auto prev     = tokens->at(start).type;
     auto i        = start; // NOLINT(readability-identifier-length)
     if (isNext(TokenType::super, start - 1)) {
       while (prev == TokenType::super
@@ -2424,7 +2426,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
         if (isNext(TokenType::super, i)) {
           relative++;
         }
-        prev = tokens.at(i + 1).type;
+        prev = tokens->at(i + 1).type;
         i++;
       }
     }
@@ -2440,8 +2442,8 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext &prev_ctx,
     if (prev != TokenType::identifier) {
       i++;
     }
-    for (; i < tokens.size(); i++) {
-      auto tok = tokens.at(i);
+    for (; i < tokens->size(); i++) {
+      auto tok = tokens->at(i);
       if (tok.type == TokenType::identifier) {
         if (i == start || prev != TokenType::identifier) {
           name += tok.value;
@@ -2498,7 +2500,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
   auto var = false;
 
   for (usize i = from + 1; i < upto; i++) {
-    Token &token = tokens.at(i);
+    Token &token = tokens->at(i);
     switch (token.type) {
     case TokenType::voidType:
     case TokenType::integerType:
@@ -2518,7 +2520,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
             auto *exp =
                 parseExpression(prev_ctx, None, i + 2, endRes.value()).first;
             result.push_back(new ast::LocalDeclaration(
-                typeRes.first, false, tokens.at(i + 1).value, exp,
+                typeRes.first, false, tokens->at(i + 1).value, exp,
                 typeRes.first->isVariable(), RangeSpan(old, endRes.value())));
             i = endRes.value();
             cacheTy.clear();
@@ -2533,7 +2535,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                 {typeRes.first->fileRange, RangeAt(i + 2)});
           // FIXME - Support uninitialised declaration
           // result.push_back(new ast::LocalDeclaration(
-          //     typeRes.first, false, tokens.at(i + 1).value, nullptr,
+          //     typeRes.first, false, tokens->at(i + 1).value, nullptr,
           //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
           // cacheTy.clear();
           // i += 2;
@@ -2855,7 +2857,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
             auto  end = endRes.value();
             auto *exp = parseExpression(prev_ctx, None, i + 2, end).first;
             result.push_back(new ast::LocalDeclaration(
-                nullptr, isRef, tokens.at(i + 1).value, exp, isVarDecl,
+                nullptr, isRef, tokens->at(i + 1).value, exp, isVarDecl,
                 RangeSpan(start, end)));
             cacheSymbol = None;
             cacheTy.clear();
@@ -2871,7 +2873,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                 RangeSpan(start, i + 2));
         } else if (isNext(TokenType::stop, i + 1)) {
           result.push_back(new ast::LocalDeclaration(
-              nullptr, isRef, tokens.at(i + 1).value, nullptr, isVarDecl,
+              nullptr, isRef, tokens->at(i + 1).value, nullptr, isVarDecl,
               RangeSpan(start, i + 2)));
           cacheSymbol = None;
           cacheTy.clear();
@@ -2964,7 +2966,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         Maybe<String> tag = None;
         if (isNext(TokenType::colon, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
-            tag = tokens.at(i + 2).value;
+            tag = tokens->at(i + 2).value;
             pos = i + 2;
           } else {
             Error("Expected identifier after : for the tag for the loop",
@@ -2994,7 +2996,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
           auto  pos   = pClose;
           if (isNext(TokenType::colon, pClose)) {
             if (isNext(TokenType::identifier, pClose + 1)) {
-              loopTag = tokens.at(pClose + 2).value;
+              loopTag = tokens->at(pClose + 2).value;
               pos     = pClose + 2;
             } else {
               Error("Expected an identifier for the tag for the loop",
@@ -3050,7 +3052,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
                     auto snts =
                         parseSentences(prev_ctx, pClose + 3, bCloseRes.value());
                     result.push_back(new ast::LoopWhile(
-                        cond, snts, tokens.at(pClose + 2).value,
+                        cond, snts, tokens->at(pClose + 2).value,
                         RangeSpan(i, bCloseRes.value())));
                     i = bCloseRes.value();
                   } else {
@@ -3110,7 +3112,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       if (isNext(TokenType::child, i)) {
         if (isNext(TokenType::identifier, i + 1)) {
           result.push_back(
-              new ast::Break(tokens.at(i + 2).value, RangeSpan(i, i + 2)));
+              new ast::Break(tokens->at(i + 2).value, RangeSpan(i, i + 2)));
           i += 2;
         } else {
           Error("Expected an identifier after break'", RangeSpan(i, i + 2));
@@ -3127,7 +3129,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       if (isNext(TokenType::child, i)) {
         if (isNext(TokenType::identifier, i + 1)) {
           result.push_back(
-              new ast::Continue(tokens.at(i + 2).value, RangeSpan(i, i + 2)));
+              new ast::Continue(tokens->at(i + 2).value, RangeSpan(i, i + 2)));
           i += 2;
         } else {
           Error("Expected an identifier after continue'", RangeSpan(i, i + 2));
@@ -3192,8 +3194,8 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
     }
   };
 
-  for (usize i = from + 1; ((i < upto) && (i < tokens.size())); i++) {
-    auto &token = tokens.at(i);
+  for (usize i = from + 1; ((i < upto) && (i < tokens->size())); i++) {
+    auto &token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
     case TokenType::voidType: {
       Error("Arguments cannot have void type", token.fileRange);
@@ -3249,7 +3251,7 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
     case TokenType::variadic: {
       if (isNext(TokenType::identifier, i)) {
         args.push_back(ast::Argument::Normal(
-            tokens.at(i + 1).value,
+            tokens->at(i + 1).value,
             utils::FileRange(token.fileRange, RangeAt(i + 1)), nullptr));
         if (isNext(TokenType::parenthesisClose, i + 1) ||
             (isNext(TokenType::separator, i + 1) &&
@@ -3266,9 +3268,9 @@ Parser::parseFunctionParameters(ParserContext &prev_ctx, usize from,
     }
     case TokenType::self: {
       if (isNext(TokenType::identifier, i)) {
-        SHOW("Creating member argument: " << tokens.at(i + 1).value)
+        SHOW("Creating member argument: " << tokens->at(i + 1).value)
         args.push_back(ast::Argument::ForConstructor(
-            tokens.at(i + 1).value, RangeSpan(i, i + 1), nullptr, true));
+            tokens->at(i + 1).value, RangeSpan(i, i + 1), nullptr, true));
         i++;
       } else {
         Error("Expected name of the member to be initialised", token.fileRange);
@@ -3284,17 +3286,17 @@ Maybe<usize> Parser::getPairEnd(const lexer::TokenType startType,
                                 const lexer::TokenType endType,
                                 const usize current, const bool respectScope) {
   usize collisions = 0;
-  for (usize i = current + 1; i < tokens.size(); i++) {
+  for (usize i = current + 1; i < tokens->size(); i++) {
     if (respectScope) {
       for (auto scopeTk : TokenFamily::scopeLimiters) {
-        if (tokens.at(i).type == scopeTk) {
+        if (tokens->at(i).type == scopeTk) {
           return None;
         }
       }
     }
-    if (tokens.at(i).type == startType) {
+    if (tokens->at(i).type == startType) {
       collisions++;
-    } else if (tokens.at(i).type == endType) {
+    } else if (tokens->at(i).type == endType) {
       if (collisions == 0) {
         return i;
       } else {
@@ -3307,15 +3309,15 @@ Maybe<usize> Parser::getPairEnd(const lexer::TokenType startType,
 
 bool Parser::isPrev(const lexer::TokenType type, const usize from) {
   if ((from - 1) >= 0) {
-    return tokens.at(from - 1).type == type;
+    return tokens->at(from - 1).type == type;
   } else {
     return false;
   }
 }
 
 bool Parser::isNext(const lexer::TokenType type, const usize current) {
-  if ((current + 1) < tokens.size()) {
-    return tokens.at(current + 1).type == type;
+  if ((current + 1) < tokens->size()) {
+    return tokens->at(current + 1).type == type;
   } else {
     return false;
   }
@@ -3325,7 +3327,7 @@ bool Parser::areOnlyPresentWithin(const Vec<lexer::TokenType> &kinds,
                                   usize from, usize upto) {
   for (usize i = from + 1; i < upto; i++) {
     for (auto const &kind : kinds) {
-      if (kind != tokens.at(i).type) {
+      if (kind != tokens->at(i).type) {
         return false;
       }
     }
@@ -3342,12 +3344,12 @@ bool Parser::isPrimaryWithin(lexer::TokenType candidate, usize from,
 Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
                                           const usize            from) {
   using lexer::TokenType;
-  for (usize i = from + 1; i < tokens.size(); i++) {
-    auto tok = tokens.at(i);
+  for (usize i = from + 1; i < tokens->size(); i++) {
+    auto tok = tokens->at(i);
     if (tok.type == TokenType::parenthesisOpen) {
       auto end_res = getPairEnd(TokenType::parenthesisOpen,
                                 TokenType::parenthesisClose, i, false);
-      if (end_res.has_value() && (end_res.value() < tokens.size())) {
+      if (end_res.has_value() && (end_res.value() < tokens->size())) {
         i = end_res.value();
       } else {
         return None;
@@ -3355,7 +3357,7 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::bracketOpen) {
       auto end_res =
           getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
-      if (end_res.has_value() && (end_res.value() < tokens.size())) {
+      if (end_res.has_value() && (end_res.value() < tokens->size())) {
         i = end_res.value();
       } else {
         return None;
@@ -3363,7 +3365,7 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::curlybraceOpen) {
       auto end_res = getPairEnd(TokenType::curlybraceOpen,
                                 TokenType::curlybraceClose, i, false);
-      if (end_res.has_value() && (end_res.value() < tokens.size())) {
+      if (end_res.has_value() && (end_res.value() < tokens->size())) {
         i = end_res.value();
       } else {
         return None;
@@ -3371,7 +3373,7 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate,
     } else if (tok.type == TokenType::templateTypeStart) {
       auto end_res = getPairEnd(TokenType::templateTypeStart,
                                 TokenType::templateTypeEnd, i, false);
-      if (end_res.has_value() && (end_res.value() < tokens.size())) {
+      if (end_res.has_value() && (end_res.value() < tokens->size())) {
         i = end_res.value();
       } else {
         return None;
@@ -3387,8 +3389,8 @@ Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate,
                                           usize from, usize upto) {
   Vec<usize> result;
   using lexer::TokenType;
-  for (usize i = from + 1; (i < upto && i < tokens.size()); i++) {
-    auto tok = tokens.at(i);
+  for (usize i = from + 1; (i < upto && i < tokens->size()); i++) {
+    auto tok = tokens->at(i);
     if (tok.type == TokenType::parenthesisOpen) {
       auto end_res = getPairEnd(TokenType::parenthesisOpen,
                                 TokenType::parenthesisClose, i, false);
@@ -3437,7 +3439,7 @@ void Parser::Error(const String &message, const utils::FileRange &fileRange) {
             << colors::underline::green << fileRange.file.string() << ":"
             << fileRange.end.line << ":" << fileRange.end.character
             << colors::reset << "\n";
-  tokens.clear();
+  tokens->clear();
   ast::Node::clearAll();
   exit(0);
 }

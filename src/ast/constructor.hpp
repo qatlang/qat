@@ -12,6 +12,13 @@
 
 namespace qat::ast {
 
+enum class ConstructorType {
+  normal,
+  copy,
+  Default,
+  move,
+};
+
 class ConstructorPrototype : public Node {
   friend class ConstructorDefinition;
   friend class DefineCoreType;
@@ -20,11 +27,12 @@ private:
   IR::CoreType         *coreType;
   Vec<Argument *>       arguments;
   utils::VisibilityKind visibility;
+  ConstructorType       type;
 
 public:
-  ConstructorPrototype(Vec<Argument *>         _arguments,
-                       utils::VisibilityKind   _visibility,
-                       const utils::FileRange &_fileRange);
+  ConstructorPrototype(ConstructorType constType, Vec<Argument *> _arguments,
+                       utils::VisibilityKind _visibility,
+                       utils::FileRange      _fileRange);
 
   void setCoreType(IR::CoreType *_coreType);
 

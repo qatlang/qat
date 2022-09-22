@@ -17,7 +17,7 @@ Lexer::Lexer() {
   Lexer::show_report = cfg->shouldShowReport();
 }
 
-Vec<Token> &Lexer::get_tokens() { return tokens; }
+Vec<Token> *Lexer::get_tokens() { return tokens; }
 
 Vec<String> Lexer::getContent() const { return content; }
 
@@ -77,16 +77,16 @@ utils::FileRange Lexer::getPosition(u64 length) {
 void Lexer::analyse() {
   file.open(filePath, std::ios::in);
   auto lexer_start = std::chrono::high_resolution_clock::now();
-  tokens.push_back(Token::valued(TokenType::startOfFile, filePath.string(),
-                                 this->getPosition(0)));
+  tokens->push_back(Token::valued(TokenType::startOfFile, filePath.string(),
+                                  this->getPosition(0)));
   read();
   while (!file.eof()) {
-    tokens.push_back(tokeniser());
+    tokens->push_back(tokeniser());
   }
   file.close();
-  if (tokens.back().type != TokenType::endOfFile) {
-    tokens.push_back(Token::valued(TokenType::endOfFile, filePath.string(),
-                                   this->getPosition(0)));
+  if (tokens->back().type != TokenType::endOfFile) {
+    tokens->push_back(Token::valued(TokenType::endOfFile, filePath.string(),
+                                    this->getPosition(0)));
   }
   std::chrono::nanoseconds lexer_elapsed =
       std::chrono::high_resolution_clock::now() - lexer_start;
@@ -95,7 +95,7 @@ void Lexer::analyse() {
 }
 
 void Lexer::changeFile(fs::path newFilePath) {
-  tokens.clear();
+  tokens = new Vec<Token>{};
   content.clear();
   filePath         = std::move(newFilePath);
   prev_ctx         = "";
@@ -732,8 +732,8 @@ void Lexer::printStatus() {
   if (Lexer::emit_tokens) {
     std::cout << "\nAnalysed Tokens \n\n";
     // NOLINTNEXTLINE(modernize-loop-convert)
-    for (usize i = 0; i < tokens.size(); i++) {
-      switch (tokens.at(i).type) {
+    for (usize i = 0; i < tokens->size(); i++) {
+      switch (tokens->at(i).type) {
       case TokenType::alias:
         std::cout << " alias ";
         break;
@@ -777,10 +777,10 @@ void Lexer::printStatus() {
         std::cout << " external ";
         break;
       case TokenType::floatType:
-        std::cout << " f" << tokens.at(i).value << " ";
+        std::cout << " f" << tokens->at(i).value << " ";
         break;
       case TokenType::floatLiteral:
-        std::cout << " " << tokens.at(i).value << " ";
+        std::cout << " " << tokens->at(i).value << " ";
         break;
       case TokenType::FALSE:
         std::cout << " false ";
@@ -801,7 +801,7 @@ void Lexer::printStatus() {
         std::cout << " # ";
         break;
       case TokenType::binaryOperator:
-        std::cout << " " << tokens.at(i).value << " ";
+        std::cout << " " << tokens->at(i).value << " ";
         break;
       case TokenType::templateTypeEnd:
         std::cout << " > ";
@@ -810,7 +810,7 @@ void Lexer::printStatus() {
         std::cout << " :< ";
         break;
       case TokenType::identifier:
-        std::cout << " " << tokens.at(i).value << " ";
+        std::cout << " " << tokens->at(i).value << " ";
         break;
       case TokenType::let:
         std::cout << " let ";
@@ -819,10 +819,10 @@ void Lexer::printStatus() {
         std::cout << " variadic ";
         break;
       case TokenType::integerType:
-        std::cout << " i" << tokens.at(i).value << " ";
+        std::cout << " i" << tokens->at(i).value << " ";
         break;
       case TokenType::integerLiteral:
-        std::cout << " " << tokens.at(i).value << " ";
+        std::cout << " " << tokens->at(i).value << " ";
         break;
       case TokenType::pointerAccess:
         std::cout << " -> ";
@@ -882,7 +882,7 @@ void Lexer::printStatus() {
         std::cout << " str ";
         break;
       case TokenType::StringLiteral:
-        std::cout << " \"" << tokens.at(i).value << "\" ";
+        std::cout << " \"" << tokens->at(i).value << "\" ";
         break;
       case TokenType::to:
         std::cout << " to ";
@@ -891,7 +891,7 @@ void Lexer::printStatus() {
         std::cout << " true ";
         break;
       case TokenType::unaryOperator:
-        std::cout << " " << tokens.at(i).value;
+        std::cout << " " << tokens->at(i).value;
         break;
       case TokenType::variationMarker:
         std::cout << " <~ ";

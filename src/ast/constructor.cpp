@@ -7,11 +7,12 @@
 
 namespace qat::ast {
 
-ConstructorPrototype::ConstructorPrototype(Vec<Argument *>         _arguments,
-                                           utils::VisibilityKind   _visibility,
-                                           const utils::FileRange &_fileRange)
-    : Node(_fileRange), arguments(std::move(_arguments)),
-      visibility(_visibility) {}
+ConstructorPrototype::ConstructorPrototype(ConstructorType       _type,
+                                           Vec<Argument *>       _arguments,
+                                           utils::VisibilityKind _visibility,
+                                           utils::FileRange      _fileRange)
+    : Node(std::move(_fileRange)), arguments(std::move(_arguments)),
+      visibility(_visibility), type(_type) {}
 
 IR::Value *ConstructorPrototype::emit(IR::Context *ctx) {
   if (!coreType) {
@@ -19,9 +20,7 @@ IR::Value *ConstructorPrototype::emit(IR::Context *ctx) {
   }
   IR::MemberFunction         *function;
   Vec<IR::QatType *>          generatedTypes;
-  Vec<u8>                     implicitPointerness;
   Vec<IR::CoreType::Member *> presentRefMembers;
-  // TODO - Check existing member functions
   // FIXME - Check if member arguments are repeating
   SHOW("Generating types")
   for (auto *arg : arguments) {

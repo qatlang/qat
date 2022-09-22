@@ -103,6 +103,8 @@ enum class TokenType {
   Union,
   unionSeparator,
   match,
+  copy,
+  move
 };
 
 } // namespace qat::lexer

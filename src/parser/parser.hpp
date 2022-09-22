@@ -32,7 +32,7 @@ class Parser {
 private:
   //  Reference to a std::deque<lexer::Token> which is
   // usually a member of the corresponding IO::QatFile
-  Vec<lexer::Token> tokens;
+  Vec<lexer::Token> *tokens;
   // Comments mapped to indices of the next AST member in the original
   // analysed sequence
   std::map<usize, lexer::Token> comments;
@@ -54,7 +54,7 @@ public:
   Parser();
 
   // Set the Tokens object
-  void setTokens(const Vec<lexer::Token> &tokens);
+  void setTokens(Vec<lexer::Token> *tokens);
 
   // Parse brought entities in a "bring" sentence
   useit ast::BringEntities *parseBroughtEntities(ParserContext &ctx, usize from,

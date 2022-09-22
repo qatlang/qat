@@ -67,7 +67,7 @@ private:
    * updated after each invocation of the `tokeniser` function.
    *
    */
-  Vec<Token> tokens;
+  Vec<Token> *tokens;
 
   /**
    *  A temporary buffer for tokens that have not yet been added to
@@ -122,7 +122,7 @@ public:
    *
    * @return Vec<Token>
    */
-  Vec<Token> &get_tokens();
+  Vec<Token> *get_tokens();
 
   useit Vec<String> getContent() const;
 

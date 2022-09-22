@@ -2,15 +2,15 @@
 #define QAT_AST_EXPRESSIONS_UNION_INITIALISER_HPP
 
 #include "../expression.hpp"
+#include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
 class UnionInitialiser : public Expression {
-  friend class UnionInitialiser;
+  friend class LocalDeclaration;
 
 private:
-  u32                 relative;
-  String              typeName;
+  QatType            *type;
   String              subName;
   Maybe<Expression *> expression;
 
@@ -18,9 +18,8 @@ private:
   String          irName;
   bool            isVar = false;
 
-  // FIXME - Support template union types
 public:
-  UnionInitialiser(u32 relative, String name, String subName,
+  UnionInitialiser(QatType *type, String subName,
                    Maybe<Expression *> expression, utils::FileRange fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;

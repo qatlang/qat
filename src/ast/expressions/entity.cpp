@@ -15,6 +15,7 @@ IR::Value *Entity::emit(IR::Context *ctx) {
   if (fun) {
     auto *mod = ctx->getMod();
     if (name.find(':') == String::npos && (relative == 0)) {
+      SHOW("Checking block " << fun->getBlock()->getName())
       if (fun->getBlock()->hasValue(name)) {
         SHOW("Found local value: " << name)
         auto *local  = fun->getBlock()->getValue(name);

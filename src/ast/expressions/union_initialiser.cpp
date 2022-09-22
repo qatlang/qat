@@ -3,59 +3,18 @@
 
 namespace qat::ast {
 
-UnionInitialiser::UnionInitialiser(u32 _relative, String _typeName,
-                                   String              _subName,
+UnionInitialiser::UnionInitialiser(QatType *_type, String _subName,
                                    Maybe<Expression *> _expression,
                                    utils::FileRange    _fileRange)
-    : Expression(std::move(_fileRange)), relative(_relative),
-      typeName(std::move(_typeName)), subName(std::move(_subName)),
-      expression(_expression) {}
+    : Expression(std::move(_fileRange)), type(_type),
+      subName(std::move(_subName)), expression(_expression) {}
 
 IR::Value *UnionInitialiser::emit(IR::Context *ctx) {
-  auto *mod     = ctx->getMod();
-  auto  reqInfo = ctx->getReqInfo();
-  if (relative != 0) {
-    if (mod->hasNthParent(relative)) {
-      mod = mod->getNthParent(relative);
-    } else {
-      ctx->Error("The current scope does not have " +
-                     ctx->highlightError(std::to_string(relative)) +
-                     " parents. Please check the logic",
-                 fileRange);
-    }
-  }
-  auto entityName = typeName;
-  if (typeName.find(':') != String::npos) {
-    auto splits = utils::splitString(typeName, ":");
-    for (usize i = 0; i < (splits.size() - 1); i++) {
-      auto split = splits.at(i);
-      if (mod->hasLib(split)) {
-        mod = mod->getLib(split, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) +
-                         " is not accessible here",
-                     fileRange);
-        }
-      } else if (mod->hasBox(split)) {
-        mod = mod->getBox(split, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Box " + ctx->highlightError(mod->getFullName()) +
-                         " is not accessible here",
-                     fileRange);
-        }
-      } else {
-        ctx->Error("No box or lib named " + ctx->highlightError(split) +
-                       " found inside " +
-                       ctx->highlightError(mod->getFullName()),
-                   fileRange);
-      }
-    }
-    entityName = splits.back();
-  }
-  if (mod->hasUnionType(entityName) || mod->hasBroughtUnionType(entityName) ||
-      mod->hasAccessibleUnionTypeInImports(entityName, ctx->getReqInfo())
-          .first) {
-    auto *uTy = mod->getUnionType(entityName, ctx->getReqInfo());
+  // FIXME - Support heaped value
+  auto  reqInfo  = ctx->getReqInfo();
+  auto *typeEmit = type->emit(ctx);
+  if (typeEmit->isUnion()) {
+    auto *uTy = typeEmit->asUnion();
     if (uTy->isAccessible(ctx->getReqInfo())) {
       auto subRes = uTy->hasSubTypeWithName(subName);
       if (subRes.first) {
@@ -81,6 +40,7 @@ IR::Value *UnionInitialiser::emit(IR::Context *ctx) {
           auto *typ     = uTy->getSubTypeWithName(subName);
           auto *expEmit = expression.value()->emit(ctx);
           if (typ->isSame(expEmit->getType())) {
+            expEmit->loadImplicitPointer(ctx->builder);
             exp = expEmit->getLLVM();
           } else if (expEmit->isReference() &&
                      expEmit->getType()->asReference()->getSubType()->isSame(
@@ -154,18 +114,17 @@ IR::Value *UnionInitialiser::emit(IR::Context *ctx) {
                  fileRange);
     }
   } else {
-    ctx->Error("No union type named " + ctx->highlightError(entityName) +
-                   " found inside module " +
-                   ctx->highlightError(mod->getFullName()),
+    ctx->Error(ctx->highlightError(typeEmit->toString()) +
+                   " is not a union type",
                fileRange);
   }
+  return nullptr;
 }
 
 nuo::Json UnionInitialiser::toJson() const {
   return nuo::Json()
       ._("nodeType", "unionInitialiser")
-      ._("relative", relative)
-      ._("typeName", typeName)
+      ._("type", type->toJson())
       ._("subName", subName)
       ._("hasExpression", expression.has_value())
       ._("expression", expression.has_value() ? expression.value()->toJson()

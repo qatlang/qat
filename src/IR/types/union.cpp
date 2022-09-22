@@ -87,6 +87,21 @@ QatType *UnionType::getSubTypeWithName(const String &sname) const {
   return nullptr;
 }
 
+void UnionType::getMissingNames(Vec<String> &vals, Vec<String> &missing) const {
+  for (const auto &sub : subtypes) {
+    bool result = false;
+    for (const auto &val : vals) {
+      if (sub.first == val) {
+        result = true;
+        break;
+      }
+    }
+    if (!result) {
+      missing.push_back(sub.first);
+    }
+  }
+}
+
 usize UnionType::getSubTypeCount() const { return subtypes.size(); }
 
 QatModule *UnionType::getParent() const { return parent; }

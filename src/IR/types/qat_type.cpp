@@ -256,6 +256,18 @@ CoreType *QatType::asCore() const {
              : (CoreType *)this;
 }
 
+bool QatType::isUnion() const {
+  return (typeKind() == TypeKind::unionType) ||
+         (typeKind() == TypeKind::definition &&
+          asDefinition()->getSubType()->isUnion());
+}
+
+UnionType *QatType::asUnion() const {
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType *)this)->getSubType()->asUnion()
+             : (UnionType *)this;
+}
+
 bool QatType::isVoid() const {
   return (typeKind() == TypeKind::Void) ||
          (typeKind() == TypeKind::definition &&

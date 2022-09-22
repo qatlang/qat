@@ -40,10 +40,11 @@ public:
   useit u64              getDataBitwidth() const;
   useit bool  isAccessible(const utils::RequesterInfo &reqInfo) const;
   useit const utils::VisibilityInfo &getVisibility() const;
+  useit String                       toString() const final;
+  useit TypeKind                     typeKind() const final;
   // FIXME - Maybe remove this
-  useit String   toString() const final;
-  useit TypeKind typeKind() const final;
   useit nuo::Json toJson() const final { return nuo::Json()._("name", name); }
+  void getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
 };
 
 } // namespace qat::IR

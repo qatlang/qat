@@ -26,6 +26,7 @@ class StringSliceType;
 class CStringType;
 class CoreType;
 class DefinitionType;
+class UnionType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -59,6 +60,8 @@ public:
   useit FunctionType     *asFunction() const;
   useit bool              isCoreType() const;
   useit CoreType         *asCore() const;
+  useit bool              isUnion() const;
+  useit UnionType        *asUnion() const;
   useit bool              isStringSlice() const;
   useit StringSliceType  *asStringSlice() const;
   useit bool              isCString() const;

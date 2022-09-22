@@ -77,6 +77,7 @@ enum class NodeType {
   arrayLiteral,
   defineUnionType,
   unionInitialiser,
+  match,
 };
 
 } // namespace qat::ast

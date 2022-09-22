@@ -6,6 +6,7 @@ namespace qat::ast {
 IR::Value *Say::emit(IR::Context *ctx) {
   SHOW("Say sentence emitting..")
   auto *mod = ctx->getMod();
+  SHOW("Current block is: " << ctx->fn->getBlock()->getName())
   mod->linkNative(IR::NativeUnit::printf);
   auto              *printfFn = mod->getLLVMModule()->getFunction("printf");
   String             formatStr;
@@ -20,9 +21,9 @@ IR::Value *Say::emit(IR::Context *ctx) {
                                                           usize      index) {
     SHOW("Say sentence value type is: " << value->getType()->toString())
     auto *val = value;
-
     auto *typ = val->getType();
     if (typ->isReference()) {
+      val->loadImplicitPointer(ctx->builder);
       val = new IR::Value(
           ctx->builder.CreateLoad(
               typ->asReference()->getSubType()->getLLVMType(), val->getLLVM()),
@@ -95,8 +96,8 @@ IR::Value *Say::emit(IR::Context *ctx) {
       for (usize i = 0; i < subTypes.size(); i++) {
         auto *subVal = val->getLLVM();
         subVal       = ctx->builder.CreateGEP(
-                  subTypes.at(i)->getLLVMType(), subVal,
-                  llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), i));
+            subTypes.at(i)->getLLVMType(), subVal,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), i));
         subVal = ctx->builder.CreateLoad(subTypes.at(i)->getLLVMType(), subVal);
         formatter(new IR::Value(subVal, subTypes.at(i), val->isVariable(),
                                 val->getNature()),

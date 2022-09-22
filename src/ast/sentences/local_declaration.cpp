@@ -3,6 +3,7 @@
 #include "../expressions/array_literal.hpp"
 #include "../expressions/constructor_call.hpp"
 #include "../expressions/plain_initialiser.hpp"
+#include "../expressions/union_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
@@ -115,6 +116,36 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       cons->irName = name;
       cons->isVar  = variability;
       (void)cons->emit(ctx);
+      return nullptr;
+    }
+  } else if (value && (value->nodeType() == NodeType::unionInitialiser)) {
+    auto *unionIn = (ast::UnionInitialiser *)value;
+    if (type) {
+      declType = type->emit(ctx);
+      if (!declType->isCoreType()) {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       " and is not a core type",
+                   fileRange);
+      }
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+      auto *constrTy = unionIn->type->emit(ctx);
+      if (declType->isSame(constrTy)) {
+        auto *loc      = block->newValue(name, declType, variability);
+        unionIn->local = loc;
+        (void)unionIn->emit(ctx);
+        return nullptr;
+      } else {
+        ctx->Error("The type provided for this declaration is " +
+                       ctx->highlightError(declType->toString()) +
+                       ", but the value provided is of type " +
+                       ctx->highlightError(constrTy->toString()),
+                   fileRange);
+      }
+    } else {
+      unionIn->irName = name;
+      unionIn->isVar  = variability;
+      (void)unionIn->emit(ctx);
       return nullptr;
     }
   }

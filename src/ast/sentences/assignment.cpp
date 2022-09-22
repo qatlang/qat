@@ -75,8 +75,7 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
   } else {
     if (lhsVal->getType()->isReference()) {
       ctx->Error("Left hand side of the assignment cannot be assigned to "
-                 "because the referred type of the reference does not have "
-                 "variability",
+                 "because the reference does not have variability",
                  lhs->fileRange);
     } else if (lhsVal->getType()->isPointer()) {
       ctx->Error("Left hand side of the assignment cannot be assigned to "

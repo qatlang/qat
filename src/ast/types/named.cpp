@@ -72,12 +72,12 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
                  fileRange);
     }
     return dTy;
-  } else if (mod->hasUnionType(entityName) ||
-             mod->hasBroughtUnionType(entityName) ||
-             mod->hasAccessibleUnionTypeInImports(entityName, reqInfo).first) {
-    auto *uTy = mod->getUnionType(entityName, reqInfo);
+  } else if (mod->hasMixType(entityName) ||
+             mod->hasBroughtMixType(entityName) ||
+             mod->hasAccessibleMixTypeInImports(entityName, reqInfo).first) {
+    auto *uTy = mod->getMixType(entityName, reqInfo);
     if (!uTy->getVisibility().isAccessible(reqInfo)) {
-      ctx->Error("Union type " + ctx->highlightError(uTy->getFullName()) +
+      ctx->Error("Mix type " + ctx->highlightError(uTy->getFullName()) +
                      " inside module " +
                      ctx->highlightError(mod->getFullName()) +
                      " is not accessible here",

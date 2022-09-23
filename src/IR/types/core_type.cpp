@@ -24,8 +24,8 @@ CoreType::CoreType(QatModule *mod, String _name, Vec<Member *> _members,
     subtypes.push_back(mem->type->getLLVMType());
   }
   SHOW("All members' LLVM types obtained")
-  llvmType = llvm::StructType::create(subtypes, mod->getFullNameWithChild(name),
-                                      false);
+  llvmType = llvm::StructType::create(ctx, subtypes,
+                                      mod->getFullNameWithChild(name), false);
   if (mod) {
     mod->coreTypes.push_back(this);
   }
@@ -143,7 +143,7 @@ void CoreType::addStaticMember(const String &name, QatType *type,
       new StaticMember(this, name, type, variability, initial, visibility));
 }
 
-bool CoreType::hasBinaryOperator(String opr, IR::QatType *type) const {
+bool CoreType::hasBinaryOperator(const String &opr, IR::QatType *type) const {
   for (auto *bin : binaryOperators) {
     if (utils::splitString(bin->getName(), "'")[1] == opr) {
       auto *binArgTy =
@@ -158,8 +158,8 @@ bool CoreType::hasBinaryOperator(String opr, IR::QatType *type) const {
   return false;
 }
 
-MemberFunction *CoreType::getBinaryOperator(String       opr,
-                                            IR::QatType *type) const {
+MemberFunction *CoreType::getBinaryOperator(const String &opr,
+                                            IR::QatType  *type) const {
   for (auto *bin : binaryOperators) {
     if (utils::splitString(bin->getName(), "'")[1] == opr) {
       auto *binArgTy =
@@ -174,7 +174,7 @@ MemberFunction *CoreType::getBinaryOperator(String       opr,
   return nullptr;
 }
 
-bool CoreType::hasUnaryOperator(String opr) const {
+bool CoreType::hasUnaryOperator(const String &opr) const {
   for (auto *unr : unaryOperators) {
     if (utils::splitString(unr->getName(), "'")[1] == opr) {
       return true;
@@ -183,7 +183,7 @@ bool CoreType::hasUnaryOperator(String opr) const {
   return false;
 }
 
-MemberFunction *CoreType::getUnaryOperator(String opr) const {
+MemberFunction *CoreType::getUnaryOperator(const String &opr) const {
   for (auto *unr : unaryOperators) {
     if (utils::splitString(unr->getName(), "'")[1] == opr) {
       return unr;
@@ -192,7 +192,7 @@ MemberFunction *CoreType::getUnaryOperator(String opr) const {
   return nullptr;
 }
 
-u64 CoreType::getOperatorVariantIndex(String opr) const {
+u64 CoreType::getOperatorVariantIndex(const String &opr) const {
   u64 index = 0;
   for (auto *bin : binaryOperators) {
     if (utils::splitString(bin->getName(), "'")[1] == opr) {
@@ -325,9 +325,21 @@ bool CoreType::hasCopyConstructor() const {
   return copyConstructor.has_value();
 }
 
+MemberFunction *CoreType::getCopyConstructor() const {
+  return copyConstructor.value_or(nullptr);
+}
+
 bool CoreType::hasMoveConstructor() const {
   return moveConstructor.has_value();
 }
+
+MemberFunction *CoreType::getMoveConstructor() const {
+  return moveConstructor.value_or(nullptr);
+}
+
+bool CoreType::hasDestructor() const { return destructor != nullptr; }
+
+IR::MemberFunction *CoreType::getDestructor() const { return destructor; }
 
 utils::VisibilityInfo CoreType::getVisibility() const { return visibility; }
 
@@ -341,13 +353,21 @@ nuo::Json CoreType::toJson() const {
   return nuo::Json()._("id", getID())._("name", name);
 }
 
+bool CoreType::isCopyExplicit() const { return explicitCopy; }
+
+bool CoreType::isMoveExplicit() const { return explicitMove; }
+
+void CoreType::setExplicitCopy() { explicitCopy = true; }
+
+void CoreType::setExplicitMove() { explicitMove = true; }
+
 TemplateCoreType::TemplateCoreType(String                       _name,
                                    Vec<ast::TemplatedType *>    _templates,
                                    ast::DefineCoreType         *_defineCoreType,
                                    QatModule                   *_parent,
                                    const utils::VisibilityInfo &_visibInfo)
-    : name(_name), templates(_templates), defineCoreType(_defineCoreType),
-      parent(_parent), visibility(_visibInfo) {
+    : name(std::move(_name)), templates(std::move(_templates)),
+      defineCoreType(_defineCoreType), parent(_parent), visibility(_visibInfo) {
   parent->templateCoreTypes.push_back(this);
 }
 

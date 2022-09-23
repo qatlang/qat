@@ -6,9 +6,9 @@
 
 namespace qat::ast {
 
-enum class MatchType { Union, Enum, Exp };
+enum class MatchType { mix, Enum, Exp };
 
-class UnionMatchValue;
+class MixMatchValue;
 class EnumMatchValue;
 class ExpressionMatchValue;
 
@@ -16,22 +16,22 @@ class MatchValue {
 public:
   ~MatchValue() = default;
 
-  useit UnionMatchValue      *asUnion();
+  useit MixMatchValue        *asMix();
   useit EnumMatchValue       *asEnum();
   useit ExpressionMatchValue *asExp();
   useit virtual MatchType     getType() const = 0;
   useit virtual nuo::Json     toJson() const  = 0;
 };
 
-class UnionMatchValue : public MatchValue {
+class MixMatchValue : public MatchValue {
 private:
   Pair<String, utils::FileRange>        name;
   Maybe<Pair<String, utils::FileRange>> valueName;
   bool                                  isVar;
 
 public:
-  UnionMatchValue(Pair<String, utils::FileRange>        name,
-                  Maybe<Pair<String, utils::FileRange>> valueName, bool isVar);
+  MixMatchValue(Pair<String, utils::FileRange>        name,
+                Maybe<Pair<String, utils::FileRange>> valueName, bool isVar);
 
   useit String getName() const;
   useit utils::FileRange getNameRange() const;
@@ -39,7 +39,7 @@ public:
   useit String           getValueName() const;
   useit utils::FileRange getValueRange() const;
   useit bool             isVariable() const;
-  useit MatchType        getType() const final { return MatchType::Union; }
+  useit MatchType        getType() const final { return MatchType::mix; }
   useit nuo::Json toJson() const final;
 };
 

@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class DefineUnionType : public Node {
+class DefineMixType : public Node {
 private:
   String                              name;
   Vec<Pair<String, Maybe<QatType *>>> subtypes;
@@ -17,9 +17,9 @@ private:
   Vec<utils::FileRange>               fRanges;
 
 public:
-  DefineUnionType(String name, Vec<Pair<String, Maybe<QatType *>>> subTypes,
-                  Vec<utils::FileRange> ranges, bool isPacked,
-                  utils::VisibilityKind visibility, utils::FileRange fileRange);
+  DefineMixType(String name, Vec<Pair<String, Maybe<QatType *>>> subTypes,
+                Vec<utils::FileRange> ranges, bool isPacked,
+                utils::VisibilityKind visibility, utils::FileRange fileRange);
 
   void       createType(IR::Context *ctx);
   void       defineType(IR::Context *ctx) final;
@@ -27,7 +27,7 @@ public:
   useit bool isTemplate() const;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::defineUnionType; }
+  useit NodeType  nodeType() const final { return NodeType::defineMixType; }
 };
 
 } // namespace qat::ast

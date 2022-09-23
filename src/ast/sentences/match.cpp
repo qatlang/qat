@@ -3,34 +3,34 @@
 
 namespace qat::ast {
 
-UnionMatchValue      *MatchValue::asUnion() { return (UnionMatchValue *)this; }
+MixMatchValue        *MatchValue::asMix() { return (MixMatchValue *)this; }
 EnumMatchValue       *MatchValue::asEnum() { return (EnumMatchValue *)this; }
 ExpressionMatchValue *MatchValue::asExp() {
   return (ExpressionMatchValue *)this;
 }
 
-UnionMatchValue::UnionMatchValue(
-    Pair<String, utils::FileRange>        _name,
-    Maybe<Pair<String, utils::FileRange>> _valueName, bool _isVar)
+MixMatchValue::MixMatchValue(Pair<String, utils::FileRange>        _name,
+                             Maybe<Pair<String, utils::FileRange>> _valueName,
+                             bool                                  _isVar)
     : name(std::move(_name)), valueName(std::move(_valueName)), isVar(_isVar) {}
 
-String UnionMatchValue::getName() const { return name.first; }
+String MixMatchValue::getName() const { return name.first; }
 
-utils::FileRange UnionMatchValue::getNameRange() const { return name.second; }
+utils::FileRange MixMatchValue::getNameRange() const { return name.second; }
 
-bool UnionMatchValue::hasValueName() const { return valueName.has_value(); }
+bool MixMatchValue::hasValueName() const { return valueName.has_value(); }
 
-bool UnionMatchValue::isVariable() const { return isVar; }
+bool MixMatchValue::isVariable() const { return isVar; }
 
-String UnionMatchValue::getValueName() const { return valueName->first; }
+String MixMatchValue::getValueName() const { return valueName->first; }
 
-utils::FileRange UnionMatchValue::getValueRange() const {
+utils::FileRange MixMatchValue::getValueRange() const {
   return valueName->second;
 }
 
-nuo::Json UnionMatchValue::toJson() const {
+nuo::Json MixMatchValue::toJson() const {
   return nuo::Json()
-      ._("matchValueType", "union")
+      ._("matchValueType", "mix")
       ._("name", name.first)
       ._("nameFileRange", name.second)
       ._("hasValue", valueName.has_value())
@@ -81,15 +81,15 @@ IR::Value *Match::emit(IR::Context *ctx) {
   }
   auto *curr      = ctx->fn->getBlock();
   auto *restBlock = new IR::Block(ctx->fn, curr->getParent());
-  if (isTypeMatch && expTy->isUnion()) {
-    auto *uTy = expTy->asUnion();
+  if (expTy->isMix()) {
+    auto *mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
       ctx->Error("Invalid value for matching", candidate->fileRange);
     }
     Vec<String> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto &section = chain.at(i);
-      auto       *uMatch  = section.first->asUnion();
+      auto       *uMatch  = section.first->asMix();
       if (uMatch->isVariable()) {
         if (!isExpVariable) {
           ctx->Error(
@@ -99,31 +99,31 @@ IR::Value *Match::emit(IR::Context *ctx) {
               uMatch->getValueRange());
         }
       }
-      if (section.first->getType() != MatchType::Union) {
-        ctx->Error("Expected name of the sub-field of the union type " +
-                       ctx->highlightError(expTy->asUnion()->getFullName()),
+      if (section.first->getType() != MatchType::mix) {
+        ctx->Error("Expected name of the sub-field of the mix type " +
+                       ctx->highlightError(expTy->asMix()->getFullName()),
                    uMatch->getNameRange());
       }
-      auto subRes = uTy->hasSubTypeWithName(uMatch->getName());
+      auto subRes = mTy->hasSubTypeWithName(uMatch->getName());
       if (!subRes.first) {
         ctx->Error("No field named " + ctx->highlightError(uMatch->getName()) +
-                       " in union type " +
-                       ctx->highlightError(uTy->getFullName()),
+                       " in mix type " +
+                       ctx->highlightError(mTy->getFullName()),
                    uMatch->getNameRange());
       }
       if (!subRes.second && uMatch->hasValueName()) {
         ctx->Error(
             "Sub-field " + ctx->highlightError(uMatch->getName()) +
-                " of union type " + ctx->highlightError(uTy->getFullName()) +
+                " of mix type " + ctx->highlightError(mTy->getFullName()) +
                 " does not have a type associated with it, and hence you "
                 "cannot use a name for the value here",
             uMatch->getValueRange());
       }
       for (usize j = i + 1; j < chain.size(); j++) {
-        if (uMatch->getName() == chain.at(j).first->asUnion()->getName()) {
-          ctx->Error("Repeating subfield of the union type " +
-                         ctx->highlightError(uTy->getFullName()),
-                     chain.at(j).first->asUnion()->getNameRange());
+        if (uMatch->getName() == chain.at(j).first->asMix()->getName()) {
+          ctx->Error("Repeating subfield of the mix type " +
+                         ctx->highlightError(mTy->getFullName()),
+                     chain.at(j).first->asMix()->getNameRange());
         }
       }
       mentionedFields.push_back(uMatch->getName());
@@ -131,12 +131,12 @@ IR::Value *Match::emit(IR::Context *ctx) {
       IR::Block *falseBlock = nullptr;
       auto      *cond       = ctx->builder.CreateICmpEQ(
           ctx->builder.CreateLoad(
-              llvm::Type::getIntNTy(ctx->llctx, uTy->getTagBitwidth()),
-              ctx->builder.CreateStructGEP(uTy->getLLVMType(),
+              llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
+              ctx->builder.CreateStructGEP(mTy->getLLVMType(),
                                                       expEmit->getLLVM(), 0)),
           llvm::ConstantInt::get(
-              llvm::Type::getIntNTy(ctx->llctx, uTy->getTagBitwidth()),
-              uTy->getIndexOfName(uMatch->getName())));
+              llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
+              mTy->getIndexOfName(uMatch->getName())));
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         falseBlock = new IR::Block(ctx->fn, curr);
         ctx->builder.CreateCondBr(cond, trueBlock->getBB(),
@@ -146,31 +146,31 @@ IR::Value *Match::emit(IR::Context *ctx) {
       }
       trueBlock->setActive(ctx->builder);
       SHOW("True block name is: " << trueBlock->getName())
-      if (section.first->asUnion()->hasValueName()) {
+      if (section.first->asMix()->hasValueName()) {
         SHOW("Match case has value name: "
-             << section.first->asUnion()->getValueName())
+             << section.first->asMix()->getValueName())
         if (trueBlock->hasValue(uMatch->getValueName())) {
           SHOW("Local entity with match case value name exists")
-          ctx->Error("Local entity named " +
-                         ctx->highlightError(
-                             section.first->asUnion()->getValueName()) +
-                         " exists already in this scope",
-                     section.first->asUnion()->getValueRange());
+          ctx->Error(
+              "Local entity named " +
+                  ctx->highlightError(section.first->asMix()->getValueName()) +
+                  " exists already in this scope",
+              section.first->asMix()->getValueRange());
         } else {
           SHOW("Creating local entity for match case value named: "
                << uMatch->getValueName())
           auto *loc = trueBlock->newValue(
               uMatch->getValueName(),
               IR::ReferenceType::get(uMatch->isVariable(),
-                                     uTy->getSubTypeWithName(uMatch->getName()),
+                                     mTy->getSubTypeWithName(uMatch->getName()),
                                      ctx->llctx),
               false);
           SHOW("Local Entity for match case created")
           ctx->builder.CreateStore(
               ctx->builder.CreatePointerCast(
-                  ctx->builder.CreateStructGEP(uTy->getLLVMType(),
+                  ctx->builder.CreateStructGEP(mTy->getLLVMType(),
                                                expEmit->getLLVM(), 1),
-                  uTy->getSubTypeWithName(uMatch->getName())
+                  mTy->getSubTypeWithName(uMatch->getName())
                       ->getLLVMType()
                       ->getPointerTo()),
               loc->getAlloca());
@@ -184,17 +184,17 @@ IR::Value *Match::emit(IR::Context *ctx) {
       }
     }
     Vec<String> missingFields;
-    uTy->getMissingNames(mentionedFields, missingFields);
+    mTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
-        ctx->Error("All possible subtypes of the union are already mentioned. "
+        ctx->Error("All possible subtypes of the mix are already mentioned. "
                    "No need to use else case for the match statement",
                    fileRange);
       }
     } else {
       if (!elseCase.has_value()) {
         ctx->Error(
-            "Not all possible subtypes of the union are provided. Please add "
+            "Not all possible subtypes of the mix are provided. Please add "
             "the else case to handle all missing possibilities",
             fileRange);
       }

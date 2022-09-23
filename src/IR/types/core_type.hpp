@@ -43,16 +43,18 @@ private:
   Vec<Member *>       members;
   Vec<StaticMember *> staticMembers;
 
-  Vec<MemberFunction *>   memberFunctions; // Normal
-  Vec<MemberFunction *>   binaryOperators; //
-  Vec<MemberFunction *>   unaryOperators;  //
-  Vec<MemberFunction *>   constructors;    // Constructors
-  Vec<MemberFunction *>   fromConvertors;  // From Convertors
-  Vec<MemberFunction *>   toConvertors;    // To Convertors
-  Vec<MemberFunction *>   staticFunctions; // Static
-  MemberFunction         *destructor;      // Destructor
-  Maybe<MemberFunction *> copyConstructor; // Copy constructor
-  Maybe<MemberFunction *> moveConstructor; // Move constructor
+  Vec<MemberFunction *>   memberFunctions;      // Normal
+  Vec<MemberFunction *>   binaryOperators;      //
+  Vec<MemberFunction *>   unaryOperators;       //
+  Vec<MemberFunction *>   constructors;         // Constructors
+  Vec<MemberFunction *>   fromConvertors;       // From Convertors
+  Vec<MemberFunction *>   toConvertors;         // To Convertors
+  Vec<MemberFunction *>   staticFunctions;      // Static
+  MemberFunction         *destructor = nullptr; // Destructor
+  Maybe<MemberFunction *> copyConstructor;      // Copy constructor
+  Maybe<MemberFunction *> moveConstructor;      // Move constructor
+  bool                    explicitCopy = false;
+  bool                    explicitMove = false;
 
   utils::VisibilityInfo visibility;
 
@@ -77,11 +79,12 @@ public:
   useit MemberFunction *getMemberFunction(const String &fnName) const;
   useit bool            hasStaticFunction(const String &fnName) const;
   useit MemberFunction *getStaticFunction(const String &fnName) const;
-  useit bool            hasBinaryOperator(String opr, IR::QatType *type) const;
-  useit MemberFunction *getBinaryOperator(String opr, IR::QatType *type) const;
-  useit bool            hasUnaryOperator(String opr) const;
-  useit MemberFunction *getUnaryOperator(String opr) const;
-  useit u64             getOperatorVariantIndex(String opr) const;
+  useit bool hasBinaryOperator(const String &opr, IR::QatType *type) const;
+  useit MemberFunction *getBinaryOperator(const String &opr,
+                                          IR::QatType  *type) const;
+  useit bool            hasUnaryOperator(const String &opr) const;
+  useit MemberFunction *getUnaryOperator(const String &opr) const;
+  useit u64             getOperatorVariantIndex(const String &opr) const;
   useit bool            hasFromConvertor(IR::QatType *type) const;
   useit MemberFunction *getFromConvertor(IR::QatType *type) const;
   useit bool            hasToConvertor(IR::QatType *type) const;
@@ -91,7 +94,13 @@ public:
   useit bool            hasAnyFromConvertor() const;
   useit bool            hasAnyConstructor() const;
   useit bool            hasCopyConstructor() const;
+  useit MemberFunction *getCopyConstructor() const;
+  useit bool            isCopyExplicit() const;
   useit bool            hasMoveConstructor() const;
+  useit MemberFunction *getMoveConstructor() const;
+  useit bool            isMoveExplicit() const;
+  useit bool            hasDestructor() const;
+  useit MemberFunction *getDestructor() const;
   useit utils::VisibilityInfo getVisibility() const;
   useit QatModule            *getParent();
   useit nuo::Json toJson() const override;
@@ -100,6 +109,8 @@ public:
   void addStaticMember(const String &name, QatType *type, bool variability,
                        Value *initial, const utils::VisibilityInfo &visibility,
                        llvm::LLVMContext &ctx);
+  void setExplicitCopy();
+  void setExplicitMove();
 };
 
 class TemplateCoreType : public Uniq {

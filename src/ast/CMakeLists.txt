@@ -6,7 +6,7 @@ add_library(QAT_AST
         convertor.cpp
         constructor.cpp
         define_core_type.cpp
-        define_union_type.cpp
+        define_mix_type.cpp
         destructor.cpp
         errors.cpp
         expression.cpp

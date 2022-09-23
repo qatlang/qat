@@ -1,6 +1,6 @@
 #include "./parser.hpp"
 #include "../ast/constructor.hpp"
-#include "../ast/define_union_type.hpp"
+#include "../ast/define_mix_type.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
@@ -17,6 +17,7 @@
 #include "../ast/expressions/loop_index.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
+#include "../ast/expressions/mix_type_initialiser.hpp"
 #include "../ast/expressions/null_pointer.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
@@ -26,7 +27,6 @@
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
-#include "../ast/expressions/union_initialiser.hpp"
 #include "../ast/expressions/unsigned_literal.hpp"
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
@@ -549,7 +549,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
       }
       break;
     }
-    case TokenType::Union: {
+    case TokenType::mix: {
       if (isNext(TokenType::identifier, i)) {
         if (isNext(TokenType::curlybraceOpen, i + 1)) {
           auto bCloseRes = getPairEnd(TokenType::curlybraceOpen,
@@ -558,9 +558,9 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto                                     bClose = bCloseRes.value();
             Vec<Pair<String, Maybe<ast::QatType *>>> subTypes;
             Vec<utils::FileRange>                    fileRanges;
-            parseUnion(prev_ctx, i + 2, bClose, subTypes, fileRanges);
+            parseMixType(prev_ctx, i + 2, bClose, subTypes, fileRanges);
             // FIXME - Support packing
-            result.push_back(new ast::DefineUnionType(
+            result.push_back(new ast::DefineMixType(
                 ValueAt(i + 1), std::move(subTypes), std::move(fileRanges),
                 false, getVisibility(), RangeSpan(i, bClose)));
             i = bClose;
@@ -568,11 +568,11 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             Error("Expected end for {", RangeAt(i + 2));
           }
         } else {
-          Error("Expected { to start the definition of the union type",
+          Error("Expected { to start the definition of the mix type",
                 RangeSpan(i, i + 1));
         }
       } else {
-        Error("Expected an identifier for the name of the union type",
+        Error("Expected an identifier for the name of the mix type",
               RangeAt(i));
       }
       break;
@@ -627,7 +627,7 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             Error("Invalid end for declaring a type", RangeAt(i + 2));
           }
         }
-        // FIXME - Support union types
+        // FIXME - Support mix types
       } else {
         Error("Expected name for the type", token.fileRange);
       }
@@ -1289,9 +1289,9 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
   }
 }
 
-void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
-                        Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
-                        Vec<utils::FileRange>                    &fileRanges) {
+void Parser::parseMixType(ParserContext &prev_ctx, usize from, usize upto,
+                          Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
+                          Vec<utils::FileRange> &fileRanges) {
   using lexer::TokenType;
 
   for (auto i = from + 1; i < upto; i++) {
@@ -1305,7 +1305,7 @@ void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
             Pair<String, Maybe<ast::QatType *>>(ValueAt(start), None));
         fileRanges.push_back(RangeAt(start));
         i++;
-      } else if (isNext(TokenType::unionSeparator, i)) {
+      } else if (isNext(TokenType::mixSeparator, i)) {
         ast::QatType *typ;
         if (isPrimaryWithin(TokenType::separator, i + 1, upto)) {
           auto sepPos =
@@ -1320,13 +1320,13 @@ void Parser::parseUnion(ParserContext &prev_ctx, usize from, usize upto,
             Pair<String, Maybe<ast::QatType *>>(ValueAt(start), typ));
         fileRanges.push_back(RangeAt(start));
       } else {
-        Error("Invalid token found after identifier in union type definition",
+        Error("Invalid token found after identifier in mix type definition",
               RangeAt(i));
       }
       break;
     }
     default: {
-      Error("Invalid token found after identifier in union type definition",
+      Error("Invalid token found after identifier in mix type definition",
             RangeAt(i));
     }
     }
@@ -1342,12 +1342,7 @@ void Parser::parseMatchContents(
   for (usize i = from + 1; i < upto; i++) {
     auto &token = tokens->at(i);
     switch (token.type) {
-    case TokenType::unionSeparator: {
-      if (!isTypeMatch) {
-        Error("This is not a type match and hence cannot use union subtype "
-              "matching syntax",
-              RangeAt(i));
-      }
+    case TokenType::mixSeparator: {
       auto start = i;
       if (isNext(TokenType::identifier, i)) {
         Pair<String, utils::FileRange>        fieldName = {ValueAt(i + 1),
@@ -1379,7 +1374,7 @@ void Parser::parseMatchContents(
                       RangeAt(i + 1));
               }
             } else {
-              Error("Expected value name for the union subfield",
+              Error("Expected value name for the mix subfield",
                     RangeSpan(start, i));
             }
           } else {
@@ -1394,8 +1389,8 @@ void Parser::parseMatchContents(
           if (bCloseRes) {
             auto snts = parseSentences(prev_ctx, i + 1, bCloseRes.value());
             chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
-                new ast::UnionMatchValue(std::move(fieldName),
-                                         std::move(valueName), isVar),
+                new ast::MixMatchValue(std::move(fieldName),
+                                       std::move(valueName), isVar),
                 std::move(snts)));
             i = bCloseRes.value();
           } else {
@@ -1405,8 +1400,8 @@ void Parser::parseMatchContents(
           auto stop = firstPrimaryPosition(TokenType::stop, i).value();
           auto snt  = parseSentences(prev_ctx, i, stop + 1);
           chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
-              new ast::UnionMatchValue(std::move(fieldName),
-                                       std::move(valueName), isVar),
+              new ast::MixMatchValue(std::move(fieldName), std::move(valueName),
+                                     isVar),
               std::move(snt)));
           i = stop;
         } else {
@@ -1414,17 +1409,13 @@ void Parser::parseMatchContents(
                 RangeAt(i));
         }
       } else {
-        Error("Expected name for the subfield of the union type to match",
+        Error("Expected name for the subfield of the mix type to match",
               RangeAt(i));
       }
       break;
     }
     case TokenType::child: {
-      if (!isTypeMatch) {
-        Error("This is not a type match and hence cannot use choice matching "
-              "syntax",
-              RangeAt(i));
-      }
+      // FIXME - Implement
       break;
     }
     case TokenType::Else: {
@@ -2210,7 +2201,7 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         }
       }
     }
-    case TokenType::unionSeparator: {
+    case TokenType::mixSeparator: {
       if (cachedSymbol.has_value()) {
         auto *typ =
             new ast::NamedType(cachedSymbol->relative, cachedSymbol->name,
@@ -2224,20 +2215,20 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
             if (pCloseRes) {
               auto  pClose = pCloseRes.value();
               auto *exp = parseExpression(prev_ctx, None, i + 2, pClose).first;
-              cachedExpressions.push_back(new ast::UnionInitialiser(
+              cachedExpressions.push_back(new ast::MixTypeInitialiser(
                   typ, subName, exp, RangeSpan(i, pClose)));
               i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 2));
             }
           } else {
-            cachedExpressions.push_back(new ast::UnionInitialiser(
+            cachedExpressions.push_back(new ast::MixTypeInitialiser(
                 typ, subName, None, {cachedSymbol->fileRange, RangeAt(i + 1)}));
             i++;
           }
         }
       } else {
-        Error("No name of the union type found", RangeAt(i));
+        Error("No name of the mix type found", RangeAt(i));
       }
       break;
     }

@@ -10,7 +10,7 @@
 #include "./types/array.hpp"
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
-#include "./types/union.hpp"
+#include "./types/mix.hpp"
 #include "./types/void.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
@@ -38,7 +38,7 @@ enum class NativeUnit {
 
 class QatModule : public Uniq {
   friend class CoreType;
-  friend class UnionType;
+  friend class MixType;
   friend class DefinitionType;
   friend class GlobalEntity;
   friend class ast::Lib;
@@ -63,8 +63,8 @@ private:
   Vec<Brought<QatModule>>        broughtModules;
   Vec<CoreType *>                coreTypes;
   Vec<Brought<CoreType>>         broughtCoreTypes;
-  Vec<UnionType *>               unionTypes;
-  Vec<Brought<UnionType>>        broughtUnionTypes;
+  Vec<MixType *>                 mixTypes;
+  Vec<Brought<MixType>>          broughtMixTypes;
   Vec<DefinitionType *>          typeDefs;
   Vec<Brought<DefinitionType>>   broughtTypeDefs;
   Vec<Function *>                functions;
@@ -198,15 +198,15 @@ public:
   useit CoreType *getCoreType(const String               &name,
                               const utils::RequesterInfo &reqInfo) const;
 
-  // UNION TYPE
+  // MIX TYPE
 
-  useit bool       hasUnionType(const String &name) const;
-  useit bool       hasBroughtUnionType(const String &name) const;
-  useit            Pair<bool, String>
-                   hasAccessibleUnionTypeInImports(const String               &name,
-                                                   const utils::RequesterInfo &reqInfo) const;
-  useit UnionType *getUnionType(const String               &name,
-                                const utils::RequesterInfo &reqInfo) const;
+  useit bool     hasMixType(const String &name) const;
+  useit bool     hasBroughtMixType(const String &name) const;
+  useit          Pair<bool, String>
+                 hasAccessibleMixTypeInImports(const String               &name,
+                                               const utils::RequesterInfo &reqInfo) const;
+  useit MixType *getMixType(const String               &name,
+                            const utils::RequesterInfo &reqInfo) const;
 
   // TEMPLATE FUNCTIONS
 

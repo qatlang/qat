@@ -21,7 +21,6 @@ enum class NodeType {
   convertorDefinition,
   constructorPrototype,
   constructorDefinition,
-  destructorPrototype,
   destructorDefinition,
   operatorPrototype,
   operatorDefinition,
@@ -75,8 +74,8 @@ enum class NodeType {
   box,
   tupleValue,
   arrayLiteral,
-  defineUnionType,
-  unionInitialiser,
+  defineMixType,
+  mixTypeInitialiser,
   match,
 };
 

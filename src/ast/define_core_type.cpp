@@ -57,7 +57,7 @@ void DefineCoreType::createType(IR::Context *ctx) const {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+      !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
     SHOW("Creating IR for CoreType members. Count: "
          << std::to_string(members.size()))
     Vec<IR::CoreType::Member *> mems;
@@ -120,10 +120,10 @@ void DefineCoreType::createType(IR::Context *ctx) const {
               " is the name of an existing type definition in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasUnionType(name)) {
+    } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing union type in this scope. "
+              " is the name of an existing mix type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {
@@ -152,7 +152,7 @@ void DefineCoreType::defineType(IR::Context *ctx) {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+      !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -179,10 +179,10 @@ void DefineCoreType::defineType(IR::Context *ctx) {
               " is the name of an existing type definition in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasUnionType(name)) {
+    } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing union type in this scope. "
+              " is the name of an existing mix type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {

@@ -81,9 +81,9 @@ public:
   void parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
                      ast::DefineCoreType *coreTy);
 
-  void parseUnion(ParserContext &prev_ctx, usize from, usize upto,
-                  Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
-                  Vec<utils::FileRange>                    &fileRanges);
+  void parseMixType(ParserContext &prev_ctx, usize from, usize upto,
+                    Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
+                    Vec<utils::FileRange>                    &fileRanges);
 
   void
   parseMatchContents(ParserContext &prev_ctx, usize from, usize upto,

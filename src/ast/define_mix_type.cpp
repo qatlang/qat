@@ -1,25 +1,25 @@
-#include "./define_union_type.hpp"
+#include "./define_mix_type.hpp"
 
 namespace qat::ast {
 
-DefineUnionType::DefineUnionType(String                              _name,
-                                 Vec<Pair<String, Maybe<QatType *>>> _subTypes,
-                                 Vec<utils::FileRange> _ranges, bool _isPacked,
-                                 utils::VisibilityKind _visibility,
-                                 utils::FileRange      _fileRange)
+DefineMixType::DefineMixType(String                              _name,
+                             Vec<Pair<String, Maybe<QatType *>>> _subTypes,
+                             Vec<utils::FileRange> _ranges, bool _isPacked,
+                             utils::VisibilityKind _visibility,
+                             utils::FileRange      _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)),
       subtypes(std::move(_subTypes)), isPacked(_isPacked),
       visibility(_visibility), fRanges(std::move(_ranges)) {}
 
-bool DefineUnionType::isTemplate() const { return !templates.empty(); }
+bool DefineMixType::isTemplate() const { return !templates.empty(); }
 
-void DefineUnionType::createType(IR::Context *ctx) {
+void DefineMixType::createType(IR::Context *ctx) {
   auto *mod = ctx->getMod();
   if
-      //   ((isTemplate() || !mod->hasTemplateUnionType(name)) &&
+      //   ((isTemplate() || !mod->hasTemplateMixType(name)) &&
       (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
        !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-       !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+       !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
     Vec<Pair<String, Maybe<IR::QatType *>>> subTypesIR;
     for (usize i = 0; i < subtypes.size(); i++) {
       for (usize j = i + 1; j < subtypes.size(); j++) {
@@ -36,8 +36,8 @@ void DefineUnionType::createType(IR::Context *ctx) {
               ? Maybe<IR::QatType *>(subtypes.at(i).second.value()->emit(ctx))
               : None));
     }
-    new IR::UnionType(name, mod, subTypesIR, ctx->llctx, isPacked,
-                      ctx->getVisibInfo(visibility));
+    new IR::MixType(name, mod, subTypesIR, ctx->llctx, isPacked,
+                    ctx->getVisibInfo(visibility));
   } else {
     if (mod->hasTemplateCoreType(name)) {
       ctx->Error(
@@ -57,7 +57,7 @@ void DefineUnionType::createType(IR::Context *ctx) {
               " is the name of an existing type definition in this scope. "
               "Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasUnionType(name)) {
+    } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
               " is the name of an existing union type in this scope. "
@@ -85,12 +85,12 @@ void DefineUnionType::createType(IR::Context *ctx) {
   }
 }
 
-void DefineUnionType::defineType(IR::Context *ctx) {
+void DefineMixType::defineType(IR::Context *ctx) {
   auto *mod = ctx->getMod();
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name) && !mod->hasUnionType(name)) {
+      !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -118,7 +118,7 @@ void DefineUnionType::defineType(IR::Context *ctx) {
               " is the name of an existing type definition in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasUnionType(name)) {
+    } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
               " is the name of an existing union type in this scope. "
@@ -143,9 +143,9 @@ void DefineUnionType::defineType(IR::Context *ctx) {
   }
 }
 
-IR::Value *DefineUnionType::emit(IR::Context *ctx) { return nullptr; }
+IR::Value *DefineMixType::emit(IR::Context *ctx) { return nullptr; }
 
-nuo::Json DefineUnionType::toJson() const {
+nuo::Json DefineMixType::toJson() const {
   Vec<nuo::JsonValue> subTypesJson;
   for (const auto &sub : subtypes) {
     subTypesJson.push_back(nuo::Json()

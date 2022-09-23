@@ -51,14 +51,14 @@ void Lib::createModule(IR::Context *ctx) const {
         "A core type named " + ctx->highlightError(name) +
             " is brought into this module. Please change name of this lib.",
         fileRange);
-  } else if (mod->hasUnionType(name)) {
-    ctx->Error("A union type named " + ctx->highlightError(name) +
+  } else if (mod->hasMixType(name)) {
+    ctx->Error("A mix type named " + ctx->highlightError(name) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtUnionType(name)) {
+  } else if (mod->hasBroughtMixType(name)) {
     ctx->Error(
-        "A union type named " + ctx->highlightError(name) +
+        "A mix type named " + ctx->highlightError(name) +
             " is brought into this module. Please change name of this lib.",
         fileRange);
   } else if (mod->hasTypeDef(name)) {

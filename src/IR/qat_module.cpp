@@ -698,11 +698,11 @@ CoreType *QatModule::getCoreType(const String               &name,
   return nullptr;
 }
 
-// UNION TYPE
+// MIX TYPE
 
-bool QatModule::hasUnionType(const String &name) const {
-  SHOW("UnionType count: " << unionTypes.size())
-  for (auto *typ : unionTypes) {
+bool QatModule::hasMixType(const String &name) const {
+  SHOW("MixType count: " << mixTypes.size())
+  for (auto *typ : mixTypes) {
     if (typ->getName() == name) {
       return true;
     }
@@ -710,8 +710,8 @@ bool QatModule::hasUnionType(const String &name) const {
   return false;
 }
 
-bool QatModule::hasBroughtUnionType(const String &name) const {
-  for (auto brought : broughtUnionTypes) {
+bool QatModule::hasBroughtMixType(const String &name) const {
+  for (auto brought : broughtMixTypes) {
     if (!brought.isNamed()) {
       auto *uType = brought.get();
       if (uType->getName() == name) {
@@ -724,15 +724,15 @@ bool QatModule::hasBroughtUnionType(const String &name) const {
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleUnionTypeInImports(
+Pair<bool, String> QatModule::hasAccessibleMixTypeInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
   for (auto brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&
-          (bMod->hasUnionType(name) || bMod->hasBroughtUnionType(name) ||
-           bMod->hasAccessibleUnionTypeInImports(name, reqInfo).first)) {
-        if (bMod->getUnionType(name, reqInfo)->isAccessible(reqInfo)) {
+          (bMod->hasMixType(name) || bMod->hasBroughtMixType(name) ||
+           bMod->hasAccessibleMixTypeInImports(name, reqInfo).first)) {
+        if (bMod->getMixType(name, reqInfo)->isAccessible(reqInfo)) {
           return {true, bMod->filePath.string()};
         }
       }
@@ -741,18 +741,18 @@ Pair<bool, String> QatModule::hasAccessibleUnionTypeInImports(
   return {false, ""};
 }
 
-UnionType *QatModule::getUnionType(const String               &name,
-                                   const utils::RequesterInfo &reqInfo) const {
-  for (auto *unionTy : unionTypes) {
-    if (unionTy->getName() == name) {
-      return unionTy;
+MixType *QatModule::getMixType(const String               &name,
+                               const utils::RequesterInfo &reqInfo) const {
+  for (auto *mixTy : mixTypes) {
+    if (mixTy->getName() == name) {
+      return mixTy;
     }
   }
-  for (auto brought : broughtUnionTypes) {
+  for (auto brought : broughtMixTypes) {
     if (!brought.isNamed()) {
-      auto *unionTy = brought.get();
-      if (unionTy->getName() == name) {
-        return unionTy;
+      auto *mixTy = brought.get();
+      if (mixTy->getName() == name) {
+        return mixTy;
       }
     } else if (brought.getName() == name) {
       return brought.get();
@@ -762,12 +762,12 @@ UnionType *QatModule::getUnionType(const String               &name,
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
-        if (bMod->hasUnionType(name) || bMod->hasBroughtUnionType(name) ||
-            bMod->hasAccessibleUnionTypeInImports(name, reqInfo).first) {
-          if (bMod->getUnionType(name, reqInfo)
+        if (bMod->hasMixType(name) || bMod->hasBroughtMixType(name) ||
+            bMod->hasAccessibleMixTypeInImports(name, reqInfo).first) {
+          if (bMod->getMixType(name, reqInfo)
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
-            return bMod->getUnionType(name, reqInfo);
+            return bMod->getMixType(name, reqInfo);
           }
         }
       }

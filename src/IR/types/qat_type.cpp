@@ -4,12 +4,12 @@
 #include "./float.hpp"
 #include "./function.hpp"
 #include "./integer.hpp"
+#include "./mix.hpp"
 #include "./pointer.hpp"
 #include "./reference.hpp"
 #include "./string_slice.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
-#include "./union.hpp"
 #include "./unsigned.hpp"
 #include "cstring.hpp"
 #include "definition.hpp"
@@ -22,8 +22,8 @@ Vec<QatType *> QatType::types = {};
 
 bool QatType::checkTypeExists(const String &name) {
   return std::ranges::any_of(types.begin(), types.end(), [&](QatType *typ) {
-    if (typ->typeKind() == TypeKind::unionType) {
-      if (((UnionType *)typ)->getFullName() == name) {
+    if (typ->typeKind() == TypeKind::mixType) {
+      if (((MixType *)typ)->getFullName() == name) {
         return true;
       }
     } else if (typ->typeKind() == TypeKind::core) {
@@ -109,9 +109,9 @@ bool QatType::isSame(QatType *other) { // NOLINT(misc-no-recursion)
       auto *otherVal = (CoreType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
-    case TypeKind::unionType: {
-      auto *thisVal  = (UnionType *)this;
-      auto *otherVal = (UnionType *)other;
+    case TypeKind::mixType: {
+      auto *thisVal  = (MixType *)this;
+      auto *otherVal = (MixType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
     case TypeKind::function: {
@@ -256,16 +256,16 @@ CoreType *QatType::asCore() const {
              : (CoreType *)this;
 }
 
-bool QatType::isUnion() const {
-  return (typeKind() == TypeKind::unionType) ||
+bool QatType::isMix() const {
+  return (typeKind() == TypeKind::mixType) ||
          (typeKind() == TypeKind::definition &&
-          asDefinition()->getSubType()->isUnion());
+          asDefinition()->getSubType()->isMix());
 }
 
-UnionType *QatType::asUnion() const {
+MixType *QatType::asMix() const {
   return (typeKind() == TypeKind::definition)
-             ? ((DefinitionType *)this)->getSubType()->asUnion()
-             : (UnionType *)this;
+             ? ((DefinitionType *)this)->getSubType()->asMix()
+             : (MixType *)this;
 }
 
 bool QatType::isVoid() const {

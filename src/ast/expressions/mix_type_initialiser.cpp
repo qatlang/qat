@@ -1,20 +1,20 @@
-#include "./union_initialiser.hpp"
+#include "./mix_type_initialiser.hpp"
 #include "../../utils/split_string.hpp"
 
 namespace qat::ast {
 
-UnionInitialiser::UnionInitialiser(QatType *_type, String _subName,
-                                   Maybe<Expression *> _expression,
-                                   utils::FileRange    _fileRange)
+MixTypeInitialiser::MixTypeInitialiser(QatType *_type, String _subName,
+                                       Maybe<Expression *> _expression,
+                                       utils::FileRange    _fileRange)
     : Expression(std::move(_fileRange)), type(_type),
       subName(std::move(_subName)), expression(_expression) {}
 
-IR::Value *UnionInitialiser::emit(IR::Context *ctx) {
+IR::Value *MixTypeInitialiser::emit(IR::Context *ctx) {
   // FIXME - Support heaped value
   auto  reqInfo  = ctx->getReqInfo();
   auto *typeEmit = type->emit(ctx);
-  if (typeEmit->isUnion()) {
-    auto *uTy = typeEmit->asUnion();
+  if (typeEmit->isMix()) {
+    auto *uTy = typeEmit->asMix();
     if (uTy->isAccessible(ctx->getReqInfo())) {
       auto subRes = uTy->hasSubTypeWithName(subName);
       if (subRes.first) {
@@ -121,7 +121,7 @@ IR::Value *UnionInitialiser::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json UnionInitialiser::toJson() const {
+nuo::Json MixTypeInitialiser::toJson() const {
   return nuo::Json()
       ._("nodeType", "unionInitialiser")
       ._("type", type->toJson())

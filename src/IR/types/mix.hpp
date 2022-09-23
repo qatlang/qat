@@ -1,5 +1,5 @@
-#ifndef QAT_IR_UNION_TYPE_HPP
-#define QAT_IR_UNION_TYPE_HPP
+#ifndef QAT_IR_MIX_TYPE_HPP
+#define QAT_IR_MIX_TYPE_HPP
 
 #include "../../utils/visibility.hpp"
 #include "./qat_type.hpp"
@@ -9,7 +9,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class UnionType : public QatType {
+class MixType : public QatType {
 private:
   String                              name;
   QatModule                          *parent;
@@ -23,10 +23,9 @@ private:
   void findTagBitWidth(usize typeCount);
 
 public:
-  UnionType(String name, QatModule *parent,
-            Vec<Pair<String, Maybe<QatType *>>> subtypes,
-            llvm::LLVMContext &ctx, bool isPacked,
-            const utils::VisibilityInfo &visibility);
+  MixType(String name, QatModule *parent,
+          Vec<Pair<String, Maybe<QatType *>>> subtypes, llvm::LLVMContext &ctx,
+          bool isPacked, const utils::VisibilityInfo &visibility);
 
   useit String getName() const;
   useit String getFullName() const;

@@ -26,5 +26,5 @@ add_library(QAT_AST_EXPRESSIONS
         ternary.cpp
         to_conversion.cpp
         tuple_value.cpp
-        union_initialiser.cpp
+        mix_type_initialiser.cpp
         unsigned_literal.cpp)

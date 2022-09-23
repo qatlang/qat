@@ -160,12 +160,12 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                          " is a core type and cannot be used as a value in "
                          "an expression",
                      fileRange);
-        } else if (mod->hasUnionType(entityName) ||
-                   mod->hasBroughtUnionType(entityName) ||
-                   mod->hasAccessibleUnionTypeInImports(entityName, reqInfo)
+        } else if (mod->hasMixType(entityName) ||
+                   mod->hasBroughtMixType(entityName) ||
+                   mod->hasAccessibleMixTypeInImports(entityName, reqInfo)
                        .first) {
-          ctx->Error(mod->getUnionType(entityName, reqInfo)->getFullName() +
-                         " is a union type and cannot be used as a value in an "
+          ctx->Error(mod->getMixType(entityName, reqInfo)->getFullName() +
+                         " is a mix type and cannot be used as a value in an "
                          "expression",
                      fileRange);
         } else if (mod->hasTypeDef(entityName) ||

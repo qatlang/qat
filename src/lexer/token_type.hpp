@@ -100,8 +100,8 @@ enum class TokenType {
   own,
   disown,
   end,
-  Union,
-  unionSeparator,
+  mix,
+  mixSeparator,
   match,
   copy,
   move

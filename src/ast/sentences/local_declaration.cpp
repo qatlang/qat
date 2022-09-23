@@ -2,8 +2,8 @@
 #include "../../show.hpp"
 #include "../expressions/array_literal.hpp"
 #include "../expressions/constructor_call.hpp"
+#include "../expressions/mix_type_initialiser.hpp"
 #include "../expressions/plain_initialiser.hpp"
-#include "../expressions/union_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
@@ -118,8 +118,8 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       (void)cons->emit(ctx);
       return nullptr;
     }
-  } else if (value && (value->nodeType() == NodeType::unionInitialiser)) {
-    auto *unionIn = (ast::UnionInitialiser *)value;
+  } else if (value && (value->nodeType() == NodeType::mixTypeInitialiser)) {
+    auto *mixTyIn = (ast::MixTypeInitialiser *)value;
     if (type) {
       declType = type->emit(ctx);
       if (!declType->isCoreType()) {
@@ -129,11 +129,11 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
                    fileRange);
       }
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-      auto *constrTy = unionIn->type->emit(ctx);
+      auto *constrTy = mixTyIn->type->emit(ctx);
       if (declType->isSame(constrTy)) {
         auto *loc      = block->newValue(name, declType, variability);
-        unionIn->local = loc;
-        (void)unionIn->emit(ctx);
+        mixTyIn->local = loc;
+        (void)mixTyIn->emit(ctx);
         return nullptr;
       } else {
         ctx->Error("The type provided for this declaration is " +
@@ -143,9 +143,9 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
                    fileRange);
       }
     } else {
-      unionIn->irName = name;
-      unionIn->isVar  = variability;
-      (void)unionIn->emit(ctx);
+      mixTyIn->irName = name;
+      mixTyIn->isVar  = variability;
+      (void)mixTyIn->emit(ctx);
       return nullptr;
     }
   }

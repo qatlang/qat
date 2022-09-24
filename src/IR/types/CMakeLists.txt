@@ -11,7 +11,7 @@ add_library(QAT_IR_TYPES
         qat_type.cpp
         string_slice.cpp
         tuple.cpp
-        union.cpp
+        mix.cpp
         unsigned.cpp
         void.cpp)
 

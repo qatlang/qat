@@ -21,6 +21,7 @@ void DefineMixType::createType(IR::Context *ctx) {
        !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
        !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
     Vec<Pair<String, Maybe<IR::QatType *>>> subTypesIR;
+    bool                                    hasAssociatedType = false;
     for (usize i = 0; i < subtypes.size(); i++) {
       for (usize j = i + 1; j < subtypes.size(); j++) {
         if (subtypes.at(i).first == subtypes.at(j).first) {
@@ -30,11 +31,19 @@ void DefineMixType::createType(IR::Context *ctx) {
               fRanges.at(j));
         }
       }
+      if (!hasAssociatedType && subtypes.at(i).second.has_value()) {
+        hasAssociatedType = true;
+      }
       subTypesIR.push_back(Pair<String, Maybe<IR::QatType *>>(
           subtypes.at(i).first,
           subtypes.at(i).second.has_value()
               ? Maybe<IR::QatType *>(subtypes.at(i).second.value()->emit(ctx))
               : None));
+    }
+    if (!hasAssociatedType) {
+      ctx->Error("No types associated to any of the subfields of the mix type. "
+                 "Please change this type to a choice type",
+                 fileRange);
     }
     new IR::MixType(name, mod, subTypesIR, ctx->llctx, isPacked,
                     ctx->getVisibInfo(visibility));

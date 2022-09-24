@@ -41,6 +41,7 @@ void Lexer::read() {
       total_char_count++;
     }
     if (current == '\n') {
+      prevLineEnd = char_num;
       line_num++;
       char_num = 0;
       content.push_back("");
@@ -49,8 +50,9 @@ void Lexer::read() {
       file.get(current);
       if (current != -1) {
         if (current == '\n') {
+          prevLineEnd = char_num;
           line_num++;
-          char_num = 1;
+          char_num = 0;
           total_char_count++;
           content.push_back("");
         } else {
@@ -69,9 +71,13 @@ void Lexer::read() {
 }
 
 utils::FileRange Lexer::getPosition(u64 length) {
-  utils::FilePos end   = {line_num, char_num};
-  utils::FilePos start = {line_num, end.character - length};
-  return {fs::path(filePath), start, end};
+  utils::FilePos end = {line_num, char_num};
+  if (char_num == 0) {
+    if (prevLineEnd.has_value()) {
+      end = {line_num - 1, prevLineEnd.value()};
+    }
+  }
+  return {fs::path(filePath), {end.line, end.character - length}, end};
 }
 
 void Lexer::analyse() {

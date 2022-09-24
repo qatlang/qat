@@ -190,6 +190,8 @@ public:
    */
   u64 char_num = 0;
 
+  Maybe<u64> prevLineEnd;
+
   /**
    *  Get the FilePosition object for a token
    *

@@ -5,10 +5,10 @@ add_library(QAT_AST
         bring_entities.cpp
         convertor.cpp
         constructor.cpp
+        define_choice_type.cpp
         define_core_type.cpp
         define_mix_type.cpp
         destructor.cpp
-        errors.cpp
         expression.cpp
         function.cpp
         global_declaration.cpp

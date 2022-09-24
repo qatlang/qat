@@ -35,7 +35,6 @@ enum class NodeType {
   saySentence,
   ifElse,
   giveSentence,
-  exposeBoxes,
   defineCoreType,
   closeBox,
   reassignment,
@@ -58,7 +57,6 @@ enum class NodeType {
   sizeOf,
   sizeOfType,
   memberIndexAccess,
-  symbol,
   expressionSentence,
   loopNormal,
   loopTimes,
@@ -77,6 +75,7 @@ enum class NodeType {
   defineMixType,
   mixTypeInitialiser,
   match,
+  defineChoiceType,
 };
 
 } // namespace qat::ast

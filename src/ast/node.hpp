@@ -5,6 +5,7 @@
 
 #include "../IR/context.hpp"
 #include "../IR/types/array.hpp"
+#include "../IR/types/choice.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../IR/types/float.hpp"
 #include "../IR/types/function.hpp"
@@ -17,7 +18,6 @@
 #include "../backend/cpp.hpp"
 #include "../show.hpp"
 #include "../utils/file_range.hpp"
-#include "./errors.hpp"
 #include "./node_type.hpp"
 #include "nuo/json.hpp"
 

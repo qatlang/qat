@@ -1,5 +1,6 @@
 add_library(QAT_IR_TYPES
         array.cpp
+        choice.cpp
         core_type.cpp
         cstring.cpp
         definition.cpp

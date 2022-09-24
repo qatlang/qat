@@ -24,11 +24,7 @@ enum class TypeKind {
   reference,       // Reference to another QatType type
   function,
   definition, // A type definition
-  /* Template type kinds */
-  templateCoreType, // Template struct type
-  templateSumType,  // Template sum type
-  templateTuple,    // Template tuple type
-  templatePointer,  // Template pointer
+  choice,
 };
 
 } // namespace qat::IR

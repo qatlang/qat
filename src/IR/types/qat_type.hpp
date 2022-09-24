@@ -27,6 +27,7 @@ class CStringType;
 class CoreType;
 class DefinitionType;
 class MixType;
+class ChoiceType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -62,11 +63,12 @@ public:
   useit CoreType         *asCore() const;
   useit bool              isMix() const;
   useit MixType          *asMix() const;
+  useit bool              isChoice() const;
+  useit ChoiceType       *asChoice() const;
   useit bool              isStringSlice() const;
   useit StringSliceType  *asStringSlice() const;
   useit bool              isCString() const;
   useit CStringType      *asCString() const;
-  useit bool              isTemplate() const;
   useit bool              isVoid() const;
   useit virtual TypeKind  typeKind() const = 0;
   useit virtual String    toString() const = 0;

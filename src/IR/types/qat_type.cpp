@@ -11,6 +11,7 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
+#include "choice.hpp"
 #include "cstring.hpp"
 #include "definition.hpp"
 
@@ -107,6 +108,11 @@ bool QatType::isSame(QatType *other) { // NOLINT(misc-no-recursion)
     case TypeKind::core: {
       auto *thisVal  = (CoreType *)this;
       auto *otherVal = (CoreType *)other;
+      return (thisVal->getFullName() == otherVal->getFullName());
+    }
+    case TypeKind::choice: {
+      auto *thisVal  = (ChoiceType *)this;
+      auto *otherVal = (ChoiceType *)other;
       return (thisVal->getFullName() == otherVal->getFullName());
     }
     case TypeKind::mixType: {
@@ -268,19 +274,22 @@ MixType *QatType::asMix() const {
              : (MixType *)this;
 }
 
+bool QatType::isChoice() const {
+  return ((typeKind() == TypeKind::choice) ||
+          (typeKind() == TypeKind::definition &&
+           asDefinition()->getSubType()->isChoice()));
+}
+
+ChoiceType *QatType::asChoice() const {
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType *)this)->getSubType()->asChoice()
+             : (ChoiceType *)this;
+}
+
 bool QatType::isVoid() const {
   return (typeKind() == TypeKind::Void) ||
          (typeKind() == TypeKind::definition &&
           asDefinition()->getSubType()->isVoid());
-}
-
-bool QatType::isTemplate() const {
-  return ((typeKind() == TypeKind::templateCoreType) ||
-          (typeKind() == TypeKind::templatePointer) ||
-          (typeKind() == TypeKind::templateSumType) ||
-          (typeKind() == TypeKind::templateTuple) ||
-          (typeKind() == TypeKind::definition &&
-           asDefinition()->getSubType()->isTemplate()));
 }
 
 bool QatType::isStringSlice() const {

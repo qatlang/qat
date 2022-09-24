@@ -9,7 +9,6 @@ NamedType::NamedType(u32 _relative, String _name, const bool _variable,
       name(std::move(_name)) {}
 
 IR::QatType *NamedType::emit(IR::Context *ctx) {
-  // FIXME - Support sum types
   auto *mod     = ctx->getMod();
   auto  reqInfo = ctx->getReqInfo();
   if (relative != 0) {
@@ -75,15 +74,27 @@ IR::QatType *NamedType::emit(IR::Context *ctx) {
   } else if (mod->hasMixType(entityName) ||
              mod->hasBroughtMixType(entityName) ||
              mod->hasAccessibleMixTypeInImports(entityName, reqInfo).first) {
-    auto *uTy = mod->getMixType(entityName, reqInfo);
-    if (!uTy->getVisibility().isAccessible(reqInfo)) {
-      ctx->Error("Mix type " + ctx->highlightError(uTy->getFullName()) +
+    auto *mTy = mod->getMixType(entityName, reqInfo);
+    if (!mTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error("Mix type " + ctx->highlightError(mTy->getFullName()) +
                      " inside module " +
                      ctx->highlightError(mod->getFullName()) +
                      " is not accessible here",
                  fileRange);
     }
-    return uTy;
+    return mTy;
+  } else if (mod->hasChoiceType(entityName) ||
+             mod->hasBroughtChoiceType(entityName) ||
+             mod->hasAccessibleChoiceTypeInImports(entityName, reqInfo).first) {
+    auto *chTy = mod->getChoiceType(entityName, reqInfo);
+    if (!chTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error("Choice type " + ctx->highlightError(chTy->getFullName()) +
+                     " inside module " +
+                     ctx->highlightError(mod->getFullName()) +
+                     " is not accessible here",
+                 fileRange);
+    }
+    return chTy;
   } else {
     ctx->Error("No type named " + name + " found in scope", fileRange);
   }

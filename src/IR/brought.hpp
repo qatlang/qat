@@ -28,13 +28,15 @@ public:
   useit String getName() const { return name.value_or(""); }
 
   // Is entity named
-  useit bool isNamed() { return name.has_value(); }
+  useit bool isNamed() const { return name.has_value(); }
 
   // Get the entity
   useit T *get() const { return entity; }
 
   // Get the visibility of the brought entity
-  useit utils::VisibilityInfo getVisibility() const { return visibility; }
+  useit const utils::VisibilityInfo &getVisibility() const {
+    return visibility;
+  }
 };
 
 } // namespace qat::IR

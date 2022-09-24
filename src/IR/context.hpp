@@ -62,7 +62,6 @@ public:
   IR::Function     *fn; // Active function
   llvm::Value      *selfVal;
   IR::CoreType     *activeType; // Active core type
-  Vec<String>       exposed;
   Vec<LoopInfo *>   loopsInfo;
   Vec<Breakable *>  breakables;
 

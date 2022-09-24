@@ -39,6 +39,7 @@ enum class NativeUnit {
 class QatModule : public Uniq {
   friend class CoreType;
   friend class MixType;
+  friend class ChoiceType;
   friend class DefinitionType;
   friend class GlobalEntity;
   friend class ast::Lib;
@@ -63,6 +64,8 @@ private:
   Vec<Brought<QatModule>>        broughtModules;
   Vec<CoreType *>                coreTypes;
   Vec<Brought<CoreType>>         broughtCoreTypes;
+  Vec<ChoiceType *>              choiceTypes;
+  Vec<Brought<ChoiceType>>       broughtChoiceTypes;
   Vec<MixType *>                 mixTypes;
   Vec<Brought<MixType>>          broughtMixTypes;
   Vec<DefinitionType *>          typeDefs;
@@ -207,6 +210,16 @@ public:
                                                const utils::RequesterInfo &reqInfo) const;
   useit MixType *getMixType(const String               &name,
                             const utils::RequesterInfo &reqInfo) const;
+
+  // CHOICE TYPE
+
+  useit bool        hasChoiceType(const String &name) const;
+  useit bool        hasBroughtChoiceType(const String &name) const;
+  useit             Pair<bool, String>
+                    hasAccessibleChoiceTypeInImports(const String               &name,
+                                                     const utils::RequesterInfo &reqInfo) const;
+  useit ChoiceType *getChoiceType(const String               &name,
+                                  const utils::RequesterInfo &reqInfo) const;
 
   // TEMPLATE FUNCTIONS
 

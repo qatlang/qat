@@ -69,6 +69,7 @@ QatModule *QatModule::getParentFile() { // NOLINT(misc-no-recursion)
       return parent->getParentFile();
     }
   }
+  return nullptr;
 }
 
 Pair<unsigned, String> QatModule::resolveNthParent(const String &name) const {
@@ -121,12 +122,12 @@ Function *QatModule::createFunction(const String &name, QatType *returnType,
                                     llvm::GlobalValue::LinkageTypes linkage,
                                     llvm::LLVMContext              &ctx) {
   SHOW("Creating IR function")
-  auto fn =
+  auto *fun =
       Function::Create(this, name, returnType, isReturnTypeVariable, isAsync,
                        std::move(args), isVariadic, fileRange, visibility, ctx);
   SHOW("Created function")
-  functions.push_back(fn);
-  return fn;
+  functions.push_back(fun);
+  return fun;
 }
 
 QatModule *
@@ -135,8 +136,8 @@ QatModule::CreateSubmodule(QatModule *parent, fs::path filepath,
                            const utils::VisibilityInfo &visibilityInfo,
                            llvm::LLVMContext           &ctx) {
   SHOW("Creating submodule: " << sname)
-  auto *sub = new QatModule(sname, std::move(filepath), std::move(basePath),
-                            type, visibilityInfo, ctx);
+  auto *sub = new QatModule(std::move(sname), std::move(filepath),
+                            std::move(basePath), type, visibilityInfo, ctx);
   if (parent) {
     sub->parent = parent;
     parent->submodules.push_back(sub);
@@ -150,8 +151,9 @@ QatModule *QatModule::CreateFile(QatModule *parent, fs::path filepath,
                                  Vec<String> content, Vec<ast::Node *> nodes,
                                  utils::VisibilityInfo visibilityInfo,
                                  llvm::LLVMContext    &ctx) {
-  auto *sub    = new QatModule(fname, filepath, basePath, ModuleType::file,
-                               visibilityInfo, ctx);
+  auto *sub =
+      new QatModule(std::move(fname), std::move(filepath), std::move(basePath),
+                    ModuleType::file, visibilityInfo, ctx);
   sub->content = std::move(content);
   if (parent) {
     sub->parent = parent;
@@ -261,7 +263,7 @@ bool QatModule::hasLib(const String &name) const {
 }
 
 bool QatModule::hasBroughtLib(const String &name) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     auto *bMod = brought.get();
     if (bMod->moduleType == ModuleType::lib) {
       if (!brought.isNamed()) {
@@ -279,7 +281,7 @@ bool QatModule::hasBroughtLib(const String &name) const {
 Pair<bool, String>
 QatModule::hasAccessibleLibInImports( // NOLINT(misc-no-recursion)
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -304,7 +306,7 @@ QatModule *QatModule::getLib(const String               &name,
       return sub;
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     auto *bMod = brought.get();
     if (bMod->moduleType == ModuleType::lib) {
       if (!brought.isNamed()) {
@@ -317,7 +319,7 @@ QatModule *QatModule::getLib(const String               &name,
       }
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -355,7 +357,7 @@ bool QatModule::hasBox(const String &name) const {
 }
 
 bool QatModule::hasBroughtBox(const String &name) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     auto *bMod = brought.get();
     if (bMod->moduleType == ModuleType::box) {
       if (!brought.isNamed()) {
@@ -373,7 +375,7 @@ bool QatModule::hasBroughtBox(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleBoxInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -398,7 +400,7 @@ QatModule *QatModule::getBox(const String               &name,
       return sub;
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     auto *bMod = brought.get();
     if (bMod->moduleType == ModuleType::box) {
       if (!brought.isNamed()) {
@@ -411,7 +413,7 @@ QatModule *QatModule::getBox(const String               &name,
       }
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -463,7 +465,7 @@ bool QatModule::hasFunction(const String &name) const {
 }
 
 bool QatModule::hasBroughtFunction(const String &name) const {
-  for (auto brought : broughtFunctions) {
+  for (const auto &brought : broughtFunctions) {
     if (!brought.isNamed()) {
       auto *bFn = brought.get();
       if (bFn->getName() == name) {
@@ -478,7 +480,7 @@ bool QatModule::hasBroughtFunction(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleFunctionInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -503,7 +505,7 @@ Function *QatModule::getFunction(const String               &name,
       return function;
     }
   }
-  for (auto brought : broughtFunctions) {
+  for (const auto &brought : broughtFunctions) {
     if (!brought.isNamed()) {
       auto *bFn = brought.get();
       if (bFn->getName() == name) {
@@ -513,7 +515,7 @@ Function *QatModule::getFunction(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -547,7 +549,7 @@ bool QatModule::hasTemplateFunction(const String &name) const {
 }
 
 bool QatModule::hasBroughtTemplateFunction(const String &name) const {
-  for (auto brought : broughtTemplateFunctions) {
+  for (const auto &brought : broughtTemplateFunctions) {
     if (!brought.isNamed()) {
       auto *bFn = brought.get();
       if (bFn->getName() == name) {
@@ -562,7 +564,7 @@ bool QatModule::hasBroughtTemplateFunction(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleTemplateFunctionInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -589,7 +591,7 @@ QatModule::getTemplateFunction(const String               &name,
       return function;
     }
   }
-  for (auto brought : broughtTemplateFunctions) {
+  for (const auto &brought : broughtTemplateFunctions) {
     if (!brought.isNamed()) {
       auto *bFn = brought.get();
       if (bFn->getName() == name) {
@@ -599,7 +601,7 @@ QatModule::getTemplateFunction(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -631,7 +633,7 @@ bool QatModule::hasCoreType(const String &name) const {
 }
 
 bool QatModule::hasBroughtCoreType(const String &name) const {
-  for (auto brought : broughtCoreTypes) {
+  for (const auto &brought : broughtCoreTypes) {
     if (!brought.isNamed()) {
       auto *cType = brought.get();
       if (cType->getName() == name) {
@@ -646,7 +648,7 @@ bool QatModule::hasBroughtCoreType(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleCoreTypeInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&
@@ -670,7 +672,7 @@ CoreType *QatModule::getCoreType(const String               &name,
       return coreType;
     }
   }
-  for (auto brought : broughtCoreTypes) {
+  for (const auto &brought : broughtCoreTypes) {
     if (!brought.isNamed()) {
       auto *coreType = brought.get();
       if (coreType->getName() == name) {
@@ -680,7 +682,7 @@ CoreType *QatModule::getCoreType(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -711,7 +713,7 @@ bool QatModule::hasMixType(const String &name) const {
 }
 
 bool QatModule::hasBroughtMixType(const String &name) const {
-  for (auto brought : broughtMixTypes) {
+  for (const auto &brought : broughtMixTypes) {
     if (!brought.isNamed()) {
       auto *uType = brought.get();
       if (uType->getName() == name) {
@@ -726,7 +728,7 @@ bool QatModule::hasBroughtMixType(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleMixTypeInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&
@@ -748,7 +750,7 @@ MixType *QatModule::getMixType(const String               &name,
       return mixTy;
     }
   }
-  for (auto brought : broughtMixTypes) {
+  for (const auto &brought : broughtMixTypes) {
     if (!brought.isNamed()) {
       auto *mixTy = brought.get();
       if (mixTy->getName() == name) {
@@ -758,7 +760,7 @@ MixType *QatModule::getMixType(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -768,6 +770,87 @@ MixType *QatModule::getMixType(const String               &name,
                   ->getVisibility()
                   .isAccessible(reqInfo)) {
             return bMod->getMixType(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+// CHOICE TYPE
+
+bool QatModule::hasChoiceType(const String &name) const {
+  SHOW("ChoiceType count: " << mixTypes.size())
+  for (auto *typ : choiceTypes) {
+    if (typ->getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasBroughtChoiceType(const String &name) const {
+  for (const auto &brought : broughtChoiceTypes) {
+    if (!brought.isNamed()) {
+      auto *uType = brought.get();
+      if (uType->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleChoiceTypeInImports(
+    const String &name, const utils::RequesterInfo &reqInfo) const {
+  for (const auto &brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName() &&
+          (bMod->hasChoiceType(name) || bMod->hasBroughtChoiceType(name) ||
+           bMod->hasAccessibleChoiceTypeInImports(name, reqInfo).first)) {
+        if (bMod->getChoiceType(name, reqInfo)
+                ->getVisibility()
+                .isAccessible(reqInfo)) {
+          return {true, bMod->filePath.string()};
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+ChoiceType *
+QatModule::getChoiceType(const String               &name,
+                         const utils::RequesterInfo &reqInfo) const {
+  for (auto *choiceTy : choiceTypes) {
+    if (choiceTy->getName() == name) {
+      return choiceTy;
+    }
+  }
+  for (const auto &brought : broughtChoiceTypes) {
+    if (!brought.isNamed()) {
+      auto *choiceTy = brought.get();
+      if (choiceTy->getName() == name) {
+        return choiceTy;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (const auto &brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto *bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasChoiceType(name) || bMod->hasBroughtChoiceType(name) ||
+            bMod->hasAccessibleChoiceTypeInImports(name, reqInfo).first) {
+          if (bMod->getChoiceType(name, reqInfo)
+                  ->getVisibility()
+                  .isAccessible(reqInfo)) {
+            return bMod->getChoiceType(name, reqInfo);
           }
         }
       }
@@ -791,7 +874,7 @@ bool QatModule::hasTemplateCoreType(const String &name) const {
 }
 
 bool QatModule::hasBroughtTemplateCoreType(const String &name) const {
-  for (auto brought : broughtTemplateCoreTypes) {
+  for (const auto &brought : broughtTemplateCoreTypes) {
     if (!brought.isNamed()) {
       auto *bFn = brought.get();
       if (bFn->getName() == name) {
@@ -806,7 +889,7 @@ bool QatModule::hasBroughtTemplateCoreType(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleTemplateCoreTypeInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -833,7 +916,7 @@ QatModule::getTemplateCoreType(const String               &name,
       return tempCore;
     }
   }
-  for (auto brought : broughtTemplateCoreTypes) {
+  for (const auto &brought : broughtTemplateCoreTypes) {
     if (!brought.isNamed()) {
       auto *bCTy = brought.get();
       if (bCTy->getName() == name) {
@@ -843,7 +926,7 @@ QatModule::getTemplateCoreType(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -875,7 +958,7 @@ bool QatModule::hasTypeDef(const String &name) const {
 }
 
 bool QatModule::hasBroughtTypeDef(const String &name) const {
-  for (auto brought : broughtTypeDefs) {
+  for (const auto &brought : broughtTypeDefs) {
     if (!brought.isNamed()) {
       auto *tDef = brought.get();
       if (tDef->getName() == name) {
@@ -890,7 +973,7 @@ bool QatModule::hasBroughtTypeDef(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleTypeDefInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&
@@ -915,7 +998,7 @@ QatModule::getTypeDef(const String               &name,
       return tDef;
     }
   }
-  for (auto brought : broughtTypeDefs) {
+  for (const auto &brought : broughtTypeDefs) {
     if (!brought.isNamed()) {
       auto *tDef = brought.get();
       if (tDef->getName() == name) {
@@ -925,7 +1008,7 @@ QatModule::getTypeDef(const String               &name,
       return brought.get();
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
@@ -955,7 +1038,7 @@ bool QatModule::hasGlobalEntity(const String &name) const {
 }
 
 bool QatModule::hasBroughtGlobalEntity(const String &name) const {
-  for (auto brought : broughtGlobalEntities) {
+  for (const auto &brought : broughtGlobalEntities) {
     if (!brought.isNamed()) {
       auto *bGlobal = brought.get();
       if (bGlobal->getName() == name) {
@@ -970,7 +1053,7 @@ bool QatModule::hasBroughtGlobalEntity(const String &name) const {
 
 Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(
     const String &name, const utils::RequesterInfo &reqInfo) const {
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&
@@ -995,7 +1078,7 @@ QatModule::getGlobalEntity(const String &name, // NOLINT(misc-no-recursion)
       return ent;
     }
   }
-  for (auto brought : broughtGlobalEntities) {
+  for (const auto &brought : broughtGlobalEntities) {
     auto *bGlobal = brought.get();
     if (!brought.isNamed()) {
       if (bGlobal->getName() == name) {
@@ -1005,7 +1088,7 @@ QatModule::getGlobalEntity(const String &name, // NOLINT(misc-no-recursion)
       return bGlobal;
     }
   }
-  for (auto brought : broughtModules) {
+  for (const auto &brought : broughtModules) {
     if (!brought.isNamed()) {
       auto *bMod = brought.get();
       if (!bMod->shouldPrefixName() &&

@@ -696,6 +696,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::disown, this->getPosition(6));
       } else if (value == "end") {
         return Token::normal(TokenType::end, this->getPosition(3));
+      } else if (value == "choice") {
+        return Token::normal(TokenType::choice, this->getPosition(6));
       } else {
         prev_ctx = "identifier";
         return Token::valued(TokenType::identifier, value,

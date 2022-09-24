@@ -104,7 +104,8 @@ enum class TokenType {
   mixSeparator,
   match,
   copy,
-  move
+  move,
+  choice,
 };
 
 } // namespace qat::lexer

@@ -59,6 +59,7 @@
 #include "../show.hpp"
 #include "cache_symbol.hpp"
 #include "parser_context.hpp"
+#include <string>
 #include <utility>
 
 #define ValueAt(ind) tokens->at(ind).value
@@ -573,6 +574,34 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
         }
       } else {
         Error("Expected an identifier for the name of the mix type",
+              RangeAt(i));
+      }
+      break;
+    }
+    case TokenType::choice: {
+      if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::curlybraceOpen, i + 1)) {
+          auto bCloseRes = getPairEnd(TokenType::curlybraceOpen,
+                                      TokenType::curlybraceClose, i + 2, false);
+          if (bCloseRes.has_value()) {
+            auto bClose = bCloseRes.value();
+            Vec<Pair<ast::DefineChoiceType::Field,
+                     Maybe<ast::DefineChoiceType::Value>>>
+                fields;
+            parseChoiceType(i + 2, bClose, fields);
+            result.push_back(new ast::DefineChoiceType(
+                ValueAt(i + 1), std::move(fields), getVisibility(),
+                RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            Error("Expected end for {", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected { to start the definition of the choice type",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected an identifier for the name of the choice type",
               RangeAt(i));
       }
       break;
@@ -1328,6 +1357,72 @@ void Parser::parseMixType(ParserContext &prev_ctx, usize from, usize upto,
     default: {
       Error("Invalid token found after identifier in mix type definition",
             RangeAt(i));
+    }
+    }
+  }
+}
+
+void Parser::parseChoiceType(
+    usize from, usize upto,
+    Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>>
+        &fields) {
+  using lexer::TokenType;
+
+  for (usize i = from + 1; i < upto; i++) {
+    auto &token = tokens->at(i);
+    switch (token.type) {
+    case TokenType::identifier: {
+      auto start = i;
+      if (isNext(TokenType::separator, i)) {
+        fields.push_back(Pair<ast::DefineChoiceType::Field,
+                              Maybe<ast::DefineChoiceType::Value>>(
+            {ValueAt(i), RangeAt(i)}, None));
+        i++;
+      } else if (isNext(TokenType::assignment, i)) {
+        auto fieldName  = ValueAt(i);
+        bool isNegative = false;
+        if (isNext(TokenType::binaryOperator, i + 1) && ValueAt(i + 2) == "-") {
+          isNegative = true;
+          i += 2;
+        } else if (isNext(TokenType::binaryOperator, i + 1)) {
+          Error("Invalid token found inside choice definition", RangeAt(i + 2));
+        } else {
+          i += 1;
+        }
+        i64              val = 0;
+        utils::FileRange valRange{"", {0u, 0u}, {0u, 0u}};
+        if (isNext(TokenType::integerLiteral, i) ||
+            isNext(TokenType::unsignedLiteral, i)) {
+          if (ValueAt(i + 1).find('_') != String::npos) {
+            ValueAt(i + 1) = ValueAt(i + 1).substr(0, ValueAt(i + 1).find('_'));
+          }
+          val = std::stoi(ValueAt(i + 1));
+          i++;
+        } else {
+          Error("Expected an integer or unsigned integer literal as the value "
+                "for the variant of the choice type",
+                RangeAt(i));
+        }
+        if (isNegative) {
+          val = -val;
+        }
+        if (isNext(TokenType::separator, i) ||
+            isNext(TokenType::curlybraceClose, i)) {
+          fields.push_back(Pair<ast::DefineChoiceType::Field,
+                                Maybe<ast::DefineChoiceType::Value>>(
+              ast::DefineChoiceType::Field{ValueAt(start), RangeAt(start)},
+              ast::DefineChoiceType::Value{val, valRange}));
+          i++;
+        } else {
+          Error(
+              "Invalid token found after integer value for the choice variant",
+              RangeAt(start));
+        }
+      }
+      break;
+    }
+    default: {
+      Error("Invalid token found inside choice type definition", RangeAt(i));
     }
     }
   }

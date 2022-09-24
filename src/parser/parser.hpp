@@ -4,6 +4,7 @@
 #include "../ast/argument.hpp"
 #include "../ast/box.hpp"
 #include "../ast/bring_entities.hpp"
+#include "../ast/define_choice_type.hpp"
 #include "../ast/define_core_type.hpp"
 #include "../ast/expression.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
@@ -84,6 +85,10 @@ public:
   void parseMixType(ParserContext &prev_ctx, usize from, usize upto,
                     Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
                     Vec<utils::FileRange>                    &fileRanges);
+
+  void parseChoiceType(usize from, usize upto,
+                       Vec<Pair<ast::DefineChoiceType::Field,
+                                Maybe<ast::DefineChoiceType::Value>>> &fields);
 
   void
   parseMatchContents(ParserContext &prev_ctx, usize from, usize upto,

@@ -57,7 +57,8 @@ void DefineCoreType::createType(IR::Context *ctx) const {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
+      !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
+      !mod->hasChoiceType(name)) {
     SHOW("Creating IR for CoreType members. Count: "
          << std::to_string(members.size()))
     Vec<IR::CoreType::Member *> mems;
@@ -126,6 +127,12 @@ void DefineCoreType::createType(IR::Context *ctx) const {
               " is the name of an existing mix type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
+    } else if (mod->hasChoiceType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasFunction(name)) {
       ctx->Error(ctx->highlightError(name) +
                      " is the name of an existing function in this scope. "
@@ -152,7 +159,8 @@ void DefineCoreType::defineType(IR::Context *ctx) {
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) &&
       !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-      !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
+      !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
+      !mod->hasChoiceType(name)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -183,6 +191,12 @@ void DefineCoreType::defineType(IR::Context *ctx) {
       ctx->Error(
           ctx->highlightError(name) +
               " is the name of an existing mix type in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasChoiceType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {

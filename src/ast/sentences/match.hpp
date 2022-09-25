@@ -6,21 +6,22 @@
 
 namespace qat::ast {
 
-enum class MatchType { mix, Enum, Exp };
+enum class MatchType { mix, choice, Exp };
 
 class MixMatchValue;
-class EnumMatchValue;
+class ChoiceMatchValue;
 class ExpressionMatchValue;
 
 class MatchValue {
 public:
   ~MatchValue() = default;
 
-  useit MixMatchValue        *asMix();
-  useit EnumMatchValue       *asEnum();
-  useit ExpressionMatchValue *asExp();
-  useit virtual MatchType     getType() const = 0;
-  useit virtual nuo::Json     toJson() const  = 0;
+  useit MixMatchValue           *asMix();
+  useit ChoiceMatchValue        *asChoice();
+  useit ExpressionMatchValue    *asExp();
+  useit virtual utils::FileRange getMainRange() const = 0;
+  useit virtual MatchType        getType() const      = 0;
+  useit virtual nuo::Json        toJson() const       = 0;
 };
 
 class MixMatchValue : public MatchValue {
@@ -40,19 +41,22 @@ public:
   useit utils::FileRange getValueRange() const;
   useit bool             isVariable() const;
   useit MatchType        getType() const final { return MatchType::mix; }
+  useit utils::FileRange getMainRange() const final { return name.second; }
   useit nuo::Json toJson() const final;
 };
 
-class EnumMatchValue : public MatchValue {
+class ChoiceMatchValue : public MatchValue {
 private:
-  Pair<String, utils::FileRange> name;
+  String           name;
+  utils::FileRange range;
 
 public:
-  EnumMatchValue(Pair<String, utils::FileRange> name);
+  ChoiceMatchValue(String name, utils::FileRange fileRange);
 
   useit String getName() const;
   useit utils::FileRange getFileRange() const;
-  useit MatchType        getType() const final { return MatchType::Enum; }
+  useit MatchType        getType() const final { return MatchType::choice; }
+  useit utils::FileRange getMainRange() const final { return range; }
   useit nuo::Json toJson() const final;
 };
 
@@ -61,8 +65,11 @@ private:
   Expression *exp;
 
 public:
+  ExpressionMatchValue(Expression *exp);
+
   useit Expression *getExpression() const;
   useit MatchType   getType() const final { return MatchType::Exp; }
+  useit utils::FileRange getMainRange() const final { return exp->fileRange; }
   useit nuo::Json toJson() const final;
 };
 

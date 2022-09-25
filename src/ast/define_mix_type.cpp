@@ -19,7 +19,8 @@ void DefineMixType::createType(IR::Context *ctx) {
       //   ((isTemplate() || !mod->hasTemplateMixType(name)) &&
       (!mod->hasCoreType(name) && !mod->hasFunction(name) &&
        !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-       !mod->hasTypeDef(name) && !mod->hasMixType(name)) {
+       !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
+       !mod->hasChoiceType(name)) {
     Vec<Pair<String, Maybe<IR::QatType *>>> subTypesIR;
     bool                                    hasAssociatedType = false;
     for (usize i = 0; i < subtypes.size(); i++) {
@@ -69,7 +70,13 @@ void DefineMixType::createType(IR::Context *ctx) {
     } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing union type in this scope. "
+              " is the name of an existing mix type in this scope. "
+              "Please change name of this union type or check the codebase",
+          fileRange);
+    } else if (mod->hasChoiceType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. "
               "Please change name of this union type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {
@@ -130,7 +137,13 @@ void DefineMixType::defineType(IR::Context *ctx) {
     } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing union type in this scope. "
+              " is the name of an existing mix type in this scope. "
+              "Please change name of this core type or check the codebase",
+          fileRange);
+    } else if (mod->hasChoiceType(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. "
               "Please change name of this core type or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {

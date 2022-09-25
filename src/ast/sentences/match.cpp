@@ -3,8 +3,8 @@
 
 namespace qat::ast {
 
-MixMatchValue        *MatchValue::asMix() { return (MixMatchValue *)this; }
-EnumMatchValue       *MatchValue::asEnum() { return (EnumMatchValue *)this; }
+MixMatchValue    *MatchValue::asMix() { return (MixMatchValue *)this; }
+ChoiceMatchValue *MatchValue::asChoice() { return (ChoiceMatchValue *)this; }
 ExpressionMatchValue *MatchValue::asExp() {
   return (ExpressionMatchValue *)this;
 }
@@ -39,19 +39,21 @@ nuo::Json MixMatchValue::toJson() const {
          valueName.has_value() ? valueName->second : nuo::JsonValue());
 }
 
-EnumMatchValue::EnumMatchValue(Pair<String, utils::FileRange> _name)
-    : name(std::move(_name)) {}
+ChoiceMatchValue::ChoiceMatchValue(String _name, utils::FileRange fileRange)
+    : name(std::move(_name)), range(std::move(fileRange)) {}
 
-String EnumMatchValue::getName() const { return name.first; }
+String ChoiceMatchValue::getName() const { return name; }
 
-utils::FileRange EnumMatchValue::getFileRange() const { return name.second; }
+utils::FileRange ChoiceMatchValue::getFileRange() const { return range; }
 
-nuo::Json EnumMatchValue::toJson() const {
+nuo::Json ChoiceMatchValue::toJson() const {
   return nuo::Json()
       ._("matchValueType", "enum")
-      ._("name", name.first)
-      ._("nameFileRange", name.second);
+      ._("name", name)
+      ._("nameFileRange", range);
 }
+
+ExpressionMatchValue::ExpressionMatchValue(Expression *_exp) : exp(_exp) {}
 
 Expression *ExpressionMatchValue::getExpression() const { return exp; }
 
@@ -80,7 +82,7 @@ IR::Value *Match::emit(IR::Context *ctx) {
     isExpVariable = expEmit->isVariable();
   }
   auto *curr      = ctx->fn->getBlock();
-  auto *restBlock = new IR::Block(ctx->fn, curr->getParent());
+  auto *restBlock = new IR::Block(ctx->fn, curr);
   if (expTy->isMix()) {
     auto *mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
@@ -89,7 +91,12 @@ IR::Value *Match::emit(IR::Context *ctx) {
     Vec<String> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto &section = chain.at(i);
-      auto       *uMatch  = section.first->asMix();
+      if (section.first->getType() != MatchType::mix) {
+        ctx->Error("Expected the name of a variant of the mix type " +
+                       ctx->highlightError(expTy->asMix()->getFullName()),
+                   section.first->getMainRange());
+      }
+      auto *uMatch = section.first->asMix();
       if (uMatch->isVariable()) {
         if (!isExpVariable) {
           ctx->Error(
@@ -98,11 +105,6 @@ IR::Value *Match::emit(IR::Context *ctx) {
               "case cannot use a variable reference to the subtype value",
               uMatch->getValueRange());
         }
-      }
-      if (section.first->getType() != MatchType::mix) {
-        ctx->Error("Expected name of the sub-field of the mix type " +
-                       ctx->highlightError(expTy->asMix()->getFullName()),
-                   uMatch->getNameRange());
       }
       auto subRes = mTy->hasSubTypeWithName(uMatch->getName());
       if (!subRes.first) {
@@ -187,16 +189,116 @@ IR::Value *Match::emit(IR::Context *ctx) {
     mTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
-        ctx->Error("All possible subtypes of the mix are already mentioned. "
-                   "No need to use else case for the match statement",
+        ctx->Error("All possible variants of the mix type are already "
+                   "mentioned in the match sentence. No need to use else case "
+                   "for the match statement",
                    fileRange);
       }
     } else {
       if (!elseCase.has_value()) {
-        ctx->Error(
-            "Not all possible subtypes of the mix are provided. Please add "
-            "the else case to handle all missing possibilities",
-            fileRange);
+        ctx->Error("Not all possible variants of the mix type are provided. "
+                   "Please add the else case to handle all missing variants",
+                   fileRange);
+      }
+    }
+    if (elseCase.has_value()) {
+      emitSentences(elseCase.value(), ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    }
+    restBlock->setActive(ctx->builder);
+  } else if (expTy->isChoice()) {
+    auto        *chTy = expTy->asChoice();
+    llvm::Value *choiceVal;
+    if (expEmit->isReference() || expEmit->isImplicitPointer()) {
+      choiceVal =
+          ctx->builder.CreateLoad(chTy->getLLVMType(), expEmit->getLLVM());
+    } else {
+      choiceVal = expEmit->getLLVM();
+    }
+    Vec<String> mentionedFields;
+    for (usize i = 0; i < chain.size(); i++) {
+      const auto  &section = chain.at(i);
+      llvm::Value *caseVal;
+      if (section.first->getType() == MatchType::mix) {
+        ctx->Error("Expected the name of a variant of the choice type " +
+                       ctx->highlightError(expTy->asMix()->getFullName()),
+                   section.first->getMainRange());
+      } else if (section.first->getType() == MatchType::Exp) {
+        auto *eMatch  = section.first->asExp();
+        auto *caseExp = eMatch->getExpression()->emit(ctx);
+        if (caseExp->getType()->isChoice() ||
+            (caseExp->getType()->isReference() &&
+             caseExp->getType()->asReference()->getSubType()->isChoice())) {
+          if (caseExp->getType()->isChoice() && caseExp->isImplicitPointer()) {
+            caseVal = ctx->builder.CreateLoad(chTy->getLLVMType(),
+                                              caseExp->getLLVM());
+          } else if (caseExp->getType()->isReference()) {
+            caseExp->loadImplicitPointer(ctx->builder);
+            caseVal = ctx->builder.CreateLoad(chTy->getLLVMType(),
+                                              caseExp->getLLVM());
+          }
+        } else {
+          ctx->Error("Expected either the name of a variant of, "
+                     "or an expression of type " +
+                         ctx->highlightError(chTy->getFullName()),
+                     eMatch->getMainRange());
+        }
+      } else {
+        auto *cMatch = section.first->asChoice();
+        for (const auto &mField : mentionedFields) {
+          if (mField == cMatch->getName()) {
+            ctx->Error("The variant " + ctx->highlightError(cMatch->getName()) +
+                           " of choice type " +
+                           ctx->highlightError(chTy->getFullName()) +
+                           " is repeating here. Please check logic and make "
+                           "necessary changes",
+                       cMatch->getFileRange());
+          }
+        }
+        mentionedFields.push_back(cMatch->getName());
+        if (chTy->hasField(cMatch->getName())) {
+          caseVal = llvm::ConstantInt::get(
+              llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
+              (u64)chTy->getValueFor(cMatch->getName()));
+        } else {
+          ctx->Error(
+              "No variant named " + ctx->highlightError(cMatch->getName()) +
+                  " in choice type " + ctx->highlightError(chTy->getFullName()),
+              cMatch->getFileRange());
+        }
+      }
+      auto      *trueBlock  = new IR::Block(ctx->fn, curr);
+      IR::Block *falseBlock = nullptr;
+      auto      *cond       = ctx->builder.CreateICmpEQ(choiceVal, caseVal);
+      if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
+        falseBlock = new IR::Block(ctx->fn, curr);
+        ctx->builder.CreateCondBr(cond, trueBlock->getBB(),
+                                  falseBlock->getBB());
+      } else {
+        ctx->builder.CreateCondBr(cond, trueBlock->getBB(), restBlock->getBB());
+      }
+      trueBlock->setActive(ctx->builder);
+      emitSentences(section.second, ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
+        // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
+        falseBlock->setActive(ctx->builder);
+      }
+    }
+    Vec<String> missingFields;
+    chTy->getMissingNames(mentionedFields, missingFields);
+    if (missingFields.empty()) {
+      if (elseCase.has_value()) {
+        ctx->Error("All possible variants of the choice type are already "
+                   "mentioned in the match sentence. No need to use else case "
+                   "for the match statement",
+                   fileRange);
+      }
+    } else {
+      if (!elseCase.has_value()) {
+        ctx->Error("Not all possible variants of the choice type are provided. "
+                   "Please add the else case to handle all missing variants",
+                   fileRange);
       }
     }
     if (elseCase.has_value()) {

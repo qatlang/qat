@@ -18,8 +18,12 @@ private:
   String name;
   u32    relative;
 
+  bool canBeChoice = false;
+
 public:
   Entity(u32 relative, String _name, utils::FileRange _fileRange);
+
+  void setCanBeChoice();
 
   useit IR::Value *emit(IR::Context *ctx);
   useit nuo::Json toJson() const;

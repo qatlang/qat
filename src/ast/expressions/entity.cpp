@@ -72,6 +72,17 @@ IR::Value *Entity::emit(IR::Context *ctx) {
           auto *gEnt = mod->getGlobalEntity(name, reqInfo);
           return new IR::Value(gEnt->getLLVM(), gEnt->getType(),
                                gEnt->isVariable(), gEnt->getNature());
+        } else if (mod->hasChoiceType(name) ||
+                   mod->hasBroughtChoiceType(name) ||
+                   mod->hasAccessibleChoiceTypeInImports(name, reqInfo).first) {
+          if (canBeChoice) {
+            return new IR::Value(nullptr, mod->getChoiceType(name, reqInfo),
+                                 false, IR::Nature::pure);
+          } else {
+            ctx->Error(ctx->highlightError(name) +
+                           " is a choice type and cannnot be used as a value",
+                       fileRange);
+          }
         }
         ctx->Error("No value named " + ctx->highlightError(name) + " found",
                    fileRange);
@@ -168,6 +179,26 @@ IR::Value *Entity::emit(IR::Context *ctx) {
                          " is a mix type and cannot be used as a value in an "
                          "expression",
                      fileRange);
+        } else if (mod->hasChoiceType(entityName) ||
+                   mod->hasBroughtChoiceType(entityName) ||
+                   mod->hasAccessibleChoiceTypeInImports(entityName, reqInfo)
+                       .first) {
+          auto *chTy = mod->getChoiceType(entityName, reqInfo);
+          if (canBeChoice) {
+            if (chTy->getVisibility().isAccessible(reqInfo)) {
+              return new IR::Value(nullptr, chTy, false, IR::Nature::pure);
+            } else {
+              ctx->Error("Choice type " +
+                             ctx->highlightError(chTy->getFullName()) +
+                             " is not accessible here",
+                         fileRange);
+            }
+          } else {
+            ctx->Error(chTy->getFullName() +
+                           " is a mix type and cannot be used as a value in an "
+                           "expression",
+                       fileRange);
+          }
         } else if (mod->hasTypeDef(entityName) ||
                    mod->hasBroughtTypeDef(entityName) ||
                    mod->hasAccessibleTypeDefInImports(entityName, reqInfo)
@@ -187,6 +218,8 @@ IR::Value *Entity::emit(IR::Context *ctx) {
   }
   return nullptr;
 }
+
+void Entity::setCanBeChoice() { canBeChoice = true; }
 
 nuo::Json Entity::toJson() const {
   return nuo::Json()

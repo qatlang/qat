@@ -88,6 +88,22 @@ void ChoiceType::findBitwidthForValues() const {
   bitwidth = hasNegative ? (result + 1) : result;
 }
 
+void ChoiceType::getMissingNames(Vec<String> &vals,
+                                 Vec<String> &missing) const {
+  for (const auto &sub : fields) {
+    bool result = false;
+    for (const auto &val : vals) {
+      if (sub == val) {
+        result = true;
+        break;
+      }
+    }
+    if (!result) {
+      missing.push_back(sub);
+    }
+  }
+}
+
 const utils::VisibilityInfo &ChoiceType::getVisibility() const {
   return visibility;
 }

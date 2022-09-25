@@ -38,6 +38,7 @@ public:
   useit String    toString() const final { return getFullName(); }
   void            findBitwidthNormal() const;
   void            findBitwidthForValues() const;
+  void getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
 };
 
 } // namespace qat::IR

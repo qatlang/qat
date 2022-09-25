@@ -1491,17 +1491,9 @@ void Parser::parseMatchContents(
           } else {
             Error("Expected end of [", RangeAt(i + 1));
           }
-        } else if (firstPrimaryPosition(TokenType::stop, i).has_value()) {
-          auto stop = firstPrimaryPosition(TokenType::stop, i).value();
-          auto snt  = parseSentences(prev_ctx, i, stop + 1);
-          chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
-              new ast::MixMatchValue(std::move(fieldName), std::move(valueName),
-                                     isVar),
-              std::move(snt)));
-          i = stop;
         } else {
           Error("Expected [ to start the sentences in this match case block",
-                RangeAt(i));
+                RangeSpan(i, i + 1));
         }
       } else {
         Error("Expected name for the subfield of the mix type to match",
@@ -1510,7 +1502,29 @@ void Parser::parseMatchContents(
       break;
     }
     case TokenType::child: {
-      // FIXME - Implement
+      if (isNext(TokenType::identifier, i)) {
+        auto variantName = ValueAt(i + 1);
+        if (isNext(TokenType::bracketOpen, i + 1)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, i + 2, false);
+          if (bCloseRes) {
+            auto bClose = bCloseRes.value();
+            auto snts   = parseSentences(prev_ctx, i + 2, bClose);
+            chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
+                new ast::ChoiceMatchValue(ValueAt(i + 1), RangeAt(i + 1)),
+                std::move(snts)));
+            i = bClose;
+          } else {
+            Error("Expected end for [", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected [ to start the sentences in this match case block",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected name of the variant of the choice type to match",
+              RangeAt(i));
+      }
       break;
     }
     case TokenType::Else: {
@@ -1542,6 +1556,28 @@ void Parser::parseMatchContents(
       break;
     }
     default: {
+      if (isPrimaryWithin(TokenType::altArrow, i, upto)) {
+        auto  start  = i;
+        auto  expEnd = firstPrimaryPosition(TokenType::altArrow, i).value();
+        auto *exp    = parseExpression(prev_ctx, None, i - 1, expEnd).first;
+        i            = expEnd;
+        if (isNext(TokenType::bracketOpen, i)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, i + 1, false);
+          if (bCloseRes.has_value()) {
+            auto snts = parseSentences(prev_ctx, i + 1, bCloseRes.value());
+            chain.push_back(Pair<ast::MatchValue *, Vec<ast::Sentence *>>(
+                new ast::ExpressionMatchValue(exp), std::move(snts)));
+            i = bCloseRes.value();
+          } else {
+            Error("Expected end for [", RangeAt(i + 1));
+          }
+        } else {
+          Error("Expected [ to start the sentences in the match case block",
+                RangeSpan(start, i));
+        }
+        break;
+      }
       SHOW("Token type: " << (int)token.type)
       Error("Unexpected token found inside match block", token.fileRange);
     }

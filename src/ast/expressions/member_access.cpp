@@ -1,4 +1,5 @@
 #include "./member_access.hpp"
+#include "entity.hpp"
 
 namespace qat::ast {
 
@@ -9,6 +10,9 @@ MemberAccess::MemberAccess(Expression *_instance, bool _isPointerAccess,
 
 IR::Value *MemberAccess::emit(IR::Context *ctx) {
   SHOW("Member variable emitting")
+  if (instance->nodeType() == NodeType::entity) {
+    ((ast::Entity *)instance)->setCanBeChoice();
+  }
   auto *inst     = instance->emit(ctx);
   auto *instType = inst->getType();
   bool  isVar    = inst->isVariable();
@@ -34,7 +38,21 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
           instance->fileRange);
     }
   }
-  if (instType->isArray()) {
+  if (instType->isChoice()) {
+    auto *chTy = instType->asChoice();
+    if (chTy->hasField(name)) {
+      auto chInd = (u64)chTy->getValueFor(name);
+      return new IR::Value(
+          llvm::ConstantInt::get(
+              llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()), chInd),
+          chTy, false, IR::Nature::pure);
+    } else {
+      ctx->Error("No variant named " + ctx->highlightError(name) +
+                     " found in choice type " +
+                     ctx->highlightError(chTy->getFullName()),
+                 fileRange);
+    }
+  } else if (instType->isArray()) {
     if (name == "length") {
       return new IR::Value(
           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),

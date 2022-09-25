@@ -38,6 +38,7 @@ FunctionType::FunctionType(QatType *_retType, bool _isRetTypeVariable,
   SHOW("Creating function type")
   Vec<llvm::Type *> argTys;
   for (auto *arg : argTypes) {
+    SHOW("Arg name is " << arg->getName())
     argTys.push_back(arg->getType()->getLLVMType());
   }
   SHOW("Got arg llvm types in FunctionType")

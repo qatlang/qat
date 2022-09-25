@@ -152,9 +152,10 @@ MemberFunction *
 MemberFunction::CreateDestructor(CoreType               *parent,
                                  const utils::FileRange &fileRange,
                                  llvm::LLVMContext      &ctx) {
+  SHOW("Creating destructor")
   return new MemberFunction(
-      MemberFnType::destructor, parent->getParent(), parent, "end",
-      VoidType::get(ctx), false, false,
+      MemberFnType::destructor, true, parent, "end", VoidType::get(ctx), false,
+      false,
       Vec<Argument>(
           {Argument::Create("''", PointerType::get(true, parent, ctx), 0)}),
       false, false, fileRange, utils::VisibilityInfo::pub(), ctx);

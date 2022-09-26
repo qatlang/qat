@@ -4,20 +4,31 @@
 namespace qat::ast {
 
 NullPointer::NullPointer(utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(nullptr) {}
+    : Expression(std::move(_fileRange)) {}
 
-NullPointer::NullPointer(llvm::Type *_type, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type) {}
+void NullPointer::setType(bool isVariable, IR::QatType *typ) {
+  isVariableType = isVariable;
+  candidateType  = typ;
+}
 
 IR::Value *NullPointer::emit(IR::Context *ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Null pointer is not assignable", fileRange);
   }
-  return new IR::Value(
-      llvm::ConstantPointerNull::get(
-          llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-      IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), ctx->llctx),
-      false, IR::Nature::pure);
+  if (candidateType) {
+    return new IR::Value(
+        llvm::ConstantPointerNull::get(
+            candidateType->getLLVMType()->getPointerTo()),
+        IR::PointerType::get(isVariableType, candidateType, ctx->llctx), false,
+        IR::Nature::pure);
+  } else {
+    return new IR::Value(llvm::ConstantPointerNull::get(
+                             llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
+                         IR::PointerType::get(isVariableType,
+                                              IR::VoidType::get(ctx->llctx),
+                                              ctx->llctx),
+                         false, IR::Nature::pure);
+  }
 }
 
 nuo::Json NullPointer::toJson() const {

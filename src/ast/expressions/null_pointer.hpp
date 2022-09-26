@@ -12,18 +12,17 @@ namespace qat::ast {
 class NullPointer : public Expression {
 private:
   // Type of the pointer
-  llvm::Type *type;
+  IR::QatType *candidateType  = nullptr;
+  bool         isVariableType = false;
 
 public:
   explicit NullPointer(utils::FileRange _fileRange);
 
-  NullPointer(llvm::Type *_type, utils::FileRange _fileRange);
+  void setType(bool isVariableTy, IR::QatType *typ);
 
-  IR::Value *emit(IR::Context *ctx) override;
-
+  useit IR::Value *emit(IR::Context *ctx) override;
   useit nuo::Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::nullPointer; }
+  useit NodeType  nodeType() const override { return NodeType::nullPointer; }
 };
 
 } // namespace qat::ast

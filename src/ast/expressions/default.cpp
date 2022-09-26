@@ -5,7 +5,7 @@ namespace qat::ast {
 Default::Default(utils::FileRange _fileRange)
     : Expression(std::move(_fileRange)) {}
 
-void Default::setCandidateType(IR::QatType *typ) { candidateType = typ; }
+void Default::setType(IR::QatType *typ) { candidateType = typ; }
 
 IR::Value *Default::emit(IR::Context *ctx) {
   if (candidateType) {
@@ -15,9 +15,18 @@ IR::Value *Default::emit(IR::Context *ctx) {
                    "is recommended over using default for readability and "
                    "decreased clutter",
                    fileRange);
-      return new IR::Value(
-          llvm::ConstantInt::get(candidateType->asInteger()->getLLVMType(), 0u),
-          candidateType, false, IR::Nature::pure);
+      if (irName.has_value()) {
+        auto *block = ctx->fn->getBlock();
+        auto *loc   = block->newValue(irName.value(), candidateType, isVar);
+        ctx->builder.CreateStore(
+            llvm::ConstantInt::get(candidateType->getLLVMType(), 0u),
+            loc->getAlloca());
+        return loc;
+      } else {
+        return new IR::Value(llvm::ConstantInt::get(
+                                 candidateType->asInteger()->getLLVMType(), 0u),
+                             candidateType, false, IR::Nature::pure);
+      }
     } else if (candidateType->isUnsignedInteger()) {
       ctx->Warning(
           "The recognised type for the default expression is an unsigned "
@@ -25,10 +34,19 @@ IR::Value *Default::emit(IR::Context *ctx) {
           "is recommended over using default for readability and "
           "decreased clutter",
           fileRange);
-      return new IR::Value(
-          llvm::ConstantInt::get(
-              candidateType->asUnsignedInteger()->getLLVMType(), 0u),
-          candidateType, false, IR::Nature::pure);
+      if (irName.has_value()) {
+        auto *block = ctx->fn->getBlock();
+        auto *loc   = block->newValue(irName.value(), candidateType, isVar);
+        ctx->builder.CreateStore(
+            llvm::ConstantInt::get(candidateType->getLLVMType(), 0u),
+            loc->getAlloca());
+        return loc;
+      } else {
+        return new IR::Value(
+            llvm::ConstantInt::get(
+                candidateType->asUnsignedInteger()->getLLVMType(), 0u),
+            candidateType, false, IR::Nature::pure);
+      }
     } else if (candidateType->isPointer()) {
       ctx->Error(
           "The recognised type for the default expression is a pointer. The "
@@ -40,10 +58,20 @@ IR::Value *Default::emit(IR::Context *ctx) {
     } else if (candidateType->isCoreType()) {
       auto *cTy = candidateType->asCore();
       if (cTy->hasDefaultConstructor()) {
-        auto *defFn    = cTy->getDefaultConstructor();
-        auto *llAlloca = ctx->builder.CreateAlloca(cTy->getLLVMType());
-        (void)defFn->call(ctx, {llAlloca}, ctx->getMod());
-        return new IR::Value(llAlloca, cTy, false, IR::Nature::temporary);
+        auto *defFn = cTy->getDefaultConstructor();
+        auto *block = ctx->fn->getBlock();
+        if (irName.has_value()) {
+          auto *loc = block->newValue(irName.value(), candidateType, isVar);
+          (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
+          return loc;
+        } else {
+          auto *loc = block->newValue(utils::unique_id(), cTy, true);
+          (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
+          auto *res = new IR::Value(loc->getAlloca(), cTy, false,
+                                    IR::Nature::temporary);
+          res->setLocalID(loc->getLocalID());
+          return res;
+        }
       } else {
         ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
                        " does not have a default constructor. Please check "

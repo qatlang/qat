@@ -112,7 +112,7 @@ IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
                          ctx->highlightError("u32"),
                      arguments.at(0)->getFileRange());
         }
-      } else if (args.size() == 1) {
+      } else if (args.size() == 0) {
         ctx->hasMain = true;
       } else {
         ctx->Error("Main function can either have two arguments, or none at "

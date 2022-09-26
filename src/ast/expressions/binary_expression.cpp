@@ -12,16 +12,16 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   if (lhs->nodeType() == NodeType::Default) {
     rhsEmit = rhs->emit(ctx);
     ((Default *)lhs)
-        ->setCandidateType(rhsEmit->isReference()
-                               ? rhsEmit->getType()->asReference()->getSubType()
-                               : rhsEmit->getType());
+        ->setType(rhsEmit->isReference()
+                      ? rhsEmit->getType()->asReference()->getSubType()
+                      : rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::Default) {
     lhsEmit = lhs->emit(ctx);
     ((Default *)rhs)
-        ->setCandidateType(lhsEmit->isReference()
-                               ? lhsEmit->getType()->asReference()->getSubType()
-                               : lhsEmit->getType());
+        ->setType(lhsEmit->isReference()
+                      ? lhsEmit->getType()->asReference()->getSubType()
+                      : lhsEmit->getType());
     rhsEmit = rhs->emit(ctx);
   } else if (lhs->nodeType() == NodeType::nullPointer) {
     rhsEmit = rhs->emit(ctx);

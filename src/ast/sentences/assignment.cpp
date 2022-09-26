@@ -35,9 +35,9 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
   } else if (value->nodeType() == NodeType::Default) {
     auto *defVal = (Default *)value;
     if (lhsVal->getType()->isReference()) {
-      defVal->setCandidateType(lhsVal->getType()->asReference()->getSubType());
+      defVal->setType(lhsVal->getType()->asReference()->getSubType());
     } else {
-      defVal->setCandidateType(lhsVal->getType());
+      defVal->setType(lhsVal->getType());
     }
   }
   auto *expVal = value->emit(ctx);

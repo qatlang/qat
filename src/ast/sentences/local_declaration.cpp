@@ -2,7 +2,9 @@
 #include "../../show.hpp"
 #include "../expressions/array_literal.hpp"
 #include "../expressions/constructor_call.hpp"
+#include "../expressions/default.hpp"
 #include "../expressions/mix_type_initialiser.hpp"
+#include "../expressions/null_pointer.hpp"
 #include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
@@ -148,12 +150,45 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
       (void)mixTyIn->emit(ctx);
       return nullptr;
     }
+  } else if (value && (value->nodeType() == NodeType::Default)) {
+    if (type) {
+      declType     = type->emit(ctx);
+      auto *defVal = (Default *)value;
+      defVal->setType(declType);
+      defVal->irName = name;
+      defVal->isVar  = variability;
+      (void)defVal->emit(ctx);
+      return nullptr;
+    } else {
+      ctx->Error("No type provided for creating default value", fileRange);
+    }
   }
 
   // EDGE CASE ends here
 
   IR::Value *expVal = nullptr;
   if (value) {
+    if (value->nodeType() == NodeType::nullPointer) {
+      if (type) {
+        declType = type->emit(ctx);
+        if (declType->isPointer() ||
+            (declType->isReference() &&
+             declType->asReference()->getSubType()->isPointer())) {
+          auto *typeToSet =
+              declType->isReference()
+                  ? declType->asReference()->getSubType()->asPointer()
+                  : declType->asPointer();
+          ((NullPointer *)value)
+              ->setType(typeToSet->isSubtypeVariable(),
+                        typeToSet->getSubType());
+        } else {
+          ctx->Error("Invalid type recognised for the value to be assigned, "
+                     "which is a null pointer. Expected a pointer type in the "
+                     "declaration",
+                     fileRange);
+        }
+      }
+    }
     expVal = value->emit(ctx);
     SHOW("Type of value to be assigned to local value "
          << name << " is " << expVal->getType()->toString())

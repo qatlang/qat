@@ -1,4 +1,6 @@
 #include "./assignment.hpp"
+#include "../expressions/default.hpp"
+#include "../expressions/null_pointer.hpp"
 
 namespace qat::ast {
 
@@ -8,6 +10,36 @@ Assignment::Assignment(Expression *_lhs, Expression *_value,
 
 IR::Value *Assignment::emit(IR::Context *ctx) {
   auto *lhsVal = lhs->emit(ctx);
+  if (value->nodeType() == NodeType::nullPointer) {
+    auto *nullVal = (NullPointer *)value;
+    if (lhsVal->getType()->isPointer()) {
+      nullVal->setType(lhsVal->getType()->asPointer()->isSubtypeVariable(),
+                       lhsVal->getType()->asPointer()->getSubType());
+    } else if (lhsVal->getType()->isReference() &&
+               lhsVal->getType()->asReference()->getSubType()->isPointer()) {
+      nullVal->setType(lhsVal->getType()
+                           ->asReference()
+                           ->getSubType()
+                           ->asPointer()
+                           ->isSubtypeVariable(),
+                       lhsVal->getType()
+                           ->asReference()
+                           ->getSubType()
+                           ->asPointer()
+                           ->getSubType());
+    } else {
+      ctx->Error("Type of the LHS is not compatible with the RHS, which is a "
+                 "null pointer",
+                 value->fileRange);
+    }
+  } else if (value->nodeType() == NodeType::Default) {
+    auto *defVal = (Default *)value;
+    if (lhsVal->getType()->isReference()) {
+      defVal->setCandidateType(lhsVal->getType()->asReference()->getSubType());
+    } else {
+      defVal->setCandidateType(lhsVal->getType());
+    }
+  }
   auto *expVal = value->emit(ctx);
   SHOW("Emitted lhs and rhs of Assignment")
   if (lhsVal->isVariable() ||
@@ -20,44 +52,32 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
       auto *expType = expVal->getType();
       if (lhsType->isSame(expType) ||
           (lhsType->isReference() &&
-           lhsType->asReference()->getSubType()->isSame(expType)) ||
+           lhsType->asReference()->getSubType()->isSame(
+               expType->isReference() ? expType->asReference()->getSubType()
+                                      : expType)) ||
           (expType->isReference() &&
-           expType->asReference()->getSubType()->isSame(lhsType))) {
+           expType->asReference()->getSubType()->isSame(
+               lhsType->isReference() ? lhsType->asReference()->getSubType()
+                                      : expType))) {
         SHOW("The general types are the same")
-        if ((lhsVal->isImplicitPointer() && lhsType->isReference()) &&
-            !lhsType->isSame(expType)) {
+        if (lhsVal->isImplicitPointer() && lhsType->isReference()) {
           SHOW("LHS is implicit pointer")
           lhsVal->loadImplicitPointer(ctx->builder);
         }
         SHOW("Loaded implicit pointer")
-        if (expType->isReference() ||
-            (!lhsVal->isReference() && expVal->isImplicitPointer())) {
-          SHOW("Expression for assignment is of type "
-               << expType->asReference()->getSubType()->toString())
-          expVal = new IR::Value(
-              ctx->builder.CreateLoad(
-                  expType->isReference()
-                      ? expType->asReference()->getSubType()->getLLVMType()
-                      : expType->getLLVMType(),
-                  expVal->getLLVM()),
-              expVal->getType(), expVal->isVariable(), expVal->getNature());
+        if (expType->isReference() || expVal->isImplicitPointer()) {
+          if (expType->isReference()) {
+            SHOW("Expression for assignment is of type "
+                 << expType->asReference()->getSubType()->toString())
+            expType = expType->asReference()->getSubType();
+          }
+          expVal = new IR::Value(ctx->builder.CreateLoad(expType->getLLVMType(),
+                                                         expVal->getLLVM()),
+                                 expVal->getType(), expVal->isVariable(),
+                                 expVal->getNature());
         }
         SHOW("Creating store")
-        if (expVal->getType()->isReference() || expVal->isImplicitPointer()) {
-          SHOW("Loading reference exp")
-          ctx->builder.CreateStore(
-              ctx->builder.CreateLoad((expVal->isImplicitPointer()
-                                           ? expVal->getType()->getLLVMType()
-                                           : expVal->getType()
-                                                 ->asReference()
-                                                 ->getSubType()
-                                                 ->getLLVMType()),
-                                      expVal->getLLVM()),
-              lhsVal->getLLVM());
-        } else {
-          SHOW("Normal assignment store")
-          ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
-        }
+        ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
         return nullptr;
       } else {
         ctx->Error("Type of the left hand side of the assignment is " +

@@ -23,7 +23,7 @@ private:
   utils::VisibilityKind visibility;
 
   Vec<TemplatedType *>  templates;
-  IR::TemplateFunction *templateFn;
+  IR::TemplateFunction *templateFn = nullptr;
 
   mutable llvm::GlobalValue::LinkageTypes linkageType;
   mutable IR::Function                   *function = nullptr;

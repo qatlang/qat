@@ -40,14 +40,17 @@ IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
   auto              *mod      = ctx->getMod();
   bool               isMainFn = false;
   String             fnName   = name;
+  SHOW("Creating function")
   if (templateFn) {
     fnName = name + ":<" + std::to_string(templateFn->getVariantCount()) + ">";
   }
+  SHOW("Checking function exists or not")
   if (mod->hasFunction(fnName)) {
     ctx->Error("A function named " + fnName + " exists already in this scope",
                fileRange);
   }
   if ((fnName == "main") && (mod->getFullNameWithChild("main") == "main")) {
+    SHOW("Is main function")
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
     isMainFn    = true;
   }
@@ -109,15 +112,22 @@ IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
                          ctx->highlightError("u32"),
                      arguments.at(0)->getFileRange());
         }
+      } else if (args.size() == 1) {
+        ctx->hasMain = true;
       } else {
-        ctx->Error(
-            "The " + ctx->highlightError("main") +
-                " function needs 2 arguments, the first argument should be " +
-                ctx->highlightError("u32") +
-                ", and the second argument should be " +
-                ctx->highlightError("#[cstring]"),
-            fileRange);
+        ctx->Error("Main function can either have two arguments, or none at "
+                   "all. Please check logic and make necessary changes",
+                   fileRange);
       }
+      // else {
+      //   ctx->Error(
+      //       "The " + ctx->highlightError("main") +
+      //           " function needs 2 arguments, the first argument should be "
+      //           + ctx->highlightError("u32") +
+      //           ", and the second argument should be " +
+      //           ctx->highlightError("#[cstring]"),
+      //       fileRange);
+      // }
     }
   }
   return fn;
@@ -204,17 +214,7 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
                              argVal->getAlloca(), false);
   }
   emitSentences(sentences, ctx);
-  if (fnEmit->getType()->asFunction()->getReturnType()->isVoid() &&
-      (block->getName() == fnEmit->getBlock()->getName())) {
-    if (block->getBB()->getInstList().empty()) {
-      ctx->builder.CreateRetVoid();
-    } else {
-      auto *lastInst = ((llvm::Instruction *)&block->getBB()->back());
-      if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
-        ctx->builder.CreateRetVoid();
-      }
-    }
-  }
+  IR::functionReturnHandler(ctx, fnEmit, fileRange);
   SHOW("Sentences emitted")
   return fnEmit;
 }

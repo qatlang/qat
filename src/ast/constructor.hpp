@@ -29,10 +29,18 @@ private:
   utils::VisibilityKind visibility;
   ConstructorType       type;
 
-public:
   ConstructorPrototype(ConstructorType constType, Vec<Argument *> _arguments,
                        utils::VisibilityKind _visibility,
                        utils::FileRange      _fileRange);
+
+public:
+  static ConstructorPrototype *Normal(Vec<Argument *>       args,
+                                      utils::VisibilityKind visibility,
+                                      utils::FileRange      fileRange);
+  static ConstructorPrototype *Default(utils::VisibilityKind visibility,
+                                       utils::FileRange      fileRange);
+  static ConstructorPrototype *Copy(utils::FileRange fileRange);
+  static ConstructorPrototype *Move(utils::FileRange fileRange);
 
   void setCoreType(IR::CoreType *_coreType);
 

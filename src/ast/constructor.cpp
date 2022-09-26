@@ -14,119 +14,161 @@ ConstructorPrototype::ConstructorPrototype(ConstructorType       _type,
     : Node(std::move(_fileRange)), arguments(std::move(_arguments)),
       visibility(_visibility), type(_type) {}
 
+ConstructorPrototype *
+ConstructorPrototype::Normal(Vec<Argument *>       args,
+                             utils::VisibilityKind visibility,
+                             utils::FileRange      fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::normal, std::move(args),
+                                       visibility, std::move(fileRange));
+}
+
+ConstructorPrototype *
+ConstructorPrototype::Default(utils::VisibilityKind visibility,
+                              utils::FileRange      fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::Default, {}, visibility,
+                                       std::move(fileRange));
+}
+
+ConstructorPrototype *ConstructorPrototype::Copy(utils::FileRange fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::copy, {},
+                                       utils::VisibilityKind::pub,
+                                       std::move(fileRange));
+}
+
+ConstructorPrototype *ConstructorPrototype::Move(utils::FileRange fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::move, {},
+                                       utils::VisibilityKind::pub,
+                                       std::move(fileRange));
+}
+
 IR::Value *ConstructorPrototype::emit(IR::Context *ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this constructor", fileRange);
   }
-  IR::MemberFunction         *function;
-  Vec<IR::QatType *>          generatedTypes;
-  Vec<IR::CoreType::Member *> presentRefMembers;
-  // FIXME - Check if member arguments are repeating
-  SHOW("Generating types")
-  for (auto *arg : arguments) {
-    if (arg->isTypeMember()) {
-      SHOW("Arg is type member")
-      if (coreType->hasMember(arg->getName())) {
-        auto *mem = coreType->getMember(arg->getName());
-        SHOW("Getting core type member: " << arg->getName())
-        if (mem->type->isReference()) {
-          presentRefMembers.push_back(mem);
+  IR::MemberFunction *function;
+  if (type == ConstructorType::normal) {
+    Vec<IR::QatType *>          generatedTypes;
+    Vec<IR::CoreType::Member *> presentRefMembers;
+    // FIXME - Check if member arguments are repeating
+    SHOW("Generating types")
+    for (auto *arg : arguments) {
+      if (arg->isTypeMember()) {
+        SHOW("Arg is type member")
+        if (coreType->hasMember(arg->getName())) {
+          auto *mem = coreType->getMember(arg->getName());
+          SHOW("Getting core type member: " << arg->getName())
+          if (mem->type->isReference()) {
+            presentRefMembers.push_back(mem);
+          }
+          generatedTypes.push_back(mem->type);
+        } else {
+          ctx->Error("No non-static member named " + arg->getName() +
+                         " in the core type " + coreType->getFullName(),
+                     arg->getFileRange());
         }
-        generatedTypes.push_back(mem->type);
       } else {
-        ctx->Error("No non-static member named " + arg->getName() +
-                       " in the core type " + coreType->getFullName(),
-                   arg->getFileRange());
+        generatedTypes.push_back(arg->getType()->emit(ctx));
       }
-    } else {
-      generatedTypes.push_back(arg->getType()->emit(ctx));
+      SHOW("Generated type of the argument is "
+           << generatedTypes.back()->toString())
     }
-    SHOW("Generated type of the argument is "
-         << generatedTypes.back()->toString())
-  }
-  SHOW("Argument types generated")
-  if (coreType->hasConstructorWithTypes(generatedTypes)) {
-    ctx->Error(
-        "Another constructor with similar signature exists for the core type " +
-            ctx->highlightError(coreType->getFullName()),
-        fileRange);
-  }
-  auto                       &allMembers = coreType->getMembers();
-  Vec<IR::CoreType::Member *> refMembers;
-  for (auto *mem : allMembers) {
-    if (mem->type->isReference()) {
-      SHOW("Ref member name: " << mem->name)
-      refMembers.push_back(mem);
+    SHOW("Argument types generated")
+    if (coreType->hasConstructorWithTypes(generatedTypes)) {
+      ctx->Error("Another constructor with similar signature exists for the "
+                 "core type " +
+                     ctx->highlightError(coreType->getFullName()),
+                 fileRange);
     }
-  }
-  bool                        allRefsPresent = true;
-  Vec<IR::CoreType::Member *> absentMembers;
-  for (auto *mem : refMembers) {
-    if (mem->type->isReference()) {
-      SHOW("Member " << mem->name << " is a reference")
-      bool memRes = false;
-      for (auto *ref : presentRefMembers) {
-        if (mem->name == ref->name) {
-          memRes = true;
-          break;
+    auto                       &allMembers = coreType->getMembers();
+    Vec<IR::CoreType::Member *> refMembers;
+    for (auto *mem : allMembers) {
+      if (mem->type->isReference()) {
+        SHOW("Ref member name: " << mem->name)
+        refMembers.push_back(mem);
+      }
+    }
+    bool                        allRefsPresent = true;
+    Vec<IR::CoreType::Member *> absentMembers;
+    for (auto *mem : refMembers) {
+      if (mem->type->isReference()) {
+        SHOW("Member " << mem->name << " is a reference")
+        bool memRes = false;
+        for (auto *ref : presentRefMembers) {
+          if (mem->name == ref->name) {
+            memRes = true;
+            break;
+          }
         }
-      }
-      if (!memRes) {
-        SHOW("Ref member " << mem->name << " not present")
-        absentMembers.push_back(mem);
-        allRefsPresent = false;
-      }
-    }
-  }
-  if (!allRefsPresent) {
-    SHOW("Absent member count: " << absentMembers.size())
-    String message;
-    for (usize i = 0; i < absentMembers.size(); i++) {
-      SHOW("Absent member name is: " << absentMembers.at(i)->name)
-      message += ctx->highlightError(absentMembers.at(i)->name);
-      if (absentMembers.size() > 1) {
-        if (i == (absentMembers.size() - 2)) {
-          message += " and ";
-        } else if (i != (absentMembers.size() - 1)) {
-          message += ", ";
+        if (!memRes) {
+          SHOW("Ref member " << mem->name << " not present")
+          absentMembers.push_back(mem);
+          allRefsPresent = false;
         }
       }
     }
-    ctx->Error(String("Member") + (absentMembers.size() == 1 ? " " : "s ") +
-                   message + " in the core type " +
-                   ctx->highlightError(coreType->getFullName()) +
-                   (absentMembers.size() == 1 ? " is a reference"
-                                              : " are references") +
-                   " and " +
-                   (absentMembers.size() == 1 ? "is not" : "are not") +
-                   " initialised in the "
-                   "constructor. Please check logic and make "
-                   "necessary changes",
-               fileRange);
-  }
-  Vec<IR::Argument> args;
-  SHOW("Setting variability of arguments")
-  for (usize i = 0; i < generatedTypes.size(); i++) {
-    if (arguments.at(i)->isTypeMember()) {
-      SHOW("Creating member argument")
-      args.push_back(IR::Argument::CreateMember(arguments.at(i)->getName(),
-                                                generatedTypes.at(i), i));
-    } else {
-      args.push_back(arguments.at(i)->getType()->isVariable()
-                         ? IR::Argument::CreateVariable(
-                               arguments.at(i)->getName(),
-                               arguments.at(i)->getType()->emit(ctx), i)
-                         : IR::Argument::Create(arguments.at(i)->getName(),
-                                                generatedTypes.at(i), i));
+    if (!allRefsPresent) {
+      SHOW("Absent member count: " << absentMembers.size())
+      String message;
+      for (usize i = 0; i < absentMembers.size(); i++) {
+        SHOW("Absent member name is: " << absentMembers.at(i)->name)
+        message += ctx->highlightError(absentMembers.at(i)->name);
+        if (absentMembers.size() > 1) {
+          if (i == (absentMembers.size() - 2)) {
+            message += " and ";
+          } else if (i != (absentMembers.size() - 1)) {
+            message += ", ";
+          }
+        }
+      }
+      ctx->Error(String("Member") + (absentMembers.size() == 1 ? " " : "s ") +
+                     message + " in the core type " +
+                     ctx->highlightError(coreType->getFullName()) +
+                     (absentMembers.size() == 1 ? " is a reference"
+                                                : " are references") +
+                     " and " +
+                     (absentMembers.size() == 1 ? "is not" : "are not") +
+                     " initialised in the "
+                     "constructor. Please check logic and make "
+                     "necessary changes",
+                 fileRange);
     }
+    Vec<IR::Argument> args;
+    SHOW("Setting variability of arguments")
+    for (usize i = 0; i < generatedTypes.size(); i++) {
+      if (arguments.at(i)->isTypeMember()) {
+        SHOW("Creating member argument")
+        args.push_back(IR::Argument::CreateMember(arguments.at(i)->getName(),
+                                                  generatedTypes.at(i), i));
+      } else {
+        args.push_back(arguments.at(i)->getType()->isVariable()
+                           ? IR::Argument::CreateVariable(
+                                 arguments.at(i)->getName(),
+                                 arguments.at(i)->getType()->emit(ctx), i)
+                           : IR::Argument::Create(arguments.at(i)->getName(),
+                                                  generatedTypes.at(i), i));
+      }
+    }
+    SHOW("About to create function")
+    function = IR::MemberFunction::CreateConstructor(
+        coreType, args, false, fileRange, ctx->getVisibInfo(visibility),
+        ctx->llctx);
+    SHOW("Constructor created in the IR")
+    // TODO - Set calling convention
+    return function;
+  } else if (type == ConstructorType::Default) {
+    for (auto *mem : coreType->getMembers()) {
+      if (mem->type->isReference()) {
+        ctx->Error("Core type " + ctx->highlightError(coreType->getFullName()) +
+                       " has members of reference type, and hence cannot use a "
+                       "default constructor",
+                   fileRange);
+      }
+    }
+    function = IR::MemberFunction::DefaultConstructor(
+        coreType, ctx->getVisibInfo(visibility), fileRange, ctx->llctx);
+    return function;
   }
-  SHOW("About to create function")
-  function = IR::MemberFunction::CreateConstructor(
-      coreType, args, false, fileRange, ctx->getVisibInfo(visibility),
-      ctx->llctx);
-  SHOW("Constructor created in the IR")
-  // TODO - Set calling convention
-  return function;
+  // FIXME - Support copy & move constructors
 }
 
 void ConstructorPrototype::setCoreType(IR::CoreType *_coreType) {

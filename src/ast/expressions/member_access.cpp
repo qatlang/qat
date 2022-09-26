@@ -1,5 +1,8 @@
 #include "./member_access.hpp"
+#include "../../IR/types/string_slice.hpp"
 #include "entity.hpp"
+#include "llvm/IR/Constants.h"
+#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 
@@ -59,6 +62,36 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
                                  instType->asArray()->getLength()),
           // NOLINTNEXTLINE(readability-magic-numbers)
           IR::IntegerType::get(64u, ctx->llctx), false, IR::Nature::pure);
+    } else {
+      ctx->Error("Invalid name for member access " + ctx->highlightError(name),
+                 fileRange);
+    }
+  } else if (instType->isStringSlice()) {
+    if (name == "length") {
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        SHOW("String slice is an implicit pointer or a reference")
+        return new IR::Value(
+            ctx->builder.CreateStructGEP(
+                IR::StringSliceType::get(ctx->llctx)->getLLVMType(),
+                inst->getLLVM(), 1u),
+            IR::ReferenceType::get(
+                false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx),
+            false, IR::Nature::temporary);
+      } else if (llvm::isa<llvm::Constant>(inst->getLLVM())) {
+        SHOW("String slice is a constant")
+        return new IR::Value(
+            llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(ctx->llctx),
+                llvm::dyn_cast<llvm::ConstantDataArray>(inst->getLLVM())
+                    ->getAsString()
+                    .size()),
+            IR::ReferenceType::get(
+                false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx),
+            false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Invalid value for String Slice and hence cannot get length",
+                   fileRange);
+      }
     } else {
       ctx->Error("Invalid name for member access " + ctx->highlightError(name),
                  fileRange);

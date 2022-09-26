@@ -202,7 +202,17 @@ u64 CoreType::getOperatorVariantIndex(const String &opr) const {
   return index;
 }
 
-bool CoreType::hasAnyConstructor() const { return (!constructors.empty()); }
+bool CoreType::hasDefaultConstructor() const {
+  return defaultConstructor != nullptr;
+}
+
+MemberFunction *CoreType::getDefaultConstructor() const {
+  return defaultConstructor;
+}
+
+bool CoreType::hasAnyConstructor() const {
+  return (!constructors.empty()) || (defaultConstructor != nullptr);
+}
 
 bool CoreType::hasAnyFromConvertor() const { return !fromConvertors.empty(); }
 
@@ -402,6 +412,59 @@ CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
   }
   SHOW("Created variant for template core type: " << cTy->getFullName())
   return cTy;
+}
+
+Value *handleCopyOrMove(Context *ctx, Value *val,
+                        const utils::FileRange &fileRange) {
+  auto *valTy = val->getType();
+  if (valTy->isCoreType() ||
+      (valTy->isReference() &&
+       valTy->asReference()->getSubType()->isCoreType())) {
+    if (valTy->isCoreType()) {
+      // FIXME - May be the llvm type should not be checked for pointerness
+      if (!val->isImplicitPointer() &&
+          !val->getLLVM()->getType()->isPointerTy()) {
+        val = val->createAlloca(ctx->builder);
+      }
+    }
+    auto *cTy   = valTy->isCoreType() ? ((IR::CoreType *)valTy)
+                                      : valTy->asReference()->asCore();
+    auto *block = ctx->fn->getBlock();
+    if (cTy->hasCopyConstructor()) {
+      auto *copyFn = cTy->getCopyConstructor();
+      ctx->fn->getCopiedCounter()++;
+      auto *copyVal = block->newValue(
+          "copied'" + std::to_string(ctx->fn->getCopiedCounter()), cTy, true);
+      (void)copyFn->call(ctx, {copyVal->getLLVM(), val->getLLVM()},
+                         ctx->getMod());
+      return copyVal;
+    } else {
+      if (val->isLocalToFn()) {
+        if (block->isMoved(val->getLocalID())) {
+          ctx->Error("The provided value is already moved in this scope and "
+                     "cannot be used",
+                     fileRange);
+        }
+      }
+      if (cTy->hasMoveConstructor()) {
+        auto *moveFn = cTy->getMoveConstructor();
+        ctx->fn->getMovedCounter()++;
+        auto *moveVal = block->newValue(
+            "moved'" + std::to_string(ctx->fn->getMovedCounter()), cTy, true);
+        (void)moveFn->call(ctx, {moveVal->getLLVM(), val->getLLVM()},
+                           ctx->getMod());
+        if (val->isLocalToFn()) {
+          block->addMovedValue(val->getLocalID());
+        }
+        return moveVal;
+      }
+      ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
+                     " has no copy constructor and move constructor",
+                 fileRange);
+    }
+  } else {
+    return val;
+  }
 }
 
 } // namespace qat::IR

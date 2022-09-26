@@ -43,6 +43,7 @@ private:
   Vec<Member *>       members;
   Vec<StaticMember *> staticMembers;
 
+  MemberFunction         *defaultConstructor = nullptr;
   Vec<MemberFunction *>   memberFunctions;      // Normal
   Vec<MemberFunction *>   binaryOperators;      //
   Vec<MemberFunction *>   unaryOperators;       //
@@ -91,6 +92,8 @@ public:
   useit MemberFunction *getToConvertor(IR::QatType *type) const;
   useit bool            hasConstructorWithTypes(Vec<IR::QatType *> types) const;
   useit MemberFunction *getConstructorWithTypes(Vec<IR::QatType *> types) const;
+  useit bool            hasDefaultConstructor() const;
+  useit MemberFunction *getDefaultConstructor() const;
   useit bool            hasAnyFromConvertor() const;
   useit bool            hasAnyConstructor() const;
   useit bool            hasCopyConstructor() const;
@@ -135,6 +138,8 @@ public:
   useit QatModule            *getModule() const;
   useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx);
 };
+
+Value *handleCopy(Context *ctx, Value *val, const utils::FileRange fileRange);
 
 } // namespace qat::IR
 

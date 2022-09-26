@@ -22,7 +22,8 @@ enum class MemberFnType {
   moveConstructor,
   destructor,
   binaryOperator,
-  unaryOperator
+  unaryOperator,
+  defaultConstructor,
 };
 
 class CoreType;
@@ -55,6 +56,10 @@ public:
          const Vec<Argument> &args, bool has_variadic_args,
          const utils::FileRange      &fileRange,
          const utils::VisibilityInfo &visib_info, llvm::LLVMContext &ctx);
+
+  static MemberFunction *
+  DefaultConstructor(CoreType *parent, const utils::VisibilityInfo &visibInfo,
+                     utils::FileRange fileRange, llvm::LLVMContext &ctx);
 
   static MemberFunction *
   CreateConstructor(CoreType *parent, const Vec<Argument> &args,

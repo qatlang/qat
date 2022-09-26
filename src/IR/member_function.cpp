@@ -25,6 +25,10 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation,
       parent(_parent), isStatic(_is_static), isVariation(_isVariation),
       fnType(_fnType) {
   switch (fnType) {
+  case MemberFnType::defaultConstructor: {
+    parent->defaultConstructor = this;
+    break;
+  }
   case MemberFnType::constructor: {
     parent->constructors.push_back(this);
     break;
@@ -85,8 +89,20 @@ MemberFunction *MemberFunction::Create(
   }
   return new MemberFunction(MemberFnType::normal, is_variation, parent, name,
                             returnTy, _isReturnTypeVariable, _is_async,
-                            args_info, has_variadic_args, false, fileRange,
-                            visibilityInfo, ctx);
+                            std::move(args_info), has_variadic_args, false,
+                            fileRange, visibilityInfo, ctx);
+}
+
+MemberFunction *MemberFunction::DefaultConstructor(
+    CoreType *parent, const utils::VisibilityInfo &visibInfo,
+    utils::FileRange fileRange, llvm::LLVMContext &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  return new MemberFunction(MemberFnType::defaultConstructor, true, parent,
+                            "default", IR::VoidType::get(ctx), false, false,
+                            std::move(argsInfo), false, false,
+                            {"", {0u, 0u}, {0u, 0u}}, visibInfo, ctx);
 }
 
 MemberFunction *MemberFunction::CreateConstructor(

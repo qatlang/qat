@@ -76,6 +76,8 @@ enum class NodeType {
   mixTypeInitialiser,
   match,
   defineChoiceType,
+  dereference,
+  Default,
 };
 
 } // namespace qat::ast

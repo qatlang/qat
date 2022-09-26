@@ -139,8 +139,6 @@ public:
   useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx);
 };
 
-Value *handleCopy(Context *ctx, Value *val, const utils::FileRange fileRange);
-
 } // namespace qat::IR
 
 #endif

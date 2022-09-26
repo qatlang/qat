@@ -8,6 +8,8 @@
 #include "../ast/expressions/constructor_call.hpp"
 #include "../ast/expressions/custom_float_literal.hpp"
 #include "../ast/expressions/custom_integer_literal.hpp"
+#include "../ast/expressions/default.hpp"
+#include "../ast/expressions/dereference.hpp"
 #include "../ast/expressions/entity.hpp"
 #include "../ast/expressions/float_literal.hpp"
 #include "../ast/expressions/function_call.hpp"
@@ -1154,6 +1156,30 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
       }
       break;
     }
+    case TokenType::Default: {
+      if (coreTy->hasDefaultConstructor()) {
+        Error("A default destructor is already defined for the core type",
+              RangeAt(i));
+      }
+      if (isNext(TokenType::bracketOpen, i)) {
+        auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                    TokenType::bracketClose, i + 1, false);
+        if (bCloseRes.has_value()) {
+          auto bClose = bCloseRes.value();
+          auto snts   = parseSentences(prev_ctx, i + 1, bClose);
+          coreTy->setDefaultConstructor(new ast::ConstructorDefinition(
+              ast::ConstructorPrototype::Default(getVisibility(), RangeAt(i)),
+              std::move(snts), RangeSpan(i, bClose)));
+          i = bClose;
+        } else {
+          Error("Expected end for [", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected [ to start the definition of the default constructor",
+              RangeAt(i));
+      }
+      break;
+    }
     case TokenType::from: {
       auto start = i;
       if (isNext(TokenType::parenthesisOpen, i)) {
@@ -1181,9 +1207,9 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
               } else {
                 // NOTE = Constructor
                 coreTy->addConstructorDefinition(new ast::ConstructorDefinition(
-                    new ast::ConstructorPrototype(
-                        ast::ConstructorType::normal, argsRes.first,
-                        getVisibility(), RangeSpan(start, pClose)),
+                    ast::ConstructorPrototype::Normal(std::move(argsRes.first),
+                                                      getVisibility(),
+                                                      RangeSpan(start, pClose)),
                     snts, RangeSpan(start, bClose)));
               }
               i = bClose;
@@ -1757,6 +1783,10 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       i              = symbolRes.second;
       break;
     }
+    case TokenType::Default: {
+      cachedExpressions.push_back(new ast::Default(RangeAt(i)));
+      break;
+    }
     case TokenType::from: {
       if (cachedSymbol.has_value()) {
         if (isNext(TokenType::parenthesisOpen, i)) {
@@ -2204,7 +2234,21 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
       break;
     }
     case TokenType::pointerType: {
-      // FIXME - Implement after reconsidering
+      if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
+        if (cachedSymbol) {
+          cachedExpressions.push_back(new ast::Entity(cachedSymbol->relative,
+                                                      cachedSymbol->name,
+                                                      cachedSymbol->fileRange));
+          cachedSymbol = None;
+        }
+        auto *exp = cachedExpressions.back();
+        cachedExpressions.pop_back();
+        cachedExpressions.push_back(
+            new ast::Dereference(exp, {exp->fileRange, RangeAt(i)}));
+      } else {
+        Error("No expression found before pointer dereference operator",
+              RangeAt(i));
+      }
       break;
     }
     case TokenType::binaryOperator: {
@@ -2221,6 +2265,32 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         cachedSymbol = None;
       } else {
         cachedBinaryOps.push_back(token);
+      }
+      break;
+    }
+    case TokenType::stringSliceType: {
+      // FIXME - Support heaped creation
+      if (isNext(TokenType::from, i)) {
+        if (isNext(TokenType::parenthesisOpen, i + 1)) {
+          auto pCloseRes =
+              getPairEnd(TokenType::parenthesisOpen,
+                         TokenType::parenthesisClose, i + 2, false);
+          if (pCloseRes.has_value()) {
+            auto pClose = pCloseRes.value();
+            auto args   = parseSeparatedExpressions(prev_ctx, i + 2, pClose);
+            cachedExpressions.push_back(new ast::ConstructorCall(
+                new ast::StringSliceType(false, RangeAt(i)), args, false,
+                RangeSpan(i, pClose)));
+            i = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected ( to start the arguments for creating a string slice",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Invalid expression", RangeAt(i));
       }
       break;
     }

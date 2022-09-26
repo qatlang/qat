@@ -5,6 +5,8 @@ add_library(QAT_AST_EXPRESSIONS
         constructor_call.cpp
         custom_float_literal.cpp
         custom_integer_literal.cpp
+        default.cpp
+        dereference.cpp
         entity.cpp
         float_literal.cpp
         function_call.cpp

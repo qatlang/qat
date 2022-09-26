@@ -84,6 +84,9 @@ void DefineCoreType::createType(IR::Context *ctx) const {
           stm->value ? stm->value->emit(ctx) : nullptr,
           ctx->getVisibInfo(stm->visibilityKind), ctx->llctx);
     }
+    if (defaultConstructor) {
+      defaultConstructor->setCoreType(coreType);
+    }
     for (auto *conv : convertorDefinitions) {
       conv->setCoreType(coreType);
     }
@@ -222,6 +225,9 @@ void DefineCoreType::define(IR::Context *ctx) {
   if (isTemplate()) {
     createType(ctx);
   }
+  if (defaultConstructor) {
+    defaultConstructor->define(ctx);
+  }
   for (auto *cons : constructorDefinitions) {
     cons->define(ctx);
   }
@@ -241,6 +247,9 @@ void DefineCoreType::define(IR::Context *ctx) {
 
 IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   ctx->activeType = coreType;
+  if (defaultConstructor) {
+    (void)defaultConstructor->emit(ctx);
+  }
   for (auto *cons : constructorDefinitions) {
     (void)cons->emit(ctx);
   }
@@ -290,8 +299,16 @@ void DefineCoreType::setDestructorDefinition(DestructorDefinition *ddef) {
   destructorDefinition = ddef;
 }
 
+void DefineCoreType::setDefaultConstructor(ConstructorDefinition *cDef) {
+  defaultConstructor = cDef;
+}
+
 bool DefineCoreType::hasDestructor() const {
   return destructorDefinition != nullptr;
+}
+
+bool DefineCoreType::hasDefaultConstructor() const {
+  return defaultConstructor != nullptr;
 }
 
 nuo::Json DefineCoreType::toJson() const {

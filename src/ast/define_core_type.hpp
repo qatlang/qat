@@ -50,16 +50,17 @@ public:
   };
 
 private:
-  String                        name;
-  bool                          isPacked;
-  Vec<Member *>                 members;
-  Vec<StaticMember *>           staticMembers;
-  Vec<MemberDefinition *>       memberDefinitions;
-  Vec<ConvertorDefinition *>    convertorDefinitions;
-  Vec<OperatorDefinition *>     operatorDefinitions;
-  Vec<ConstructorDefinition *>  constructorDefinitions;
-  mutable DestructorDefinition *destructorDefinition = nullptr;
-  utils::VisibilityKind         visibility;
+  String                         name;
+  bool                           isPacked;
+  Vec<Member *>                  members;
+  Vec<StaticMember *>            staticMembers;
+  Vec<MemberDefinition *>        memberDefinitions;
+  Vec<ConvertorDefinition *>     convertorDefinitions;
+  Vec<OperatorDefinition *>      operatorDefinitions;
+  Vec<ConstructorDefinition *>   constructorDefinitions;
+  mutable ConstructorDefinition *defaultConstructor   = nullptr;
+  mutable DestructorDefinition  *destructorDefinition = nullptr;
+  utils::VisibilityKind          visibility;
 
   Vec<ast::TemplatedType *>     templates;
   mutable IR::CoreType         *coreType         = nullptr;
@@ -79,9 +80,11 @@ public:
   void       addConstructorDefinition(ConstructorDefinition *cdef);
   void       addOperatorDefinition(OperatorDefinition *odef);
   void       setDestructorDefinition(DestructorDefinition *ddef);
+  void       setDefaultConstructor(ConstructorDefinition *cDef);
   void       createType(IR::Context *ctx) const;
   void       defineType(IR::Context *ctx) final;
   void       define(IR::Context *ctx) final;
+  useit bool hasDefaultConstructor() const;
   useit bool hasDestructor() const;
   useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;

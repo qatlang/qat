@@ -1,12 +1,85 @@
 #include "binary_expression.hpp"
 #include "../../IR/types/reference.hpp"
+#include "default.hpp"
+#include "null_pointer.hpp"
 #include "operator.hpp"
 
 namespace qat::ast {
 
 IR::Value *BinaryExpression::emit(IR::Context *ctx) {
-  auto *lhsEmit = lhs->emit(ctx);
-  auto *rhsEmit = rhs->emit(ctx);
+  IR::Value *lhsEmit = nullptr;
+  IR::Value *rhsEmit = nullptr;
+  if (lhs->nodeType() == NodeType::Default) {
+    rhsEmit = rhs->emit(ctx);
+    ((Default *)lhs)
+        ->setCandidateType(rhsEmit->isReference()
+                               ? rhsEmit->getType()->asReference()->getSubType()
+                               : rhsEmit->getType());
+    lhsEmit = lhs->emit(ctx);
+  } else if (rhs->nodeType() == NodeType::Default) {
+    lhsEmit = lhs->emit(ctx);
+    ((Default *)rhs)
+        ->setCandidateType(lhsEmit->isReference()
+                               ? lhsEmit->getType()->asReference()->getSubType()
+                               : lhsEmit->getType());
+    rhsEmit = rhs->emit(ctx);
+  } else if (lhs->nodeType() == NodeType::nullPointer) {
+    rhsEmit = rhs->emit(ctx);
+    if (rhsEmit->getType()->isPointer() ||
+        (rhsEmit->getType()->isReference() &&
+         rhsEmit->getType()->asReference()->getSubType()->isPointer())) {
+      ((NullPointer *)lhs)
+          ->setType(rhsEmit->isReference()
+                        ? rhsEmit->getType()
+                              ->asReference()
+                              ->getSubType()
+                              ->asPointer()
+                              ->isSubtypeVariable()
+                        : rhsEmit->getType()->asPointer()->isSubtypeVariable(),
+                    rhsEmit->isReference()
+                        ? rhsEmit->getType()
+                              ->asReference()
+                              ->getSubType()
+                              ->asPointer()
+                              ->getSubType()
+                        : rhsEmit->getType()->asPointer()->getSubType());
+      lhsEmit = lhs->emit(ctx);
+    } else {
+      ctx->Error("Invalid type found to set for the null pointer. The LHS is a "
+                 "null pointer and so RHS is expected to be of pointer type",
+                 fileRange);
+    }
+  } else if (rhs->nodeType() == NodeType::nullPointer) {
+    lhsEmit = lhs->emit(ctx);
+    if (lhsEmit->getType()->isPointer() ||
+        (lhsEmit->getType()->isReference() &&
+         lhsEmit->getType()->asReference()->getSubType()->isPointer())) {
+      SHOW("Set type for RHS null pointer")
+      ((NullPointer *)rhs)
+          ->setType(lhsEmit->isReference()
+                        ? lhsEmit->getType()
+                              ->asReference()
+                              ->getSubType()
+                              ->asPointer()
+                              ->isSubtypeVariable()
+                        : lhsEmit->getType()->asPointer()->isSubtypeVariable(),
+                    lhsEmit->isReference()
+                        ? lhsEmit->getType()
+                              ->asReference()
+                              ->getSubType()
+                              ->asPointer()
+                              ->getSubType()
+                        : lhsEmit->getType()->asPointer()->getSubType());
+      rhsEmit = rhs->emit(ctx);
+    } else {
+      ctx->Error("Invalid type found to set for the null pointer. The LHS is a "
+                 "null pointer and so RHS is expected to be of pointer type",
+                 fileRange);
+    }
+  } else {
+    lhsEmit = lhs->emit(ctx);
+    rhsEmit = rhs->emit(ctx);
+  }
 
   SHOW("Operator is: " << OpToString(op))
 
@@ -403,6 +476,45 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
                        rhsType->toString() + ". Please check the logic.",
                    fileRange);
       }
+    }
+  } else if ((lhsType->isPointer() ||
+              (lhsType->isReference() &&
+               lhsType->asReference()->getSubType()->isPointer())) &&
+             (rhsType->isPointer() ||
+              (rhsType->isReference() &&
+               rhsType->asReference()->getSubType()->isPointer()))) {
+    referenceHandler();
+    if (lhsType->asPointer()->getSubType()->isSame(
+            rhsType->asPointer()->getSubType())) {
+      if (op == Op::equalTo) {
+        return new IR::Value(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreatePtrDiff(
+                    lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal,
+                    rhsVal),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+            IR::UnsignedType::get(1, ctx->llctx), false, IR::Nature::temporary);
+      } else if (op == Op::notEqualTo) {
+        return new IR::Value(
+            ctx->builder.CreateICmpNE(
+                ctx->builder.CreatePtrDiff(
+                    lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal,
+                    rhsVal),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+            IR::UnsignedType::get(1, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("The operands are pointers, and the operation " +
+                       ctx->highlightError(OpToString(op)) +
+                       " is not supported for pointers",
+                   fileRange);
+      }
+    } else {
+      ctx->Error("The operands are pointers, pointing to different types. LHS "
+                 "is of type " +
+                     ctx->highlightError(lhsType->toString()) +
+                     " and RHS is of type " +
+                     ctx->highlightError(rhsType->toString()),
+                 fileRange);
     }
   } else {
     if (lhsType->isCoreType() ||

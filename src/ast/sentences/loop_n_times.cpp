@@ -5,9 +5,10 @@
 namespace qat::ast {
 
 LoopNTimes::LoopNTimes(Expression *_count, Vec<Sentence *> _snts,
-                       Maybe<String> _tag, utils::FileRange _fileRange)
+                       Maybe<String> _tag, bool _isAlias,
+                       utils::FileRange _fileRange)
     : Sentence(std::move(_fileRange)), sentences(std::move(_snts)),
-      count(_count), tag(std::move(_tag)) {}
+      count(_count), tag(std::move(_tag)), isAlias(_isAlias) {}
 
 bool LoopNTimes::hasTag() const { return tag.has_value(); }
 
@@ -24,6 +25,20 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
       if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
         ctx->Error("The tag provided for the loop is already used by another "
                    "loop or switch",
+                   fileRange);
+      }
+    }
+    // TODO - Potentially change the alias system in loops
+    if (isAlias) {
+      if (ctx->fn->getBlock()->hasValue(tag.value())) {
+        ctx->Error("A local entity named " + ctx->highlightError(tag.value()) +
+                       " exists already in this scope. Cannot create alias for "
+                       "this loop",
+                   fileRange);
+      } else if (ctx->fn->getBlock()->hasAlias(tag.value())) {
+        ctx->Error("An alias named " + ctx->highlightError(tag.value()) +
+                       " exists already in this scope. Cannot create alias for "
+                       "this loop",
                    fileRange);
       }
     }
@@ -48,6 +63,11 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u),
                              loopIndex->getAlloca());
     auto *trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    if (isAlias) {
+      trueBlock->addAlias(tag.value(), new IR::Value(loopIndex->getAlloca(),
+                                                     loopIndex->getType(),
+                                                     false, IR::Nature::pure));
+    }
     SHOW("loop times true block " << ctx->fn->getFullName() << "."
                                   << trueBlock->getName())
     auto *condBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());

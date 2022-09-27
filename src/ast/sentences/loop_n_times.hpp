@@ -16,10 +16,11 @@ class LoopNTimes : public Sentence {
   Vec<Sentence *> sentences;
   Expression     *count;
   Maybe<String>   tag;
+  bool            isAlias;
 
 public:
   LoopNTimes(Expression *_count, Vec<Sentence *> _snts, Maybe<String> _tag,
-             utils::FileRange _fileRange);
+             bool _isAlias, utils::FileRange _fileRange);
 
   useit bool hasTag() const;
   useit IR::Value *emit(IR::Context *ctx) final;

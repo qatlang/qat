@@ -42,17 +42,18 @@ public:
 
 class Block {
 private:
-  String              name;
-  llvm::BasicBlock   *bb;
-  Vec<LocalValue *>   values;
-  Block              *parent;
-  Vec<Block *>        children;
-  Function           *fn;
-  usize               index;
-  Maybe<usize>        active;
-  mutable Vec<String> movedValues;
-  mutable bool        isGhost = false;
-  mutable bool        hasGive = false;
+  String                                 name;
+  llvm::BasicBlock                      *bb;
+  Vec<LocalValue *>                      values;
+  Block                                 *parent;
+  Vec<Block *>                           children;
+  Function                              *fn;
+  usize                                  index;
+  Maybe<usize>                           active;
+  mutable Vec<String>                    movedValues;
+  mutable bool                           isGhost = false;
+  mutable bool                           hasGive = false;
+  mutable Vec<Pair<String, IR::Value *>> aliases;
 
 public:
   Block(Function *_fn, Block *_parent);
@@ -67,12 +68,15 @@ public:
   useit LocalValue *newValue(const String &name, IR::QatType *type, bool isVar);
   useit bool        isMoved(const String &locID) const;
   useit bool        hasGiveInAllControlPaths() const;
-  void              setGhost(bool value) const;
-  void              setHasGive() const;
-  void              addMovedValue(String locID) const;
-  void              setActive(llvm::IRBuilder<> &builder);
-  useit Block      *getActive();
-  void              collectLocalValues(Vec<LocalValue *> &vals) const;
+  useit bool        hasAlias(const String &name) const;
+  useit IR::Value *getAlias(const String &name) const;
+  void             addAlias(String name, IR::Value *value) const;
+  void             setGhost(bool value) const;
+  void             setHasGive() const;
+  void             addMovedValue(String locID) const;
+  void             setActive(llvm::IRBuilder<> &builder);
+  useit Block     *getActive();
+  void             collectLocalValues(Vec<LocalValue *> &vals) const;
 };
 
 // Function represents a normal function in the language

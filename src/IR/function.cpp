@@ -129,6 +129,28 @@ LocalValue *Block::newValue(const String &name, IR::QatType *type, bool isVar) {
   return values.back();
 }
 
+bool Block::hasAlias(const String &name) const {
+  for (const auto &alias : aliases) {
+    if (alias.first == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+IR::Value *Block::getAlias(const String &name) const {
+  for (const auto &alias : aliases) {
+    if (alias.first == name) {
+      return alias.second;
+    }
+  }
+  return nullptr;
+}
+
+void Block::addAlias(String name, IR::Value *value) const {
+  aliases.push_back(Pair<String, IR::Value *>(std::move(name), value));
+}
+
 void Block::setGhost(bool value) const { isGhost = value; }
 
 void Block::setHasGive() const { hasGive = true; }

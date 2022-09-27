@@ -645,6 +645,8 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::mix, this->getPosition(5));
       } else if (value == "match") {
         return Token::normal(TokenType::match, this->getPosition(5));
+      } else if (value == "alias") {
+        return Token::normal(TokenType::alias, this->getPosition(5));
       } else if (value.substr(0, 1) == "u" &&
                  ((value.length() > 1)
                       ? utils::isInteger(value.substr(1, value.length() - 1))

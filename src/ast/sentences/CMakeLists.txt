@@ -13,6 +13,7 @@ add_library(QAT_AST_SENTENCES
         match.cpp
         multithread_give.cpp
         multithread.cpp
+        new_alias.cpp
         say_sentence.cpp)
 
 target_link_libraries(QAT_AST_SENTENCES QAT_UTILS)

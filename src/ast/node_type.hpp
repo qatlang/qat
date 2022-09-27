@@ -78,6 +78,7 @@ enum class NodeType {
   defineChoiceType,
   dereference,
   Default,
+  newAlias,
 };
 
 } // namespace qat::ast

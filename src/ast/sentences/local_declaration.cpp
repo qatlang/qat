@@ -25,11 +25,16 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
                    " already exists in this scope. Please change name of this "
                    "declaration or check the logic",
                fileRange);
+  } else if (block->hasAlias(name)) {
+    ctx->Error("An alias named " + ctx->highlightError(name) +
+                   " already exists in this scope. Please change name of this "
+                   "declaration or check the logic",
+               fileRange);
   }
   IR::QatType *declType = nullptr;
 
-  // EDGE CASE -> The following code avoids multiple allocations for arrays and
-  // core types
+  // EDGE CASE -> The following code avoids multiple allocations for newly
+  // created values, that are just meant to be assigned to the new entity
   if (value && (value->nodeType() == NodeType::arrayLiteral)) {
     auto *arr = (ast::ArrayLiteral *)value;
     if (type) {

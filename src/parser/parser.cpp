@@ -45,6 +45,7 @@
 #include "../ast/sentences/loop_infinite.hpp"
 #include "../ast/sentences/loop_n_times.hpp"
 #include "../ast/sentences/loop_while.hpp"
+#include "../ast/sentences/new_alias.hpp"
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
@@ -1906,8 +1907,13 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
                   getPairEnd(TokenType::templateTypeStart,
                              TokenType::templateTypeEnd, i + 3, false);
               if (tEndRes.has_value()) {
-                auto  tEnd = tEndRes.value();
-                auto *type = parseType(prev_ctx, i + 3, tEnd).first;
+                auto  tEnd    = tEndRes.value();
+                auto  typeRes = parseType(prev_ctx, i + 3, tEnd);
+                auto *type    = typeRes.first;
+                if (typeRes.second != tEnd - 1) {
+                  Error("Invalid type for heap'get",
+                        RangeSpan(i, typeRes.second));
+                }
                 if (isNext(TokenType::parenthesisOpen, tEnd)) {
                   auto pCloseRes =
                       getPairEnd(TokenType::parenthesisOpen,
@@ -2918,6 +2924,27 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
       }
       break;
     }
+    case TokenType::alias: {
+      if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::altArrow, i + 1)) {
+          auto stop = firstPrimaryPosition(TokenType::stop, i + 2);
+          if (stop.has_value()) {
+            auto *exp =
+                parseExpression(prev_ctx, None, i + 2, stop.value()).first;
+            result.push_back(new ast::NewAlias(ValueAt(i + 1), exp,
+                                               RangeSpan(i, stop.value())));
+            i = stop.value();
+          } else {
+            Error("Expected end for alias declaration", RangeSpan(i, i + 2));
+          }
+        } else {
+          Error("Expected => after name for the alias", RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected identifier for alias declaration", RangeAt(i));
+      }
+      break;
+    }
     case TokenType::assignment: {
       SHOW("Assignment found")
       /* Assignment */
@@ -3181,10 +3208,21 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
         if (pCloseRes.has_value()) {
           auto          pClose  = pCloseRes.value();
           Maybe<String> loopTag = None;
+          bool          isAlias = false;
           auto *count = parseExpression(prev_ctx, None, i + 1, pClose).first;
           auto  pos   = pClose;
           if (isNext(TokenType::colon, pClose)) {
-            if (isNext(TokenType::identifier, pClose + 1)) {
+            if (isNext(TokenType::alias, pClose + 1)) {
+              if (isNext(TokenType::identifier, pClose + 2)) {
+                isAlias = true;
+                loopTag = ValueAt(pClose + 3);
+                pos     = pClose + 3;
+              } else {
+                Error("Expected an identifier for the tag for the loop after "
+                      "alias",
+                      RangeAt(pClose + 2));
+              }
+            } else if (isNext(TokenType::identifier, pClose + 1)) {
               loopTag = ValueAt(pClose + 2);
               pos     = pClose + 2;
             } else {
@@ -3200,7 +3238,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
               auto snts = parseSentences(prev_ctx, pos + 1, bCloseRes.value());
               result.push_back(new ast::LoopNTimes(
                   count, parseSentences(prev_ctx, pos + 1, bCloseRes.value()),
-                  loopTag, RangeSpan(i, bCloseRes.value())));
+                  loopTag, isAlias, RangeSpan(i, bCloseRes.value())));
               i = bCloseRes.value();
             } else {
               Error("Expected end for [", RangeAt(pos + 1));

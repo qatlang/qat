@@ -16,7 +16,10 @@ IR::Value *Entity::emit(IR::Context *ctx) {
     auto *mod = ctx->getMod();
     if (name.find(':') == String::npos && (relative == 0)) {
       SHOW("Checking block " << fun->getBlock()->getName())
-      if (fun->getBlock()->hasValue(name)) {
+      if (fun->getBlock()->hasAlias(name)) {
+        SHOW("Entity is an alias")
+        return fun->getBlock()->getAlias(name);
+      } else if (fun->getBlock()->hasValue(name)) {
         SHOW("Found local value: " << name)
         auto *local  = fun->getBlock()->getValue(name);
         auto *alloca = local->getAlloca();

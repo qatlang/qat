@@ -53,9 +53,8 @@ CompileTarget Config::parseCompileTarget(const String &val) {
 
 Config::Config(u64 count, char **args)
     : target(CompileTarget::normal), exitAfter(false), verbose(false),
-      saveDocs(false), showReport(false), lexer_emit_tokens(false),
-      export_ast(false), compile(false), run(false),
-      outputInTemporaryPath(false) {
+      saveDocs(false), showReport(false), export_ast(false), compile(false),
+      run(false), outputInTemporaryPath(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -162,8 +161,6 @@ Config::Config(u64 count, char **args)
         }
       } else if (arg == "--report") {
         showReport = true;
-      } else if (arg == "--emit-tokens") {
-        lexer_emit_tokens = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
       } else if (arg == "--tmp-dir") {
@@ -204,8 +201,6 @@ fs::path Config::getOutputPath() const { return outputPath.value(); }
 bool Config::shouldShowReport() const { return showReport; }
 
 bool Config::shouldExportAST() const { return export_ast; }
-
-bool Config::shouldLexerEmitTokens() const { return lexer_emit_tokens; }
 
 bool Config::isVerbose() const { return verbose; }
 

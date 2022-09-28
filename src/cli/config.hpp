@@ -52,9 +52,6 @@ private:
   // generation and other processes should be displayed in the console.
   bool showReport;
 
-  //  Whether lexer should display the tokens analysed in the console
-  bool lexer_emit_tokens;
-
   // Whether AST should be exported
   bool export_ast;
 
@@ -127,9 +124,6 @@ public:
   //  Whether different parts of the compiler should show reports about
   // the performance and timing statistics
   useit bool shouldShowReport() const;
-
-  //  Whether lexer should display the analysed tokens in the console
-  useit bool shouldLexerEmitTokens() const;
 
   // Whether an output path is provided to the compiler
   useit bool hasOutputPath() const;

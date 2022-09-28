@@ -88,9 +88,13 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   llvm::Value *lhsVal           = lhsEmit->getLLVM();
   llvm::Value *rhsVal           = rhsEmit->getLLVM();
   auto         referenceHandler = [&]() {
+    SHOW("Loading implicit LHS")
     lhsEmit->loadImplicitPointer(ctx->builder);
+    SHOW("Loaded LHS")
     lhsVal = lhsEmit->getLLVM();
+    SHOW("Loading implicit RHS")
     rhsEmit->loadImplicitPointer(ctx->builder);
+    SHOW("Loaded RHS")
     rhsVal = rhsEmit->getLLVM();
     if (lhsEmit->isReference()) {
       SHOW("LHS is reference")

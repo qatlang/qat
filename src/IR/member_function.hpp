@@ -61,6 +61,16 @@ public:
   DefaultConstructor(CoreType *parent, const utils::VisibilityInfo &visibInfo,
                      utils::FileRange fileRange, llvm::LLVMContext &ctx);
 
+  static MemberFunction *CopyConstructor(CoreType               *parent,
+                                         const String           &otherName,
+                                         const utils::FileRange &fileRange,
+                                         llvm::LLVMContext      &ctx);
+
+  static MemberFunction *MoveConstructor(CoreType               *parent,
+                                         const String           &otherName,
+                                         const utils::FileRange &fileRange,
+                                         llvm::LLVMContext      &ctx);
+
   static MemberFunction *
   CreateConstructor(CoreType *parent, const Vec<Argument> &args,
                     bool hasVariadicArgs, const utils::FileRange &fileRange,

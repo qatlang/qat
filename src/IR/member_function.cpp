@@ -5,6 +5,7 @@
 #include "types/core_type.hpp"
 #include "types/pointer.hpp"
 #include "types/qat_type.hpp"
+#include "types/reference.hpp"
 #include "types/void.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -103,6 +104,36 @@ MemberFunction *MemberFunction::DefaultConstructor(
                             "default", IR::VoidType::get(ctx), false, false,
                             std::move(argsInfo), false, false,
                             {"", {0u, 0u}, {0u, 0u}}, visibInfo, ctx);
+}
+
+MemberFunction *
+MemberFunction::CopyConstructor(CoreType *parent, const String &otherName,
+                                const utils::FileRange &fileRange,
+                                llvm::LLVMContext      &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(
+      Argument::Create(otherName, ReferenceType::get(false, parent, ctx), 0));
+  return new MemberFunction(MemberFnType::copyConstructor, true, parent, "copy",
+                            IR::VoidType::get(ctx), false, false,
+                            std::move(argsInfo), false, false, fileRange,
+                            utils::VisibilityInfo::pub(), ctx);
+}
+
+MemberFunction *
+MemberFunction::MoveConstructor(CoreType *parent, const String &otherName,
+                                const utils::FileRange &fileRange,
+                                llvm::LLVMContext      &ctx) {
+  Vec<Argument> argsInfo;
+  argsInfo.push_back(
+      Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(
+      Argument::Create(otherName, ReferenceType::get(true, parent, ctx), 0));
+  return new MemberFunction(MemberFnType::moveConstructor, true, parent, "move",
+                            IR::VoidType::get(ctx), false, false,
+                            std::move(argsInfo), false, false, fileRange,
+                            utils::VisibilityInfo::pub(), ctx);
 }
 
 MemberFunction *MemberFunction::CreateConstructor(

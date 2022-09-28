@@ -3,6 +3,7 @@
 #include "../ast/types/templated.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
+#include "./logic.hpp"
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
@@ -33,30 +34,7 @@ LocalValue::LocalValue(String _name, IR::QatType *_type, bool _isVar,
   } else {
     SHOW("LLVM type is null")
   }
-  if (fun->getLLVMFunction()->getEntryBlock().getInstList().empty()) {
-    ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name,
-                              &fun->getLLVMFunction()->getEntryBlock());
-  } else {
-    llvm::Instruction *inst = nullptr;
-    // NOLINTNEXTLINE(modernize-loop-convert)
-    for (auto instr =
-             fun->getLLVMFunction()->getEntryBlock().getInstList().begin();
-         instr != fun->getLLVMFunction()->getEntryBlock().getInstList().end();
-         instr++) {
-      if (llvm::isa<llvm::AllocaInst>(&*instr)) {
-        continue;
-      } else {
-        inst = &*instr;
-        break;
-      }
-    }
-    if (inst) {
-      ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name, inst);
-    } else {
-      ll = new llvm::AllocaInst(type->getLLVMType(), 0U, name,
-                                &fun->getLLVMFunction()->getEntryBlock());
-    }
-  }
+  ll = IR::Logic::newAlloca(fun, name, type->getLLVMType());
   SHOW("AllocaInst name is: " << ((llvm::AllocaInst *)ll)->getName().str());
 }
 
@@ -360,10 +338,22 @@ usize TemplateFunction::getTypeCount() const { return templates.size(); }
 
 usize TemplateFunction::getVariantCount() const { return variants.size(); }
 
+String TemplateFunction::getVariantName(Vec<IR::QatType *> &types) const {
+  String result;
+  for (usize i = 0; i < types.size(); i++) {
+    result += types.at(i)->toString();
+    if (i != (types.size() - 1)) {
+      result += ", ";
+    }
+  }
+  return result;
+}
+
 QatModule *TemplateFunction::getModule() const { return parent; }
 
 Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
-                                          IR::Context       *ctx) {
+                                          IR::Context       *ctx,
+                                          utils::FileRange   fileRange) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
@@ -372,11 +362,14 @@ Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
+  auto variantName = getVariantName(types);
+  functionDefinition->prototype->setVariantName(variantName);
   auto *fun = (IR::Function *)functionDefinition->emit(ctx);
   variants.push_back(TemplateVariant<Function>(fun, types));
   for (auto *temp : templates) {
     temp->unsetType();
   }
+  functionDefinition->prototype->unsetVariantName();
   return fun;
 }
 

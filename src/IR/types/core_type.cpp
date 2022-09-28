@@ -347,6 +347,11 @@ MemberFunction *CoreType::getMoveConstructor() const {
   return moveConstructor.value_or(nullptr);
 }
 
+bool CoreType::isTriviallyCopyable() const {
+  return (constructors.empty() && fromConvertors.empty() && !hasDestructor() &&
+          !hasCopyConstructor() && !hasMoveConstructor());
+}
+
 bool CoreType::hasDestructor() const { return destructor != nullptr; }
 
 IR::MemberFunction *CoreType::getDestructor() const { return destructor; }
@@ -378,6 +383,7 @@ TemplateCoreType::TemplateCoreType(String                       _name,
                                    const utils::VisibilityInfo &_visibInfo)
     : name(std::move(_name)), templates(std::move(_templates)),
       defineCoreType(_defineCoreType), parent(_parent), visibility(_visibInfo) {
+  SHOW("Adding template core type to parent module")
   parent->templateCoreTypes.push_back(this);
 }
 
@@ -393,8 +399,20 @@ usize TemplateCoreType::getVariantCount() const { return variants.size(); }
 
 QatModule *TemplateCoreType::getModule() const { return parent; }
 
-CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
-                                          IR::Context   *ctx) {
+String TemplateCoreType::getVariantName(Vec<IR::QatType *> &types) const {
+  String result;
+  for (usize i = 0; i < types.size(); i++) {
+    result += types.at(i)->toString();
+    if (i != (types.size() - 1)) {
+      result += ", ";
+    }
+  }
+  return result;
+}
+
+CoreType *TemplateCoreType::fillTemplates(Vec<QatType *>   types,
+                                          IR::Context     *ctx,
+                                          utils::FileRange range) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
@@ -403,6 +421,9 @@ CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
+  auto variantName = getVariantName(types);
+  defineCoreType->setVariantName(variantName);
+  ctx->activeTemplate = Pair<String, utils::FileRange>(variantName, range);
   (void)defineCoreType->define(ctx);
   (void)defineCoreType->emit(ctx);
   auto *cTy = (IR::CoreType *)defineCoreType->getCoreType();
@@ -410,6 +431,8 @@ CoreType *TemplateCoreType::fillTemplates(Vec<QatType *> types,
   for (auto *temp : templates) {
     temp->unsetType();
   }
+  defineCoreType->unsetVariantName();
+  ctx->activeTemplate = None;
   SHOW("Created variant for template core type: " << cTy->getFullName())
   return cTy;
 }

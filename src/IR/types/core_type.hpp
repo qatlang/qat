@@ -102,6 +102,7 @@ public:
   useit bool            hasMoveConstructor() const;
   useit MemberFunction *getMoveConstructor() const;
   useit bool            isMoveExplicit() const;
+  useit bool            isTriviallyCopyable() const;
   useit bool            hasDestructor() const;
   useit MemberFunction *getDestructor() const;
   useit utils::VisibilityInfo getVisibility() const;
@@ -132,11 +133,13 @@ public:
                    const utils::VisibilityInfo &visibInfo);
 
   useit String getName() const;
+  useit String getVariantName(Vec<IR::QatType *> &types) const;
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
   useit usize                 getVariantCount() const;
   useit QatModule            *getModule() const;
-  useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx);
+  useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx,
+                                utils::FileRange range);
 };
 
 } // namespace qat::IR

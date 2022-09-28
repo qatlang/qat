@@ -156,9 +156,11 @@ public:
   useit String getName() const;
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
+  useit String                getVariantName(Vec<IR::QatType *> &types) const;
   useit usize                 getVariantCount() const;
   useit QatModule            *getModule() const;
-  useit Function *fillTemplates(Vec<IR::QatType *> _types, IR::Context *ctx);
+  useit Function *fillTemplates(Vec<IR::QatType *> _types, IR::Context *ctx,
+                                utils::FileRange fileRange);
 };
 
 void functionReturnHandler(IR::Context *ctx, IR::Function *fun,

@@ -20,6 +20,21 @@ enum class LoopType {
   infinite,
 };
 
+enum class TemplateEntityType {
+  function,
+  memberFunction,
+  coreType,
+  mixType,
+  typeDefinition,
+};
+
+struct TemplateEntityMarker {
+  String             name;
+  TemplateEntityType type;
+  utils::FileRange   fileRange;
+  u64                warningCount = 0;
+};
+
 class LoopInfo {
 public:
   LoopInfo(String _name, IR::Block *_mainB, IR::Block *_condB,
@@ -37,7 +52,7 @@ public:
 
 enum class BreakableType {
   loop,
-  Switch,
+  match,
 };
 
 class Breakable {
@@ -58,19 +73,20 @@ public:
 
   llvm::LLVMContext llctx;
   IRBuilderTy       builder;
-  QatModule        *mod;
-  IR::Function     *fn; // Active function
-  llvm::Value      *selfVal;
-  IR::CoreType     *activeType; // Active core type
+  QatModule        *mod        = nullptr;
+  IR::Function     *fn         = nullptr; // Active function
+  llvm::Value      *selfVal    = nullptr;
+  IR::CoreType     *activeType = nullptr; // Active core type
   Vec<LoopInfo *>   loopsInfo;
   Vec<Breakable *>  breakables;
 
   // META
 
-  bool          hasMain;
-  mutable u64   stringCount;
-  Vec<fs::path> llvmOutputPaths;
-  Vec<String>   nativeLibsToLink;
+  bool                                hasMain;
+  mutable u64                         stringCount;
+  Vec<fs::path>                       llvmOutputPaths;
+  Vec<String>                         nativeLibsToLink;
+  mutable Maybe<TemplateEntityMarker> activeTemplate;
 
   useit QatModule *getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
@@ -78,8 +94,8 @@ public:
   useit                      utils::VisibilityInfo
   getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
 
-  static void Error(const String &message, const utils::FileRange &fileRange);
-  static void Warning(const String &message, const utils::FileRange &fileRange);
+  void Error(const String &message, const utils::FileRange &fileRange) const;
+  void Warning(const String &message, const utils::FileRange &fileRange) const;
   static String highlightError(const String &message,
                                const char   *color = colors::yellow);
   static String highlightWarning(const String &message,

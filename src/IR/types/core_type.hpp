@@ -133,12 +133,11 @@ public:
                    const utils::VisibilityInfo &visibInfo);
 
   useit String getName() const;
-  useit String getVariantName(Vec<IR::QatType *> &types) const;
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
   useit usize                 getVariantCount() const;
   useit QatModule            *getModule() const;
-  useit CoreType *fillTemplates(Vec<QatType *> templates, IR::Context *ctx,
+  useit CoreType *fillTemplates(Vec<QatType *> &templates, IR::Context *ctx,
                                 utils::FileRange range);
 };
 

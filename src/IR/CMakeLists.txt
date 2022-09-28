@@ -1,5 +1,6 @@
 add_library(QAT_IR
         context.cpp
+        logic.cpp
         function.cpp
         global_entity.cpp
         member_function.cpp

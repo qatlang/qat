@@ -30,6 +30,7 @@ String Context::getGlobalStringName() const {
 utils::VisibilityInfo
 Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
   if (kind.has_value() && (kind.value() != utils::VisibilityKind::parent)) {
+    SHOW("Visibility kind has value")
     switch (kind.value()) {
     case utils::VisibilityKind::box: {
       return utils::VisibilityInfo::box(
@@ -66,9 +67,12 @@ Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
       break;
     }
   } else {
+    SHOW("No visibility kind")
     if (activeType) {
+      SHOW("Found active type")
       return utils::VisibilityInfo::type(activeType->getFullName());
     } else {
+      SHOW("No active type")
       switch (getMod()->getModuleType()) {
       case ModuleType::box: {
         return utils::VisibilityInfo::box(getMod()->getFullName());
@@ -86,6 +90,7 @@ Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
       }
     }
   }
+  SHOW("No visibility info found")
 } // NOLINT(clang-diagnostic-return-type)
 
 utils::RequesterInfo Context::getReqInfo() const {
@@ -121,9 +126,28 @@ String Context::highlightWarning(const String &message, const char *color) {
   return color + message + colors::bold::purple;
 }
 
-void Context::Error(const String &message, const utils::FileRange &fileRange) {
+void Context::Error(const String           &message,
+                    const utils::FileRange &fileRange) const {
+  if (activeTemplate) {
+    std::cout << colors::highIntensityBackground::red << "  error  "
+              << colors::white << "▌" << colors::reset << " "
+              << colors::bold::red
+              << "Errors generated while creating template variant: "
+              << highlightError(activeTemplate->name) << colors::reset << " | "
+              << colors::underline::green
+              << activeTemplate->fileRange.file.string() << ":"
+              << activeTemplate->fileRange.start.line << ":"
+              << activeTemplate->fileRange.start.character << colors::reset
+              << " >> " << colors::underline::green
+              << activeTemplate->fileRange.file.string() << ":"
+              << activeTemplate->fileRange.end.line << ":"
+              << activeTemplate->fileRange.end.character << colors::reset
+              << "\n";
+  }
   std::cout << colors::highIntensityBackground::red << "  error  "
             << colors::white << "▌" << colors::reset << " " << colors::bold::red
+            << (activeTemplate ? ("Generating " + activeTemplate->name + " => ")
+                               : "")
             << message << colors::reset << " | " << colors::underline::green
             << fileRange.file.string() << ":" << fileRange.start.line << ":"
             << fileRange.start.character << colors::reset << " >> "
@@ -136,15 +160,21 @@ void Context::Error(const String &message, const utils::FileRange &fileRange) {
 }
 
 void Context::Warning(const String           &message,
-                      const utils::FileRange &fileRange) {
+                      const utils::FileRange &fileRange) const {
+  if (activeTemplate) {
+    activeTemplate->warningCount++;
+  }
   std::cout << colors::highIntensityBackground::purple << " warning "
             << colors::blue << "▌" << colors::reset << " "
-            << colors::bold::purple << message << colors::reset << " | "
+            << colors::bold::purple
+            << (activeTemplate ? ("Generating " + activeTemplate->name + " => ")
+                               : "")
+            << message << colors::reset << " | " << colors::underline::green
+            << fileRange.file.string() << ":" << fileRange.start.line << ":"
+            << fileRange.start.character << colors::reset << " >> "
             << colors::underline::green << fileRange.file.string() << ":"
-            << fileRange.start.line << ":" << fileRange.start.character
-            << colors::reset << " >> " << colors::underline::green
-            << fileRange.file.string() << ":" << fileRange.end.line << ":"
-            << fileRange.end.character << colors::reset << "\n";
+            << fileRange.end.line << ":" << fileRange.end.character
+            << colors::reset << "\n";
 }
 
 } // namespace qat::IR

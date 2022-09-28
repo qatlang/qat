@@ -338,17 +338,6 @@ usize TemplateFunction::getTypeCount() const { return templates.size(); }
 
 usize TemplateFunction::getVariantCount() const { return variants.size(); }
 
-String TemplateFunction::getVariantName(Vec<IR::QatType *> &types) const {
-  String result;
-  for (usize i = 0; i < types.size(); i++) {
-    result += types.at(i)->toString();
-    if (i != (types.size() - 1)) {
-      result += ", ";
-    }
-  }
-  return result;
-}
-
 QatModule *TemplateFunction::getModule() const { return parent; }
 
 Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
@@ -362,13 +351,25 @@ Function *TemplateFunction::fillTemplates(Vec<IR::QatType *> types,
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
-  auto variantName = getVariantName(types);
+  auto variantName = IR::Logic::getTemplateVariantName(name, types);
   functionDefinition->prototype->setVariantName(variantName);
+  auto prevTemp       = ctx->activeTemplate;
+  ctx->activeTemplate = IR::TemplateEntityMarker{
+      variantName, IR::TemplateEntityType::function, fileRange};
   auto *fun = (IR::Function *)functionDefinition->emit(ctx);
   variants.push_back(TemplateVariant<Function>(fun, types));
   for (auto *temp : templates) {
     temp->unsetType();
   }
+  if (ctx->activeTemplate->warningCount > 0) {
+    auto count          = ctx->activeTemplate->warningCount;
+    ctx->activeTemplate = None;
+    ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
+                     " generated while creating template function: " +
+                     ctx->highlightWarning(variantName),
+                 fileRange);
+  }
+  ctx->activeTemplate = prevTemp;
   functionDefinition->prototype->unsetVariantName();
   return fun;
 }

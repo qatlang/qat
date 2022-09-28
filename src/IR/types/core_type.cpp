@@ -3,6 +3,7 @@
 #include "../../ast/types/templated.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
+#include "../logic.hpp"
 #include "../qat_module.hpp"
 #include "definition.hpp"
 #include "function.hpp"
@@ -399,18 +400,7 @@ usize TemplateCoreType::getVariantCount() const { return variants.size(); }
 
 QatModule *TemplateCoreType::getModule() const { return parent; }
 
-String TemplateCoreType::getVariantName(Vec<IR::QatType *> &types) const {
-  String result;
-  for (usize i = 0; i < types.size(); i++) {
-    result += types.at(i)->toString();
-    if (i != (types.size() - 1)) {
-      result += ", ";
-    }
-  }
-  return result;
-}
-
-CoreType *TemplateCoreType::fillTemplates(Vec<QatType *>   types,
+CoreType *TemplateCoreType::fillTemplates(Vec<QatType *>  &types,
                                           IR::Context     *ctx,
                                           utils::FileRange range) {
   for (auto var : variants) {
@@ -421,9 +411,11 @@ CoreType *TemplateCoreType::fillTemplates(Vec<QatType *>   types,
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
-  auto variantName = getVariantName(types);
+  auto variantName = IR::Logic::getTemplateVariantName(name, types);
   defineCoreType->setVariantName(variantName);
-  ctx->activeTemplate = Pair<String, utils::FileRange>(variantName, range);
+  auto prevTemp       = ctx->activeTemplate;
+  ctx->activeTemplate = IR::TemplateEntityMarker{
+      variantName, IR::TemplateEntityType::coreType, range};
   (void)defineCoreType->define(ctx);
   (void)defineCoreType->emit(ctx);
   auto *cTy = (IR::CoreType *)defineCoreType->getCoreType();
@@ -432,7 +424,15 @@ CoreType *TemplateCoreType::fillTemplates(Vec<QatType *>   types,
     temp->unsetType();
   }
   defineCoreType->unsetVariantName();
-  ctx->activeTemplate = None;
+  if (ctx->activeTemplate->warningCount > 0) {
+    auto count          = ctx->activeTemplate->warningCount;
+    ctx->activeTemplate = None;
+    ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
+                     " generated while creating template variant " +
+                     ctx->highlightWarning(variantName),
+                 range);
+  }
+  ctx->activeTemplate = prevTemp;
   SHOW("Created variant for template core type: " << cTy->getFullName())
   return cTy;
 }

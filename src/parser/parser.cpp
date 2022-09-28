@@ -20,6 +20,7 @@
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/mix_type_initialiser.hpp"
+#include "../ast/expressions/move.hpp"
 #include "../ast/expressions/null_pointer.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
@@ -272,8 +273,12 @@ Pair<ast::QatType *, usize> Parser::parseType(ParserContext &prev_ctx,
       if (cacheTy.has_value()) {
         return {cacheTy.value(), i - 1};
       }
-      cacheTy = new ast::UnsignedType(std::stoul(token.value), getVariability(),
-                                      token.fileRange);
+      cacheTy =
+          new ast::UnsignedType(token.value == "usize"
+                                    // NOLINTNEXTLINE(readability-magic-numbers)
+                                    ? (sizeof(usize) * 8u)
+                                    : std::stoul(token.value),
+                                getVariability(), token.fileRange);
       break;
     }
     case TokenType::integerType: {
@@ -1177,6 +1182,68 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
         }
       } else {
         Error("Expected [ to start the definition of the default constructor",
+              RangeAt(i));
+      }
+      break;
+    }
+    case TokenType::copy: {
+      if (coreTy->hasCopyConstructor()) {
+        Error("A copy constructor is already defined for the core type",
+              RangeAt(i));
+      }
+      if (isNext(TokenType::identifier, i)) {
+        auto argName = ValueAt(i + 1);
+        if (isNext(TokenType::bracketOpen, i + 1)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, i + 2, false);
+          if (bCloseRes.has_value()) {
+            auto bClose = bCloseRes.value();
+            auto snts   = parseSentences(prev_ctx, i + 2, bClose);
+            coreTy->setCopyConstructor(new ast::ConstructorDefinition(
+                ast::ConstructorPrototype::Copy(RangeSpan(i, i + 1), argName),
+                std::move(snts), RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            Error("Expected end for [", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected [ to start the definition of the copy constructor",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected name for the argument, which represents the existing "
+              "instance of the type, after copy keyword",
+              RangeAt(i));
+      }
+      break;
+    }
+    case TokenType::move: {
+      if (coreTy->hasMoveConstructor()) {
+        Error("A move constructor is already defined for the core type",
+              RangeAt(i));
+      }
+      if (isNext(TokenType::identifier, i)) {
+        auto argName = ValueAt(i + 1);
+        if (isNext(TokenType::bracketOpen, i + 1)) {
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen,
+                                      TokenType::bracketClose, i + 2, false);
+          if (bCloseRes.has_value()) {
+            auto bClose = bCloseRes.value();
+            auto snts   = parseSentences(prev_ctx, i + 2, bClose);
+            coreTy->setMoveConstructor(new ast::ConstructorDefinition(
+                ast::ConstructorPrototype::Move(RangeSpan(i, i + 1), argName),
+                std::move(snts), RangeSpan(i, bClose)));
+            i = bClose;
+          } else {
+            Error("Expected end for [", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected [ to start the definition of the move constructor",
+                RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected name for the argument, which represents the existing "
+              "instance of the type, after move keyword",
               RangeAt(i));
       }
       break;
@@ -2192,6 +2259,23 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
         }
       } else {
         Error("Invalid token after loop", token.fileRange);
+      }
+      break;
+    }
+    case TokenType::move: {
+      if (isNext(TokenType::parenthesisOpen, i)) {
+        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen,
+                                    TokenType::parenthesisClose, i + 1, false);
+        if (pCloseRes) {
+          auto  pClose = pCloseRes.value();
+          auto *exp    = parseExpression(prev_ctx, None, i + 1, pClose).first;
+          cachedExpressions.push_back(new ast::Move(exp, RangeSpan(i, pClose)));
+          i = pClose;
+        } else {
+          Error("Expected end for (", RangeAt(i + 1));
+        }
+      } else {
+        Error("Expected ( to start the expression to move", RangeAt(i));
       }
       break;
     }

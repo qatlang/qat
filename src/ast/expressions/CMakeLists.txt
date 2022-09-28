@@ -16,6 +16,7 @@ add_library(QAT_AST_EXPRESSIONS
         member_function_call.cpp
         index_access.cpp
         member_access.cpp
+        move.cpp
         null_pointer.cpp
         operator.cpp
         plain_initialiser.cpp

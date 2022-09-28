@@ -13,24 +13,31 @@ TernaryExpression::TernaryExpression(Expression      *_condition,
 IR::Value *TernaryExpression::emit(IR::Context *ctx) {
   auto *genCond = condition->emit(ctx);
   if (genCond) {
-    if (genCond->getType()->isInteger() ||
-        genCond->getType()->isUnsignedInteger()) {
+    auto *genType = genCond->getType();
+    if (genType->isReference()) {
+      genCond->loadImplicitPointer(ctx->builder);
+      genType = genType->asReference()->getSubType();
+    }
+    if (genType->isInteger() || genType->isUnsignedInteger()) {
       auto *fun        = ctx->fn;
       auto *trueBlock  = new IR::Block(fun, fun->getBlock());
       auto *falseBlock = new IR::Block(fun, fun->getBlock());
       auto *mergeBlock = new IR::Block(fun, fun->getBlock());
+      if (genCond->isReference() || genCond->isImplicitPointer()) {
+        genCond = new IR::Value(
+            ctx->builder.CreateLoad(genType->getLLVMType(), genCond->getLLVM()),
+            genType, false, IR::Nature::temporary);
+      }
       ctx->builder.CreateCondBr(genCond->getLLVM(), trueBlock->getBB(),
                                 falseBlock->getBB());
 
       /* true case */
       trueBlock->setActive(ctx->builder);
       auto *trueVal = trueExpr->emit(ctx);
-      (void)IR::addBranch(ctx->builder, mergeBlock->getBB());
 
       /* false case */
       falseBlock->setActive(ctx->builder);
       auto *falseVal = falseExpr->emit(ctx);
-      (void)IR::addBranch(ctx->builder, mergeBlock->getBB());
 
       /* rest block */
       llvm::PHINode *phiNode = nullptr;
@@ -43,7 +50,8 @@ IR::Value *TernaryExpression::emit(IR::Context *ctx) {
             (falseType->isReference() &&
              falseType->asReference()->getSubType()->isSame(trueType))) {
           IR::QatType *resultType = nullptr;
-          if (trueType->isReference() && !falseType->isReference()) {
+          if (trueType->isReference() &&
+              (!falseType->isReference() && !falseVal->isImplicitPointer())) {
             resultType = trueType->asReference()->getSubType();
             trueBlock->setActive(ctx->builder);
             trueVal->loadImplicitPointer(ctx->builder);
@@ -53,7 +61,9 @@ IR::Value *TernaryExpression::emit(IR::Context *ctx) {
                     trueVal->getLLVM()),
                 trueType->asReference()->getSubType(), false,
                 IR::Nature::temporary);
-          } else if (falseType->isReference() && !trueType->isReference()) {
+          } else if (falseType->isReference() &&
+                     (!trueType->isReference() &&
+                      !trueVal->isImplicitPointer())) {
             resultType = falseType->asReference()->getSubType();
             falseBlock->setActive(ctx->builder);
             falseVal->loadImplicitPointer(ctx->builder);
@@ -66,11 +76,16 @@ IR::Value *TernaryExpression::emit(IR::Context *ctx) {
           } else {
             resultType = trueType;
           }
+          trueBlock->setActive(ctx->builder);
+          (void)IR::addBranch(ctx->builder, mergeBlock->getBB());
+          falseBlock->setActive(ctx->builder);
+          (void)IR::addBranch(ctx->builder, mergeBlock->getBB());
           mergeBlock->setActive(ctx->builder);
-          phiNode = ctx->builder.CreatePHI(trueType->getLLVMType(), 2,
+          phiNode = ctx->builder.CreatePHI(resultType->getLLVMType(), 2,
                                            utils::unique_id());
           phiNode->addIncoming(trueVal->getLLVM(), trueBlock->getBB());
           phiNode->addIncoming(falseVal->getLLVM(), falseBlock->getBB());
+          SHOW("Phinode type is: " << phiNode->getType()->getTypeID());
           return new IR::Value(phiNode, resultType, false,
                                IR::Nature::temporary);
         } else {

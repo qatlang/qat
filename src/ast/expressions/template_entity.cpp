@@ -79,7 +79,7 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
     for (auto *typ : templateTypes) {
       types.push_back(typ->emit(ctx));
     }
-    auto *fnRes = tempFn->fillTemplates(types, ctx);
+    auto *fnRes = tempFn->fillTemplates(types, ctx, fileRange);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);

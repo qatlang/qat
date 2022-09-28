@@ -72,8 +72,7 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     SHOW("Emitted IR for all members")
     auto cTyName = name;
     if (isTemplate()) {
-      cTyName = name + ":<" +
-                std::to_string(templateCoreType->getVariantCount()) + ">";
+      cTyName = name + "'<" + variantName.value() + ">";
     }
     coreType = new IR::CoreType(mod, cTyName, mems,
                                 ctx->getVisibInfo(visibility), ctx->llctx);
@@ -86,6 +85,12 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     }
     if (defaultConstructor) {
       defaultConstructor->setCoreType(coreType);
+    }
+    if (copyConstructor) {
+      copyConstructor->setCoreType(coreType);
+    }
+    if (moveConstructor) {
+      moveConstructor->setCoreType(coreType);
     }
     for (auto *conv : convertorDefinitions) {
       conv->setCoreType(coreType);
@@ -170,6 +175,7 @@ void DefineCoreType::defineType(IR::Context *ctx) {
       SHOW("Creating template core type: " << name)
       templateCoreType = new IR::TemplateCoreType(
           name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
+      SHOW("Created templated core type")
     }
   } else {
     // TODO - Check type definitions
@@ -221,12 +227,24 @@ void DefineCoreType::defineType(IR::Context *ctx) {
   }
 }
 
+void DefineCoreType::setVariantName(const String &name) const {
+  variantName = name;
+}
+
+void DefineCoreType::unsetVariantName() const { variantName = None; }
+
 void DefineCoreType::define(IR::Context *ctx) {
   if (isTemplate()) {
     createType(ctx);
   }
   if (defaultConstructor) {
     defaultConstructor->define(ctx);
+  }
+  if (copyConstructor) {
+    copyConstructor->define(ctx);
+  }
+  if (moveConstructor) {
+    moveConstructor->define(ctx);
   }
   for (auto *cons : constructorDefinitions) {
     cons->define(ctx);
@@ -249,6 +267,12 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   ctx->activeType = coreType;
   if (defaultConstructor) {
     (void)defaultConstructor->emit(ctx);
+  }
+  if (copyConstructor) {
+    (void)copyConstructor->emit(ctx);
+  }
+  if (moveConstructor) {
+    (void)moveConstructor->emit(ctx);
   }
   for (auto *cons : constructorDefinitions) {
     (void)cons->emit(ctx);
@@ -309,6 +333,22 @@ bool DefineCoreType::hasDestructor() const {
 
 bool DefineCoreType::hasDefaultConstructor() const {
   return defaultConstructor != nullptr;
+}
+
+bool DefineCoreType::hasCopyConstructor() const {
+  return copyConstructor != nullptr;
+}
+
+bool DefineCoreType::hasMoveConstructor() const {
+  return moveConstructor != nullptr;
+}
+
+void DefineCoreType::setCopyConstructor(ConstructorDefinition *cDef) {
+  copyConstructor = cDef;
+}
+
+void DefineCoreType::setMoveConstructor(ConstructorDefinition *cDef) {
+  moveConstructor = cDef;
 }
 
 nuo::Json DefineCoreType::toJson() const {

@@ -59,10 +59,13 @@ private:
   Vec<OperatorDefinition *>      operatorDefinitions;
   Vec<ConstructorDefinition *>   constructorDefinitions;
   mutable ConstructorDefinition *defaultConstructor   = nullptr;
+  mutable ConstructorDefinition *copyConstructor      = nullptr;
+  mutable ConstructorDefinition *moveConstructor      = nullptr;
   mutable DestructorDefinition  *destructorDefinition = nullptr;
   utils::VisibilityKind          visibility;
 
   Vec<ast::TemplatedType *>     templates;
+  mutable Maybe<String>         variantName;
   mutable IR::CoreType         *coreType         = nullptr;
   mutable IR::TemplateCoreType *templateCoreType = nullptr;
 
@@ -81,11 +84,17 @@ public:
   void       addOperatorDefinition(OperatorDefinition *odef);
   void       setDestructorDefinition(DestructorDefinition *ddef);
   void       setDefaultConstructor(ConstructorDefinition *cDef);
+  void       setCopyConstructor(ConstructorDefinition *cDef);
+  void       setMoveConstructor(ConstructorDefinition *cDef);
   void       createType(IR::Context *ctx) const;
   void       defineType(IR::Context *ctx) final;
   void       define(IR::Context *ctx) final;
+  void       setVariantName(const String &name) const;
+  void       unsetVariantName() const;
   useit bool hasDefaultConstructor() const;
   useit bool hasDestructor() const;
+  useit bool hasCopyConstructor() const;
+  useit bool hasMoveConstructor() const;
   useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;
   useit nuo::Json toJson() const final;

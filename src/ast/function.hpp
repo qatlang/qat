@@ -24,6 +24,7 @@ private:
 
   Vec<TemplatedType *>  templates;
   IR::TemplateFunction *templateFn = nullptr;
+  mutable Maybe<String> variantName;
 
   mutable llvm::GlobalValue::LinkageTypes linkageType;
   mutable IR::Function                   *function = nullptr;
@@ -40,6 +41,8 @@ public:
 
   useit bool isTemplate() const;
   useit Vec<TemplatedType *> getTemplates() const;
+  void                       setVariantName(const String &value) const;
+  void                       unsetVariantName() const;
   IR::Function              *createFunction(IR::Context *ctx) const;
 
   void  define(IR::Context *ctx) final;

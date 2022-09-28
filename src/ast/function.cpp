@@ -42,7 +42,7 @@ IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
   String             fnName   = name;
   SHOW("Creating function")
   if (templateFn) {
-    fnName = name + ":<" + std::to_string(templateFn->getVariantCount()) + ">";
+    fnName = name + "'<" + variantName.value() + ">";
   }
   SHOW("Checking function exists or not")
   if (mod->hasFunction(fnName)) {
@@ -132,6 +132,12 @@ IR::Function *FunctionPrototype::createFunction(IR::Context *ctx) const {
   }
   return fn;
 }
+
+void FunctionPrototype::setVariantName(const String &value) const {
+  variantName = value;
+}
+
+void FunctionPrototype::unsetVariantName() const { variantName = None; }
 
 void FunctionPrototype::define(IR::Context *ctx) {
   if (!isTemplate()) {

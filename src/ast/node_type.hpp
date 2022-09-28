@@ -79,6 +79,7 @@ enum class NodeType {
   dereference,
   Default,
   newAlias,
+  moveExpression,
 };
 
 } // namespace qat::ast

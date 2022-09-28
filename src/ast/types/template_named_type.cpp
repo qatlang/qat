@@ -79,7 +79,7 @@ IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
     for (auto *typ : templateTypes) {
       types.push_back(typ->emit(ctx));
     }
-    auto *tyRes = tempCoreTy->fillTemplates(types, ctx);
+    auto *tyRes = tempCoreTy->fillTemplates(types, ctx, fileRange);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);
@@ -108,7 +108,7 @@ nuo::Json TemplateNamedType::toJson() const {
 }
 
 String TemplateNamedType::toString() const {
-  auto result = (isVariable() ? "var " : "") + name + ":<";
+  auto result = (isVariable() ? "var " : "") + name + "'<";
   for (usize i = 0; i < templateTypes.size(); i++) {
     result += templateTypes.at(i)->toString();
     if (i != (templateTypes.size() - 1)) {

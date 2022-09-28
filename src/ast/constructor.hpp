@@ -28,10 +28,12 @@ private:
   Vec<Argument *>       arguments;
   utils::VisibilityKind visibility;
   ConstructorType       type;
+  Maybe<String>         argName;
 
   ConstructorPrototype(ConstructorType constType, Vec<Argument *> _arguments,
                        utils::VisibilityKind _visibility,
-                       utils::FileRange      _fileRange);
+                       utils::FileRange      _fileRange,
+                       Maybe<String>         argName = None);
 
 public:
   static ConstructorPrototype *Normal(Vec<Argument *>       args,
@@ -39,8 +41,8 @@ public:
                                       utils::FileRange      fileRange);
   static ConstructorPrototype *Default(utils::VisibilityKind visibility,
                                        utils::FileRange      fileRange);
-  static ConstructorPrototype *Copy(utils::FileRange fileRange);
-  static ConstructorPrototype *Move(utils::FileRange fileRange);
+  static ConstructorPrototype *Copy(utils::FileRange fileRange, String argName);
+  static ConstructorPrototype *Move(utils::FileRange fileRange, String argName);
 
   void setCoreType(IR::CoreType *_coreType);
 

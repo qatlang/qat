@@ -198,12 +198,12 @@ IR::Value *ConstructorCall::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json ConstructorCall::toJson() const {
-  Vec<nuo::JsonValue> argsJson;
+Json ConstructorCall::toJson() const {
+  Vec<JsonValue> argsJson;
   for (auto *arg : args) {
     argsJson.push_back(arg->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "constructorCall")
       ._("type", type->toJson())
       ._("arguments", argsJson)

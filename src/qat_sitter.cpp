@@ -5,11 +5,11 @@
 #include "cli/config.hpp"
 #include "cli/error.hpp"
 #include "cli/version.hpp"
+#include "utils/json.hpp"
 #include "utils/visibility.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Target/TargetMachine.h"
 #include <filesystem>
-#include <nuo/json.hpp>
 
 #define OUTPUT_OBJECT_NAME "output"
 

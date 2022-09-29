@@ -23,8 +23,8 @@ public:
 
   useit bool hasLocal() const;
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::arrayLiteral; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::arrayLiteral; }
 };
 
 } // namespace qat::ast

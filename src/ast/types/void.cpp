@@ -12,8 +12,8 @@ IR::QatType *VoidType::emit(IR::Context *ctx) {
 
 TypeKind VoidType::typeKind() const { return TypeKind::Void; }
 
-nuo::Json VoidType::toJson() const {
-  return nuo::Json()
+Json VoidType::toJson() const {
+  return Json()
       ._("typeKind", "void")
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);

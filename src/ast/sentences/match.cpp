@@ -28,15 +28,15 @@ utils::FileRange MixMatchValue::getValueRange() const {
   return valueName->second;
 }
 
-nuo::Json MixMatchValue::toJson() const {
-  return nuo::Json()
+Json MixMatchValue::toJson() const {
+  return Json()
       ._("matchValueType", "mix")
       ._("name", name.first)
       ._("nameFileRange", name.second)
       ._("hasValue", valueName.has_value())
       ._("valueName", valueName.has_value() ? valueName->first : "")
       ._("valueFileRange",
-         valueName.has_value() ? valueName->second : nuo::JsonValue());
+         valueName.has_value() ? valueName->second : JsonValue());
 }
 
 ChoiceMatchValue::ChoiceMatchValue(String _name, utils::FileRange fileRange)
@@ -46,8 +46,8 @@ String ChoiceMatchValue::getName() const { return name; }
 
 utils::FileRange ChoiceMatchValue::getFileRange() const { return range; }
 
-nuo::Json ChoiceMatchValue::toJson() const {
-  return nuo::Json()
+Json ChoiceMatchValue::toJson() const {
+  return Json()
       ._("matchValueType", "enum")
       ._("name", name)
       ._("nameFileRange", range);
@@ -57,8 +57,8 @@ ExpressionMatchValue::ExpressionMatchValue(Expression *_exp) : exp(_exp) {}
 
 Expression *ExpressionMatchValue::getExpression() const { return exp; }
 
-nuo::Json ExpressionMatchValue::toJson() const {
-  return nuo::Json()
+Json ExpressionMatchValue::toJson() const {
+  return Json()
       ._("matchValueType", "expression")
       ._("expression", exp->toJson());
 }
@@ -313,24 +313,24 @@ IR::Value *Match::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Match::toJson() const {
-  Vec<nuo::JsonValue> chainJson;
+Json Match::toJson() const {
+  Vec<JsonValue> chainJson;
   for (const auto &elem : chain) {
-    Vec<nuo::JsonValue> sentencesJson;
+    Vec<JsonValue> sentencesJson;
     for (auto *snt : elem.second) {
       sentencesJson.push_back(snt->toJson());
     }
-    chainJson.push_back(nuo::Json()
+    chainJson.push_back(Json()
                             ._("matchValue", elem.first->toJson())
                             ._("sentences", sentencesJson));
   }
-  Vec<nuo::JsonValue> elseJson;
+  Vec<JsonValue> elseJson;
   if (elseCase.has_value()) {
     for (auto *snt : elseCase.value()) {
       elseJson.push_back(snt->toJson());
     }
   }
-  return nuo::Json()
+  return Json()
       ._("candidate", candidate->toJson())
       ._("matchChain", chainJson)
       ._("hasElse", elseCase.has_value())

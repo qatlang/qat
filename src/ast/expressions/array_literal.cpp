@@ -93,12 +93,12 @@ IR::Value *ArrayLiteral::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json ArrayLiteral::toJson() const {
-  Vec<nuo::JsonValue> vals;
+Json ArrayLiteral::toJson() const {
+  Vec<JsonValue> vals;
   for (auto *exp : values) {
     vals.push_back(exp->toJson());
   }
-  return nuo::Json()._("nodeType", "arrayLiteral")._("values", vals);
+  return Json()._("nodeType", "arrayLiteral")._("values", vals);
 }
 
 } // namespace qat::ast

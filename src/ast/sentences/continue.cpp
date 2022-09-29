@@ -55,8 +55,8 @@ IR::Value *Continue::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Continue::toJson() const {
-  return nuo::Json()._("hasTag", tag.has_value())._("tag", tag.value_or(""));
+Json Continue::toJson() const {
+  return Json()._("hasTag", tag.has_value())._("tag", tag.value_or(""));
 }
 
 } // namespace qat::ast

@@ -1,5 +1,5 @@
 #include "./box.hpp"
-#include <nuo/json.hpp>
+#include "../utils/json.hpp"
 
 namespace qat::ast {
 
@@ -93,12 +93,12 @@ void Box::createModule(IR::Context *ctx) const {
 
 IR::Value *Box::emit(IR::Context *ctx) { return nullptr; }
 
-nuo::Json Box::toJson() const {
-  Vec<nuo::JsonValue> mems;
+Json Box::toJson() const {
+  Vec<JsonValue> mems;
   for (auto *mem : members) {
     mems.push_back(mem->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "box")
       ._("members", mems)
       ._("fileRange", fileRange);

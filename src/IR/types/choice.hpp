@@ -34,11 +34,11 @@ public:
   useit u64        getBitwidth() const;
   useit const utils::VisibilityInfo &getVisibility() const;
   useit TypeKind typeKind() const final { return TypeKind::choice; }
-  useit nuo::Json toJson() const final { return nuo::Json(); }
-  useit String    toString() const final { return getFullName(); }
-  void            findBitwidthNormal() const;
-  void            findBitwidthForValues() const;
-  void getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
+  useit Json     toJson() const final { return Json(); }
+  useit String   toString() const final { return getFullName(); }
+  void           findBitwidthNormal() const;
+  void           findBitwidthForValues() const;
+  void           getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
 };
 
 } // namespace qat::IR

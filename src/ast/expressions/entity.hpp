@@ -26,8 +26,8 @@ public:
   void setCanBeChoice();
 
   useit IR::Value *emit(IR::Context *ctx);
-  useit nuo::Json toJson() const;
-  useit NodeType  nodeType() const { return NodeType::entity; }
+  useit Json       toJson() const;
+  useit NodeType   nodeType() const { return NodeType::entity; }
 };
 
 } // namespace qat::ast

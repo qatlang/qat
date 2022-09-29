@@ -89,8 +89,6 @@ IR::Value *Default::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json Default::toJson() const {
-  return nuo::Json()._("nodeType", "default");
-}
+Json Default::toJson() const { return Json()._("nodeType", "default"); }
 
 } // namespace qat::ast

@@ -17,8 +17,8 @@ IR::Value *NewAlias::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json NewAlias::toJson() const {
-  return nuo::Json()
+Json NewAlias::toJson() const {
+  return Json()
       ._("nodeType", "newAlias")
       ._("name", name)
       ._("expression", exp->toJson())

@@ -32,8 +32,8 @@ IR::Value *Dereference::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Dereference::toJson() const {
-  return nuo::Json()
+Json Dereference::toJson() const {
+  return Json()
       ._("nodeType", "dereference")
       ._("expression", exp->toJson())
       ._("fileRange", fileRange);

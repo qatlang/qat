@@ -272,15 +272,15 @@ public:
   useit fs::path getResolvedOutputPath(const String &extension) const;
   useit llvm::Module *getLLVMModule() const;
 
-  bool      areNodesEmitted() const;
-  void      createModules(IR::Context *ctx);
-  void      defineTypes(IR::Context *ctx);
-  void      defineNodes(IR::Context *ctx);
-  void      emitNodes(IR::Context *ctx);
-  void      exportJsonFromAST() const;
-  void      linkNative(NativeUnit nval);
-  void      finaliseModule();
-  nuo::Json toJson() const;
+  bool areNodesEmitted() const;
+  void createModules(IR::Context *ctx);
+  void defineTypes(IR::Context *ctx);
+  void defineNodes(IR::Context *ctx);
+  void emitNodes(IR::Context *ctx);
+  void exportJsonFromAST() const;
+  void linkNative(NativeUnit nval);
+  void finaliseModule();
+  Json toJson() const;
 };
 
 } // namespace qat::IR

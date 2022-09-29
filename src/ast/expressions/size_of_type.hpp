@@ -17,8 +17,8 @@ public:
   SizeOfType(QatType *_type, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
-  useit NodeType  nodeType() const override { return NodeType::sizeOfType; }
+  useit Json       toJson() const override;
+  useit NodeType   nodeType() const override { return NodeType::sizeOfType; }
 };
 
 } // namespace qat::ast

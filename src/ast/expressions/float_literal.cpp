@@ -19,8 +19,8 @@ IR::Value *FloatLiteral::emit(IR::Context *ctx) {
       IR::Nature::pure);
 }
 
-nuo::Json FloatLiteral::toJson() const {
-  return nuo::Json()
+Json FloatLiteral::toJson() const {
+  return Json()
       ._("nodeType", "floatLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

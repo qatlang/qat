@@ -16,8 +16,8 @@ IR::Value *UnsignedLiteral::emit(IR::Context *ctx) {
   // NOLINTEND(readability-magic-numbers)
 }
 
-nuo::Json UnsignedLiteral::toJson() const {
-  return nuo::Json()
+Json UnsignedLiteral::toJson() const {
+  return Json()
       ._("nodeType", "unsignedLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

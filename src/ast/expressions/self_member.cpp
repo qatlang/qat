@@ -22,12 +22,12 @@ IR::Value *SelfMember::emit(IR::Context *ctx) {
       auto *mem     = cTy->getMemberAt(index);
       auto *selfVal = mFn->getBlock()->getValue("''");
       auto *res     = new IR::Value(
-              ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
-              IR::ReferenceType::get(
-                  selfVal->getType()->asPointer()->isSubtypeVariable() &&
-                      mem->variability,
-                  mem->type, ctx->llctx),
-              false, IR::Nature::temporary);
+          ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
+          IR::ReferenceType::get(
+              selfVal->getType()->asPointer()->isSubtypeVariable() &&
+                  mem->variability,
+              mem->type, ctx->llctx),
+          false, IR::Nature::temporary);
       while (res->getType()->isReference() &&
              res->getType()->asReference()->getSubType()->isReference()) {
         res = new IR::Value(
@@ -54,8 +54,8 @@ IR::Value *SelfMember::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json SelfMember::toJson() const {
-  return nuo::Json()._("nodeType", "selfMember")._("fileRange", fileRange);
+Json SelfMember::toJson() const {
+  return Json()._("nodeType", "selfMember")._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

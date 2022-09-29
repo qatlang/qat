@@ -9,12 +9,12 @@ IR::Value *TupleValue::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-nuo::Json TupleValue::toJson() const {
-  Vec<nuo::JsonValue> mems;
+Json TupleValue::toJson() const {
+  Vec<JsonValue> mems;
   for (auto mem : members) {
     mems.push_back(mem->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "tupleValue")
       ._("members", mems)
       ._("fileRange", fileRange);

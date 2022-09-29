@@ -11,8 +11,8 @@ IR::Value *BooleanLiteral::emit(IR::Context *ctx) {
                        IR::Nature::pure);
 }
 
-nuo::Json BooleanLiteral::toJson() const {
-  return nuo::Json()
+Json BooleanLiteral::toJson() const {
+  return Json()
       ._("nodeType", "booleanLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

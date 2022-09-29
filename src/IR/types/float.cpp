@@ -71,8 +71,8 @@ String FloatType::toString() const {
   }
 }
 
-nuo::Json FloatType::toJson() const {
-  return nuo::Json()
+Json FloatType::toJson() const {
+  return Json()
       ._("id", getID())
       ._("typeKind", "float")
       ._("floatKind", toString().substr(1));

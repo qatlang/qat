@@ -144,12 +144,12 @@ IR::Value *Say::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Say::toJson() const {
-  Vec<nuo::JsonValue> exps;
+Json Say::toJson() const {
+  Vec<JsonValue> exps;
   for (auto *exp : expressions) {
     exps.push_back(exp->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "saySentence")
       ._("values", exps)
       ._("fileRange", fileRange);

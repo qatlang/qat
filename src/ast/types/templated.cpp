@@ -47,8 +47,8 @@ IR::QatType *TemplatedType::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json TemplatedType::toJson() const {
-  return nuo::Json()
+Json TemplatedType::toJson() const {
+  return Json()
       ._("typeKind", "templated")
       ._("id", id)
       ._("name", name)

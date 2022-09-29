@@ -17,8 +17,8 @@ public:
                  utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::templateEntity; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::templateEntity; }
 };
 
 } // namespace qat::ast

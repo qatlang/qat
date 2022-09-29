@@ -29,7 +29,7 @@ public:
     utils::VisibilityKind visibilityKind;
     utils::FileRange      fileRange;
 
-    useit nuo::Json toJson() const;
+    useit Json toJson() const;
   };
 
   // Static member representation in the AST
@@ -46,7 +46,7 @@ public:
     utils::VisibilityKind visibilityKind;
     utils::FileRange      fileRange;
 
-    useit nuo::Json toJson() const;
+    useit Json toJson() const;
   };
 
 private:
@@ -97,8 +97,8 @@ public:
   useit bool hasMoveConstructor() const;
   useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::defineCoreType; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::defineCoreType; }
 };
 
 } // namespace qat::ast

@@ -128,12 +128,12 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json MemberFunctionCall::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json MemberFunctionCall::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : arguments) {
     args.emplace_back(arg->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "memberFunctionCall")
       ._("instance", instance->toJson())
       ._("function", memberName)

@@ -14,8 +14,8 @@ public:
   BooleanLiteral(bool _value, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::booleanLiteral; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::booleanLiteral; }
 };
 
 } // namespace qat::ast

@@ -5,7 +5,7 @@ namespace qat::utils {
 #define VISIB_KIND  "visibility_kind"
 #define VISIB_VALUE "visibility_value"
 
-nuo::JsonValue kindToJsonValue(VisibilityKind kind) {
+JsonValue kindToJsonValue(VisibilityKind kind) {
   switch (kind) {
   case VisibilityKind::type:
     return "type";
@@ -86,11 +86,11 @@ bool VisibilityInfo::operator==(const VisibilityInfo &other) const {
   return (kind == other.kind) && (value == other.value);
 }
 
-VisibilityInfo::operator nuo::Json() const {
-  return nuo::Json()._("nature", Visibility::getValue(kind))._("value", value);
+VisibilityInfo::operator Json() const {
+  return Json()._("nature", Visibility::getValue(kind))._("value", value);
 }
 
-VisibilityInfo::operator nuo::JsonValue() const { return {(nuo::Json)(*this)}; }
+VisibilityInfo::operator JsonValue() const { return {(Json)(*this)}; }
 
 VisibilityInfo::VisibilityInfo(const VisibilityInfo &other) = default;
 

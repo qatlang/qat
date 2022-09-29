@@ -47,8 +47,8 @@ public:
 
   void  define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::functionPrototype; }
+  useit Json       toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::functionPrototype; }
 };
 
 class FunctionDefinition : public Node {
@@ -65,7 +65,7 @@ public:
   void       define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType nodeType() const final { return NodeType::functionDefinition; }
-  useit nuo::Json toJson() const final;
+  useit Json     toJson() const final;
 };
 
 } // namespace qat::ast

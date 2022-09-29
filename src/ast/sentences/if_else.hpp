@@ -21,8 +21,8 @@ public:
          Maybe<Vec<Sentence *>> _else, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::ifElse; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::ifElse; }
 };
 
 } // namespace qat::ast

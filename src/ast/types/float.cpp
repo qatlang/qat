@@ -39,8 +39,8 @@ String FloatType::kindToString(IR::FloatTypeKind kind) {
 
 TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
-nuo::Json FloatType::toJson() const {
-  return nuo::Json()
+Json FloatType::toJson() const {
+  return Json()
       ._("typeKind", "float")
       ._("floatTypeKind", kindToString(kind))
       ._("isVariable", isVariable())

@@ -14,8 +14,8 @@ public:
 
   useit bool hasName() const;
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::loopIndex; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::loopIndex; }
 };
 
 } // namespace qat::ast

@@ -29,7 +29,7 @@ public:
   useit bool           isExpectedKind(ExpressionKind _kind);
   useit IR::Value *emit(IR::Context *ctx) override = 0;
   useit NodeType   nodeType() const override       = 0;
-  useit nuo::Json toJson() const override          = 0;
+  useit Json       toJson() const override         = 0;
   ~Expression() override                           = default;
 };
 

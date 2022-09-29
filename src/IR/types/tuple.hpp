@@ -31,7 +31,7 @@ public:
   useit bool           isPackedTuple() const;
   useit TypeKind       typeKind() const override;
   useit String         toString() const override;
-  useit nuo::Json toJson() const override;
+  useit Json           toJson() const override;
 };
 
 } // namespace qat::IR

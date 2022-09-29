@@ -18,7 +18,7 @@ public:
 
   NodeType nodeType() const { return NodeType::saySentence; }
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 };
 
 } // namespace qat::ast

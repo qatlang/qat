@@ -18,8 +18,8 @@ bool IntegerType::isBitWidth(const u32 width) const {
 
 TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
 
-nuo::Json IntegerType::toJson() const {
-  return nuo::Json()
+Json IntegerType::toJson() const {
+  return Json()
       ._("typeKind", "integer")
       ._("bitWidth", bitWidth)
       ._("isVariable", isVariable())

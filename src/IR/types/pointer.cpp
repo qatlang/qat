@@ -38,8 +38,8 @@ String PointerType::toString() const {
          subType->toString() + "]";
 }
 
-nuo::Json PointerType::toJson() const {
-  return nuo::Json()
+Json PointerType::toJson() const {
+  return Json()
       ._("type", "pointer")
       ._("subtype", subType->getID())
       ._("isSubtypeVariable", isSubtypeVariable());

@@ -25,8 +25,8 @@ public:
   useit u32    getRelative() const;
   useit IR::QatType *emit(IR::Context *ctx) final;
   useit TypeKind     typeKind() const final;
-  useit nuo::Json toJson() const final;
-  useit String    toString() const final;
+  useit Json         toJson() const final;
+  useit String       toString() const final;
 };
 
 } // namespace qat::ast

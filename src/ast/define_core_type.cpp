@@ -12,8 +12,8 @@ DefineCoreType::Member::Member( //
     : type(_type), name(std::move(_name)), variability(_variability),
       visibilityKind(_kind), fileRange(std::move(_fileRange)) {}
 
-nuo::Json DefineCoreType::Member::toJson() const {
-  return nuo::Json()
+Json DefineCoreType::Member::toJson() const {
+  return Json()
       ._("nodeType", "coreTypeMember")
       ._("name", name)
       ._("type", type->toJson())
@@ -30,8 +30,8 @@ DefineCoreType::StaticMember::StaticMember(QatType *_type, String _name,
     : type(_type), name(std::move(_name)), variability(_variability),
       value(_value), visibilityKind(_kind), fileRange(std::move(_fileRange)) {}
 
-nuo::Json DefineCoreType::StaticMember::toJson() const {
-  return nuo::Json()
+Json DefineCoreType::StaticMember::toJson() const {
+  return Json()
       ._("nodeType", "coreTypeMember")
       ._("name", name)
       ._("type", type->toJson())
@@ -351,16 +351,16 @@ void DefineCoreType::setMoveConstructor(ConstructorDefinition *cDef) {
   moveConstructor = cDef;
 }
 
-nuo::Json DefineCoreType::toJson() const {
-  Vec<nuo::JsonValue> membersJsonValue;
-  Vec<nuo::JsonValue> staticMembersJsonValue;
+Json DefineCoreType::toJson() const {
+  Vec<JsonValue> membersJsonValue;
+  Vec<JsonValue> staticMembersJsonValue;
   for (auto *mem : members) {
     membersJsonValue.emplace_back(mem->toJson());
   }
   for (auto *mem : staticMembers) {
     staticMembersJsonValue.emplace_back(mem->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "defineCoreType")
       ._("members", membersJsonValue)
       ._("staticMembers", staticMembersJsonValue)

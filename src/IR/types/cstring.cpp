@@ -22,8 +22,6 @@ TypeKind CStringType::typeKind() const { return TypeKind::cstring; }
 
 String CStringType::toString() const { return "cstring"; }
 
-nuo::Json CStringType::toJson() const {
-  return nuo::Json()._("type", "cstring");
-}
+Json CStringType::toJson() const { return Json()._("type", "cstring"); }
 
 } // namespace qat::IR

@@ -14,8 +14,8 @@ IR::QatType *ArrayType::emit(IR::Context *ctx) {
 
 TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
-nuo::Json ArrayType::toJson() const {
-  return nuo::Json()
+Json ArrayType::toJson() const {
+  return Json()
       ._("typeKind", "array")
       ._("subType", element_type->toJson())
       ._("isVariable", isVariable())

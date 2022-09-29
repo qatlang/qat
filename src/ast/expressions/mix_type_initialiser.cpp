@@ -121,14 +121,14 @@ IR::Value *MixTypeInitialiser::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json MixTypeInitialiser::toJson() const {
-  return nuo::Json()
+Json MixTypeInitialiser::toJson() const {
+  return Json()
       ._("nodeType", "unionInitialiser")
       ._("type", type->toJson())
       ._("subName", subName)
       ._("hasExpression", expression.has_value())
-      ._("expression", expression.has_value() ? expression.value()->toJson()
-                                              : nuo::JsonValue())
+      ._("expression",
+         expression.has_value() ? expression.value()->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

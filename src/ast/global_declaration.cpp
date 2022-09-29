@@ -42,8 +42,8 @@ void GlobalDeclaration::define(IR::Context *ctx) {
 
 IR::Value *GlobalDeclaration::emit(IR::Context *ctx) { return globalEntity; }
 
-nuo::Json GlobalDeclaration::toJson() const {
-  return nuo::Json()
+Json GlobalDeclaration::toJson() const {
+  return Json()
       ._("nodeType", "globalDeclaration")
       ._("name", name)
       ._("type", type->toJson())

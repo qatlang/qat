@@ -19,7 +19,7 @@ public:
   void  defineType(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *_) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::typeDefinition; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

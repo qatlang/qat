@@ -167,17 +167,17 @@ void DefineMixType::defineType(IR::Context *ctx) {
 
 IR::Value *DefineMixType::emit(IR::Context *ctx) { return nullptr; }
 
-nuo::Json DefineMixType::toJson() const {
-  Vec<nuo::JsonValue> subTypesJson;
+Json DefineMixType::toJson() const {
+  Vec<JsonValue> subTypesJson;
   for (const auto &sub : subtypes) {
-    subTypesJson.push_back(nuo::Json()
+    subTypesJson.push_back(Json()
                                ._("name", sub.first)
                                ._("hasType", sub.second.has_value())
                                ._("type", sub.second.has_value()
                                               ? sub.second.value()->toJson()
-                                              : nuo::JsonValue()));
+                                              : JsonValue()));
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "defineUnionType")
       ._("name", name)
       ._("subTypes", subTypesJson)

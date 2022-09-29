@@ -176,8 +176,7 @@ if(IS_UNIX)
         QAT_IR
         QAT_UTILS
         QAT_CLI
-        QAT_BACKEND
-        nuo)
+        QAT_BACKEND)
 else()
     target_link_libraries(${PROJECT_NAME}
         ${LLVM_LIBRARIES}
@@ -193,8 +192,7 @@ else()
         QAT_IR
         QAT_UTILS
         QAT_CLI
-        QAT_BACKEND
-        nuo)
+        QAT_BACKEND)
 endif()
 
 if(IS_UNIX)

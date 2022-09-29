@@ -13,8 +13,8 @@ String ArgumentType::getName() const { return name.value_or(""); }
 
 QatType *ArgumentType::getType() { return type; }
 
-nuo::Json ArgumentType::toJson() const {
-  return nuo::Json()
+Json ArgumentType::toJson() const {
+  return Json()
       ._("type", type->toJson())
       ._("hasName", name.has_value())
       ._("name", name.value_or(""));
@@ -26,12 +26,12 @@ FunctionType::FunctionType(QatType *_retType, Vec<ArgumentType *> _argTypes,
 
 TypeKind FunctionType::typeKind() const { return TypeKind::function; }
 
-nuo::Json FunctionType::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json FunctionType::toJson() const {
+  Vec<JsonValue> args;
   for (auto argTy : argTypes) {
     args.push_back(argTy->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("typeKind", "function")
       ._("returnType", returnType->toJson())
       ._("arguments", args);

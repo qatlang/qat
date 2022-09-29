@@ -186,18 +186,18 @@ void ConstructorPrototype::setCoreType(IR::CoreType *_coreType) {
   coreType = _coreType;
 }
 
-nuo::Json ConstructorPrototype::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json ConstructorPrototype::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : arguments) {
     auto aJson =
-        nuo::Json()
+        Json()
             ._("name", arg->getName())
-            ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
+            ._("type", arg->getType() ? arg->getType()->toJson() : Json())
             ._("isMemberArg", arg->isTypeMember())
             ._("fileRange", arg->getFileRange());
     args.push_back(aJson);
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "constructorPrototype")
       ._("arguments", args)
       ._("visibility", utils::kindToJsonValue(visibility))
@@ -261,12 +261,12 @@ void ConstructorDefinition::setCoreType(IR::CoreType *coreType) const {
   prototype->setCoreType(coreType);
 }
 
-nuo::Json ConstructorDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntcs;
+Json ConstructorDefinition::toJson() const {
+  Vec<JsonValue> sntcs;
   for (auto *sentence : sentences) {
     sntcs.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "constructorDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)

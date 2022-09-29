@@ -1,17 +1,17 @@
 #include "./file_range.hpp"
-#include <nuo/json.hpp>
+#include "./json.hpp"
 namespace qat::utils {
 
 FilePos::FilePos(uint64_t _line, uint64_t _character)
     : line(_line), character(_character) {}
 
-FilePos::FilePos(nuo::Json json)
+FilePos::FilePos(Json json)
     : line(json["line"].asInt()), character(json["char"].asInt()) {}
 
-FilePos::operator nuo::JsonValue() const { return (nuo::Json)(*this); }
+FilePos::operator JsonValue() const { return (Json)(*this); }
 
-FilePos::operator nuo::Json() const {
-  return nuo::Json()
+FilePos::operator Json() const {
+  return Json()
       ._("line", (unsigned long long)line)
       ._("char", (unsigned long long)character);
 }
@@ -23,14 +23,14 @@ FileRange::FileRange(const FileRange &first, const FileRange &second)
     : file(first.file), start(first.start),
       end((first.file == second.file) ? second.end : first.end) {}
 
-FileRange::FileRange(nuo::Json json)
+FileRange::FileRange(Json json)
     : file(json["file"].asString()), start(json["start"].asJson()),
       end(json["end"].asJson()) {}
 
-FileRange::operator nuo::Json() const {
-  return nuo::Json()._("path", file.string())._("start", start)._("end", end);
+FileRange::operator Json() const {
+  return Json()._("path", file.string())._("start", start)._("end", end);
 }
 
-FileRange::operator nuo::JsonValue() const { return (nuo::Json)(*this); }
+FileRange::operator JsonValue() const { return (Json)(*this); }
 
 } // namespace qat::utils

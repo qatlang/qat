@@ -45,8 +45,6 @@ IR::Value *LoopIndex::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json LoopIndex::toJson() const {
-  return nuo::Json()._("nodeType", "loopIndex");
-}
+Json LoopIndex::toJson() const { return Json()._("nodeType", "loopIndex"); }
 
 } // namespace qat::ast

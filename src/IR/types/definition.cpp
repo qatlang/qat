@@ -32,8 +32,8 @@ TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 
 String DefinitionType::toString() const { return name; }
 
-nuo::Json DefinitionType::toJson() const {
-  return nuo::Json()._("type", "definition")._("subtype", subType->getID());
+Json DefinitionType::toJson() const {
+  return Json()._("type", "definition")._("subtype", subType->getID());
 }
 
 } // namespace qat::IR

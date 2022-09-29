@@ -224,8 +224,8 @@ IR::Value *Entity::emit(IR::Context *ctx) {
 
 void Entity::setCanBeChoice() { canBeChoice = true; }
 
-nuo::Json Entity::toJson() const {
-  return nuo::Json()
+Json Entity::toJson() const {
+  return Json()
       ._("nodeType", "entity")
       ._("name", name)
       ._("relative", relative)

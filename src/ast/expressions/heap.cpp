@@ -57,8 +57,8 @@ IR::Value *HeapGet::emit(IR::Context *ctx) {
       resTy, false, IR::Nature::temporary);
 }
 
-nuo::Json HeapGet::toJson() const {
-  return nuo::Json()
+Json HeapGet::toJson() const {
+  return Json()
       ._("nodeType", "heapGet")
       ._("type", type->toJson())
       ._("count", count->toJson())
@@ -101,8 +101,8 @@ IR::Value *HeapPut::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json HeapPut::toJson() const {
-  return nuo::Json()
+Json HeapPut::toJson() const {
+  return Json()
       ._("nodeType", "heapPut")
       ._("pointer", ptr->toJson())
       ._("fileRange", fileRange);
@@ -177,8 +177,8 @@ IR::Value *HeapGrow::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json HeapGrow::toJson() const {
-  return nuo::Json()
+Json HeapGrow::toJson() const {
+  return Json()
       ._("nodeType", "heapGrow")
       ._("type", type->toJson())
       ._("pointer", ptr->toJson())

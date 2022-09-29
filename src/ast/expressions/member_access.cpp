@@ -129,8 +129,8 @@ IR::Value *MemberAccess::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json MemberAccess::toJson() const {
-  return nuo::Json()
+Json MemberAccess::toJson() const {
+  return Json()
       ._("nodeType", "memberVariable")
       ._("instance", instance->toJson())
       ._("isPointerAccess", isPointer)

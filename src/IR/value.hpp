@@ -2,12 +2,12 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../backend/cpp.hpp"
+#include "../utils/json.hpp"
 #include "llvm_helper.hpp"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
-#include <nuo/json.hpp>
 
 namespace qat::IR {
 

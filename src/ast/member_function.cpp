@@ -129,18 +129,18 @@ void MemberPrototype::setCoreType(IR::CoreType *_coreType) const {
   coreType = _coreType;
 }
 
-nuo::Json MemberPrototype::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json MemberPrototype::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : arguments) {
     auto aJson =
-        nuo::Json()
+        Json()
             ._("name", arg->getName())
-            ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
+            ._("type", arg->getType() ? arg->getType()->toJson() : Json())
             ._("isMemberArg", arg->isTypeMember())
             ._("fileRange", arg->getFileRange());
     args.push_back(aJson);
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "memberPrototype")
       ._("isVariation", isVariationFn)
       ._("isStatic", isStatic)
@@ -217,12 +217,12 @@ void MemberDefinition::setCoreType(IR::CoreType *coreType) const {
   prototype->setCoreType(coreType);
 }
 
-nuo::Json MemberDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntcs;
+Json MemberDefinition::toJson() const {
+  Vec<JsonValue> sntcs;
   for (auto *sentence : sentences) {
     sntcs.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "memberDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)

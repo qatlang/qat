@@ -93,12 +93,11 @@ IR::Value *GiveSentence::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json GiveSentence::toJson() const {
-  return nuo::Json()
+Json GiveSentence::toJson() const {
+  return Json()
       ._("nodeType", "giveSentence")
       ._("hasValue", give_expr.has_value())
-      ._("value",
-         give_expr.has_value() ? give_expr.value()->toJson() : nuo::Json())
+      ._("value", give_expr.has_value() ? give_expr.value()->toJson() : Json())
       ._("fileRange", fileRange);
 }
 

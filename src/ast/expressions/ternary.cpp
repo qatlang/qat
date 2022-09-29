@@ -114,8 +114,8 @@ IR::Value *TernaryExpression::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json TernaryExpression::toJson() const {
-  return nuo::Json()
+Json TernaryExpression::toJson() const {
+  return Json()
       ._("nodeType", "ternaryExpression")
       ._("condition", condition->toJson())
       ._("trueCase", trueExpr->toJson())

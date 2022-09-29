@@ -1269,8 +1269,8 @@ fs::path QatModule::getResolvedOutputPath(const String &extension) const {
 
 void QatModule::exportJsonFromAST() const {
   if (moduleType == ModuleType::file) {
-    auto                result = nuo::Json();
-    Vec<nuo::JsonValue> contents;
+    auto           result = Json();
+    Vec<JsonValue> contents;
     for (auto *node : nodes) {
       contents.push_back(node->toJson());
     }
@@ -1370,9 +1370,9 @@ void QatModule::linkNative(NativeUnit nval) {
   }
 }
 
-nuo::Json QatModule::toJson() const {
+Json QatModule::toJson() const {
   // FIXME - Change
-  return nuo::Json()._("name", name);
+  return Json()._("name", name);
 }
 
 // NOLINTBEGIN(readability-magic-numbers)

@@ -31,8 +31,8 @@ public:
   void  defineType(IR::Context *ctx) final;
   void  define(IR::Context *ctx) final {}
   useit IR::Value *emit(IR::Context *ctx) final { return nullptr; }
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::defineChoiceType; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::defineChoiceType; }
 };
 
 } // namespace qat::ast

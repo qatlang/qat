@@ -11,7 +11,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) override = 0;
   useit NodeType   nodeType() const override       = 0;
-  useit nuo::Json toJson() const override          = 0;
+  useit Json       toJson() const override         = 0;
   ~Sentence() override                             = default;
 };
 

@@ -14,8 +14,8 @@ IR::QatType *PointerType::emit(IR::Context *ctx) {
 
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
-nuo::Json PointerType::toJson() const {
-  return nuo::Json()
+Json PointerType::toJson() const {
+  return Json()
       ._("typeKind", "pointer")
       ._("subType", type->toJson())
       ._("isVariable", isVariable())

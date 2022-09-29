@@ -27,8 +27,8 @@ u64 GlobalEntity::getStoreCount() const { return stores; }
 
 u64 GlobalEntity::getReferCount() const { return refers; }
 
-nuo::Json GlobalEntity::toJson() const {
-  return nuo::Json()
+Json GlobalEntity::toJson() const {
+  return Json()
       ._("name", name)
       ._("type", type->toJson())
       ._("isVariable", variable)

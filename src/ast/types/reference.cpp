@@ -17,8 +17,8 @@ IR::QatType *ReferenceType::emit(IR::Context *ctx) {
 
 TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
 
-nuo::Json ReferenceType::toJson() const {
-  return nuo::Json()
+Json ReferenceType::toJson() const {
+  return Json()
       ._("typeKind", "reference")
       ._("subType", type->toJson())
       ._("isVariable", isVariable())

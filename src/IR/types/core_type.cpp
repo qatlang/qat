@@ -365,8 +365,8 @@ TypeKind CoreType::typeKind() const { return TypeKind::core; }
 
 String CoreType::toString() const { return getFullName(); }
 
-nuo::Json CoreType::toJson() const {
-  return nuo::Json()._("id", getID())._("name", name);
+Json CoreType::toJson() const {
+  return Json()._("id", getID())._("name", name);
 }
 
 bool CoreType::isCopyExplicit() const { return explicitCopy; }

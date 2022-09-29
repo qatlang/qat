@@ -15,18 +15,18 @@ IR::Value *IndexAccess::emit(IR::Context *ctx) {
   auto *instType = inst->getType();
   auto *ind      = index->emit(ctx);
   auto *indType  = ind->getType();
-  if (!instType->isArray()) {
-    inst->loadImplicitPointer(ctx->builder);
-  }
-  ind->loadImplicitPointer(ctx->builder);
   if (inst->getType()->isReference()) {
     instType = instType->asReference()->getSubType();
   }
-  if (ind->getType()->isReference()) {
-    indType = indType->asReference()->getSubType();
-  }
   // TODO - Update when supporting operators for core types
   if (instType->isPointer() || instType->isArray() || instType->isTuple()) {
+    if (!instType->isArray()) {
+      inst->loadImplicitPointer(ctx->builder);
+    }
+    ind->loadImplicitPointer(ctx->builder);
+    if (ind->getType()->isReference()) {
+      indType = indType->asReference()->getSubType();
+    }
     if (ind->getType()->isUnsignedInteger() || ind->getType()->isInteger() ||
         (ind->getType()->isReference() &&
          (ind->getType()->asReference()->getSubType()->isUnsignedInteger() ||
@@ -55,7 +55,7 @@ IR::Value *IndexAccess::emit(IR::Context *ctx) {
           idxs.push_back(ind->getLLVM());
           return new IR::Value(
               ctx->builder.CreateInBoundsGEP(
-                  inst->getType()->getLLVMType()->getPointerElementType(),
+                  instType->asPointer()->getSubType()->getLLVMType(),
                   inst->getLLVM(), idxs),
               IR::ReferenceType::get(inst->isVariable(),
                                      instType->asPointer()->getSubType(),
@@ -132,14 +132,77 @@ IR::Value *IndexAccess::emit(IR::Context *ctx) {
                      ". It should be a signed or an unsigned integer",
                  index->fileRange);
     }
+  } else if (instType->isStringSlice()) {
+    ind->loadImplicitPointer(ctx->builder);
+    if (!ind->getType()->isInteger() && !ind->getType()->isUnsignedInteger()) {
+      ctx->Error("Invalid type for the index of string slice", fileRange);
+    }
+    // FIXME - POSSIBLY THROW ERROR AT RUNTIME IF BOUNDS ARE EXCEEDED
+    if (inst->isImplicitPointer() || inst->isReference()) {
+      auto *zero64 =
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u);
+      auto *strData = ctx->builder.CreateStructGEP(
+          IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(),
+          0);
+      SHOW("Got string data")
+      SHOW("Got first element")
+      return new IR::Value(
+          ctx->builder.CreateInBoundsGEP(
+              llvm::Type::getInt8Ty(ctx->llctx),
+              ctx->builder.CreateLoad(
+                  llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(), strData),
+              Vec<llvm::Value *>({ind->getLLVM()})),
+          IR::ReferenceType::get(
+              inst->isReference()
+                  ? inst->getType()->asReference()->isSubtypeVariable()
+                  : inst->isVariable(),
+              IR::UnsignedType::get(8, ctx->llctx), ctx->llctx),
+          false, IR::Nature::temporary);
+    } else {
+      ctx->Error(
+          "Invalid value for string slice and hence string cannot be indexed",
+          fileRange);
+    }
+  } else if (instType->isCoreType()) {
+    auto               *cTy     = instType->asCore();
+    IR::MemberFunction *opFn    = nullptr;
+    IR::Value          *operand = nullptr;
+    if (cTy->hasBinaryOperator("[]", indType)) {
+      opFn    = cTy->getBinaryOperator("[]", indType);
+      operand = ind;
+    } else if (indType->isReference() &&
+               cTy->hasBinaryOperator("[]",
+                                      indType->asReference()->getSubType())) {
+      opFn = cTy->getBinaryOperator("[]", indType->asReference()->getSubType());
+      operand =
+          new IR::Value(ind->getLLVM(), indType->asReference()->getSubType(),
+                        false, IR::Nature::temporary);
+    } else if (cTy->hasBinaryOperator(
+                   "[]", IR::ReferenceType::get(true, indType, ctx->llctx))) {
+      if (ind->isImplicitPointer()) {
+        if (!ind->isVariable()) {
+          ctx->Error("The [] operator of core type " +
+                         ctx->highlightError(cTy->getFullName()) +
+                         " expects a variable reference, but the provided "
+                         "expression is not a variable",
+                     index->fileRange);
+        }
+        // FIXME
+      } else {
+      }
+    }
+    if (!inst->isImplicitPointer() && !inst->isReference()) {
+      inst = inst->createAlloca(ctx->builder);
+    }
+
   } else {
     ctx->Error("The expression cannot be used for index access",
                instance->fileRange);
   }
 }
 
-nuo::Json IndexAccess::toJson() const {
-  return nuo::Json()
+Json IndexAccess::toJson() const {
+  return Json()
       ._("nodeType", "memberIndexAccess")
       ._("instance", instance->toJson())
       ._("index", index->toJson())

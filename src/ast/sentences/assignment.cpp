@@ -112,8 +112,8 @@ IR::Value *Assignment::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json Assignment::toJson() const {
-  return nuo::Json()
+Json Assignment::toJson() const {
+  return Json()
       ._("nodeType", "assignment")
       ._("lhs", lhs->toJson())
       ._("rhs", value->toJson())

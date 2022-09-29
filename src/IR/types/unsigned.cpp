@@ -28,10 +28,8 @@ TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
 String UnsignedType::toString() const { return "u" + std::to_string(bitWidth); }
 
-nuo::Json UnsignedType::toJson() const {
-  return nuo::Json()
-      ._("type", "unsigned")
-      ._("bitWidth", std::to_string(bitWidth));
+Json UnsignedType::toJson() const {
+  return Json()._("type", "unsigned")._("bitWidth", std::to_string(bitWidth));
 }
 
 } // namespace qat::IR

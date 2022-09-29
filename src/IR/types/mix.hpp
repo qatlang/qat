@@ -42,8 +42,8 @@ public:
   useit String                       toString() const final;
   useit TypeKind                     typeKind() const final;
   // FIXME - Maybe remove this
-  useit nuo::Json toJson() const final { return nuo::Json()._("name", name); }
-  void getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
+  useit Json toJson() const final { return Json()._("name", name); }
+  void       getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
 };
 
 } // namespace qat::IR

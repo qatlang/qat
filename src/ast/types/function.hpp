@@ -25,7 +25,7 @@ public:
 
   QatType *getType();
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 };
 
 class FunctionType : public QatType {
@@ -42,7 +42,7 @@ public:
 
   TypeKind typeKind() const;
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 
   String toString() const;
 };

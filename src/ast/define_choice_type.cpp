@@ -170,20 +170,20 @@ void DefineChoiceType::defineType(IR::Context *ctx) {
   }
 }
 
-nuo::Json DefineChoiceType::toJson() const {
-  Vec<nuo::JsonValue> fieldsJson;
+Json DefineChoiceType::toJson() const {
+  Vec<JsonValue> fieldsJson;
   for (const auto &field : fields) {
     fieldsJson.push_back(
-        nuo::Json()
+        Json()
             ._("name", field.first.name)
             ._("nameRange", field.first.range)
             ._("hasValue", field.second.has_value())
             ._("value",
-               field.second.has_value() ? field.second->data : nuo::JsonValue())
-            ._("valueRange", field.second.has_value() ? field.second->range
-                                                      : nuo::JsonValue()));
+               field.second.has_value() ? field.second->data : JsonValue())
+            ._("valueRange",
+               field.second.has_value() ? field.second->range : JsonValue()));
   }
-  return nuo::Json()
+  return Json()
       ._("name", name)
       ._("fields", fieldsJson)
       ._("visibility", utils::kindToJsonValue(visibility))

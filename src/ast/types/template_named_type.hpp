@@ -17,9 +17,9 @@ public:
                     bool isVariable, utils::FileRange _fileRange);
 
   useit IR::QatType *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit String    toString() const final;
-  useit TypeKind  typeKind() const final { return TypeKind::templateNamed; }
+  useit Json         toJson() const final;
+  useit String       toString() const final;
+  useit TypeKind     typeKind() const final { return TypeKind::templateNamed; }
 };
 
 } // namespace qat::ast

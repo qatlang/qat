@@ -14,8 +14,8 @@ IR::Value *SizeOfType::emit(IR::Context *ctx) {
       IR::Nature::pure);
 }
 
-nuo::Json SizeOfType::toJson() const {
-  return nuo::Json()
+Json SizeOfType::toJson() const {
+  return Json()
       ._("nodeType", "sizeOfType")
       ._("type", type->toJson())
       ._("fileRange", fileRange);

@@ -29,12 +29,12 @@ IR::Value *BringPaths::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json BringPaths::toJson() const {
-  Vec<nuo::JsonValue> pths;
+Json BringPaths::toJson() const {
+  Vec<JsonValue> pths;
   for (auto *path : paths) {
     pths.push_back(path->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "bringPaths")
       ._("paths", std::move(pths))
       ._("visibility", visibility)

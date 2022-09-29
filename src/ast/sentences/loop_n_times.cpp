@@ -128,12 +128,12 @@ IR::Value *LoopNTimes::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json LoopNTimes::toJson() const {
-  Vec<nuo::JsonValue> snts;
+Json LoopNTimes::toJson() const {
+  Vec<JsonValue> snts;
   for (auto *snt : sentences) {
     snts.push_back(snt->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "loopTimes")
       ._("count", count->toJson())
       ._("sentences", snts)

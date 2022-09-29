@@ -24,7 +24,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::constructorCall; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

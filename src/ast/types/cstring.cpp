@@ -14,8 +14,8 @@ IR::QatType *CStringType::emit(IR::Context *ctx) {
 
 TypeKind CStringType::typeKind() const { return TypeKind::cstring; }
 
-nuo::Json CStringType::toJson() const {
-  return nuo::Json()
+Json CStringType::toJson() const {
+  return Json()
       ._("typeKind", "cstring")
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);

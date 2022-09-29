@@ -24,7 +24,7 @@ public:
 
   TypeKind typeKind() const;
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 
   String toString() const;
 };

@@ -66,8 +66,8 @@ void ConvertorPrototype::define(IR::Context *ctx) {
 
 IR::Value *ConvertorPrototype::emit(IR::Context *ctx) { return memberFn; }
 
-nuo::Json ConvertorPrototype::toJson() const {
-  return nuo::Json()
+Json ConvertorPrototype::toJson() const {
+  return Json()
       ._("nodeType", "convertorPrototype")
       ._("isFrom", isFrom)
       ._("argumentName", argName)
@@ -130,12 +130,12 @@ void ConvertorDefinition::setCoreType(IR::CoreType *coreType) const {
   prototype->setCoreType(coreType);
 }
 
-nuo::Json ConvertorDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntcs;
+Json ConvertorDefinition::toJson() const {
+  Vec<JsonValue> sntcs;
   for (auto *sentence : sentences) {
     sntcs.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "functionDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)

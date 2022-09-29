@@ -35,8 +35,8 @@ IR::Value *Move::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Move::toJson() const {
-  return nuo::Json()
+Json Move::toJson() const {
+  return Json()
       ._("nodeType", "move")
       ._("expression", exp->toJson())
       ._("fileRange", fileRange);

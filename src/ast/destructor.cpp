@@ -49,12 +49,12 @@ IR::Value *DestructorDefinition::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json DestructorDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntsJson;
+Json DestructorDefinition::toJson() const {
+  Vec<JsonValue> sntsJson;
   for (auto *snt : sentences) {
     sntsJson.push_back(snt->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "destructorDefinition")
       ._("sentences", sntsJson)
       ._("fileRange", fileRange);

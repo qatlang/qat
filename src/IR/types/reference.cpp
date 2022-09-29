@@ -33,8 +33,8 @@ String ReferenceType::toString() const {
   return "@" + String(isSubVariable ? " var " : "") + subType->toString();
 }
 
-nuo::Json ReferenceType::toJson() const {
-  return nuo::Json()
+Json ReferenceType::toJson() const {
+  return Json()
       ._("type", "reference")
       ._("subType", subType->getID())
       ._("isSubtypeVariable", isSubVariable);

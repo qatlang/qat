@@ -21,8 +21,8 @@ public:
   Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::block; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::block; }
 };
 
 } // namespace qat::ast

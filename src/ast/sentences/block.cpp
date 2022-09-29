@@ -9,12 +9,12 @@ IR::Value *Block::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-nuo::Json Block::toJson() const {
-  Vec<nuo::JsonValue> snts;
+Json Block::toJson() const {
+  Vec<JsonValue> snts;
   for (auto sentence : sentences) {
     snts.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "block")
       ._("sentences", snts)
       ._("fileRange", fileRange);

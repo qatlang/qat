@@ -20,6 +20,6 @@ TypeKind VoidType::typeKind() const { return TypeKind::Void; }
 
 String VoidType::toString() const { return "void"; }
 
-nuo::Json VoidType::toJson() const { return nuo::Json()._("typeKind", "void"); }
+Json VoidType::toJson() const { return Json()._("typeKind", "void"); }
 
 } // namespace qat::IR

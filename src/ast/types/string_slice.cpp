@@ -14,8 +14,8 @@ IR::QatType *StringSliceType::emit(IR::Context *ctx) {
 
 TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }
 
-nuo::Json StringSliceType::toJson() const {
-  return nuo::Json()
+Json StringSliceType::toJson() const {
+  return Json()
       ._("typeKind", "stringSlice")
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);

@@ -2,9 +2,9 @@
 #define QAT_UTILS_VISIBILITY_HPP
 
 #include "./helpers.hpp"
+#include "./json.hpp"
 #include "./macros.hpp"
 #include <map>
-#include <nuo/json.hpp>
 
 namespace qat::utils {
 
@@ -35,7 +35,7 @@ enum class VisibilityKind {
   parent
 };
 
-nuo::JsonValue kindToJsonValue(VisibilityKind kind);
+JsonValue kindToJsonValue(VisibilityKind kind);
 
 class RequesterInfo;
 
@@ -78,8 +78,8 @@ public:
   useit bool isAccessible(const RequesterInfo &reqInfo) const;
 
   useit bool operator==(const VisibilityInfo &other) const;
-             operator nuo::Json() const;
-             operator nuo::JsonValue() const;
+             operator Json() const;
+             operator JsonValue() const;
 };
 
 // Information about the entity requesting access

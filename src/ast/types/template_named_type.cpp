@@ -95,12 +95,12 @@ IR::QatType *TemplateNamedType::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json TemplateNamedType::toJson() const {
-  Vec<nuo::JsonValue> typs;
+Json TemplateNamedType::toJson() const {
+  Vec<JsonValue> typs;
   for (auto *typ : templateTypes) {
     typs.push_back(typ->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("typeKind", "templateNamed")
       ._("name", name)
       ._("types", typs)

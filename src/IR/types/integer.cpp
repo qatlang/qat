@@ -1,7 +1,7 @@
 #include "./integer.hpp"
+#include "../../utils/json.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
-#include <nuo/json.hpp>
 
 namespace qat::IR {
 
@@ -29,10 +29,8 @@ u64 IntegerType::getBitwidth() const { return bitWidth; }
 
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
 
-nuo::Json IntegerType::toJson() const {
-  return nuo::Json()
-      ._("type", "integer")
-      ._("bitWidth", std::to_string(bitWidth));
+Json IntegerType::toJson() const {
+  return Json()._("type", "integer")._("bitWidth", std::to_string(bitWidth));
 }
 
 } // namespace qat::IR

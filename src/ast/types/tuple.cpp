@@ -22,12 +22,12 @@ IR::QatType *TupleType::emit(IR::Context *ctx) {
 
 TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 
-nuo::Json TupleType::toJson() const {
-  Vec<nuo::JsonValue> mems;
+Json TupleType::toJson() const {
+  Vec<JsonValue> mems;
   for (auto *mem : types) {
     mems.push_back(mem->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("typeKind", "tuple")
       ._("members", mems)
       ._("isVariable", isVariable())

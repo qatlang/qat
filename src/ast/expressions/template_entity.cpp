@@ -95,12 +95,12 @@ IR::Value *TemplateEntity::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json TemplateEntity::toJson() const {
-  Vec<nuo::JsonValue> typs;
+Json TemplateEntity::toJson() const {
+  Vec<JsonValue> typs;
   for (auto *typ : templateTypes) {
     typs.push_back(typ->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "templateEntity")
       ._("name", name)
       ._("types", typs)

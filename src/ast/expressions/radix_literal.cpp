@@ -27,8 +27,8 @@ IR::Value *RadixLiteral::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-nuo::Json RadixLiteral::toJson() const {
-  return nuo::Json()
+Json RadixLiteral::toJson() const {
+  return Json()
       ._("nodeType", "radixLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

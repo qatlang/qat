@@ -264,9 +264,9 @@ MemberFnType MemberFunction::getMemberFnType() { return fnType; }
 
 void MemberFunction::emitCPP(cpp::File &file) const {}
 
-nuo::Json MemberFunction::toJson() const {
+Json MemberFunction::toJson() const {
   // TODO - Implement remaining
-  return nuo::Json()._("coreType", parent->getID());
+  return Json()._("coreType", parent->getID());
 }
 
 } // namespace qat::IR

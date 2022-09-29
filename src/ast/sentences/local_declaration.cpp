@@ -261,13 +261,13 @@ LocalDeclaration::LocalDeclaration(QatType *_type, bool _isRef, String _name,
   return nullptr;
 }
 
-nuo::Json LocalDeclaration::toJson() const {
-  return nuo::Json()
+Json LocalDeclaration::toJson() const {
+  return Json()
       ._("nodeType", "localDeclaration")
       ._("name", name)
       ._("isVariable", variability)
       ._("hasType", (type != nullptr))
-      ._("type", (type != nullptr) ? type->toJson() : nuo::Json())
+      ._("type", (type != nullptr) ? type->toJson() : Json())
       ._("value", value->toJson())
       ._("fileRange", fileRange);
 }

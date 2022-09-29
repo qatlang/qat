@@ -21,7 +21,7 @@ public:
   useit ExpressionMatchValue    *asExp();
   useit virtual utils::FileRange getMainRange() const = 0;
   useit virtual MatchType        getType() const      = 0;
-  useit virtual nuo::Json        toJson() const       = 0;
+  useit virtual Json             toJson() const       = 0;
 };
 
 class MixMatchValue : public MatchValue {
@@ -42,7 +42,7 @@ public:
   useit bool             isVariable() const;
   useit MatchType        getType() const final { return MatchType::mix; }
   useit utils::FileRange getMainRange() const final { return name.second; }
-  useit nuo::Json toJson() const final;
+  useit Json             toJson() const final;
 };
 
 class ChoiceMatchValue : public MatchValue {
@@ -57,7 +57,7 @@ public:
   useit utils::FileRange getFileRange() const;
   useit MatchType        getType() const final { return MatchType::choice; }
   useit utils::FileRange getMainRange() const final { return range; }
-  useit nuo::Json toJson() const final;
+  useit Json             toJson() const final;
 };
 
 class ExpressionMatchValue : public MatchValue {
@@ -70,7 +70,7 @@ public:
   useit Expression *getExpression() const;
   useit MatchType   getType() const final { return MatchType::Exp; }
   useit utils::FileRange getMainRange() const final { return exp->fileRange; }
-  useit nuo::Json toJson() const final;
+  useit Json             toJson() const final;
 };
 
 class Match : public Sentence {
@@ -87,7 +87,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::match; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

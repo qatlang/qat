@@ -47,12 +47,12 @@ IR::Value *LoopInfinite::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json LoopInfinite::toJson() const {
-  Vec<nuo::JsonValue> snts;
+Json LoopInfinite::toJson() const {
+  Vec<JsonValue> snts;
   for (auto *snt : sentences) {
     snts.push_back(snt->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "loopNormal")
       ._("sentences", snts)
       ._("hasTag", tag.has_value())

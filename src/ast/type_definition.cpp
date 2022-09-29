@@ -112,8 +112,8 @@ void TypeDefinition::defineType(IR::Context *ctx) {
   }
 }
 
-nuo::Json TypeDefinition::toJson() const {
-  return nuo::Json()
+Json TypeDefinition::toJson() const {
+  return Json()
       ._("nodeType", "typeDefinition")
       ._("name", name)
       ._("subType", subType->toJson())

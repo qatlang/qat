@@ -41,8 +41,8 @@ IR::Value *Break::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json Break::toJson() const {
-  return nuo::Json()._("hasTag", tag.has_value())._("tag", tag.value_or(""));
+Json Break::toJson() const {
+  return Json()._("hasTag", tag.has_value())._("tag", tag.value_or(""));
 }
 
 } // namespace qat::ast

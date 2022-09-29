@@ -155,17 +155,17 @@ IR::Value *FunctionPrototype::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json FunctionPrototype::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json FunctionPrototype::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : arguments) {
     auto aJson =
-        nuo::Json()
+        Json()
             ._("name", arg->getName())
-            ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
+            ._("type", arg->getType() ? arg->getType()->toJson() : Json())
             ._("fileRange", arg->getFileRange());
     args.push_back(aJson);
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "functionPrototype")
       ._("name", name)
       ._("isAsync", isAsync)
@@ -225,12 +225,12 @@ IR::Value *FunctionDefinition::emit(IR::Context *ctx) {
   return fnEmit;
 }
 
-nuo::Json FunctionDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntcs;
+Json FunctionDefinition::toJson() const {
+  Vec<JsonValue> sntcs;
   for (auto *sentence : sentences) {
     sntcs.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "functionDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)

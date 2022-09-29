@@ -107,9 +107,9 @@ public:
   useit MemberFunction *getDestructor() const;
   useit utils::VisibilityInfo getVisibility() const;
   useit QatModule            *getParent();
-  useit nuo::Json toJson() const override;
-  useit TypeKind  typeKind() const override;
-  useit String    toString() const override;
+  useit Json                  toJson() const override;
+  useit TypeKind              typeKind() const override;
+  useit String                toString() const override;
   void addStaticMember(const String &name, QatType *type, bool variability,
                        Value *initial, const utils::VisibilityInfo &visibility,
                        llvm::LLVMContext &ctx);

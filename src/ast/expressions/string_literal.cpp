@@ -27,8 +27,8 @@ IR::Value *StringLiteral::emit(IR::Context *ctx) {
       IR::StringSliceType::get(ctx->llctx), false, IR::Nature::pure);
 }
 
-nuo::Json StringLiteral::toJson() const {
-  return nuo::Json()
+Json StringLiteral::toJson() const {
+  return Json()
       ._("nodeType", "stringLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

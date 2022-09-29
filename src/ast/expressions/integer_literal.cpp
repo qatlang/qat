@@ -16,8 +16,8 @@ IR::Value *IntegerLiteral::emit(IR::Context *ctx) {
   // NOLINTEND(readability-magic-numbers)
 }
 
-nuo::Json IntegerLiteral::toJson() const {
-  return nuo::Json()
+Json IntegerLiteral::toJson() const {
+  return Json()
       ._("nodeType", "integerLiteral")
       ._("value", value)
       ._("fileRange", fileRange);

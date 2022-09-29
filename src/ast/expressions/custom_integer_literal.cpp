@@ -1,5 +1,5 @@
 #include "./custom_integer_literal.hpp"
-#include <nuo/json.hpp>
+#include "../../utils/json.hpp"
 
 namespace qat::ast {
 
@@ -23,8 +23,8 @@ IR::Value *CustomIntegerLiteral::emit(IR::Context *ctx) {
   // NOLINTEND(readability-magic-numbers)
 }
 
-nuo::Json CustomIntegerLiteral::toJson() const {
-  return nuo::Json()
+Json CustomIntegerLiteral::toJson() const {
+  return Json()
       ._("nodeType", "customIntegerLiteral")
       ._("isUnsigned", isUnsigned)
       ._("bitWidth", (unsigned long long)bitWidth)

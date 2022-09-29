@@ -113,8 +113,8 @@ public:
   useit String       getFullName() const final;
   useit bool         isMemberFunction() const final;
   useit CoreType    *getParentType();
-  useit nuo::Json toJson() const;
-  void            emitCPP(cpp::File &file) const;
+  useit Json         toJson() const;
+  void               emitCPP(cpp::File &file) const;
 };
 
 } // namespace qat::IR

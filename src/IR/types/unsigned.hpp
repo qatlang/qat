@@ -18,7 +18,7 @@ public:
   useit u64                  getBitwidth() const;
   useit bool                 isBitWidth(u64 width) const;
   useit String               toString() const override;
-  useit nuo::Json toJson() const override;
+  useit Json                 toJson() const override;
 };
 
 } // namespace qat::IR

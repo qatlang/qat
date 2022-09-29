@@ -121,8 +121,8 @@ IR::Value *ToConversion::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json ToConversion::toJson() const {
-  return nuo::Json()
+Json ToConversion::toJson() const {
+  return Json()
       ._("nodeType", "toConversion")
       ._("instance", source->toJson())
       ._("targetType", destinationType->toJson())

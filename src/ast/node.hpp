@@ -20,8 +20,8 @@
 #include "../backend/cpp.hpp"
 #include "../show.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/json.hpp"
 #include "./node_type.hpp"
-#include "nuo/json.hpp"
 
 namespace qat::ast {
 
@@ -47,7 +47,7 @@ public:
   virtual void             defineType(IR::Context *ctx) {}
   virtual void             define(IR::Context *ctx) {}
   useit virtual IR::Value *emit(IR::Context *ctx) = 0;
-  useit virtual nuo::Json  toJson() const         = 0;
+  useit virtual Json       toJson() const         = 0;
   useit virtual NodeType   nodeType() const       = 0;
   static void              clearAll();
 };
@@ -61,8 +61,8 @@ public:
 
   // NOLINTNEXTLINE(misc-unused-parameters)
   useit IR::Value *emit(IR::Context *ctx) final { return nullptr; }
-  useit nuo::Json toJson() const final { return node->toJson(); }
-  useit NodeType  nodeType() const final { return NodeType::holder; }
+  useit Json       toJson() const final { return node->toJson(); }
+  useit NodeType   nodeType() const final { return NodeType::holder; }
 };
 
 } // namespace qat::ast

@@ -51,7 +51,7 @@ public:
   useit u64                 getArgumentCount() const;
   useit TypeKind typeKind() const override { return TypeKind::function; }
   useit String   toString() const override;
-  useit nuo::Json toJson() const override;
+  useit Json     toJson() const override;
 };
 
 } // namespace qat::IR

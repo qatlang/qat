@@ -15,7 +15,7 @@ public:
 
   IR::Value *emit(IR::Context *ctx);
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 
   NodeType nodeType() const { return NodeType::tupleValue; }
 };

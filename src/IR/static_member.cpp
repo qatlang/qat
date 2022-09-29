@@ -32,7 +32,7 @@ u64 StaticMember::getStoreCount() const { return stores; }
 
 u64 StaticMember::getReferCount() const { return refers; }
 
-nuo::Json StaticMember::toJson() const {
+Json StaticMember::toJson() const {
   // TODO - Implement
 }
 

@@ -29,8 +29,6 @@ TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }
 
 String StringSliceType::toString() const { return "str"; }
 
-nuo::Json StringSliceType::toJson() const {
-  return nuo::Json()._("type", "str");
-}
+Json StringSliceType::toJson() const { return Json()._("type", "str"); }
 
 } // namespace qat::IR

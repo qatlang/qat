@@ -107,8 +107,8 @@ u32 NamedType::getRelative() const { return relative; }
 
 TypeKind NamedType::typeKind() const { return TypeKind::Float; }
 
-nuo::Json NamedType::toJson() const {
-  return nuo::Json()
+Json NamedType::toJson() const {
+  return Json()
       ._("typeKind", "named")
       ._("name", name)
       ._("isVariable", isVariable())

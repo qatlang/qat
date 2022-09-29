@@ -35,8 +35,8 @@ String ArrayType::toString() const {
   return element_type->toString() + "[" + std::to_string(length) + "]";
 }
 
-nuo::Json ArrayType::toJson() const {
-  return nuo::Json()
+Json ArrayType::toJson() const {
+  return Json()
       ._("type", "array")
       ._("subtype", element_type->getID())
       ._("length", std::to_string(length));

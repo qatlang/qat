@@ -2,13 +2,13 @@
 #define QAT_IR_TYPES_QAT_TYPE_HPP
 
 #include "../../backend/cpp.hpp"
+#include "../../utils/json.hpp"
 #include "../../utils/macros.hpp"
 #include "../llvm_helper.hpp"
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
-#include <nuo/json.hpp>
 #include <string>
 #include <vector>
 
@@ -39,40 +39,40 @@ public:
   QatType();
   virtual ~QatType() = default;
 
-  useit static bool       checkTypeExists(const String &name);
-  useit bool              isSame(QatType *other);
-  useit bool              isDefinition() const;
-  useit DefinitionType   *asDefinition() const;
-  useit bool              isInteger() const;
-  useit IntegerType      *asInteger() const;
-  useit bool              isUnsignedInteger() const;
-  useit UnsignedType     *asUnsignedInteger() const;
-  useit bool              isFloat() const;
-  useit FloatType        *asFloat() const;
-  useit bool              isReference() const;
-  useit ReferenceType    *asReference() const;
-  useit bool              isPointer() const;
-  useit PointerType      *asPointer() const;
-  useit bool              isArray() const;
-  useit ArrayType        *asArray() const;
-  useit bool              isTuple() const;
-  useit TupleType        *asTuple() const;
-  useit bool              isFunction() const;
-  useit FunctionType     *asFunction() const;
-  useit bool              isCoreType() const;
-  useit CoreType         *asCore() const;
-  useit bool              isMix() const;
-  useit MixType          *asMix() const;
-  useit bool              isChoice() const;
-  useit ChoiceType       *asChoice() const;
-  useit bool              isStringSlice() const;
-  useit StringSliceType  *asStringSlice() const;
-  useit bool              isCString() const;
-  useit CStringType      *asCString() const;
-  useit bool              isVoid() const;
-  useit virtual TypeKind  typeKind() const = 0;
-  useit virtual String    toString() const = 0;
-  useit virtual nuo::Json toJson() const   = 0;
+  useit static bool      checkTypeExists(const String &name);
+  useit bool             isSame(QatType *other);
+  useit bool             isDefinition() const;
+  useit DefinitionType  *asDefinition() const;
+  useit bool             isInteger() const;
+  useit IntegerType     *asInteger() const;
+  useit bool             isUnsignedInteger() const;
+  useit UnsignedType    *asUnsignedInteger() const;
+  useit bool             isFloat() const;
+  useit FloatType       *asFloat() const;
+  useit bool             isReference() const;
+  useit ReferenceType   *asReference() const;
+  useit bool             isPointer() const;
+  useit PointerType     *asPointer() const;
+  useit bool             isArray() const;
+  useit ArrayType       *asArray() const;
+  useit bool             isTuple() const;
+  useit TupleType       *asTuple() const;
+  useit bool             isFunction() const;
+  useit FunctionType    *asFunction() const;
+  useit bool             isCoreType() const;
+  useit CoreType        *asCore() const;
+  useit bool             isMix() const;
+  useit MixType         *asMix() const;
+  useit bool             isChoice() const;
+  useit ChoiceType      *asChoice() const;
+  useit bool             isStringSlice() const;
+  useit StringSliceType *asStringSlice() const;
+  useit bool             isCString() const;
+  useit CStringType     *asCString() const;
+  useit bool             isVoid() const;
+  useit virtual TypeKind typeKind() const = 0;
+  useit virtual String   toString() const = 0;
+  useit virtual Json     toJson() const   = 0;
   useit llvm::Type *getLLVMType() const { return llvmType; }
 };
 

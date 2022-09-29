@@ -23,7 +23,7 @@ public:
   useit String getParent() const;
   useit Vec<String> getMembers() const;
   useit bool        isAllBrought() const;
-  useit nuo::Json toJson() const;
+  useit Json        toJson() const;
 };
 
 class BringEntities : public Node {
@@ -37,8 +37,8 @@ public:
                 utils::FileRange             _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::bringEntities; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::bringEntities; }
 };
 
 } // namespace qat::ast

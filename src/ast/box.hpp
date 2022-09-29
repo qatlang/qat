@@ -24,8 +24,8 @@ public:
 
   void  createModule(IR::Context *ctx) const final;
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::box; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::box; }
 };
 
 } // namespace qat::ast

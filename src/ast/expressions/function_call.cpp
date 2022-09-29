@@ -66,12 +66,12 @@ IR::Value *FunctionCall::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json FunctionCall::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json FunctionCall::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : values) {
     args.emplace_back(arg->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "functionCall")
       ._("function", fnExpr->toJson())
       ._("arguments", args)

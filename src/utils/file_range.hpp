@@ -1,17 +1,15 @@
 #ifndef QAT_UTILS_FILE_PLACEMENT_HPP
 #define QAT_UTILS_FILE_PLACEMENT_HPP
 
+#include "./json.hpp"
 #include <cstdint>
 #include <filesystem>
-#include <nuo/json.hpp>
-
-namespace fs = std::filesystem;
 
 namespace qat::utils {
 
 // Position indicates a line and character number in a file
 struct FilePos {
-  FilePos(nuo::Json);
+  FilePos(Json);
 
   FilePos(uint64_t line, uint64_t character);
 
@@ -20,9 +18,9 @@ struct FilePos {
   // Number of the character of this position. This will never be negative
   uint64_t character;
 
-  operator nuo::JsonValue() const;
+  operator JsonValue() const;
 
-  operator nuo::Json() const;
+  operator Json() const;
 };
 
 /** FileRange represents a particular range in a file */
@@ -37,7 +35,7 @@ public:
    */
   FileRange(fs::path _file, FilePos _start, FilePos _end);
 
-  FileRange(nuo::Json json);
+  FileRange(Json json);
 
   /**
    *  FileRange represents a partivular range in a file
@@ -64,9 +62,9 @@ public:
   /** Ending position of the range */
   FilePos end;
 
-  operator nuo::Json() const;
+  operator Json() const;
 
-  operator nuo::JsonValue() const;
+  operator JsonValue() const;
 };
 
 } // namespace qat::utils

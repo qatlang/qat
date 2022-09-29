@@ -9,4 +9,6 @@ add_library(QAT_UTILS
         string_to_callingconv.cpp
         unique_id.cpp
         version_number.cpp
-        visibility.cpp)
+        visibility.cpp
+        json_parser.cpp
+        json.cpp)

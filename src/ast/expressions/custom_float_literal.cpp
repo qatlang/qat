@@ -59,8 +59,8 @@ IR::Value *CustomFloatLiteral::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json CustomFloatLiteral::toJson() const {
-  return nuo::Json()
+Json CustomFloatLiteral::toJson() const {
+  return Json()
       ._("nodeType", "customFloatLiteral")
       ._("nature", kind)
       ._("value", value)

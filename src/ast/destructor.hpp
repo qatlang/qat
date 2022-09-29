@@ -25,8 +25,8 @@ public:
 
   void  define(IR::Context *ctx) final;
   useit IR::Value *emit(IR::Context *ctx) final;
-  useit nuo::Json toJson() const final;
-  useit NodeType  nodeType() const final { return NodeType::memberDefinition; }
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::memberDefinition; }
 };
 
 } // namespace qat::ast

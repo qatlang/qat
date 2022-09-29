@@ -18,12 +18,12 @@ Vec<String> BroughtGroup::getMembers() const { return members; }
 
 bool BroughtGroup::isAllBrought() const { return members.empty(); }
 
-nuo::Json BroughtGroup::toJson() const {
-  Vec<nuo::JsonValue> membersJson;
+Json BroughtGroup::toJson() const {
+  Vec<JsonValue> membersJson;
   for (auto const &mem : members) {
     membersJson.emplace_back(mem);
   }
-  return nuo::Json()
+  return Json()
       ._("parent", parent)
       ._("members", membersJson)
       ._("fileRange", fileRange);
@@ -40,12 +40,12 @@ IR::Value *BringEntities::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json BringEntities::toJson() const {
-  Vec<nuo::JsonValue> entitiesJson;
+Json BringEntities::toJson() const {
+  Vec<JsonValue> entitiesJson;
   for (auto *ent : entities) {
     entitiesJson.emplace_back(ent->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "bringEntities")
       ._("entities", entitiesJson)
       ._("visibility", visibility)

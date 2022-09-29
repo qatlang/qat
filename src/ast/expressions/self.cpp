@@ -29,8 +29,8 @@ IR::Value *Self::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json Self::toJson() const {
-  return nuo::Json()._("nodeType", "self")._("fileRange", fileRange);
+Json Self::toJson() const {
+  return Json()._("nodeType", "self")._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

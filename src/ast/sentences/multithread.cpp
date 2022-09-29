@@ -26,15 +26,15 @@ IR::Value *Multithread::emit(IR::Context *ctx) {
   // TODO - Implement this
 }
 
-nuo::Json Multithread::toJson() const {
-  return nuo::Json()
+Json Multithread::toJson() const {
+  return Json()
       ._("nodeType", "multithread")
       ._("count", count->toJson())
       ._("hasCollect", name.has_value())
-      ._("collect", nuo::Json()
-                        ._("name", name.value_or(""))
-                        ._("type", type.has_value() ? type.value()->toJson()
-                                                    : nuo::Json()))
+      ._("collect",
+         Json()
+             ._("name", name.value_or(""))
+             ._("type", type.has_value() ? type.value()->toJson() : Json()))
       ._("mainBlock", block->toJson())
       ._("afterBlock", after->toJson())
       ._("fileRange", fileRange);

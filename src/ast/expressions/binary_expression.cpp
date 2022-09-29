@@ -591,8 +591,8 @@ IR::Value *BinaryExpression::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json BinaryExpression::toJson() const {
-  return nuo::Json()
+Json BinaryExpression::toJson() const {
+  return Json()
       ._("nodeType", "binaryExpression")
       ._("operator", OpToString(op))
       ._("lhs", lhs->toJson())

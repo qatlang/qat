@@ -152,8 +152,8 @@ IR::Value *PlainInitialiser::emit(IR::Context *ctx) {
   return nullptr;
 }
 
-nuo::Json PlainInitialiser::toJson() const {
-  return nuo::Json()
+Json PlainInitialiser::toJson() const {
+  return Json()
       ._("nodeType", "plainInitialiser")
       ._("type", type->toJson())
       ._("fileRange", fileRange);

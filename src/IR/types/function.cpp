@@ -70,12 +70,12 @@ String FunctionType::toString() const {
   return result;
 }
 
-nuo::Json FunctionType::toJson() const {
-  Vec<nuo::JsonValue> vals;
+Json FunctionType::toJson() const {
+  Vec<JsonValue> vals;
   for (auto *arg : argTypes) {
     vals.push_back(arg->getType()->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("typeKind", "function")
       ._("returnType", returnType->getID())
       ._("argumentTypes", vals);

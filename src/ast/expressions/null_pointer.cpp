@@ -31,8 +31,6 @@ IR::Value *NullPointer::emit(IR::Context *ctx) {
   }
 }
 
-nuo::Json NullPointer::toJson() const {
-  return nuo::Json()._("nodeType", "nullPointer");
-}
+Json NullPointer::toJson() const { return Json()._("nodeType", "nullPointer"); }
 
 } // namespace qat::ast

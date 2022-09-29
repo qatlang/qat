@@ -106,18 +106,18 @@ void OperatorPrototype::setCoreType(IR::CoreType *_coreType) const {
   coreType = _coreType;
 }
 
-nuo::Json OperatorPrototype::toJson() const {
-  Vec<nuo::JsonValue> args;
+Json OperatorPrototype::toJson() const {
+  Vec<JsonValue> args;
   for (auto *arg : arguments) {
     auto aJson =
-        nuo::Json()
+        Json()
             ._("name", arg->getName())
-            ._("type", arg->getType() ? arg->getType()->toJson() : nuo::Json())
+            ._("type", arg->getType() ? arg->getType()->toJson() : Json())
             ._("isMemberArg", arg->isTypeMember())
             ._("fileRange", arg->getFileRange());
     args.push_back(aJson);
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "operatorPrototype")
       ._("isVariation", isVariationFn)
       ._("operator", OpToString(opr))
@@ -182,12 +182,12 @@ void OperatorDefinition::setCoreType(IR::CoreType *coreType) const {
   prototype->setCoreType(coreType);
 }
 
-nuo::Json OperatorDefinition::toJson() const {
-  Vec<nuo::JsonValue> sntcs;
+Json OperatorDefinition::toJson() const {
+  Vec<JsonValue> sntcs;
   for (auto *sentence : sentences) {
     sntcs.push_back(sentence->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("nodeType", "operatorDefinition")
       ._("prototype", prototype->toJson())
       ._("body", sntcs)

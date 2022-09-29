@@ -103,12 +103,12 @@ void Lib::createModule(IR::Context *ctx) const {
 
 IR::Value *Lib::emit(IR::Context *ctx) { return nullptr; }
 
-nuo::Json Lib::toJson() const {
-  Vec<nuo::JsonValue> membersJsonValue;
+Json Lib::toJson() const {
+  Vec<JsonValue> membersJsonValue;
   for (auto *mem : members) {
     membersJsonValue.emplace_back(mem->toJson());
   }
-  return nuo::Json()
+  return Json()
       ._("name", name)
       ._("nodeType", "lib")
       ._("members", membersJsonValue)

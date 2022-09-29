@@ -41,7 +41,7 @@ public:
    */
   bool isBitWidth(const u32 width) const;
 
-  nuo::Json toJson() const;
+  Json toJson() const;
 
   String toString() const;
 };

@@ -16,7 +16,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGet; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 class HeapPut : public Expression {
@@ -28,7 +28,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapPut; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 class HeapGrow : public Expression {
@@ -44,7 +44,7 @@ public:
 
   useit IR::Value *emit(IR::Context *ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGrow; }
-  useit nuo::Json toJson() const final;
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

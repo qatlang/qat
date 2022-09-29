@@ -17,8 +17,8 @@ public:
                utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
-  useit NodeType  nodeType() const override { return NodeType::memberAccess; }
+  useit Json       toJson() const override;
+  useit NodeType   nodeType() const override { return NodeType::memberAccess; }
 };
 
 } // namespace qat::ast

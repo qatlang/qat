@@ -15,8 +15,8 @@ public:
   GiveSentence(Maybe<Expression *> _given_expr, utils::FileRange _fileRange);
 
   useit IR::Value *emit(IR::Context *ctx) override;
-  useit nuo::Json toJson() const override;
-  useit NodeType  nodeType() const override { return NodeType::giveSentence; }
+  useit Json       toJson() const override;
+  useit NodeType   nodeType() const override { return NodeType::giveSentence; }
 };
 
 } // namespace qat::ast

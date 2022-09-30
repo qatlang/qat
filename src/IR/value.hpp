@@ -15,6 +15,8 @@ class QatType;
 
 enum class Nature { assignable, temporary, pure, expired };
 
+class ConstantValue;
+
 class Value {
 private:
   static Vec<IR::Value *> allValues;
@@ -32,20 +34,30 @@ public:
 
   virtual ~Value() = default;
 
-  useit QatType *getType() const; // Type of the value
-  useit llvm::Value *getLLVM();
-  useit bool         isReference() const;
-  useit bool         isPointer() const;
-  useit bool         isVariable() const;
-  useit bool         isLocalToFn() const;
-  useit String       getLocalID() const;
-  void               setLocalID(String id);
-  useit Nature       getNature() const;
+  useit QatType             *getType() const; // Type of the value
+  useit virtual llvm::Value *getLLVM() const;
+  useit bool                 isReference() const;
+  useit bool                 isPointer() const;
+  useit bool                 isVariable() const;
+  useit virtual bool         isConstVal() const;
+  useit ConstantValue       *asConst() const;
+  useit bool                 isLocalToFn() const;
+  useit String               getLocalID() const;
+  void                       setLocalID(String locID);
+  useit Nature               getNature() const;
   useit IR::Value *createAlloca(llvm::IRBuilder<> &builder);
   useit bool       isImplicitPointer() const;
   void             loadImplicitPointer(llvm::IRBuilder<> &builder);
 
   static void clearAll();
+};
+
+class ConstantValue : public Value {
+public:
+  ConstantValue(llvm::Constant *_llconst, IR::QatType *_type);
+
+  useit llvm::Constant *getLLVM() const final;
+  useit bool            isConstVal() const final;
 };
 
 } // namespace qat::IR

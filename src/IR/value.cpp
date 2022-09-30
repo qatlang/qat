@@ -14,7 +14,7 @@ Vec<Value *> Value::allValues = {};
 
 QatType *Value::getType() const { return type; }
 
-llvm::Value *Value::getLLVM() { return ll; }
+llvm::Value *Value::getLLVM() const { return ll; }
 
 bool Value::isLocalToFn() const { return localID.has_value(); }
 
@@ -75,6 +75,10 @@ bool Value::isReference() const {
 
 bool Value::isVariable() const { return variable; }
 
+bool Value::isConstVal() const { return false; }
+
+ConstantValue *Value::asConst() const { return (ConstantValue *)this; }
+
 Nature Value::getNature() const { return nature; }
 
 void Value::clearAll() {
@@ -83,5 +87,12 @@ void Value::clearAll() {
   }
   allValues.clear();
 }
+
+ConstantValue::ConstantValue(llvm::Constant *_llConst, IR::QatType *_type)
+    : Value(_llConst, _type, false, IR::Nature::pure) {}
+
+llvm::Constant *ConstantValue::getLLVM() const { return (llvm::Constant *)ll; }
+
+bool ConstantValue::isConstVal() const { return true; }
 
 } // namespace qat::IR

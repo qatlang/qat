@@ -4,10 +4,12 @@ namespace qat::ast {
 
 DefineChoiceType::DefineChoiceType(String                         _name,
                                    Vec<Pair<Field, Maybe<Value>>> _fields,
+                                   Maybe<usize>                   _defaulVal,
                                    utils::VisibilityKind          _visibility,
                                    utils::FileRange               _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)),
-      fields(std::move(_fields)), visibility(_visibility) {}
+      fields(std::move(_fields)), visibility(_visibility),
+      defaultVal(_defaulVal) {}
 
 void DefineChoiceType::createType(IR::Context *ctx) {
   auto *mod = ctx->getMod();
@@ -55,7 +57,7 @@ void DefineChoiceType::createType(IR::Context *ctx) {
       }
     }
     new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues),
-                       ctx->getVisibInfo(visibility), ctx->llctx);
+                       None, ctx->getVisibInfo(visibility), ctx->llctx);
   } else {
     if (mod->hasTemplateCoreType(name)) {
       ctx->Error(

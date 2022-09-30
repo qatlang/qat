@@ -4,11 +4,12 @@
 namespace qat::IR {
 
 ChoiceType::ChoiceType(String _name, QatModule *_parent, Vec<String> _fields,
-                       Maybe<Vec<i64>>              _values,
+                       Maybe<Vec<i64>> _values, Maybe<usize> _defaultVal,
                        const utils::VisibilityInfo &_visibility,
                        llvm::LLVMContext           &ctx)
     : name(std::move(_name)), parent(_parent), fields(std::move(_fields)),
-      values(std::move(_values)), visibility(_visibility) {
+      values(std::move(_values)), visibility(_visibility),
+      defaultVal(_defaultVal) {
   if (!values.has_value()) {
     findBitwidthNormal();
     llvmType = llvm::Type::getIntNTy(ctx, bitwidth);
@@ -30,6 +31,13 @@ String ChoiceType::getFullName() const {
 QatModule *ChoiceType::getParent() const { return parent; }
 
 bool ChoiceType::hasCustomValue() const { return values.has_value(); }
+
+bool ChoiceType::hasDefault() const { return defaultVal.has_value(); }
+
+i64 ChoiceType::getDefault() const {
+  return values.has_value() ? values->at(defaultVal.value())
+                            : (i64)defaultVal.value();
+}
 
 bool ChoiceType::hasField(const String &name) const {
   for (const auto &field : fields) {

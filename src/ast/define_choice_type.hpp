@@ -21,11 +21,12 @@ private:
   String                         name;
   Vec<Pair<Field, Maybe<Value>>> fields;
   utils::VisibilityKind          visibility;
+  Maybe<usize>                   defaultVal;
 
 public:
   DefineChoiceType(String name, Vec<Pair<Field, Maybe<Value>>> fields,
-                   utils::VisibilityKind visibility,
-                   utils::FileRange      fileRange);
+                   Maybe<usize> defaultVal, utils::VisibilityKind visibility,
+                   utils::FileRange fileRange);
 
   void  createType(IR::Context *ctx);
   void  defineType(IR::Context *ctx) final;

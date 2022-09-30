@@ -19,19 +19,23 @@ private:
   // NOLINTNEXTLINE(readability-magic-numbers)
   usize                 tagBitWidth = 1;
   utils::VisibilityInfo visibility;
+  Maybe<usize>          defaultVal;
 
   void findTagBitWidth(usize typeCount);
 
 public:
   MixType(String name, QatModule *parent,
-          Vec<Pair<String, Maybe<QatType *>>> subtypes, llvm::LLVMContext &ctx,
-          bool isPacked, const utils::VisibilityInfo &visibility);
+          Vec<Pair<String, Maybe<QatType *>>> subtypes, Maybe<usize> defaultVal,
+          llvm::LLVMContext &ctx, bool isPacked,
+          const utils::VisibilityInfo &visibility);
 
   useit String getName() const;
   useit String getFullName() const;
   useit usize  getIndexOfName(const String &name) const;
   useit Pair<bool, bool> hasSubTypeWithName(const String &sname) const;
   useit QatType         *getSubTypeWithName(const String &sname) const;
+  useit bool             hasDefault() const;
+  useit usize            getDefault() const;
   useit usize            getSubTypeCount() const;
   useit QatModule       *getParent() const;
   useit bool             isPacked() const;

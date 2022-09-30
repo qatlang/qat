@@ -14,10 +14,10 @@ namespace qat::IR {
 
 MixType::MixType(String _name, QatModule *_parent,
                  Vec<Pair<String, Maybe<QatType *>>> _subtypes,
-                 llvm::LLVMContext &ctx, bool _isPacked,
-                 const utils::VisibilityInfo &_visibility)
+                 Maybe<usize> _defaultVal, llvm::LLVMContext &ctx,
+                 bool _isPacked, const utils::VisibilityInfo &_visibility)
     : name(std::move(_name)), parent(_parent), subtypes(std::move(_subtypes)),
-      isPack(_isPacked), visibility(_visibility) {
+      isPack(_isPacked), visibility(_visibility), defaultVal(_defaultVal) {
   for (const auto &sub : subtypes) {
     if (sub.second.has_value()) {
       auto *typ = sub.second.value();
@@ -48,7 +48,7 @@ MixType::MixType(String _name, QatModule *_parent,
 
 void MixType::findTagBitWidth(usize typeCount) {
   auto calc = 2;
-  while (calc < typeCount) {
+  while (calc <= typeCount) {
     calc <<= 1;
     tagBitWidth++;
   }
@@ -68,6 +68,10 @@ usize MixType::getIndexOfName(const String &name) const {
   }
   return subtypes.size();
 }
+
+bool MixType::hasDefault() const { return defaultVal.has_value(); }
+
+usize MixType::getDefault() const { return defaultVal.value_or(0u); }
 
 Pair<bool, bool> MixType::hasSubTypeWithName(const String &sname) const {
   for (const auto &sTy : subtypes) {

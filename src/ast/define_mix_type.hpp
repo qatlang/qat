@@ -1,5 +1,5 @@
-#ifndef QAT_AST_DEFINE_UNION_TYPE_HPP
-#define QAT_AST_DEFINT_UNION_TYPE_HPP
+#ifndef QAT_AST_DEFINE_MIX_TYPE_HPP
+#define QAT_AST_DEFINT_MIX_TYPE_HPP
 
 #include "./node.hpp"
 #include "./types/qat_type.hpp"
@@ -15,11 +15,13 @@ private:
   Vec<QatType *>                      templates;
   utils::VisibilityKind               visibility;
   Vec<utils::FileRange>               fRanges;
+  Maybe<usize>                        defaultVal;
 
 public:
   DefineMixType(String name, Vec<Pair<String, Maybe<QatType *>>> subTypes,
-                Vec<utils::FileRange> ranges, bool isPacked,
-                utils::VisibilityKind visibility, utils::FileRange fileRange);
+                Vec<utils::FileRange> ranges, Maybe<usize> defaultVal,
+                bool isPacked, utils::VisibilityKind visibility,
+                utils::FileRange fileRange);
 
   void       createType(IR::Context *ctx);
   void       defineType(IR::Context *ctx) final;

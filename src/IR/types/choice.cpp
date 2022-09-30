@@ -67,7 +67,7 @@ u64 ChoiceType::getBitwidth() const { return bitwidth; }
 
 void ChoiceType::findBitwidthNormal() const {
   auto calc = 2;
-  while (calc < fields.size()) {
+  while (calc <= fields.size()) {
     calc <<= 1;
     bitwidth++;
   }

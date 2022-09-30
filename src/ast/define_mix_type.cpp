@@ -4,12 +4,14 @@ namespace qat::ast {
 
 DefineMixType::DefineMixType(String                              _name,
                              Vec<Pair<String, Maybe<QatType *>>> _subTypes,
-                             Vec<utils::FileRange> _ranges, bool _isPacked,
+                             Vec<utils::FileRange>               _ranges,
+                             Maybe<usize> _defaultVal, bool _isPacked,
                              utils::VisibilityKind _visibility,
                              utils::FileRange      _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)),
       subtypes(std::move(_subTypes)), isPacked(_isPacked),
-      visibility(_visibility), fRanges(std::move(_ranges)) {}
+      visibility(_visibility), fRanges(std::move(_ranges)),
+      defaultVal(_defaultVal) {}
 
 bool DefineMixType::isTemplate() const { return !templates.empty(); }
 
@@ -35,6 +37,16 @@ void DefineMixType::createType(IR::Context *ctx) {
       if (!hasAssociatedType && subtypes.at(i).second.has_value()) {
         hasAssociatedType = true;
       }
+      if (defaultVal.has_value()) {
+        if (defaultVal.value() == i) {
+          if (subtypes.at(i).second.has_value()) {
+            ctx->Error(
+                "A subfield with a value associated with them cannot be "
+                "used as a default value",
+                {fRanges.at(i), subtypes.at(i).second.value()->fileRange});
+          }
+        }
+      }
       subTypesIR.push_back(Pair<String, Maybe<IR::QatType *>>(
           subtypes.at(i).first,
           subtypes.at(i).second.has_value()
@@ -46,7 +58,7 @@ void DefineMixType::createType(IR::Context *ctx) {
                  "Please change this type to a choice type",
                  fileRange);
     }
-    new IR::MixType(name, mod, subTypesIR, ctx->llctx, isPacked,
+    new IR::MixType(name, mod, subTypesIR, defaultVal, ctx->llctx, isPacked,
                     ctx->getVisibInfo(visibility));
   } else {
     if (mod->hasTemplateCoreType(name)) {

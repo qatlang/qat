@@ -28,7 +28,9 @@ enum class Op {
   Or,
   Index,
   minus,
-  Not
+  Not,
+  copyAssignment,
+  moveAssignment,
 };
 
 useit bool isUnaryOp(Op opr);

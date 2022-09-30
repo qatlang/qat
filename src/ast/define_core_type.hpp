@@ -61,6 +61,8 @@ private:
   mutable ConstructorDefinition *defaultConstructor   = nullptr;
   mutable ConstructorDefinition *copyConstructor      = nullptr;
   mutable ConstructorDefinition *moveConstructor      = nullptr;
+  mutable OperatorDefinition    *copyAssignment       = nullptr;
+  mutable OperatorDefinition    *moveAssignment       = nullptr;
   mutable DestructorDefinition  *destructorDefinition = nullptr;
   utils::VisibilityKind          visibility;
 
@@ -86,6 +88,8 @@ public:
   void       setDefaultConstructor(ConstructorDefinition *cDef);
   void       setCopyConstructor(ConstructorDefinition *cDef);
   void       setMoveConstructor(ConstructorDefinition *cDef);
+  void       setCopyAssignment(OperatorDefinition *mDef);
+  void       setMoveAssignment(OperatorDefinition *mDef);
   void       createType(IR::Context *ctx) const;
   void       defineType(IR::Context *ctx) final;
   void       define(IR::Context *ctx) final;
@@ -95,6 +99,8 @@ public:
   useit bool hasDestructor() const;
   useit bool hasCopyConstructor() const;
   useit bool hasMoveConstructor() const;
+  useit bool hasCopyAssignment() const;
+  useit bool hasMoveAssignment() const;
   useit IR::CoreType *getCoreType();
   useit IR::Value *emit(IR::Context *ctx) final;
   useit Json       toJson() const final;

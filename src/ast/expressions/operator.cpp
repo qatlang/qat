@@ -104,6 +104,10 @@ String OpToString(Op opr) {
     return "-";
   case Op::Not:
     return "!";
+  case Op::copyAssignment:
+    return "copy =";
+  case Op::moveAssignment:
+    return "move =";
   }
 }
 

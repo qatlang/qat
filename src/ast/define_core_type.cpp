@@ -104,6 +104,12 @@ void DefineCoreType::createType(IR::Context *ctx) const {
     for (auto *oprDef : operatorDefinitions) {
       oprDef->setCoreType(coreType);
     }
+    if (copyAssignment) {
+      copyAssignment->setCoreType(coreType);
+    }
+    if (moveAssignment) {
+      moveAssignment->setCoreType(coreType);
+    }
     if (destructorDefinition) {
       destructorDefinition->setCoreType(coreType);
     } else {
@@ -258,6 +264,12 @@ void DefineCoreType::define(IR::Context *ctx) {
   for (auto *oFn : operatorDefinitions) {
     oFn->define(ctx);
   }
+  if (copyAssignment) {
+    copyAssignment->define(ctx);
+  }
+  if (moveAssignment) {
+    moveAssignment->define(ctx);
+  }
   if (destructorDefinition) {
     destructorDefinition->define(ctx);
   }
@@ -285,6 +297,12 @@ IR::Value *DefineCoreType::emit(IR::Context *ctx) {
   }
   for (auto *oFn : operatorDefinitions) {
     (void)oFn->emit(ctx);
+  }
+  if (copyAssignment) {
+    (void)copyAssignment->emit(ctx);
+  }
+  if (moveAssignment) {
+    (void)moveAssignment->emit(ctx);
   }
   if (destructorDefinition) {
     (void)destructorDefinition->emit(ctx);
@@ -343,12 +361,28 @@ bool DefineCoreType::hasMoveConstructor() const {
   return moveConstructor != nullptr;
 }
 
+bool DefineCoreType::hasCopyAssignment() const {
+  return copyAssignment != nullptr;
+}
+
+bool DefineCoreType::hasMoveAssignment() const {
+  return moveAssignment != nullptr;
+}
+
 void DefineCoreType::setCopyConstructor(ConstructorDefinition *cDef) {
   copyConstructor = cDef;
 }
 
 void DefineCoreType::setMoveConstructor(ConstructorDefinition *cDef) {
   moveConstructor = cDef;
+}
+
+void DefineCoreType::setCopyAssignment(OperatorDefinition *mDef) {
+  copyAssignment = mDef;
+}
+
+void DefineCoreType::setMoveAssignment(OperatorDefinition *mDef) {
+  moveAssignment = mDef;
 }
 
 Json DefineCoreType::toJson() const {

@@ -21,14 +21,16 @@ private:
   Vec<Argument *>       arguments;
   QatType              *returnType;
   utils::VisibilityKind kind;
+  Maybe<String>         argName;
 
-  mutable IR::CoreType       *coreType;
+  mutable IR::CoreType       *coreType = nullptr;
   mutable IR::MemberFunction *memberFn = nullptr;
 
 public:
   OperatorPrototype(bool _isVariationFn, Op _op, Vec<Argument *> _arguments,
                     QatType *_returnType, utils::VisibilityKind kind,
-                    const utils::FileRange &_fileRange);
+                    const utils::FileRange &_fileRange,
+                    Maybe<String>           _argName = None);
 
   void setCoreType(IR::CoreType *_coreType) const;
 

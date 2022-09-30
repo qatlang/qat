@@ -10,13 +10,34 @@ OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op,
                                      Vec<Argument *>         _arguments,
                                      QatType                *_returnType,
                                      utils::VisibilityKind   kind,
-                                     const utils::FileRange &_fileRange)
+                                     const utils::FileRange &_fileRange,
+                                     Maybe<String>           _argName)
     : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op),
-      arguments(std::move(_arguments)), returnType(_returnType), kind(kind) {}
+      arguments(std::move(_arguments)), returnType(_returnType), kind(kind),
+      argName(std::move(_argName)) {}
 
 void OperatorPrototype::define(IR::Context *ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
+  }
+  if (opr == Op::copyAssignment) {
+    if (coreType->hasCopyAssignment()) {
+      ctx->Error("Copy assignment operator already exists for core type " +
+                     ctx->highlightError(coreType->getFullName()),
+                 fileRange);
+    }
+    memberFn = IR::MemberFunction::CopyAssignment(coreType, argName.value(),
+                                                  fileRange, ctx->llctx);
+    return;
+  } else if (opr == Op::moveAssignment) {
+    if (coreType->hasMoveAssignment()) {
+      ctx->Error("Move assignment operator already exists for core type " +
+                     ctx->highlightError(coreType->getFullName()),
+                 fileRange);
+    }
+    memberFn = IR::MemberFunction::MoveAssignment(coreType, argName.value(),
+                                                  fileRange, ctx->llctx);
+    return;
   }
   if (opr == Op::subtract) {
     if (arguments.empty()) {

@@ -348,6 +348,18 @@ MemberFunction *CoreType::getMoveConstructor() const {
   return moveConstructor.value_or(nullptr);
 }
 
+bool CoreType::hasCopyAssignment() const { return copyAssignment.has_value(); }
+
+MemberFunction *CoreType::getCopyAssignment() const {
+  return copyAssignment.value_or(nullptr);
+}
+
+bool CoreType::hasMoveAssignment() const { return moveAssignment.has_value(); }
+
+MemberFunction *CoreType::getMoveAssignment() const {
+  return moveAssignment.value_or(nullptr);
+}
+
 bool CoreType::isTriviallyCopyable() const {
   return (constructors.empty() && fromConvertors.empty() && !hasDestructor() &&
           !hasCopyConstructor() && !hasMoveConstructor());

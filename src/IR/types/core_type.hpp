@@ -54,6 +54,8 @@ private:
   MemberFunction         *destructor = nullptr; // Destructor
   Maybe<MemberFunction *> copyConstructor;      // Copy constructor
   Maybe<MemberFunction *> moveConstructor;      // Move constructor
+  Maybe<MemberFunction *> copyAssignment;       // Copy assignment operator
+  Maybe<MemberFunction *> moveAssignment;       // Move assignment operator
   bool                    explicitCopy = false;
   bool                    explicitMove = false;
 
@@ -101,6 +103,10 @@ public:
   useit bool            isCopyExplicit() const;
   useit bool            hasMoveConstructor() const;
   useit MemberFunction *getMoveConstructor() const;
+  useit bool            hasCopyAssignment() const;
+  useit MemberFunction *getCopyAssignment() const;
+  useit bool            hasMoveAssignment() const;
+  useit MemberFunction *getMoveAssignment() const;
   useit bool            isMoveExplicit() const;
   useit bool            isTriviallyCopyable() const;
   useit bool            hasDestructor() const;

@@ -20,6 +20,8 @@ enum class MemberFnType {
   constructor,
   copyConstructor,
   moveConstructor,
+  copyAssignment,
+  moveAssignment,
   destructor,
   binaryOperator,
   unaryOperator,
@@ -70,6 +72,16 @@ public:
                                          const String           &otherName,
                                          const utils::FileRange &fileRange,
                                          llvm::LLVMContext      &ctx);
+
+  static MemberFunction *CopyAssignment(CoreType               *parent,
+                                        const String           &otherName,
+                                        const utils::FileRange &fileRange,
+                                        llvm::LLVMContext      &ctx);
+
+  static MemberFunction *MoveAssignment(CoreType               *parent,
+                                        const String           &otherName,
+                                        const utils::FileRange &fileRange,
+                                        llvm::LLVMContext      &ctx);
 
   static MemberFunction *
   CreateConstructor(CoreType *parent, const Vec<Argument> &args,

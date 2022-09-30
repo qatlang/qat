@@ -567,11 +567,13 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto                                     bClose = bCloseRes.value();
             Vec<Pair<String, Maybe<ast::QatType *>>> subTypes;
             Vec<utils::FileRange>                    fileRanges;
-            parseMixType(prev_ctx, i + 2, bClose, subTypes, fileRanges);
+            Maybe<usize>                             defaultVal;
+            parseMixType(prev_ctx, i + 2, bClose, subTypes, fileRanges,
+                         defaultVal);
             // FIXME - Support packing
             result.push_back(new ast::DefineMixType(
                 ValueAt(i + 1), std::move(subTypes), std::move(fileRanges),
-                false, getVisibility(), RangeSpan(i, bClose)));
+                defaultVal, false, getVisibility(), RangeSpan(i, bClose)));
             i = bClose;
           } else {
             Error("Expected end for {", RangeAt(i + 2));
@@ -595,10 +597,11 @@ Parser::parse(ParserContext prev_ctx, // NOLINT(misc-no-recursion)
             auto bClose = bCloseRes.value();
             Vec<Pair<ast::DefineChoiceType::Field,
                      Maybe<ast::DefineChoiceType::Value>>>
-                fields;
-            parseChoiceType(i + 2, bClose, fields);
+                         fields;
+            Maybe<usize> defaultVal;
+            parseChoiceType(i + 2, bClose, fields, defaultVal);
             result.push_back(new ast::DefineChoiceType(
-                ValueAt(i + 1), std::move(fields), getVisibility(),
+                ValueAt(i + 1), std::move(fields), defaultVal, getVisibility(),
                 RangeSpan(i, bClose)));
             i = bClose;
           } else {
@@ -1495,19 +1498,36 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
 
 void Parser::parseMixType(ParserContext &prev_ctx, usize from, usize upto,
                           Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
-                          Vec<utils::FileRange> &fileRanges) {
+                          Vec<utils::FileRange>                    &fileRanges,
+                          Maybe<usize> &defaultVal) {
   using lexer::TokenType;
 
   for (auto i = from + 1; i < upto; i++) {
     auto &token = tokens->at(i);
     switch (token.type) {
+    case TokenType::Default: {
+      if (!defaultVal.has_value()) {
+        if (isNext(TokenType::identifier, i)) {
+          defaultVal = uRef.size();
+          break;
+        } else {
+          Error("Invalid token found after default", RangeAt(i));
+        }
+      } else {
+        Error("Default value for mix type already provided", RangeAt(i));
+      }
+    }
     case TokenType::identifier: {
       auto start = i;
       if (isNext(TokenType::separator, i) ||
           (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
         uRef.push_back(
             Pair<String, Maybe<ast::QatType *>>(ValueAt(start), None));
-        fileRanges.push_back(RangeAt(start));
+        fileRanges.push_back(
+            isPrev(TokenType::Default, start)
+                ? utils::FileRange(tokens->at(start - 1).fileRange,
+                                   tokens->at(start).fileRange)
+                : RangeAt(start));
         i++;
       } else if (isNext(TokenType::mixSeparator, i)) {
         ast::QatType *typ;
@@ -1522,7 +1542,11 @@ void Parser::parseMixType(ParserContext &prev_ctx, usize from, usize upto,
         }
         uRef.push_back(
             Pair<String, Maybe<ast::QatType *>>(ValueAt(start), typ));
-        fileRanges.push_back(RangeAt(start));
+        fileRanges.push_back(
+            isPrev(TokenType::Default, start)
+                ? utils::FileRange(tokens->at(start - 1).fileRange,
+                                   tokens->at(start).fileRange)
+                : RangeAt(start));
       } else {
         Error("Invalid token found after identifier in mix type definition",
               RangeAt(i));
@@ -1540,18 +1564,35 @@ void Parser::parseMixType(ParserContext &prev_ctx, usize from, usize upto,
 void Parser::parseChoiceType(
     usize from, usize upto,
     Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>>
-        &fields) {
+                 &fields,
+    Maybe<usize> &defaultVal) {
   using lexer::TokenType;
 
   for (usize i = from + 1; i < upto; i++) {
     auto &token = tokens->at(i);
     switch (token.type) {
+    case TokenType::Default: {
+      if (!defaultVal.has_value()) {
+        if (isNext(TokenType::identifier, i)) {
+          defaultVal = fields.size();
+          break;
+        } else {
+          Error("Invalid token found after default", RangeAt(i));
+        }
+      } else {
+        Error("Default value for choice type already provided", RangeAt(i));
+      }
+    }
     case TokenType::identifier: {
       auto start = i;
       if (isNext(TokenType::separator, i)) {
         fields.push_back(Pair<ast::DefineChoiceType::Field,
                               Maybe<ast::DefineChoiceType::Value>>(
-            {ValueAt(i), RangeAt(i)}, None));
+            {ValueAt(i), isPrev(TokenType::Default, i)
+                             ? utils::FileRange(tokens->at(i - 1).fileRange,
+                                                tokens->at(i).fileRange)
+                             : RangeAt(i)},
+            None));
         i++;
       } else if (isNext(TokenType::assignment, i)) {
         auto fieldName  = ValueAt(i);
@@ -1585,7 +1626,12 @@ void Parser::parseChoiceType(
             isNext(TokenType::curlybraceClose, i)) {
           fields.push_back(Pair<ast::DefineChoiceType::Field,
                                 Maybe<ast::DefineChoiceType::Value>>(
-              ast::DefineChoiceType::Field{ValueAt(start), RangeAt(start)},
+              ast::DefineChoiceType::Field{
+                  ValueAt(start),
+                  isPrev(TokenType::Default, start)
+                      ? utils::FileRange(tokens->at(start - 1).fileRange,
+                                         tokens->at(start).fileRange)
+                      : RangeAt(start)},
               ast::DefineChoiceType::Value{val, valRange}));
           i++;
         } else {

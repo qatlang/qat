@@ -84,11 +84,13 @@ public:
 
   void parseMixType(ParserContext &prev_ctx, usize from, usize upto,
                     Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
-                    Vec<utils::FileRange>                    &fileRanges);
+                    Vec<utils::FileRange>                    &fileRanges,
+                    Maybe<usize>                             &defaultVal);
 
   void parseChoiceType(usize from, usize upto,
                        Vec<Pair<ast::DefineChoiceType::Field,
-                                Maybe<ast::DefineChoiceType::Value>>> &fields);
+                                Maybe<ast::DefineChoiceType::Value>>> &fields,
+                       Maybe<usize> &defaultVal);
 
   void
   parseMatchContents(ParserContext &prev_ctx, usize from, usize upto,

@@ -1,4 +1,5 @@
 #include "./parser.hpp"
+#include "../ast/constants/size_of_type.hpp"
 #include "../ast/constructor.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/destructor.hpp"
@@ -25,7 +26,6 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
 #include "../ast/expressions/self_member.hpp"
-#include "../ast/expressions/size_of_type.hpp"
 #include "../ast/expressions/template_entity.hpp"
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"

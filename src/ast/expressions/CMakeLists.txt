@@ -23,7 +23,6 @@ add_library(QAT_AST_EXPRESSIONS
         radix_literal.cpp
         self.cpp
         self_member.cpp
-        size_of_type.cpp
         string_literal.cpp
         template_entity.cpp
         ternary.cpp

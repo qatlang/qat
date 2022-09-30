@@ -1295,6 +1295,87 @@ void Parser::parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
       break;
     }
     case TokenType::Operator: {
+      if (isNext(TokenType::copy, i)) {
+        if (coreTy->hasCopyAssignment()) {
+          Error("The copy assignment operator is already defined for this core "
+                "type",
+                RangeSpan(i, i + 1));
+        }
+        if (isNext(TokenType::assignment, i + 1)) {
+          if (isNext(TokenType::identifier, i + 2)) {
+            if (isNext(TokenType::bracketOpen, i + 3)) {
+              auto bCloseRes =
+                  getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                             i + 4, false);
+              if (bCloseRes) {
+                auto bClose = bCloseRes.value();
+                auto snts   = parseSentences(prev_ctx, i + 4, bClose);
+                coreTy->setCopyAssignment(new ast::OperatorDefinition(
+                    new ast::OperatorPrototype(
+                        true, ast::Op::copyAssignment, {}, nullptr,
+                        utils::VisibilityKind::pub, RangeSpan(i, i + 3),
+                        ValueAt(i + 3)),
+                    std::move(snts), RangeSpan(i, bClose)));
+                i = bClose;
+              } else {
+                Error("Expected end for [", RangeAt(i + 4));
+              }
+            } else {
+              Error("Expected definition for the copy assignment operator",
+                    RangeSpan(i, i + 3));
+            }
+          } else {
+            Error("Expected identifier for the name of the value that is being "
+                  "copied from",
+                  RangeSpan(i, i + 2));
+          }
+        } else {
+          Error("Expected = after the copy keyword to indicate the copy "
+                "assignment operator",
+                RangeSpan(i, i + 1));
+        }
+        break;
+      } else if (isNext(TokenType::move, i)) {
+        if (coreTy->hasMoveAssignment()) {
+          Error("The move assignment operator is already defined for this core "
+                "type",
+                RangeSpan(i, i + 1));
+        }
+        if (isNext(TokenType::assignment, i + 1)) {
+          if (isNext(TokenType::identifier, i + 2)) {
+            if (isNext(TokenType::bracketOpen, i + 3)) {
+              auto bCloseRes =
+                  getPairEnd(TokenType::bracketOpen, TokenType::bracketClose,
+                             i + 4, false);
+              if (bCloseRes) {
+                auto bClose = bCloseRes.value();
+                auto snts   = parseSentences(prev_ctx, i + 4, bClose);
+                coreTy->setMoveAssignment(new ast::OperatorDefinition(
+                    new ast::OperatorPrototype(
+                        true, ast::Op::moveAssignment, {}, nullptr,
+                        utils::VisibilityKind::pub, RangeSpan(i, i + 3),
+                        ValueAt(i + 3)),
+                    std::move(snts), RangeSpan(i, bClose)));
+                i = bClose;
+              } else {
+                Error("Expected end for [", RangeAt(i + 4));
+              }
+            } else {
+              Error("Expected definition for the move assignment operator",
+                    RangeSpan(i, i + 3));
+            }
+          } else {
+            Error("Expected identifier for the name of the value that is being "
+                  "moved from",
+                  RangeSpan(i, i + 2));
+          }
+        } else {
+          Error("Expected = after the move keyword to indicate the move "
+                "assignment operator",
+                RangeSpan(i, i + 1));
+        }
+        break;
+      }
       auto          start = i;
       String        opr;
       bool          isUnary = false;
@@ -1508,9 +1589,9 @@ void Parser::parseChoiceType(
               ast::DefineChoiceType::Value{val, valRange}));
           i++;
         } else {
-          Error(
-              "Invalid token found after integer value for the choice variant",
-              RangeAt(start));
+          Error("Invalid token found after integer value for the choice "
+                "variant",
+                RangeAt(start));
         }
       }
       break;
@@ -1635,10 +1716,10 @@ void Parser::parseMatchContents(
           elseCase  = std::move(snts);
           i         = bCloseRes.value();
           if (i + 1 != upto) {
-            Error(
-                "Expected match sentence to end after the else case. Make sure "
-                "that the else case is the last branch in a match sentence",
-                RangeSpan(i + 1, bCloseRes.value()));
+            Error("Expected match sentence to end after the else case. Make "
+                  "sure "
+                  "that the else case is the last branch in a match sentence",
+                  RangeSpan(i + 1, bCloseRes.value()));
           }
         } else {
           Error("Expected end for [", RangeAt(i + 1));
@@ -1827,10 +1908,10 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           Error("Expected end for (", RangeAt(i + 1));
         }
       } else {
-        Error(
-            "Expected ( to start the expression for sizeOf. Make sure that you "
-            "provide a value, so that the size of its type can be calculated",
-            RangeAt(i));
+        Error("Expected ( to start the expression for sizeOf. Make sure that "
+              "you "
+              "provide a value, so that the size of its type can be calculated",
+              RangeAt(i));
       }
       break;
     }
@@ -1944,9 +2025,9 @@ Parser::parseExpression(ParserContext &prev_ctx, // NOLINT(misc-no-recursion)
           Error("Expected end for template type specification", RangeAt(i));
         }
       } else {
-        Error(
-            "Expected identifier or symbol before template type specification",
-            RangeAt(i));
+        Error("Expected identifier or symbol before template type "
+              "specification",
+              RangeAt(i));
       }
       break;
     }
@@ -2921,8 +3002,8 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
           Error("Invalid token after symbol", RangeAt(i));
         }
         // Declaration
-        // A normal declaration where the type of the entity is provided by the
-        // user
+        // A normal declaration where the type of the entity is provided by
+        // the user
         if (isNext(TokenType::assignment, i)) {
           SHOW("Declaration encountered")
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
@@ -3296,7 +3377,7 @@ Vec<ast::Sentence *> Parser::parseSentences(ParserContext &prev_ctx, usize from,
           auto *count = parseExpression(prev_ctx, None, i + 1, pClose).first;
           auto  pos   = pClose;
           if (isNext(TokenType::colon, pClose)) {
-            if (isNext(TokenType::alias, pClose + 1)) {
+            if (isNext(TokenType::let, pClose + 1)) {
               if (isNext(TokenType::identifier, pClose + 2)) {
                 isAlias = true;
                 loopTag = ValueAt(pClose + 3);

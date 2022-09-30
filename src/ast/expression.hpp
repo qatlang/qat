@@ -33,6 +33,16 @@ public:
   ~Expression() override                           = default;
 };
 
+class ConstantExpression : public Expression {
+public:
+  ConstantExpression(utils::FileRange fileRange);
+
+  useit IR::ConstantValue *emit(IR::Context *ctx) override = 0;
+  useit NodeType           nodeType() const override       = 0;
+  useit Json               toJson() const override         = 0;
+  ~ConstantExpression() override                           = default;
+};
+
 } // namespace qat::ast
 
 #endif

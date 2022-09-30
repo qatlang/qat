@@ -15,4 +15,7 @@ void Expression::setExpectedKind(ExpressionKind _kind) {
   this->expected = _kind;
 }
 
+ConstantExpression::ConstantExpression(utils::FileRange _range)
+    : Expression(std::move(_range)) {}
+
 } // namespace qat::ast

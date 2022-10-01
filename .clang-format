@@ -1,6 +1,10 @@
 ---
 Language: Cpp
 BasedOnStyle: LLVM
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
+ColumnLimit: 120
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: true
@@ -49,8 +53,7 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
 BreakAfterJavaFieldAnnotations: false
-BreakStringLiterals: true
-ColumnLimit: 80
+BreakStringLiterals: false
 CommentPragmas: '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
@@ -79,10 +82,9 @@ IncludeCategories:
     SortPriority: 0
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
-IndentCaseLabels: false
+IndentCaseLabels: true
 IndentGotoLabels: true
 IndentPPDirectives: None
-IndentWidth: 2
 IndentWrappedFunctionNames: false
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
@@ -103,7 +105,7 @@ PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 60
-PointerAlignment: Right
+PointerAlignment: Left
 ReflowComments: true
 SortIncludes: true
 SortUsingDeclarations: true
@@ -130,8 +132,6 @@ Standard: Latest
 StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
-TabWidth: 8
 UseCRLF: false
-UseTab: Never
 ...
 

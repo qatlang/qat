@@ -33,7 +33,7 @@ class Parser {
 private:
   //  Reference to a std::deque<lexer::Token> which is
   // usually a member of the corresponding IO::QatFile
-  Vec<lexer::Token> *tokens;
+  Deque<lexer::Token>* tokens;
   // Comments mapped to indices of the next AST member in the original
   // analysed sequence
   std::map<usize, lexer::Token> comments;
@@ -55,11 +55,10 @@ public:
   Parser();
 
   // Set the Tokens object
-  void setTokens(Vec<lexer::Token> *tokens);
+  void setTokens(Deque<lexer::Token>* tokens);
 
   // Parse brought entities in a "bring" sentence
-  useit ast::BringEntities *parseBroughtEntities(ParserContext &ctx, usize from,
-                                                 usize upto);
+  useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);
 
   // Parse all files or folders brought into this module
   useit Vec<String> parseBroughtFilesOrFolders(usize from, usize upto);
@@ -67,61 +66,47 @@ public:
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
 
   // Parse a type represented by the next series of tokens
-  useit Pair<ast::QatType *, usize> parseType(ParserContext &prev_ctx,
-                                              usize from, Maybe<usize> upto);
+  useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
 
   // Top-level parsing function
-  useit Vec<ast::Node *> parse(ParserContext prevCtx = ParserContext(),
-                               usize from = -1, usize upto = -1);
+  useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
 
   // Parse a symbol represented by the next series of tokens
-  useit Pair<CacheSymbol, usize> parseSymbol(ParserContext &prev_ctx,
-                                             usize          start);
+  useit Pair<CacheSymbol, usize> parseSymbol(ParserContext& prev_ctx, usize start);
 
   // Parse the contents of a CoreType
-  void parseCoreType(ParserContext &prev_ctx, usize from, usize upto,
-                     ast::DefineCoreType *coreTy);
+  void parseCoreType(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
 
-  void parseMixType(ParserContext &prev_ctx, usize from, usize upto,
-                    Vec<Pair<String, Maybe<ast::QatType *>>> &uRef,
-                    Vec<utils::FileRange>                    &fileRanges,
-                    Maybe<usize>                             &defaultVal);
+  void parseMixType(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<String, Maybe<ast::QatType*>>>& uRef,
+                    Vec<utils::FileRange>& fileRanges, Maybe<usize>& defaultVal);
 
   void parseChoiceType(usize from, usize upto,
-                       Vec<Pair<ast::DefineChoiceType::Field,
-                                Maybe<ast::DefineChoiceType::Value>>> &fields,
-                       Maybe<usize> &defaultVal);
+                       Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>>& fields,
+                       Maybe<usize>&                                                                 defaultVal);
 
-  void
-  parseMatchContents(ParserContext &prev_ctx, usize from, usize upto,
-                     Vec<Pair<ast::MatchValue *, Vec<ast::Sentence *>>> &chain,
-                     Maybe<Vec<ast::Sentence *>> &elseCase, bool isTypeMatch);
+  void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
+                          Vec<Pair<ast::MatchValue*, Vec<ast::Sentence*>>>& chain, Maybe<Vec<ast::Sentence*>>& elseCase,
+                          bool isTypeMatch);
 
   // Parse the parameters of a function
-  useit Pair<Vec<ast::Argument *>, bool>
-  parseFunctionParameters(ParserContext &prev_ctx, usize from, usize upto);
+  useit Pair<Vec<ast::Argument*>, bool> parseFunctionParameters(ParserContext& prev_ctx, usize from, usize upto);
 
   // Parse an expression. This returns only a single expression. Because
   // of the nature of expressions, multiple expressions can be nested into one
   // expression
-  useit Pair<ast::Expression *, usize>
-  parseExpression(ParserContext &prev_ctx, const Maybe<CacheSymbol> &symbol,
-                  usize from, Maybe<usize> upto, bool isMemberFn = false,
-                  Vec<ast::Expression *> cachedExpressions = {});
+  useit Pair<ast::Expression*, usize> parseExpression(ParserContext& prev_ctx, const Maybe<CacheSymbol>& symbol,
+                                                      usize from, Maybe<usize> upto, bool isMemberFn = false,
+                                                      Vec<ast::Expression*> cachedExpressions = {});
 
   // Parse a series of expressions separated by a separator (comma).
-  useit Vec<ast::Expression *>
-  parseSeparatedExpressions(ParserContext &prev_ctx, usize from, usize upto);
+  useit Vec<ast::Expression*> parseSeparatedExpressions(ParserContext& prev_ctx, usize from, usize upto);
 
   // Parse multiple sentences
-  useit Vec<ast::Sentence *> parseSentences(ParserContext &prev_ctx, usize from,
-                                            usize upto, bool onlyOne = false,
-                                            bool isMemberFn = false);
+  useit Vec<ast::Sentence*> parseSentences(ParserContext& prev_ctx, usize from, usize upto, bool onlyOne = false,
+                                           bool isMemberFn = false);
 
   // Get the end token belonging to a token pair.
-  useit Maybe<usize> getPairEnd(lexer::TokenType startType,
-                                lexer::TokenType endType, usize current,
-                                bool respectScope);
+  useit Maybe<usize> getPairEnd(lexer::TokenType startType, lexer::TokenType endType, usize current, bool respectScope);
 
   // Whether the previous token respective to the current position is of
   // the specified type
@@ -133,39 +118,32 @@ public:
 
   // Whether the tokens found within the range (from, to) are only
   // of the TokenType present in the vector
-  useit bool areOnlyPresentWithin(const Vec<lexer::TokenType> &kinds,
-                                  usize from, usize upto);
+  useit bool areOnlyPresentWithin(const Vec<lexer::TokenType>& kinds, usize from, usize upto);
 
   // Whether the provided token has a first degree presence within the
   // range. That is, the presence of the token is not nested within other scope
   // limiting tokens
-  useit bool isPrimaryWithin(lexer::TokenType candidate, usize from,
-                             usize upto);
+  useit bool isPrimaryWithin(lexer::TokenType candidate, usize from, usize upto);
 
   // If the provided token has a primary position, find the first such
   // position
-  useit Maybe<usize> firstPrimaryPosition(lexer::TokenType candidate,
-                                          usize            from);
+  useit Maybe<usize> firstPrimaryPosition(lexer::TokenType candidate, usize from);
 
   // If the provided token has one or more primary positions within the
   // provided range, find all such positions
-  useit Vec<usize> primaryPositionsWithin(lexer::TokenType candidate,
-                                          usize from, usize upto);
+  useit Vec<usize> primaryPositionsWithin(lexer::TokenType candidate, usize from, usize upto);
 
-  useit Vec<ast::TemplatedType *> parseTemplateTypes(usize from, usize upto);
+  useit Vec<ast::TemplatedType*> parseTemplateTypes(usize from, usize upto);
 
-  useit Vec<ast::QatType *> parseSeparatedTypes(ParserContext &prev_ctx,
-                                                usize from, usize upto);
+  useit Vec<ast::QatType*> parseSeparatedTypes(ParserContext& prev_ctx, usize from, usize upto);
 
-  useit ast::PlainInitialiser *parsePlainInitialiser(ParserContext &ctx,
-                                                     ast::QatType  *type,
-                                                     usize from, usize upto);
+  useit ast::PlainInitialiser* parsePlainInitialiser(ParserContext& ctx, ast::QatType* type, usize from, usize upto);
 
   // Throws error with a formatted error message and exits the program
-  void Error(const String &message, const utils::FileRange &fileRange);
+  void Error(const String& message, const utils::FileRange& fileRange);
 
   // Shows warning to the user
-  static void Warning(const String &message, const utils::FileRange &fileRange);
+  static void Warning(const String& message, const utils::FileRange& fileRange);
 };
 
 } // namespace qat::parser

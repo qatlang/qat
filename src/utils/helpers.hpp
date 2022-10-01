@@ -2,6 +2,7 @@
 #define QAT_UTILS_HELPERS_HPP
 
 #include <cstdint>
+#include <deque>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -23,6 +24,7 @@ using usize                                  = std::size_t;
 using String                                 = std::string;
 template <typename T> using Maybe            = std::optional<T>;
 template <typename T> using Vec              = std::vector<T>;
+template <typename T> using Deque            = std::deque<T>;
 template <typename F, typename S> using Pair = std::pair<F, S>;
 namespace fs                                 = std::filesystem;
 const std::nullopt_t None                    = std::nullopt;

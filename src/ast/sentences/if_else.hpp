@@ -13,14 +13,26 @@ namespace qat::ast {
 // plain if sentence
 class IfElse : public Sentence {
 private:
-  Vec<Pair<Expression *, Vec<Sentence *>>> chain;
-  Maybe<Vec<Sentence *>>                   elseCase;
+  Vec<Pair<Expression*, Vec<Sentence*>>> chain;
+  Maybe<Vec<Sentence*>>                  elseCase;
+  Vec<Maybe<bool>>                       knownVals;
 
 public:
-  IfElse(Vec<Pair<Expression *, Vec<Sentence *>>> _chain,
-         Maybe<Vec<Sentence *>> _else, utils::FileRange _fileRange);
+  IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit Pair<bool, usize> trueKnownValue(usize ind) const;
+  useit bool              getKnownValue(usize ind) const;
+  useit bool              hasValueAt(usize ind) const;
+  useit bool              isFalseTill(usize ind) const;
+  useit bool              hasAnyKnownValue() const {
+    for (const auto& val : knownVals) {
+      if (val.has_value()) {
+        return true;
+      }
+    }
+    return false;
+  };
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::ifElse; }
 };

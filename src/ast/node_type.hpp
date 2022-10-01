@@ -80,6 +80,8 @@ enum class NodeType {
   Default,
   newAlias,
   moveExpression,
+  typeChecker,
+  Not,
 };
 
 } // namespace qat::ast

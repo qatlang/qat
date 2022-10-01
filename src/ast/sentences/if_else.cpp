@@ -88,18 +88,17 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
     }
   }
   if (elseCase.has_value()) {
-    if (hasAnyKnownValue()) {
-      if (isFalseTill(knownVals.size())) {
-        auto* elseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-        elseBlock->setActive(ctx->builder);
-        emitSentences(elseCase.value(), ctx);
-        (void)IR::addBranch(ctx->builder, restBlock->getBB());
-      }
+    if (hasAnyKnownValue() && isFalseTill(knownVals.size())) {
+      auto* elseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+      (void)IR::addBranch(ctx->builder, elseBlock->getBB());
+      elseBlock->setActive(ctx->builder);
+      emitSentences(elseCase.value(), ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
     } else {
       emitSentences(elseCase.value(), ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
-  } else {
+  } else if (!hasAnyKnownValue()) {
     (void)IR::addBranch(ctx->builder, restBlock->getBB());
   }
   restBlock->setActive(ctx->builder);

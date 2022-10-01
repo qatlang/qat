@@ -2,10 +2,10 @@
 
 namespace qat::ast {
 
-IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
+IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
   SHOW("Member variable emitting")
-  auto *inst     = instance->emit(ctx);
-  auto *instType = inst->getType();
+  auto* inst     = instance->emit(ctx);
+  auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
   if (instType->isReference()) {
     inst->loadImplicitPointer(ctx->builder);
@@ -18,79 +18,81 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
       isVar    = instType->asPointer()->isSubtypeVariable();
       instType = instType->asPointer()->getSubType();
     } else {
-      ctx->Error(
-          "The expression type has to be a pointer to use > to access members",
-          instance->fileRange);
+      ctx->Error("The expression type has to be a pointer to use > to access members", instance->fileRange);
     }
   } else {
     if (instType->isPointer()) {
-      ctx->Error(String("The expression is of pointer type. Please use ") +
-                     (variation ? ">~" : ">-") + " to access member function",
+      ctx->Error(String("The expression is of pointer type. Please use ") + (variation ? ">~" : ">-") +
+                     " to access member function",
                  instance->fileRange);
     }
   }
   if (instType->isCoreType()) {
-    if (!instType->asCore()->hasMemberFunction(memberName)) {
-      ctx->Error(
-          "Core type " + ctx->highlightError(instType->asCore()->toString()) +
-              " does not have a member function named " +
-              ctx->highlightError(memberName) + ". Please check the logic",
-          fileRange);
+    if (memberName == "end") {
+      if (!instType->asCore()->hasDestructor()) {
+        ctx->Error("Core type " + ctx->highlightError(instType->asCore()->getFullName()) +
+                       " does not have a destructor",
+                   fileRange);
+      }
+      auto* desFn = instType->asCore()->getDestructor();
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        return desFn->call(ctx, {inst->getLLVM()}, ctx->getMod());
+      } else {
+        ctx->Error("Invalid expression to call the destructor of", fileRange);
+      }
     }
-    auto *cTy   = instType->asCore();
-    auto *memFn = cTy->getMemberFunction(memberName);
+    if (!instType->asCore()->hasMemberFunction(memberName)) {
+      ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) +
+                     " does not have a member function named " + ctx->highlightError(memberName) +
+                     ". Please check the logic",
+                 fileRange);
+    }
+    auto* cTy   = instType->asCore();
+    auto* memFn = cTy->getMemberFunction(memberName);
     if (variation) {
       if (!memFn->isVariationFunction()) {
-        ctx->Error(
-            "Member function " + ctx->highlightError(memberName) +
-                " of core type " + ctx->highlightError(cTy->getFullName()) +
-                " is not a variation and hence cannot be called as a variation",
-            fileRange);
+        ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
+                       ctx->highlightError(cTy->getFullName()) +
+                       " is not a variation and hence cannot be called as a variation",
+                   fileRange);
       }
       if (!isVar) {
-        ctx->Error(
-            "The expression does not have variability and hence variation "
-            "member functions cannot be called",
-            instance->fileRange);
+        ctx->Error("The expression does not have variability and hence variation "
+                   "member functions cannot be called",
+                   instance->fileRange);
       }
     } else {
       if (memFn->isVariationFunction()) {
-        ctx->Error(
-            "Member function " + ctx->highlightError(memberName) +
-                " of core type " + ctx->highlightError(cTy->getFullName()) +
-                " is a variation and hence should be called as a variation",
-            fileRange);
+        ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
+                       ctx->highlightError(cTy->getFullName()) +
+                       " is a variation and hence should be called as a variation",
+                   fileRange);
       }
     }
     if (!memFn->isAccessible(ctx->getReqInfo())) {
-      ctx->Error("Member function " + ctx->highlightError(memberName) +
-                     " of core type " +
-                     ctx->highlightError(cTy->getFullName()) +
-                     " is not accessible here",
+      ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
+                     ctx->highlightError(cTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
-    if (!inst->isImplicitPointer() && !inst->getType()->isReference() &&
-        !inst->getType()->isPointer()) {
+    if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
       inst = inst->createAlloca(ctx->builder);
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();
     if ((fnArgsTy.size() - 1) != arguments.size()) {
-      ctx->Error(
-          "Number of arguments provided for the member function call does not "
-          "match the signature",
-          fileRange);
+      ctx->Error("Number of arguments provided for the member function call does not "
+                 "match the signature",
+                 fileRange);
     }
-    Vec<IR::Value *> argsEmit;
-    for (auto *val : arguments) {
+    Vec<IR::Value*> argsEmit;
+    for (auto* val : arguments) {
       argsEmit.push_back(val->emit(ctx));
     }
     SHOW("Argument values generated")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
           !(argsEmit.at(i - 1)->getType()->isReference() &&
-            fnArgsTy.at(i)->getType()->isSame(
-                argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
+            fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument of the function " +
                        ctx->highlightError(memFn->getName()),
@@ -98,23 +100,17 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
       }
     }
     //
-    Vec<llvm::Value *> argVals;
+    Vec<llvm::Value*> argVals;
     argVals.push_back(inst->getLLVM());
     for (usize i = 1; i < fnArgsTy.size(); i++) {
-      if (fnArgsTy.at(i)->getType()->isReference() &&
-          !argsEmit.at(i - 1)->isReference()) {
+      if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i - 1)->isReference()) {
         if (!argsEmit.at(i - 1)->isImplicitPointer()) {
-          ctx->Error(
-              "Cannot pass a value for the argument that expects a reference",
-              arguments.at(i - 1)->fileRange);
+          ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);
         }
       } else if (argsEmit.at(i - 1)->isReference()) {
         argsEmit.at(i - 1) = new IR::Value(
-            ctx->builder.CreateLoad(
-                argsEmit.at(i - 1)->getType()->getLLVMType(),
-                argsEmit.at(i - 1)->getLLVM()),
-            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->isVariable(),
-            argsEmit.at(i - 1)->getNature());
+            ctx->builder.CreateLoad(argsEmit.at(i - 1)->getType()->getLLVMType(), argsEmit.at(i - 1)->getLLVM()),
+            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->isVariable(), argsEmit.at(i - 1)->getNature());
       } else {
         argsEmit.at(i - 1)->loadImplicitPointer(ctx->builder);
       }
@@ -122,15 +118,14 @@ IR::Value *MemberFunctionCall::emit(IR::Context *ctx) {
     }
     return memFn->call(ctx, argVals, ctx->getMod());
   } else {
-    ctx->Error("Member function call for this type is not supported",
-               fileRange);
+    ctx->Error("Member function call for this type is not supported", fileRange);
   }
   return nullptr;
 }
 
 Json MemberFunctionCall::toJson() const {
   Vec<JsonValue> args;
-  for (auto *arg : arguments) {
+  for (auto* arg : arguments) {
     args.emplace_back(arg->toJson());
   }
   return Json()

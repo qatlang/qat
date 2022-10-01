@@ -1,0 +1,181 @@
+#include "./type_checker.hpp"
+
+namespace qat::ast {
+
+#define LLVM_SIZEOF_RESULT_BITWIDTH 64u
+
+TypeChecker::TypeChecker(String _name, Vec<ast::QatType*> _args, utils::FileRange _fileRange)
+    : ConstantExpression(std::move(_fileRange)), name(std::move(_name)), args(std::move(_args)) {}
+
+IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
+  Vec<IR::QatType*> typs;
+  for (auto* arg : args) {
+    typs.push_back(arg->emit(ctx));
+  }
+  if (typs.empty()) {
+    ctx->Error("At least one type should be provided for type checker", fileRange);
+  }
+  if ((name == "bits") || (name == "bytes")) {
+    if (typs.size() > 1) {
+      ctx->Error("Only one type can be provided for " + ctx->highlightError(name) + " type function", fileRange);
+    }
+    return new IR::ConstantValue(
+        llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(ctx->llctx),
+            name == "bits"
+                ? ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSizeInBits(typs.at(0)->getLLVMType())
+                : ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSize(typs.at(0)->getLLVMType())),
+        IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
+  } else if (name == "isCore") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isCoreType()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isMix") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isMix()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isChoice") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isChoice()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isTuple") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isTuple()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isArray") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isArray()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isTypeDefinition") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isDefinition()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isSigned") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isInteger()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isUnsigned") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isUnsignedInteger()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isIntegral") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isInteger() && !typ->isUnsignedInteger()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isFloatingPoint") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isFloat()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "isPointer") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (!typ->isPointer()) {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasDefault") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasDefaultConstructor()) {
+          res = false;
+          break;
+        }
+      } else if (typ->isChoice()) {
+        if (!typ->asChoice()->hasDefault()) {
+          res = false;
+          break;
+        }
+      } else if (typ->isMix()) {
+        if (!typ->asMix()->hasDefault()) {
+          res = false;
+        }
+        break;
+      } else if (typ->isInteger() || typ->isUnsignedInteger() || typ->isCString() || typ->isStringSlice() ||
+                 typ->isFloat()) {
+        res = true;
+      } else {
+        res = false;
+        break;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else {
+    ctx->Error("Type checker " + ctx->highlightError(name) + " is not supported", fileRange);
+  }
+  return nullptr;
+}
+
+Json TypeChecker::toJson() const {
+  Vec<JsonValue> argsJson;
+  for (auto* arg : args) {
+    argsJson.push_back(arg->toJson());
+  }
+  return Json()._("nodeType", "typeFunction")._("name", name)._("args", argsJson)._("fileRange", fileRange);
+}
+
+} // namespace qat::ast

@@ -164,6 +164,98 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
     }
     return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
                                  IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasDestructor") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasDestructor()) {
+          res = false;
+        }
+      } else {
+        // TODO - Change if mix types get destructors
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasAnyConstructor") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasAnyConstructor()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasAnyFromConvertor") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasAnyFromConvertor()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasCopyConstructor") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasCopyConstructor()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasMoveConstructor") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasMoveConstructor()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasCopyAssignment") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasCopyAssignment()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "hasMoveAssignment") {
+    bool res = true;
+    for (auto* typ : typs) {
+      if (typ->isCoreType()) {
+        if (!typ->asCore()->hasMoveAssignment()) {
+          res = false;
+        }
+      } else {
+        res = false;
+      }
+    }
+    return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
+                                 IR::UnsignedType::get(1u, ctx->llctx));
   } else {
     ctx->Error("Type checker " + ctx->highlightError(name) + " is not supported", fileRange);
   }

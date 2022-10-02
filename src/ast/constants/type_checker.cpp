@@ -1,4 +1,5 @@
 #include "./type_checker.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
@@ -256,6 +257,17 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
     }
     return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
                                  IR::UnsignedType::get(1u, ctx->llctx));
+  } else if (name == "name") {
+    if (typs.size() > 1) {
+      ctx->Error("name type checker expects only one type as argument", fileRange);
+    }
+    return new IR::ConstantValue(
+        llvm::ConstantStruct::get(
+            llvm::dyn_cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
+            {ctx->builder.CreateGlobalStringPtr(typs.at(0)->toString(), ctx->getGlobalStringName(), 0u,
+                                                ctx->getMod()->getLLVMModule()),
+             llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), (typs.at(0)->toString().size() + 1))}),
+        IR::StringSliceType::get(ctx->llctx));
   } else {
     ctx->Error("Type checker " + ctx->highlightError(name) + " is not supported", fileRange);
   }

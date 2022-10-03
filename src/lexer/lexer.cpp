@@ -441,13 +441,32 @@ Token Lexer::tokeniser() {
           read();
           if (current == 'u') {
             read();
-            while (digits.find(current) != String::npos) {
-              bitString += current;
+            if (current == 's') {
               read();
+              if (current == 'i') {
+                read();
+                if (current == 'z') {
+                  read();
+                  if (current == 'e') {
+                    read();
+                    auto resString = numVal + "_usize";
+                    return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
+                  }
+                } else {
+                  throw_error("Invalid unsigned integer literal");
+                }
+              } else {
+                throw_error("Invalid unsigned integer literal");
+              }
+            } else {
+              while (digits.find(current) != String::npos) {
+                bitString += current;
+                read();
+              }
+              auto resString = numVal;
+              resString.append("_u").append(bitString);
+              return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
             }
-            auto resString = numVal;
-            resString.append("_u").append(bitString);
-            return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
           } else if (current == 'i') {
             read();
             while (digits.find(current) != String::npos) {

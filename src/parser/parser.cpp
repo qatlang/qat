@@ -1452,9 +1452,10 @@ void Parser::parseChoiceType(usize from, usize upto,
           utils::FileRange valRange{"", {0u, 0u}, {0u, 0u}};
           if (isNext(TokenType::integerLiteral, i) || isNext(TokenType::unsignedLiteral, i)) {
             if (ValueAt(i + 1).find('_') != String::npos) {
-              ValueAt(i + 1) = ValueAt(i + 1).substr(0, ValueAt(i + 1).find('_'));
+              val = std::stoi(ValueAt(i + 1).substr(0, ValueAt(i + 1).find('_')));
+            } else {
+              val = std::stoi(ValueAt(i + 1));
             }
-            val = std::stoi(ValueAt(i + 1));
             i++;
           } else {
             Error("Expected an integer or unsigned integer literal as the value "
@@ -1716,7 +1717,11 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           auto   split = token.value.find('_');
           String number(token.value.substr(0, split));
           if ((split + 2) < token.value.length()) {
-            bits = std::stoul(token.value.substr(split + 2));
+            if (token.value.substr(split + 1) == "usize") {
+              bits = (sizeof(usize) * 8u); // NOLINT(readability-magic-numbers)
+            } else {
+              bits = std::stoul(token.value.substr(split + 2));
+            }
           }
           cachedExpressions.push_back(new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
         } else {

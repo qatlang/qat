@@ -64,6 +64,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
           trueBlock->setActive(ctx->builder);
           emitSentences(section.second, ctx);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
+          break;
         }
       } else {
         auto*      trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
@@ -99,7 +100,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       emitSentences(elseCase.value(), ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
-  } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !isFalseTill(knownVals.size()))) {
+  } else {
     (void)IR::addBranch(ctx->builder, restBlock->getBB());
   }
   restBlock->setActive(ctx->builder);

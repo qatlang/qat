@@ -1,6 +1,8 @@
 #include "binary_expression.hpp"
 #include "../../IR/types/reference.hpp"
+#include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
+#include "../constants/unsigned_literal.hpp"
 #include "default.hpp"
 #include "operator.hpp"
 
@@ -52,6 +54,66 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  "null pointer and so RHS is expected to be of pointer type",
                  fileRange);
     }
+  } else if (lhs->nodeType() == NodeType::integerLiteral) {
+    rhsEmit = rhs->emit(ctx);
+    if (rhsEmit->getType()->isInteger() ||
+        (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
+      ((IntegerLiteral*)lhs)
+          ->setType(rhsEmit->getType()->isInteger() ? rhsEmit->getType()
+                                                    : rhsEmit->getType()->asReference()->getSubType());
+    } else if (rhsEmit->getType()->isUnsignedInteger() ||
+               (rhsEmit->getType()->isReference() &&
+                rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+      ((IntegerLiteral*)lhs)
+          ->setType(rhsEmit->getType()->isUnsignedInteger() ? rhsEmit->getType()
+                                                            : rhsEmit->getType()->asReference()->getSubType());
+    }
+    lhsEmit = lhs->emit(ctx);
+  } else if (lhs->nodeType() == NodeType::unsignedLiteral) {
+    rhsEmit = rhs->emit(ctx);
+    if (rhsEmit->getType()->isInteger() ||
+        (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
+      ((UnsignedLiteral*)lhs)
+          ->setType(rhsEmit->getType()->isInteger() ? rhsEmit->getType()
+                                                    : rhsEmit->getType()->asReference()->getSubType());
+    } else if (rhsEmit->getType()->isUnsignedInteger() ||
+               (rhsEmit->getType()->isReference() &&
+                rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+      ((UnsignedLiteral*)lhs)
+          ->setType(rhsEmit->getType()->isUnsignedInteger() ? rhsEmit->getType()
+                                                            : rhsEmit->getType()->asReference()->getSubType());
+    }
+    lhsEmit = lhs->emit(ctx);
+  } else if (rhs->nodeType() == NodeType::integerLiteral) {
+    lhsEmit = lhs->emit(ctx);
+    if (lhsEmit->getType()->isInteger() ||
+        (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
+      ((IntegerLiteral*)rhs)
+          ->setType(lhsEmit->getType()->isInteger() ? lhsEmit->getType()
+                                                    : lhsEmit->getType()->asReference()->getSubType());
+    } else if (lhsEmit->getType()->isUnsignedInteger() ||
+               (lhsEmit->getType()->isReference() &&
+                lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+      ((IntegerLiteral*)rhs)
+          ->setType(lhsEmit->getType()->isUnsignedInteger() ? lhsEmit->getType()
+                                                            : lhsEmit->getType()->asReference()->getSubType());
+    }
+    rhsEmit = rhs->emit(ctx);
+  } else if (rhs->nodeType() == NodeType::unsignedLiteral) {
+    lhsEmit = lhs->emit(ctx);
+    if (lhsEmit->getType()->isInteger() ||
+        (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
+      ((UnsignedLiteral*)rhs)
+          ->setType(lhsEmit->getType()->isInteger() ? lhsEmit->getType()
+                                                    : lhsEmit->getType()->asReference()->getSubType());
+    } else if (lhsEmit->getType()->isUnsignedInteger() ||
+               (lhsEmit->getType()->isReference() &&
+                lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+      ((UnsignedLiteral*)rhs)
+          ->setType(lhsEmit->getType()->isUnsignedInteger() ? lhsEmit->getType()
+                                                            : lhsEmit->getType()->asReference()->getSubType());
+    }
+    rhsEmit = rhs->emit(ctx);
   } else {
     lhsEmit = lhs->emit(ctx);
     rhsEmit = rhs->emit(ctx);

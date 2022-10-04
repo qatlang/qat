@@ -2,7 +2,7 @@
 #define QAT_AST_BRING_PATHS_HPP
 
 #include "../utils/visibility.hpp"
-#include "./expressions/string_literal.hpp"
+#include "./constants/string_literal.hpp"
 #include "./sentence.hpp"
 #include <filesystem>
 
@@ -12,18 +12,15 @@ namespace qat::ast {
 // compilable scope
 class BringPaths : public Sentence {
 private:
-  Vec<StringLiteral *>
-      paths; // All paths specified to be brought into the scope
+  Vec<StringLiteral*>   paths;      // All paths specified to be brought into the scope
   utils::VisibilityInfo visibility; // Visibility of the brought paths
 
 public:
   // BringPaths represents importing of files or folders into the
   // current compilable scope
-  BringPaths(Vec<StringLiteral *>         _paths,
-             const utils::VisibilityInfo &_visibility,
-             utils::FileRange             _fileRange);
+  BringPaths(Vec<StringLiteral*> _paths, const utils::VisibilityInfo& _visibility, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
+  IR::Value* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 

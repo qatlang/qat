@@ -1,33 +1,25 @@
 add_library(QAT_AST_EXPRESSIONS
         array_literal.cpp
         binary_expression.cpp
-        boolean_literal.cpp
         constructor_call.cpp
-        custom_float_literal.cpp
-        custom_integer_literal.cpp
         default.cpp
         dereference.cpp
         entity.cpp
-        float_literal.cpp
         function_call.cpp
         heap.cpp
-        integer_literal.cpp
         loop_index.cpp
         member_function_call.cpp
         index_access.cpp
         member_access.cpp
         move.cpp
         not.cpp
-        null_pointer.cpp
         operator.cpp
         plain_initialiser.cpp
         radix_literal.cpp
         self.cpp
         self_member.cpp
-        string_literal.cpp
         template_entity.cpp
         ternary.cpp
         to_conversion.cpp
         tuple_value.cpp
-        mix_type_initialiser.cpp
-        unsigned_literal.cpp)
+        mix_type_initialiser.cpp)

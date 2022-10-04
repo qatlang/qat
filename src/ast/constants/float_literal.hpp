@@ -1,11 +1,11 @@
-#ifndef QAT_AST_EXPRESSIONS_FLOAT_LITERAL_HPP
-#define QAT_AST_EXPRESSIONS_FLOAT_LITERAL_HPP
+#ifndef QAT_AST_CONSTANTS_FLOAT_LITERAL_HPP
+#define QAT_AST_CONSTANTS_FLOAT_LITERAL_HPP
 
 #include "../expression.hpp"
 
 namespace qat::ast {
 
-class FloatLiteral : public Expression {
+class FloatLiteral : public ConstantExpression {
 private:
   /**
    *  String representation of the floating point number
@@ -22,7 +22,7 @@ public:
    */
   FloatLiteral(String _value, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
+  IR::ConstantValue* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 

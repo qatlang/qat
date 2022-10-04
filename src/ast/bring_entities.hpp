@@ -3,7 +3,7 @@
 
 #include "../IR/context.hpp"
 #include "../utils/file_range.hpp"
-#include "./expressions/string_literal.hpp"
+#include "./constants/string_literal.hpp"
 #include "./node.hpp"
 #include "./node_type.hpp"
 
@@ -16,8 +16,7 @@ private:
   utils::FileRange fileRange;
 
 public:
-  BroughtGroup(String _parent, Vec<String> _members,
-               utils::FileRange _fileRange);
+  BroughtGroup(String _parent, Vec<String> _members, utils::FileRange _fileRange);
   BroughtGroup(String _parent, utils::FileRange _range);
 
   useit String getParent() const;
@@ -28,15 +27,13 @@ public:
 
 class BringEntities : public Node {
 private:
-  Vec<BroughtGroup *>   entities;
+  Vec<BroughtGroup*>    entities;
   utils::VisibilityInfo visibility;
 
 public:
-  BringEntities(Vec<BroughtGroup *>          _entities,
-                const utils::VisibilityInfo &_visibility,
-                utils::FileRange             _fileRange);
+  BringEntities(Vec<BroughtGroup*> _entities, const utils::VisibilityInfo& _visibility, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::bringEntities; }
 };

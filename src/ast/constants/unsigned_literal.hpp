@@ -1,5 +1,5 @@
-#ifndef QAT_AST_EXPRESSIONS_UNSIGNED_LITERAL_HPP
-#define QAT_AST_EXPRESSIONS_UNSIGNED_LITERAL_HPP
+#ifndef QAT_AST_CONSTANTS_UNSIGNED_LITERAL_HPP
+#define QAT_AST_CONSTANTS_UNSIGNED_LITERAL_HPP
 
 #include "../../IR/context.hpp"
 #include "../expression.hpp"
@@ -23,9 +23,9 @@ public:
    */
   UnsignedLiteral(String _value, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
-  useit Json       toJson() const override;
-  useit NodeType nodeType() const override { return NodeType::unsignedLiteral; }
+  useit IR::ConstantValue* emit(IR::Context* ctx) override;
+  useit Json               toJson() const override;
+  useit NodeType           nodeType() const override { return NodeType::unsignedLiteral; }
 };
 
 } // namespace qat::ast

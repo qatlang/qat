@@ -1,0 +1,22 @@
+#ifndef QAT_AST_CONSTANTS_INTEGER_LITERAL_HPP
+#define QAT_AST_CONSTANTS_INTEGER_LITERAL_HPP
+
+#include "../expression.hpp"
+
+namespace qat::ast {
+
+class IntegerLiteral : public ConstantExpression {
+private:
+  String value;
+
+public:
+  IntegerLiteral(String _value, utils::FileRange _fileRange);
+
+  useit IR::ConstantValue* emit(IR::Context* ctx) override;
+  useit Json               toJson() const override;
+  useit NodeType           nodeType() const override { return NodeType::integerLiteral; }
+};
+
+} // namespace qat::ast
+
+#endif

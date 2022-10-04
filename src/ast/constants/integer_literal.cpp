@@ -10,10 +10,14 @@ IR::ConstantValue* IntegerLiteral::emit(IR::Context* ctx) {
     ctx->Error("Integer literals are not assignable", fileRange);
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->llctx), value, 10u),
-                               IR::UnsignedType::get(32, ctx->llctx));
+  return new IR::ConstantValue(llvm::ConstantInt::get(expected ? (llvm::IntegerType*)(expected->getLLVMType())
+                                                               : llvm::Type::getInt32Ty(ctx->llctx),
+                                                      value, 10u),
+                               expected ? expected : IR::IntegerType::get(32, ctx->llctx));
   // NOLINTEND(readability-magic-numbers)
 }
+
+void IntegerLiteral::setType(IR::QatType* typ) const { expected = typ; }
 
 Json IntegerLiteral::toJson() const {
   return Json()._("nodeType", "integerLiteral")._("value", value)._("fileRange", fileRange);

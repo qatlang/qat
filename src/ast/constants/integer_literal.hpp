@@ -7,11 +7,13 @@ namespace qat::ast {
 
 class IntegerLiteral : public ConstantExpression {
 private:
-  String value;
+  String               value;
+  mutable IR::QatType* expected = nullptr;
 
 public:
   IntegerLiteral(String _value, utils::FileRange _fileRange);
 
+  void  setType(IR::QatType* ty) const;
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
   useit NodeType           nodeType() const override { return NodeType::integerLiteral; }

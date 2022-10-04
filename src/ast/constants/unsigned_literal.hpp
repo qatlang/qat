@@ -8,21 +8,13 @@ namespace qat::ast {
 
 class UnsignedLiteral : public Expression {
 private:
-  /**
-   *  String representation of the integer
-   *
-   */
-  String value;
+  String               value;
+  mutable IR::QatType* expected = nullptr;
 
 public:
-  /**
-   *  An Unsigned Integer Literal
-   *
-   * @param _value String representation of the integer
-   * @param _fileRange
-   */
   UnsignedLiteral(String _value, utils::FileRange _fileRange);
 
+  void  setType(IR::QatType* typ) const;
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
   useit NodeType           nodeType() const override { return NodeType::unsignedLiteral; }

@@ -1725,12 +1725,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
           cachedExpressions.push_back(new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
         } else {
-          cachedExpressions.push_back(new ast::UnsignedLiteral(token.value, token.fileRange));
+          cachedExpressions.push_back(new ast::UnsignedLiteral(
+              (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
+              token.fileRange));
         }
         break;
       }
       case TokenType::integerLiteral: {
-        if (token.value.find('_') != String::npos) {
+        if ((token.value.find('_') != String::npos) && (token.value.find('i') != (token.value.length() - 1))) {
           u64    bits  = 32; // NOLINT(readability-magic-numbers)
           auto   split = token.value.find('_');
           String number(token.value.substr(0, split));
@@ -1739,7 +1741,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
           cachedExpressions.push_back(new ast::CustomIntegerLiteral(number, false, bits, token.fileRange));
         } else {
-          cachedExpressions.push_back(new ast::IntegerLiteral(token.value, token.fileRange));
+          cachedExpressions.push_back(new ast::IntegerLiteral(
+              (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
+              token.fileRange));
         }
         break;
       }

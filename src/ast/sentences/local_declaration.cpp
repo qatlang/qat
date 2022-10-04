@@ -1,6 +1,8 @@
 #include "./local_declaration.hpp"
 #include "../../show.hpp"
+#include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
+#include "../constants/unsigned_literal.hpp"
 #include "../expressions/array_literal.hpp"
 #include "../expressions/constructor_call.hpp"
 #include "../expressions/default.hpp"
@@ -172,6 +174,34 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, String _name, Ex
                      "which is a null pointer. Expected a pointer type in the "
                      "declaration",
                      fileRange);
+        }
+      }
+    } else if (value->nodeType() == NodeType::integerLiteral) {
+      if (type) {
+        declType = type->emit(ctx);
+        if (!isRef) {
+          if (declType->isInteger() || declType->isUnsignedInteger()) {
+            ((IntegerLiteral*)value)->setType(declType);
+          } else {
+            ctx->Error("Invalid type to set for integer literal", fileRange);
+          }
+        } else {
+          ctx->Error("The value to be assigned is a signed integer and hence this declaration cannot be a reference",
+                     value->fileRange);
+        }
+      }
+    } else if (value->nodeType() == NodeType::unsignedLiteral) {
+      if (type) {
+        declType = type->emit(ctx);
+        if (!isRef) {
+          if (declType->isInteger() || declType->isUnsignedInteger()) {
+            ((UnsignedLiteral*)value)->setType(declType);
+          } else {
+            ctx->Error("Invalid type to set for unsigned integer literal", fileRange);
+          }
+        } else {
+          ctx->Error("The value to be assigned is an unsigned integer and hence this declaration cannot be a reference",
+                     value->fileRange);
         }
       }
     }

@@ -1,8 +1,12 @@
 #include "./assignment.hpp"
+#include "../../IR/logic.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
+#include "../expressions/copy.hpp"
 #include "../expressions/default.hpp"
+#include "../expressions/move.hpp"
+#include <cerrno>
 
 namespace qat::ast {
 
@@ -62,12 +66,55 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
       ctx->Error("Type of LHS is not compatible with the RHS", fileRange);
     }
   }
-  auto* expVal = value->emit(ctx);
   SHOW("Emitted lhs and rhs of Assignment")
   if (lhsVal->isVariable() ||
       (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->isSubtypeVariable())) {
     SHOW("Is variable nature")
     if (lhsVal->isImplicitPointer() || lhsVal->getType()->isReference()) {
+      if (value->nodeType() == NodeType::copyExpression || value->nodeType() == NodeType::moveExpression) {
+        auto isCopy = value->nodeType() == NodeType::copyExpression;
+        if ((lhsVal->getType()->isCoreType() && (isCopy ? lhsVal->getType()->asCore()->hasCopyAssignment()
+                                                        : lhsVal->getType()->asCore()->hasMoveAssignment())) ||
+            (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isCoreType() &&
+             ((isCopy ? lhsVal->getType()->asReference()->getSubType()->asCore()->hasCopyAssignment()
+                      : lhsVal->getType()->asReference()->getSubType()->asCore()->hasMoveAssignment())))) {
+          auto* val    = isCopy ? ((Copy*)value)->exp : ((Move*)value)->exp;
+          auto* expVal = val->emit(ctx);
+          auto* lhsTy  = lhsVal->getType();
+          auto* expTy  = expVal->getType();
+          if ((expTy->isCoreType() && expVal->isImplicitPointer()) ||
+              (expTy->isReference() && expTy->asReference()->getSubType()->isCoreType())) {
+            if (expTy->isReference()) {
+              expVal->loadImplicitPointer(ctx->builder);
+            }
+            if (lhsTy->isSame(expVal->getType()) ||
+                (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isSame(
+                                             expTy->isReference() ? expTy->asReference()->getSubType() : expTy)) ||
+                (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
+                                             lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy))) {
+              auto* cTy = lhsTy->isCoreType() ? lhsTy->asCore() : lhsTy->asReference()->getSubType()->asCore();
+              if (lhsVal->isImplicitPointer() && lhsVal->isReference()) {
+                SHOW("LHS is implicit pointer")
+                lhsVal->loadImplicitPointer(ctx->builder);
+                SHOW("Loaded implicit pointer")
+              }
+              if (expVal->isImplicitPointer() && expTy->isReference()) {
+                expVal->loadImplicitPointer(ctx->builder);
+              }
+              auto* cFn = isCopy ? cTy->getCopyAssignment() : cTy->getMoveAssignment();
+              SHOW("Performing explicit " << (isCopy ? "copy" : "move") << " for core type " << cTy->getFullName()
+                                          << " in assignment")
+              (void)cFn->call(ctx, {lhsVal->getLLVM(), expVal->getLLVM()}, ctx->getMod());
+              return nullptr;
+            } else {
+              ctx->Error("Types of the LHS and RHS are not compatible for assignment", fileRange);
+            }
+          } else {
+            ctx->Error(String("The expression cannot be ") + (isCopy ? "copied" : "moved"), value->fileRange);
+          }
+        }
+      }
+      auto* expVal = value->emit(ctx);
       SHOW("Getting IR types")
       auto* lhsTy = lhsVal->getType();
       auto* expTy = expVal->getType();
@@ -75,20 +122,39 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isSame(
                                        expTy->isReference() ? expTy->asReference()->getSubType() : expTy)) ||
           (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
-                                       lhsTy->isReference() ? lhsTy->asReference()->getSubType() : expTy))) {
+                                       lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy))) {
         SHOW("The general types are the same")
         if (lhsVal->isImplicitPointer() && lhsTy->isReference()) {
           SHOW("LHS is implicit pointer")
           lhsVal->loadImplicitPointer(ctx->builder);
+          SHOW("Loaded implicit pointer")
         }
-        SHOW("Loaded implicit pointer")
         if (expTy->isReference() || expVal->isImplicitPointer()) {
           if (expTy->isReference()) {
+            expVal->loadImplicitPointer(ctx->builder);
             SHOW("Expression for assignment is of type " << expTy->asReference()->getSubType()->toString())
             expTy = expTy->asReference()->getSubType();
           }
-          expVal = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expVal->getLLVM()), expVal->getType(),
-                                 expVal->isVariable(), expVal->getNature());
+          if (expTy->isCoreType() && (expTy->asCore()->hasCopyAssignment() || expTy->asCore()->hasMoveAssignment())) {
+            auto* cTy = expTy->asCore();
+            if (cTy->hasCopyAssignment()) {
+              auto* cpFn = cTy->getCopyAssignment();
+              ctx->Warning("Copy assignment of core type " + ctx->highlightWarning(cTy->getFullName()) +
+                               " is invoked here. Please make the copy explicit",
+                           fileRange);
+              (void)cpFn->call(ctx, {lhsVal->getLLVM(), expVal->getLLVM()}, ctx->getMod());
+            } else {
+              auto* mvFn = cTy->getMoveAssignment();
+              ctx->Warning("Move assignment of core type " + ctx->highlightWarning(cTy->getFullName()) +
+                               " is invoked here. Please make the move explicit",
+                           fileRange);
+              (void)mvFn->call(ctx, {lhsVal->getLLVM(), expVal->getLLVM()}, ctx->getMod());
+            }
+            return nullptr;
+          } else {
+            expVal = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expVal->getLLVM()), expVal->getType(),
+                                   expVal->isVariable(), expVal->getNature());
+          }
         }
         SHOW("Creating store")
         ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());

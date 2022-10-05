@@ -939,11 +939,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  Maybe<utils::VisibilityKind> broadVisib;
+  // Maybe<utils::VisibilityKind> broadVisib;
   Maybe<utils::VisibilityKind> visibility;
   auto                         setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
   auto                         getVisibility = [&]() {
-    auto res   = visibility.value_or(broadVisib.value_or(utils::VisibilityKind::type));
+    // auto res   = visibility.value_or(broadVisib.value_or(utils::VisibilityKind::type));
+    auto res   = visibility.value_or(utils::VisibilityKind::type);
     visibility = None;
     return res;
   };
@@ -955,17 +956,18 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     switch (token.type) {
       case TokenType::Public: {
         auto kindRes = parseVisibilityKind(i);
-        if (isNext(TokenType::colon, kindRes.second)) {
-          broadVisib = kindRes.first;
-          i          = kindRes.second + 1;
-        } else {
-          setVisibility(kindRes.first);
-          i = kindRes.second;
-        }
+        // if (isNext(TokenType::colon, kindRes.second)) {
+        //   broadVisib = kindRes.first;
+        //   i          = kindRes.second + 1;
+        // } else {
+        setVisibility(kindRes.first);
+        i = kindRes.second;
+        // }
         break;
       }
       case TokenType::constant: {
         setConst();
+        tokens->at(i);
         break;
       }
       case TokenType::Static: {

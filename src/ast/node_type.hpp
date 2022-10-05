@@ -82,6 +82,7 @@ enum class NodeType {
   moveExpression,
   typeChecker,
   Not,
+  copyExpression,
 };
 
 } // namespace qat::ast

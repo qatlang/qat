@@ -6,12 +6,19 @@
 namespace qat::ast {
 
 class Move : public Expression {
-  Expression *exp;
+  friend class Assignment;
+  friend class LocalDeclaration;
+
+private:
+  Expression*     exp;
+  IR::LocalValue* local = nullptr;
+  Maybe<String>   irName;
+  bool            isVar = false;
 
 public:
-  Move(Expression *exp, utils::FileRange fileRange);
+  Move(Expression* exp, utils::FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::moveExpression; }
   useit Json       toJson() const final;
 };

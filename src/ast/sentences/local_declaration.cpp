@@ -5,8 +5,10 @@
 #include "../constants/unsigned_literal.hpp"
 #include "../expressions/array_literal.hpp"
 #include "../expressions/constructor_call.hpp"
+#include "../expressions/copy.hpp"
 #include "../expressions/default.hpp"
 #include "../expressions/mix_type_initialiser.hpp"
+#include "../expressions/move.hpp"
 #include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
 
@@ -156,6 +158,34 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, String _name, Ex
     } else {
       ctx->Error("No type provided for creating default value", fileRange);
     }
+  } else if (value && (value->nodeType() == NodeType::moveExpression)) {
+    SHOW("Value assigned to declaration is Move exp")
+    auto* moveVal = (Move*)value;
+    if (type) {
+      declType       = type->emit(ctx);
+      moveVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
+      (void)moveVal->emit(ctx);
+      return nullptr;
+    } else if (!isRef) {
+      moveVal->irName = name;
+      moveVal->isVar  = variability;
+      (void)moveVal->emit(ctx);
+      return nullptr;
+    }
+  } else if (value && (value->nodeType() == NodeType::copyExpression)) {
+    SHOW("Value assigned to declaration is Copy exp")
+    auto* copyVal = (Copy*)value;
+    if (type) {
+      declType       = type->emit(ctx);
+      copyVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
+      (void)copyVal->emit(ctx);
+      return nullptr;
+    } else if (!isRef) {
+      copyVal->irName = name;
+      copyVal->isVar  = variability;
+      (void)copyVal->emit(ctx);
+      return nullptr;
+    }
   }
 
   // EDGE CASE ends here
@@ -249,6 +279,32 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, String _name, Ex
   }
   auto* newValue = block->newValue(name, declType, type ? type->isVariable() : variability);
   if (expVal) {
+    if ((expVal->getType()->isCoreType() && expVal->isImplicitPointer()) ||
+        (expVal->getType()->isReference() && expVal->getType()->asReference()->getSubType()->isCoreType())) {
+      auto* cTy = expVal->isReference() ? expVal->getType()->asReference()->getSubType()->asCore()
+                                        : expVal->getType()->asCore();
+      if (cTy->hasCopyConstructor()) {
+        if (expVal->isReference()) {
+          expVal->loadImplicitPointer(ctx->builder);
+        }
+        auto* cpFn = cTy->getCopyConstructor();
+        ctx->Warning("The copy constructor of core type " + ctx->highlightWarning(cTy->getFullName()) +
+                         " is invoked here. Please make the copy explicit.",
+                     value->fileRange);
+        (void)cpFn->call(ctx, {newValue->getAlloca(), expVal->getLLVM()}, ctx->getMod());
+        return nullptr;
+      } else if (cTy->hasMoveConstructor()) {
+        if (expVal->isReference()) {
+          expVal->loadImplicitPointer(ctx->builder);
+        }
+        auto* mvFn = cTy->getMoveConstructor();
+        ctx->Warning("The move constructor of core type " + ctx->highlightWarning(cTy->getFullName()) +
+                         " is invoked here. Please make the move explicit.",
+                     value->fileRange);
+        (void)mvFn->call(ctx, {newValue->getAlloca(), expVal->getLLVM()}, ctx->getMod());
+        return nullptr;
+      }
+    }
     SHOW("Creating store")
     if ((expVal->isImplicitPointer() && !declType->isReference()) ||
         (expVal->isImplicitPointer() && declType->isReference() && expVal->getType()->isReference())) {

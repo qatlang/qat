@@ -6,8 +6,14 @@
 namespace qat::ast {
 
 class Copy : public Expression {
+  friend class Assignment;
+  friend class LocalDeclaration;
+
 private:
-  Expression* exp;
+  Expression*     exp;
+  IR::LocalValue* local = nullptr;
+  Maybe<String>   irName;
+  bool            isVar = false;
 
 public:
   Copy(Expression* exp, utils::FileRange fileRange);

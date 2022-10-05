@@ -12,10 +12,26 @@ IR::Value* Copy::emit(IR::Context* ctx) {
     auto* cTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asCore()
                                        : expEmit->getType()->asCore();
     if (cTy->hasCopyConstructor()) {
-      auto* cpFn   = cTy->getCopyConstructor();
-      auto* newVal = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
-      (void)cpFn->call(ctx, {newVal, expEmit->getLLVM()}, ctx->getMod());
-      return new IR::Value(newVal, cTy, false, IR::Nature::temporary);
+      llvm::AllocaInst* alloca = nullptr;
+      if (local) {
+        if (!cTy->isSame(local->getType())) {
+          ctx->Error("The type provided in the local declaration does not match the type to be copied", fileRange);
+        }
+        alloca = local->getAlloca();
+      } else if (irName.has_value()) {
+        local  = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar);
+        alloca = local->getAlloca();
+      } else {
+        alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
+      }
+      (void)cTy->getCopyConstructor()->call(ctx, {alloca, expEmit->getLLVM()}, ctx->getMod());
+      if (local) {
+        auto* val = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
+        val->setLocalID(local->getLocalID());
+        return val;
+      } else {
+        return new IR::Value(alloca, cTy, true, IR::Nature::pure);
+      }
     } else {
       ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) + " does not have a copy constructor",
                  fileRange);

@@ -14,6 +14,7 @@
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/constructor_call.hpp"
+#include "../ast/expressions/copy.hpp"
 #include "../ast/expressions/default.hpp"
 #include "../ast/expressions/dereference.hpp"
 #include "../ast/expressions/entity.hpp"
@@ -2167,6 +2168,21 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           Error("Expected ( to start the expression to move", RangeAt(i));
         }
         break;
+      }
+      case TokenType::copy: {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          if (pCloseRes) {
+            auto  pClose = pCloseRes.value();
+            auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
+            cachedExpressions.push_back(new ast::Copy(exp, RangeSpan(i, pClose)));
+            i = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
+          }
+        } else {
+          Error("Expected ( to start the expression to copy", RangeAt(i));
+        }
       }
       case TokenType::unaryOperator: {
         if (ValueAt(i) == "!" || ValueAt(i) == "-") {

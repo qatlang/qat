@@ -1,8 +1,12 @@
 #include "./assignment.hpp"
+#include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
+#include "../constants/unsigned_literal.hpp"
 #include "../expressions/default.hpp"
 
 namespace qat::ast {
+
+#define MAX_RESPONSIVE_BITWIDTH 64u
 
 Assignment::Assignment(Expression* _lhs, Expression* _value, utils::FileRange _fileRange)
     : Sentence(std::move(_fileRange)), lhs(_lhs), value(_value) {}
@@ -29,6 +33,34 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
     } else {
       defVal->setType(lhsVal->getType());
     }
+  } else if (value->nodeType() == NodeType::unsignedLiteral) {
+    auto* uLit = (UnsignedLiteral*)value;
+    if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isInteger()) {
+      uLit->setType(lhsVal->getType()->asReference()->getSubType());
+    } else if (lhsVal->getType()->isReference() &&
+               lhsVal->getType()->asReference()->getSubType()->isUnsignedInteger()) {
+      uLit->setType(lhsVal->getType()->asReference()->getSubType());
+    } else if (lhsVal->getType()->isInteger()) {
+      uLit->setType(lhsVal->getType());
+    } else if (lhsVal->getType()->isUnsignedInteger()) {
+      uLit->setType(lhsVal->getType());
+    } else {
+      ctx->Error("Type of LHS is not compatible with the RHS", fileRange);
+    }
+  } else if (value->nodeType() == NodeType::integerLiteral) {
+    auto* iLit = (IntegerLiteral*)value;
+    if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isInteger()) {
+      iLit->setType(lhsVal->getType()->asReference()->getSubType());
+    } else if (lhsVal->getType()->isReference() &&
+               lhsVal->getType()->asReference()->getSubType()->isUnsignedInteger()) {
+      iLit->setType(lhsVal->getType()->asReference()->getSubType());
+    } else if (lhsVal->getType()->isInteger()) {
+      iLit->setType(lhsVal->getType());
+    } else if (lhsVal->getType()->isUnsignedInteger()) {
+      iLit->setType(lhsVal->getType());
+    } else {
+      ctx->Error("Type of LHS is not compatible with the RHS", fileRange);
+    }
   }
   auto* expVal = value->emit(ctx);
   SHOW("Emitted lhs and rhs of Assignment")
@@ -37,33 +69,71 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
     SHOW("Is variable nature")
     if (lhsVal->isImplicitPointer() || lhsVal->getType()->isReference()) {
       SHOW("Getting IR types")
-      auto* lhsType = lhsVal->getType();
-      auto* expType = expVal->getType();
-      if (lhsType->isSame(expType) ||
-          (lhsType->isReference() && lhsType->asReference()->getSubType()->isSame(
-                                         expType->isReference() ? expType->asReference()->getSubType() : expType)) ||
-          (expType->isReference() && expType->asReference()->getSubType()->isSame(
-                                         lhsType->isReference() ? lhsType->asReference()->getSubType() : expType))) {
+      auto* lhsTy = lhsVal->getType();
+      auto* expTy = expVal->getType();
+      if (lhsTy->isSame(expTy) ||
+          (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isSame(
+                                       expTy->isReference() ? expTy->asReference()->getSubType() : expTy)) ||
+          (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
+                                       lhsTy->isReference() ? lhsTy->asReference()->getSubType() : expTy))) {
         SHOW("The general types are the same")
-        if (lhsVal->isImplicitPointer() && lhsType->isReference()) {
+        if (lhsVal->isImplicitPointer() && lhsTy->isReference()) {
           SHOW("LHS is implicit pointer")
           lhsVal->loadImplicitPointer(ctx->builder);
         }
         SHOW("Loaded implicit pointer")
-        if (expType->isReference() || expVal->isImplicitPointer()) {
-          if (expType->isReference()) {
-            SHOW("Expression for assignment is of type " << expType->asReference()->getSubType()->toString())
-            expType = expType->asReference()->getSubType();
+        if (expTy->isReference() || expVal->isImplicitPointer()) {
+          if (expTy->isReference()) {
+            SHOW("Expression for assignment is of type " << expTy->asReference()->getSubType()->toString())
+            expTy = expTy->asReference()->getSubType();
           }
-          expVal = new IR::Value(ctx->builder.CreateLoad(expType->getLLVMType(), expVal->getLLVM()), expVal->getType(),
+          expVal = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expVal->getLLVM()), expVal->getType(),
                                  expVal->isVariable(), expVal->getNature());
         }
         SHOW("Creating store")
         ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
         return nullptr;
+      } else if (expVal->isConstVal() &&
+                 ((lhsTy->isInteger() || (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isInteger()) ||
+                   lhsTy->isUnsignedInteger() ||
+                   (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isUnsignedInteger())) &&
+                  ((expTy->isInteger() && (expTy->asInteger()->getBitwidth() < MAX_RESPONSIVE_BITWIDTH)) ||
+                   (expTy->isUnsignedInteger() &&
+                    (expTy->asUnsignedInteger()->getBitwidth() <= MAX_RESPONSIVE_BITWIDTH))))) {
+        if (lhsVal->isImplicitPointer() && lhsTy->isReference()) {
+          SHOW("LHS is implicit pointer")
+          lhsVal->loadImplicitPointer(ctx->builder);
+        }
+        auto isSignedLHS =
+            lhsTy->isInteger() || (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isInteger());
+        auto isSignedExp = expTy->isInteger();
+        auto lhsBits     = lhsTy->isInteger()
+                               ? lhsTy->asInteger()->getBitwidth()
+                               : (lhsTy->isUnsignedInteger()
+                                      ? lhsTy->asUnsignedInteger()->getBitwidth()
+                                      : (lhsTy->asReference()->getSubType()->isInteger()
+                                             ? lhsTy->asReference()->getSubType()->asInteger()->getBitwidth()
+                                             : lhsTy->asReference()->getSubType()->asUnsignedInteger()->getBitwidth()));
+        auto expBits =
+            expTy->isInteger() ? expTy->asInteger()->getBitwidth() : expTy->asUnsignedInteger()->getBitwidth();
+        if (isSignedExp == isSignedLHS) {
+          if (lhsBits < expBits) {
+            ctx->Warning("The biwidth of the RHS is higher than LHS and hence, there could be a loss of data",
+                         fileRange);
+          }
+          expVal = new IR::Value(
+              ctx->builder.CreateIntCast(expVal->asConst()->getLLVM(),
+                                         lhsTy->isReference() ? lhsTy->asReference()->getSubType()->getLLVMType()
+                                                              : lhsTy->getLLVMType(),
+                                         isSignedLHS),
+              lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy, false, IR::Nature::pure);
+          ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
+        } else {
+          ctx->Error("Types on both sides are not compatible", fileRange);
+        }
       } else {
-        ctx->Error("Type of the left hand side of the assignment is " + ctx->highlightError(lhsType->toString()) +
-                       " and the type of right hand side is " + ctx->highlightError(expType->toString()) +
+        ctx->Error("Type of the left hand side of the assignment is " + ctx->highlightError(lhsTy->toString()) +
+                       " and the type of right hand side is " + ctx->highlightError(expTy->toString()) +
                        ". The types of both sides of the assignment are not "
                        "compatible. Please check the logic.",
                    fileRange);

@@ -10,19 +10,18 @@ class ConstructorCall : public Expression {
   friend class LocalDeclaration;
 
 private:
-  QatType          *type;
-  Vec<Expression *> args;
-  bool              isHeaped;
+  QatType*         type;
+  Vec<Expression*> args;
+  bool             isHeaped;
 
-  mutable IR::LocalValue *local = nullptr;
+  mutable IR::LocalValue* local = nullptr;
   mutable String          irName;
-  mutable bool            isVar = false;
+  mutable bool            isVar = true;
 
 public:
-  ConstructorCall(QatType *_type, Vec<Expression *> _args, bool _isHeap,
-                  utils::FileRange _fileRange);
+  ConstructorCall(QatType* _type, Vec<Expression*> _args, bool _isHeap, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::constructorCall; }
   useit Json       toJson() const final;
 };

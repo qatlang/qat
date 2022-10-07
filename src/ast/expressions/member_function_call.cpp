@@ -114,7 +114,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       }
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }
-    SHOW("Argument values generated")
+    SHOW("Argument values generated for member function")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
           !(argsEmit.at(i - 1)->getType()->isReference() &&
@@ -134,9 +134,12 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);
         }
       } else if (argsEmit.at(i - 1)->isReference()) {
+        SHOW("Loading ref arg at " << i - 1 << " with type " << argsEmit.at(i - 1)->getType()->toString())
         argsEmit.at(i - 1) = new IR::Value(
-            ctx->builder.CreateLoad(argsEmit.at(i - 1)->getType()->getLLVMType(), argsEmit.at(i - 1)->getLLVM()),
-            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->isVariable(), argsEmit.at(i - 1)->getNature());
+            ctx->builder.CreateLoad(argsEmit.at(i - 1)->getType()->asReference()->getSubType()->getLLVMType(),
+                                    argsEmit.at(i - 1)->getLLVM()),
+            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->getType()->asReference()->isSubtypeVariable(),
+            argsEmit.at(i - 1)->getNature());
       } else {
         argsEmit.at(i - 1)->loadImplicitPointer(ctx->builder);
       }

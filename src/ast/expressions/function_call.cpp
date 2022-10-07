@@ -66,7 +66,8 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
         }
       } else if (argsEmit.at(i)->isReference()) {
         argsEmit.at(i) =
-            new IR::Value(ctx->builder.CreateLoad(argsEmit.at(i)->getType()->getLLVMType(), argsEmit.at(i)->getLLVM()),
+            new IR::Value(ctx->builder.CreateLoad(argsEmit.at(i)->getType()->asReference()->getSubType()->getLLVMType(),
+                                                  argsEmit.at(i)->getLLVM()),
                           argsEmit.at(i)->getType(), argsEmit.at(i)->isVariable(), argsEmit.at(i)->getNature());
       } else {
         argsEmit.at(i)->loadImplicitPointer(ctx->builder);

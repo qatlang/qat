@@ -63,6 +63,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
           (void)IR::addBranch(ctx->builder, trueBlock->getBB());
           trueBlock->setActive(ctx->builder);
           emitSentences(section.second, ctx);
+          trueBlock->destroyLocals(ctx);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           break;
         }
@@ -81,6 +82,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
         }
         trueBlock->setActive(ctx->builder);
         emitSentences(section.second, ctx);
+        trueBlock->destroyLocals(ctx);
         (void)IR::addBranch(ctx->builder, restBlock->getBB());
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
           // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
@@ -95,9 +97,11 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       (void)IR::addBranch(ctx->builder, elseBlock->getBB());
       elseBlock->setActive(ctx->builder);
       emitSentences(elseCase.value(), ctx);
+      elseBlock->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && trueKnownValue(knownVals.size()).first)) {
       emitSentences(elseCase.value(), ctx);
+      ctx->fn->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
   } else {

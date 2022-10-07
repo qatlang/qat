@@ -3,23 +3,19 @@
 
 namespace qat::ast {
 
-LoopWhile::LoopWhile(Expression *_condition, Vec<Sentence *> _sentences,
-                     Maybe<String> _tag, utils::FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), condition(_condition),
-      sentences(std::move(_sentences)), tag(std::move(_tag)) {}
+LoopWhile::LoopWhile(Expression* _condition, Vec<Sentence*> _sentences, Maybe<String> _tag, utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), condition(_condition), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
-IR::Value *LoopWhile::emit(IR::Context *ctx) {
+IR::Value* LoopWhile::emit(IR::Context* ctx) {
   String uniq;
   if (tag.has_value()) {
     uniq = tag.value();
-    for (const auto &info : ctx->loopsInfo) {
+    for (const auto& info : ctx->loopsInfo) {
       if (info->name == uniq) {
-        ctx->Error(
-            "The tag provided for this loop is already used by another loop",
-            fileRange);
+        ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
-    for (const auto &brek : ctx->breakables) {
+    for (const auto& brek : ctx->breakables) {
       if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
         ctx->Error("The tag provided for the loop is already used by another "
                    "loop or switch",
@@ -29,27 +25,24 @@ IR::Value *LoopWhile::emit(IR::Context *ctx) {
   } else {
     uniq = utils::unique_id();
   }
-  auto *cond = condition->emit(ctx);
+  auto* cond = condition->emit(ctx);
   cond->loadImplicitPointer(ctx->builder);
   if (cond->getType()->isUnsignedInteger() ||
-      (cond->getType()->isReference() &&
-       cond->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-    auto *fun       = ctx->fn;
-    auto *trueBlock = new IR::Block(fun, fun->getBlock());
-    auto *condBlock = new IR::Block(fun, fun->getBlock());
-    auto *restBlock = new IR::Block(fun, fun->getBlock());
-    auto *llCond    = cond->getLLVM();
+      (cond->getType()->isReference() && cond->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+    auto* fun       = ctx->fn;
+    auto* trueBlock = new IR::Block(fun, fun->getBlock());
+    auto* condBlock = new IR::Block(fun, fun->getBlock());
+    auto* restBlock = new IR::Block(fun, fun->getBlock());
+    auto* llCond    = cond->getLLVM();
     if (cond->getType()->isReference()) {
-      llCond = ctx->builder.CreateLoad(
-          cond->getType()->asReference()->getSubType()->getLLVMType(), llCond);
+      llCond = ctx->builder.CreateLoad(cond->getType()->asReference()->getSubType()->getLLVMType(), llCond);
     }
     ctx->builder.CreateCondBr(llCond, trueBlock->getBB(), restBlock->getBB());
-    ctx->loopsInfo.push_back(new IR::LoopInfo(
-        uniq, trueBlock, condBlock, restBlock, nullptr, IR::LoopType::While));
-    ctx->breakables.push_back(new IR::Breakable(
-        tag.has_value() ? Maybe<String>(uniq) : None, restBlock));
+    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, condBlock, restBlock, nullptr, IR::LoopType::While));
+    ctx->breakables.push_back(new IR::Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
     trueBlock->setActive(ctx->builder);
     emitSentences(sentences, ctx);
+    trueBlock->destroyLocals(ctx);
     ctx->loopsInfo.pop_back();
     ctx->breakables.pop_back();
     (void)IR::addBranch(ctx->builder, condBlock->getBB());
@@ -57,9 +50,7 @@ IR::Value *LoopWhile::emit(IR::Context *ctx) {
     cond = condition->emit(ctx);
     cond->loadImplicitPointer(ctx->builder);
     if (cond->getType()->isReference()) {
-      llCond = ctx->builder.CreateLoad(
-          cond->getType()->asReference()->getSubType()->getLLVMType(),
-          cond->getLLVM());
+      llCond = ctx->builder.CreateLoad(cond->getType()->asReference()->getSubType()->getLLVMType(), cond->getLLVM());
     } else {
       llCond = cond->getLLVM();
     }
@@ -75,7 +66,7 @@ IR::Value *LoopWhile::emit(IR::Context *ctx) {
 
 Json LoopWhile::toJson() const {
   Vec<JsonValue> snts;
-  for (auto *snt : sentences) {
+  for (auto* snt : sentences) {
     snts.push_back(snt->toJson());
   }
   return Json()

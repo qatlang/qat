@@ -37,14 +37,14 @@ struct TemplateEntityMarker {
 
 class LoopInfo {
 public:
-  LoopInfo(String _name, IR::Block *_mainB, IR::Block *_condB,
-           IR::Block *_restB, IR::LocalValue *_index, LoopType _type);
+  LoopInfo(String _name, IR::Block* _mainB, IR::Block* _condB, IR::Block* _restB, IR::LocalValue* _index,
+           LoopType _type);
 
   String          name;
-  IR::Block      *mainBlock;
-  IR::Block      *condBlock;
-  IR::Block      *restBlock;
-  IR::LocalValue *index;
+  IR::Block*      mainBlock;
+  IR::Block*      condBlock;
+  IR::Block*      restBlock;
+  IR::LocalValue* index;
   LoopType        type;
 
   useit bool isTimes() const;
@@ -57,28 +57,28 @@ enum class BreakableType {
 
 class Breakable {
 public:
-  Breakable(Maybe<String> _tag, IR::Block *_restBlock);
+  Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock);
 
   Maybe<String> tag;
-  IR::Block    *restBlock;
+  IR::Block*    restBlock;
+  IR::Block*    trueBlock;
 };
 
 class Context {
 private:
-  using IRBuilderTy =
-      llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
+  using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
 
 public:
   Context();
 
   llvm::LLVMContext llctx;
   IRBuilderTy       builder;
-  QatModule        *mod        = nullptr;
-  IR::Function     *fn         = nullptr; // Active function
-  llvm::Value      *selfVal    = nullptr;
-  IR::CoreType     *activeType = nullptr; // Active core type
-  Vec<LoopInfo *>   loopsInfo;
-  Vec<Breakable *>  breakables;
+  QatModule*        mod        = nullptr;
+  IR::Function*     fn         = nullptr; // Active function
+  llvm::Value*      selfVal    = nullptr;
+  IR::CoreType*     activeType = nullptr; // Active core type
+  Vec<LoopInfo*>    loopsInfo;
+  Vec<Breakable*>   breakables;
 
   // META
 
@@ -88,18 +88,15 @@ public:
   Vec<String>                         nativeLibsToLink;
   mutable Maybe<TemplateEntityMarker> activeTemplate;
 
-  useit QatModule *getMod() const; // Get the active IR module
+  useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;
-  useit                      utils::VisibilityInfo
-  getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
+  useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
 
-  void Error(const String &message, const utils::FileRange &fileRange) const;
-  void Warning(const String &message, const utils::FileRange &fileRange) const;
-  static String highlightError(const String &message,
-                               const char   *color = colors::yellow);
-  static String highlightWarning(const String &message,
-                                 const char   *color = colors::yellow);
+  void          Error(const String& message, const utils::FileRange& fileRange) const;
+  void          Warning(const String& message, const utils::FileRange& fileRange) const;
+  static String highlightError(const String& message, const char* color = colors::yellow);
+  static String highlightWarning(const String& message, const char* color = colors::yellow);
 };
 
 } // namespace qat::IR

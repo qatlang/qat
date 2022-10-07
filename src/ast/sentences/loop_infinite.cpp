@@ -3,23 +3,19 @@
 
 namespace qat::ast {
 
-LoopInfinite::LoopInfinite(Vec<Sentence *> _sentences, Maybe<String> _tag,
-                           utils::FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)),
-      tag(std::move(_tag)) {}
+LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
-IR::Value *LoopInfinite::emit(IR::Context *ctx) {
+IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   String uniq;
   if (tag.has_value()) {
     uniq = tag.value();
-    for (const auto &info : ctx->loopsInfo) {
+    for (const auto& info : ctx->loopsInfo) {
       if (info->name == uniq) {
-        ctx->Error(
-            "The tag provided for this loop is already used by another loop",
-            fileRange);
+        ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
-    for (const auto &brek : ctx->breakables) {
+    for (const auto& brek : ctx->breakables) {
       if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
         ctx->Error("The tag provided for the loop is already used by another "
                    "loop or switch",
@@ -29,17 +25,16 @@ IR::Value *LoopInfinite::emit(IR::Context *ctx) {
   } else {
     uniq = utils::unique_id();
   }
-  auto *trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
   SHOW("Infinite loop true block " << trueBlock->getName())
-  auto *restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
   SHOW("Infinite loop rest block " << restBlock->getName())
   (void)IR::addBranch(ctx->builder, trueBlock->getBB());
   trueBlock->setActive(ctx->builder);
-  ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, nullptr, restBlock,
-                                            nullptr, IR::LoopType::infinite));
-  ctx->breakables.push_back(new IR::Breakable(
-      tag.has_value() ? Maybe<String>(uniq) : None, restBlock));
+  ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, nullptr, restBlock, nullptr, IR::LoopType::infinite));
+  ctx->breakables.push_back(new IR::Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
   emitSentences(sentences, ctx);
+  trueBlock->destroyLocals(ctx);
   ctx->loopsInfo.pop_back();
   ctx->breakables.pop_back();
   (void)IR::addBranch(ctx->builder, trueBlock->getBB());
@@ -49,7 +44,7 @@ IR::Value *LoopInfinite::emit(IR::Context *ctx) {
 
 Json LoopInfinite::toJson() const {
   Vec<JsonValue> snts;
-  for (auto *snt : sentences) {
+  for (auto* snt : sentences) {
     snts.push_back(snt->toJson());
   }
   return Json()

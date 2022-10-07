@@ -161,15 +161,26 @@ void Block::setActive(llvm::IRBuilder<>& builder) {
   builder.SetInsertPoint(bb);
 }
 
-void Block::collectLocalValues(Vec<LocalValue*>& vals) const {
+void Block::collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const {
   if (hasParent()) {
-    parent->collectLocalValues(vals);
+    parent->collectAllLocalValuesSoFar(vals);
   } else {
     for (auto* val : values) {
       vals.push_back(val);
     }
   }
 }
+
+void Block::collectLocalsFrom(Vec<LocalValue*>& vals) const {
+  for (auto* val : values) {
+    vals.push_back(val);
+  }
+  for (auto* child : children) {
+    child->collectLocalsFrom(vals);
+  }
+}
+
+Vec<LocalValue*>& Block::getLocals() { return values; }
 
 bool Block::isMoved(const String& locID) const {
   if (hasParent()) {
@@ -193,6 +204,18 @@ Block* Block::getActive() {
     return children.at(active.value())->getActive();
   } else {
     return this;
+  }
+}
+
+void Block::destroyLocals(IR::Context* ctx) {
+  SHOW("Locals being destroyed for " << name)
+  for (auto* loc : values) {
+    if (loc->getType()->isCoreType()) {
+      if (loc->getType()->asCore()->hasDestructor()) {
+        auto* dFn = loc->getType()->asCore()->getDestructor();
+        (void)dFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
+      }
+    }
   }
 }
 
@@ -333,7 +356,7 @@ Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* 
 void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange) {
   auto destructorCaller = [&]() {
     Vec<IR::LocalValue*> locals;
-    fun->getBlock()->collectLocalValues(locals);
+    fun->getBlock()->collectAllLocalValuesSoFar(locals);
     for (auto* loc : locals) {
       if (loc->getType()->isCoreType()) {
         auto* cTy        = loc->getType()->asCore();
@@ -343,11 +366,26 @@ void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::Fil
     }
     locals.clear();
   };
-  auto* block = fun->getBlock();
-  auto* retTy = fun->getType()->asFunction()->getReturnType();
+  auto* block          = fun->getBlock();
+  auto* retTy          = fun->getType()->asFunction()->getReturnType();
+  auto  zeroAssignSelf = [&]() {
+    if (fun->isMemberFunction()) {
+      if (((IR::MemberFunction*)fun)->getMemberFnType() == MemberFnType::destructor) {
+        if (fun->getBlock()->hasValue("''")) {
+          SHOW("Destructor self value is zero assigned")
+          auto* selfVal = fun->getBlock()->getValue("''");
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(selfVal->getType()->getLLVMType()),
+                                    selfVal->getAlloca());
+        } else {
+          SHOW("Destructor has no self value")
+        }
+      }
+    }
+  };
   if (block->getBB()->getInstList().empty()) {
     if (retTy->isVoid()) {
       destructorCaller();
+      zeroAssignSelf();
       ctx->builder.CreateRetVoid();
     } else {
       ctx->Error("Missing given value in all control paths", fileRange);
@@ -357,9 +395,23 @@ void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::Fil
     if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
       if (retTy->isVoid()) {
         destructorCaller();
+        zeroAssignSelf();
         ctx->builder.CreateRetVoid();
       } else {
         ctx->Error("Missing given value in all control paths", fileRange);
+      }
+    }
+  }
+}
+
+void destroyLocalsFrom(IR::Context* ctx, IR::Block* block) {
+  Vec<IR::LocalValue*> locals;
+  block->collectLocalsFrom(locals);
+  for (auto* loc : locals) {
+    if (loc->getType()->isCoreType()) {
+      if (loc->getType()->asCore()->hasDestructor()) {
+        auto* dFn = loc->getType()->asCore()->getDestructor();
+        (void)dFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
       }
     }
   }

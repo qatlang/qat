@@ -29,7 +29,7 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         }
       }
       Vec<IR::LocalValue*> locals;
-      fun->getBlock()->collectLocalValues(locals);
+      fun->getBlock()->collectAllLocalValuesSoFar(locals);
       for (auto* loc : locals) {
         if (loc->getType()->isCoreType()) {
           auto* cTy        = loc->getType()->asCore();
@@ -76,7 +76,7 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                        fileRange);
         }
         Vec<IR::LocalValue*> locals;
-        fun->getBlock()->collectLocalValues(locals);
+        fun->getBlock()->collectAllLocalValuesSoFar(locals);
         for (auto* loc : locals) {
           if (loc->getType()->isCoreType()) {
             auto* cTy        = loc->getType()->asCore();

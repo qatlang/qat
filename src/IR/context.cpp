@@ -1,7 +1,9 @@
 #include "./context.hpp"
 #include "../ast/node.hpp"
 #include "../cli/color.hpp"
+#include "../cli/config.hpp"
 #include "./value.hpp"
+#include "fstream"
 #include "member_function.hpp"
 #include <iostream>
 
@@ -15,6 +17,11 @@ bool LoopInfo::isTimes() const { return type == LoopType::nTimes; }
 
 Breakable::Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock)
     : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock) {}
+
+CodeProblem::CodeProblem(bool _isError, String _message, utils::FileRange _range)
+    : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
+
+CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
 
 Context::Context() : builder(llctx), hasMain(false) {}
 
@@ -117,25 +124,49 @@ String Context::highlightWarning(const String& message, const char* color) {
   return color + message + colors::bold::purple;
 }
 
+void Context::writeJsonResult(bool status) const {
+  Vec<JsonValue> problems;
+  for (const auto& prob : codeProblems) {
+    problems.push_back((Json)prob);
+  }
+  Json result;
+  result._("status", status)
+      ._("problems", problems)
+      ._("qatTime", (unsigned long long)qatTimeInMicroseconds.value_or(0u))
+      ._("clangTime", (unsigned long long)clangTimeInMicroseconds.value_or(0u))
+      ._("hasMain", hasMain);
+  std::fstream output;
+  output.open((cli::Config::get()->getOutputPath() / "qat_result.json").string().c_str(), std::ios_base::out);
+  if (output.is_open()) {
+    output << result;
+    output.close();
+  }
+}
+
 void Context::Error(const String& message, const utils::FileRange& fileRange) const {
   if (activeTemplate) {
+    codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeTemplate->name,
+                                       activeTemplate->fileRange));
     std::cout << colors::highIntensityBackground::red << "  error  " << colors::white << "▌" << colors::reset << " "
               << colors::bold::red
-              << "Errors generated while creating template variant: " << highlightError(activeTemplate->name)
+              << "Errors generated while creating generic variant: " << highlightError(activeTemplate->name)
               << colors::reset << " | " << colors::underline::green << activeTemplate->fileRange.file.string() << ":"
               << activeTemplate->fileRange.start.line << ":" << activeTemplate->fileRange.start.character
               << colors::reset << " >> " << colors::underline::green << activeTemplate->fileRange.file.string() << ":"
               << activeTemplate->fileRange.end.line << ":" << activeTemplate->fileRange.end.character << colors::reset
               << "\n";
   }
+  codeProblems.push_back(
+      CodeProblem(true, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
   std::cout << colors::highIntensityBackground::red << "  error  " << colors::white << "▌" << colors::reset << " "
-            << colors::bold::red << (activeTemplate ? ("Generating " + activeTemplate->name + " => ") : "") << message
+            << colors::bold::red << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
             << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
             << fileRange.start.line << ":" << fileRange.start.character << colors::reset << " >> "
             << colors::underline::green << fileRange.file.string() << ":" << fileRange.end.line << ":"
             << fileRange.end.character << colors::reset << "\n";
   ast::Node::clearAll();
   Value::clearAll();
+  writeJsonResult(false);
   exit(0);
 }
 
@@ -143,9 +174,11 @@ void Context::Warning(const String& message, const utils::FileRange& fileRange) 
   if (activeTemplate) {
     activeTemplate->warningCount++;
   }
+  codeProblems.push_back(
+      CodeProblem(false, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
   std::cout << colors::highIntensityBackground::purple << " warning " << colors::blue << "▌" << colors::reset << " "
-            << colors::bold::purple << (activeTemplate ? ("Generating " + activeTemplate->name + " => ") : "")
-            << message << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
+            << colors::bold::purple << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
+            << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
             << fileRange.start.line << ":" << fileRange.start.character << colors::reset << " >> "
             << colors::underline::green << fileRange.file.string() << ":" << fileRange.end.line << ":"
             << fileRange.end.character << colors::reset << "\n";

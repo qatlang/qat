@@ -64,6 +64,16 @@ public:
   IR::Block*    trueBlock;
 };
 
+class CodeProblem {
+  bool             isError;
+  String           message;
+  utils::FileRange range;
+
+public:
+  CodeProblem(bool isError, String message, utils::FileRange range);
+  operator Json() const;
+};
+
 class Context {
 private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
@@ -87,11 +97,15 @@ public:
   Vec<fs::path>                       llvmOutputPaths;
   Vec<String>                         nativeLibsToLink;
   mutable Maybe<TemplateEntityMarker> activeTemplate;
+  mutable Vec<CodeProblem>            codeProblems;
+  mutable Maybe<u64>                  qatTimeInMicroseconds;
+  mutable Maybe<u64>                  clangTimeInMicroseconds;
 
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;
   useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
+  void                        writeJsonResult(bool status) const;
 
   void          Error(const String& message, const utils::FileRange& fileRange) const;
   void          Warning(const String& message, const utils::FileRange& fileRange) const;

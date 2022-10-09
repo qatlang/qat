@@ -1,14 +1,11 @@
 #include "./qat_sitter.hpp"
 #include "./show.hpp"
-#include "IR/llvm_helper.hpp"
 #include "IR/qat_module.hpp"
 #include "cli/config.hpp"
 #include "cli/error.hpp"
-#include "cli/version.hpp"
-#include "utils/json.hpp"
 #include "utils/visibility.hpp"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/Target/TargetMachine.h"
+#include <chrono>
 #include <filesystem>
 
 #define OUTPUT_OBJECT_NAME "output"
@@ -30,6 +27,7 @@ void QatSitter::init() {
   } else if (config->isCompile()) {
     switch (config->getTarget()) {
       case cli::CompileTarget::normal: {
+        auto start = std::chrono::steady_clock::now();
         for (auto* entity : fileEntities) {
           entity->createModules(ctx);
         }
@@ -48,6 +46,9 @@ void QatSitter::init() {
           SHOW("Calling emitNodes")
           entity->emitNodes(ctx);
         }
+        ctx->qatTimeInMicroseconds =
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count();
+        auto clangStart = std::chrono::steady_clock::now();
         if (checkExecutableExists("clang++")) {
           String compileCommand = "clang++ -fuse-ld=lld ";
           for (const auto& llPath : ctx->llvmOutputPaths) {
@@ -59,6 +60,10 @@ void QatSitter::init() {
             compileCommand += ("-o " OUTPUT_OBJECT_NAME);
           }
           if (!system(compileCommand.c_str())) {
+            ctx->clangTimeInMicroseconds =
+                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - clangStart)
+                    .count();
+            ctx->writeJsonResult(true);
             SHOW("Compiled successfully")
             if (config->isRun() && ctx->hasMain) {
               SHOW("Executing the program")
@@ -69,7 +74,8 @@ void QatSitter::init() {
               }
             }
           } else {
-            cli::Error("Compilation failed", None);
+            ctx->writeJsonResult(false);
+            cli::Error("Compilation failed on the clang side", None);
           }
 #if IS_RELEASE
           for (const auto& llPath : ctx->llvmOutputPaths) {
@@ -80,6 +86,7 @@ void QatSitter::init() {
           }
 #endif
         } else {
+          ctx->writeJsonResult(true);
           cli::Error("qat cannot find clang on path. Please make sure that you "
                      "have clang installed and the path to clang is available in "
                      "the environment",

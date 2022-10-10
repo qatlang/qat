@@ -7,7 +7,7 @@
 
 namespace qat::cli {
 
-Config *Config::instance = nullptr;
+Config* Config::instance = nullptr;
 
 Config::~Config() {
   if (Config::instance) {
@@ -16,8 +16,8 @@ Config::~Config() {
   }
 }
 
-Config *Config::init(u64   count,
-                     char *args[]) { // NOLINT(modernize-avoid-c-arrays)
+Config* Config::init(u64   count,
+                     char* args[]) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
     return new Config(count, args);
   } else {
@@ -27,7 +27,7 @@ Config *Config::init(u64   count,
 
 void Config::destroy() {
   if (Config::instance) {
-    auto *inst       = Config::instance;
+    auto* inst       = Config::instance;
     Config::instance = nullptr;
     delete inst;
   }
@@ -39,9 +39,9 @@ bool Config::hasInstance() { return Config::instance != nullptr; }
 
 bool Config::shouldExit() const { return exitAfter; }
 
-Config *Config::get() { return Config::instance; }
+Config* Config::get() { return Config::instance; }
 
-CompileTarget Config::parseCompileTarget(const String &val) {
+CompileTarget Config::parseCompileTarget(const String& val) {
   if (val == "cpp") {
     return CompileTarget::cpp;
   } else if (val == "json") {
@@ -51,10 +51,9 @@ CompileTarget Config::parseCompileTarget(const String &val) {
   }
 }
 
-Config::Config(u64 count, char **args)
-    : target(CompileTarget::normal), exitAfter(false), verbose(false),
-      saveDocs(false), showReport(false), export_ast(false), compile(false),
-      run(false), outputInTemporaryPath(false) {
+Config::Config(u64 count, char** args)
+    : target(CompileTarget::normal), exitAfter(false), verbose(false), saveDocs(false), showReport(false),
+      export_ast(false), compile(false), run(false), outputInTemporaryPath(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -99,10 +98,9 @@ Config::Config(u64 count, char **args)
       exitAfter = true;
     } else if (command == "show") {
       if (count == 2) {
-        cli::Error(
-            "Nothing to show here. Please provide name of the information "
-            "to display",
-            None);
+        cli::Error("Nothing to show here. Please provide name of the information "
+                   "to display",
+                   None);
       } else {
         String candidate = args[2];
         if (candidate == "build-info") {
@@ -128,8 +126,7 @@ Config::Config(u64 count, char **args)
       } else if (String(arg).find("-t=") == 0) {
         target = parseCompileTarget(String(arg).substr(3));
       } else if (String(arg).find("--target=") == 0) {
-        target = parseCompileTarget(
-            String(arg).substr(9)); // NOLINT(readability-magic-numbers)
+        target = parseCompileTarget(String(arg).substr(9)); // NOLINT(readability-magic-numbers)
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
           target = parseCompileTarget(args[i + 1]);
@@ -154,11 +151,12 @@ Config::Config(u64 count, char **args)
           }
           i++;
         } else {
-          cli::Error(
-              "Output path is not provided! Please provide path to a directory "
-              "for output, or don't mention the output flag at all.",
-              None);
+          cli::Error("Output path is not provided! Please provide path to a directory "
+                     "for output, or don't mention the output flag at all.",
+                     None);
         }
+      } else if (arg == "--no-colors") {
+        noColors = true;
       } else if (arg == "--report") {
         showReport = true;
       } else if (arg == "--save-docs") {
@@ -180,8 +178,7 @@ Config::Config(u64 count, char **args)
     }
     if (!outputPath.has_value()) {
       if (outputInTemporaryPath) {
-        outputPath =
-            fs::temp_directory_path() / ".qatcache" / utils::unique_id();
+        outputPath = fs::temp_directory_path() / ".qatcache" / utils::unique_id();
         fs::create_directories(outputPath.value());
       } else {
         outputPath = fs::current_path();
@@ -209,5 +206,7 @@ bool Config::isRun() const { return run; }
 CompileTarget Config::getTarget() const { return target; }
 
 bool Config::outputToTempDir() const { return outputInTemporaryPath; }
+
+bool Config::noColorMode() const { return noColors; }
 
 } // namespace qat::cli

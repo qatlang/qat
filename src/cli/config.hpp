@@ -20,7 +20,7 @@ private:
   // Construct a new Config object
   // This expects the number of arguments passed to the compiler and the
   // arguments, and it initialises the members and sets corresponding values
-  Config(u64 count, char **args);
+  Config(u64 count, char** args);
 
   // The first CLI argument. Indicates the path specified to invoke the compiler
   String invokePath;
@@ -62,13 +62,15 @@ private:
 
   bool outputInTemporaryPath;
 
+  bool noColors;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
    * either the Config hasn't been initialised or it has been freed from memory
    *
    */
-  static Config *instance;
+  static Config* instance;
 
   /**
    *  The initialisation function for Config. Multiple calls to this
@@ -78,8 +80,8 @@ public:
    * @param args The arguments provided to the compiler
    * @return Config
    */
-  static Config *init(u64   count,
-                      char *args[]); // NOLINT(modernize-avoid-c-arrays)
+  static Config* init(u64   count,
+                      char* args[]); // NOLINT(modernize-avoid-c-arrays)
 
   /**
    *  This is technically the proper function to get the existing instance
@@ -87,10 +89,10 @@ public:
    *
    * @return Config
    */
-  static Config *get();
+  static Config* get();
 
   // Parse the CompileTarget from the argument
-  static CompileTarget parseCompileTarget(const String &val);
+  static CompileTarget parseCompileTarget(const String& val);
 
   // Whether there is an instance of Config that has been initialised
   static bool hasInstance();
@@ -141,6 +143,8 @@ public:
   useit CompileTarget getTarget() const;
 
   useit bool outputToTempDir() const;
+
+  useit bool noColorMode() const;
 
   ~Config();
 };

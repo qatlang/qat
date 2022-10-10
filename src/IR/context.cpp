@@ -9,6 +9,10 @@
 
 namespace qat::IR {
 
+#define Colored(val) (cfg->noColorMode() ? "" : val)
+
+#define ColoredOr(val, rep) (cfg->noColorMode() ? rep : val)
+
 LoopInfo::LoopInfo(String _name, IR::Block* _mainB, IR::Block* _condB, IR::Block* _restB, IR::LocalValue* _index,
                    LoopType _type)
     : name(std::move(_name)), mainBlock(_mainB), condBlock(_condB), restBlock(_restB), index(_index), type(_type) {}
@@ -118,10 +122,14 @@ utils::RequesterInfo Context::getReqInfo() const {
   return {lib, box, file, type};
 }
 
-String Context::highlightError(const String& message, const char* color) { return color + message + colors::bold::red; }
+String Context::highlightError(const String& message, const char* color) {
+  auto* cfg = cli::Config::get();
+  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::red, "`");
+}
 
 String Context::highlightWarning(const String& message, const char* color) {
-  return color + message + colors::bold::purple;
+  auto* cfg = cli::Config::get();
+  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::purple, "`");
 }
 
 void Context::writeJsonResult(bool status) const {
@@ -144,26 +152,29 @@ void Context::writeJsonResult(bool status) const {
 }
 
 void Context::Error(const String& message, const utils::FileRange& fileRange) const {
+  auto* cfg = cli::Config::get();
   if (activeTemplate) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeTemplate->name,
                                        activeTemplate->fileRange));
-    std::cout << colors::highIntensityBackground::red << "  error  " << colors::white << "▌" << colors::reset << " "
-              << colors::bold::red
+    std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
+              << Colored(colors::reset) << " " << Colored(colors::bold::red)
               << "Errors generated while creating generic variant: " << highlightError(activeTemplate->name)
-              << colors::reset << " | " << colors::underline::green << activeTemplate->fileRange.file.string() << ":"
-              << activeTemplate->fileRange.start.line << ":" << activeTemplate->fileRange.start.character
-              << colors::reset << " >> " << colors::underline::green << activeTemplate->fileRange.file.string() << ":"
-              << activeTemplate->fileRange.end.line << ":" << activeTemplate->fileRange.end.character << colors::reset
-              << "\n";
+              << Colored(colors::reset) << " | " << Colored(colors::underline::green)
+              << activeTemplate->fileRange.file.string() << ":" << activeTemplate->fileRange.start.line << ":"
+              << activeTemplate->fileRange.start.character << Colored(colors::reset) << " >> "
+              << Colored(colors::underline::green) << activeTemplate->fileRange.file.string() << ":"
+              << activeTemplate->fileRange.end.line << ":" << activeTemplate->fileRange.end.character
+              << Colored(colors::reset) << "\n";
   }
   codeProblems.push_back(
       CodeProblem(true, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
-  std::cout << colors::highIntensityBackground::red << "  error  " << colors::white << "▌" << colors::reset << " "
-            << colors::bold::red << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
-            << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
-            << fileRange.start.line << ":" << fileRange.start.character << colors::reset << " >> "
-            << colors::underline::green << fileRange.file.string() << ":" << fileRange.end.line << ":"
-            << fileRange.end.character << colors::reset << "\n";
+  std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
+            << Colored(colors::reset) << " " << Colored(colors::bold::red)
+            << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
+            << Colored(colors::reset) << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":"
+            << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
+            << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
+            << fileRange.end.character << Colored(colors::reset) << "\n";
   ast::Node::clearAll();
   Value::clearAll();
   writeJsonResult(false);
@@ -176,12 +187,14 @@ void Context::Warning(const String& message, const utils::FileRange& fileRange) 
   }
   codeProblems.push_back(
       CodeProblem(false, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
-  std::cout << colors::highIntensityBackground::purple << " warning " << colors::blue << "▌" << colors::reset << " "
-            << colors::bold::purple << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
-            << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
-            << fileRange.start.line << ":" << fileRange.start.character << colors::reset << " >> "
-            << colors::underline::green << fileRange.file.string() << ":" << fileRange.end.line << ":"
-            << fileRange.end.character << colors::reset << "\n";
+  auto* cfg = cli::Config::get();
+  std::cout << Colored(colors::highIntensityBackground::purple) << " warning " << Colored(colors::blue) << "▌"
+            << Colored(colors::reset) << " " << Colored(colors::bold::purple)
+            << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
+            << Colored(colors::reset) << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":"
+            << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
+            << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
+            << fileRange.end.character << Colored(colors::reset) << "\n";
 }
 
 } // namespace qat::IR

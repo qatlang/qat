@@ -31,13 +31,14 @@ enum class Op {
   Not,
   copyAssignment,
   moveAssignment,
+  dereference,
 };
 
 useit bool isUnaryOp(Op opr);
 
 useit String OpToString(Op opr);
 
-useit Op OpFromString(const String &str);
+useit Op OpFromString(const String& str);
 
 } // namespace qat::ast
 

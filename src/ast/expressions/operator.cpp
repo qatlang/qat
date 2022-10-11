@@ -4,15 +4,16 @@ namespace qat::ast {
 
 bool isUnaryOp(Op opr) {
   switch (opr) {
-  case Op::minus:
-  case Op::Not:
-    return true;
-  default:
-    return false;
+    case Op::minus:
+    case Op::Not:
+    case Op::dereference:
+      return true;
+    default:
+      return false;
   }
 }
 
-Op OpFromString(const String &str) {
+Op OpFromString(const String& str) {
   if (str == "+") {
     return Op::add;
   } else if (str == "-") {
@@ -55,59 +56,63 @@ Op OpFromString(const String &str) {
     return Op::Index;
   } else if (str == "!") {
     return Op::Not;
+  } else if (str == "#") {
+    return Op::dereference;
   }
 } // NOLINT(clang-diagnostic-return-type)
 
 String OpToString(Op opr) {
   switch (opr) {
-  case Op::add:
-    return "+";
-  case Op::subtract:
-    return "-";
-  case Op::multiply:
-    return "*";
-  case Op::divide:
-    return "/";
-  case Op::remainder:
-    return "%";
-  case Op::bitwiseOr:
-    return "|";
-  case Op::bitwiseAnd:
-    return "&";
-  case Op::bitwiseXor:
-    return "^";
-  case Op::logicalLeftShift:
-    return "<<";
-  case Op::logicalRightShift:
-    return ">>";
-  case Op::arithmeticRightShift:
-    return ">>>";
-  case Op::equalTo:
-    return "==";
-  case Op::notEqualTo:
-    return "!=";
-  case Op::lessThan:
-    return "<";
-  case Op::lessThanOrEqualTo:
-    return "<=";
-  case Op::greaterThan:
-    return ">";
-  case Op::greaterThanEqualTo:
-    return ">=";
-  case Op::And:
-    return "&&";
-  case Op::Or:
-    return "||";
-  case Op::Index:
-    return "[]";
-  case Op::minus:
-    return "-";
-  case Op::Not:
-    return "!";
-  case Op::copyAssignment:
-    return "copy =";
-  case Op::moveAssignment:
-    return "move =";
+    case Op::add:
+      return "+";
+    case Op::subtract:
+      return "-";
+    case Op::multiply:
+      return "*";
+    case Op::divide:
+      return "/";
+    case Op::remainder:
+      return "%";
+    case Op::bitwiseOr:
+      return "|";
+    case Op::bitwiseAnd:
+      return "&";
+    case Op::bitwiseXor:
+      return "^";
+    case Op::logicalLeftShift:
+      return "<<";
+    case Op::logicalRightShift:
+      return ">>";
+    case Op::arithmeticRightShift:
+      return ">>>";
+    case Op::equalTo:
+      return "==";
+    case Op::notEqualTo:
+      return "!=";
+    case Op::lessThan:
+      return "<";
+    case Op::lessThanOrEqualTo:
+      return "<=";
+    case Op::greaterThan:
+      return ">";
+    case Op::greaterThanEqualTo:
+      return ">=";
+    case Op::And:
+      return "&&";
+    case Op::Or:
+      return "||";
+    case Op::Index:
+      return "[]";
+    case Op::minus:
+      return "-";
+    case Op::Not:
+      return "!";
+    case Op::copyAssignment:
+      return "copy =";
+    case Op::moveAssignment:
+      return "move =";
+    case Op::dereference:
+      return "#";
   }
 }
 

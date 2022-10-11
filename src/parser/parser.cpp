@@ -940,12 +940,11 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  // Maybe<utils::VisibilityKind> broadVisib;
+  Maybe<utils::VisibilityKind> broadVisib;
   Maybe<utils::VisibilityKind> visibility;
   auto                         setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
   auto                         getVisibility = [&]() {
-    // auto res   = visibility.value_or(broadVisib.value_or(utils::VisibilityKind::type));
-    auto res   = visibility.value_or(utils::VisibilityKind::type);
+    auto res   = visibility.value_or(broadVisib.value_or(utils::VisibilityKind::type));
     visibility = None;
     return res;
   };
@@ -957,13 +956,13 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     switch (token.type) {
       case TokenType::Public: {
         auto kindRes = parseVisibilityKind(i);
-        // if (isNext(TokenType::colon, kindRes.second)) {
-        //   broadVisib = kindRes.first;
-        //   i          = kindRes.second + 1;
-        // } else {
-        setVisibility(kindRes.first);
-        i = kindRes.second;
-        // }
+        if (isNext(TokenType::colon, kindRes.second)) {
+          broadVisib = kindRes.first;
+          i          = kindRes.second + 1;
+        } else {
+          setVisibility(kindRes.first);
+          i = kindRes.second;
+        }
         break;
       }
       case TokenType::constant: {
@@ -1279,6 +1278,10 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           isUnary = true;
           opr     = ValueAt(i + 1);
           i++;
+        } else if (isNext(TokenType::pointerType, i)) {
+          isUnary = true;
+          opr     = "#";
+          i++;
         } else if (isNext(TokenType::assignment, i)) {
           opr = "=";
           i++;
@@ -1297,20 +1300,18 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           returnTy    = typRes.first;
           i           = typRes.second;
         }
-        if (!isUnary) {
-          if (isNext(TokenType::parenthesisOpen, i)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
-            if (pCloseRes.has_value()) {
-              auto pClose    = pCloseRes.value();
-              auto fnArgsRes = parseFunctionParameters(preCtx, i + 1, pClose);
-              if (fnArgsRes.second) {
-                Error("Operator functions cannot have variadic arguments", RangeSpan(start, pClose));
-              }
-              args = fnArgsRes.first;
-              i    = pClose;
-            } else {
-              Error("Expected end for (", RangeAt(i + 1));
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          if (pCloseRes.has_value()) {
+            auto pClose    = pCloseRes.value();
+            auto fnArgsRes = parseFunctionParameters(preCtx, i + 1, pClose);
+            if (fnArgsRes.second) {
+              Error("Operator functions cannot have variadic arguments", RangeSpan(start, pClose));
             }
+            args = fnArgsRes.first;
+            i    = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
           }
         }
         auto* prototype = new ast::OperatorPrototype(
@@ -1332,6 +1333,29 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::to: {
+        auto start  = i;
+        auto typRes = parseType(preCtx, i, None);
+        i           = typRes.second;
+        if (isNext(TokenType::altArrow, i)) {
+          if (isNext(TokenType::bracketOpen, i + 1)) {
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+            if (bCloseRes.has_value()) {
+              auto bClose = bCloseRes.value();
+              auto snts   = parseSentences(preCtx, i + 2, bClose);
+              coreTy->addConvertorDefinition(new ast::ConvertorDefinition(
+                  ast::ConvertorPrototype::To(typRes.first, getVisibility(), RangeSpan(start, i + 1)), std::move(snts),
+                  RangeSpan(start, bClose)));
+              i = bClose;
+              break;
+            } else {
+              Error("Expected end for [", RangeAt(i + 2));
+            }
+          } else {
+            Error("Expected [ to start the definition of the to convertor", RangeAt(i + 2));
+          }
+        } else {
+          Error("Expected => after the type for conversion", RangeSpan(start, i));
+        }
         break;
       }
       case TokenType::end: {

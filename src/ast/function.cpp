@@ -1,5 +1,4 @@
 #include "./function.hpp"
-#include "../IR/control_flow.hpp"
 #include "../show.hpp"
 #include "sentence.hpp"
 #include "types/templated.hpp"
@@ -16,12 +15,12 @@ FunctionPrototype::FunctionPrototype(String _name, Vec<Argument*> _arguments, bo
                                      Vec<ast::TemplatedType*> _templates)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
-      linkageType(_linkageType), templates(std::move(_templates)) {}
+      templates(std::move(_templates)), linkageType(_linkageType) {}
 
 FunctionPrototype::FunctionPrototype(const FunctionPrototype& ref)
     : Node(ref.fileRange), name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments), isVariadic(ref.isVariadic),
-      returnType(ref.returnType), callingConv(ref.callingConv), visibility(ref.visibility),
-      linkageType(ref.linkageType), function(ref.function), templates(ref.templates) {}
+      returnType(ref.returnType), callingConv(ref.callingConv), visibility(ref.visibility), templates(ref.templates),
+      linkageType(ref.linkageType), function(ref.function) {}
 
 bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
 
@@ -66,18 +65,20 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   }
   SHOW("Variability setting complete")
   SHOW("About to create function")
-  auto* fn = mod->createFunction(fnName, returnType->emit(ctx), returnType->isVariable(), isAsync, args, isVariadic,
-                                 fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+  auto* fun = mod->createFunction(fnName, returnType->emit(ctx), returnType->isVariable(), isAsync, args, isVariadic,
+                                  fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
   if (isMainFn) {
-    if (ctx->hasMain) {
-      ctx->Error(ctx->highlightError("main") + " function already exists. Please check the codebase", fileRange);
+    if (ctx->getMod()->hasMainFn()) {
+      ctx->Error(ctx->highlightError("main") + " function already exists in this module. Please check the codebase",
+                 fileRange);
     } else {
-      auto args = fn->getType()->asFunction()->getArgumentTypes();
+      auto args = fun->getType()->asFunction()->getArgumentTypes();
       if (args.size() == 2) {
         if (args.at(0)->getType()->isUnsignedInteger() &&
             (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() == MainFirstArgBitwidth)) {
           if (args.at(1)->getType()->isPointer() && ((!args.at(1)->getType()->asPointer()->isSubtypeVariable()) &&
                                                      (args.at(1)->getType()->asPointer()->getSubType()->isCString()))) {
+            mod->setHasMainFn();
             ctx->hasMain = true;
           } else {
             ctx->Error("The second argument of the " + ctx->highlightError("main") + " function should be " +
@@ -89,7 +90,8 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
                          ctx->highlightError("u32"),
                      arguments.at(0)->getFileRange());
         }
-      } else if (args.size() == 0) {
+      } else if (args.empty()) {
+        mod->setHasMainFn();
         ctx->hasMain = true;
       } else {
         ctx->Error("Main function can either have two arguments, or none at "
@@ -107,7 +109,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
       // }
     }
   }
-  return fn;
+  return fun;
 }
 
 void FunctionPrototype::setVariantName(const String& value) const { variantName = value; }

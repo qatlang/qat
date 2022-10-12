@@ -6,44 +6,18 @@
 
 namespace qat::ast {
 
-/**
- *  Integer datatype in the language
- *
- */
 class IntegerType : public QatType {
 private:
-  /**
-   *  Bitwidth of the integer
-   *
-   */
   const u32 bitWidth;
 
 public:
-  /**
-   *  Construct an Integer type with a bitwidth
-   *
-   * @param _bitWidth Bitwidth of the integer type
-   * @param _fileRange
-   */
-  IntegerType(const u32 _bitWidth, const bool _variable,
-              const utils::FileRange _fileRange);
+  IntegerType(u32 _bitWidth, bool _variable, utils::FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
-
-  TypeKind typeKind() const;
-
-  /**
-   *  Whether the provided integer is the bitwidth of the IntegerType
-   *
-   * @param width Bitwidth to check for
-   * @return true If the width matches
-   * @return false If the width does not match
-   */
-  bool isBitWidth(const u32 width) const;
-
-  Json toJson() const;
-
-  String toString() const;
+  IR::QatType* emit(IR::Context* ctx);
+  TypeKind     typeKind() const;
+  bool         isBitWidth(const u32 width) const;
+  Json         toJson() const;
+  String       toString() const;
 };
 
 } // namespace qat::ast

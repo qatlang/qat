@@ -4,17 +4,20 @@
 
 namespace qat::ast {
 
-IntegerType::IntegerType(const u32 _bitWidth, const bool _variable,
-                         const utils::FileRange _fileRange)
-    : bitWidth(_bitWidth), QatType(_variable, _fileRange) {}
+IntegerType::IntegerType(u32 _bitWidth, bool _variable, utils::FileRange _fileRange)
+    : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth) {}
 
-IR::QatType *IntegerType::emit(IR::Context *ctx) {
-  return IR::IntegerType::get(bitWidth, ctx->llctx);
+IR::QatType* IntegerType::emit(IR::Context* ctx) {
+  if (ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
+    return IR::IntegerType::get(bitWidth, ctx->llctx);
+  } else {
+    ctx->Error("This signed integer bitwidth is not allowed to be used since it is not brought into the module scope",
+               fileRange);
+  }
+  return nullptr;
 }
 
-bool IntegerType::isBitWidth(const u32 width) const {
-  return bitWidth == width;
-}
+bool IntegerType::isBitWidth(const u32 width) const { return bitWidth == width; }
 
 TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
 
@@ -26,8 +29,6 @@ Json IntegerType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-String IntegerType::toString() const {
-  return (isVariable() ? "var i" : "i") + std::to_string(bitWidth);
-}
+String IntegerType::toString() const { return (isVariable() ? "var i" : "i") + std::to_string(bitWidth); }
 
 } // namespace qat::ast

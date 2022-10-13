@@ -16,47 +16,49 @@ class QatType;
 enum class Nature { assignable, temporary, pure, expired };
 
 class ConstantValue;
+class Context;
+class QatModule;
 
 class Value {
 private:
-  static Vec<IR::Value *> allValues;
+  static Vec<IR::Value*> allValues;
 
 protected:
-  IR::QatType  *type;     // Type representation of the value
+  IR::QatType*  type;     // Type representation of the value
   Nature        nature;   // The nature of the value
   bool          variable; // Variability nature
-  llvm::Value  *ll;       // LLVM value
+  llvm::Value*  ll;       // LLVM value
   Maybe<String> localID;  // ID of the local in a function
 
 public:
-  Value(llvm::Value *_llValue, IR::QatType *_type, bool _isVariable,
-        Nature kind);
+  Value(llvm::Value* _llValue, IR::QatType* _type, bool _isVariable, Nature kind);
 
   virtual ~Value() = default;
 
-  useit QatType             *getType() const; // Type of the value
-  useit virtual llvm::Value *getLLVM() const;
+  useit QatType*             getType() const; // Type of the value
+  useit virtual llvm::Value* getLLVM() const;
   useit bool                 isReference() const;
   useit bool                 isPointer() const;
   useit bool                 isVariable() const;
   useit virtual bool         isConstVal() const;
-  useit ConstantValue       *asConst() const;
+  useit ConstantValue*       asConst() const;
   useit bool                 isLocalToFn() const;
   useit String               getLocalID() const;
-  void                       setLocalID(String locID);
+  void                       setLocalID(const String& locID);
   useit Nature               getNature() const;
-  useit IR::Value *createAlloca(llvm::IRBuilder<> &builder);
-  useit bool       isImplicitPointer() const;
-  void             loadImplicitPointer(llvm::IRBuilder<> &builder);
+  useit IR::Value*     createAlloca(llvm::IRBuilder<>& builder);
+  useit bool           isImplicitPointer() const;
+  void                 loadImplicitPointer(llvm::IRBuilder<>& builder);
+  useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
 
   static void clearAll();
 };
 
 class ConstantValue : public Value {
 public:
-  ConstantValue(llvm::Constant *_llconst, IR::QatType *_type);
+  ConstantValue(llvm::Constant* _llconst, IR::QatType* _type);
 
-  useit llvm::Constant *getLLVM() const final;
+  useit llvm::Constant* getLLVM() const final;
   useit bool            isConstVal() const final;
 };
 

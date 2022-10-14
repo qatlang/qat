@@ -2694,7 +2694,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
             if (endRes.has_value()) {
               auto* exp = parseExpression(preCtx, None, i + 2, endRes.value()).first;
-              result.push_back(new ast::LocalDeclaration(typeRes.first, false, ValueAt(i + 1), exp,
+              result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), exp,
                                                          typeRes.first->isVariable(), RangeSpan(old, endRes.value())));
               i = endRes.value();
               cacheTy.clear();
@@ -2813,7 +2813,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   (cacheTy.empty() ? (new ast::NamedType(cacheSymbol.value().relative, cacheSymbol.value().name, false,
                                                          cacheSymbol.value().fileRange))
                                    : cacheTy.back()),
-                  false, token.value, exp, var, token.fileRange));
+                  false, false, token.value, exp, var, token.fileRange));
               var = false;
               cacheTy.clear();
               cacheSymbol = None;
@@ -2995,6 +2995,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         context          = "LET";
         SHOW("Found let")
         bool isRef     = false;
+        bool isPtr     = false;
         bool isVarDecl = false;
         if (isNext(TokenType::var, i)) {
           isVarDecl = true;
@@ -3002,11 +3003,14 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             isRef = true;
             i += 2;
           } else {
-            i += 1;
+            i++;
           }
         } else if (isNext(TokenType::referenceType, i)) {
           isRef = true;
-          i += 1;
+          i++;
+        } else if (isNext(TokenType::pointerType, i)) {
+          isPtr = true;
+          i++;
         }
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::assignment, i + 1)) {
@@ -3014,8 +3018,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             if (endRes.has_value()) {
               auto  end = endRes.value();
               auto* exp = parseExpression(preCtx, None, i + 2, end).first;
-              result.push_back(
-                  new ast::LocalDeclaration(nullptr, isRef, ValueAt(i + 1), exp, isVarDecl, RangeSpan(start, end)));
+              result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, ValueAt(i + 1), exp, isVarDecl,
+                                                         RangeSpan(start, end)));
               cacheSymbol = None;
               cacheTy.clear();
               cachedExpressions.clear();
@@ -3029,8 +3033,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   "declaration",
                   RangeSpan(start, i + 2));
           } else if (isNext(TokenType::stop, i + 1)) {
-            result.push_back(
-                new ast::LocalDeclaration(nullptr, isRef, ValueAt(i + 1), nullptr, isVarDecl, RangeSpan(start, i + 2)));
+            result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, ValueAt(i + 1), nullptr, isVarDecl,
+                                                       RangeSpan(start, i + 2)));
             cacheSymbol = None;
             cacheTy.clear();
             cachedExpressions.clear();

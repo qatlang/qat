@@ -11,16 +11,17 @@
 #include "../expressions/move.hpp"
 #include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
+#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, String _name, Expression* _value, bool _variability,
-                                   utils::FileRange _fileRange)
+LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, String _name, Expression* _value,
+                                   bool _variability, utils::FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
-      isRef(_isRef){SHOW("Name for local declaration is " << name)}
+      isRef(_isRef), isPtr(_isPtr){SHOW("Name for local declaration is " << name)}
 
-          IR::Value
-          * LocalDeclaration::emit(IR::Context * ctx) {
+                         IR::Value
+                         * LocalDeclaration::emit(IR::Context * ctx) {
   auto* block = ctx->fn->getBlock();
   if (block->hasValue(name)) {
     ctx->Error("A local value named " + ctx->highlightError(name) +
@@ -258,6 +259,17 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, String _name, Ex
         if (!isRef) {
           declType = expVal->getType()->asReference()->getSubType();
         }
+      } else if (declType->isFunction()) {
+        if (!isPtr) {
+          ctx->Error(
+              "The value to be assigned is a pointer to a function, so please add a pointer hint to this declaration",
+              fileRange);
+        }
+        declType       = IR::PointerType::get(false, declType, ctx->llctx);
+        auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
+        auto* newValue = block->newValue(name, declType, variability);
+        ctx->builder.CreateStore(fnCast, newValue->getLLVM());
+        return nullptr;
       }
     } else {
       ctx->Error("Type inference for declarations require a value", fileRange);

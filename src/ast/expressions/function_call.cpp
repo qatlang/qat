@@ -12,15 +12,20 @@ FunctionCall::FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, uti
 IR::Value* FunctionCall::emit(IR::Context* ctx) {
   auto* mod   = ctx->getMod();
   auto* fnVal = fnExpr->emit(ctx);
-  if (fnVal && fnVal->getType()->isFunction()) {
-    auto* fun = (IR::Function*)fnVal;
-    if (fun->getType()->asFunction()->getArgumentTypes().size() != values.size()) {
+  if (fnVal && (fnVal->getType()->isFunction() ||
+                (fnVal->getType()->isPointer() && fnVal->getType()->asPointer()->getSubType()->isFunction()))) {
+    auto*                fnTy = fnVal->getType()->isFunction() ? fnVal->getType()->asFunction()
+                                                               : fnVal->getType()->asPointer()->getSubType()->asFunction();
+    Maybe<IR::Function*> fun;
+    if (fnVal->getType()->isFunction()) {
+      fun = (IR::Function*)fnVal;
+    }
+    if (fnTy->getArgumentTypes().size() != values.size()) {
       ctx->Error("Number of arguments provided for the function call does not "
                  "match the function signature",
                  fileRange);
     }
     Vec<IR::Value*> argsEmit;
-    auto*           fnTy = fun->getType()->asFunction();
     for (usize i = 0; i < values.size(); i++) {
       if (fnTy->getArgumentCount() > (u64)i) {
         auto* argTy = fnTy->getArgumentTypeAt(i)->getType();
@@ -46,7 +51,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       argsEmit.push_back(values.at(i)->emit(ctx));
     }
     SHOW("Argument values generated")
-    auto fnArgsTy = fnVal->getType()->asFunction()->getArgumentTypes();
+    auto fnArgsTy = fnTy->getArgumentTypes();
     for (usize i = 0; i < fnArgsTy.size(); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) ||
           (argsEmit.at(i)->getType()->isReference() &&
@@ -54,7 +59,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument at " +
                        ctx->highlightError(std::to_string(i)) + " of the function " +
-                       ctx->highlightError(fun->getName()),
+                       (fun.has_value() ? ctx->highlightError(fun.value()->getName()) : ""),
                    values.at(i)->fileRange);
       }
     }
@@ -74,7 +79,12 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       }
       argValues.push_back(argsEmit.at(i)->getLLVM());
     }
-    return fun->call(ctx, argValues, mod);
+    if (fun.has_value()) {
+      return fun.value()->call(ctx, argValues, mod);
+    } else {
+      fnVal->loadImplicitPointer(ctx->builder);
+      return fnVal->call(ctx, argValues, mod);
+    }
   } else {
     ctx->Error("The expression is not callable. It has type " + fnVal->getType()->toString(), fnExpr->fileRange);
   }

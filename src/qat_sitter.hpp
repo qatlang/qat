@@ -21,20 +21,19 @@ namespace fs = std::filesystem;
 
 class QatSitter {
 private:
-  Vec<IR::QatModule *> fileEntities;
-  IR::Context         *Context;
-  lexer::Lexer        *Lexer;
-  parser::Parser      *Parser;
+  Vec<IR::QatModule*> fileEntities;
+  IR::Context*        Context;
+  lexer::Lexer*       Lexer;
+  parser::Parser*     Parser;
+  Vec<fs::path>       queuedPaths;
 
 public:
   QatSitter();
 
-  // Initialise QatSitter
-  void init();
-
-  void handlePath(const fs::path &path, llvm::LLVMContext &llctx);
-
-  useit static bool checkExecutableExists(const String &name);
+  void              init();
+  void              queuePath(fs::path path);
+  void              handlePath(const fs::path& path, llvm::LLVMContext& llctx);
+  useit static bool checkExecutableExists(const String& name);
 
   ~QatSitter();
 };

@@ -24,101 +24,94 @@ void QatSitter::init() {
     for (auto* entity : fileEntities) {
       entity->exportJsonFromAST();
     }
-  } else if (config->isCompile()) {
-    switch (config->getTarget()) {
-      case cli::CompileTarget::normal: {
-        auto start = std::chrono::steady_clock::now();
+  } else if (config->isCompile() || config->isAnalyse()) {
+    ctx->qatStartTime = std::chrono::steady_clock::now();
+    for (auto* entity : fileEntities) {
+      entity->createModules(ctx);
+    }
+    Vec<IR::QatModule*> prevEntities;
+    while (!queuedPaths.empty()) {
+      for (auto* ent : fileEntities) {
+        prevEntities.push_back(ent);
+      }
+      fileEntities.clear();
+      for (const auto& qPath : queuedPaths) {
+        handlePath(qPath, ctx->llctx);
+      }
+      queuedPaths.clear();
+      for (auto* entity : fileEntities) {
+        entity->createModules(ctx);
+      }
+    }
+    if (!prevEntities.empty()) {
+      fileEntities = std::move(prevEntities);
+    }
+    for (auto* entity : fileEntities) {
+      entity->defineTypes(ctx);
+    }
+    for (auto* entity : fileEntities) {
+      entity->defineNodes(ctx);
+    }
+    auto* cfg = cli::Config::get();
+    if (cfg->hasOutputPath()) {
+      fs::remove_all(cfg->getOutputPath() / ".llvm");
+    }
+    for (auto* entity : fileEntities) {
+      ctx->mod = entity;
+      SHOW("Calling emitNodes")
+      entity->emitNodes(ctx);
+    }
+    ctx->qatEndTime         = std::chrono::steady_clock::now();
+    ctx->clangLinkStartTime = std::chrono::steady_clock::now();
+    if (cfg->isCompile()) {
+      if (checkExecutableExists("clang")) {
         for (auto* entity : fileEntities) {
-          entity->createModules(ctx);
+          entity->compileToObject(ctx);
         }
         for (auto* entity : fileEntities) {
-          entity->defineTypes(ctx);
+          entity->bundleLibs(ctx);
         }
-        for (auto* entity : fileEntities) {
-          entity->defineNodes(ctx);
+        ctx->clangLinkEndTime = std::chrono::steady_clock::now();
+        ctx->writeJsonResult(true);
+#if IS_RELEASE
+        for (const auto& llPath : ctx->llvmOutputPaths) {
+          fs::remove(llPath);
         }
-        auto* cfg = cli::Config::get();
         if (cfg->hasOutputPath()) {
           fs::remove_all(cfg->getOutputPath() / ".llvm");
         }
-        for (auto* entity : fileEntities) {
-          ctx->mod = entity;
-          SHOW("Calling emitNodes")
-          entity->emitNodes(ctx);
-        }
-        ctx->qatTimeInMicroseconds =
-            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count();
-        auto clangStart = std::chrono::steady_clock::now();
-        if (checkExecutableExists("clang++")) {
-          String compileCommand = "clang++ -fuse-ld=lld ";
-          for (const auto& llPath : ctx->llvmOutputPaths) {
-            compileCommand += (fs::absolute(llPath).string() + " ");
-          }
-          if (config->hasOutputPath()) {
-            compileCommand += "-o " + (config->getOutputPath() / OUTPUT_OBJECT_NAME).string();
-          } else {
-            compileCommand += ("-o " OUTPUT_OBJECT_NAME);
-          }
-          if (!system(compileCommand.c_str())) {
-            ctx->clangTimeInMicroseconds =
-                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - clangStart)
-                    .count();
-            ctx->writeJsonResult(true);
-            SHOW("Compiled successfully")
-            if (config->isRun() && ctx->hasMain) {
-              SHOW("Executing the program")
-              if (config->hasOutputPath()) {
-                system((String(".") + ((config->getOutputPath().string().find('/') == 0) ? "" : "/") +
-                        (config->getOutputPath() / OUTPUT_OBJECT_NAME).string())
-                           .c_str());
-              }
-            }
-          } else {
-            ctx->writeJsonResult(false);
-            cli::Error("Compilation failed on the clang side", None);
-          }
-#if IS_RELEASE
-          for (const auto& llPath : ctx->llvmOutputPaths) {
-            fs::remove(llPath);
-          }
-          if (cfg->hasOutputPath()) {
-            fs::remove_all(cfg->getOutputPath() / ".llvm");
-          }
 #endif
-        } else {
-          ctx->writeJsonResult(true);
-          cli::Error("qat cannot find clang on path. Please make sure that you "
-                     "have clang installed and the path to clang is available in "
-                     "the environment",
-                     None);
-        }
-        break;
+      } else {
+        ctx->writeJsonResult(false);
+        cli::Error("qat cannot find clang on path. Please make sure that you "
+                   "have clang installed and the path to clang is available in "
+                   "the environment",
+                   None);
       }
-      case cli::CompileTarget::json: {
-        // TODO - Implement
-      }
-      case cli::CompileTarget::cpp: {
-        // TODO - Implement
-      }
+    } else {
+      ctx->writeJsonResult(true);
     }
   }
   delete ctx;
 }
+
+void QatSitter::queuePath(fs::path path) { queuedPaths.push_back(std::move(path)); }
 
 void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
   std::function<void(IR::QatModule*, const fs::path&)> recursiveModuleCreator = [&](IR::QatModule*  folder,
                                                                                     const fs::path& path) {
     for (auto const& item : path) {
       if (fs::is_directory(item)) {
-        if (fs::exists(item / "lib.qat")) {
-          Lexer->changeFile(item / "lib.qat");
+        auto libPath = item / "lib.qat";
+        if (fs::exists(libPath)) {
+          Lexer->changeFile(fs::absolute(libPath));
           Lexer->analyse();
           Parser->setTokens(Lexer->get_tokens());
-          fileEntities.push_back(IR::QatModule::CreateFile(folder, fs::absolute(item / "lib.qat"), path, "lib.qat",
+          fileEntities.push_back(IR::QatModule::CreateFile(folder, fs::absolute(libPath), path, "lib.qat",
                                                            Lexer->getContent(), Parser->parse(),
                                                            utils::VisibilityInfo::pub(), llctx));
         } else {
-          auto* subfolder = IR::QatModule::CreateSubmodule(folder, item, path, item.filename().string(),
+          auto* subfolder = IR::QatModule::CreateSubmodule(folder, item, path, fs::absolute(item.filename()).string(),
                                                            IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
           fileEntities.push_back(subfolder);
           recursiveModuleCreator(subfolder, item);
@@ -127,7 +120,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
         Lexer->changeFile(item.string());
         Lexer->analyse();
         Parser->setTokens(Lexer->get_tokens());
-        fileEntities.push_back(IR::QatModule::CreateFile(folder, item, path, item.filename().string(),
+        fileEntities.push_back(IR::QatModule::CreateFile(folder, fs::absolute(item), path, item.filename().string(),
                                                          Lexer->getContent(), Parser->parse(),
                                                          utils::VisibilityInfo::pub(), llctx));
       }

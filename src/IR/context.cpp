@@ -5,6 +5,7 @@
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
+#include <chrono>
 #include <iostream>
 
 namespace qat::IR {
@@ -137,11 +138,23 @@ void Context::writeJsonResult(bool status) const {
   for (const auto& prob : codeProblems) {
     problems.push_back((Json)prob);
   }
-  Json result;
+  Json               result;
+  unsigned long long qatTime   = 0;
+  unsigned long long clangTime = 0;
+  if (qatStartTime) {
+    qatTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                  qatEndTime.value_or(std::chrono::steady_clock::now()) - qatStartTime.value())
+                  .count();
+  }
+  if (clangLinkStartTime) {
+    clangTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                    clangLinkEndTime.value_or(std::chrono::steady_clock::now()) - clangLinkStartTime.value())
+                    .count();
+  }
   result._("status", status)
       ._("problems", problems)
-      ._("qatTime", (unsigned long long)qatTimeInMicroseconds.value_or(0u))
-      ._("clangTime", (unsigned long long)clangTimeInMicroseconds.value_or(0u))
+      ._("qatTime", qatTime)
+      ._("clangTime", clangTime)
       ._("hasMain", hasMain);
   std::fstream output;
   output.open((cli::Config::get()->getOutputPath() / "qat_result.json").string().c_str(), std::ios_base::out);

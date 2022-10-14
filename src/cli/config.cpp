@@ -74,7 +74,13 @@ Config::Config(u64 count, char** args)
 
     String command(args[1]);
     u64    proceed = 2;
-    if (command == "run") {
+    if (command == "analyse") {
+      analyse = true;
+      if (count == 2) {
+        paths.push_back(fs::current_path());
+        return;
+      }
+    } else if (command == "run") {
       compile = true;
       run     = true;
       if (count == 2) {
@@ -202,6 +208,8 @@ bool Config::shouldExportAST() const { return export_ast; }
 bool Config::isVerbose() const { return verbose; }
 
 bool Config::isRun() const { return run; }
+
+bool Config::isAnalyse() const { return analyse; }
 
 CompileTarget Config::getTarget() const { return target; }
 

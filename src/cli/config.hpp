@@ -60,6 +60,8 @@ private:
 
   bool run;
 
+  bool analyse;
+
   bool outputInTemporaryPath;
 
   bool noColors;
@@ -109,6 +111,9 @@ public:
   // Whether the program should be run after building. This is valid only if
   // there is a valid main function present
   useit bool isRun() const;
+
+  // Whether files should be analysed for errors, warnings and infos and not compiled
+  useit bool isAnalyse() const;
 
   // Whether compiler should exit after arguments are handled by Config
   //

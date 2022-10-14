@@ -8,6 +8,7 @@
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -92,14 +93,16 @@ public:
 
   // META
 
-  bool                                hasMain;
-  mutable u64                         stringCount;
-  Vec<fs::path>                       llvmOutputPaths;
-  Vec<String>                         nativeLibsToLink;
-  mutable Maybe<TemplateEntityMarker> activeTemplate;
-  mutable Vec<CodeProblem>            codeProblems;
-  mutable Maybe<u64>                  qatTimeInMicroseconds;
-  mutable Maybe<u64>                  clangTimeInMicroseconds;
+  bool                                                 hasMain;
+  mutable u64                                          stringCount;
+  Vec<fs::path>                                        llvmOutputPaths;
+  Vec<String>                                          nativeLibsToLink;
+  mutable Maybe<TemplateEntityMarker>                  activeTemplate;
+  mutable Vec<CodeProblem>                             codeProblems;
+  mutable Maybe<std::chrono::steady_clock::time_point> qatStartTime;
+  mutable Maybe<std::chrono::steady_clock::time_point> qatEndTime;
+  mutable Maybe<std::chrono::steady_clock::time_point> clangLinkStartTime;
+  mutable Maybe<std::chrono::steady_clock::time_point> clangLinkEndTime;
 
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;

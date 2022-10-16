@@ -4,6 +4,7 @@
 #include "../ast/argument.hpp"
 #include "../ast/box.hpp"
 #include "../ast/bring_entities.hpp"
+#include "../ast/bring_paths.hpp"
 #include "../ast/constants/string_literal.hpp"
 #include "../ast/define_choice_type.hpp"
 #include "../ast/define_core_type.hpp"
@@ -11,7 +12,6 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/sentence.hpp"
 #include "../ast/sentences/match.hpp"
-#include "../cli/color.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/helpers.hpp"
@@ -34,6 +34,7 @@ private:
   //  Reference to a std::deque<lexer::Token> which is
   // usually a member of the corresponding IO::QatFile
   Deque<lexer::Token>* tokens;
+  Vec<fs::path>        broughtPaths;
   // Comments mapped to indices of the next AST member in the original
   // analysed sequence
   std::map<usize, lexer::Token> comments;
@@ -61,7 +62,12 @@ public:
   useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);
 
   // Parse all files or folders brought into this module
-  useit Vec<String> parseBroughtFilesOrFolders(usize from, usize upto);
+  useit ast::BringPaths* parseBroughtPaths(usize from, usize upto, utils::VisibilityKind kind,
+                                           const utils::FileRange& start);
+
+  useit Vec<fs::path>& getBroughtPaths();
+
+  void clearBroughtPaths();
 
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
 

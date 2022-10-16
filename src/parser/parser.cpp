@@ -137,11 +137,17 @@ ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, usize from,
   // FIXME - Return valid value
 }
 
-Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
+Vec<fs::path>& Parser::getBroughtPaths() { return broughtPaths; }
+
+void Parser::clearBroughtPaths() { broughtPaths.clear(); }
+
+ast::BringPaths* Parser::parseBroughtPaths(usize from, usize upto, utils::VisibilityKind kind,
+                                           const utils::FileRange& startRange) {
   using lexer::TokenType;
-  Vec<String> result;
+  Vec<ast::StringLiteral*>        paths;
+  Vec<Maybe<ast::StringLiteral*>> names;
   for (usize i = from + 1; (i < upto) && (i < tokens->size()); i++) {
-    auto token = tokens->at(i);
+    const auto& token = tokens->at(i);
     switch (token.type) {
       case TokenType::StringLiteral: {
         if (isNext(TokenType::StringLiteral, i)) {
@@ -150,8 +156,20 @@ Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
                 "If this is supposed to be another file or folder to bring, then "
                 "add a separator between these. Or else fix the sentence.",
                 RangeAt(i + 1));
+        } else if (isNext(TokenType::as, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            names.push_back(new ast::StringLiteral(ValueAt(i + 2), RangeAt(i + 2)));
+            i += 2;
+          } else {
+            Error("Expected alias for the file module", RangeSpan(i, i + 1));
+          }
+        } else {
+          names.push_back(None);
+          i++;
         }
-        result.push_back(token.value);
+        SHOW("Pushing brought path: " << token.fileRange.file.parent_path() / token.value)
+        broughtPaths.push_back(token.fileRange.file.parent_path() / token.value);
+        paths.push_back(new ast::StringLiteral(token.value, token.fileRange));
         break;
       }
       case TokenType::separator: {
@@ -159,7 +177,7 @@ Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
           continue;
         } else {
           if (isNext(TokenType::separator, i)) {
-            // NOTE - This might be too much
+            // NOTE - This might be too much, or not
             Error("Multiple adjacent separators found. This is not supported to "
                   "discourage code clutter. Please remove this",
                   RangeAt(i + 1));
@@ -174,7 +192,7 @@ Vec<String> Parser::parseBroughtFilesOrFolders(usize from, usize upto) {
       }
     }
   }
-  return result;
+  return new ast::BringPaths(std::move(paths), std::move(names), kind, {startRange, RangeAt(upto)});
 }
 
 Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, Maybe<usize> upto) {
@@ -505,17 +523,19 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       }
       case TokenType::bring: {
         // FIXME - Support bring sentences
-        if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::StringLiteral, i)) {
           auto endRes = firstPrimaryPosition(TokenType::stop, i);
           if (endRes.has_value()) {
-            auto* broughtEntities = parseBroughtEntities(ctx, i, endRes.value());
-          }
-        } else if (isNext(TokenType::StringLiteral, i)) {
-          auto endRes = firstPrimaryPosition(TokenType::stop, i);
-          if (endRes.has_value()) {
-            auto broughtFiles = parseBroughtFilesOrFolders(i, endRes.value());
+            result.push_back(parseBroughtPaths(i, endRes.value(), getVisibility(), RangeAt(i)));
+            i = endRes.value();
           } else {
             Error("Expected end of bring sentence", token.fileRange);
+          }
+        } else if (isNext(TokenType::identifier, i)) {
+          auto endRes = firstPrimaryPosition(TokenType::stop, i);
+          if (endRes.has_value()) {
+            result.push_back(parseBroughtEntities(ctx, i, endRes.value()));
+            i = endRes.value();
           }
         }
         break;

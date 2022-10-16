@@ -86,6 +86,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       return fnVal->call(ctx, argValues, mod);
     }
   } else {
+    // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
     ctx->Error("The expression is not callable. It has type " + fnVal->getType()->toString(), fnExpr->fileRange);
   }
   return nullptr;

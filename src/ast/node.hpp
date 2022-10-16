@@ -30,7 +30,7 @@ namespace qat::ast {
 // corresponding file
 class Node {
 private:
-  static Vec<Node *> allNodes;
+  static Vec<Node*> allNodes;
 
 public:
   utils::FileRange fileRange;
@@ -43,10 +43,11 @@ public:
   // spanned by the tokens that made up this AST member
   explicit Node(utils::FileRange _fileRange);
   virtual ~Node() = default;
-  virtual void             createModule(IR::Context *ctx) const {}
-  virtual void             defineType(IR::Context *ctx) {}
-  virtual void             define(IR::Context *ctx) {}
-  useit virtual IR::Value *emit(IR::Context *ctx) = 0;
+  virtual void             createModule(IR::Context* ctx) const {}
+  virtual void             handleBrings(IR::Context* ctx) const {}
+  virtual void             defineType(IR::Context* ctx) {}
+  virtual void             define(IR::Context* ctx) {}
+  useit virtual IR::Value* emit(IR::Context* ctx) = 0;
   useit virtual Json       toJson() const         = 0;
   useit virtual NodeType   nodeType() const       = 0;
   static void              clearAll();
@@ -54,13 +55,13 @@ public:
 
 class HolderNode : public Node {
 private:
-  Node *node;
+  Node* node;
 
 public:
-  explicit HolderNode(Node *_node) : Node(_node->fileRange), node(_node) {}
+  explicit HolderNode(Node* _node) : Node(_node->fileRange), node(_node) {}
 
   // NOLINTNEXTLINE(misc-unused-parameters)
-  useit IR::Value *emit(IR::Context *ctx) final { return nullptr; }
+  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit Json       toJson() const final { return node->toJson(); }
   useit NodeType   nodeType() const final { return NodeType::holder; }
 };

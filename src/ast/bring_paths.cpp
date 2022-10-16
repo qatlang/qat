@@ -3,41 +3,106 @@
 
 namespace qat::ast {
 
-BringPaths::BringPaths(Vec<StringLiteral *>         _paths,
-                       const utils::VisibilityInfo &_visibility,
-                       utils::FileRange             _fileRange)
-    : paths(std::move(_paths)), visibility(_visibility),
-      Sentence(std::move(_fileRange)) {}
+BringPaths::BringPaths(Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names, utils::VisibilityKind _visibility,
+                       utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), paths(std::move(_paths)), visibility(_visibility), names(std::move(_names)) {}
 
-IR::Value *BringPaths::emit(IR::Context *ctx) {
-  for (auto const &pathString : paths) {
-    auto path = pathString->get_value();
+void BringPaths::handleBrings(IR::Context* ctx) const {
+  auto* mod = ctx->getMod();
+  for (usize i = 0; i < paths.size(); i++) {
+    auto path = fileRange.file.parent_path() / paths.at(i)->get_value();
     if (fs::exists(path)) {
       if (fs::is_directory(path)) {
-        // TODO - Implement this
+        if (IR::QatModule::hasFolderModule(path)) {
+          if (names.at(i).has_value()) {
+            auto name = names.at(i).value()->get_value();
+            if (mod->hasLib(name)) {
+              ctx->Error("A lib named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBox(name)) {
+              ctx->Error("A box named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtLib(name)) {
+              ctx->Error("A brought lib named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtBox(name)) {
+              ctx->Error("A brought box named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleBoxInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A box named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleLibInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A lib named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtModule(name)) {
+              ctx->Error("A brought module named " + ctx->highlightError(name) + " is in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleBroughtModuleInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A brought module named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            }
+            mod->bringNamedModule(name, IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+          } else {
+            mod->bringModule(IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+          }
+        } else {
+          ctx->Error("Couldn't create module for path: " + ctx->highlightError(path.string()), fileRange);
+        }
       } else if (fs::is_regular_file(path)) {
-        // TODO - Implement this
+        if (IR::QatModule::hasFileModule(path)) {
+          if (names.at(i).has_value()) {
+            auto name = names.at(i).value()->get_value();
+            if (mod->hasLib(name)) {
+              ctx->Error("A lib named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBox(name)) {
+              ctx->Error("A box named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtLib(name)) {
+              ctx->Error("A brought lib named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtBox(name)) {
+              ctx->Error("A brought box named " + ctx->highlightError(name) + " exists already",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleBoxInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A box named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleLibInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A lib named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasBroughtModule(name)) {
+              ctx->Error("A brought module named " + ctx->highlightError(name) + " is in this scope",
+                         names.at(i).value()->fileRange);
+            } else if (mod->hasAccessibleBroughtModuleInImports(name, ctx->getReqInfo()).first) {
+              ctx->Error("A brought module named " + ctx->highlightError(name) + " is already accessible in this scope",
+                         names.at(i).value()->fileRange);
+            }
+            mod->bringNamedModule(name, IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+          } else {
+            mod->bringModule(IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+          }
+        } else {
+          ctx->Error("Couldn't create module for path: " + ctx->highlightError(path.string()), fileRange);
+        }
       } else {
-        ctx->Error("Cannot bring this file type", pathString->fileRange);
+        ctx->Error("Cannot bring this file type", paths.at(i)->fileRange);
       }
     } else {
-      ctx->Error("The path provided does not exist: " + path +
-                     " and cannot be brought in.",
-                 pathString->fileRange);
+      ctx->Error("The path provided does not exist: " + path.string() + " and cannot be brought in.",
+                 paths.at(i)->fileRange);
     }
   }
-  return nullptr;
 }
 
 Json BringPaths::toJson() const {
   Vec<JsonValue> pths;
-  for (auto *path : paths) {
+  for (auto* path : paths) {
     pths.push_back(path->toJson());
   }
   return Json()
       ._("nodeType", "bringPaths")
       ._("paths", std::move(pths))
-      ._("visibility", visibility)
+      ._("visibility", utils::kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

@@ -8,23 +8,20 @@
 
 namespace qat::ast {
 
-// BringPaths represents importing of files or folders into the current
-// compilable scope
 class BringPaths : public Sentence {
 private:
-  Vec<StringLiteral*>   paths;      // All paths specified to be brought into the scope
-  utils::VisibilityInfo visibility; // Visibility of the brought paths
+  Vec<StringLiteral*>        paths;
+  utils::VisibilityKind      visibility;
+  Vec<Maybe<StringLiteral*>> names;
 
 public:
-  // BringPaths represents importing of files or folders into the
-  // current compilable scope
-  BringPaths(Vec<StringLiteral*> _paths, const utils::VisibilityInfo& _visibility, utils::FileRange _fileRange);
+  BringPaths(Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names, utils::VisibilityKind _visibility,
+             utils::FileRange _fileRange);
 
-  IR::Value* emit(IR::Context* ctx) override;
-
-  useit Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::bringPaths; }
+  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
+  void             handleBrings(IR::Context* ctx) const override;
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::bringPaths; }
 };
 
 } // namespace qat::ast

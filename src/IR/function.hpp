@@ -30,6 +30,11 @@ class FunctionCall;
 class Context;
 class Function;
 
+enum class ExternFnType {
+  C,
+  CPP,
+};
+
 class LocalValue : public Value, public Uniq {
   String name;
 
@@ -115,7 +120,7 @@ public:
                           const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
                           llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                           bool                            ignoreParentName = false);
-  useit Value*     call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
+  useit Value*     call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
   useit virtual bool   isMemberFunction() const;
   useit bool           hasVariadicArgs() const;
   useit bool           isAsyncFunction() const;

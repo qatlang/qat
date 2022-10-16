@@ -209,7 +209,7 @@ Block* Block::getActive() {
 
 void Block::destroyLocals(IR::Context* ctx) {
   SHOW("Locals being destroyed for " << name)
-  for (auto* loc : values) {
+  for (auto* loc : values) { // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
     if (loc->getType()->isCoreType()) {
       if (loc->getType()->asCore()->hasDestructor()) {
         auto* dFn = loc->getType()->asCore()->getDestructor();
@@ -245,9 +245,12 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   SHOW("Linking function if it is external")
   auto* llvmFunction = (llvm::Function*)ll;
   if (destMod->getID() != mod->getID()) {
-    llvm::Function::Create((llvm::FunctionType*)getType()->getLLVMType(),
-                           llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, llvmFunction->getAddressSpace(),
-                           getFullName(), destMod->getLLVMModule());
+    // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
+    if (!destMod->getLLVMModule()->getFunction(getFullName())) {
+      llvm::Function::Create((llvm::FunctionType*)getType()->getLLVMType(),
+                             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, llvmFunction->getAddressSpace(),
+                             getFullName(), destMod->getLLVMModule());
+    }
   }
   SHOW("Getting return type")
   auto* retType = ((FunctionType*)getType())->getReturnType();

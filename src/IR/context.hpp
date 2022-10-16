@@ -92,7 +92,6 @@ public:
   Vec<Breakable*>   breakables;
 
   // META
-
   bool                                                 hasMain;
   mutable u64                                          stringCount;
   Vec<fs::path>                                        llvmOutputPaths;

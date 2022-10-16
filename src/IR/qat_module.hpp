@@ -38,7 +38,7 @@ private:
   bool          sharedBuild = true;
 
 public:
-  ModuleInfo() {}
+  ModuleInfo() = default;
 };
 
 class QatModule : public Uniq {
@@ -55,6 +55,13 @@ class QatModule : public Uniq {
 public:
   QatModule(String _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
             const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
+
+  static Vec<QatModule*> allModules;
+
+  useit static bool       hasFileModule(const fs::path& fPath);
+  useit static bool       hasFolderModule(const fs::path& fPath);
+  useit static QatModule* getFileModule(const fs::path& fPath);
+  useit static QatModule* getFolderModule(const fs::path& fPath);
 
 private:
   String                         name;
@@ -231,23 +238,25 @@ public:
 
   // IMPORT
 
-  useit bool       hasImport(const String& name) const;
-  useit QatModule* getImport(const String& name) const;
-  useit Pair<bool, String> hasAccessibleNamedImportInImports(const String&               name,
-                                                             const utils::RequesterInfo& reqInfo) const;
+  useit bool       hasBroughtModule(const String& name) const;
+  useit QatModule* getBroughtModule(const String& name, const utils::RequesterInfo& reqInfo) const;
+  useit Pair<bool, String> hasAccessibleBroughtModuleInImports(const String&               name,
+                                                               const utils::RequesterInfo& reqInfo) const;
 
   // BRING ENTITIES
 
-  void  bring_module(QatModule* other, const utils::VisibilityInfo& _visibility);
-  void  bring_named_module(const String& _name, QatModule* other, const utils::VisibilityInfo& _visibility);
-  void  bring_entity(const String& name, const utils::VisibilityInfo& _visibility);
-  void  bring_named_entity(const String& name, const String& entity, const utils::VisibilityInfo& _visibility);
+  void bringModule(QatModule* other, const utils::VisibilityInfo& _visibility);
+  void bringNamedModule(const String& _name, QatModule* other, const utils::VisibilityInfo& _visibility);
+  // void  bring_entity(const String& name, const utils::VisibilityInfo& _visibility);
+  // void  bring_named_entity(const String& name, const String& entity, const utils::VisibilityInfo& _visibility);
   useit llvm::GlobalVariable* get_global_variable(String name, utils::RequesterInfo& req_info);
+
   useit fs::path getResolvedOutputPath(const String& extension) const;
   useit llvm::Module* getLLVMModule() const;
 
   bool areNodesEmitted() const;
   void createModules(IR::Context* ctx);
+  void handleBrings(IR::Context* ctx);
   void defineTypes(IR::Context* ctx);
   void defineNodes(IR::Context* ctx);
   void emitNodes(IR::Context* ctx);

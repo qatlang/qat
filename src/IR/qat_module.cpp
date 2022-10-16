@@ -22,6 +22,52 @@
 
 namespace qat::IR {
 
+Vec<QatModule*> QatModule::allModules{};
+
+bool QatModule::hasFileModule(const fs::path& fPath) {
+  for (auto* mod : allModules) {
+    if (mod->moduleType == ModuleType::file) {
+      if (fs::equivalent(mod->filePath, fPath)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasFolderModule(const fs::path& fPath) {
+  for (auto* mod : allModules) {
+    if (mod->moduleType == ModuleType::folder) {
+      if (fs::equivalent(mod->filePath, fPath)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+QatModule* QatModule::getFileModule(const fs::path& fPath) {
+  for (auto* mod : allModules) {
+    if (mod->moduleType == ModuleType::file) {
+      if (fs::equivalent(mod->filePath, fPath)) {
+        return mod;
+      }
+    }
+  }
+  return nullptr;
+}
+
+QatModule* QatModule::getFolderModule(const fs::path& fPath) {
+  for (auto* mod : allModules) {
+    if (mod->moduleType == ModuleType::folder) {
+      if (fs::equivalent(mod->filePath, fPath)) {
+        return mod;
+      }
+    }
+  }
+  return nullptr;
+}
+
 QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath, ModuleType _type,
                      const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
     : name(std::move(_name)), moduleType(_type), filePath(std::move(_filepath)), basePath(std::move(_basePath)),
@@ -31,6 +77,7 @@ QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath, Modul
   llvmModule->setSourceFileName(filePath.string());
   llvmModule->setCodeModel(llvm::CodeModel::Small);
   llvmModule->setTargetTriple(LLVM_HOST_TRIPLE);
+  allModules.push_back(this);
 }
 
 QatModule::~QatModule() = default;
@@ -403,10 +450,79 @@ void QatModule::openBox(const String& _name, Maybe<utils::VisibilityInfo> visib_
 
 void QatModule::closeBox() { closeSubmodule(); }
 
+bool QatModule::hasBroughtModule(const String& name) const {
+  for (const auto& brought : broughtModules) {
+    auto* bMod = brought.get();
+    if (!brought.isNamed()) {
+      if (bMod->shouldPrefixName() && (bMod->getName() == name)) {
+        SHOW("Found brought module with name")
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      SHOW("Found named brought module")
+      SHOW("Brought module " << bMod)
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleBroughtModuleInImports(const String&               name,
+                                                                  const utils::RequesterInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasBroughtModule(name) || bMod->hasAccessibleBroughtModuleInImports(name, reqInfo).first) {
+          if (bMod->getBroughtModule(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            SHOW("Found module in imports")
+            return {true, bMod->filePath.string()};
+          }
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+QatModule* QatModule::getBroughtModule(const String& name, const utils::RequesterInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    auto* bMod = brought.get();
+    if (!brought.isNamed()) {
+      if (bMod->shouldPrefixName() && (bMod->getName() == name)) {
+        SHOW("Found brought module with name")
+        return bMod;
+      } else if (!bMod->shouldPrefixName()) {
+        if (bMod->hasBroughtModule(name) || bMod->hasAccessibleBroughtModuleInImports(name, reqInfo).first) {
+          SHOW("Found brought module in unnamed module")
+          if (bMod->getBroughtModule(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getBroughtModule(name, reqInfo);
+          }
+        }
+      }
+    } else if (brought.getName() == name) {
+      SHOW("Found named brought module")
+      SHOW("Brought module " << bMod)
+      return bMod;
+    }
+  }
+  return nullptr;
+}
+
+void QatModule::bringModule(QatModule* other, const utils::VisibilityInfo& _visibility) {
+  broughtModules.push_back(Brought<QatModule>(other, _visibility));
+}
+
+void QatModule::bringNamedModule(const String& _name, QatModule* other, const utils::VisibilityInfo& _visibility) {
+  broughtModules.push_back(Brought<QatModule>(_name, other, _visibility));
+}
+
 bool QatModule::hasFunction(const String& name) const {
   SHOW("Function to be checked: " << name)
+  SHOW("This pointer: " << this)
   SHOW("Function count: " << functions.size())
   for (auto* function : functions) {
+    SHOW("Function in module: " << function)
     if (function->getName() == name) {
       SHOW("Found function")
       return true;
@@ -436,6 +552,8 @@ Pair<bool, String> QatModule::hasAccessibleFunctionInImports(const String&      
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
+        SHOW("Checking brought function " << name << " in brought module " << bMod->getName() << " from file "
+                                          << bMod->getFilePath())
         if (bMod->hasFunction(name) || bMod->hasBroughtFunction(name) ||
             bMod->hasAccessibleFunctionInImports(name, reqInfo).first) {
           if (bMod->getFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
@@ -483,8 +601,8 @@ Function* QatModule::getFunction(const String& name, const utils::RequesterInfo&
 // TEMPLATE FUNCTION
 
 bool QatModule::hasTemplateFunction(const String& name) const {
-  SHOW("Function to be checked: " << name)
-  SHOW("Function count: " << functions.size())
+  SHOW("Template Function to be checked: " << name)
+  SHOW("Template Function count: " << functions.size())
   for (auto* function : templateFunctions) {
     if (function->getName() == name) {
       SHOW("Found template function")
@@ -1058,13 +1176,23 @@ String QatModule::getFilePath() const { return filePath; }
 bool QatModule::areNodesEmitted() const { return isEmitted; }
 
 void QatModule::createModules(IR::Context* ctx) {
-  SHOW("Creating modules via nodes")
+  SHOW("Creating modules via nodes" << filePath.string())
   ctx->mod = this;
   for (auto* node : nodes) {
     node->createModule(ctx);
   }
   for (auto* sub : submodules) {
     sub->createModules(ctx);
+  }
+}
+
+void QatModule::handleBrings(IR::Context* ctx) {
+  ctx->mod = this;
+  for (auto* node : nodes) {
+    node->handleBrings(ctx);
+  }
+  for (auto* sub : submodules) {
+    sub->handleBrings(ctx);
   }
 }
 
@@ -1121,9 +1249,9 @@ void QatModule::emitNodes(IR::Context* ctx) {
     SHOW("Creating llvm output path")
     auto fileName = getWritableName() + ".ll";
     if (!cfg->hasOutputPath()) {
-      fs::remove_all(basePath / ".llvm");
+      fs::remove_all(basePath / "llvm");
     }
-    llPath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / ".llvm" /
+    llPath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "llvm" /
              filePath.lexically_relative(basePath).replace_filename(fileName);
     std::error_code errorCode;
     SHOW("Creating all folders in llvm output path: " << llPath)
@@ -1141,6 +1269,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
         SHOW("Could not open file for writing")
       }
       fStream.flush();
+      SHOW("Flushed llvm IR file stream")
     } else {
       SHOW("Error could not create directory")
     }
@@ -1149,12 +1278,10 @@ void QatModule::emitNodes(IR::Context* ctx) {
 
 void QatModule::compileToObject(IR::Context* ctx) {
   if (!isCompiledToObject) {
+    SHOW("Compiling Module `" << name << "` from file " << filePath.string())
     String compileCommand("clang -c ");
     for (auto* sub : submodules) {
       sub->compileToObject(ctx);
-    }
-    for (const auto& bmod : broughtModules) {
-      bmod.get()->compileToObject(ctx);
     }
     // FIXME - Also link modules of other brought entities
     auto* cfg      = cli::Config::get();
@@ -1162,7 +1289,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
                      filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o"));
     SHOW("Creating all folders in object file output path: " << objectFilePath)
     fs::create_directory(objectFilePath.parent_path());
-    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath);
+    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.string());
     SHOW("Command is: " << compileCommand)
     if (system(compileCommand.c_str())) {
       ctx->writeJsonResult(false);
@@ -1183,9 +1310,14 @@ void QatModule::bundleLibs(IR::Context* ctx) {
     for (auto* sub : submodules) {
       cmdRem.append(sub->objectFilePath.string()).append(" ");
     }
+    SHOW("Added ll paths of all submodules")
     for (const auto& bMod : broughtModules) {
+      SHOW("Brought module: " << bMod.get())
+      SHOW("Brought module name: " << bMod.get()->name)
+      SHOW("Brought module path: " << bMod.get()->objectFilePath)
       cmdRem.append(bMod.get()->objectFilePath.string()).append(" ");
     }
+    SHOW("Added ll paths of all brought modules")
     if (hasMain) {
       auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                       filePath.lexically_relative(basePath)

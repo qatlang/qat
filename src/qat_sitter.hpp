@@ -21,11 +21,11 @@ namespace fs = std::filesystem;
 
 class QatSitter {
 private:
-  Vec<IR::QatModule*> fileEntities;
-  IR::Context*        Context;
-  lexer::Lexer*       Lexer;
-  parser::Parser*     Parser;
-  Vec<fs::path>       queuedPaths;
+  Deque<IR::QatModule*> fileEntities;
+  IR::Context*          Context;
+  lexer::Lexer*         Lexer;
+  parser::Parser*       Parser;
+  Vec<fs::path>         queuedPaths;
 
 public:
   QatSitter();

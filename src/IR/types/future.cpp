@@ -4,9 +4,14 @@
 namespace qat::IR {
 
 FutureType::FutureType(QatType* _subType, llvm::LLVMContext& ctx) : subTy(_subType) {
-  llvmType = llvm::StructType::create(
-      ctx, {llvm::Type::getInt8Ty(ctx)->getPointerTo(), llvm::Type::getInt1Ty(ctx), subTy->getLLVMType()},
-      "future " + subTy->toString(), false);
+  if (subTy->isVoid()) {
+    llvmType = llvm::StructType::create(ctx, {llvm::Type::getInt8Ty(ctx)->getPointerTo(), llvm::Type::getInt1Ty(ctx)},
+                                        "future void", false);
+  } else {
+    llvmType = llvm::StructType::create(
+        ctx, {llvm::Type::getInt8Ty(ctx)->getPointerTo(), llvm::Type::getInt1Ty(ctx), subTy->getLLVMType()},
+        "future " + subTy->toString(), false);
+  }
 }
 
 FutureType* FutureType::get(QatType* subType, llvm::LLVMContext& ctx) {

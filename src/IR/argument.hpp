@@ -13,41 +13,42 @@ namespace qat::IR {
  */
 class Argument {
   String   name;
-  QatType *type;
+  QatType* type;
   bool     variability;
   u64      argIndex;
   bool     isMemberForConstructor;
+  bool     isReturnArg;
 
   // Construct a new Argument
-  Argument(String _name, QatType *_type, bool _variability, u64 _arg_index,
-           bool isMember)
-      : name(std::move(_name)), type(_type), variability(_variability),
-        argIndex(_arg_index), isMemberForConstructor(isMember) {}
+  Argument(String _name, QatType* _type, bool _variability, u64 _arg_index, bool isMember, bool _isReturnArg)
+      : name(std::move(_name)), type(_type), variability(_variability), argIndex(_arg_index),
+        isMemberForConstructor(isMember), isReturnArg(_isReturnArg) {}
 
 public:
   // This constructs an immutable argument
-  useit static Argument Create(const String &name, QatType *type,
-                               u64 arg_index) {
-    return {name, type, false, arg_index, false};
+  useit static Argument Create(const String& name, QatType* type, u64 arg_index) {
+    return {name, type, false, arg_index, false, false};
   }
 
   // This constructs an implicit member argument for constructors
-  useit static Argument CreateMember(const String &name, QatType *type,
-                                     u64 argIndex) {
-    return {name, type, true, argIndex, true};
+  useit static Argument CreateMember(const String& name, QatType* type, u64 argIndex) {
+    return {name, type, true, argIndex, true, false};
   }
 
   // This constructs a variable argument
-  useit static Argument CreateVariable(const String &name, QatType *type,
-                                       u64 arg_index) {
-    return {name, type, true, arg_index, false};
+  useit static Argument CreateVariable(const String& name, QatType* type, u64 arg_index) {
+    return {name, type, true, arg_index, false, false};
+  }
+
+  useit static Argument CreateReturnArg(const String& name, QatType* type, u64 argIndex) {
+    return {name, type, false, argIndex, false, true};
   }
 
   // Get the name of the argument
   useit String getName() const { return name; }
 
   // Get the LLVM type of the argument
-  useit QatType *getType() const { return type; }
+  useit QatType* getType() const { return type; }
 
   // Get the variability of the argument
   useit bool get_variability() const { return variability; }
@@ -56,6 +57,8 @@ public:
   useit u64 getArgIndex() const { return argIndex; }
 
   useit bool isMemberArg() const { return isMemberForConstructor; }
+
+  useit bool isRetArg() const { return isReturnArg; }
 };
 } // namespace qat::IR
 

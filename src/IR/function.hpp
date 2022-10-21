@@ -10,6 +10,7 @@
 #include "types/qat_type.hpp"
 #include "uniq.hpp"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
@@ -60,20 +61,30 @@ private:
   mutable bool                          hasGive = false;
   mutable Vec<Pair<String, IR::Value*>> aliases;
 
+  Block* prevBlock = nullptr;
+  Block* nextBlock = nullptr;
+
 public:
   Block(Function* _fn, Block* _parent);
 
   useit String getName() const;
   useit llvm::BasicBlock* getBB() const;
-  useit bool              hasParent() const;
-  useit Block*            getParent() const;
-  useit Function*         getFn() const;
-  useit bool              hasValue(const String& name) const;
-  useit LocalValue*       getValue(const String& name) const;
-  useit LocalValue*       newValue(const String& name, IR::QatType* type, bool isVar);
-  useit bool              isMoved(const String& locID) const;
-  useit bool              hasGiveInAllControlPaths() const;
-  useit bool              hasAlias(const String& name) const;
+
+  useit bool hasPrevBlock() const;
+  Block*     getPrevBlock() const;
+  useit bool hasNextBlock() const;
+  Block*     getNextBlock() const;
+  void       linkPrevBlock(Block* block);
+
+  useit bool        hasParent() const;
+  useit Block*      getParent() const;
+  useit Function*   getFn() const;
+  useit bool        hasValue(const String& name) const;
+  useit LocalValue* getValue(const String& name) const;
+  useit LocalValue* newValue(const String& name, IR::QatType* type, bool isVar);
+  useit bool        isMoved(const String& locID) const;
+  useit bool        hasGiveInAllControlPaths() const;
+  useit bool        hasAlias(const String& name) const;
   useit IR::Value* getAlias(const String& name) const;
   useit Block*     getActive();
   useit Vec<LocalValue*>& getLocals();
@@ -108,6 +119,9 @@ protected:
   mutable u64   calls;
   mutable u64   refers;
 
+  Maybe<llvm::Function*>   asyncFn;
+  Maybe<llvm::StructType*> asyncArgTy;
+
   Function(QatModule* mod, String _name, QatType* returnType, bool _isReturnValueVariable, bool _is_async,
            Vec<Argument> _args, bool has_variadic_arguments, utils::FileRange fileRange,
            const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn = false,
@@ -121,15 +135,17 @@ public:
                           llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                           bool                            ignoreParentName = false);
   useit Value*     call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
-  useit virtual bool   isMemberFunction() const;
-  useit bool           hasVariadicArgs() const;
-  useit bool           isAsyncFunction() const;
-  useit String         argumentNameAt(u32 index) const;
-  useit virtual String getName() const;
-  useit virtual String getFullName() const;
-  useit bool           isReturnTypeReference() const;
-  useit bool           isReturnTypePointer() const;
-  useit bool           isAccessible(const utils::RequesterInfo& req_info) const;
+  useit virtual bool isMemberFunction() const;
+  useit bool         hasVariadicArgs() const;
+  useit bool         isAsyncFunction() const;
+  useit llvm::Function* getAsyncSubFunction() const;
+  useit llvm::StructType* getAsyncArgType() const;
+  useit String            argumentNameAt(u32 index) const;
+  useit virtual String    getName() const;
+  useit virtual String    getFullName() const;
+  useit bool              isReturnTypeReference() const;
+  useit bool              isReturnTypePointer() const;
+  useit bool              isAccessible(const utils::RequesterInfo& req_info) const;
   useit utils::VisibilityInfo getVisibility() const;
   useit llvm::Function* getLLVMFunction();
   void                  setActiveBlock(usize index) const;
@@ -157,7 +173,7 @@ public:
   useit usize                 getTypeCount() const;
   useit usize                 getVariantCount() const;
   useit QatModule*            getModule() const;
-  useit Function*             fillTemplates(Vec<IR::QatType*> _types, IR::Context* ctx, utils::FileRange fileRange);
+  useit Function* fillTemplates(Vec<IR::QatType*> _types, IR::Context* ctx, const utils::FileRange& fileRange);
 };
 
 void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange);

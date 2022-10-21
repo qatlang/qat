@@ -10,6 +10,7 @@
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "types/reference.hpp"
+#include "types/void.hpp"
 #include "value.hpp"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
@@ -51,7 +52,11 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
   }
   name = (hasParent() ? (parent->getName() + ".") : "") + std::to_string(index) + "_bb";
   SHOW("Name of the block set")
-  bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getLLVMFunction());
+  if (fn->isAsyncFunction()) {
+    bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getAsyncSubFunction());
+  } else {
+    bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getLLVMFunction());
+  }
   SHOW("Created llvm::BasicBlock" << name)
 }
 
@@ -60,6 +65,16 @@ String Block::getName() const { return name; }
 llvm::BasicBlock* Block::getBB() const { return bb; }
 
 bool Block::hasParent() const { return (parent != nullptr); }
+
+bool Block::hasPrevBlock() const { return prevBlock != nullptr; }
+
+Block* Block::getPrevBlock() const { return prevBlock; }
+
+bool Block::hasNextBlock() const { return nextBlock != nullptr; }
+
+Block* Block::getNextBlock() const { return nextBlock; }
+
+void Block::linkPrevBlock(Block* block) { prevBlock = block; }
 
 Block* Block::getParent() const { return parent; }
 
@@ -75,6 +90,11 @@ bool Block::hasValue(const String& name) const {
     SHOW("Local value name is: " << val->getName())
     SHOW("Local value type is: " << val->getType()->toString())
   }
+  if (prevBlock) {
+    if (prevBlock->hasValue(name)) {
+      return true;
+    }
+  }
   if (hasParent()) {
     SHOW("Has parent block")
     return parent->hasValue(name);
@@ -88,6 +108,9 @@ LocalValue* Block::getValue(const String& name) const {
     if (val->getName() == name) {
       return val;
     }
+  }
+  if (prevBlock && prevBlock->hasValue(name)) {
+    return prevBlock->getValue(name);
   }
   if (hasParent()) {
     return parent->getValue(name);
@@ -178,6 +201,9 @@ void Block::collectLocalsFrom(Vec<LocalValue*>& vals) const {
   for (auto* child : children) {
     child->collectLocalsFrom(vals);
   }
+  if (nextBlock) {
+    nextBlock->collectLocalsFrom(vals);
+  }
 }
 
 Vec<LocalValue*>& Block::getLocals() { return values; }
@@ -193,6 +219,9 @@ bool Block::isMoved(const String& locID) const {
     if (mov == locID) {
       return true;
     }
+  }
+  if (prevBlock) {
+    return prevBlock->isMoved(locID);
   }
   return false;
 }
@@ -217,6 +246,9 @@ void Block::destroyLocals(IR::Context* ctx) {
       }
     }
   }
+  if (prevBlock) {
+    prevBlock->destroyLocals(ctx);
+  }
 }
 
 Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isRetTypeVariable, bool _is_async,
@@ -229,9 +261,17 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
 {
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
-    argTypes.push_back(new ArgumentType(arg.getName(), arg.getType(), arg.isMemberArg(), arg.get_variability()));
+    argTypes.push_back(
+        new ArgumentType(arg.getName(), arg.getType(), arg.isMemberArg(), arg.get_variability(), arg.isRetArg()));
   }
-  type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
+  if (is_async) {
+    SHOW("Argument type for future return is: " << returnType->toString())
+    argTypes.push_back(
+        new ArgumentType("qat'returnValue", IR::ReferenceType::get(true, returnType, ctx), false, false, true));
+    type = new FunctionType(IR::VoidType::get(ctx), false, argTypes, ctx);
+  } else {
+    type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
+  }
   if (isMemberFn) {
     ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name,
                                 mod->getLLVMModule());
@@ -239,7 +279,22 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
     ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U,
                                 (ignoreParentName ? name : mod->getFullNameWithChild(name)), mod->getLLVMModule());
   }
+  if (is_async) {
+    asyncFn = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(),
+                                                             {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
+                                     llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
+                                     (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
+    Vec<llvm::Type*> argTys;
+    for (const auto& fnArg : getType()->asFunction()->getArgumentTypes()) {
+      argTys.push_back(fnArg->getType()->getLLVMType());
+    }
+    asyncArgTy = llvm::StructType::get(ll->getContext(), argTys);
+  }
 }
+
+llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }
+
+llvm::StructType* Function::getAsyncArgType() const { return asyncArgTy.value(); }
 
 IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, QatModule* destMod) {
   SHOW("Linking function if it is external")
@@ -252,23 +307,40 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
                              getFullName(), destMod->getLLVMModule());
     }
   }
-  SHOW("Getting return type")
-  auto* retType = ((FunctionType*)getType())->getReturnType();
-  SHOW("Getting function type")
-  auto* fnTy = (llvm::FunctionType*)getType()->asFunction()->getLLVMType();
-  SHOW("Got function type")
-  SHOW("Creating LLVM call: " << getFullName())
-  return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType,
-                       retType->isReference() && retType->asReference()->isSubtypeVariable(),
-                       (retType->isReference() && retType->asReference()->isSubtypeVariable()) ? Nature::assignable
-                                                                                               : Nature::temporary);
+  bool         hasRetArg = false;
+  IR::QatType* retArgTy  = nullptr;
+  hasRetArg              = getType()->asFunction()->hasReturnArgument();
+  if (hasRetArg) {
+    retArgTy = getType()->asFunction()->getReturnArgType();
+  }
+  if (!hasRetArg) {
+    SHOW("Getting return type")
+    auto* retType = ((FunctionType*)getType())->getReturnType();
+    SHOW("Getting function type")
+    auto* fnTy = (llvm::FunctionType*)getType()->asFunction()->getLLVMType();
+    SHOW("Got function type")
+    SHOW("Creating LLVM call: " << getFullName())
+    return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType,
+                         retType->isReference() && retType->asReference()->isSubtypeVariable(),
+                         (retType->isReference() && retType->asReference()->isSubtypeVariable()) ? Nature::assignable
+                                                                                                 : Nature::temporary);
+  } else {
+    Vec<llvm::Value*> argVals = argValues;
+    SHOW("Function: Casting return arg type to reference")
+    auto* retValAlloca =
+        IR::Logic::newAlloca(ctx->fn, utils::unique_id(), retArgTy->asReference()->getSubType()->getLLVMType());
+    argVals.push_back(retValAlloca);
+    ctx->builder.CreateCall(llvmFunction->getFunctionType(), llvmFunction, argVals);
+    SHOW("Call complete")
+    return new Value(retValAlloca, retArgTy->asReference()->getSubType(), false, IR::Nature::temporary);
+  }
 }
 
 Function* Function::Create(QatModule* mod, String name, QatType* returnTy, const bool isReturnTypeVariable,
-                           const bool is_async, Vec<Argument> args, const bool hasvariadicargs,
+                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs,
                            utils::FileRange fileRange, const utils::VisibilityInfo& visibilityInfo,
                            llvm::LLVMContext& ctx, llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
-  return new Function(mod, std::move(name), returnTy, isReturnTypeVariable, is_async, std::move(args), hasvariadicargs,
+  return new Function(mod, std::move(name), returnTy, isReturnTypeVariable, isAsync, std::move(args), hasVariadicArgs,
                       std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
 }
 
@@ -326,7 +398,8 @@ usize TemplateFunction::getVariantCount() const { return variants.size(); }
 
 QatModule* TemplateFunction::getModule() const { return parent; }
 
-Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* ctx, utils::FileRange fileRange) {
+Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* ctx,
+                                          const utils::FileRange& fileRange) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();

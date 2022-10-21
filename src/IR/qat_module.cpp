@@ -11,6 +11,7 @@
 #include "types/qat_type.hpp"
 #include "value.hpp"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
@@ -1279,7 +1280,10 @@ void QatModule::emitNodes(IR::Context* ctx) {
 void QatModule::compileToObject(IR::Context* ctx) {
   if (!isCompiledToObject) {
     SHOW("Compiling Module `" << name << "` from file " << filePath.string())
-    String compileCommand("clang -c ");
+    String compileCommand("clang -fPIC -c ");
+    if (moduleInfo.linkPthread) {
+      compileCommand += "-pthread ";
+    }
     for (auto* sub : submodules) {
       sub->compileToObject(ctx);
     }
@@ -1305,7 +1309,10 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       sub->bundleLibs(ctx);
     }
     auto*  cfg = cli::Config::get();
-    String cmdRem;
+    String cmdRem("-fPIC ");
+    if (moduleInfo.linkPthread) {
+      cmdRem.append("-pthread ");
+    }
     cmdRem.append(objectFilePath.string()).append(" ");
     for (auto* sub : submodules) {
       cmdRem.append(sub->objectFilePath.string()).append(" ");
@@ -1401,60 +1408,97 @@ void QatModule::exportJsonFromAST() const {
 llvm::Module* QatModule::getLLVMModule() const { return llvmModule; }
 
 void QatModule::linkNative(NativeUnit nval) {
+  // FIXME - Use integer widths according to the specification and not the same on all platforms
+  llvm::LLVMContext& ctx = llvmModule->getContext();
   switch (nval) {
     case NativeUnit::printf: {
       if (!llvmModule->getFunction("printf")) {
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(llvmModule->getContext()),
-                                    {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo()}, true),
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, true),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "printf", llvmModule);
       }
       break;
     }
     case NativeUnit::malloc: {
-      if (!hasFunction("malloc")) {
+      if (!llvmModule->getFunction("malloc")) {
         SHOW("Creating malloc function")
-        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
-                                                       {llvm::Type::getInt64Ty(llvmModule->getContext())}, false),
-                               llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(), {llvm::Type::getInt64Ty(ctx)}, false),
+            llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
       }
       break;
     }
     case NativeUnit::free: {
       if (!llvmModule->getFunction("free")) {
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(llvmModule->getContext()),
-                                    {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo()}, false),
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "free", llvmModule);
       }
       break;
     }
     case NativeUnit::realloc: {
       if (!llvmModule->getFunction("realloc")) {
-        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
-                                                       {llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo(),
-                                                        llvm::Type::getInt64Ty(llvmModule->getContext())},
-                                                       false),
-                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "realloc", llvmModule);
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(),
+                                    {llvm::Type::getInt8Ty(ctx)->getPointerTo(), llvm::Type::getInt64Ty(ctx)}, false),
+            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "realloc", llvmModule);
       }
       break;
     }
     case NativeUnit::pthreadCreate: {
-      llvm::Type* pthreadTy   = llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo();
-      llvm::Type* voidPtrTy   = llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo();
-      auto*       pthreadFnTy = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
-      llvm::Function::Create(llvm::FunctionType::get(
-                                 llvm::Type::getInt32Ty(llvmModule->getContext()),
-                                 {pthreadTy->getPointerTo(), voidPtrTy, pthreadFnTy->getPointerTo(), voidPtrTy}, false),
-                             llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, "pthread_create", llvmModule);
+      if (!llvmModule->getFunction("pthread_create")) {
+        llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(ctx)->getPointerTo();
+        llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(ctx)->getPointerTo();
+        auto*       pthreadFnTy  = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
+        if (!llvm::StructType::getTypeByName(ctx, "pthread_attr_t")) {
+          llvm::StructType::create(ctx,
+                                   {llvm::Type::getInt64Ty(ctx), llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 48u)},
+                                   "pthread_attr_t");
+        }
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx),
+                                    {pthreadPtrTy,
+                                     llvm::StructType::getTypeByName(ctx, "pthread_attr_t")->getPointerTo(),
+                                     pthreadFnTy->getPointerTo(), voidPtrTy},
+                                    false),
+            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_create", llvmModule);
+        moduleInfo.linkPthread = true;
+      }
       break;
     }
     case NativeUnit::pthreadJoin: {
-      llvm::Type* pthreadTy = llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo();
-      llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llvmModule->getContext())->getPointerTo();
-      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llvmModule->getContext()),
-                                                     {pthreadTy, voidPtrTy->getPointerTo()}, false),
-                             llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, "pthread_join", llvmModule);
+      if (!llvmModule->getFunction("pthread_join")) {
+        llvm::Type* pthreadTy = llvm::Type::getInt64Ty(ctx);
+        llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(ctx)->getPointerTo();
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {pthreadTy, voidPtrTy->getPointerTo()}, false),
+            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_join", llvmModule);
+        moduleInfo.linkPthread = true;
+      }
+      break;
+    }
+    case NativeUnit::pthreadExit: {
+      if (!llvmModule->getFunction("pthread_exit")) {
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
+            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_exit", llvmModule);
+        moduleInfo.linkPthread = true;
+      }
+      break;
+    }
+    case NativeUnit::pthreadAttrInit: {
+      if (!llvmModule->getFunction("pthread_attr_init")) {
+        if (!llvm::StructType::getTypeByName(ctx, "pthread_attr_t")) {
+          llvm::StructType::create(ctx,
+                                   {llvm::Type::getInt64Ty(ctx), llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 48u)},
+                                   "pthread_attr_t");
+        }
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx),
+                                    {llvm::StructType::getTypeByName(ctx, "pthread_attr_t")->getPointerTo()}, false),
+            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_attr_init", llvmModule);
+        moduleInfo.linkPthread = true;
+      }
       break;
     }
   }

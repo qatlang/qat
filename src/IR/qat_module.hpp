@@ -27,7 +27,7 @@ namespace qat::IR {
 class Context;
 
 enum class ModuleType { lib, box, file, folder };
-enum class NativeUnit { printf, malloc, free, realloc, pthreadCreate, pthreadJoin };
+enum class NativeUnit { printf, malloc, free, realloc, pthreadCreate, pthreadJoin, pthreadExit, pthreadAttrInit };
 
 class ModuleInfo {
   friend class QatModule;
@@ -36,6 +36,17 @@ private:
   Maybe<String> outputName;
   bool          staticBuild = true;
   bool          sharedBuild = true;
+  Deque<String> libsToLink;
+  bool          linkPthread = false;
+
+  void addLibToLink(const String& name) {
+    for (const auto& lib : libsToLink) {
+      if (lib == name) {
+        return;
+      }
+    }
+    libsToLink.push_back(name);
+  }
 
 public:
   ModuleInfo() = default;

@@ -15,43 +15,45 @@ private:
   // Name of the argument
   Maybe<String> name;
   // Type of the argument
-  QatType *type;
+  QatType* type;
   // Variability of the argument
   bool variability;
 
   bool isMemberArg;
+  bool isReturnArg;
 
 public:
-  ArgumentType(QatType *_type, bool _variability);
-  ArgumentType(String _name, QatType *_type, bool _variability);
-  ArgumentType(String _name, QatType *type, bool isMemberArg,
-               bool _variability);
+  ArgumentType(QatType* _type, bool _variability);
+  ArgumentType(String _name, QatType* _type, bool _variability);
+  ArgumentType(String _name, QatType* type, bool isMemberArg, bool _variability, bool isRetArg);
 
   useit bool     hasName() const;
   useit String   getName() const;
-  useit QatType *getType();
+  useit QatType* getType();
   useit bool     isVariable() const;
   useit bool     isMemberArgument() const;
+  useit bool     isReturnArgument() const;
   useit String   toString() const;
 };
 
 class FunctionType : public QatType {
-  QatType            *returnType;
-  bool                isReturnVariable;
-  Vec<ArgumentType *> argTypes;
+  QatType*           returnType;
+  bool               isReturnVariable;
+  Vec<ArgumentType*> argTypes;
 
 public:
-  FunctionType(QatType *_retType, bool _isReturnValueVariable,
-               Vec<ArgumentType *> _argTypes, llvm::LLVMContext &ctx);
+  FunctionType(QatType* _retType, bool _isReturnValueVariable, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
 
-  useit QatType      *getReturnType();
+  useit QatType*      getReturnType();
   useit bool          isReturnTypeVariable() const;
-  useit ArgumentType *getArgumentTypeAt(u32 index);
-  useit Vec<ArgumentType *> getArgumentTypes() const;
-  useit u64                 getArgumentCount() const;
-  useit TypeKind typeKind() const override { return TypeKind::function; }
-  useit String   toString() const override;
-  useit Json     toJson() const override;
+  useit ArgumentType* getArgumentTypeAt(u32 index);
+  useit Vec<ArgumentType*> getArgumentTypes() const;
+  useit u64                getArgumentCount() const;
+  useit TypeKind           typeKind() const override { return TypeKind::function; }
+  useit String             toString() const override;
+  useit Json               toJson() const override;
+  useit bool               hasReturnArgument() const;
+  useit IR::QatType* getReturnArgType() const;
 };
 
 } // namespace qat::IR

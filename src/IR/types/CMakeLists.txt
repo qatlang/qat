@@ -6,6 +6,7 @@ add_library(QAT_IR_TYPES
         definition.cpp
         float.cpp
         function.cpp
+        future.cpp
         integer.cpp
         reference.cpp
         pointer.cpp

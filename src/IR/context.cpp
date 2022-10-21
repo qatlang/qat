@@ -28,7 +28,7 @@ CodeProblem::CodeProblem(bool _isError, String _message, utils::FileRange _range
 
 CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
 
-Context::Context() : builder(llctx), hasMain(false) {}
+Context::Context() : builder(llctx), hasMain(false) { llctx.setOpaquePointers(false); }
 
 QatModule* Context::getMod() const { return mod->getActive(); }
 

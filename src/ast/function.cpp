@@ -1,7 +1,12 @@
 #include "./function.hpp"
+#include "../IR/logic.hpp"
+#include "../IR/types/future.hpp"
 #include "../show.hpp"
 #include "sentence.hpp"
 #include "types/templated.hpp"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -64,9 +69,16 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
             : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
   }
   SHOW("Variability setting complete")
+  auto* retTy = returnType->emit(ctx);
+  if (isAsync) {
+    if (!retTy->isFuture()) {
+      ctx->Error("An async function should always return a future", fileRange);
+    }
+  }
   SHOW("About to create function")
-  auto* fun = mod->createFunction(fnName, returnType->emit(ctx), returnType->isVariable(), isAsync, args, isVariadic,
-                                  fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+  auto* fun = mod->createFunction(fnName, retTy, returnType->isVariable(), isAsync, args, isVariadic, fileRange,
+                                  ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+  SHOW("Created IR function")
   if (isMainFn) {
     if (ctx->getMod()->hasMainFn()) {
       ctx->Error(ctx->highlightError("main") + " function already exists in this module. Please check the codebase",
@@ -175,24 +187,121 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
   auto* fnEmit = prototype->function;
   ctx->fn      = fnEmit;
   SHOW("Set active function: " << fnEmit->getFullName())
-  auto* block = new IR::Block((IR::Function*)fnEmit, nullptr);
-  SHOW("Created entry block")
-  block->setActive(ctx->builder);
-  SHOW("Set new block as the active block")
-  SHOW("About to allocate necessary arguments")
-  auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-  SHOW("Iteration run for function is: " << fnEmit->getName())
-  for (usize i = 0; i < argIRTypes.size(); i++) {
-    SHOW("Argument name is " << argIRTypes.at(i)->getName())
-    SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-    auto* argVal =
-        block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
-    SHOW("Created local value for the argument")
-    ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+  if (prototype->isAsync) {
+    auto* fun        = fnEmit->getAsyncSubFunction();
+    auto* entryBlock = llvm::BasicBlock::Create(ctx->llctx, "entry", fnEmit->getLLVMFunction());
+    ctx->builder.SetInsertPoint(entryBlock);
+    SHOW("Getting void pointer")
+    auto* voidPtrTy = llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo();
+    ctx->getMod()->linkNative(IR::NativeUnit::pthreadCreate);
+    ctx->getMod()->linkNative(IR::NativeUnit::pthreadAttrInit);
+    SHOW("Linked pthread_create & pthread_attr_init functions to current module")
+    auto* pthreadCreate     = ctx->mod->getLLVMModule()->getFunction("pthread_create");
+    auto* pthreadAttrInitFn = ctx->mod->getLLVMModule()->getFunction("pthread_attr_init");
+    auto* argAlloca         = ctx->builder.CreateAlloca(fnEmit->getAsyncArgType());
+    auto* pthreadAttrAlloca = ctx->builder.CreateAlloca(llvm::StructType::getTypeByName(ctx->llctx, "pthread_attr_t"));
+    SHOW("Create allocas for async arg and pthread_attr_t")
+    const auto& fnOrigArgs = fnEmit->getType()->asFunction()->getArgumentTypes();
+    for (usize i = 0; i < fnOrigArgs.size(); i++) {
+      auto* argSubGEP = ctx->builder.CreateStructGEP(argAlloca->getAllocatedType(), argAlloca, i);
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argSubGEP);
+    }
+    ctx->builder.CreateCall(pthreadAttrInitFn->getFunctionType(), pthreadAttrInitFn, {pthreadAttrAlloca});
+    auto* futureTy = fnEmit->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
+    SHOW("Getting pthread pointer")
+    auto* futureRefRef = ctx->builder.CreateStructGEP(argAlloca->getAllocatedType(), argAlloca, fnOrigArgs.size() - 1);
+    auto* pthreadPtr   = ctx->builder.CreateStructGEP(
+        futureTy->getLLVMType(), ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(), futureRefRef), 0);
+    SHOW("Calling pthread_create")
+    ctx->builder.CreateCall(pthreadCreate->getFunctionType(), pthreadCreate,
+                            {pthreadPtr, pthreadAttrAlloca, fun, ctx->builder.CreatePointerCast(argAlloca, voidPtrTy)});
+    {
+      SHOW("Loading future from async arg")
+      auto* futureRef = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(), futureRefRef);
+      SHOW("Future loaded from async arg")
+      ctx->getMod()->linkNative(IR::NativeUnit::malloc);
+      auto* mallocFn = ctx->getMod()->getLLVMModule()->getFunction("malloc");
+      ctx->builder.CreateStore(
+          ctx->builder.CreatePointerCast(
+              ctx->builder.CreateCall(
+                  mallocFn->getFunctionType(), mallocFn,
+                  {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                          ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(
+                                              llvm::Type::getInt1Ty(ctx->llctx)))}),
+              llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo()),
+          ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 2u));
+      ctx->builder.CreateStore(
+          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
+          ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                                  ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 2u)));
+      SHOW("Future: Stored tag")
+      if (!futureTy->getSubType()->isVoid()) {
+        ctx->builder.CreateStore(
+            ctx->builder.CreatePointerCast(
+                ctx->builder.CreateCall(
+                    mallocFn->getFunctionType(), mallocFn,
+                    {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                            ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(
+                                                futureTy->getSubType()->getLLVMType()))}),
+                futureTy->getSubType()->getLLVMType()->getPointerTo()),
+            ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 3u));
+        ctx->builder.CreateStore(
+            llvm::Constant::getNullValue(futureTy->getSubType()->getLLVMType()),
+            ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
+                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 3u)));
+        SHOW("Future: Stored null value")
+      }
+    }
+    ctx->builder.CreateRetVoid();
+    SHOW("Switching to the internal async function")
+    auto* block = new IR::Block(fnEmit, nullptr);
+    SHOW("Created entry block for async fn")
+    block->setActive(ctx->builder);
+    SHOW("Async fn block set active")
+    auto* asyncArgTy     = fnEmit->getAsyncArgType();
+    auto* asyncArgAlloca = IR::Logic::newAlloca(fnEmit, "qat'asyncArgPtr", asyncArgTy->getPointerTo());
+    ctx->builder.CreateStore(
+        ctx->builder.CreatePointerCast(fnEmit->getAsyncSubFunction()->getArg(0), asyncArgTy->getPointerTo()),
+        asyncArgAlloca);
+    auto* asyncArg = ctx->builder.CreateLoad(asyncArgTy->getPointerTo(), asyncArgAlloca);
+    for (usize i = 0; i < fnOrigArgs.size(); i++) {
+      IR::LocalValue* localArg = nullptr;
+      SHOW("Creating arg at " << i << " for async fn")
+      if (i == (fnOrigArgs.size() - 1)) {
+        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+      } else {
+        localArg =
+            block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+      };
+      SHOW("Storing arg for async fn")
+      SHOW("Arg alloca for future is: " << localArg->getType()->asReference()->toString())
+      auto* argValLoad = ctx->builder.CreateLoad(fnOrigArgs.at(i)->getType()->getLLVMType(),
+                                                 ctx->builder.CreateStructGEP(fnEmit->getAsyncArgType(), asyncArg, i));
+      SHOW("Arg val loaded")
+      ctx->builder.CreateStore(argValLoad, localArg->getAlloca());
+      SHOW("Arg val stored")
+    }
+  } else {
+    auto* block = new IR::Block(fnEmit, nullptr);
+    SHOW("Created entry block")
+    block->setActive(ctx->builder);
+    SHOW("Set new block as the active block")
+    SHOW("About to allocate necessary arguments")
+    auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+    SHOW("Iteration run for function is: " << fnEmit->getName())
+    for (usize i = 0; i < argIRTypes.size(); i++) {
+      SHOW("Argument name is " << argIRTypes.at(i)->getName())
+      SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+      auto* argVal =
+          block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
+      SHOW("Created local value for the argument")
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+    }
   }
+  SHOW("Emitting sentences")
   emitSentences(sentences, ctx);
-  IR::functionReturnHandler(ctx, fnEmit, fileRange);
   SHOW("Sentences emitted")
+  IR::functionReturnHandler(ctx, fnEmit, fileRange);
   return fnEmit;
 }
 

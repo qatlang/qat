@@ -2,6 +2,7 @@ add_library(QAT_AST_TYPES
         array.cpp
         cstring.cpp
         float.cpp
+        future.cpp
         integer.cpp
         named.cpp
         reference.cpp

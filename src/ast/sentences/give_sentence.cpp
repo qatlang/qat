@@ -55,10 +55,10 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
                                  ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
                                                          ctx->builder.CreateStructGEP(futureTy, futRet, 2u)));
-        // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-        // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-        // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-        //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+        auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+        ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+                                {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
         SHOW("Creating return for async function with void return")
         return new IR::Value(
             ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
@@ -133,11 +133,10 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
               ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
                                       ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)));
           SHOW("Stored tag")
-          // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-          // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-          // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-          //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
-          // ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()));
+          ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+          auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+          ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+                                  {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
           return new IR::Value(ctx->builder.CreateRet(llvm::ConstantPointerNull::get(
                                    llvm::dyn_cast<llvm::PointerType>(fun->getAsyncSubFunction()->getReturnType()))),
                                IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
@@ -177,10 +176,10 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
             ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
                                     ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)),
             true);
-        // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-        // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-        // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-        //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+        auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+        ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+                                {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
         return new IR::Value(
             ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
             IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);

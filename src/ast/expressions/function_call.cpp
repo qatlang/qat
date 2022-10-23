@@ -20,7 +20,8 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     if (fnVal->getType()->isFunction()) {
       fun = (IR::Function*)fnVal;
     }
-    if (fnTy->getArgumentTypes().size() != values.size()) {
+    if (fnTy->hasReturnArgument() ? ((fnTy->getArgumentTypes().size() - 1) != values.size())
+                                  : fnTy->getArgumentTypes().size() != values.size()) {
       ctx->Error("Number of arguments provided for the function call does not "
                  "match the function signature",
                  fileRange);
@@ -52,7 +53,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     }
     SHOW("Argument values generated")
     auto fnArgsTy = fnTy->getArgumentTypes();
-    for (usize i = 0; i < fnArgsTy.size(); i++) {
+    for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) ||
           (argsEmit.at(i)->getType()->isReference() &&
            !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()))) {
@@ -64,7 +65,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       }
     }
     Vec<llvm::Value*> argValues;
-    for (usize i = 0; i < fnArgsTy.size(); i++) {
+    for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
       if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i)->isReference()) {
         if (!argsEmit.at(i)->isImplicitPointer()) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", values.at(i)->fileRange);

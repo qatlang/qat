@@ -631,6 +631,8 @@ Token Lexer::tokeniser() {
           return Token::normal(TokenType::end, this->getPosition(3));
         } else if (value == "choice") {
           return Token::normal(TokenType::choice, this->getPosition(6));
+        } else if (value == "future") {
+          return Token::normal(TokenType::future, this->getPosition(6));
         } else {
           return Token::valued(TokenType::identifier, value, this->getPosition(value.length()));
         }

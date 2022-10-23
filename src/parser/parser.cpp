@@ -12,6 +12,7 @@
 #include "../ast/define_mix_type.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
+#include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/constructor_call.hpp"
 #include "../ast/expressions/copy.hpp"
@@ -55,6 +56,7 @@
 #include "../ast/types/array.hpp"
 #include "../ast/types/cstring.hpp"
 #include "../ast/types/float.hpp"
+#include "../ast/types/future.hpp"
 #include "../ast/types/integer.hpp"
 #include "../ast/types/named.hpp"
 #include "../ast/types/pointer.hpp"
@@ -215,6 +217,12 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
     switch (token.type) {
       case TokenType::var: {
         variable = true;
+        break;
+      }
+      case TokenType::future: {
+        auto subRes = parseType(preCtx, i, upto);
+        cacheTy     = new ast::FutureType(false, subRes.first, RangeSpan(i, subRes.second));
+        i           = subRes.second;
         break;
       }
       case TokenType::parenthesisOpen: {
@@ -477,6 +485,14 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
     return res;
   };
 
+  Maybe<bool> asyncState;
+  auto        setAsync = [&]() { asyncState = true; };
+  auto        getAsync = [&]() {
+    bool res   = asyncState.value_or(false);
+    asyncState = false;
+    return res;
+  };
+
   for (usize i = (from + 1); i < upto; i++) {
     Token& token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
@@ -719,6 +735,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
+      case TokenType::Async: {
+        if (!isNext(TokenType::identifier, i)) {
+          Error("Expected an identifier for the name of the function, after async", RangeAt(i));
+        }
+        setAsync();
+        break;
+      }
       case TokenType::identifier: {
         auto start   = i;
         auto sym_res = parseSymbol(ctx, i);
@@ -778,9 +801,11 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               }
             }
             SHOW("Creating prototype")
-            auto* prototype = new ast::FunctionPrototype(ValueAt(start), argResult.first, argResult.second, retType,
-                                                         false, llvm::GlobalValue::WeakAnyLinkage, callConv,
-                                                         getVisibility(), RangeSpan(start, pClose), templates);
+            auto  IsAsync   = getAsync();
+            auto* prototype = new ast::FunctionPrototype(
+                ValueAt(start), argResult.first, argResult.second, retType, IsAsync, llvm::GlobalValue::WeakAnyLinkage,
+                callConv, getVisibility(),
+                RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), templates);
             SHOW("Prototype created")
             if (isNext(TokenType::bracketOpen, i)) {
               auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
@@ -855,13 +880,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           for (auto* arg : argResult.first) {
             SHOW("Arg name " << arg->getName())
           }
-          /// TODO: Change implementation of Box
+          bool  IsAsync   = getAsync();
+          auto  cacheSym  = getCachedSymbol();
           auto* prototype = new ast::FunctionPrototype(
-              getCachedSymbol().name, argResult.first, argResult.second,
-              // FIXME - Support async
-              retType, false, isExternal ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::WeakAnyLinkage,
-              // FIXME - Support other visibilities
-              callConv, getVisibility(), token.fileRange);
+              cacheSym.name, argResult.first, argResult.second, retType, IsAsync,
+              isExternal ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::WeakAnyLinkage, callConv,
+              getVisibility(),
+              isPrev(TokenType::Async, cacheSym.tokenIndex)
+                  ? utils::FileRange{RangeAt(cacheSym.tokenIndex - 1), token.fileRange}
+                  : utils::FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange});
           SHOW("Prototype created")
           if (!isExternal) {
             if (isNext(TokenType::bracketOpen, pClose)) {
@@ -2291,6 +2318,12 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         } else {
           Error("No expression found before pointer dereference operator", RangeAt(i));
         }
+        break;
+      }
+      case TokenType::Await: {
+        auto expRes = parseExpression(preCtx, None, i, None);
+        cachedExpressions.push_back(new ast::Await(expRes.first, RangeSpan(i, expRes.second)));
+        i = expRes.second;
         break;
       }
       case TokenType::binaryOperator: {

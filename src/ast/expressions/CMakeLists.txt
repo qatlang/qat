@@ -1,5 +1,6 @@
 add_library(QAT_AST_EXPRESSIONS
         array_literal.cpp
+        await.cpp
         binary_expression.cpp
         constructor_call.cpp
         copy.cpp

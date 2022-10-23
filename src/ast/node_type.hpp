@@ -83,6 +83,7 @@ enum class NodeType {
   typeChecker,
   Not,
   copyExpression,
+  Await,
 };
 
 } // namespace qat::ast

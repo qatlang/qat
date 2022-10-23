@@ -143,6 +143,7 @@ public:
   useit String            argumentNameAt(u32 index) const;
   useit virtual String    getName() const;
   useit virtual String    getFullName() const;
+  useit bool              hasReturnArgument() const;
   useit bool              isReturnTypeReference() const;
   useit bool              isReturnTypePointer() const;
   useit bool              isAccessible(const utils::RequesterInfo& req_info) const;

@@ -362,6 +362,8 @@ utils::VisibilityInfo Function::getVisibility() const { return visibility_info; 
 
 bool Function::isMemberFunction() const { return false; }
 
+bool Function::hasReturnArgument() const { return getType()->asFunction()->hasReturnArgument(); }
+
 bool Function::isReturnTypeReference() const {
   return ((FunctionType*)type)->getReturnType()->typeKind() == TypeKind::reference;
 }

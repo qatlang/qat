@@ -83,7 +83,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();
-    if ((fnArgsTy.size() - 1) != arguments.size()) {
+    if ((fnArgsTy.size() - (memFn->hasReturnArgument() ? 2 : 1)) != arguments.size()) {
       ctx->Error("Number of arguments provided for the member function call does not "
                  "match the signature",
                  fileRange);
@@ -115,7 +115,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }
     SHOW("Argument values generated for member function")
-    for (usize i = 1; i < fnArgsTy.size(); i++) {
+    for (usize i = 1; i < (fnArgsTy.size() - (memFn->hasReturnArgument() ? 1 : 0)); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
           !(argsEmit.at(i - 1)->getType()->isReference() &&
             fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
@@ -128,7 +128,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     //
     Vec<llvm::Value*> argVals;
     argVals.push_back(inst->getLLVM());
-    for (usize i = 1; i < fnArgsTy.size(); i++) {
+    for (usize i = 1; i < (fnArgsTy.size() - (memFn->hasReturnArgument() ? 1 : 0)); i++) {
       if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i - 1)->isReference()) {
         if (!argsEmit.at(i - 1)->isImplicitPointer()) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);

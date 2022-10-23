@@ -3,11 +3,11 @@
 
 namespace qat::ast {
 
-void emitSentences(const Vec<Sentence *> &sentences, IR::Context *ctx) {
-  for (auto *snt : sentences) {
-    auto *irVal = snt->emit(ctx);
-    if (irVal && irVal->getLLVM() &&
-        IR::isTerminatorInstruction(irVal->getLLVM())) {
+void emitSentences(const Vec<Sentence*>& sentences, IR::Context* ctx) {
+  for (auto* snt : sentences) {
+    SHOW("Sentence nodeType is: " << (int)snt->nodeType())
+    auto* irVal = snt->emit(ctx);
+    if (irVal && irVal->getLLVM() && IR::isTerminatorInstruction(irVal->getLLVM())) {
       break;
     }
   }

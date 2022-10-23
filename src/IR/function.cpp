@@ -51,7 +51,7 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
     fn->blocks.push_back(this);
   }
   name = (hasParent() ? (parent->getName() + ".") : "") + std::to_string(index) + "_bb";
-  SHOW("Name of the block set")
+  SHOW("Name of the block set in function: " << fn->getFullName())
   if (fn->isAsyncFunction()) {
     bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getAsyncSubFunction());
   } else {
@@ -331,7 +331,7 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
         IR::Logic::newAlloca(ctx->fn, utils::unique_id(), retArgTy->asReference()->getSubType()->getLLVMType());
     argVals.push_back(retValAlloca);
     ctx->builder.CreateCall(llvmFunction->getFunctionType(), llvmFunction, argVals);
-    SHOW("Call complete")
+    SHOW("Call complete for fn: " << getFullName())
     return new Value(retValAlloca, retArgTy->asReference()->getSubType(), false, IR::Nature::temporary);
   }
 }

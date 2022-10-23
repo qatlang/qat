@@ -1,8 +1,10 @@
 #include "./give_sentence.hpp"
+#include "../../IR/types/future.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "../expressions/default.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
@@ -11,7 +13,15 @@ GiveSentence::GiveSentence(Maybe<Expression*> _given_expr, utils::FileRange _fil
 
 IR::Value* GiveSentence::emit(IR::Context* ctx) {
   auto* fun = ctx->fn;
-  if (fun->getType()->asFunction()->getReturnType()->typeKind() == IR::TypeKind::Void) {
+  if (fun->isAsyncFunction() ? fun->getType()
+                                   ->asFunction()
+                                   ->getReturnArgType()
+                                   ->asReference()
+                                   ->getSubType()
+                                   ->asFuture()
+                                   ->getSubType()
+                                   ->isVoid()
+                             : fun->getType()->asFunction()->getReturnType()->isVoid()) {
     if (give_expr.has_value()) {
       ctx->Error("Given value type of the function is void. Please remove this "
                  "unnecessary value",
@@ -38,11 +48,31 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         }
       }
       locals.clear();
-      return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+      if (fun->isAsyncFunction()) {
+        auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->getLLVMType();
+        auto* futRet =
+            ctx->builder.CreateLoad(futureTy->getPointerTo(), fun->getBlock()->getValue("qat'future")->getAlloca());
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
+                                 ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                                                         ctx->builder.CreateStructGEP(futureTy, futRet, 2u)));
+        // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+        // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+        // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+        //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        SHOW("Creating return for async function with void return")
+        return new IR::Value(
+            ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
+            IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+      } else {
+        return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+      }
     }
   } else {
     if (give_expr.has_value()) {
-      auto* retType = fun->getType()->asFunction()->getReturnType();
+      auto* retType = fun->isAsyncFunction()
+                          ? fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()
+                          : fun->getType()->asFunction()->getReturnType();
+      retType       = fun->isAsyncFunction() ? retType->asFuture()->getSubType() : retType;
       if (give_expr.value()->nodeType() == NodeType::Default) {
         ((Default*)give_expr.value())->setType(retType);
       }
@@ -59,10 +89,12 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         }
       }
       auto* retVal = give_expr.value()->emit(ctx);
+      SHOW("ret val emitted")
       if (retType->isSame(retVal->getType()) ||
           (retType->isReference() && retType->asReference()->getSubType()->isSame(retVal->getType()) &&
            retVal->isImplicitPointer()) ||
           (retVal->getType()->isReference() && retVal->getType()->asReference()->getSubType()->isSame(retType))) {
+        SHOW("Return type is same")
         if (retVal->getType()->isReference() && !(retType->isReference())) {
           retVal = new IR::Value(ctx->builder.CreateLoad(retType->getLLVMType(), retVal->getLLVM()), retType, false,
                                  IR::Nature::temporary);
@@ -85,7 +117,73 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
           }
         }
         locals.clear();
-        return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retVal->getType(), false, IR::Nature::pure);
+        if (fun->isAsyncFunction()) {
+          auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
+          SHOW("Got future type")
+          auto* futureRet = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(),
+                                                    fun->getBlock()->getValue("qat'future")->getAlloca());
+          SHOW("Got future ret")
+          ctx->builder.CreateStore(
+              retVal->getLLVM(),
+              ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
+                                      ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 3u)));
+          SHOW("Stored value to future")
+          ctx->builder.CreateStore(
+              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
+              ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                                      ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)));
+          SHOW("Stored tag")
+          // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+          // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+          // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+          //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+          // ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()));
+          return new IR::Value(ctx->builder.CreateRet(llvm::ConstantPointerNull::get(
+                                   llvm::dyn_cast<llvm::PointerType>(fun->getAsyncSubFunction()->getReturnType()))),
+                               IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+        } else {
+          return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retVal->getType(), false, IR::Nature::pure);
+        }
+      } else if (fun->isAsyncFunction() && retType->isFuture() &&
+                 (retType->asFuture()->getSubType()->isSame(retVal->getType()) ||
+                  (retVal->isReference() &&
+                   retType->asFuture()->getSubType()->isSame(retVal->getType()->asReference()->getSubType())) ||
+                  (retType->asFuture()->getSubType()->isReference() &&
+                   (retVal->isImplicitPointer() &&
+                    (retType->asFuture()->getSubType()->asReference()->isSubtypeVariable() ? retVal->isVariable()
+                                                                                           : true) &&
+                    retType->asFuture()->getSubType()->asReference()->getSubType()->isSame(retVal->getType()))))) {
+        SHOW("GIVE: Async fn and value type matches return type")
+        // FIXME - Check returning of future values
+        // FIXME - Implement copy & move semantics
+        if (retType->asFuture()->getSubType()->isSame(retVal->getType())) {
+          retVal->loadImplicitPointer(ctx->builder);
+        } else if (retVal->isReference() &&
+                   retType->asFuture()->getSubType()->isSame(retVal->getType()->asReference()->getSubType())) {
+          retVal = new IR::Value(
+              ctx->builder.CreateLoad(retVal->getType()->asReference()->getSubType()->getLLVMType(), retVal->getLLVM()),
+              retVal->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+        }
+        auto* futureTy  = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
+        auto* futureRet = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(),
+                                                  fun->getBlock()->getValue("qat'future")->getAlloca());
+        ctx->builder.CreateStore(
+            retVal->getLLVM(),
+            ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
+                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 3u)),
+            true);
+        ctx->builder.CreateStore(
+            llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
+            ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)),
+            true);
+        // ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+        // auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+        // ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+        //                         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        return new IR::Value(
+            ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
+            IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
       } else {
         ctx->Error("Given value type of the function is " + fun->getType()->asFunction()->getReturnType()->toString() +
                        ", but the provided value in the give sentence is " + retVal->getType()->toString(),

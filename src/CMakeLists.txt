@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-    VERSION "0.4.0"
+    VERSION "0.5.0"
     DESCRIPTION "Qat Programming Language"
     HOMEPAGE_URL "https://qat.dev")
 
@@ -12,6 +12,10 @@ else()
     SET(IS_RELEASE OFF)
     add_compile_definitions(IS_RELEASE=false)
 endif()
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 if(WIN32)
     SET(IS_UNIX OFF)
@@ -90,17 +94,17 @@ message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 #
 if(IS_UNIX)
     if(IS_RELEASE)
-        SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/")
+        SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/")
     else()
-        SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/")
+        SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/")
 
         # SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
     endif()
 else()
     if(IS_RELEASE)
-        SET(CMAKE_CXX_FLAGS "-Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
+        SET(CMAKE_CXX_FLAGS "-static -Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
     else()
-        SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
+        SET(CMAKE_CXX_FLAGS "-static -g -Oz -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include")
 
         # SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\clang64\\include\\c++\\v1 -IC:\\msys64\\clang64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
     endif()
@@ -110,10 +114,10 @@ endif()
 #
 #
 if(IS_RELEASE)
-    execute_process(COMMAND /mnt/Main/LIBS/llvm-release/bin/llvm-config --libs core
+    execute_process(COMMAND /mnt/Main/LIBS/llvm-release/bin/llvm-config --link-static --libs core
         OUTPUT_VARIABLE LLVM_LIBRARIES)
 else()
-    execute_process(COMMAND /mnt/Main/LIBS/llvm-debug/bin/llvm-config --libs core
+    execute_process(COMMAND /mnt/Main/LIBS/llvm-debug/bin/llvm-config --link-static --libs core
         OUTPUT_VARIABLE LLVM_LIBRARIES)
 endif()
 
@@ -144,6 +148,8 @@ target_link_directories(${PROJECT_NAME}
     PRIVATE /usr/local/lib/)
 
 if(IS_UNIX)
+    SET(ZLIB_LIBRARY /usr/local/lib/libz.a)
+
     if(IS_RELEASE)
         target_link_directories(${PROJECT_NAME} PRIVATE /mnt/Main/LIBS/llvm-release/lib)
     else()

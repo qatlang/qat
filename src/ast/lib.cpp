@@ -93,7 +93,7 @@ void Lib::createModule(IR::Context *ctx) const {
         fileRange);
   }
   SHOW("Creating lib")
-  mod->openLib(name, fileRange.file, ctx->getVisibInfo(visibility), ctx->llctx);
+  mod->openLib(name, fileRange.file.string(), ctx->getVisibInfo(visibility), ctx->llctx);
   mod->getActive()->nodes = members;
   for (auto *nod : members) {
     nod->createModule(ctx);

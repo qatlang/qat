@@ -9,6 +9,10 @@
 #include <chrono>
 #include <filesystem>
 
+#if PLATFORM_IS_WINDOWS
+  #include "processenv.h"
+#endif
+
 #define OUTPUT_OBJECT_NAME "output"
 
 namespace qat {
@@ -172,7 +176,7 @@ bool QatSitter::checkExecutableExists(const String& name) {
 #if PLATFORM_IS_WINDOWS
   LPSTR lpFilePart;
   char  fileName[2000];
-  if (!SearchPath(NULL, name, ".exe", 2000, fileName, &lpFilePart)) {
+  if (!SearchPath(NULL, name.c_str(), ".exe", 2000, fileName, &lpFilePart)) {
     return false;
   }
   return true;

@@ -52,7 +52,7 @@ utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) c
         return utils::VisibilityInfo::file(getMod()->getFilePath());
       }
       case utils::VisibilityKind::folder: {
-        return utils::VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path());
+        return utils::VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path().string());
       }
       case utils::VisibilityKind::type: {
         if (activeType) {
@@ -90,7 +90,7 @@ utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) c
           return utils::VisibilityInfo::lib(getMod()->getFullName());
         }
         case ModuleType::folder: {
-          return utils::VisibilityInfo::folder(fs::path(getMod()->getParentFile()->getFilePath()).parent_path());
+          return utils::VisibilityInfo::folder(fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
         }
       }
     }

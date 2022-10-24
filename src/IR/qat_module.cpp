@@ -445,7 +445,7 @@ void QatModule::openBox(const String& _name, Maybe<utils::VisibilityInfo> visib_
       }
     }
   } else {
-    addSubmodule(_name, filePath, ModuleType::box, visib_info.value(), llvmModule->getContext());
+    addSubmodule(_name, filePath.string(), ModuleType::box, visib_info.value(), llvmModule->getContext());
   }
 }
 
@@ -1172,7 +1172,7 @@ QatModule* QatModule::getClosestParentLib() {
   }
 }
 
-String QatModule::getFilePath() const { return filePath; }
+String QatModule::getFilePath() const { return filePath.string(); }
 
 bool QatModule::areNodesEmitted() const { return isEmitted; }
 

@@ -68,7 +68,7 @@ endif()
 #
 #
 if(IS_UNIX)
-    SET(CMAKE_CXX_COMPILER /usr/lib/llvm-15/bin/clang)
+    SET(CMAKE_CXX_COMPILER /usr/lib/llvm-14/bin/clang)
 else()
     SET(CMAKE_CXX_COMPILER C:\\msys64\\mingw64\\bin\\clang++)
 endif()
@@ -113,7 +113,7 @@ endif()
 # LLVM Configuration to programmatically link required libs
 #
 #
-if (IS_UNIX)
+if(IS_UNIX)
     if(IS_RELEASE)
         execute_process(COMMAND /mnt/Main/LIBS/llvm-release/bin/llvm-config --link-static --libs core
             OUTPUT_VARIABLE LLVM_LIBRARIES)
@@ -123,7 +123,7 @@ if (IS_UNIX)
     endif()
 else()
     execute_process(COMMAND llvm-config --link-static --libs core
-                    OUTPUT_VARIABLE LLVM_LIBRARIES)
+        OUTPUT_VARIABLE LLVM_LIBRARIES)
 endif()
 
 string(STRIP "${LLVM_LIBRARIES}" LLVM_LIBRARIES)
@@ -160,6 +160,7 @@ if(IS_UNIX)
     endif()
 else()
     target_link_directories(${PROJECT_NAME} PRIVATE C:\\msys64\\mingw64\\lib)
+
     # SET(FFI_LIBRARIES /c/msys64/mingw64/lib/libffi.a)
     # SET(ZLIB_LIBRARY /c/msys64/mingw64/lib/libz.a)
     # SET(LIBXML2_LIBRARY /c/msys64/mingw64/lib/libxml2.a)

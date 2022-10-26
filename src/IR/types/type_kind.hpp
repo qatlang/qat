@@ -26,6 +26,7 @@ enum class TypeKind {
   definition, // A type definition
   choice,
   future,
+  maybe,
 };
 
 } // namespace qat::IR

@@ -15,6 +15,7 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
+#include "maybe.hpp"
 
 namespace qat::IR {
 
@@ -60,6 +61,9 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
       }
       case TypeKind::future: {
         return ((FutureType*)this)->getSubType()->isSame(((FutureType*)other)->getSubType());
+      }
+      case TypeKind::maybe: {
+        return ((MaybeType*)this)->getSubType()->isSame(((MaybeType*)other)->getSubType());
       }
       case TypeKind::unsignedInteger: {
         return (((UnsignedType*)this)->getBitwidth() == ((UnsignedType*)other)->getBitwidth());
@@ -278,6 +282,15 @@ bool QatType::isFuture() const {
 
 FutureType* QatType::asFuture() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFuture() : (FutureType*)this;
+}
+
+bool QatType::isMaybe() const {
+  return ((typeKind() == TypeKind::maybe) ||
+          (typeKind() == TypeKind::maybe && asDefinition()->getSubType()->isMaybe()));
+}
+
+MaybeType* QatType::asMaybe() const {
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMaybe() : (MaybeType*)this;
 }
 
 } // namespace qat::IR

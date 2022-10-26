@@ -29,6 +29,7 @@ class DefinitionType;
 class MixType;
 class ChoiceType;
 class FutureType;
+class MaybeType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -72,6 +73,8 @@ public:
   useit CStringType*     asCString() const;
   useit bool             isFuture() const;
   useit FutureType*      asFuture() const;
+  useit bool             isMaybe() const;
+  useit MaybeType*       asMaybe() const;
   useit bool             isVoid() const;
   useit virtual TypeKind typeKind() const = 0;
   useit virtual String   toString() const = 0;

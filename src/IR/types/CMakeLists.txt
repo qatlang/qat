@@ -8,6 +8,7 @@ add_library(QAT_IR_TYPES
         function.cpp
         future.cpp
         integer.cpp
+        maybe.cpp
         reference.cpp
         pointer.cpp
         qat_type.cpp

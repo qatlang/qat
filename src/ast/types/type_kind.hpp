@@ -25,6 +25,7 @@ enum class TypeKind {
   function,
   future,
   templated, // Templated type
+  maybe,
 };
 
 } // namespace qat::ast

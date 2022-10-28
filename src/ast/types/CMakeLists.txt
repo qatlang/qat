@@ -4,6 +4,7 @@ add_library(QAT_AST_TYPES
         float.cpp
         future.cpp
         integer.cpp
+        maybe.cpp
         named.cpp
         reference.cpp
         pointer.cpp

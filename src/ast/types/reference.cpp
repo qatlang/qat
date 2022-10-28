@@ -3,14 +3,15 @@
 
 namespace qat::ast {
 
-ReferenceType::ReferenceType(QatType *_type, bool _variable,
-                             utils::FileRange _fileRange)
+ReferenceType::ReferenceType(QatType* _type, bool _variable, utils::FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), type(_type) {}
 
-IR::QatType *ReferenceType::emit(IR::Context *ctx) {
-  auto *typEmit = type->emit(ctx);
+IR::QatType* ReferenceType::emit(IR::Context* ctx) {
+  auto* typEmit = type->emit(ctx);
   if (typEmit->isReference()) {
     ctx->Error("Subtype of reference cannot be a reference", fileRange);
+  } else if (typEmit->isVoid()) {
+    ctx->Error("Subtype of reference cannot be void", fileRange);
   }
   return IR::ReferenceType::get(type->isVariable(), typEmit, ctx->llctx);
 }
@@ -25,8 +26,6 @@ Json ReferenceType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-String ReferenceType::toString() const {
-  return (isVariable() ? "var @" : "@") + type->toString();
-}
+String ReferenceType::toString() const { return (isVariable() ? "var @" : "@") + type->toString(); }
 
 } // namespace qat::ast

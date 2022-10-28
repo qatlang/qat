@@ -66,6 +66,8 @@ private:
 
   bool noColors;
 
+  bool releaseMode;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -150,6 +152,10 @@ public:
   useit bool outputToTempDir() const;
 
   useit bool noColorMode() const;
+
+  useit bool isDebugMode() const;
+
+  useit bool isReleaseMode() const;
 
   ~Config();
 };

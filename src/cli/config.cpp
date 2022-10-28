@@ -53,7 +53,7 @@ CompileTarget Config::parseCompileTarget(const String& val) {
 
 Config::Config(u64 count, char** args)
     : target(CompileTarget::normal), exitAfter(false), verbose(false), saveDocs(false), showReport(false),
-      export_ast(false), compile(false), run(false), outputInTemporaryPath(false) {
+      export_ast(false), compile(false), run(false), outputInTemporaryPath(false), releaseMode(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -169,6 +169,8 @@ Config::Config(u64 count, char** args)
         saveDocs = true;
       } else if (arg == "--tmp-dir") {
         outputInTemporaryPath = true;
+      } else if (arg == "--release") {
+        releaseMode = true;
       } else {
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
@@ -216,5 +218,9 @@ CompileTarget Config::getTarget() const { return target; }
 bool Config::outputToTempDir() const { return outputInTemporaryPath; }
 
 bool Config::noColorMode() const { return noColors; }
+
+bool Config::isDebugMode() const { return !releaseMode; }
+
+bool Config::isReleaseMode() const { return releaseMode; }
 
 } // namespace qat::cli

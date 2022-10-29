@@ -58,6 +58,7 @@
 #include "../ast/types/float.hpp"
 #include "../ast/types/future.hpp"
 #include "../ast/types/integer.hpp"
+#include "../ast/types/maybe.hpp"
 #include "../ast/types/named.hpp"
 #include "../ast/types/pointer.hpp"
 #include "../ast/types/reference.hpp"
@@ -222,6 +223,12 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
       case TokenType::future: {
         auto subRes = parseType(preCtx, i, upto);
         cacheTy     = new ast::FutureType(false, subRes.first, RangeSpan(i, subRes.second));
+        i           = subRes.second;
+        break;
+      }
+      case TokenType::maybe: {
+        auto subRes = parseType(preCtx, i, upto);
+        cacheTy     = new ast::MaybeType(false, subRes.first, RangeSpan(i, subRes.second));
         i           = subRes.second;
         break;
       }
@@ -511,6 +518,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::stringSliceType:
       case TokenType::unsignedIntegerType:
       case TokenType::referenceType:
+      case TokenType::future:
+      case TokenType::maybe:
       case TokenType::integerType:
       case TokenType::pointerType:
       case TokenType::floatType: {
@@ -2737,6 +2746,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::curlybraceOpen:
       case TokenType::unsignedIntegerType:
       case TokenType::referenceType:
+      case TokenType::future:
+      case TokenType::maybe:
       case TokenType::var:
       case TokenType::pointerType: {
         auto typeRes = parseType(ctx, i - 1, None);
@@ -2758,14 +2769,21 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           } else if (isNext(TokenType::from, i + 1)) {
             // TODO - Implement constructor calls
           } else if (isNext(TokenType::stop, i + 1)) {
-            Error("No value for initialisation in local declaration", {typeRes.first->fileRange, RangeAt(i + 2)});
-            // FIXME - Support uninitialised declaration
-            // result.push_back(new ast::LocalDeclaration(
-            //     typeRes.first, false, ValueAt(i + 1), nullptr,
-            //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
-            // cacheTy.clear();
-            // i += 2;
-            // break;
+            if (typeRes.first->typeKind() == ast::TypeKind::maybe) {
+              result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), nullptr,
+                                                         typeRes.first->isVariable(), RangeSpan(old, i + 2)));
+              i += 2;
+              cacheTy.clear();
+            } else {
+              Error("No value for initialisation in local declaration", {typeRes.first->fileRange, RangeAt(i + 2)});
+              // FIXME - Support uninitialised declaration
+              // result.push_back(new ast::LocalDeclaration(
+              //     typeRes.first, false, ValueAt(i + 1), nullptr,
+              //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
+              // cacheTy.clear();
+              // i += 2;
+              // break;
+            }
           } else {
             Error("Invalid token found in local declaration", RangeAt(i + 1));
           }
@@ -2988,6 +3006,19 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         break;
       }
       case TokenType::say: {
+        ast::SayType sayTy = ast::SayType::say;
+        if (isNext(TokenType::child, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            if (ValueAt(i + 2) == "dbg") {
+              sayTy = ast::SayType::dbg;
+              i += 2;
+            } else {
+              Error("Unexpected identifier found", RangeSpan(i, i + 1));
+            }
+          } else {
+            Error("Expected an identifier after, for the variant of say", RangeSpan(i, i + 1));
+          }
+        }
         context      = "SAY";
         auto end_res = firstPrimaryPosition(TokenType::stop, i);
         if (!end_res.has_value() || (end_res.value() >= upto)) {
@@ -2995,7 +3026,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         }
         auto end  = end_res.value();
         auto exps = parseSeparatedExpressions(ctx, i, end);
-        result.push_back(new ast::Say(exps, token.fileRange));
+        result.push_back(new ast::SayLike(sayTy, exps, token.fileRange));
         i = end;
         break;
       }
@@ -3420,6 +3451,8 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
       case TokenType::stringSliceType:
       case TokenType::floatType:
       case TokenType::unsignedIntegerType:
+      case TokenType::future:
+      case TokenType::maybe:
       case TokenType::integerType: {
         if (hasType()) {
           Error("A type is already provided before. Please change this "

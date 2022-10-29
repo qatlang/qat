@@ -9,7 +9,7 @@ SayLike::SayLike(SayType _sayTy, Vec<Expression*> _expressions, utils::FileRange
 
 IR::Value* SayLike::emit(IR::Context* ctx) {
   auto* cfg = cli::Config::get();
-  if ((sayType == SayType::log) ? cfg->isDebugMode() : true) {
+  if ((sayType == SayType::dbg) ? cfg->isDebugMode() : true) {
     SHOW("Say sentence emitting..")
     auto* mod = ctx->getMod();
     SHOW("Current block is: " << ctx->fn->getBlock()->getName())

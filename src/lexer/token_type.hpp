@@ -107,6 +107,8 @@ enum class TokenType {
   move,
   choice,
   future,
+  maybe,
+  none,
 };
 
 } // namespace qat::lexer

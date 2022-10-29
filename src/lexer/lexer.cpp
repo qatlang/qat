@@ -633,6 +633,10 @@ Token Lexer::tokeniser() {
           return Token::normal(TokenType::choice, this->getPosition(6));
         } else if (value == "future") {
           return Token::normal(TokenType::future, this->getPosition(6));
+        } else if (value == "maybe") {
+          return Token::normal(TokenType::maybe, this->getPosition(5));
+        } else if (value == "none") {
+          return Token::normal(TokenType::none, this->getPosition(4));
         } else {
           return Token::valued(TokenType::identifier, value, this->getPosition(value.length()));
         }

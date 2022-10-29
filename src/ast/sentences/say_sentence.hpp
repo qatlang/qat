@@ -6,19 +6,23 @@
 
 namespace qat::ast {
 
-class Say : public Sentence {
+enum class SayType {
+  say,
+  log,
+  panic,
+};
+
+class SayLike : public Sentence {
 private:
-  Vec<Expression *> expressions;
+  Vec<Expression*> expressions;
+  SayType          sayType;
 
 public:
-  Say(Vec<Expression *> _expressions, utils::FileRange _fileRange)
-      : expressions(_expressions), Sentence(_fileRange) {}
+  SayLike(SayType _sayTy, Vec<Expression*> _expressions, utils::FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
-
-  NodeType nodeType() const { return NodeType::saySentence; }
-
-  Json toJson() const;
+  useit IR::Value* emit(IR::Context* ctx) final;
+  useit NodeType   nodeType() const final { return NodeType::saySentence; }
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

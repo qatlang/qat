@@ -123,6 +123,33 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),
                  fileRange);
     }
+  } else if (instType->isMaybe()) {
+    if (name == "hasValue") {
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        return new IR::Value(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
+            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Invalid value for maybe and hence cannot get data", fileRange);
+      }
+    } else if (name == "hasNoValue") {
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        return new IR::Value(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
+            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Invalid value for maybe and hence cannot get data", fileRange);
+      }
+    } else {
+      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),
+                 fileRange);
+    }
   } else if (instType->isCoreType()) {
     if (!instType->asCore()->hasMember(name)) {
       ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) + " does not have a member named " +

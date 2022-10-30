@@ -10,9 +10,9 @@ namespace qat::ast {
 
 class LocalDeclaration : public Sentence {
 private:
-  QatType*    type;
+  QatType*    type = nullptr;
   String      name;
-  Expression* value;
+  Expression* value = nullptr;
   bool        variability;
   bool        isRef;
   bool        isPtr;

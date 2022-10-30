@@ -1,4 +1,6 @@
 #include "./member_access.hpp"
+#include "../../IR/types/future.hpp"
+#include "../../IR/types/maybe.hpp"
 #include "../../IR/types/string_slice.hpp"
 #include "entity.hpp"
 #include "llvm/IR/Constants.h"
@@ -79,14 +81,47 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
             IR::ReferenceType::get(false, IR::UnsignedType::get(8u, ctx->llctx), ctx->llctx), false,
             IR::Nature::temporary);
-      } else if (llvm::isa<llvm::Constant>(inst->getLLVM())) {
-        // FIXME - Implement this
-        return nullptr;
       } else {
+        // FIXME - Implement constant value support
         ctx->Error("Invalid value for String Slice and hence cannot get data", fileRange);
       }
     } else {
       ctx->Error("Invalid name for member access: " + ctx->highlightError(name), fileRange);
+    }
+  } else if (instType->isFuture()) {
+    if (name == "isDone") {
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        return new IR::Value(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreateLoad(
+                    llvm::Type::getInt1Ty(ctx->llctx),
+                    ctx->builder.CreateLoad(
+                        llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                        ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
+                    true),
+                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
+            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Invalid value for future and hence cannot get data", fileRange);
+      }
+    } else if (name == "isNotDone") {
+      if (inst->isImplicitPointer() || inst->isReference()) {
+        return new IR::Value(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreateLoad(
+                    llvm::Type::getInt1Ty(ctx->llctx),
+                    ctx->builder.CreateLoad(
+                        llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                        ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
+                    true),
+                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
+            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Invalid value for future and hence cannot get data", fileRange);
+      }
+    } else {
+      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),
+                 fileRange);
     }
   } else if (instType->isCoreType()) {
     if (!instType->asCore()->hasMember(name)) {

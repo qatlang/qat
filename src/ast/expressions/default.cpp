@@ -1,13 +1,13 @@
 #include "./default.hpp"
+#include "../../IR/types/maybe.hpp"
 
 namespace qat::ast {
 
-Default::Default(utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)) {}
+Default::Default(utils::FileRange _fileRange) : Expression(std::move(_fileRange)) {}
 
-void Default::setType(IR::QatType *typ) { candidateType = typ; }
+void Default::setType(IR::QatType* typ) { candidateType = typ; }
 
-IR::Value *Default::emit(IR::Context *ctx) {
+IR::Value* Default::emit(IR::Context* ctx) {
   if (candidateType) {
     if (candidateType->isInteger()) {
       ctx->Warning("The recognised type for the default expression is a signed "
@@ -16,59 +16,49 @@ IR::Value *Default::emit(IR::Context *ctx) {
                    "decreased clutter",
                    fileRange);
       if (irName.has_value()) {
-        auto *block = ctx->fn->getBlock();
-        auto *loc   = block->newValue(irName.value(), candidateType, isVar);
-        ctx->builder.CreateStore(
-            llvm::ConstantInt::get(candidateType->getLLVMType(), 0u),
-            loc->getAlloca());
+        auto* block = ctx->fn->getBlock();
+        auto* loc   = block->newValue(irName.value(), candidateType, isVar);
+        ctx->builder.CreateStore(llvm::ConstantInt::get(candidateType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
       } else {
-        return new IR::Value(llvm::ConstantInt::get(
-                                 candidateType->asInteger()->getLLVMType(), 0u),
-                             candidateType, false, IR::Nature::pure);
+        return new IR::Value(llvm::ConstantInt::get(candidateType->asInteger()->getLLVMType(), 0u), candidateType,
+                             false, IR::Nature::pure);
       }
     } else if (candidateType->isUnsignedInteger()) {
-      ctx->Warning(
-          "The recognised type for the default expression is an unsigned "
-          "integer. The resultant value is 0. But using the literal "
-          "is recommended over using default for readability and "
-          "decreased clutter",
-          fileRange);
+      ctx->Warning("The recognised type for the default expression is an unsigned "
+                   "integer. The resultant value is 0. But using the literal "
+                   "is recommended over using default for readability and "
+                   "decreased clutter",
+                   fileRange);
       if (irName.has_value()) {
-        auto *block = ctx->fn->getBlock();
-        auto *loc   = block->newValue(irName.value(), candidateType, isVar);
-        ctx->builder.CreateStore(
-            llvm::ConstantInt::get(candidateType->getLLVMType(), 0u),
-            loc->getAlloca());
+        auto* block = ctx->fn->getBlock();
+        auto* loc   = block->newValue(irName.value(), candidateType, isVar);
+        ctx->builder.CreateStore(llvm::ConstantInt::get(candidateType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
       } else {
-        return new IR::Value(
-            llvm::ConstantInt::get(
-                candidateType->asUnsignedInteger()->getLLVMType(), 0u),
-            candidateType, false, IR::Nature::pure);
+        return new IR::Value(llvm::ConstantInt::get(candidateType->asUnsignedInteger()->getLLVMType(), 0u),
+                             candidateType, false, IR::Nature::pure);
       }
     } else if (candidateType->isPointer()) {
-      ctx->Error(
-          "The recognised type for the default expression is a pointer. The "
-          "obvious value here is a null pointer, however it is not allowed to "
-          "use default as an alternative to null, for improved readability",
-          fileRange);
+      ctx->Error("The recognised type for the default expression is a pointer. The "
+                 "obvious value here is a null pointer, however it is not allowed to "
+                 "use default as an alternative to null, for improved readability",
+                 fileRange);
     } else if (candidateType->isReference()) {
       ctx->Error("Cannot get default value for a reference type", fileRange);
     } else if (candidateType->isCoreType()) {
-      auto *cTy = candidateType->asCore();
+      auto* cTy = candidateType->asCore();
       if (cTy->hasDefaultConstructor()) {
-        auto *defFn = cTy->getDefaultConstructor();
-        auto *block = ctx->fn->getBlock();
+        auto* defFn = cTy->getDefaultConstructor();
+        auto* block = ctx->fn->getBlock();
         if (irName.has_value()) {
-          auto *loc = block->newValue(irName.value(), candidateType, isVar);
+          auto* loc = block->newValue(irName.value(), candidateType, isVar);
           (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
           return loc;
         } else {
-          auto *loc = block->newValue(utils::unique_id(), cTy, true);
+          auto* loc = block->newValue(utils::unique_id(), cTy, true);
           (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
-          auto *res = new IR::Value(loc->getAlloca(), cTy, false,
-                                    IR::Nature::temporary);
+          auto* res = new IR::Value(loc->getAlloca(), cTy, false, IR::Nature::temporary);
           res->setLocalID(loc->getLocalID());
           return res;
         }
@@ -78,9 +68,23 @@ IR::Value *Default::emit(IR::Context *ctx) {
                        "logic and make necessary changes",
                    fileRange);
       }
+    } else if (candidateType->isMaybe()) {
+      auto* mTy   = candidateType->asMaybe();
+      auto* block = ctx->fn->getBlock();
+      auto* loc   = block->newValue(irName.has_value() ? irName.value() : utils::unique_id(), mTy, true);
+      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
+                               ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getAlloca(), 0u));
+      ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),
+                               ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getAlloca(), 1u));
+      auto* res = new IR::Value(loc->getAlloca(), mTy, false, IR::Nature::temporary);
+      res->setLocalID(loc->getLocalID());
+      ctx->Warning("The inferred type for " + ctx->highlightWarning("default") + " is " +
+                       ctx->highlightWarning(mTy->toString()) + " and it's better to use " +
+                       ctx->highlightWarning("none") + " for clarity",
+                   fileRange);
+      return res;
     } else {
-      ctx->Error("The type " + ctx->highlightError(candidateType->toString()) +
-                     " cannot have default value",
+      ctx->Error("The type " + ctx->highlightError(candidateType->toString()) + " cannot have default value",
                  fileRange);
       // FIXME - Handle other types
     }

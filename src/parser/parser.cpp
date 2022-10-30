@@ -2769,21 +2769,17 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           } else if (isNext(TokenType::from, i + 1)) {
             // TODO - Implement constructor calls
           } else if (isNext(TokenType::stop, i + 1)) {
-            if (typeRes.first->typeKind() == ast::TypeKind::maybe) {
-              result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), nullptr,
-                                                         typeRes.first->isVariable(), RangeSpan(old, i + 2)));
-              i += 2;
-              cacheTy.clear();
-            } else {
-              Error("No value for initialisation in local declaration", {typeRes.first->fileRange, RangeAt(i + 2)});
-              // FIXME - Support uninitialised declaration
-              // result.push_back(new ast::LocalDeclaration(
-              //     typeRes.first, false, ValueAt(i + 1), nullptr,
-              //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
-              // cacheTy.clear();
-              // i += 2;
-              // break;
-            }
+            result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), nullptr,
+                                                       typeRes.first->isVariable(), RangeSpan(old, i + 2)));
+            i += 2;
+            cacheTy.clear();
+            // FIXME - Support uninitialised declaration
+            // result.push_back(new ast::LocalDeclaration(
+            //     typeRes.first, false, ValueAt(i + 1), nullptr,
+            //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
+            // cacheTy.clear();
+            // i += 2;
+            // break;
           } else {
             Error("Invalid token found in local declaration", RangeAt(i + 1));
           }

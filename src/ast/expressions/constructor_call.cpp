@@ -110,17 +110,15 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       valsLLVM.push_back(val->getLLVM());
     }
     (void)cons->call(ctx, valsLLVM, ctx->getMod());
-    if (local->getType()->isMaybe()) {
+    if (local && local->getType()->isMaybe()) {
       ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
                                ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
       auto* res = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
       res->setLocalID(local->getLocalID());
       return res;
     } else {
-      auto* res = new IR::Value(llAlloca,
-                                isHeaped ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ctx->llctx)
-                                         : (IR::QatType*)IR::ReferenceType::get(isVar, cTy, ctx->llctx),
-                                false, IR::Nature::temporary);
+      auto* res = new IR::Value(llAlloca, isHeaped ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ctx->llctx) : cTy,
+                                isHeaped ? false : isVar, IR::Nature::temporary);
       if (local) {
         res->setLocalID(local->getLocalID());
       }

@@ -36,6 +36,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
                fileRange);
   }
   IR::QatType* declType = nullptr;
+  if (type) {
+    SHOW("Type for local declaration: " << type->toString());
+  }
 
   SHOW("Edge cases starts here")
   // EDGE CASE -> The following code avoids multiple allocations for newly
@@ -103,8 +106,13 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* constrTy = cons->type->emit(ctx);
       if (declType->isSame(constrTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(constrTy))) {
-        auto* loc   = block->newValue(name, declType, variability);
+        SHOW("Local Declaration => name : " << name << " type: " << declType->toString()
+                                            << " variability: " << (type ? type->isVariable() : variability))
+        auto* loc   = block->newValue(name, declType, type ? type->isVariable() : variability);
         cons->local = loc;
+        if (type) {
+          cons->isVar = type->isVariable();
+        }
         (void)cons->emit(ctx);
         return nullptr;
       } else {

@@ -19,6 +19,6 @@ Json MaybeType::toJson() const {
   return Json()._("typeKind", "maybe")._("subType", subTyp->toJson())._("fileRange", fileRange);
 }
 
-String MaybeType::toString() const { return "maybe " + subTyp->toString(); }
+String MaybeType::toString() const { return String(isVariable() ? "var " : "") + "maybe " + subTyp->toString(); }
 
 } // namespace qat::ast

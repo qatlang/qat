@@ -228,7 +228,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
       }
       case TokenType::maybe: {
         auto subRes = parseType(preCtx, i, upto);
-        cacheTy     = new ast::MaybeType(false, subRes.first, RangeSpan(i, subRes.second));
+        cacheTy     = new ast::MaybeType(getVariability(), subRes.first, RangeSpan(i, subRes.second));
         i           = subRes.second;
         break;
       }

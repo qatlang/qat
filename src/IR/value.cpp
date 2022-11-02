@@ -61,9 +61,9 @@ bool Value::isImplicitPointer() const {
   return ll && (llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll));
 }
 
-void Value::makeImplicitPointer(IR::Context* ctx, const String& name, llvm::Type* type) {
+void Value::makeImplicitPointer(IR::Context* ctx, Maybe<String> name) {
   if (!isImplicitPointer()) {
-    auto* alloc = IR::Logic::newAlloca(ctx->fn, name, type);
+    auto* alloc = IR::Logic::newAlloca(ctx->fn, name.value_or(utils::unique_id()), ll->getType());
     ctx->builder.CreateStore(ll, alloc);
     ll = alloc;
   }

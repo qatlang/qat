@@ -49,7 +49,7 @@ public:
   useit Nature               getNature() const;
   useit IR::Value*     createAlloca(llvm::IRBuilder<>& builder);
   useit bool           isImplicitPointer() const;
-  void                 makeImplicitPointer(IR::Context* ctx, const String& name, llvm::Type* type);
+  void                 makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
   void                 loadImplicitPointer(llvm::IRBuilder<>& builder);
   useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
 

@@ -2,6 +2,6 @@
 
 namespace qat::ast {
 
-Vec<TemplatedType *> QatType::templates = {};
+Vec<TemplatedType*> QatType::templates = {};
 
-}
+} // namespace qat::ast

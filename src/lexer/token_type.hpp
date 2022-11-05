@@ -101,7 +101,7 @@ enum class TokenType {
   disown,
   end,
   mix,
-  mixSeparator,
+  typeSeparator,
   match,
   copy,
   move,

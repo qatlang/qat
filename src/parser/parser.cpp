@@ -1102,13 +1102,15 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           } else {
             Error("Expected ( for the arguments of the member function", RangeSpan(start, i));
           }
-        } else if (cacheTy.has_value()) {
-          if (isNext(TokenType::stop, i)) {
+        } else if (isNext(TokenType::typeSeparator, i)) {
+          auto stop = firstPrimaryPosition(TokenType::stop, i + 1);
+          if (stop.has_value()) {
+            auto typeRes = parseType(preCtx, i + 1, stop.value());
             coreTy->addMember(
-                new ast::DefineCoreType::Member(cacheTy.value(), token.value, !getConst(), getVisibility(),
+                new ast::DefineCoreType::Member(typeRes.first, token.value, !getConst(), getVisibility(),
                                                 utils::FileRange(cacheTy.value()->fileRange, token.fileRange)));
             cacheTy = None;
-            i++;
+            i       = stop.value();
           } else {
             Error("Expected . after member declaration", token.fileRange);
           }
@@ -1465,7 +1467,7 @@ void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto, Vec<Pai
                                    ? utils::FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
                                    : RangeAt(start));
           i++;
-        } else if (isNext(TokenType::mixSeparator, i)) {
+        } else if (isNext(TokenType::typeSeparator, i)) {
           ast::QatType* typ;
           if (isPrimaryWithin(TokenType::separator, i + 1, upto)) {
             auto sepPos = firstPrimaryPosition(TokenType::separator, i + 1).value();
@@ -1579,7 +1581,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
   for (usize i = from + 1; i < upto; i++) {
     auto& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::mixSeparator: {
+      case TokenType::typeSeparator: {
         auto start = i;
         if (isNext(TokenType::identifier, i)) {
           Pair<String, utils::FileRange>        fieldName = {ValueAt(i + 1), RangeAt(i + 1)};
@@ -2467,7 +2469,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
         }
       }
-      case TokenType::mixSeparator: {
+      case TokenType::typeSeparator: {
         if (cachedSymbol.has_value()) {
           auto* typ = new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange);
           if (isNext(TokenType::identifier, i)) {

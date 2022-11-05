@@ -181,7 +181,7 @@ Token Lexer::tokeniser() {
         return Token::normal(TokenType::associatedAssignment, this->getPosition(2));
       } else if (current == ':') {
         read();
-        return Token::normal(TokenType::mixSeparator, this->getPosition(2));
+        return Token::normal(TokenType::typeSeparator, this->getPosition(2));
       } else {
         return Token::normal(TokenType::colon, this->getPosition(1));
       }

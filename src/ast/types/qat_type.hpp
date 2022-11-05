@@ -14,20 +14,19 @@ class TemplatedType;
 
 class QatType {
 protected:
-  static Vec<TemplatedType *> templates;
+  static Vec<TemplatedType*> templates;
 
 private:
   bool variable;
 
 public:
-  QatType(bool _variable, utils::FileRange _fileRange)
-      : variable(_variable), fileRange(std::move(_fileRange)) {}
+  QatType(bool _variable, utils::FileRange _fileRange) : variable(_variable), fileRange(std::move(_fileRange)) {}
   utils::FileRange fileRange;
 
   virtual ~QatType() = default;
   useit bool                 isConstant() const { return !variable; }
   useit bool                 isVariable() const { return variable; }
-  useit virtual IR::QatType *emit(IR::Context *ctx) = 0;
+  useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
   useit virtual TypeKind     typeKind() const       = 0;
   useit virtual Json         toJson() const         = 0;
   useit virtual String       toString() const       = 0;

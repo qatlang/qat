@@ -23,6 +23,8 @@ QatType::QatType() { types.push_back(this); }
 
 Vec<QatType*> QatType::types = {};
 
+bool QatType::hasNoValueSemantics() const { return false; }
+
 bool QatType::checkTypeExists(const String& name) {
   return std::ranges::any_of(types.begin(), types.end(), [&](QatType* typ) {
     if (typ->typeKind() == TypeKind::mixType) {

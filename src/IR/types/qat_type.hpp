@@ -41,6 +41,8 @@ public:
   QatType();
   virtual ~QatType() = default;
 
+  useit virtual bool hasNoValueSemantics() const;
+
   useit static bool      checkTypeExists(const String& name);
   useit bool             isSame(QatType* other);
   useit bool             isDefinition() const;

@@ -1108,7 +1108,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
             auto typeRes = parseType(preCtx, i + 1, stop.value());
             coreTy->addMember(
                 new ast::DefineCoreType::Member(typeRes.first, token.value, !getConst(), getVisibility(),
-                                                utils::FileRange(cacheTy.value()->fileRange, token.fileRange)));
+                                                utils::FileRange(typeRes.first->fileRange, token.fileRange)));
             cacheTy = None;
             i       = stop.value();
           } else {
@@ -2742,54 +2742,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
   for (usize i = from + 1; i < upto; i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::voidType:
-      case TokenType::integerType:
-      case TokenType::floatType:
-      case TokenType::curlybraceOpen:
-      case TokenType::unsignedIntegerType:
-      case TokenType::referenceType:
-      case TokenType::future:
-      case TokenType::maybe:
-      case TokenType::var:
-      case TokenType::pointerType: {
-        auto typeRes = parseType(ctx, i - 1, None);
-        auto old     = i;
-        i            = typeRes.second;
-        if (isNext(TokenType::identifier, i)) {
-          if (isNext(TokenType::assignment, i + 1)) {
-            auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
-            if (endRes.has_value()) {
-              auto* exp = parseExpression(preCtx, None, i + 2, endRes.value()).first;
-              result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), exp,
-                                                         typeRes.first->isVariable(), RangeSpan(old, endRes.value())));
-              i = endRes.value();
-              cacheTy.clear();
-              break;
-            } else {
-              Error("Invalid end for sentence", RangeSpan(old, i + 2));
-            }
-          } else if (isNext(TokenType::from, i + 1)) {
-            // TODO - Implement constructor calls
-          } else if (isNext(TokenType::stop, i + 1)) {
-            result.push_back(new ast::LocalDeclaration(typeRes.first, false, false, ValueAt(i + 1), nullptr,
-                                                       typeRes.first->isVariable(), RangeSpan(old, i + 2)));
-            i += 2;
-            cacheTy.clear();
-            // FIXME - Support uninitialised declaration
-            // result.push_back(new ast::LocalDeclaration(
-            //     typeRes.first, false, ValueAt(i + 1), nullptr,
-            //     typeRes.first->isVariable(), RangeSpan(old, i + 1)));
-            // cacheTy.clear();
-            // i += 2;
-            // break;
-          } else {
-            Error("Invalid token found in local declaration", RangeAt(i + 1));
-          }
-        } else {
-          cacheTy.push_back(typeRes.first);
-        }
-        break;
-      }
       case TokenType::parenthesisOpen: {
         auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
         if (pCloseRes.has_value()) {
@@ -3072,10 +3024,10 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         }
         break;
       }
-      case TokenType::let: {
+      case TokenType::New: {
         const auto start = i;
-        context          = "LET";
-        SHOW("Found let")
+        context          = "NEW";
+        SHOW("Found new")
         bool isRef     = false;
         bool isPtr     = false;
         bool isVarDecl = false;
@@ -3083,6 +3035,9 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           isVarDecl = true;
           if (isNext(TokenType::referenceType, i + 1)) {
             isRef = true;
+            i += 2;
+          } else if (isNext(TokenType::pointerType, i + 1)) {
+            isPtr = true;
             i += 2;
           } else {
             i++;
@@ -3109,18 +3064,33 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             } else {
               Error("Invalid end for sentence", RangeSpan(start, i + 2));
             }
+          } else if (isNext(TokenType::colon, i + 1)) {
+            auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
+            if (endRes.has_value()) {
+              if (isPrimaryWithin(TokenType::assignment, i + 2, endRes.value())) {
+                auto  asgnPos = firstPrimaryPosition(TokenType::assignment, i + 2).value();
+                auto* typeRes = parseType(preCtx, i + 2, asgnPos).first;
+                auto* exp     = parseExpression(preCtx, None, asgnPos, endRes.value()).first;
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, ValueAt(i + 1), exp, isVarDecl,
+                                                           RangeSpan(start, endRes.value())));
+              } else {
+                // No value for the assignment
+                auto* typeRes = parseType(preCtx, i + 2, endRes.value()).first;
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, ValueAt(i + 1), nullptr, isVarDecl,
+                                                           RangeSpan(start, endRes.value())));
+              }
+              i = endRes.value();
+              break;
+            } else {
+              Error("Expected . to mark the end of this declaration", RangeSpan(start, i + 1));
+            }
           } else if (isNext(TokenType::from, i + 1)) {
             Error("Initialisation via constructor or convertor can be used "
                   "only if there is a type provided. This is an inferred "
                   "declaration",
                   RangeSpan(start, i + 2));
           } else if (isNext(TokenType::stop, i + 1)) {
-            result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, ValueAt(i + 1), nullptr, isVarDecl,
-                                                       RangeSpan(start, i + 2)));
-            cacheSymbol = None;
-            cacheTy.clear();
-            cachedExpressions.clear();
-            i += 2;
+            Error("Only declarations with maybe type can omit the value to be assigned", RangeSpan(start, i + 2));
           } else {
             Error("Unexpected token found after the beginning of inferred "
                   "declaration",
@@ -3222,7 +3192,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             auto*         count   = parseExpression(preCtx, None, i + 1, pClose).first;
             auto          pos     = pClose;
             if (isNext(TokenType::colon, pClose)) {
-              if (isNext(TokenType::let, pClose + 1)) {
+              if (isNext(TokenType::New, pClose + 1)) {
                 if (isNext(TokenType::identifier, pClose + 2)) {
                   isAlias = true;
                   loopTag = ValueAt(pClose + 3);

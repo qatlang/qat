@@ -44,7 +44,7 @@ enum class TokenType {
   constant,
   Static,
   Default,
-  let,
+  New,
   assignment,
   associatedAssignment,
   separator,

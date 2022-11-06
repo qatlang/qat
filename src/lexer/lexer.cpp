@@ -517,8 +517,8 @@ Token Lexer::tokeniser() {
           return Token::normal(TokenType::bring, this->getPosition(5));
         } else if (value == "pub") {
           return Token::normal(TokenType::Public, this->getPosition(3));
-        } else if (value == "let") {
-          return Token::normal(TokenType::let, this->getPosition(3));
+        } else if (value == "new") {
+          return Token::normal(TokenType::New, this->getPosition(3));
         } else if (value == "self") {
           return Token::normal(TokenType::self, this->getPosition(3));
         } else if (value == "void") {

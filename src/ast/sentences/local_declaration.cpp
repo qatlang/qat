@@ -40,6 +40,14 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     SHOW("Type for local declaration: " << type->toString());
   }
 
+  auto maybeTypeCheck = [&]() {
+    if (declType && declType->isMaybe() && !variability) {
+      ctx->Warning("The type of the declaration is " + ctx->highlightWarning(declType->toString()) +
+                       ", but the local declaration is not a variable. And hence, it might not be usable",
+                   fileRange);
+    }
+  };
+
   SHOW("Edge cases starts here")
   // EDGE CASE -> The following code avoids multiple allocations for newly
   // created values, that are just meant to be assigned to the new entity
@@ -47,6 +55,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     auto* arr = (ast::ArrayLiteral*)value;
     if (type) {
       declType = type->emit(ctx);
+      maybeTypeCheck();
       if (!declType->isArray()) {
         ctx->Error("The type for this declaration is " + ctx->highlightError(declType->toString()) +
                        ", but the provided value is not compatible",
@@ -66,6 +75,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     auto* plain = (ast::PlainInitialiser*)value;
     if (type) {
       declType = type->emit(ctx);
+      maybeTypeCheck();
       if (!declType->isCoreType() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
         ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
                        " and is not a core type. So the value provided cannot "
@@ -98,6 +108,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     auto* cons = (ast::ConstructorCall*)value;
     if (type) {
       declType = type->emit(ctx);
+      maybeTypeCheck();
       if (!declType->isCoreType() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
         ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
                        " and is not a core type",
@@ -107,11 +118,11 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       auto* constrTy = cons->type->emit(ctx);
       if (declType->isSame(constrTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(constrTy))) {
         SHOW("Local Declaration => name : " << name << " type: " << declType->toString()
-                                            << " variability: " << (type ? type->isVariable() : variability))
-        auto* loc   = block->newValue(name, declType, type ? type->isVariable() : variability);
+                                            << " variability: " << variability)
+        auto* loc   = block->newValue(name, declType, variability);
         cons->local = loc;
         if (type) {
-          cons->isVar = type->isVariable();
+          cons->isVar = variability;
         }
         (void)cons->emit(ctx);
         return nullptr;
@@ -130,6 +141,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     auto* mixTyIn = (ast::MixTypeInitialiser*)value;
     if (type) {
       declType = type->emit(ctx);
+      maybeTypeCheck();
       if (!declType->isMix() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isMix())) {
         ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
                        " and is not a mix type",
@@ -155,7 +167,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     }
   } else if (value && (value->nodeType() == NodeType::Default)) {
     if (type) {
-      declType     = type->emit(ctx);
+      declType = type->emit(ctx);
+      maybeTypeCheck();
       auto* defVal = (Default*)value;
       defVal->setType(declType);
       defVal->irName = name;
@@ -169,7 +182,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     SHOW("Value assigned to declaration is Move exp")
     auto* moveVal = (Move*)value;
     if (type) {
-      declType       = type->emit(ctx);
+      declType = type->emit(ctx);
+      maybeTypeCheck();
       moveVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
       (void)moveVal->emit(ctx);
       return nullptr;
@@ -183,7 +197,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     SHOW("Value assigned to declaration is Copy exp")
     auto* copyVal = (Copy*)value;
     if (type) {
-      declType       = type->emit(ctx);
+      declType = type->emit(ctx);
+      maybeTypeCheck();
       copyVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
       (void)copyVal->emit(ctx);
       return nullptr;
@@ -202,6 +217,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     if (value->nodeType() == NodeType::nullPointer) {
       if (type) {
         declType = type->emit(ctx);
+        maybeTypeCheck();
         if (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer()) {
           ((NullPointer*)value)
               ->setType(declType->asMaybe()->getSubType()->asPointer()->isSubtypeVariable(),
@@ -221,6 +237,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     } else if (value->nodeType() == NodeType::integerLiteral) {
       if (type) {
         declType = type->emit(ctx);
+        maybeTypeCheck();
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
@@ -238,6 +255,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     } else if (value->nodeType() == NodeType::unsignedLiteral) {
       if (type) {
         declType = type->emit(ctx);
+        maybeTypeCheck();
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
@@ -261,6 +279,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     SHOW("Checking & setting declType")
     if (!declType) {
       declType = type->emit(ctx);
+      maybeTypeCheck();
     }
     SHOW("About to type match")
     if (value && (((declType->isReference() && !expVal->isReference()) &&
@@ -278,6 +297,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     if (expVal) {
       SHOW("Getting type from expression")
       declType = expVal->getType();
+      maybeTypeCheck();
       if (expVal->getType()->isReference()) {
         if (!isRef) {
           declType = expVal->getType()->asReference()->getSubType();
@@ -313,7 +333,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     }
   }
   SHOW("Creating new value")
-  auto* newValue = block->newValue(name, declType, type ? type->isVariable() : variability);
+  auto* newValue = block->newValue(name, declType, variability);
   if (expVal) {
     if (declType->isMaybe()) {
       SHOW("Got sub type")

@@ -27,6 +27,7 @@
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/mix_type_initialiser.hpp"
 #include "../ast/expressions/move.hpp"
+#include "../ast/expressions/none.hpp"
 #include "../ast/expressions/not.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
@@ -1857,6 +1858,27 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           i = pos;
         }
         cachedExpressions.push_back(new ast::StringLiteral(val, fRange));
+        break;
+      }
+      case TokenType::none: {
+        ast::QatType* noneType = nullptr;
+        auto          range    = RangeAt(i);
+        if (isNext(TokenType::templateTypeStart, i)) {
+          auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+          if (endRes.has_value()) {
+            auto typeRes = parseType(preCtx, i + 1, endRes.value());
+            if (typeRes.second + 1 != endRes.value()) {
+              Error("Unexpected end for the type of the none expression", RangeSpan(i, typeRes.second));
+            } else {
+              noneType = typeRes.first;
+              range    = RangeSpan(i, endRes.value());
+              i        = endRes.value();
+            }
+          } else {
+            Error("Expected end for generic type specification", RangeAt(i + 1));
+          }
+        }
+        cachedExpressions.push_back(new ast::NoneExpression(noneType, range));
         break;
       }
       case TokenType::sizeOf: {

@@ -46,41 +46,4 @@ llvm::AllocaInst* Logic::newAlloca(IR::Function* fun, const String& name, llvm::
   return result;
 }
 
-IR::Value* Logic::handleCopyOrMove(IR::Value* value, IR::Context* ctx, const utils::FileRange& fileRange) {
-  if (value->getType()->isCoreType()) {
-    if (value->isImplicitPointer() || value->isReference()) {
-      auto* cTy = value->getType()->asCore();
-      if (cTy->hasCopyConstructor()) {
-        auto* cpFn = cTy->getCopyConstructor();
-        auto* copy = newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
-        (void)cpFn->call(ctx, {copy, value->getLLVM()}, ctx->getMod());
-        return new IR::Value(copy, IR::ReferenceType::get(true, cTy, ctx->llctx), false, IR::Nature::temporary);
-      } else if (cTy->hasMoveConstructor()) {
-        auto* mvFn  = cTy->getMoveConstructor();
-        auto* moved = newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
-        (void)mvFn->call(ctx, {moved, value->getLLVM()}, ctx->getMod());
-        ctx->Warning("A move is happening here. Considering making it explicit so that "
-                     "there is no confusion as to the validity of the moved value",
-                     fileRange);
-        return new IR::Value(moved, IR::ReferenceType::get(true, cTy, ctx->llctx), false, IR::Nature::temporary);
-      } else if (cTy->isTriviallyCopyable()) {
-        return value;
-      } else {
-        ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
-                       " has no copy or move constructors, and is also not "
-                       "trivially copyable and hence cannot be "
-                       "copied or moved",
-                   fileRange);
-      }
-    } else {
-      return value;
-    }
-  } else {
-    ctx->Error("Only core types can be copied or moved", fileRange);
-    // FIXME - Support mix types
-  }
-  // FIXME- Remove this
-  return nullptr;
-}
-
 } // namespace qat::IR

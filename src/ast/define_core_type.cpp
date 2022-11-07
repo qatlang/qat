@@ -75,9 +75,19 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
     if (copyConstructor) {
       copyConstructor->setCoreType(coreType);
+      if (!copyAssignment) {
+        ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+                       ", and hence copy assignment operator is also required to be defined",
+                   fileRange);
+      }
     }
     if (moveConstructor) {
       moveConstructor->setCoreType(coreType);
+      if (!moveAssignment) {
+        ctx->Error("Move constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+                       ", and hence move assignment operator is also required to be defined",
+                   fileRange);
+      }
     }
     for (auto* conv : convertorDefinitions) {
       conv->setCoreType(coreType);
@@ -93,9 +103,19 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
     if (copyAssignment) {
       copyAssignment->setCoreType(coreType);
+      if (!copyConstructor) {
+        ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+                       ", and hence copy constructor is also required to be defined",
+                   fileRange);
+      }
     }
     if (moveAssignment) {
       moveAssignment->setCoreType(coreType);
+      if (!moveConstructor) {
+        ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+                       ", and hence move constructor is also required to be defined",
+                   fileRange);
+      }
     }
     if (destructorDefinition) {
       destructorDefinition->setCoreType(coreType);

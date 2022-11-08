@@ -9,6 +9,7 @@ namespace qat::ast {
 enum class SayType {
   say,
   dbg,
+  only,
 };
 
 class SayLike : public Sentence {

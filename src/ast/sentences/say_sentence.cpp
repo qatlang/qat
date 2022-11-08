@@ -5,7 +5,7 @@
 namespace qat::ast {
 
 SayLike::SayLike(SayType _sayTy, Vec<Expression*> _expressions, utils::FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), sayType(_sayTy), expressions(std::move(_expressions)) {}
+    : Sentence(std::move(_fileRange)), expressions(std::move(_expressions)), sayType(_sayTy) {}
 
 IR::Value* SayLike::emit(IR::Context* ctx) {
   auto* cfg = cli::Config::get();
@@ -117,7 +117,9 @@ IR::Value* SayLike::emit(IR::Context* ctx) {
     for (usize i = 0; i < valuesIR.size(); i++) {
       formatter(valuesIR.at(i), i);
     }
-    formatStr += "\n";
+    if (sayType != SayType::only) {
+      formatStr += "\n";
+    }
     Vec<llvm::Value*> values;
     values.push_back(ctx->builder.CreateGlobalStringPtr(formatStr, ctx->getGlobalStringName()));
     for (auto* val : llvmValues) {

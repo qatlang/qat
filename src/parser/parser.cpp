@@ -70,6 +70,7 @@
 #include "../show.hpp"
 #include "cache_symbol.hpp"
 #include "parser_context.hpp"
+#include <chrono>
 #include <string>
 #include <utility>
 
@@ -83,6 +84,8 @@
 namespace qat::parser {
 
 Parser::Parser() = default;
+
+u64 Parser::timeInMicroSeconds = 0;
 
 void Parser::setTokens(Deque<lexer::Token>* allTokens) {
   g_ctx = ParserContext();
@@ -462,6 +465,12 @@ Vec<ast::TemplatedType*> Parser::parseTemplateTypes(usize from, usize upto) {
 
 Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
                               usize from, usize upto) {
+  if (parseRecurseCount == 0) {
+    latestStartTime = std::chrono::high_resolution_clock::now();
+    SHOW("Parse start time: " << latestStartTime.time_since_epoch().count())
+  }
+  parseRecurseCount++;
+  SHOW("Parse main function recurse count: " << parseRecurseCount)
   Vec<ast::Node*> result;
   using lexer::Token;
   using lexer::TokenType;
@@ -505,7 +514,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
     Token& token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
       case TokenType::endOfFile: {
-        return result;
+        break;
       }
       case TokenType::Public: {
         auto kindRes = parseVisibilityKind(i);
@@ -930,6 +939,12 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
     }
+  }
+  parseRecurseCount--;
+  if (parseRecurseCount == 0) {
+    auto parseEndTime = std::chrono::high_resolution_clock::now();
+    SHOW("Parse end time: " << parseEndTime.time_since_epoch().count())
+    timeInMicroSeconds += std::chrono::duration_cast<std::chrono::microseconds>(parseEndTime - latestStartTime).count();
   }
   return result;
 }
@@ -2757,8 +2772,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
   Vec<ast::QatType*>    cacheTy;
   Vec<ast::Expression*> cachedExpressions;
 
-  String context;
-
   auto var = false;
 
   for (usize i = from + 1; i < upto; i++) {
@@ -2829,7 +2842,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       }
       case TokenType::super:
       case TokenType::identifier: {
-        context = "IDENTIFIER";
         SHOW("Identifier encountered")
         if (cacheSymbol.has_value() || !cacheTy.empty()) {
           if (token.type == TokenType::super) {
@@ -2983,15 +2995,16 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           if (isNext(TokenType::identifier, i + 1)) {
             if (ValueAt(i + 2) == "dbg") {
               sayTy = ast::SayType::dbg;
-              i += 2;
+            } else if (ValueAt(i + 2) == "only") {
+              sayTy = ast::SayType::only;
             } else {
-              Error("Unexpected identifier found", RangeSpan(i, i + 1));
+              Error("Unexpected variant of say found", RangeSpan(i, i + 1));
             }
+            i += 2;
           } else {
-            Error("Expected an identifier after, for the variant of say", RangeSpan(i, i + 1));
+            Error("Expected an identifier for the variant of say", RangeSpan(i, i + 1));
           }
         }
-        context      = "SAY";
         auto end_res = firstPrimaryPosition(TokenType::stop, i);
         if (!end_res.has_value() || (end_res.value() >= upto)) {
           Error("Say sentence has invalid end", token.fileRange);
@@ -3048,7 +3061,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       }
       case TokenType::New: {
         const auto start = i;
-        context          = "NEW";
         SHOW("Found new")
         bool isRef     = false;
         bool isPtr     = false;
@@ -3295,7 +3307,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       }
       case TokenType::give: {
         SHOW("give sentence found")
-        context = "GIVE";
         if (isNext(TokenType::stop, i)) {
           i++;
           result.push_back(new ast::GiveSentence(None, utils::FileRange(token.fileRange, RangeAt(i + 1))));

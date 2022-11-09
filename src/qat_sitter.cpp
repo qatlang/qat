@@ -10,7 +10,7 @@
 #include <filesystem>
 
 #if PLATFORM_IS_WINDOWS
-  #include "processenv.h"
+#include "processenv.h"
 #endif
 
 #define OUTPUT_OBJECT_NAME "output"
@@ -101,7 +101,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
         if (fs::exists(libPath)) {
           Lexer->changeFile(fs::absolute(libPath));
           Lexer->analyse();
-          Parser->setTokens(Lexer->get_tokens());
+          Parser->setTokens(Lexer->getTokens());
           auto parseRes(Parser->parse());
           for (const auto& bPath : Parser->getBroughtPaths()) {
             broughtPaths.push_back(bPath);
@@ -119,7 +119,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
       } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
         Lexer->changeFile(item.string());
         Lexer->analyse();
-        Parser->setTokens(Lexer->get_tokens());
+        Parser->setTokens(Lexer->getTokens());
         auto parseRes(Parser->parse());
         for (const auto& bPath : Parser->getBroughtPaths()) {
           broughtPaths.push_back(bPath);
@@ -138,7 +138,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     if (fs::exists(libpath) && fs::is_regular_file(libpath)) {
       Lexer->changeFile(libpath);
       Lexer->analyse();
-      Parser->setTokens(Lexer->get_tokens());
+      Parser->setTokens(Lexer->getTokens());
       auto parseRes(Parser->parse());
       for (const auto& bPath : Parser->getBroughtPaths()) {
         broughtPaths.push_back(bPath);
@@ -156,7 +156,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);
     Lexer->analyse();
-    Parser->setTokens(Lexer->get_tokens());
+    Parser->setTokens(Lexer->getTokens());
     auto parseRes(Parser->parse());
     for (const auto& bPath : Parser->getBroughtPaths()) {
       broughtPaths.push_back(bPath);

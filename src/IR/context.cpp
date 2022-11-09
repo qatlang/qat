@@ -2,6 +2,8 @@
 #include "../ast/node.hpp"
 #include "../cli/color.hpp"
 #include "../cli/config.hpp"
+#include "../lexer/lexer.hpp"
+#include "../parser/parser.hpp"
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
@@ -90,7 +92,8 @@ utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) c
           return utils::VisibilityInfo::lib(getMod()->getFullName());
         }
         case ModuleType::folder: {
-          return utils::VisibilityInfo::folder(fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
+          return utils::VisibilityInfo::folder(
+              fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
         }
       }
     }
@@ -153,6 +156,8 @@ void Context::writeJsonResult(bool status) const {
   }
   result._("status", status)
       ._("problems", problems)
+      ._("lexerTime", (unsigned long long)lexer::Lexer::timeInMicroSeconds)
+      ._("parserTime", (unsigned long long)parser::Parser::timeInMicroSeconds)
       ._("qatTime", qatTime)
       ._("clangTime", clangTime)
       ._("hasMain", hasMain);

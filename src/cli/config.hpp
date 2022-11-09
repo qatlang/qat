@@ -3,12 +3,9 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
-#include "./display.hpp"
 #include <iostream>
 
 namespace qat::cli {
-
-enum class CompileTarget { normal, cpp, json };
 
 // CLI Configuration -
 //
@@ -32,7 +29,10 @@ private:
   Maybe<fs::path> outputPath;
 
   // Compile target value
-  CompileTarget target;
+  Maybe<String> targetTriple;
+
+  // Sysroot for alternative system folder for the linker
+  Maybe<String> sysRoot;
 
   // The latest commit at the time of the build of the compiler
   String buildCommit;
@@ -95,9 +95,6 @@ public:
    */
   static Config* get();
 
-  // Parse the CompileTarget from the argument
-  static CompileTarget parseCompileTarget(const String& val);
-
   // Whether there is an instance of Config that has been initialised
   static bool hasInstance();
 
@@ -147,7 +144,7 @@ public:
   useit bool shouldExportAST() const;
 
   // Get the compile-target provided by the user
-  useit CompileTarget getTarget() const;
+  useit String getTargetTriple() const;
 
   useit bool outputToTempDir() const;
 
@@ -156,6 +153,10 @@ public:
   useit bool isDebugMode() const;
 
   useit bool isReleaseMode() const;
+
+  useit bool hasSysroot() const;
+
+  useit String getSysroot() const;
 
   ~Config();
 };

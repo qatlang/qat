@@ -1,8 +1,8 @@
 #include "./config.hpp"
-#include "../show.hpp"
 #include "../utils/unique_id.hpp"
-#include "color.hpp"
+#include "./display.hpp"
 #include "error.hpp"
+#include "llvm/Config/llvm-config.h"
 #include <filesystem>
 
 namespace qat::cli {
@@ -41,19 +41,9 @@ bool Config::shouldExit() const { return exitAfter; }
 
 Config* Config::get() { return Config::instance; }
 
-CompileTarget Config::parseCompileTarget(const String& val) {
-  if (val == "cpp") {
-    return CompileTarget::cpp;
-  } else if (val == "json") {
-    return CompileTarget::json;
-  } else {
-    return CompileTarget::normal;
-  }
-}
-
 Config::Config(u64 count, char** args)
-    : target(CompileTarget::normal), exitAfter(false), verbose(false), saveDocs(false), showReport(false),
-      export_ast(false), compile(false), run(false), outputInTemporaryPath(false), releaseMode(false) {
+    : exitAfter(false), verbose(false), saveDocs(false), showReport(false), export_ast(false), compile(false),
+      run(false), outputInTemporaryPath(false), releaseMode(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -130,14 +120,26 @@ Config::Config(u64 count, char** args)
       if (arg == "-v" || arg == "--verbose") {
         verbose = true;
       } else if (String(arg).find("-t=") == 0) {
-        target = parseCompileTarget(String(arg).substr(3));
+        targetTriple = String(arg).substr(3);
       } else if (String(arg).find("--target=") == 0) {
-        target = parseCompileTarget(String(arg).substr(9)); // NOLINT(readability-magic-numbers)
+        targetTriple = String(arg).substr(9); // NOLINT(readability-magic-numbers)
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
-          target = parseCompileTarget(args[i + 1]);
+          targetTriple = args[i + 1];
         } else {
           cli::Error("Expected a target after " + arg + " flag", None);
+        }
+      } else if (String(arg).find("--sysroot=") == 0) {
+        if (String(arg).length() > 10) {
+          sysRoot = String(arg).substr(10);
+        } else {
+          cli::Error("Expected valid path for sysroot", None);
+        }
+      } else if (arg == "--sysroot") {
+        if (i + 1 < count) {
+          sysRoot = args[i + 1];
+        } else {
+          cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
         }
       } else if (arg == "-o" || arg == "--output") {
         if ((i + 1) < count) {
@@ -213,7 +215,7 @@ bool Config::isRun() const { return run; }
 
 bool Config::isAnalyse() const { return analyse; }
 
-CompileTarget Config::getTarget() const { return target; }
+String Config::getTargetTriple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
 
 bool Config::outputToTempDir() const { return outputInTemporaryPath; }
 
@@ -222,5 +224,9 @@ bool Config::noColorMode() const { return noColors; }
 bool Config::isDebugMode() const { return !releaseMode; }
 
 bool Config::isReleaseMode() const { return releaseMode; }
+
+bool Config::hasSysroot() const { return sysRoot.has_value(); }
+
+String Config::getSysroot() const { return sysRoot.value_or(""); }
 
 } // namespace qat::cli

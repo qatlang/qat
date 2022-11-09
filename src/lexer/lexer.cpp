@@ -1,5 +1,8 @@
 #include "lexer.hpp"
+#include "../cli/color.hpp"
+#include "../utils/is_integer.hpp"
 #include "token_type.hpp"
+#include <chrono>
 
 #define NanosecondsInMicroseconds 1000
 #define NanosecondsInMilliseconds 1000000
@@ -7,14 +10,9 @@
 
 namespace qat::lexer {
 
-bool Lexer::show_report = false;
+u64 Lexer::timeInMicroSeconds = 0;
 
-Lexer::Lexer() {
-  auto* cfg          = cli::Config::get();
-  Lexer::show_report = cfg->shouldShowReport();
-}
-
-Deque<Token>* Lexer::get_tokens() { return tokens; }
+Deque<Token>* Lexer::getTokens() { return tokens; }
 
 Vec<String> Lexer::getContent() const { return content; }
 
@@ -35,7 +33,7 @@ void Lexer::read() {
         }
       }
       characterNumber++;
-      total_char_count++;
+      totalCharacterCount++;
     }
     if (current == '\n') {
       previousLineEnd = characterNumber;
@@ -50,19 +48,19 @@ void Lexer::read() {
           previousLineEnd = characterNumber;
           lineNumber++;
           characterNumber = 0;
-          total_char_count++;
+          totalCharacterCount++;
           content.push_back("");
         } else {
           characterNumber++;
-          total_char_count++;
+          totalCharacterCount++;
           (content.back() += "\r") += current;
         }
       }
-      total_char_count++;
+      totalCharacterCount++;
       characterNumber = (current == '\n') ? 0 : 1;
     }
   } catch (std::exception& err) {
-    throw_error(String("Lexer failed while reading the file. Error: ") + err.what());
+    throwError(String("Lexer failed while reading the file. Error: ") + err.what());
   }
 }
 
@@ -78,7 +76,7 @@ utils::FileRange Lexer::getPosition(u64 length) {
 
 void Lexer::analyse() {
   file.open(filePath, std::ios::in);
-  auto lexer_start = std::chrono::high_resolution_clock::now();
+  auto startTime = std::chrono::high_resolution_clock::now();
   tokens->push_back(Token::valued(TokenType::startOfFile, filePath.string(), this->getPosition(0)));
   read();
   while (!file.eof()) {
@@ -88,21 +86,20 @@ void Lexer::analyse() {
   if (tokens->back().type != TokenType::endOfFile) {
     tokens->push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0)));
   }
-  std::chrono::nanoseconds lexer_elapsed = std::chrono::high_resolution_clock::now() - lexer_start;
-  timeInNS                               = lexer_elapsed.count();
-  printStatus();
+  timeInMicroSeconds +=
+      std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime)
+          .count();
 }
 
 void Lexer::changeFile(fs::path newFilePath) {
   tokens = new Deque<Token>{};
   content.clear();
-  filePath         = std::move(newFilePath);
-  prev             = -1;
-  current          = -1;
-  lineNumber       = 1;
-  characterNumber  = 0;
-  timeInNS         = 0;
-  total_char_count = 0;
+  filePath            = std::move(newFilePath);
+  prev                = -1;
+  current             = -1;
+  lineNumber          = 1;
+  characterNumber     = 0;
+  totalCharacterCount = 0;
 }
 
 Token Lexer::tokeniser() {
@@ -289,9 +286,9 @@ Token Lexer::tokeniser() {
     case '*':
     case '<':
     case '>': {
-      if ((current == '>') && (template_type_start_count > 0)) {
+      if ((current == '>') && (genericStartCount > 0)) {
         read();
-        template_type_start_count--;
+        genericStartCount--;
         return Token::normal(TokenType::templateTypeEnd, this->getPosition(1));
       }
       String operatorValue;
@@ -348,7 +345,7 @@ Token Lexer::tokeniser() {
       read();
       if (current == '<') {
         read();
-        template_type_start_count++;
+        genericStartCount++;
         return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
       } else if (current == '\'') {
         read();
@@ -453,10 +450,10 @@ Token Lexer::tokeniser() {
                     return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
                   }
                 } else {
-                  throw_error("Invalid unsigned integer literal");
+                  throwError("Invalid unsigned integer literal");
                 }
               } else {
-                throw_error("Invalid unsigned integer literal");
+                throwError("Invalid unsigned integer literal");
               }
             } else {
               while (digits.find(current) != String::npos) {
@@ -486,7 +483,7 @@ Token Lexer::tokeniser() {
             resString.append("_f").append(bitString);
             return Token::valued(TokenType::floatLiteral, resString, this->getPosition(resString.length()));
           } else {
-            throw_error("Invalid integer literal suffix");
+            throwError("Invalid integer literal suffix");
           }
         }
         numVal += current;
@@ -642,34 +639,14 @@ Token Lexer::tokeniser() {
         }
         // NOLINTEND(readability-magic-numbers)
       } else {
-        throw_error("Unrecognised character found: " + String(1, current));
+        throwError("Unrecognised character found: " + String(1, current));
         return Token::normal(TokenType::endOfFile, this->getPosition(0));
       }
     }
   }
 }
 
-void Lexer::printStatus() {
-  if (Lexer::show_report) {
-    double time_val;
-    String time_unit;
-    if (timeInNS < NanosecondsInMicroseconds) {
-      time_val  = ((double)timeInNS) / NanosecondsInMicroseconds;
-      time_unit = " microseconds \n";
-    } else if (timeInNS < NanosecondsInMilliseconds) {
-      time_val  = ((double)timeInNS) / NanosecondsInMilliseconds;
-      time_unit = " milliseconds \n";
-    } else {
-      time_val  = ((double)timeInNS) / NanosecondsInSeconds;
-      time_unit = " seconds \n";
-    }
-    std::cout << colors::cyan << "[ LEXER ] " << colors::bold::green << filePath << colors::reset << "\n   "
-              << --lineNumber << " lines & " << --total_char_count << " characters in " << colors::bold_ << time_val
-              << time_unit << colors::reset;
-  }
-}
-
-void Lexer::throw_error(const String& message) {
+void Lexer::throwError(const String& message) {
   std::cout << colors::highIntensityBackground::red << " lexer error " << colors::reset << " " << colors::bold::red
             << message << colors::reset << " | " << colors::underline::green << filePath << ":" << lineNumber << ":"
             << characterNumber << colors::reset << "\n";

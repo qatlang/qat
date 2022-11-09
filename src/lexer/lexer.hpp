@@ -1,12 +1,8 @@
 #ifndef QAT_LEXER_LEXER_HPP
 #define QAT_LEXER_LEXER_HPP
 
-#include "../cli/color.hpp"
-#include "../cli/config.hpp"
 #include "../utils/file_range.hpp"
-#include "../utils/is_integer.hpp"
 #include "./token.hpp"
-#include "./token_type.hpp"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -28,25 +24,23 @@ private:
   char          current;
   Deque<Token>* tokens;
   Deque<Token>  buffer;
-  u32           template_type_start_count = 0;
-  u64           total_char_count          = 0;
-  u64           timeInNS                  = 0;
+  u32           genericStartCount   = 0;
+  u64           totalCharacterCount = 0;
 
 public:
-  Lexer();
+  Lexer() = default;
 
   u64        lineNumber      = 1;
   u64        characterNumber = 0;
   Maybe<u64> previousLineEnd;
+  static u64 timeInMicroSeconds;
 
-  void        clear_tokens();
-  void        throw_error(const String& message);
-  void        analyse();
-  void        read();
-  void        changeFile(fs::path newFile);
-  void        printStatus();
-  static bool show_report;
-  useit Deque<Token>* get_tokens();
+  void  clearTokens();
+  void  throwError(const String& message);
+  void  analyse();
+  void  read();
+  void  changeFile(fs::path newFile);
+  useit Deque<Token>* getTokens();
   useit Vec<String> getContent() const;
   useit Token       tokeniser();
   useit utils::FileRange getPosition(u64 length);

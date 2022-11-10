@@ -12,7 +12,7 @@ class QatModule;
 class ChoiceType : public QatType {
 private:
   String                name;
-  QatModule            *parent;
+  QatModule*            parent;
   Vec<String>           fields;
   Maybe<Vec<i64>>       values;
   utils::VisibilityInfo visibility;
@@ -22,26 +22,26 @@ private:
   mutable bool hasNegative;
 
 public:
-  ChoiceType(String name, QatModule *parent, Vec<String> fields,
-             Maybe<Vec<i64>> values, Maybe<usize> defaultVal,
-             const utils::VisibilityInfo &visibility, llvm::LLVMContext &ctx);
+  ChoiceType(String name, QatModule* parent, Vec<String> fields, Maybe<Vec<i64>> values, Maybe<usize> defaultVal,
+             const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
 
   useit String     getName() const;
   useit String     getFullName() const;
-  useit QatModule *getParent() const;
+  useit QatModule* getParent() const;
   useit bool       hasCustomValue() const;
+  useit bool       hasNegativeValues() const;
   useit bool       hasDefault() const;
-  useit bool       hasField(const String &name) const;
-  useit i64        getValueFor(const String &name) const;
+  useit bool       hasField(const String& name) const;
+  useit i64        getValueFor(const String& name) const;
   useit i64        getDefault() const;
   useit u64        getBitwidth() const;
-  useit const utils::VisibilityInfo &getVisibility() const;
-  useit TypeKind typeKind() const final { return TypeKind::choice; }
-  useit Json     toJson() const final { return Json(); }
-  useit String   toString() const final { return getFullName(); }
-  void           findBitwidthNormal() const;
-  void           findBitwidthForValues() const;
-  void           getMissingNames(Vec<String> &vals, Vec<String> &missing) const;
+  useit const utils::VisibilityInfo& getVisibility() const;
+  useit TypeKind                     typeKind() const final { return TypeKind::choice; }
+  useit Json                         toJson() const final { return Json(); }
+  useit String                       toString() const final { return getFullName(); }
+  void                               findBitwidthNormal() const;
+  void                               findBitwidthForValues() const;
+  void                               getMissingNames(Vec<String>& vals, Vec<String>& missing) const;
 };
 
 } // namespace qat::IR

@@ -2389,24 +2389,19 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::stringSliceType: {
-        // FIXME - Support heaped creation
-        if (isNext(TokenType::from, i)) {
-          if (isNext(TokenType::parenthesisOpen, i + 1)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
-            if (pCloseRes.has_value()) {
-              auto pClose = pCloseRes.value();
-              auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-              cachedExpressions.push_back(new ast::ConstructorCall(new ast::StringSliceType(false, RangeAt(i)), args,
-                                                                   false, RangeSpan(i, pClose)));
-              i = pClose;
-            } else {
-              Error("Expected end for (", RangeAt(i + 2));
-            }
+        if (isNext(TokenType::curlybraceOpen, i)) {
+          auto pCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
+          if (pCloseRes.has_value()) {
+            auto pClose = pCloseRes.value();
+            auto args   = parseSeparatedExpressions(preCtx, i + 1, pClose);
+            cachedExpressions.push_back(
+                new ast::PlainInitialiser(new ast::StringSliceType(false, RangeAt(i)), {}, args, RangeSpan(i, pClose)));
+            i = pClose;
           } else {
-            Error("Expected ( to start the arguments for creating a string slice", RangeSpan(i, i + 1));
+            Error("Expected end for {", RangeAt(i + 2));
           }
         } else {
-          Error("Invalid expression", RangeAt(i));
+          Error("Expected { to start the arguments for creating a string slice", RangeSpan(i, i + 1));
         }
         break;
       }
@@ -3419,53 +3414,6 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
         Error("Arguments cannot have void type", token.fileRange);
         break;
       }
-      case TokenType::super: {
-        auto typeRes = parseType(preCtx, i - 1, None);
-        typ          = typeRes.first;
-        i            = typeRes.second;
-        break;
-      }
-      case TokenType::identifier: {
-        if (hasType() && (!hasName())) {
-          name = token.value;
-          if (isNext(TokenType::separator, i) || isNext(TokenType::parenthesisClose, i)) {
-            args.push_back(ast::Argument::Normal(useName(), token.fileRange, useType()));
-            i++;
-            break;
-          } else {
-            Error("Expected , or ) after argument name", token.fileRange);
-          }
-        } else if (hasName()) {
-          Error("Additional name provided after the previous one. Please "
-                "remove this name",
-                token.fileRange);
-        } else {
-          auto typeRes = parseType(preCtx, i - 1, None);
-          typ          = typeRes.first;
-          i            = typeRes.second;
-        }
-        break;
-      }
-      case TokenType::var:
-      case TokenType::pointerType:
-      case TokenType::referenceType:
-      case TokenType::stringSliceType:
-      case TokenType::floatType:
-      case TokenType::unsignedIntegerType:
-      case TokenType::future:
-      case TokenType::maybe:
-      case TokenType::integerType: {
-        if (hasType()) {
-          Error("A type is already provided before. Please change this "
-                "to the name of the argument, or remove the previous type",
-                token.fileRange);
-        } else {
-          auto typeRes = parseType(preCtx, i - 1, None);
-          typ          = typeRes.first;
-          i            = typeRes.second;
-          break;
-        }
-      }
       case TokenType::variadic: {
         if (isNext(TokenType::identifier, i)) {
           args.push_back(ast::Argument::Normal(ValueAt(i + 1), RangeSpan(i, i + 1), nullptr));
@@ -3487,6 +3435,23 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
         } else {
           Error("Expected name of the member to be initialised", token.fileRange);
         }
+        break;
+      }
+      default: {
+        auto typeRes = parseType(preCtx, i - 1, None);
+        typ          = typeRes.first;
+        i            = typeRes.second;
+        if (isNext(TokenType::identifier, i)) {
+          args.push_back(ast::Argument::Normal(ValueAt(i + 1), {typ.value()->fileRange}, typ.value()));
+          if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
+            i += 2;
+          } else {
+            Error("Unexpected token found after argument name", RangeAt(i + 1));
+          }
+        } else {
+          Error("Expected a name for the argument, after the type", typ.value()->fileRange);
+        }
+        break;
       }
     }
   }

@@ -522,42 +522,41 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         i = kindRes.second;
         break;
       }
-      case TokenType::parenthesisOpen:
-      case TokenType::voidType:
-      case TokenType::cstringType:
-      case TokenType::stringSliceType:
-      case TokenType::unsignedIntegerType:
-      case TokenType::referenceType:
-      case TokenType::future:
-      case TokenType::maybe:
-      case TokenType::integerType:
-      case TokenType::pointerType:
-      case TokenType::floatType: {
-        auto start      = i;
-        auto typeResult = parseType(ctx, i - 1, None);
-        i               = typeResult.second;
+      case TokenType::New: {
+        auto start = i;
+        bool isVar = false;
+        if (isNext(TokenType::var, i)) {
+          isVar = true;
+          i++;
+        }
         if (isNext(TokenType::identifier, i)) {
-          ast::Expression* exp = nullptr;
-          if (isNext(TokenType::assignment, i + 1)) {
-            auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
-            if (endRes.has_value()) {
-              auto end = endRes.value();
-              exp      = parseExpression(preCtx, None, i + 2, end).first;
-              result.push_back(new ast::GlobalDeclaration(ValueAt(i + 1), typeResult.first, exp,
-                                                          typeResult.first->isVariable(), getVisibility(),
-                                                          RangeSpan(start, end)));
-              i = end;
+          ast::Expression* exp    = nullptr;
+          ast::QatType*    typ    = nullptr;
+          auto             endRes = firstPrimaryPosition(TokenType::stop, i + 1);
+          if (!endRes.has_value()) {
+            Error("Expected end for the global declaration", RangeSpan(start, i + 1));
+          }
+          if (isNext(TokenType::colon, i + 1)) {
+            if (isPrimaryWithin(TokenType::assignment, i + 2, endRes.value())) {
+              auto assignPos = firstPrimaryPosition(TokenType::assignment, i + 2).value();
+              typ            = parseType(preCtx, i + 2, assignPos).first;
+              exp            = parseExpression(preCtx, None, assignPos, endRes.value()).first;
             } else {
-              Error("Expected . to end the declaration of the global entity", RangeSpan(start, i + 2));
+              typ = parseType(preCtx, i + 2, endRes.value()).first;
             }
           }
+          result.push_back(new ast::GlobalDeclaration(ValueAt(i + 1), typ, exp, isVar, getVisibility(),
+                                                      RangeSpan(start, endRes.value())));
+          i = endRes.value();
         } else {
-          cacheTy.push_back(typeResult.first);
+          Error("Expected name for the global declaration",
+                isVar ? utils::FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
+                      : RangeAt(start));
         }
         break;
       }
       case TokenType::bring: {
-        // FIXME - Support bring sentences
+        // FIXME - Support bringing entities
         if (isNext(TokenType::StringLiteral, i)) {
           auto endRes = firstPrimaryPosition(TokenType::stop, i);
           if (endRes.has_value()) {

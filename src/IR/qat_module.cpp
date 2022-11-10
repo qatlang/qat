@@ -77,7 +77,7 @@ QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath, Modul
   llvmModule->setModuleIdentifier(getFullName());
   llvmModule->setSourceFileName(filePath.string());
   llvmModule->setCodeModel(llvm::CodeModel::Small);
-  llvmModule->setTargetTriple(LLVM_HOST_TRIPLE);
+  llvmModule->setTargetTriple(cli::Config::get()->getTargetTriple());
   allModules.push_back(this);
 }
 
@@ -1284,11 +1284,17 @@ void QatModule::compileToObject(IR::Context* ctx) {
     if (moduleInfo.linkPthread) {
       compileCommand += "-pthread ";
     }
+    auto* cfg = cli::Config::get();
+    compileCommand.append("--target=").append(cfg->getTargetTriple()).append(" ");
+    if (cfg->hasSysroot()) {
+      compileCommand.append("--sysroot=").append(cfg->getSysroot()).append(" ");
+      //-Wl,--import-memory
+      // compileCommand.append(" -nostartfiles -Wl,--no-entry ");
+    }
     for (auto* sub : submodules) {
       sub->compileToObject(ctx);
     }
     // FIXME - Also link modules of other brought entities
-    auto* cfg      = cli::Config::get();
     objectFilePath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
                      filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o"));
     SHOW("Creating all folders in object file output path: " << objectFilePath)
@@ -1312,6 +1318,12 @@ void QatModule::bundleLibs(IR::Context* ctx) {
     String cmdRem("-fPIC ");
     if (moduleInfo.linkPthread) {
       cmdRem.append("-pthread ");
+    }
+    cmdRem.append(" --target=").append(cfg->getTargetTriple()).append(" ");
+    if (cfg->hasSysroot()) {
+      cmdRem.append("--sysroot=").append(cfg->getSysroot()).append(" ");
+      // -Wl,--import-memory
+      // cmdRem.append(" -nostartfiles -Wl,--no-entry ");
     }
     cmdRem.append(objectFilePath.string()).append(" ");
     for (auto* sub : submodules) {

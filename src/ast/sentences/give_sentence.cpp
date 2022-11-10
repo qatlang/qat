@@ -1,5 +1,6 @@
 #include "./give_sentence.hpp"
 #include "../../IR/types/future.hpp"
+#include "../../IR/types/void.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"

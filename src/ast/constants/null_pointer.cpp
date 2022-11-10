@@ -1,4 +1,5 @@
 #include "./null_pointer.hpp"
+#include "../../IR/types/void.hpp"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {

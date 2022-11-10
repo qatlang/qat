@@ -1,6 +1,7 @@
 #include "./await.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/future.hpp"
+#include "../../IR/types/void.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 

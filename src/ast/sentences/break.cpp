@@ -1,5 +1,6 @@
 #include "./break.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/types/void.hpp"
 
 namespace qat::ast {
 

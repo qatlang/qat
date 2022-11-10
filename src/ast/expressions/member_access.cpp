@@ -40,9 +40,10 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
   if (instType->isChoice()) {
     auto* chTy = instType->asChoice();
     if (chTy->hasField(name)) {
-      auto chInd = (u64)chTy->getValueFor(name);
-      return new IR::Value(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()), chInd), chTy,
-                           false, IR::Nature::pure);
+      auto chInd = chTy->getValueFor(name);
+      return new IR::Value(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
+                                                  static_cast<u64>(chInd), chTy->hasNegativeValues() && (chInd < 0)),
+                           chTy, false, IR::Nature::pure);
     } else {
       ctx->Error("No variant named " + ctx->highlightError(name) + " found in choice type " +
                      ctx->highlightError(chTy->getFullName()),
@@ -54,7 +55,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                            // NOLINTNEXTLINE(readability-magic-numbers)
                            IR::IntegerType::get(64u, ctx->llctx), false, IR::Nature::pure);
     } else {
-      ctx->Error("Invalid name for member access " + ctx->highlightError(name), fileRange);
+      ctx->Error("Invalid name for member access " + ctx->highlightError(name) + " for expression with type " +
+                     ctx->highlightError(instType->toString()),
+                 fileRange);
     }
   } else if (instType->isStringSlice()) {
     if (name == "length") {
@@ -74,12 +77,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Invalid value for String Slice and hence cannot get length", fileRange);
       }
-    } else if (name == "data") {
+    } else if (name == "buffer") {
       if (inst->isImplicitPointer() || inst->isReference()) {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
-            IR::ReferenceType::get(false, IR::UnsignedType::get(8u, ctx->llctx), ctx->llctx), false,
+            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), ctx->llctx), false,
             IR::Nature::temporary);
       } else {
         // FIXME - Implement constant value support

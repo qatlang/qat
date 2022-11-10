@@ -124,53 +124,6 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
       return res;
     }
-  } else if (typ->isStringSlice()) {
-    if (args.size() == 2) {
-      auto* strData  = args.at(0)->emit(ctx);
-      auto* strLen   = args.at(1)->emit(ctx);
-      auto* dataType = strData->getType();
-      auto* lenType  = strLen->getType();
-      if (dataType->isReference()) {
-        dataType = dataType->asReference()->getSubType();
-      }
-      if (lenType->isReference()) {
-        lenType = lenType->asReference()->getSubType();
-      }
-      if (dataType->isPointer() && dataType->asPointer()->getSubType()->isUnsignedInteger() &&
-          dataType->asPointer()->getSubType()->asUnsignedInteger()->getBitwidth() == 8u) {
-        if (strData->isImplicitPointer() || strData->getType()->isReference()) {
-          strData = new IR::Value(ctx->builder.CreateLoad(dataType->getLLVMType(), strData->getLLVM()), dataType, false,
-                                  IR::Nature::temporary);
-        }
-        if (lenType->isUnsignedInteger() && lenType->asUnsignedInteger()->getBitwidth() == 64u) {
-          if (strLen->isImplicitPointer() || strLen->isReference()) {
-            strLen = new IR::Value(ctx->builder.CreateLoad(lenType->getLLVMType(), strLen->getLLVM()), lenType, false,
-                                   IR::Nature::temporary);
-          }
-          auto* strSliceTy = IR::StringSliceType::get(ctx->llctx);
-          auto* strAlloca  = ctx->builder.CreateAlloca(strSliceTy->getLLVMType());
-          ctx->builder.CreateStore(strData->getLLVM(),
-                                   ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 0));
-          ctx->builder.CreateStore(strLen->getLLVM(),
-                                   ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 1));
-          return new IR::Value(strAlloca, strSliceTy, false, IR::Nature::pure);
-        } else {
-          ctx->Error("The second argument for creating a string slice is not a "
-                     "64-bit unsigned integer",
-                     args.at(1)->fileRange);
-        }
-      } else {
-        ctx->Error("The first argument for creating a string slice is not a "
-                   "pointer to an unsigned 8-bit integer",
-                   args.at(0)->fileRange);
-      }
-    } else {
-      ctx->Error("Creating a string slice using constructor requires 2 arguments. The "
-                 "first argument should be the pointer to the start of the data and "
-                 "the second argument should be the length of the data (including the "
-                 "terminating null character).",
-                 fileRange);
-    }
   } else {
     ctx->Error("The provided type " + ctx->highlightError(typ->toString()) +
                    " is not a core type and hence the constructor cannot be "

@@ -109,6 +109,7 @@ enum class TokenType {
   future,
   maybe,
   none,
+  meta,
 };
 
 } // namespace qat::lexer

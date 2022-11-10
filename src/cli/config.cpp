@@ -1,5 +1,4 @@
 #include "./config.hpp"
-#include "../utils/unique_id.hpp"
 #include "./display.hpp"
 #include "error.hpp"
 #include "llvm/Config/llvm-config.h"
@@ -43,7 +42,7 @@ Config* Config::get() { return Config::instance; }
 
 Config::Config(u64 count, char** args)
     : exitAfter(false), verbose(false), saveDocs(false), showReport(false), export_ast(false), compile(false),
-      run(false), outputInTemporaryPath(false), releaseMode(false) {
+      run(false), releaseMode(false) {
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -103,8 +102,6 @@ Config::Config(u64 count, char** args)
           display::build_info(buildCommit);
         } else if (candidate == "web") {
           display::websites();
-        } else if (candidate == "errors") {
-          display::errors();
         }
         proceed   = 3;
         exitAfter = true;
@@ -126,6 +123,7 @@ Config::Config(u64 count, char** args)
       } else if (arg == "-t" || arg == "--target") {
         if ((i + 1) < count) {
           targetTriple = args[i + 1];
+          i++;
         } else {
           cli::Error("Expected a target after " + arg + " flag", None);
         }
@@ -138,9 +136,12 @@ Config::Config(u64 count, char** args)
       } else if (arg == "--sysroot") {
         if (i + 1 < count) {
           sysRoot = args[i + 1];
+          i++;
         } else {
           cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
         }
+      } else if (arg == "--wasm") {
+        isWASM = true;
       } else if (arg == "-o" || arg == "--output") {
         if ((i + 1) < count) {
           String out(args[i + 1]);
@@ -169,8 +170,6 @@ Config::Config(u64 count, char** args)
         showReport = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
-      } else if (arg == "--tmp-dir") {
-        outputInTemporaryPath = true;
       } else if (arg == "--release") {
         releaseMode = true;
       } else {
@@ -187,12 +186,7 @@ Config::Config(u64 count, char** args)
       cli::Warning("Ignoring additional arguments provided...", None);
     }
     if (!outputPath.has_value()) {
-      if (outputInTemporaryPath) {
-        outputPath = fs::temp_directory_path() / ".qatcache" / utils::unique_id();
-        fs::create_directories(outputPath.value());
-      } else {
-        outputPath = fs::current_path();
-      }
+      outputPath = fs::current_path() / ".qatcache";
     }
   }
 }
@@ -217,8 +211,6 @@ bool Config::isAnalyse() const { return analyse; }
 
 String Config::getTargetTriple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
 
-bool Config::outputToTempDir() const { return outputInTemporaryPath; }
-
 bool Config::noColorMode() const { return noColors; }
 
 bool Config::isDebugMode() const { return !releaseMode; }
@@ -228,5 +220,7 @@ bool Config::isReleaseMode() const { return releaseMode; }
 bool Config::hasSysroot() const { return sysRoot.has_value(); }
 
 String Config::getSysroot() const { return sysRoot.value_or(""); }
+
+bool Config::isWasmMode() const { return isWASM; }
 
 } // namespace qat::cli

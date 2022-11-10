@@ -62,11 +62,11 @@ private:
 
   bool analyse;
 
-  bool outputInTemporaryPath;
-
   bool noColors;
 
   bool releaseMode;
+
+  bool isWASM;
 
 public:
   /**
@@ -146,8 +146,6 @@ public:
   // Get the compile-target provided by the user
   useit String getTargetTriple() const;
 
-  useit bool outputToTempDir() const;
-
   useit bool noColorMode() const;
 
   useit bool isDebugMode() const;
@@ -157,6 +155,8 @@ public:
   useit bool hasSysroot() const;
 
   useit String getSysroot() const;
+
+  useit bool isWasmMode() const;
 
   ~Config();
 };

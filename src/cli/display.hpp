@@ -42,13 +42,6 @@ void help();
  */
 void websites();
 
-/**
- *  Displays information about potential errors that are shown while using
- * the language in a wrong manner
- *
- */
-void errors();
-
 } // namespace qat::cli::display
 
 #endif

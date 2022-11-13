@@ -4,50 +4,49 @@
 
 namespace qat::ast {
 
-GlobalDeclaration::GlobalDeclaration(String _name, QatType *_type,
-                                     Expression *_value, bool _isVariable,
-                                     utils::VisibilityKind _kind,
-                                     utils::FileRange      _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), type(_type),
-      value(_value), isVariable(_isVariable), visibility(_kind) {}
+GlobalDeclaration::GlobalDeclaration(String _name, QatType* _type, Expression* _value, bool _isVariable,
+                                     utils::VisibilityKind _kind, utils::FileRange _fileRange)
+    : Node(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value), isVariable(_isVariable),
+      visibility(_kind) {}
 
-void GlobalDeclaration::define(IR::Context *ctx) {
-  auto *mod  = ctx->getMod();
-  auto *init = mod->getGlobalInitialiser(ctx);
+void GlobalDeclaration::define(IR::Context* ctx) {
+  auto* mod  = ctx->getMod();
+  auto* init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;
   init->getBlock()->setActive(ctx->builder);
-  auto                 *typ  = type->emit(ctx);
-  auto                 *val  = value->emit(ctx);
-  llvm::GlobalVariable *gvar = nullptr;
-  if (llvm::isa<llvm::Constant>(val->getLLVM())) {
-    gvar = new llvm::GlobalVariable(
-        *mod->getLLVMModule(), typ->getLLVMType(), isVariable,
-        visibility == utils::VisibilityKind::pub
-            ? llvm::GlobalValue::LinkageTypes::WeakAnyLinkage
-            : llvm::GlobalValue::LinkageTypes::PrivateLinkage,
-        llvm::dyn_cast<llvm::Constant>(val->getLLVM()), name);
+  if (!type) {
+    ctx->Error("Expected a type for global declaration", fileRange);
+  }
+  if (!value) {
+    ctx->Error("Expected a value to be assigned for global declaration", fileRange);
+  }
+  // FIXME - Perform name collision checks & scoped naming
+  auto*                 typ  = type->emit(ctx);
+  auto*                 val  = value->emit(ctx);
+  llvm::GlobalVariable* gvar = nullptr;
+  if (val->isConstVal()) {
+    gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), isVariable,
+                                    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                                    llvm::dyn_cast<llvm::Constant>(val->getLLVM()), name);
   } else {
-    gvar = new llvm::GlobalVariable(
-        *mod->getLLVMModule(), typ->getLLVMType(), false,
-        visibility == utils::VisibilityKind::pub
-            ? llvm::GlobalValue::LinkageTypes::WeakAnyLinkage
-            : llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage,
-        llvm::Constant::getNullValue(typ->getLLVMType()));
+    mod->incrementNonConstGlobalCounter();
+    gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), false,
+                                    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+                                    llvm::Constant::getNullValue(typ->getLLVMType()), name);
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
-  globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable,
-                                      gvar, ctx->getVisibInfo(visibility));
+  globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, gvar, ctx->getVisibInfo(visibility));
   ctx->fn      = nullptr;
 }
 
-IR::Value *GlobalDeclaration::emit(IR::Context *ctx) { return globalEntity; }
+IR::Value* GlobalDeclaration::emit(IR::Context* ctx) { return globalEntity; }
 
 Json GlobalDeclaration::toJson() const {
   return Json()
       ._("nodeType", "globalDeclaration")
       ._("name", name)
-      ._("type", type->toJson())
-      ._("value", value->toJson())
+      ._("type", type ? type->toJson() : Json())
+      ._("value", value ? value->toJson() : Json())
       ._("variability", isVariable)
       ._("visibility", utils::kindToJsonValue(visibility))
       ._("fileRange", fileRange);

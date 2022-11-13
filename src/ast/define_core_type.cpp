@@ -40,7 +40,7 @@ DefineCoreType::DefineCoreType(String _name, const utils::VisibilityKind _visibi
                                Vec<ast::TemplatedType*> _templates, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
       templates(std::move(_templates)) {
-  SHOW("Created core type " + name)
+  SHOW("Created define core type " + name)
 }
 
 bool DefineCoreType::isTemplate() const { return !(templates.empty()); }

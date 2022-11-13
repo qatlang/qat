@@ -9,6 +9,7 @@
 #include "types/core_type.hpp"
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
+#include "types/void.hpp"
 #include "value.hpp"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -153,6 +154,11 @@ QatModule* QatModule::getNthParent(u32 n) { // NOLINT(misc-no-recursion)
   }
 }
 
+void QatModule::addMember(QatModule* mod) {
+  mod->parent = this;
+  submodules.push_back(mod);
+}
+
 Function* QatModule::createFunction(const String& name, QatType* returnType, bool isReturnTypeVariable, bool isAsync,
                                     Vec<Argument> args, bool isVariadic, const utils::FileRange& fileRange,
                                     const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
@@ -248,7 +254,7 @@ String QatModule::getFullNameWithChild(const String& child) const {
     SHOW("Getting full name: " << getFullName())
     return getFullName() + ":" + child;
   } else {
-    return child;
+    return parent ? parent->getFullNameWithChild(child) : child;
   }
 }
 
@@ -257,7 +263,7 @@ bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!globalInitialiser) {
     globalInitialiser = IR::Function::Create(
-        this, "qat'global'initialiser", IR::VoidType::get(ctx->llctx), false, false, {}, false,
+        this, "module'initialiser'" + utils::unique_id(), IR::VoidType::get(ctx->llctx), false, false, {}, false,
         utils::FileRange("", utils::FilePos{0u, 0u}, utils::FilePos{0u, 0u}), utils::VisibilityInfo::pub(), ctx->llctx);
     auto* entry = new IR::Block(globalInitialiser, nullptr);
     entry->setActive(ctx->builder);
@@ -265,10 +271,14 @@ Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   return globalInitialiser;
 }
 
+void QatModule::incrementNonConstGlobalCounter() { nonConstantGlobals++; }
+
+bool QatModule::shouldCallInitialiser() const { return nonConstantGlobals != 0; }
+
 bool QatModule::isSubmodule() const { return parent != nullptr; }
 
-void QatModule::addSubmodule(const String& sname, const String& filename, ModuleType type,
-                             const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx) {
+void QatModule::addNamedSubmodule(const String& sname, const String& filename, ModuleType type,
+                                  const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx) {
   SHOW("Creating submodule: " << sname)
   active = CreateSubmodule(this, filename, basePath.string(), sname, type, visib_info, ctx);
 }
@@ -353,7 +363,7 @@ QatModule* QatModule::getLib(const String& name, const utils::RequesterInfo& req
 void QatModule::openLib(const String& name, const String& filename, const utils::VisibilityInfo& visib_info,
                         llvm::LLVMContext& ctx) {
   if (!hasLib(name)) {
-    addSubmodule(name, filename, ModuleType::lib, visib_info, ctx);
+    addNamedSubmodule(name, filename, ModuleType::lib, visib_info, ctx);
   }
 }
 
@@ -445,7 +455,7 @@ void QatModule::openBox(const String& _name, Maybe<utils::VisibilityInfo> visib_
       }
     }
   } else {
-    addSubmodule(_name, filePath.string(), ModuleType::box, visib_info.value(), llvmModule->getContext());
+    addNamedSubmodule(_name, filePath.string(), ModuleType::box, visib_info.value(), llvmModule->getContext());
   }
 }
 
@@ -1177,60 +1187,85 @@ String QatModule::getFilePath() const { return filePath.string(); }
 bool QatModule::areNodesEmitted() const { return isEmitted; }
 
 void QatModule::createModules(IR::Context* ctx) {
-  SHOW("Creating modules via nodes" << filePath.string())
-  ctx->mod = this;
-  for (auto* node : nodes) {
-    node->createModule(ctx);
-  }
-  for (auto* sub : submodules) {
-    sub->createModules(ctx);
+  if (!hasCreatedModules) {
+    hasCreatedModules = true;
+    SHOW("Creating modules via nodes \nname = " << name << "\n    Path = " << filePath.string())
+    SHOW("    hasParent = " << (parent != nullptr))
+    auto* oldMod = ctx->mod;
+    ctx->mod     = this;
+    SHOW("Submodule count before creating modules via nodes: " << submodules.size())
+    for (auto* node : nodes) {
+      node->createModule(ctx);
+    }
+    SHOW("Submodule count after creating modules via nodes: " << submodules.size())
+    for (auto* sub : submodules) {
+      sub->createModules(ctx);
+    }
+    ctx->mod = oldMod;
   }
 }
 
 void QatModule::handleBrings(IR::Context* ctx) {
-  ctx->mod = this;
-  for (auto* node : nodes) {
-    node->handleBrings(ctx);
-  }
-  for (auto* sub : submodules) {
-    sub->handleBrings(ctx);
+  if (!hasHandledBrings) {
+    hasHandledBrings = true;
+    auto* oldMod     = ctx->mod;
+    ctx->mod         = this;
+    for (auto* node : nodes) {
+      node->handleBrings(ctx);
+    }
+    for (auto* sub : submodules) {
+      sub->handleBrings(ctx);
+    }
+    ctx->mod = oldMod;
   }
 }
 
 void QatModule::defineTypes(IR::Context* ctx) {
-  SHOW("Defining types")
-  ctx->mod = this;
-  for (auto& node : nodes) {
-    node->defineType(ctx);
-    if ((node->nodeType() == ast::NodeType::defineCoreType) && (((ast::DefineCoreType*)node)->isTemplate())) {
-      node = new ast::HolderNode(node);
+  if (!hasDefinedTypes) {
+    hasDefinedTypes = true;
+    SHOW("Defining types")
+    auto* oldMod = ctx->mod;
+    ctx->mod     = this;
+    for (auto& node : nodes) {
+      node->defineType(ctx);
+      if ((node->nodeType() == ast::NodeType::defineCoreType) && (((ast::DefineCoreType*)node)->isTemplate())) {
+        node = new ast::HolderNode(node);
+      }
     }
-  }
-  for (auto* sub : submodules) {
-    sub->defineTypes(ctx);
+    for (auto* sub : submodules) {
+      sub->defineTypes(ctx);
+    }
+    ctx->mod = oldMod;
   }
 }
 
 void QatModule::defineNodes(IR::Context* ctx) {
-  SHOW("Defining nodes")
-  ctx->mod = this;
-  for (auto& node : nodes) {
-    node->define(ctx);
-    if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isTemplate())) {
-      node = new ast::HolderNode(node);
-    } else if ((node->nodeType() == ast::NodeType::functionPrototype) &&
-               (((ast::FunctionPrototype*)node)->isTemplate())) {
-      node = new ast::HolderNode(node);
+  if (!hasDefinedNodes) {
+    hasDefinedNodes = true;
+    SHOW("Defining nodes")
+    auto* oldMod = ctx->mod;
+    ctx->mod     = this;
+    for (auto& node : nodes) {
+      node->define(ctx);
+      if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isTemplate())) {
+        node = new ast::HolderNode(node);
+      } else if ((node->nodeType() == ast::NodeType::functionPrototype) &&
+                 (((ast::FunctionPrototype*)node)->isTemplate())) {
+        node = new ast::HolderNode(node);
+      }
     }
-  }
-  for (auto* sub : submodules) {
-    sub->defineNodes(ctx);
+    for (auto* sub : submodules) {
+      sub->defineNodes(ctx);
+    }
+    ctx->mod = oldMod;
   }
 }
 
 void QatModule::emitNodes(IR::Context* ctx) {
   if (!isEmitted) {
-    ctx->mod = this;
+    isEmitted    = true;
+    auto* oldMod = ctx->mod;
+    ctx->mod     = this;
     SHOW("About to emit for module: " << getFullName())
     for (auto* node : nodes) {
       if (node) {
@@ -1244,7 +1279,10 @@ void QatModule::emitNodes(IR::Context* ctx) {
       sub->emitNodes(ctx);
       SHOW("Emission complete, linking LLVM modules")
     }
-    isEmitted = true;
+    if (globalInitialiser) {
+      globalInitialiser->getBlock()->setActive(ctx->builder);
+      ctx->builder.CreateRetVoid();
+    }
     SHOW("Module type is: " << (int)moduleType)
     auto* cfg = cli::Config::get();
     SHOW("Creating llvm output path")
@@ -1274,6 +1312,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
     } else {
       SHOW("Error could not create directory")
     }
+    ctx->mod = oldMod;
   }
 }
 
@@ -1315,26 +1354,27 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       sub->bundleLibs(ctx);
     }
     auto*  cfg = cli::Config::get();
-    String cmdRem("-fPIC ");
+    String cmdOne("-fPIC ");
     if (moduleInfo.linkPthread) {
-      cmdRem.append("-pthread ");
+      cmdOne.append("-pthread ");
     }
-    cmdRem.append(" --target=").append(cfg->getTargetTriple()).append(" ");
+    cmdOne.append("--target=").append(cfg->getTargetTriple()).append(" ");
     if (cfg->hasSysroot()) {
-      cmdRem.append("--sysroot=").append(cfg->getSysroot()).append(" ");
+      cmdOne.append("--sysroot=").append(cfg->getSysroot()).append(" ");
       // -Wl,--import-memory
       // cmdRem.append(" -nostartfiles -Wl,--no-entry ");
     }
-    cmdRem.append(objectFilePath.string()).append(" ");
+    String cmdTwo(" " + objectFilePath.string().append(" "));
+    cmdTwo.append(objectFilePath.string()).append(" ");
     for (auto* sub : submodules) {
-      cmdRem.append(sub->objectFilePath.string()).append(" ");
+      cmdTwo.append(sub->objectFilePath.string()).append(" ");
     }
     SHOW("Added ll paths of all submodules")
     for (const auto& bMod : broughtModules) {
       SHOW("Brought module: " << bMod.get())
       SHOW("Brought module name: " << bMod.get()->name)
       SHOW("Brought module path: " << bMod.get()->objectFilePath)
-      cmdRem.append(bMod.get()->objectFilePath.string()).append(" ");
+      cmdTwo.append(bMod.get()->objectFilePath.string()).append(" ");
     }
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
@@ -1344,7 +1384,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                           .replace_extension(""))
                          .string()
                          .append(" ");
-      if (system(String("clang -o ").append(outPath).append(cmdRem).c_str())) {
+      if (system(String("clang -o ").append(outPath).append(cmdOne).append(cmdTwo).c_str())) {
         ctx->Error("Compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
       }
     } else {
@@ -1354,7 +1394,8 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             moduleInfo.outputName.value_or(getWritableName()).append(".a")))
                            .string()
                            .append(" ");
-        if (system(String("ar r ").append(outPath).append(cmdRem).c_str())) {
+        SHOW("Archiving library " << String("ar r ").append(outPath).append(cmdTwo).c_str())
+        if (system(String("ar r ").append(outPath).append(cmdTwo).c_str())) {
           ctx->Error("Static compilation of module " + ctx->highlightError(filePath.string()) + " failed",
                      {"", {0u, 0u}, {0u, 0u}});
         }
@@ -1369,7 +1410,8 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                        .append(hasMain ? "-fuse-ld=lld" : "")
                        .append(" -shared -o ")
                        .append(outPath)
-                       .append(cmdRem)
+                       .append(cmdOne)
+                       .append(cmdTwo)
                        .c_str())) {
           ctx->Error("Static compilation of module " + ctx->highlightError(filePath.string()) + " failed",
                      {"", {0u, 0u}, {0u, 0u}});

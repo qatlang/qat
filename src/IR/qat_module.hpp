@@ -6,12 +6,9 @@
 #include "./brought.hpp"
 #include "./function.hpp"
 #include "./global_entity.hpp"
-#include "./static_member.hpp"
-#include "./types/array.hpp"
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
 #include "./types/mix.hpp"
-#include "./types/void.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <vector>
@@ -20,6 +17,7 @@ namespace qat::ast {
 class Node;
 class Lib;
 class Box;
+class ModInfo;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -30,23 +28,28 @@ enum class ModuleType { lib, box, file, folder };
 enum class NativeUnit { printf, malloc, free, realloc, pthreadCreate, pthreadJoin, pthreadExit, pthreadAttrInit };
 
 class ModuleInfo {
+  friend class ast::ModInfo;
   friend class QatModule;
 
 private:
   Maybe<String> outputName;
   bool          staticBuild = true;
-  bool          sharedBuild = true;
-  Deque<String> libsToLink;
+  bool          sharedBuild = false;
+  Deque<String> nativeLibsToLink;
   bool          linkPthread = false;
+  Maybe<String> foreignID;
 
   void addLibToLink(const String& name) {
-    for (const auto& lib : libsToLink) {
+    for (const auto& lib : nativeLibsToLink) {
       if (lib == name) {
         return;
       }
     }
-    libsToLink.push_back(name);
+    nativeLibsToLink.push_back(name);
   }
+  useit bool   isForeign() { return foreignID.has_value(); }
+  useit bool   isForeignCPP() { return foreignID.value_or("") == "C++"; }
+  useit String foreignIdentity() { return foreignID.value_or(""); }
 
 public:
   ModuleInfo() = default;
@@ -60,6 +63,7 @@ class QatModule : public Uniq {
   friend class GlobalEntity;
   friend class ast::Lib;
   friend class ast::Box;
+  friend class ast::ModInfo;
   friend class TemplateFunction;
   friend class TemplateCoreType;
 
@@ -78,6 +82,7 @@ private:
   String                         name;
   ModuleType                     moduleType;
   ModuleInfo                     moduleInfo;
+  bool                           isModuleInfoProvided = false;
   fs::path                       filePath;
   fs::path                       basePath;
   utils::VisibilityInfo          visibility;
@@ -102,6 +107,7 @@ private:
   Vec<GlobalEntity*>             globalEntities;
   Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
   Function*                      globalInitialiser;
+  u64                            nonConstantGlobals = 0;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -109,16 +115,22 @@ private:
 
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
-  mutable bool          isEmitted = false;
   mutable llvm::Module* llvmModule;
   bool                  hasMain = false;
   fs::path              llPath;
   fs::path              objectFilePath;
+  mutable bool          hasCreatedModules  = false;
+  mutable bool          hasHandledBrings   = false;
+  mutable bool          hasDefinedTypes    = false;
+  mutable bool          hasDefinedNodes    = false;
+  mutable bool          isEmitted          = false;
   bool                  isCompiledToObject = false;
   bool                  isBundled          = false;
 
-  void       addSubmodule(const String& name, const String& _filename, ModuleType type,
-                          const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
+  void addMember(QatModule* mod);
+
+  void       addNamedSubmodule(const String& name, const String& _filename, ModuleType type,
+                               const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
   void       closeSubmodule();
   useit bool shouldPrefixName() const;
 
@@ -143,6 +155,8 @@ public:
   useit QatModule* getParentFile();
   useit String     getFilePath() const;
   useit Function*  getGlobalInitialiser(IR::Context* ctx);
+  void             incrementNonConstGlobalCounter();
+  useit bool       shouldCallInitialiser() const;
 
   useit bool       hasClosestParentLib() const;
   useit QatModule* getClosestParentLib();

@@ -1,7 +1,6 @@
 #ifndef QAT_IR_TYPES_QAT_TYPE_HPP
 #define QAT_IR_TYPES_QAT_TYPE_HPP
 
-#include "../../backend/cpp.hpp"
 #include "../../utils/json.hpp"
 #include "../../utils/macros.hpp"
 #include "../llvm_helper.hpp"

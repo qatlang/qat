@@ -17,7 +17,6 @@
 #include "../IR/types/string_slice.hpp"
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
-#include "../backend/cpp.hpp"
 #include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/json.hpp"

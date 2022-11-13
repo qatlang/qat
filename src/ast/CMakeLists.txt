@@ -37,5 +37,4 @@ target_link_libraries(QAT_AST
    QAT_AST_SENTENCES
    QAT_AST_CONSTANTS
    QAT_UTILS
-   QAT_IR
-   QAT_BACKEND)
+   QAT_IR)

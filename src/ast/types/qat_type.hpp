@@ -2,7 +2,6 @@
 #define QAT_AST_TYPES_QAT_TYPE_HPP
 
 #include "../../IR/context.hpp"
-#include "../../backend/cpp.hpp"
 #include "../../utils/file_range.hpp"
 #include "./type_kind.hpp"
 

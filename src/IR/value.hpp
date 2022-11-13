@@ -1,7 +1,6 @@
 #ifndef QAT_IR_VALUE_HPP
 #define QAT_IR_VALUE_HPP
 
-#include "../backend/cpp.hpp"
 #include "../utils/json.hpp"
 #include "llvm_helper.hpp"
 #include "llvm/IR/ConstantFolder.h"

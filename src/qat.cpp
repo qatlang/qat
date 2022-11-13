@@ -16,18 +16,19 @@ void setTerminalColors() {
 }
 #endif
 
-int main(int count, char *args[]) {
+int main(int count, char* args[]) {
   using qat::cli::Config;
 
 #if PLATFORM_IS_WINDOWS
   setTerminalColors();
 #endif
 
-  auto *cli = Config::init(count, args);
+  auto* cli = Config::init(count, args);
   if (cli->shouldExit()) {
     return 0;
   }
-  auto sitter = qat::QatSitter();
+  auto sitter              = qat::QatSitter();
+  qat::QatSitter::instance = &sitter;
   sitter.init();
   Config::destroy();
   return 0;

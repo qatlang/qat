@@ -25,13 +25,14 @@ private:
   IR::Context*          Context;
   lexer::Lexer*         Lexer;
   parser::Parser*       Parser;
-  Vec<fs::path>         queuedPaths;
 
 public:
   QatSitter();
 
+  static QatSitter* instance;
+
   void              init();
-  void              queuePath(fs::path path);
+  void              removeEntityWithPath(const fs::path& path);
   void              handlePath(const fs::path& path, llvm::LLVMContext& llctx);
   useit static bool checkExecutableExists(const String& name);
 

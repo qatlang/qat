@@ -19,6 +19,8 @@ namespace qat {
 
 QatSitter::QatSitter() : Context(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {}
 
+QatSitter* QatSitter::instance = nullptr;
+
 void QatSitter::init() {
   auto* config = cli::Config::get();
   auto* ctx    = new IR::Context();
@@ -88,10 +90,19 @@ void QatSitter::init() {
   delete ctx;
 }
 
-void QatSitter::queuePath(fs::path path) { queuedPaths.push_back(std::move(path)); }
+void QatSitter::removeEntityWithPath(const fs::path& path) {
+  for (auto item = fileEntities.begin(); item != fileEntities.end(); item++) {
+    if (((*item)->getModuleType() == IR::ModuleType::file || (*item)->getModuleType() == IR::ModuleType::folder) &&
+        fs::equivalent(fs::path((*item)->getFilePath()), path)) {
+      fileEntities.erase(item);
+      return;
+    }
+  }
+}
 
 void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
   Vec<fs::path> broughtPaths;
+  Vec<fs::path> memberPaths;
   SHOW("Handling path: " << mainPath.string())
   std::function<void(IR::QatModule*, const fs::path&)> recursiveModuleCreator = [&](IR::QatModule*  folder,
                                                                                     const fs::path& path) {
@@ -106,7 +117,11 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
           for (const auto& bPath : Parser->getBroughtPaths()) {
             broughtPaths.push_back(bPath);
           }
+          for (const auto& mPath : Parser->getMemberPaths()) {
+            memberPaths.push_back(mPath);
+          }
           Parser->clearBroughtPaths();
+          Parser->clearMemberPaths();
           fileEntities.push_back(IR::QatModule::CreateFile(folder, fs::absolute(libPath), path, "lib.qat",
                                                            Lexer->getContent(), std::move(parseRes),
                                                            utils::VisibilityInfo::pub(), llctx));
@@ -124,7 +139,11 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
         for (const auto& bPath : Parser->getBroughtPaths()) {
           broughtPaths.push_back(bPath);
         }
+        for (const auto& mPath : Parser->getMemberPaths()) {
+          memberPaths.push_back(mPath);
+        }
         Parser->clearBroughtPaths();
+        Parser->clearMemberPaths();
         fileEntities.push_back(IR::QatModule::CreateFile(folder, fs::absolute(item), path, item.filename().string(),
                                                          Lexer->getContent(), std::move(parseRes),
                                                          utils::VisibilityInfo::pub(), llctx));
@@ -143,7 +162,11 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
       for (const auto& bPath : Parser->getBroughtPaths()) {
         broughtPaths.push_back(bPath);
       }
+      for (const auto& mPath : Parser->getMemberPaths()) {
+        memberPaths.push_back(mPath);
+      }
       Parser->clearBroughtPaths();
+      Parser->clearMemberPaths();
       fileEntities.push_back(IR::QatModule::CreateFile(nullptr, libpath, mainPath, "lib.qat", Lexer->getContent(),
                                                        std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
     } else {
@@ -161,7 +184,11 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     for (const auto& bPath : Parser->getBroughtPaths()) {
       broughtPaths.push_back(bPath);
     }
+    for (const auto& mPath : Parser->getMemberPaths()) {
+      memberPaths.push_back(mPath);
+    }
     Parser->clearBroughtPaths();
+    Parser->clearMemberPaths();
     fileEntities.push_back(IR::QatModule::CreateFile(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
                                                      mainPath.filename().string(), Lexer->getContent(),
                                                      std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
@@ -170,6 +197,10 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     handlePath(bPath, llctx);
   }
   broughtPaths.clear();
+  for (const auto& mPath : memberPaths) {
+    removeEntityWithPath(mPath);
+  }
+  memberPaths.clear();
 }
 
 bool QatSitter::checkExecutableExists(const String& name) {

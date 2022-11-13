@@ -34,8 +34,6 @@ class ModuleInfo {
 
 private:
   Maybe<String> outputName;
-  bool          staticBuild = true;
-  bool          sharedBuild = false;
   Deque<String> nativeLibsToLink;
   bool          linkPthread = false;
   Maybe<String> foreignID;

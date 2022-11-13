@@ -153,7 +153,7 @@ Vec<fs::path>& Parser::getMemberPaths() { return memberPaths; }
 
 void Parser::clearMemberPaths() { memberPaths.clear(); }
 
-ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, utils::FileRange startRange) {
+ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const utils::FileRange& startRange) {
   Maybe<Pair<String, utils::FileRange>> outputName;
   Maybe<ast::KeyValue<String>>          foreignID;
   Vec<Pair<String, utils::FileRange>>   nativeLibs;

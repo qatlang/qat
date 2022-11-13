@@ -77,7 +77,7 @@ public:
   useit Vec<fs::path>& getBroughtPaths();
   useit Vec<fs::path>& getMemberPaths();
   void                 clearMemberPaths();
-  useit ast::ModInfo* parseModuleInfo(usize from, usize upto, utils::FileRange startRange);
+  useit ast::ModInfo* parseModuleInfo(usize from, usize upto, const utils::FileRange& startRange);
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
   useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);

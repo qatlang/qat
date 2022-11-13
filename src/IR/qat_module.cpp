@@ -1382,13 +1382,23 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                       filePath.lexically_relative(basePath)
                           .replace_filename(moduleInfo.outputName.value_or(name))
                           .replace_extension(""))
-                         .string()
-                         .append(" ");
-      if (system(String("clang -o ").append(outPath).append(cmdOne).append(cmdTwo).c_str())) {
-        ctx->Error("Compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
+                         .string();
+      auto staticCommand =
+          String("clang -static -o ").append(outPath).append(" ").append(cmdOne).append(cmdTwo).c_str();
+      auto sharedCommand =
+          String("clang -shared -o ").append(outPath).append(" ").append(cmdOne).append(cmdTwo).c_str();
+      if (cfg->shouldBuildStatic()) {
+        if (system(staticCommand)) {
+          ctx->Error("Statically linking & compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
+        }
+      }
+      if (cfg->shouldBuildShared()) {
+        if (system(sharedCommand)) {
+          ctx->Error("Dynamically linking & compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
+        }
       }
     } else {
-      if (moduleInfo.staticBuild) {
+      if (cfg->shouldBuildStatic()) {
         auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                         filePath.lexically_relative(basePath).replace_filename(
                             moduleInfo.outputName.value_or(getWritableName()).append(".a")))
@@ -1400,7 +1410,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                      {"", {0u, 0u}, {0u, 0u}});
         }
       }
-      if (moduleInfo.sharedBuild) {
+      if (cfg->shouldBuildShared()) {
         auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                         filePath.lexically_relative(basePath).replace_filename(
                             moduleInfo.outputName.value_or(getWritableName()).append(".so")))

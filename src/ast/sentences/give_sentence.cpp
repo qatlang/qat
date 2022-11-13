@@ -23,50 +23,60 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                                    ->getSubType()
                                    ->isVoid()
                              : fun->getType()->asFunction()->getReturnType()->isVoid()) {
-    if (give_expr.has_value()) {
-      ctx->Error("Given value type of the function is void. Please remove this "
-                 "unnecessary value",
-                 give_expr.value()->fileRange);
-    } else {
-      if (fun->isMemberFunction() && ((IR::MemberFunction*)fun)->getMemberFnType() == IR::MemberFnType::destructor) {
-        auto* mFn = (IR::MemberFunction*)fun;
-        auto* cTy = mFn->getParentType();
-        for (usize i = 0; i < cTy->getMemberCount(); i++) {
-          if (cTy->getMemberAt(i)->type->isCoreType()) {
-            auto* memPtr     = ctx->builder.CreateStructGEP(mFn->getParentType()->getLLVMType(), ctx->selfVal, i);
-            auto* destructor = cTy->getDestructor();
-            (void)destructor->call(ctx, {memPtr}, ctx->getMod());
-          }
-        }
-      }
-      Vec<IR::LocalValue*> locals;
-      fun->getBlock()->collectAllLocalValuesSoFar(locals);
-      for (auto* loc : locals) {
-        if (loc->getType()->isCoreType()) {
-          auto* cTy        = loc->getType()->asCore();
+    if (fun->isMemberFunction() && ((IR::MemberFunction*)fun)->getMemberFnType() == IR::MemberFnType::destructor) {
+      auto* mFn = (IR::MemberFunction*)fun;
+      auto* cTy = mFn->getParentType();
+      for (usize i = 0; i < cTy->getMemberCount(); i++) {
+        if (cTy->getMemberAt(i)->type->isCoreType()) {
+          auto* memPtr     = ctx->builder.CreateStructGEP(mFn->getParentType()->getLLVMType(), ctx->selfVal, i);
           auto* destructor = cTy->getDestructor();
-          (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
+          (void)destructor->call(ctx, {memPtr}, ctx->getMod());
         }
       }
-      locals.clear();
-      if (fun->isAsyncFunction()) {
-        auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->getLLVMType();
-        auto* futRet =
-            ctx->builder.CreateLoad(futureTy->getPointerTo(), fun->getBlock()->getValue("qat'future")->getAlloca());
-        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                                 ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                                         ctx->builder.CreateStructGEP(futureTy, futRet, 2u)));
-        ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-        auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-        ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-                                {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
-        SHOW("Creating return for async function with void return")
-        return new IR::Value(
-            ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
-            IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
-      } else {
-        return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+    }
+    Vec<IR::LocalValue*> locals;
+    fun->getBlock()->collectAllLocalValuesSoFar(locals);
+    for (auto* loc : locals) {
+      if (loc->getType()->isCoreType()) {
+        auto* cTy        = loc->getType()->asCore();
+        auto* destructor = cTy->getDestructor();
+        (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
       }
+    }
+    locals.clear();
+    if (fun->isAsyncFunction()) {
+      auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->getLLVMType();
+      auto* futRet =
+          ctx->builder.CreateLoad(futureTy->getPointerTo(), fun->getBlock()->getValue("qat'future")->getAlloca());
+      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
+                               ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
+                                                       ctx->builder.CreateStructGEP(futureTy, futRet, 2u)));
+      ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
+      auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
+      ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
+                              {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+      SHOW("Creating return for async function with void return")
+      if (give_expr.has_value()) {
+        auto* giveExpr = give_expr.value()->emit(ctx);
+        if (!giveExpr->getType()->isVoid()) {
+          ctx->Error("The return type of the function is " + ctx->highlightError("void") +
+                         " but the expression is of type " + ctx->highlightError(giveExpr->getType()->toString()),
+                     give_expr.value()->fileRange);
+        }
+      }
+      return new IR::Value(
+          ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
+          IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+    } else {
+      if (give_expr.has_value()) {
+        auto* giveExpr = give_expr.value()->emit(ctx);
+        if (!giveExpr->getType()->isVoid()) {
+          ctx->Error("The return type of the function is " + ctx->highlightError("void") +
+                         " but the expression is of type " + ctx->highlightError(giveExpr->getType()->toString()),
+                     give_expr.value()->fileRange);
+        }
+      }
+      return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
     }
   } else {
     if (give_expr.has_value()) {

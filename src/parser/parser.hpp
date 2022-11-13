@@ -35,6 +35,7 @@ private:
   // usually a member of the corresponding IO::QatFile
   Deque<lexer::Token>* tokens;
   Vec<fs::path>        broughtPaths;
+  Vec<fs::path>        memberPaths;
   // Comments mapped to indices of the next AST member in the original
   // analysed sequence
   std::map<usize, lexer::Token> comments;
@@ -71,9 +72,12 @@ public:
   static void Warning(const String& message, const utils::FileRange& fileRange);
 
   useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);
-  useit ast::BringPaths* parseBroughtPaths(usize from, usize upto, utils::VisibilityKind kind,
+  useit ast::BringPaths* parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
                                            const utils::FileRange& start);
   useit Vec<fs::path>& getBroughtPaths();
+  useit Vec<fs::path>& getMemberPaths();
+  void                 clearMemberPaths();
+  useit ast::ModInfo* parseModuleInfo(usize from, usize upto, utils::FileRange startRange);
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
   useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);

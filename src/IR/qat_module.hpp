@@ -18,6 +18,7 @@ class Node;
 class Lib;
 class Box;
 class ModInfo;
+class BringPaths;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -64,6 +65,7 @@ class QatModule : public Uniq {
   friend class ast::Lib;
   friend class ast::Box;
   friend class ast::ModInfo;
+  friend class ast::BringPaths;
   friend class TemplateFunction;
   friend class TemplateCoreType;
 

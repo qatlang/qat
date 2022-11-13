@@ -40,6 +40,7 @@
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/member_function.hpp"
+#include "../ast/mod_info.hpp"
 #include "../ast/operator_function.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
@@ -148,7 +149,84 @@ Vec<fs::path>& Parser::getBroughtPaths() { return broughtPaths; }
 
 void Parser::clearBroughtPaths() { broughtPaths.clear(); }
 
-ast::BringPaths* Parser::parseBroughtPaths(usize from, usize upto, utils::VisibilityKind kind,
+Vec<fs::path>& Parser::getMemberPaths() { return memberPaths; }
+
+void Parser::clearMemberPaths() { memberPaths.clear(); }
+
+ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, utils::FileRange startRange) {
+  Maybe<Pair<String, utils::FileRange>> outputName;
+  Maybe<ast::KeyValue<String>>          foreignID;
+  Vec<Pair<String, utils::FileRange>>   buildAs;
+  Vec<Pair<String, utils::FileRange>>   nativeLibs;
+  using lexer::TokenType;
+  for (usize i = from + 1; i < upto; i++) {
+    auto token = tokens->at(i);
+    switch (token.type) {
+      case TokenType::identifier: {
+        if (!isNext(TokenType::associatedAssignment, i)) {
+          Error("Expected := after the key", RangeAt(i));
+        }
+        if (token.value == "foreign") {
+          if (isNext(TokenType::StringLiteral, i + 1)) {
+            if (foreignID) {
+              Error("Foreign module information is already provided", RangeSpan(i, i + 2));
+            }
+            foreignID = ast::KeyValue<String>("foreign", RangeAt(i), ValueAt(i + 2), RangeAt(i + 2));
+            i += 2;
+          } else {
+            Error("Expected a string for the parent identity of the foreign module", RangeAt(i));
+          }
+        } else if (token.value == "buildAs") {
+          if (isNext(TokenType::bracketOpen, i + 1)) {
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+            if (bCloseRes.has_value()) {
+              for (usize j = i + 3; j < bCloseRes.value(); j++) {
+                auto elemTok = tokens->at(j);
+                if (elemTok.type == TokenType::StringLiteral) {
+                  buildAs.push_back(Pair<String, utils::FileRange>(elemTok.value, elemTok.fileRange));
+                } else if (elemTok.type == TokenType::separator) {
+                  if (!isPrev(TokenType::StringLiteral, j)) {
+                    Error("Invalid position for ,", RangeAt(j));
+                  }
+                } else {
+                  Error("Unexpected token found", RangeAt(j));
+                }
+              }
+              i = bCloseRes.value();
+            } else {
+              Error("Expected end for [", RangeAt(i + 2));
+            }
+          } else {
+            Error("Expected a list of strings to specify the build bundle types", RangeSpan(i, i + 1));
+          }
+        } else if (token.value == "outputName") {
+          if (isNext(TokenType::StringLiteral, i + 1)) {
+            outputName = Pair<String, utils::FileRange>(ValueAt(i + 2), RangeAt(i + 2));
+            i += 2;
+          } else {
+            Error("Expected name for the output file", RangeSpan(i, i + 1));
+          }
+        } else {
+          Error("Unexpected key found: " + token.value, RangeAt(i));
+        }
+        break;
+      }
+      case TokenType::separator: {
+        if (isPrev(TokenType::separator, i)) {
+          Error("Repeating commas are present", RangeSpan(i - 1, i));
+        }
+        break;
+      }
+      default: {
+        Error("Unexpected token found inside meta'moduleInfo", RangeAt(i));
+      }
+    }
+  }
+  return new ast::ModInfo(std::move(outputName), std::move(foreignID), std::move(buildAs), std::move(nativeLibs),
+                          {startRange, RangeAt(upto)});
+}
+
+ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
                                            const utils::FileRange& startRange) {
   using lexer::TokenType;
   Vec<ast::StringLiteral*>        paths;
@@ -176,6 +254,9 @@ ast::BringPaths* Parser::parseBroughtPaths(usize from, usize upto, utils::Visibi
         }
         SHOW("Pushing brought path: " << token.fileRange.file.parent_path() / token.value)
         broughtPaths.push_back(token.fileRange.file.parent_path() / token.value);
+        if (isMember) {
+          memberPaths.push_back(token.fileRange.file.parent_path() / token.value);
+        }
         paths.push_back(new ast::StringLiteral(token.value, token.fileRange));
         break;
       }
@@ -199,7 +280,7 @@ ast::BringPaths* Parser::parseBroughtPaths(usize from, usize upto, utils::Visibi
       }
     }
   }
-  return new ast::BringPaths(std::move(paths), std::move(names), kind, {startRange, RangeAt(upto)});
+  return new ast::BringPaths(isMember, std::move(paths), std::move(names), kind, {startRange, RangeAt(upto)});
 }
 
 Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, Maybe<usize> upto) {
@@ -522,6 +603,32 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         i = kindRes.second;
         break;
       }
+      case TokenType::meta: {
+        if (isNext(TokenType::child, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            if (ValueAt(i + 2) == "moduleInfo") {
+              if (isNext(TokenType::curlybraceOpen, i + 2)) {
+                auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 3, false);
+                if (bCloseRes.has_value()) {
+                  result.push_back(parseModuleInfo(i + 3, bCloseRes.value(), RangeAt(i)));
+                  i = bCloseRes.value();
+                } else {
+                  Error("Expected end for {", RangeAt(i + 3));
+                }
+              } else {
+                Error("Expected { to start the module information", RangeAt(i + 2));
+              }
+            } else {
+              Error("Unexpected metadata", RangeSpan(i, i + 2));
+            }
+          } else {
+            Error("Expected an identifier after meta'", RangeSpan(i, i + 1));
+          }
+        } else {
+          Error("Unexpected token", RangeAt(i));
+        }
+        break;
+      }
       case TokenType::New: {
         auto start = i;
         bool isVar = false;
@@ -557,10 +664,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       }
       case TokenType::bring: {
         // FIXME - Support bringing entities
-        if (isNext(TokenType::StringLiteral, i)) {
-          auto endRes = firstPrimaryPosition(TokenType::stop, i);
+        if (isNext(TokenType::StringLiteral, i) ||
+            (isNext(TokenType::child, i) && isNext(TokenType::identifier, i + 1) && (ValueAt(i + 2) == "member"))) {
+          bool isMember = !isNext(TokenType::StringLiteral, i);
+          auto endRes   = firstPrimaryPosition(TokenType::stop, i);
           if (endRes.has_value()) {
-            result.push_back(parseBroughtPaths(i, endRes.value(), getVisibility(), RangeAt(i)));
+            result.push_back(
+                parseBroughtPaths(isMember, isMember ? i + 2 : i, endRes.value(), getVisibility(), RangeAt(i)));
             i = endRes.value();
           } else {
             Error("Expected end of bring sentence", token.fileRange);
@@ -3379,7 +3489,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
   using ast::IntegerType;
   using IR::FloatTypeKind;
   using lexer::TokenType;
-
+  SHOW("Starting parsing function parameters")
   Vec<ast::Argument*> args;
 
   Maybe<ast::QatType*> typ;
@@ -3425,12 +3535,17 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
         } else {
           Error("Expected name for the variadic argument. Please provide a name", token.fileRange);
         }
+        break;
       }
       case TokenType::self: {
         if (isNext(TokenType::identifier, i)) {
           SHOW("Creating member argument: " << ValueAt(i + 1))
           args.push_back(ast::Argument::ForConstructor(ValueAt(i + 1), RangeSpan(i, i + 1), nullptr, true));
-          i++;
+          if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
+            i += 2;
+          } else {
+            Error("Invalid token found after argument", RangeSpan(i, i + 1));
+          }
         } else {
           Error("Expected name of the member to be initialised", token.fileRange);
         }

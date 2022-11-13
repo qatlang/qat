@@ -10,13 +10,14 @@ namespace qat::ast {
 
 class BringPaths : public Sentence {
 private:
-  Vec<StringLiteral*>        paths;
-  utils::VisibilityKind      visibility;
-  Vec<Maybe<StringLiteral*>> names;
+  bool                         isMember;
+  Vec<StringLiteral*>          paths;
+  Maybe<utils::VisibilityKind> visibility;
+  Vec<Maybe<StringLiteral*>>   names;
 
 public:
-  BringPaths(Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names, utils::VisibilityKind _visibility,
-             utils::FileRange _fileRange);
+  BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+             Maybe<utils::VisibilityKind> _visibility, utils::FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   void             handleBrings(IR::Context* ctx) const override;

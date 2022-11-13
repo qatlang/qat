@@ -3,18 +3,32 @@
 
 namespace qat::ast {
 
-BringPaths::BringPaths(Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names, utils::VisibilityKind _visibility,
-                       utils::FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), paths(std::move(_paths)), visibility(_visibility), names(std::move(_names)) {}
+BringPaths::BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+                       Maybe<utils::VisibilityKind> _visibility, utils::FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibility(_visibility),
+      names(std::move(_names)) {}
 
 void BringPaths::handleBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
+  if (visibility.has_value()) {
+    if (isMember) {
+      if (visibility.value() != utils::VisibilityKind::pub) {
+        ctx->Error("This is a bring'member sentence and hence cannot have any visibility other than " +
+                       ctx->highlightError("pub"),
+                   fileRange);
+      }
+    }
+  }
   for (usize i = 0; i < paths.size(); i++) {
     auto path = fileRange.file.parent_path() / paths.at(i)->get_value();
     if (fs::exists(path)) {
       if (fs::is_directory(path)) {
         if (IR::QatModule::hasFolderModule(path)) {
           if (names.at(i).has_value()) {
+            if (isMember) {
+              // FIXME - Maybe change this
+              ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
+            }
             auto name = names.at(i).value()->get_value();
             if (mod->hasLib(name)) {
               ctx->Error("A lib named " + ctx->highlightError(name) + " exists already",
@@ -43,14 +57,22 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
             }
             mod->bringNamedModule(name, IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
           } else {
-            mod->bringModule(IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+            if (isMember) {
+              mod->addMember(IR::QatModule::getFolderModule(path));
+            } else {
+              mod->bringModule(IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+            }
           }
         } else {
-          ctx->Error("Couldn't create module for path: " + ctx->highlightError(path.string()), fileRange);
+          ctx->Error("Couldn't find folder module for path: " + ctx->highlightError(path.string()), fileRange);
         }
       } else if (fs::is_regular_file(path)) {
         if (IR::QatModule::hasFileModule(path)) {
           if (names.at(i).has_value()) {
+            if (isMember) {
+              // FIXME - Maybe change this
+              ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
+            }
             auto name = names.at(i).value()->get_value();
             if (mod->hasLib(name)) {
               ctx->Error("A lib named " + ctx->highlightError(name) + " exists already",
@@ -79,10 +101,14 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
             }
             mod->bringNamedModule(name, IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
           } else {
-            mod->bringModule(IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+            if (isMember) {
+              mod->addMember(IR::QatModule::getFileModule(path));
+            } else {
+              mod->bringModule(IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+            }
           }
         } else {
-          ctx->Error("Couldn't create module for path: " + ctx->highlightError(path.string()), fileRange);
+          ctx->Error("Couldn't find file module for path: " + ctx->highlightError(path.string()), fileRange);
         }
       } else {
         ctx->Error("Cannot bring this file type", paths.at(i)->fileRange);
@@ -102,7 +128,8 @@ Json BringPaths::toJson() const {
   return Json()
       ._("nodeType", "bringPaths")
       ._("paths", std::move(pths))
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("hasVisibility", visibility.has_value())
+      ._("visibility", visibility.has_value() ? utils::kindToJsonValue(visibility.value()) : Json())
       ._("fileRange", fileRange);
 }
 

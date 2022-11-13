@@ -1,5 +1,6 @@
 #include "./json_parser.hpp"
 #include "./json.hpp"
+#include "helpers.hpp"
 #include <optional>
 #include <vector>
 
@@ -55,15 +56,14 @@ bool JsonParser::lex(String val) {
         }
       }
       i = j;
-      toks.emplace_back(Token(TokenType::string, str));
+      toks.emplace_back(Token(TokenType::string));
     } else if ((digits.find(val.at(i)) != String::npos) || (val.at(i) == '-')) {
       bool   isFloat = false;
       String num(val.substr(i, 1));
       String decimal;
       usize  jInd = i + 1;
       for (; ((isFloat ? (digits.find(val.at(jInd)) != String::npos)
-                       : ((digits.find(val.at(jInd)) != String::npos) ||
-                          (val.at(jInd) == '.'))) &&
+                       : ((digits.find(val.at(jInd)) != String::npos) || (val.at(jInd) == '.'))) &&
               (jInd < val.size()));
            jInd++) {
         if (isFloat) {
@@ -89,16 +89,14 @@ bool JsonParser::lex(String val) {
         isFloat = !onlyZeroes;
       }
       if (isFloat) {
-        toks.emplace_back(
-            Token(TokenType::floating, num.append(".").append(decimal)));
+        toks.emplace_back(Token(TokenType::floating, num.append(".").append(decimal)));
       } else {
         toks.emplace_back(Token(TokenType::integer, num));
       }
     } else if (alpha.find(val.at(i)) != String::npos) {
       String idt(val.substr(i, 1));
       usize  j = i + 1; // NOLINT(readability-identifier-length)
-      for (; ((alpha.find(val.at(j)) != String::npos) && (j < val.size()));
-           j++) {
+      for (; ((alpha.find(val.at(j)) != String::npos) && (j < val.size())); j++) {
         idt += val.at(j);
       }
       if (idt == "true") {
@@ -122,12 +120,9 @@ bool JsonParser::isNext(TokenType type, usize pos = 0) const {
   return (pos < toks.size()) ? (toks.at(pos + 1).type == type) : false;
 }
 
-std::optional<usize> JsonParser::getPairEnd(bool isList, usize from,
-                                            std::optional<usize> upto) const {
+std::optional<usize> JsonParser::getPairEnd(bool isList, usize from, std::optional<usize> upto) const {
   unsigned collisions = 0;
-  for (usize i = from + 1;
-       ((upto.has_value() ? (i < upto.value()) : true) && (i < toks.size()));
-       i++) {
+  for (usize i = from + 1; ((upto.has_value() ? (i < upto.value()) : true) && (i < toks.size())); i++) {
     auto tok = toks.at(i);
     if (isList) {
       if (tok.type == TokenType::bracketOpen) {
@@ -158,23 +153,23 @@ Maybe<bool> JsonParser::hasPrimaryCommas(usize from, usize upto) const {
   for (usize i = from + 1; i < upto; i++) {
     auto tok = toks.at(i);
     switch (tok.type) {
-    case TokenType::curlyBraceOpen:
-    case TokenType::bracketOpen: {
-      bool isList    = (tok.type == TokenType::bracketOpen);
-      auto bCloseRes = getPairEnd(isList, i, upto);
-      if (bCloseRes.has_value()) {
-        i = bCloseRes.value();
-      } else {
-        return None;
+      case TokenType::curlyBraceOpen:
+      case TokenType::bracketOpen: {
+        bool isList    = (tok.type == TokenType::bracketOpen);
+        auto bCloseRes = getPairEnd(isList, i, upto);
+        if (bCloseRes.has_value()) {
+          i = bCloseRes.value();
+        } else {
+          return None;
+        }
+        break;
       }
-      break;
-    }
-    case TokenType::comma: {
-      return true;
-    }
-    default: {
-      continue;
-    }
+      case TokenType::comma: {
+        return true;
+      }
+      default: {
+        continue;
+      }
     }
   }
   return false;
@@ -185,24 +180,24 @@ Maybe<Vec<usize>> JsonParser::getPrimaryCommas(usize from, usize upto) const {
   for (usize i = from + 1; i < upto; i++) {
     auto tok = toks.at(i);
     switch (tok.type) {
-    case TokenType::curlyBraceOpen:
-    case TokenType::bracketOpen: {
-      bool isList    = (tok.type == TokenType::bracketOpen);
-      auto bCloseRes = getPairEnd(isList, i, upto);
-      if (bCloseRes.has_value()) {
-        i = bCloseRes.value();
-      } else {
-        return None;
+      case TokenType::curlyBraceOpen:
+      case TokenType::bracketOpen: {
+        bool isList    = (tok.type == TokenType::bracketOpen);
+        auto bCloseRes = getPairEnd(isList, i, upto);
+        if (bCloseRes.has_value()) {
+          i = bCloseRes.value();
+        } else {
+          return None;
+        }
+        break;
       }
-      break;
-    }
-    case TokenType::comma: {
-      result.push_back(i);
-      break;
-    }
-    default: {
-      continue;
-    }
+      case TokenType::comma: {
+        result.push_back(i);
+        break;
+      }
+      default: {
+        continue;
+      }
     }
   }
   return result;
@@ -210,61 +205,126 @@ Maybe<Vec<usize>> JsonParser::getPrimaryCommas(usize from, usize upto) const {
 
 Maybe<JsonValue> JsonParser::parseValue(usize from, usize upto) const {
   for (usize i = from + 1; i < upto; i++) {
-    const auto &tok = toks.at(i);
+    const auto& tok = toks.at(i);
     switch (tok.type) {
-    case TokenType::True:
-    case TokenType::False: {
-      return JsonValue(tok.type == TokenType::True);
-    }
-    case TokenType::curlyBraceOpen: {
-      auto bCloseRes = getPairEnd(false, i, upto);
-      if (bCloseRes.has_value()) {
-        return parse(i - 1, bCloseRes.value() + 1);
-      } else {
+      case TokenType::True:
+      case TokenType::False: {
+        return JsonValue(tok.type == TokenType::True);
+      }
+      case TokenType::curlyBraceOpen: {
+        auto bCloseRes = getPairEnd(false, i, upto);
+        if (bCloseRes.has_value()) {
+          auto json = parse(i - 1, bCloseRes.value() + 1);
+          return json.has_value() ? JsonValue(json.value()) : Maybe<JsonValue>(None);
+        } else {
+          return None;
+        }
+      }
+      case TokenType::string: {
+        return JsonValue(tok.value);
+      }
+      case TokenType::integer: {
+        return JsonValue(std::stoi(tok.value));
+      }
+      case TokenType::floating: {
+        return JsonValue(std::stod(tok.value));
+      }
+      case TokenType::curlyBraceClose:
+      case TokenType::comma:
+      case TokenType::colon: {
         return None;
       }
-    }
-    case TokenType::string: {
-      return JsonValue(tok.value);
-    }
-    case TokenType::integer: {
-      return JsonValue(std::stoi(tok.value));
-    }
-    case TokenType::floating: {
-      return JsonValue(std::stod(tok.value));
-    }
-    case TokenType::curlyBraceClose:
-    case TokenType::comma:
-    case TokenType::colon: {
-      return None;
-    }
-    case TokenType::null: {
-      return JsonValue();
-    }
-    case TokenType::bracketOpen: {
-      auto bCloseRes = getPairEnd(true, i, upto);
-      if (bCloseRes.has_value()) {
-        auto           bClose = bCloseRes.value();
-        Vec<JsonValue> vals;
-        auto           hasPComma = hasPrimaryCommas(i, bClose);
-        if (hasPComma) {
-          if (hasPComma.value()) {
-            auto sepPos = getPrimaryCommas(i, bClose);
-            if (sepPos.has_value()) {
-              auto firstVal = parseValue(i, sepPos->front());
-              if (firstVal) {
-                vals.push_back(firstVal.value());
-                for (usize j = 0; j < (sepPos->size() - 1); j++) {
-                  auto midVal = parseValue(sepPos->at(j), sepPos->at(j + 1));
-                  if (midVal.value()) {
-                    vals.push_back(midVal.value());
+      case TokenType::null: {
+        return JsonValue();
+      }
+      case TokenType::bracketOpen: {
+        auto bCloseRes = getPairEnd(true, i, upto);
+        if (bCloseRes.has_value()) {
+          auto           bClose = bCloseRes.value();
+          Vec<JsonValue> vals;
+          auto           hasPComma = hasPrimaryCommas(i, bClose);
+          if (hasPComma) {
+            if (hasPComma.value()) {
+              auto sepPos = getPrimaryCommas(i, bClose);
+              if (sepPos.has_value()) {
+                auto firstVal = parseValue(i, sepPos->front());
+                if (firstVal) {
+                  vals.push_back(firstVal.value());
+                  for (usize j = 0; j < (sepPos->size() - 1); j++) {
+                    auto midVal = parseValue(sepPos->at(j), sepPos->at(j + 1));
+                    if (midVal.value()) {
+                      vals.push_back(midVal.value());
+                    } else {
+                      return None;
+                    }
+                  }
+                  auto lastVal = parseValue(sepPos->back(), bClose);
+                  if (lastVal) {
+                    vals.push_back(lastVal.value());
                   } else {
                     return None;
                   }
+                } else {
+                  return None;
                 }
-                auto lastVal = parseValue(sepPos->back(), bClose);
-                if (lastVal) {
-                  vals.push_back(lastVal.value());
+              } else {
+                return None;
+              }
+            } else if (i != bClose) {
+              auto val = parseValue(i, bClose);
+              if (val) {
+                vals.push_back(val.value());
+              } else {
+                return None;
+              }
+            }
+            return JsonValue(vals);
+          } else {
+            return None;
+          }
+        } else {
+          return None;
+        }
+      }
+      case TokenType::bracketClose:
+        return None;
+    }
+  }
+  return JsonValue::none();
+}
+
+Maybe<Vec<Pair<String, JsonValue>>> JsonParser::parsePairs(usize from, usize upto) const {
+  Vec<Pair<String, JsonValue>> result;
+  for (usize i = from + 1; i < upto; i++) {
+    auto tok = toks.at(i);
+    if (tok.type == TokenType::string) {
+      if (isNext(TokenType::colon, i)) {
+        switch (toks.at(i + 2).type) {
+          case TokenType::True:
+          case TokenType::False: {
+            if (isNext(TokenType::comma, i + 2) || isNext(TokenType::curlyBraceClose, i + 2)) {
+              auto val = parseValue(i + 1, i + 3);
+              if (val.has_value()) {
+                result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
+                i += 2;
+                break;
+              } else {
+                return None;
+              }
+            } else {
+              return None;
+            }
+          }
+          case TokenType::curlyBraceOpen: {
+            auto bCloseRes = getPairEnd(false, i + 2, upto);
+            if (bCloseRes.has_value()) {
+              auto bClose = bCloseRes.value();
+              if (isNext(TokenType::comma, bClose) || isNext(TokenType::curlyBraceClose, bClose)) {
+                auto jsonVal = parse(i + 1, bClose + 1);
+                if (jsonVal) {
+                  result.push_back(Pair<String, JsonValue>(tok.value, JsonValue(jsonVal.value())));
+                  i = bClose;
+                  break;
                 } else {
                   return None;
                 }
@@ -274,134 +334,16 @@ Maybe<JsonValue> JsonParser::parseValue(usize from, usize upto) const {
             } else {
               return None;
             }
-          } else if (i != bClose) {
-            auto val = parseValue(i, bClose);
-            if (val) {
-              vals.push_back(val.value());
-            } else {
-              return None;
-            }
           }
-          return JsonValue(vals);
-        } else {
-          return None;
-        }
-      } else {
-        return None;
-      }
-    }
-    case TokenType::bracketClose:
-      return None;
-    }
-  }
-  return JsonValue::none();
-}
-
-Maybe<Vec<Pair<String, JsonValue>>> JsonParser::parsePairs(usize from,
-                                                           usize upto) const {
-  Vec<Pair<String, JsonValue>> result;
-  for (usize i = from + 1; i < upto; i++) {
-    auto tok = toks.at(i);
-    if (tok.type == TokenType::string) {
-      if (isNext(TokenType::colon, i)) {
-        switch (toks.at(i + 2).type) {
-        case TokenType::True:
-        case TokenType::False: {
-          if (isNext(TokenType::comma, i + 2) ||
-              isNext(TokenType::curlyBraceClose, i + 2)) {
-            auto val = parseValue(i + 1, i + 3);
-            if (val.has_value()) {
-              result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
-              i += 2;
-              break;
-            } else {
-              return None;
-            }
-          } else {
+          case TokenType::curlyBraceClose: {
             return None;
           }
-        }
-        case TokenType::curlyBraceOpen: {
-          auto bCloseRes = getPairEnd(false, i + 2, upto);
-          if (bCloseRes.has_value()) {
-            auto bClose = bCloseRes.value();
-            if (isNext(TokenType::comma, bClose) ||
-                isNext(TokenType::curlyBraceClose, bClose)) {
-              auto jsonVal = parse(i + 1, bClose + 1);
-              if (jsonVal) {
-                result.push_back(
-                    Pair<String, JsonValue>(tok.value, jsonVal.value()));
-                i = bClose;
-                break;
-              } else {
-                return None;
-              }
-            } else {
-              return None;
-            }
-          } else {
-            return None;
-          }
-        }
-        case TokenType::curlyBraceClose: {
-          return None;
-        }
-        case TokenType::string: {
-          if (isNext(TokenType::comma, i + 2) ||
-              isNext(TokenType::curlyBraceClose, i + 2)) {
-            auto val = parseValue(i + 1, i + 3);
-            if (val) {
-              result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
-              i += 2;
-              break;
-            } else {
-              return None;
-            }
-          } else {
-            return None;
-          }
-        }
-        case TokenType::integer: {
-          if (isNext(TokenType::comma, i + 2) ||
-              isNext(TokenType::curlyBraceClose, i + 2)) {
-            auto val = parseValue(i + 1, i + 3);
-            if (val) {
-              result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
-              i += 2;
-              break;
-            } else {
-              return None;
-            }
-          } else {
-            return None;
-          }
-        }
-        case TokenType::floating: {
-          if (isNext(TokenType::comma, i + 2) ||
-              isNext(TokenType::curlyBraceClose, i + 2)) {
-            auto val = parseValue(i + 1, i + 3);
-            if (val) {
-              result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
-              i += 2;
-              break;
-            } else {
-              return None;
-            }
-          } else {
-            return None;
-          }
-        }
-        case TokenType::bracketOpen: {
-          auto bCloseRes = getPairEnd(true, i + 2, upto);
-          if (bCloseRes.has_value()) {
-            auto bClose = bCloseRes.value();
-            if (isNext(TokenType::comma, bClose) ||
-                isNext(TokenType::curlyBraceClose, bClose)) {
-              auto val = parseValue(i + 1, bClose + 1);
+          case TokenType::string: {
+            if (isNext(TokenType::comma, i + 2) || isNext(TokenType::curlyBraceClose, i + 2)) {
+              auto val = parseValue(i + 1, i + 3);
               if (val) {
-                result.push_back(
-                    Pair<String, JsonValue>(tok.value, val.value()));
-                i = bClose;
+                result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
+                i += 2;
                 break;
               } else {
                 return None;
@@ -409,28 +351,72 @@ Maybe<Vec<Pair<String, JsonValue>>> JsonParser::parsePairs(usize from,
             } else {
               return None;
             }
-          } else {
+          }
+          case TokenType::integer: {
+            if (isNext(TokenType::comma, i + 2) || isNext(TokenType::curlyBraceClose, i + 2)) {
+              auto val = parseValue(i + 1, i + 3);
+              if (val) {
+                result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
+                i += 2;
+                break;
+              } else {
+                return None;
+              }
+            } else {
+              return None;
+            }
+          }
+          case TokenType::floating: {
+            if (isNext(TokenType::comma, i + 2) || isNext(TokenType::curlyBraceClose, i + 2)) {
+              auto val = parseValue(i + 1, i + 3);
+              if (val) {
+                result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
+                i += 2;
+                break;
+              } else {
+                return None;
+              }
+            } else {
+              return None;
+            }
+          }
+          case TokenType::bracketOpen: {
+            auto bCloseRes = getPairEnd(true, i + 2, upto);
+            if (bCloseRes.has_value()) {
+              auto bClose = bCloseRes.value();
+              if (isNext(TokenType::comma, bClose) || isNext(TokenType::curlyBraceClose, bClose)) {
+                auto val = parseValue(i + 1, bClose + 1);
+                if (val) {
+                  result.push_back(Pair<String, JsonValue>(tok.value, val.value()));
+                  i = bClose;
+                  break;
+                } else {
+                  return None;
+                }
+              } else {
+                return None;
+              }
+            } else {
+              return None;
+            }
+          }
+          case TokenType::null: {
+            if (isNext(TokenType::comma, i + 2) || isNext(TokenType::curlyBraceClose, i + 2)) {
+              result.push_back(Pair<String, JsonValue>(tok.value, JsonValue()));
+              i += 2;
+              break;
+            } else {
+              return None;
+            }
+          }
+          case TokenType::comma: {
             return None;
           }
-        }
-        case TokenType::null: {
-          if (isNext(TokenType::comma, i + 2) ||
-              isNext(TokenType::curlyBraceClose, i + 2)) {
-            result.push_back(Pair<String, JsonValue>(tok.value, JsonValue()));
-            i += 2;
-            break;
-          } else {
+          case TokenType::colon: {
             return None;
           }
-        }
-        case TokenType::comma: {
-          return None;
-        }
-        case TokenType::colon: {
-          return None;
-        }
-        case TokenType::bracketClose:
-          return None;
+          case TokenType::bracketClose:
+            return None;
         }
       } else {
         return None;
@@ -454,44 +440,44 @@ Maybe<Json> JsonParser::parse(usize from, usize upto) const {
   for (usize i = from + 1; i < upto; i++) {
     auto tok = toks.at(i);
     switch (tok.type) {
-    case TokenType::False: {
-      return None;
-      break;
-    }
-    case TokenType::True: {
-      return None;
-      break;
-    }
-    case TokenType::curlyBraceOpen: {
-      auto bClose = getPairEnd(false, i, upto);
-      if (bClose.has_value()) {
-        auto pairsVal = parsePairs(i, bClose.value());
-        if (pairsVal.has_value()) {
-          for (auto &pair : pairsVal.value()) {
-            result[pair.first] = pair.second;
+      case TokenType::False: {
+        return None;
+        break;
+      }
+      case TokenType::True: {
+        return None;
+        break;
+      }
+      case TokenType::curlyBraceOpen: {
+        auto bClose = getPairEnd(false, i, upto);
+        if (bClose.has_value()) {
+          auto pairsVal = parsePairs(i, bClose.value());
+          if (pairsVal.has_value()) {
+            for (auto& pair : pairsVal.value()) {
+              result[pair.first] = pair.second;
+            }
+            i = bClose.value();
+          } else {
+            return None;
           }
-          i = bClose.value();
         } else {
           return None;
         }
-      } else {
+        break;
+      }
+      case TokenType::curlyBraceClose: {
+        break;
+      }
+      case TokenType::string:
+      case TokenType::integer:
+      case TokenType::floating:
+      case TokenType::comma:
+      case TokenType::colon:
+      case TokenType::null:
+      case TokenType::bracketOpen:
+      case TokenType::bracketClose: {
         return None;
       }
-      break;
-    }
-    case TokenType::curlyBraceClose: {
-      break;
-    }
-    case TokenType::string:
-    case TokenType::integer:
-    case TokenType::floating:
-    case TokenType::comma:
-    case TokenType::colon:
-    case TokenType::null:
-    case TokenType::bracketOpen:
-    case TokenType::bracketClose: {
-      return None;
-    }
     }
   }
 

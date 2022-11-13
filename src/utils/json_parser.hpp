@@ -48,10 +48,8 @@ private:
   useit Maybe<bool> hasPrimaryCommas(usize from, usize upto) const;
   useit Maybe<Json> parse(usize from = -1, usize upto = -1) const;
   useit Maybe<JsonValue> parseValue(usize from, usize upto) const;
-  useit Maybe<Vec<Pair<String, JsonValue>>> parsePairs(usize from,
-                                                       usize upto) const;
-  useit Maybe<usize> getPairEnd(bool isList, usize from,
-                                std::optional<usize> upto) const;
+  useit Maybe<Vec<Pair<String, JsonValue>>> parsePairs(usize from, usize upto) const;
+  useit Maybe<usize> getPairEnd(bool isList, usize from, std::optional<usize> upto) const;
   useit Maybe<Vec<usize>> getPrimaryCommas(usize from, usize upto) const;
 };
 

@@ -172,6 +172,10 @@ Config::Config(u64 count, char** args)
         saveDocs = true;
       } else if (arg == "--release") {
         releaseMode = true;
+      } else if (arg == "--static") {
+        buildStatic = true;
+      } else if (arg == "--shared") {
+        buildShared = true;
       } else {
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
@@ -222,5 +226,9 @@ bool Config::hasSysroot() const { return sysRoot.has_value(); }
 String Config::getSysroot() const { return sysRoot.value_or(""); }
 
 bool Config::isWasmMode() const { return isWASM; }
+
+bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
+
+bool Config::shouldBuildShared() const { return buildShared.value_or(false); }
 
 } // namespace qat::cli

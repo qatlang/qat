@@ -68,6 +68,10 @@ private:
 
   bool isWASM;
 
+  Maybe<bool> buildShared;
+
+  Maybe<bool> buildStatic;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -103,60 +107,30 @@ public:
 
   /** Behaviour specific functions */
 
-  // Whether there are paths provided in the CLI and the compilation step
-  // should proceed
-  useit bool isCompile() const;
-
-  // Whether the program should be run after building. This is valid only if
-  // there is a valid main function present
-  useit bool isRun() const;
-
-  // Whether files should be analysed for errors, warnings and infos and not compiled
-  useit bool isAnalyse() const;
-
+  useit bool isCompile() const;                 // Whether there are paths and the compilation can proceed
+  useit bool isRun() const;                     // Whether the program should be run after building
+  useit bool isAnalyse() const;                 // Whether files should be analysed and not compiled
+  useit Vec<fs::path> getPaths() const;         // Get paths provided for the compilation stage
+  useit bool          shouldSaveDocs() const;   //  Whether comments should be saved for documentation
+  useit bool          shouldShowReport() const; //  Whether performance & timing reports should be shown
+  useit bool          hasOutputPath() const;
+  useit fs::path getOutputPath() const;
+  useit bool     isVerbose() const;
+  useit bool     shouldExportAST() const;
+  useit String   getTargetTriple() const;
+  useit bool     noColorMode() const;
+  useit bool     isDebugMode() const;
+  useit bool     isReleaseMode() const;
+  useit bool     hasSysroot() const;
+  useit String   getSysroot() const;
+  useit bool     isWasmMode() const;
+  useit bool     shouldBuildStatic() const;
+  useit bool     shouldBuildShared() const;
   // Whether compiler should exit after arguments are handled by Config
   //
   // This is usually true for simple actions like version display, about... and
   // if there were errors during Config initialisation
   useit bool shouldExit() const;
-
-  // Get paths provided to the compiler for the compilation stage
-  useit Vec<fs::path> getPaths() const;
-
-  //  Whether comments in source code files should be saved to be used for
-  // documentation
-  useit bool shouldSaveDocs() const;
-
-  //  Whether different parts of the compiler should show reports about
-  // the performance and timing statistics
-  useit bool shouldShowReport() const;
-
-  // Whether an output path is provided to the compiler
-  useit bool hasOutputPath() const;
-
-  // Get the output path provided to the compiler
-  useit fs::path getOutputPath() const;
-
-  // Whether compiler outputs should be verbose
-  useit bool isVerbose() const;
-
-  // Whether the AST should be exported
-  useit bool shouldExportAST() const;
-
-  // Get the compile-target provided by the user
-  useit String getTargetTriple() const;
-
-  useit bool noColorMode() const;
-
-  useit bool isDebugMode() const;
-
-  useit bool isReleaseMode() const;
-
-  useit bool hasSysroot() const;
-
-  useit String getSysroot() const;
-
-  useit bool isWasmMode() const;
 
   ~Config();
 };

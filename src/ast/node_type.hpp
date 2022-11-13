@@ -85,6 +85,7 @@ enum class NodeType {
   copyExpression,
   Await,
   none,
+  modInfo,
 };
 
 } // namespace qat::ast

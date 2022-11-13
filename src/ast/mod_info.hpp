@@ -16,13 +16,11 @@ class ModInfo : public Node {
 private:
   Maybe<KeyValue<String>>               foreignID;
   Maybe<Pair<String, utils::FileRange>> outputName;
-  Vec<Pair<String, utils::FileRange>>   buildAs;
   Vec<Pair<String, utils::FileRange>>   linkLibs;
 
 public:
   ModInfo(Maybe<Pair<String, utils::FileRange>> _outputName, Maybe<KeyValue<String>> _foreignID,
-          Vec<Pair<String, utils::FileRange>> _buildAs, Vec<Pair<String, utils::FileRange>> _linkLibs,
-          utils::FileRange _fileRange);
+          Vec<Pair<String, utils::FileRange>> _linkLibs, utils::FileRange _fileRange);
 
   void  createModule(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }

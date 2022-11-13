@@ -156,7 +156,6 @@ void Parser::clearMemberPaths() { memberPaths.clear(); }
 ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, utils::FileRange startRange) {
   Maybe<Pair<String, utils::FileRange>> outputName;
   Maybe<ast::KeyValue<String>>          foreignID;
-  Vec<Pair<String, utils::FileRange>>   buildAs;
   Vec<Pair<String, utils::FileRange>>   nativeLibs;
   using lexer::TokenType;
   for (usize i = from + 1; i < upto; i++) {
@@ -175,29 +174,6 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, utils::FileRange s
             i += 2;
           } else {
             Error("Expected a string for the parent identity of the foreign module", RangeAt(i));
-          }
-        } else if (token.value == "buildAs") {
-          if (isNext(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
-            if (bCloseRes.has_value()) {
-              for (usize j = i + 3; j < bCloseRes.value(); j++) {
-                auto elemTok = tokens->at(j);
-                if (elemTok.type == TokenType::StringLiteral) {
-                  buildAs.push_back(Pair<String, utils::FileRange>(elemTok.value, elemTok.fileRange));
-                } else if (elemTok.type == TokenType::separator) {
-                  if (!isPrev(TokenType::StringLiteral, j)) {
-                    Error("Invalid position for ,", RangeAt(j));
-                  }
-                } else {
-                  Error("Unexpected token found", RangeAt(j));
-                }
-              }
-              i = bCloseRes.value();
-            } else {
-              Error("Expected end for [", RangeAt(i + 2));
-            }
-          } else {
-            Error("Expected a list of strings to specify the build bundle types", RangeSpan(i, i + 1));
           }
         } else if (token.value == "outputName") {
           if (isNext(TokenType::StringLiteral, i + 1)) {
@@ -222,7 +198,7 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, utils::FileRange s
       }
     }
   }
-  return new ast::ModInfo(std::move(outputName), std::move(foreignID), std::move(buildAs), std::move(nativeLibs),
+  return new ast::ModInfo(std::move(outputName), std::move(foreignID), std::move(nativeLibs),
                           {startRange, RangeAt(upto)});
 }
 

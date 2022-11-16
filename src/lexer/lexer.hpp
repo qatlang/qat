@@ -33,11 +33,12 @@ public:
   Maybe<u64> previousLineEnd;
   static u64 timeInMicroSeconds;
 
-  void  clearTokens();
-  void  throwError(const String& message);
-  void  analyse();
-  void  read();
-  void  changeFile(fs::path newFile);
+  void               clearTokens();
+  void               throwError(const String& message);
+  void               analyse();
+  void               read();
+  void               changeFile(fs::path newFile);
+  useit static Token wordToToken(const String& value, Lexer* lexInst);
   useit Deque<Token>* getTokens();
   useit Vec<String> getContent() const;
   useit Token       tokeniser();

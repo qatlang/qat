@@ -34,7 +34,7 @@ public:
   void                                       handlePath(const fs::path& path, llvm::LLVMContext& llctx);
   useit static bool                          checkExecutableExists(const String& name);
   useit static Maybe<Pair<String, fs::path>> detectLibFile(const fs::path& path);
-  //   useit static bool                          isNameValid(const String& name);
+  useit static bool                          isNameValid(const String& name);
 
   ~QatSitter();
 };

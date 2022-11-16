@@ -3,6 +3,7 @@
 #include "IR/qat_module.hpp"
 #include "cli/config.hpp"
 #include "cli/error.hpp"
+#include "lexer/token_type.hpp"
 #include "utils/visibility.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <algorithm>
@@ -100,35 +101,44 @@ void QatSitter::removeEntityWithPath(const fs::path& path) {
 
 Maybe<Pair<String, fs::path>> QatSitter::detectLibFile(const fs::path& path) {
   if (fs::is_directory(path)) {
-    for (auto const& item : path) {
+    SHOW("Path is a directory: " << fs::absolute(path).string())
+    for (auto item : fs::directory_iterator(path)) {
       if (fs::is_regular_file(item)) {
-        auto name = item.filename().string();
+        auto name = item.path().filename().string();
         if (name.ends_with(".lib.qat")) {
+          SHOW("lib file detected: " << name.substr(0, name.length() - 8))
           return Pair<String, fs::path>(name.substr(0, name.length() - 8), item); // NOLINT(readability-magic-numbers)
         }
       }
     }
   } else if (fs::is_regular_file(path)) {
+    SHOW("Path is a file: " << path.string())
     auto name = path.filename().string();
     if (name.ends_with(".lib.qat")) {
+      SHOW("lib file detected: " << name.substr(0, name.length() - 8))
       return Pair<String, fs::path>(name.substr(0, name.length() - 8), path); // NOLINT(readability-magic-numbers)
     }
   }
   return None;
 }
 
+bool QatSitter::isNameValid(const String& name) {
+  return (lexer::Lexer::wordToToken(name, nullptr).type == lexer::TokenType::identifier);
+}
+
 void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
   Vec<fs::path> broughtPaths;
   Vec<fs::path> memberPaths;
   SHOW("Handling path: " << mainPath.string())
-  //   handleLibDirectory(mainPath);
   std::function<void(IR::QatModule*, const fs::path&)> recursiveModuleCreator = [&](IR::QatModule*  parentMod,
                                                                                     const fs::path& path) {
-    for (auto const& item : path) {
+    for (auto const& item : fs::directory_iterator(path)) {
       if (fs::is_directory(item) && !IR::QatModule::hasFolderModule(item)) {
-        //   auto libPath = item / "lib.qat";
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value()) {
+          if (!isNameValid(libCheckRes->first)) {
+            cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", libCheckRes->second);
+          }
           Lexer->changeFile(fs::absolute(libCheckRes->second));
           Lexer->analyse();
           Parser->setTokens(Lexer->getTokens());
@@ -145,15 +155,18 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
               parentMod, fs::absolute(libCheckRes->second), path, libCheckRes->first, Lexer->getContent(),
               std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
         } else {
-          auto* subfolder =
-              IR::QatModule::CreateSubmodule(parentMod, item, path, fs::absolute(item.filename()).string(),
-                                             IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
+          auto* subfolder = IR::QatModule::CreateSubmodule(parentMod, item.path(), path,
+                                                           fs::absolute(item.path().filename()).string(),
+                                                           IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
           fileEntities.push_back(subfolder);
           recursiveModuleCreator(subfolder, item);
         }
       } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
         auto libCheckRes = detectLibFile(item);
-        Lexer->changeFile(item.string());
+        if (!isNameValid(libCheckRes->first)) {
+          cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", item);
+        }
+        Lexer->changeFile(item.path().string());
         Lexer->analyse();
         Parser->setTokens(Lexer->getTokens());
         auto parseRes(Parser->parse());
@@ -171,7 +184,7 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
                                                               utils::VisibilityInfo::pub(), llctx));
         } else {
           fileEntities.push_back(IR::QatModule::CreateFile(parentMod, fs::absolute(item), path,
-                                                           item.filename().string(), Lexer->getContent(),
+                                                           item.path().filename().string(), Lexer->getContent(),
                                                            std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
         }
       }
@@ -183,6 +196,9 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     SHOW("Is directory")
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value()) {
+      if (!isNameValid(libCheckRes->first)) {
+        cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", libCheckRes->second);
+      }
       Lexer->changeFile(libCheckRes->second);
       Lexer->analyse();
       Parser->setTokens(Lexer->getTokens());
@@ -206,6 +222,9 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     }
   } else if (fs::is_regular_file(mainPath) && !IR::QatModule::hasFileModule(mainPath)) {
     auto libCheckRes = detectLibFile(mainPath);
+    if (!isNameValid(libCheckRes->first)) {
+      cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", mainPath);
+    }
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);
     Lexer->analyse();

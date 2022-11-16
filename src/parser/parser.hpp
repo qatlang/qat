@@ -52,6 +52,7 @@ private:
 public:
   // Parser handles parsing of all tokens analysed by the lexer
   Parser();
+  ~Parser();
 
   static u64                            timeInMicroSeconds;
   u64                                   parseRecurseCount = 0;

@@ -86,6 +86,14 @@ namespace qat::parser {
 
 Parser::Parser() = default;
 
+Parser::~Parser() {
+  delete tokens;
+  tokens = nullptr;
+  broughtPaths.clear();
+  memberPaths.clear();
+  comments.clear();
+}
+
 u64 Parser::timeInMicroSeconds = 0;
 
 void Parser::setTokens(Deque<lexer::Token>* allTokens) {

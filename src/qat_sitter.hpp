@@ -31,10 +31,11 @@ public:
 
   static QatSitter* instance;
 
-  void              init();
-  void              removeEntityWithPath(const fs::path& path);
-  void              handlePath(const fs::path& path, llvm::LLVMContext& llctx);
-  useit static bool checkExecutableExists(const String& name);
+  void                                 init();
+  void                                 removeEntityWithPath(const fs::path& path);
+  void                                 handlePath(const fs::path& path, llvm::LLVMContext& llctx);
+  static Maybe<Pair<String, fs::path>> detectLibFile(const fs::path& path);
+  useit static bool                    checkExecutableExists(const String& name);
 
   ~QatSitter();
 };

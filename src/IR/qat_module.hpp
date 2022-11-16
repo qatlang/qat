@@ -47,7 +47,8 @@ private:
     nativeLibsToLink.push_back(name);
   }
   useit bool   isForeign() { return foreignID.has_value(); }
-  useit bool   isForeignCPP() { return foreignID.value_or("") == "C++"; }
+  useit bool   isForeignC() { return foreignID.has_value() && (foreignID.value() == "C"); }
+  useit bool   isForeignCPP() { return foreignID.has_value() && (foreignID.value() == "C++"); }
   useit String foreignIdentity() { return foreignID.value_or(""); }
 
 public:
@@ -145,6 +146,9 @@ public:
   useit static QatModule* CreateFile(QatModule* parent, fs::path _filepath, fs::path basePath, String name,
                                      Vec<String> content, Vec<ast::Node*>, utils::VisibilityInfo visibilityInfo,
                                      llvm::LLVMContext& ctx);
+  useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, String name,
+                                        Vec<String> content, Vec<ast::Node*> nodes,
+                                        const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
 
   useit ModuleType getModuleType() const;
   useit String     getFullName() const;

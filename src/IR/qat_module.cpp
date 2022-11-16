@@ -198,6 +198,20 @@ QatModule* QatModule::CreateFile(QatModule* parent, fs::path filepath, fs::path 
   return sub;
 }
 
+QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::path basePath, String fname,
+                                    Vec<String> content, Vec<ast::Node*> nodes,
+                                    const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx) {
+  auto* sub =
+      new QatModule(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
+  sub->content = std::move(content);
+  if (parent) {
+    sub->parent = parent;
+    parent->submodules.push_back(sub);
+  }
+  sub->nodes = std::move(nodes);
+  return sub;
+}
+
 String QatModule::getName() const { return name; }
 
 String QatModule::getFullName() const {

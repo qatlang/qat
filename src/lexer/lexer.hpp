@@ -12,9 +12,6 @@
 
 namespace qat::lexer {
 
-// Lexer of the QAT Programming language. This handles lexical
-// analysis, emission of tokens and also will report on statistics
-// regarding the analysis
 class Lexer {
 private:
   fs::path      filePath;
@@ -29,6 +26,7 @@ private:
 
 public:
   Lexer() = default;
+  ~Lexer();
 
   u64        lineNumber      = 1;
   u64        characterNumber = 0;

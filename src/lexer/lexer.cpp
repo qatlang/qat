@@ -10,6 +10,16 @@
 
 namespace qat::lexer {
 
+Lexer::~Lexer() {
+  delete tokens;
+  tokens = nullptr;
+  if (file.is_open()) {
+    file.close();
+  }
+  content.clear();
+  buffer.clear();
+}
+
 u64 Lexer::timeInMicroSeconds = 0;
 
 Deque<Token>* Lexer::getTokens() { return tokens; }

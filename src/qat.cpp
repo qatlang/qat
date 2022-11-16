@@ -27,8 +27,7 @@ int main(int count, char* args[]) {
   if (cli->shouldExit()) {
     return 0;
   }
-  auto sitter              = qat::QatSitter();
-  qat::QatSitter::instance = &sitter;
+  auto sitter = qat::QatSitter();
   sitter.init();
   Config::destroy();
   return 0;

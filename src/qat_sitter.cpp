@@ -19,8 +19,6 @@ namespace qat {
 
 QatSitter::QatSitter() : Context(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {}
 
-QatSitter* QatSitter::instance = nullptr;
-
 void QatSitter::init() {
   auto* config = cli::Config::get();
   auto* ctx    = new IR::Context();

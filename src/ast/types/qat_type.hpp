@@ -16,10 +16,11 @@ protected:
   static Vec<TemplatedType*> templates;
 
 private:
-  bool variable;
+  bool                 variable;
+  static Vec<QatType*> allTypes;
 
 public:
-  QatType(bool _variable, utils::FileRange _fileRange) : variable(_variable), fileRange(std::move(_fileRange)) {}
+  QatType(bool _variable, utils::FileRange _fileRange);
   utils::FileRange fileRange;
 
   virtual ~QatType() = default;
@@ -30,6 +31,7 @@ public:
   useit virtual Json         toJson() const         = 0;
   useit virtual String       toString() const       = 0;
   virtual void               destroy() {}
+  static void                clearAll();
 };
 
 } // namespace qat::ast

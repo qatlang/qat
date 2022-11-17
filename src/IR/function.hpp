@@ -41,6 +41,7 @@ class LocalValue : public Value, public Uniq {
 
 public:
   LocalValue(String name, IR::QatType* type, bool isVariable, Function* fun);
+  ~LocalValue() = default;
 
   useit String getName() const;
   useit llvm::AllocaInst* getAlloca() const;
@@ -66,6 +67,8 @@ private:
 
 public:
   Block(Function* _fn, Block* _parent);
+
+  ~Block() = default;
 
   useit String getName() const;
   useit llvm::BasicBlock* getBB() const;
@@ -153,6 +156,8 @@ public:
   useit Block*          getBlock() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
+
+  virtual ~Function() override;
 };
 
 class TemplateFunction : public Uniq {
@@ -168,6 +173,8 @@ private:
 public:
   TemplateFunction(String name, Vec<ast::TemplatedType*> templates, ast::FunctionDefinition* functionDef,
                    QatModule* parent, const utils::VisibilityInfo& _visibInfo);
+
+  ~TemplateFunction() = default;
 
   useit String getName() const;
   useit utils::VisibilityInfo getVisibility() const;

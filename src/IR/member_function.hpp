@@ -92,6 +92,8 @@ public:
                                       bool has_variadic_args, const utils::FileRange& fileRange,
                                       const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
 
+  ~MemberFunction() override;
+
   useit String       getName() const final;
   useit MemberFnType getMemberFnType();
   useit bool         isVariationFunction() const;

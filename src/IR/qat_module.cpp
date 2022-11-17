@@ -82,7 +82,19 @@ QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath, Modul
   allModules.push_back(this);
 }
 
-QatModule::~QatModule() = default;
+QatModule::~QatModule() {
+  SHOW("Deleting module :: " << name << " :: " << filePath)
+  for (auto* sub : submodules) {
+    delete sub;
+  }
+  for (auto* tFn : templateFunctions) {
+    delete tFn;
+  }
+  for (auto* tCty : templateCoreTypes) {
+    delete tCty;
+  }
+  delete llvmModule;
+};
 
 QatModule* QatModule::Create(const String& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
                              const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx) {
@@ -265,7 +277,6 @@ String QatModule::getWritableName() const {
 
 String QatModule::getFullNameWithChild(const String& child) const {
   if (shouldPrefixName()) {
-    SHOW("Getting full name: " << getFullName())
     return getFullName() + ":" + child;
   } else {
     return parent ? parent->getFullNameWithChild(child) : child;
@@ -1291,7 +1302,6 @@ void QatModule::emitNodes(IR::Context* ctx) {
     for (auto* sub : submodules) {
       SHOW("About to emit for submodule: " << sub->getFullName())
       sub->emitNodes(ctx);
-      SHOW("Emission complete, linking LLVM modules")
     }
     if (globalInitialiser) {
       globalInitialiser->getBlock()->setActive(ctx->builder);
@@ -1333,11 +1343,16 @@ void QatModule::emitNodes(IR::Context* ctx) {
 void QatModule::compileToObject(IR::Context* ctx) {
   if (!isCompiledToObject) {
     SHOW("Compiling Module `" << name << "` from file " << filePath.string())
-    String compileCommand("clang -fPIC -c ");
+    auto*  cfg = cli::Config::get();
+    String compileCommand("clang ");
+    if (cfg->shouldBuildShared()) {
+      compileCommand.append("-fPIC -c ");
+    } else {
+      compileCommand.append("-c ");
+    }
     if (moduleInfo.linkPthread) {
       compileCommand += "-pthread ";
     }
-    auto* cfg = cli::Config::get();
     compileCommand.append("--target=").append(cfg->getTargetTriple()).append(" ");
     if (cfg->hasSysroot()) {
       compileCommand.append("--sysroot=").append(cfg->getSysroot()).append(" ");
@@ -1348,11 +1363,13 @@ void QatModule::compileToObject(IR::Context* ctx) {
       sub->compileToObject(ctx);
     }
     // FIXME - Also link modules of other brought entities
-    objectFilePath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
-                     filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o"));
-    SHOW("Creating all folders in object file output path: " << objectFilePath)
-    fs::create_directory(objectFilePath.parent_path());
-    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.string());
+    objectFilePath =
+        fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
+                     filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o")))
+            .lexically_normal();
+    SHOW("Creating all folders in object file output path: " << objectFilePath.value())
+    fs::create_directory(objectFilePath.value().parent_path());
+    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
     SHOW("Command is: " << compileCommand)
     if (system(compileCommand.c_str())) {
       ctx->writeJsonResult(false);
@@ -1368,27 +1385,30 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       sub->bundleLibs(ctx);
     }
     auto*  cfg = cli::Config::get();
-    String cmdOne("-fPIC ");
+    String cmdOne;
+    String targetCMD;
     if (moduleInfo.linkPthread) {
       cmdOne.append("-pthread ");
     }
-    cmdOne.append("--target=").append(cfg->getTargetTriple()).append(" ");
+    targetCMD.append("--target=").append(cfg->getTargetTriple()).append(" ");
     if (cfg->hasSysroot()) {
-      cmdOne.append("--sysroot=").append(cfg->getSysroot()).append(" ");
+      targetCMD.append("--sysroot=").append(cfg->getSysroot()).append(" ");
       // -Wl,--import-memory
       // cmdRem.append(" -nostartfiles -Wl,--no-entry ");
     }
-    String cmdTwo(" " + objectFilePath.string().append(" "));
-    cmdTwo.append(objectFilePath.string()).append(" ");
+    String cmdTwo(" " + (objectFilePath.has_value() ? objectFilePath.value().string().append(" ") : ""));
     for (auto* sub : submodules) {
-      cmdTwo.append(sub->objectFilePath.string()).append(" ");
+      if (objectFilePath.has_value()) {
+        cmdTwo.append(sub->objectFilePath.value().string()).append(" ");
+      }
     }
-    SHOW("Added ll paths of all submodules")
     for (const auto& bMod : broughtModules) {
       SHOW("Brought module: " << bMod.get())
       SHOW("Brought module name: " << bMod.get()->name)
-      SHOW("Brought module path: " << bMod.get()->objectFilePath)
-      cmdTwo.append(bMod.get()->objectFilePath.string()).append(" ");
+      SHOW("Brought module has Object: " << bMod.get()->objectFilePath.has_value())
+      if (bMod.get()->objectFilePath.has_value()) {
+        cmdTwo.append(bMod.get()->objectFilePath.value().string()).append(" ");
+      }
     }
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
@@ -1396,19 +1416,21 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                       filePath.lexically_relative(basePath)
                           .replace_filename(moduleInfo.outputName.value_or(name))
                           .replace_extension(""))
-                         .string();
-      auto staticCommand =
-          String("clang -static -o ").append(outPath).append(" ").append(cmdOne).append(cmdTwo).c_str();
+                         .string()
+                         .append(" ");
+      auto staticCommand = String("clang -static -o ").append(outPath).append(cmdOne).append(targetCMD).append(cmdTwo);
       auto sharedCommand =
-          String("clang -shared -o ").append(outPath).append(" ").append(cmdOne).append(cmdTwo).c_str();
+          String("clang -shared -fPIC -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
       if (cfg->shouldBuildStatic()) {
-        if (system(staticCommand)) {
-          ctx->Error("Statically linking & compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
+        SHOW("Static Build Command :: " << staticCommand)
+        if (system(staticCommand.c_str())) {
+          ctx->Error("Statically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
       if (cfg->shouldBuildShared()) {
-        if (system(sharedCommand)) {
-          ctx->Error("Dynamically linking & compiling executable failed", {"", {0u, 0u}, {0u, 0u}});
+        SHOW("Dynamic Build Command :: " << sharedCommand)
+        if (system(sharedCommand.c_str())) {
+          ctx->Error("Dynamically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
     } else {
@@ -1420,8 +1442,8 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                            .append(" ");
         SHOW("Archiving library " << String("ar r ").append(outPath).append(cmdTwo).c_str())
         if (system(String("ar r ").append(outPath).append(cmdTwo).c_str())) {
-          ctx->Error("Static compilation of module " + ctx->highlightError(filePath.string()) + " failed",
-                     {"", {0u, 0u}, {0u, 0u}});
+          ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed",
+                     {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
       if (cfg->shouldBuildShared()) {
@@ -1437,8 +1459,8 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                        .append(cmdOne)
                        .append(cmdTwo)
                        .c_str())) {
-          ctx->Error("Static compilation of module " + ctx->highlightError(filePath.string()) + " failed",
-                     {"", {0u, 0u}, {0u, 0u}});
+          ctx->Error("Dynamic build of module " + ctx->highlightError(filePath.string()) + " failed",
+                     {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
     }

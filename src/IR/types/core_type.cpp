@@ -29,6 +29,12 @@ CoreType::CoreType(QatModule* mod, String _name, Vec<Member*> _members, const ut
   }
 }
 
+CoreType::~CoreType() {
+  for (auto* mem : members) {
+    delete mem;
+  }
+}
+
 String CoreType::getFullName() const { return parent->getFullNameWithChild(name); }
 
 String CoreType::getName() const { return name; }
@@ -115,8 +121,12 @@ MemberFunction* CoreType::getMemberFunction(const String& fnName) const {
 }
 
 bool CoreType::hasStaticFunction(const String& fnName) const {
-  return std::ranges::any_of(staticFunctions.begin(), staticFunctions.end(),
-                             [&](MemberFunction* fun) { return fun->getName() == fnName; });
+  for (const auto& fun : staticFunctions) {
+    if (fun->getName() == fnName) {
+      return true;
+    }
+  }
+  return false;
 }
 
 MemberFunction* CoreType::getStaticFunction(const String& fnName) const {

@@ -16,56 +16,54 @@ private:
   friend class FunctionDefinition;
   String                name;
   bool                  isAsync;
-  Vec<Argument *>       arguments;
+  Vec<Argument*>        arguments;
   bool                  isVariadic;
-  QatType              *returnType;
+  QatType*              returnType;
   String                callingConv;
   utils::VisibilityKind visibility;
 
-  Vec<TemplatedType *>  templates;
-  IR::TemplateFunction *templateFn = nullptr;
+  Vec<TemplatedType*>   templates;
+  IR::TemplateFunction* templateFn = nullptr;
   mutable Maybe<String> variantName;
 
   mutable llvm::GlobalValue::LinkageTypes linkageType;
-  mutable IR::Function                   *function = nullptr;
+  mutable IR::Function*                   function = nullptr;
 
 public:
-  FunctionPrototype(String _name, Vec<Argument *> _arguments, bool _isVariadic,
-                    QatType *_returnType, bool _is_async,
-                    llvm::GlobalValue::LinkageTypes _linkageType,
-                    String _callingConv, utils::VisibilityKind _visibility,
-                    const utils::FileRange &_fileRange,
-                    Vec<TemplatedType *>    _templates = {});
+  FunctionPrototype(String _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
+                    llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
+                    utils::VisibilityKind _visibility, const utils::FileRange& _fileRange,
+                    Vec<TemplatedType*> _templates = {});
 
-  FunctionPrototype(const FunctionPrototype &ref);
+  FunctionPrototype(const FunctionPrototype& ref);
 
   useit bool isTemplate() const;
-  useit Vec<TemplatedType *> getTemplates() const;
-  void                       setVariantName(const String &value) const;
-  void                       unsetVariantName() const;
-  IR::Function              *createFunction(IR::Context *ctx) const;
+  useit Vec<TemplatedType*> getTemplates() const;
+  void                      setVariantName(const String& value) const;
+  void                      unsetVariantName() const;
+  IR::Function*             createFunction(IR::Context* ctx) const;
 
-  void  define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::functionPrototype; }
+  useit NodeType   nodeType() const final { return NodeType::functionPrototype; }
+  ~FunctionPrototype();
 };
 
 class FunctionDefinition : public Node {
 private:
-  Vec<Sentence *> sentences;
+  Vec<Sentence*> sentences;
 
 public:
-  FunctionDefinition(FunctionPrototype *_prototype, Vec<Sentence *> _sentences,
-                     utils::FileRange _fileRange);
+  FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
 
-  FunctionPrototype *prototype;
+  FunctionPrototype* prototype;
 
   useit bool isTemplate() const;
-  void       define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
-  useit NodeType nodeType() const final { return NodeType::functionDefinition; }
-  useit Json     toJson() const final;
+  void       define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
+  useit NodeType   nodeType() const final { return NodeType::functionDefinition; }
+  useit Json       toJson() const final;
 };
 
 } // namespace qat::ast

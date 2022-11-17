@@ -1,4 +1,6 @@
 #include "./config.hpp"
+#include "../memory_tracker.hpp"
+#include "../show.hpp"
 #include "./display.hpp"
 #include "error.hpp"
 #include "llvm/Config/llvm-config.h"
@@ -8,27 +10,12 @@ namespace qat::cli {
 
 Config* Config::instance = nullptr;
 
-Config::~Config() {
-  if (Config::instance) {
-    delete Config::instance;
-    Config::instance = nullptr;
-  }
-}
-
-Config* Config::init(u64   count,
-                     char* args[]) { // NOLINT(modernize-avoid-c-arrays)
+Config* Config::init(u64          count,
+                     const char** args) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
     return new Config(count, args);
   } else {
     return get();
-  }
-}
-
-void Config::destroy() {
-  if (Config::instance) {
-    auto* inst       = Config::instance;
-    Config::instance = nullptr;
-    delete inst;
   }
 }
 
@@ -40,7 +27,7 @@ bool Config::shouldExit() const { return exitAfter; }
 
 Config* Config::get() { return Config::instance; }
 
-Config::Config(u64 count, char** args)
+Config::Config(u64 count, const char** args)
     : exitAfter(false), verbose(false), saveDocs(false), showReport(false), export_ast(false), compile(false),
       run(false), releaseMode(false) {
   if (!hasInstance()) {

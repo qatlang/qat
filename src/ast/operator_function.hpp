@@ -18,43 +18,41 @@ class OperatorPrototype : public Node {
 private:
   bool                  isVariationFn;
   Op                    opr;
-  Vec<Argument *>       arguments;
-  QatType              *returnType;
+  Vec<Argument*>        arguments;
+  QatType*              returnType;
   utils::VisibilityKind kind;
   Maybe<String>         argName;
 
-  mutable IR::CoreType       *coreType = nullptr;
-  mutable IR::MemberFunction *memberFn = nullptr;
+  mutable IR::CoreType*       coreType = nullptr;
+  mutable IR::MemberFunction* memberFn = nullptr;
 
 public:
-  OperatorPrototype(bool _isVariationFn, Op _op, Vec<Argument *> _arguments,
-                    QatType *_returnType, utils::VisibilityKind kind,
-                    const utils::FileRange &_fileRange,
-                    Maybe<String>           _argName = None);
+  OperatorPrototype(bool _isVariationFn, Op _op, Vec<Argument*> _arguments, QatType* _returnType,
+                    utils::VisibilityKind kind, const utils::FileRange& _fileRange, Maybe<String> _argName = None);
 
-  void setCoreType(IR::CoreType *_coreType) const;
+  void setCoreType(IR::CoreType* _coreType) const;
 
-  void  define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::operatorPrototype; }
+  useit NodeType   nodeType() const final { return NodeType::operatorPrototype; }
+  ~OperatorPrototype();
 };
 
 class OperatorDefinition : public Node {
 private:
-  Vec<Sentence *>    sentences;
-  OperatorPrototype *prototype;
+  Vec<Sentence*>     sentences;
+  OperatorPrototype* prototype;
 
 public:
-  OperatorDefinition(OperatorPrototype *_prototype, Vec<Sentence *> _sentences,
-                     utils::FileRange _fileRange);
+  OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
 
-  void setCoreType(IR::CoreType *coreType) const;
+  void setCoreType(IR::CoreType* coreType) const;
 
-  void  define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::operatorDefinition; }
+  useit NodeType   nodeType() const final { return NodeType::operatorDefinition; }
 };
 
 } // namespace qat::ast

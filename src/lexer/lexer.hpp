@@ -26,6 +26,7 @@ private:
 
 public:
   Lexer() = default;
+
   ~Lexer();
 
   u64        lineNumber      = 1;

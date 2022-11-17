@@ -1,22 +1,21 @@
 #include "./tuple.hpp"
+#include "../../memory_tracker.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-TupleType::TupleType(Vec<QatType *> _types, bool _isPacked,
-                     llvm::LLVMContext &ctx)
+TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ctx)
     : subTypes(std::move(_types)), isPacked(_isPacked) {
-  Vec<llvm::Type *> subTypes;
-  for (auto *typ : types) {
+  Vec<llvm::Type*> subTypes;
+  for (auto* typ : types) {
     subTypes.push_back(typ->getLLVMType());
   }
   llvmType = llvm::StructType::get(ctx, subTypes, isPacked);
 }
 
-TupleType *TupleType::get(Vec<QatType *> newSubTypes, bool isPacked,
-                          llvm::LLVMContext &ctx) {
-  for (auto *typ : types) {
+TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMContext& ctx) {
+  for (auto* typ : types) {
     if (typ->isTuple()) {
       auto subTys = typ->asTuple()->getSubTypes();
       bool isSame = true;
@@ -40,9 +39,9 @@ TupleType *TupleType::get(Vec<QatType *> newSubTypes, bool isPacked,
   return new TupleType(newSubTypes, isPacked, ctx);
 }
 
-Vec<QatType *> TupleType::getSubTypes() const { return subTypes; }
+Vec<QatType*> TupleType::getSubTypes() const { return subTypes; }
 
-QatType *TupleType::getSubtypeAt(u64 index) { return subTypes.at(index); }
+QatType* TupleType::getSubtypeAt(u64 index) { return subTypes.at(index); }
 
 u64 TupleType::getSubTypeCount() const { return subTypes.size(); }
 
@@ -64,7 +63,7 @@ String TupleType::toString() const {
 
 Json TupleType::toJson() const {
   Vec<JsonValue> jsonValues;
-  for (auto *typ : types) {
+  for (auto* typ : types) {
     jsonValues.push_back(typ->getID());
   }
   return Json()._("type", "tuple")._("subTypes", jsonValues);

@@ -1,4 +1,5 @@
 #include "./maybe.hpp"
+#include "../../memory_tracker.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::IR {

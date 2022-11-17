@@ -39,6 +39,7 @@ protected:
 public:
   QatType();
   virtual ~QatType() = default;
+  static void clearAll();
 
   useit virtual bool hasNoValueSemantics() const;
 

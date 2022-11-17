@@ -1,16 +1,16 @@
 #include "./unsigned.hpp"
+#include "../../memory_tracker.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-UnsignedType::UnsignedType(u64 _bitWidth, llvm::LLVMContext &ctx)
-    : bitWidth(_bitWidth) {
+UnsignedType::UnsignedType(u64 _bitWidth, llvm::LLVMContext& ctx) : bitWidth(_bitWidth) {
   llvmType = llvm::IntegerType::get(ctx, bitWidth);
 }
 
-UnsignedType *UnsignedType::get(u64 bits, llvm::LLVMContext &ctx) {
-  for (auto *typ : types) {
+UnsignedType* UnsignedType::get(u64 bits, llvm::LLVMContext& ctx) {
+  for (auto* typ : types) {
     if (typ->isUnsignedInteger()) {
       if (typ->asUnsignedInteger()->isBitWidth(bits)) {
         return typ->asUnsignedInteger();
@@ -28,8 +28,6 @@ TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
 String UnsignedType::toString() const { return "u" + std::to_string(bitWidth); }
 
-Json UnsignedType::toJson() const {
-  return Json()._("type", "unsigned")._("bitWidth", std::to_string(bitWidth));
-}
+Json UnsignedType::toJson() const { return Json()._("type", "unsigned")._("bitWidth", std::to_string(bitWidth)); }
 
 } // namespace qat::IR

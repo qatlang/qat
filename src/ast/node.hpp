@@ -1,8 +1,6 @@
 #ifndef QAT_AST_NODE_HPP
 #define QAT_AST_NODE_HPP
 
-#include <utility>
-
 #include "../IR/context.hpp"
 #include "../IR/types/array.hpp"
 #include "../IR/types/choice.hpp"
@@ -17,8 +15,10 @@
 #include "../IR/types/string_slice.hpp"
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
+#include "../memory_tracker.hpp"
 #include "../show.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/helpers.hpp"
 #include "../utils/json.hpp"
 #include "./node_type.hpp"
 

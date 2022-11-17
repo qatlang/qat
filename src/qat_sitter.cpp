@@ -1,6 +1,9 @@
 #include "./qat_sitter.hpp"
+#include "./memory_tracker.hpp"
 #include "./show.hpp"
 #include "IR/qat_module.hpp"
+#include "IR/value.hpp"
+#include "ast/types/qat_type.hpp"
 #include "cli/config.hpp"
 #include "cli/error.hpp"
 #include "lexer/token_type.hpp"
@@ -18,11 +21,10 @@
 
 namespace qat {
 
-QatSitter::QatSitter() : Context(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {}
+QatSitter::QatSitter() : ctx(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {}
 
 void QatSitter::init() {
   auto* config = cli::Config::get();
-  auto* ctx    = new IR::Context();
   for (const auto& path : config->getPaths()) {
     handlePath(path, ctx->llctx);
   }
@@ -86,7 +88,6 @@ void QatSitter::init() {
       ctx->writeJsonResult(true);
     }
   }
-  delete ctx;
 }
 
 void QatSitter::removeEntityWithPath(const fs::path& path) {
@@ -276,16 +277,33 @@ bool QatSitter::checkExecutableExists(const String& name) {
 }
 
 QatSitter::~QatSitter() {
+  SHOW("About to delete filesystem entities")
   for (auto* mod : fileEntities) {
     delete mod;
   }
+  SHOW("Deleted filesystem entities")
   fileEntities.clear();
-  delete Context;
-  Context = nullptr;
+  SHOW("About to delete IR::Context")
+  delete ctx;
+  SHOW("Deleted IR::Context")
+  SHOW("About to delete Parser")
   delete Parser;
-  Parser = nullptr;
+  SHOW("Deleted Parser")
+  SHOW("About to delete Lexer")
   delete Lexer;
-  Lexer = nullptr;
+  SHOW("Deleted Lexer")
+  SHOW("Clearing nodes")
+  ast::Node::clearAll();
+  SHOW("Nodes cleared")
+  SHOW("Clearing AST types")
+  ast::QatType::clearAll();
+  SHOW("AST types cleared")
+  SHOW("Clearing IR values")
+  IR::Value::clearAll();
+  SHOW("Values cleared")
+  SHOW("Clearing QatTypes")
+  IR::QatType::clearAll();
+  SHOW("QatTypes cleared")
 }
 
 } // namespace qat

@@ -1,4 +1,5 @@
 #include "./member_function.hpp"
+#include "../memory_tracker.hpp"
 #include "../show.hpp"
 #include "argument.hpp"
 #include "function.hpp"
@@ -19,6 +20,7 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, CoreType
                _isReturnTypeVariable, _is_async, std::move(_args), is_variable_arguments, _fileRange, _visibility_info,
                ctx, true),
       parent(_parent), isStatic(_is_static), isVariation(_isVariation), fnType(_fnType) {
+  SHOW("Member function name :: " << name << " ; " << this)
   switch (fnType) {
     case MemberFnType::defaultConstructor: {
       parent->defaultConstructor = this;
@@ -78,6 +80,8 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, CoreType
     }
   }
 }
+
+MemberFunction::~MemberFunction() = default;
 
 MemberFunction* MemberFunction::Create(CoreType* parent, bool is_variation, const String& name, QatType* returnTy,
                                        bool _isReturnTypeVariable, bool _is_async, const Vec<Argument>& args,

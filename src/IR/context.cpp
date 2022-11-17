@@ -32,6 +32,15 @@ CodeProblem::operator Json() const { return Json()._("isError", isError)._("mess
 
 Context::Context() : builder(llctx), hasMain(false) { llctx.setOpaquePointers(false); }
 
+Context::~Context() {
+  for (auto* lInfo : loopsInfo) {
+    delete lInfo;
+  }
+  for (auto* brk : breakables) {
+    delete brk;
+  }
+}
+
 QatModule* Context::getMod() const { return mod->getActive(); }
 
 String Context::getGlobalStringName() const {

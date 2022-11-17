@@ -14,6 +14,12 @@ MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, String _na
       arguments(std::move(_arguments)), isVariadic(_isVariadic), returnType(_returnType), kind(kind),
       isStatic(_isStatic) {}
 
+MemberPrototype::~MemberPrototype() {
+  for (auto* arg : arguments) {
+    delete arg;
+  }
+}
+
 MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const String& _name, const Vec<Argument*>& _arguments,
                                          bool _isVariadic, QatType* _returnType, bool _is_async,
                                          utils::VisibilityKind kind, const utils::FileRange& _fileRange) {

@@ -1,5 +1,7 @@
 #include "lexer.hpp"
 #include "../cli/color.hpp"
+#include "../memory_tracker.hpp"
+#include "../show.hpp"
 #include "../utils/is_integer.hpp"
 #include "token_type.hpp"
 #include <chrono>
@@ -11,18 +13,27 @@
 namespace qat::lexer {
 
 Lexer::~Lexer() {
+  SHOW("About to delete remaining tokens")
   delete tokens;
   tokens = nullptr;
+  SHOW("Tokens deleted")
   if (file.is_open()) {
     file.close();
+    SHOW("Closed file that was open in the lexer")
   }
   content.clear();
+  SHOW("Cleared file content")
   buffer.clear();
+  SHOW("Cleared token buffer")
 }
 
 u64 Lexer::timeInMicroSeconds = 0;
 
-Deque<Token>* Lexer::getTokens() { return tokens; }
+Deque<Token>* Lexer::getTokens() {
+  auto* res = tokens;
+  tokens    = nullptr;
+  return res;
+}
 
 Vec<String> Lexer::getContent() const { return content; }
 

@@ -259,6 +259,7 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
       mod(_mod), arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
       is_async(_is_async), hasVariadicArguments(_isVariadicArguments) //
 {
+  SHOW("Function name :: " << name << " ; " << this)
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
     argTypes.push_back(
@@ -290,6 +291,14 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
     }
     asyncArgTy = llvm::StructType::get(ll->getContext(), argTys);
   }
+}
+
+Function::~Function() {
+  SHOW("Deleting function: " << getFullName() << " ; address " << this)
+  for (auto* blk : blocks) {
+    delete blk;
+  }
+  SHOW("Function deleted")
 }
 
 llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }

@@ -17,7 +17,7 @@ private:
   // Construct a new Config object
   // This expects the number of arguments passed to the compiler and the
   // arguments, and it initialises the members and sets corresponding values
-  Config(u64 count, char** args);
+  Config(u64 count, const char** args);
 
   // The first CLI argument. Indicates the path specified to invoke the compiler
   String invokePath;
@@ -88,8 +88,8 @@ public:
    * @param args The arguments provided to the compiler
    * @return Config
    */
-  static Config* init(u64   count,
-                      char* args[]); // NOLINT(modernize-avoid-c-arrays)
+  static Config* init(u64          count,
+                      const char** args); // NOLINT(modernize-avoid-c-arrays)
 
   /**
    *  This is technically the proper function to get the existing instance
@@ -101,9 +101,6 @@ public:
 
   // Whether there is an instance of Config that has been initialised
   static bool hasInstance();
-
-  // Function that destroys/deletes the single instance of Config
-  static void destroy();
 
   /** Behaviour specific functions */
 
@@ -132,7 +129,7 @@ public:
   // if there were errors during Config initialisation
   useit bool shouldExit() const;
 
-  ~Config();
+  ~Config() = default;
 };
 
 } // namespace qat::cli

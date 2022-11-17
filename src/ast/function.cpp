@@ -22,6 +22,12 @@ FunctionPrototype::FunctionPrototype(String _name, Vec<Argument*> _arguments, bo
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
       templates(std::move(_templates)), linkageType(_linkageType) {}
 
+FunctionPrototype::~FunctionPrototype() {
+  for (auto* arg : arguments) {
+    delete arg;
+  }
+}
+
 FunctionPrototype::FunctionPrototype(const FunctionPrototype& ref)
     : Node(ref.fileRange), name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments), isVariadic(ref.isVariadic),
       returnType(ref.returnType), callingConv(ref.callingConv), visibility(ref.visibility), templates(ref.templates),

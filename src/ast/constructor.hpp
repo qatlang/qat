@@ -24,47 +24,43 @@ class ConstructorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  IR::CoreType         *coreType;
-  Vec<Argument *>       arguments;
+  IR::CoreType*         coreType;
+  Vec<Argument*>        arguments;
   utils::VisibilityKind visibility;
   ConstructorType       type;
   Maybe<String>         argName;
 
-  ConstructorPrototype(ConstructorType constType, Vec<Argument *> _arguments,
-                       utils::VisibilityKind _visibility,
-                       utils::FileRange      _fileRange,
-                       Maybe<String>         argName = None);
+  ConstructorPrototype(ConstructorType constType, Vec<Argument*> _arguments, utils::VisibilityKind _visibility,
+                       utils::FileRange _fileRange, Maybe<String> argName = None);
 
 public:
-  static ConstructorPrototype *Normal(Vec<Argument *>       args,
-                                      utils::VisibilityKind visibility,
-                                      utils::FileRange      fileRange);
-  static ConstructorPrototype *Default(utils::VisibilityKind visibility,
-                                       utils::FileRange      fileRange);
-  static ConstructorPrototype *Copy(utils::FileRange fileRange, String argName);
-  static ConstructorPrototype *Move(utils::FileRange fileRange, String argName);
+  static ConstructorPrototype* Normal(Vec<Argument*> args, utils::VisibilityKind visibility,
+                                      utils::FileRange fileRange);
+  static ConstructorPrototype* Default(utils::VisibilityKind visibility, utils::FileRange fileRange);
+  static ConstructorPrototype* Copy(utils::FileRange fileRange, String argName);
+  static ConstructorPrototype* Move(utils::FileRange fileRange, String argName);
 
-  void setCoreType(IR::CoreType *_coreType);
+  void setCoreType(IR::CoreType* _coreType);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::convertorPrototype; }
+  useit NodeType   nodeType() const final { return NodeType::convertorPrototype; }
+
+  ~ConstructorPrototype();
 };
 
 class ConstructorDefinition : public Node {
 private:
-  Vec<Sentence *>       sentences;
-  ConstructorPrototype *prototype;
+  Vec<Sentence*>        sentences;
+  ConstructorPrototype* prototype;
 
 public:
-  ConstructorDefinition(ConstructorPrototype *_prototype,
-                        Vec<Sentence *>       _sentences,
-                        utils::FileRange      _fileRange);
+  ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
 
-  void setCoreType(IR::CoreType *coreType) const;
+  void setCoreType(IR::CoreType* coreType) const;
 
-  void  define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::memberDefinition; }
 };

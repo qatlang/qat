@@ -58,6 +58,7 @@ public:
 class ConstantValue : public Value {
 public:
   ConstantValue(llvm::Constant* _llconst, IR::QatType* _type);
+  virtual ~ConstantValue() override = default;
 
   useit llvm::Constant* getLLVM() const final;
   useit bool            isConstVal() const final;

@@ -29,6 +29,8 @@ public:
     Member(String _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
         : name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
 
+    ~Member() = default;
+
     String                name;
     QatType*              type;
     utils::VisibilityInfo visibility;
@@ -64,6 +66,8 @@ private:
 public:
   CoreType(QatModule* mod, String _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
            llvm::LLVMContext& ctx);
+
+  ~CoreType();
 
   useit Maybe<usize> getIndexOf(const String& member) const;
   useit bool         hasMember(const String& member) const;
@@ -134,6 +138,8 @@ private:
 public:
   TemplateCoreType(String name, Vec<ast::TemplatedType*> templates, ast::DefineCoreType* defineCoreType,
                    QatModule* parent, const utils::VisibilityInfo& visibInfo);
+
+  ~TemplateCoreType() = default;
 
   useit String getName() const;
   useit utils::VisibilityInfo getVisibility() const;

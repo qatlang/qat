@@ -1,6 +1,7 @@
 #ifndef QAT_IR_QAT_MODULE_HPP
 #define QAT_IR_QAT_MODULE_HPP
 
+#include "../memory_tracker.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
@@ -119,7 +120,7 @@ private:
   mutable llvm::Module* llvmModule;
   bool                  hasMain = false;
   fs::path              llPath;
-  fs::path              objectFilePath;
+  Maybe<fs::path>       objectFilePath;
   mutable bool          hasCreatedModules  = false;
   mutable bool          hasHandledBrings   = false;
   mutable bool          hasDefinedTypes    = false;

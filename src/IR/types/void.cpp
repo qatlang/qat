@@ -1,16 +1,15 @@
 #include "./void.hpp"
+#include "../../memory_tracker.hpp"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-VoidType::VoidType(llvm::LLVMContext &ctx) {
-  llvmType = llvm::Type::getVoidTy(ctx);
-}
+VoidType::VoidType(llvm::LLVMContext& ctx) { llvmType = llvm::Type::getVoidTy(ctx); }
 
-VoidType *VoidType::get(llvm::LLVMContext &ctx) {
-  for (auto *typ : types) {
+VoidType* VoidType::get(llvm::LLVMContext& ctx) {
+  for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::Void) {
-      return (VoidType *)typ;
+      return (VoidType*)typ;
     }
   }
   return new VoidType(ctx);

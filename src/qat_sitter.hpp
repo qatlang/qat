@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 class QatSitter {
 private:
   Deque<IR::QatModule*> fileEntities;
-  IR::Context*          Context;
+  IR::Context*          ctx;
   lexer::Lexer*         Lexer;
   parser::Parser*       Parser;
 

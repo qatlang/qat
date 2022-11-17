@@ -41,6 +41,8 @@ public:
   LoopInfo(String _name, IR::Block* _mainB, IR::Block* _condB, IR::Block* _restB, IR::LocalValue* _index,
            LoopType _type);
 
+  ~LoopInfo() = default;
+
   String          name;
   IR::Block*      mainBlock;
   IR::Block*      condBlock;
@@ -59,6 +61,8 @@ enum class BreakableType {
 class Breakable {
 public:
   Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock);
+
+  ~Breakable() = default;
 
   Maybe<String> tag;
   IR::Block*    restBlock;
@@ -113,6 +117,7 @@ public:
   void          Warning(const String& message, const utils::FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::yellow);
   static String highlightWarning(const String& message, const char* color = colors::yellow);
+  ~Context();
 };
 
 } // namespace qat::IR

@@ -12,39 +12,37 @@ class ArgumentType {
 private:
   Maybe<String> name;
 
-  QatType *type;
+  QatType* type;
 
 public:
-  ArgumentType(QatType *type);
+  ArgumentType(QatType* type);
 
-  ArgumentType(String name, QatType *type);
+  ArgumentType(String name, QatType* type);
 
   bool hasName() const;
 
   String getName() const;
 
-  QatType *getType();
+  QatType* getType();
 
   Json toJson() const;
 };
 
 class FunctionType : public QatType {
 private:
-  QatType *returnType;
+  QatType* returnType;
 
-  Vec<ArgumentType *> argTypes;
+  Vec<ArgumentType*> argTypes;
 
 public:
-  FunctionType(QatType *_retType, Vec<ArgumentType *> _argTypes,
-               utils::FileRange _fileRange);
+  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, utils::FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
+  ~FunctionType() override;
 
-  TypeKind typeKind() const;
-
-  Json toJson() const;
-
-  String toString() const;
+  useit IR::QatType* emit(IR::Context* ctx) final;
+  useit TypeKind     typeKind() const final;
+  useit Json         toJson() const final;
+  useit String       toString() const final;
 };
 
 } // namespace qat::ast

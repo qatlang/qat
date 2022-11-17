@@ -21,6 +21,7 @@ using u8                                     = uint8_t;
 using f32                                    = float;
 using f64                                    = double;
 using usize                                  = std::size_t;
+using VoidPtr                                = void*;
 using String                                 = std::string;
 template <typename T> using Maybe            = std::optional<T>;
 template <typename T> using Vec              = std::vector<T>;

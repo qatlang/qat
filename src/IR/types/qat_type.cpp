@@ -23,10 +23,16 @@ QatType::QatType() { types.push_back(this); }
 
 Vec<QatType*> QatType::types = {};
 
+void QatType::clearAll() {
+  for (auto* typ : types) {
+    delete typ;
+  }
+}
+
 bool QatType::hasNoValueSemantics() const { return false; }
 
 bool QatType::checkTypeExists(const String& name) {
-  return std::ranges::any_of(types.begin(), types.end(), [&](QatType* typ) {
+  for (const auto& typ : types) {
     if (typ->typeKind() == TypeKind::mixType) {
       if (((MixType*)typ)->getFullName() == name) {
         return true;
@@ -37,7 +43,7 @@ bool QatType::checkTypeExists(const String& name) {
       }
     }
     return false;
-  });
+  };
 }
 
 bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)

@@ -1,4 +1,5 @@
 #include "./global_declaration.hpp"
+#include "../memory_tracker.hpp"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Value.h"
 

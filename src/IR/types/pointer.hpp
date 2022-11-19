@@ -7,25 +7,59 @@
 
 namespace qat::IR {
 
-/**
- *  A pointer type in the language
- *
- */
+class Function;
+
+enum class PointerOwnerType {
+  region,
+  heap,
+  anonymous,
+  type,
+  function,
+};
+
+class PointerOwner {
+public:
+  void*            owner;
+  PointerOwnerType ownerTy;
+
+  useit static PointerOwner OfHeap();
+  useit static PointerOwner OfAnonymous();
+  useit static PointerOwner OfType(QatType* type);
+  useit static PointerOwner OfFunction(Function* fun);
+  // TODO - Add region
+  useit static PointerOwner OfRegion();
+
+  useit QatType*  ownerAsType() const;
+  useit Function* ownerAsFunction() const;
+
+  useit bool isType() const;
+  useit bool isAnonymous() const;
+  useit bool isRegion() const;
+  useit bool isHeap() const;
+  useit bool isFunction() const;
+
+  useit bool isSame(const PointerOwner& other) const;
+
+  useit String toString() const;
+};
+
 class PointerType : public QatType {
 private:
-  QatType *subType;
-  bool     isSubtypeVar;
-  PointerType(bool _isSubVar, QatType *_type, llvm::LLVMContext &ctx);
+  QatType*     subType;
+  bool         isSubtypeVar;
+  PointerOwner owner;
+
+  PointerType(bool _isSubVar, QatType* _subtype, PointerOwner _owner, llvm::LLVMContext& ctx);
 
 public:
-  useit static PointerType *get(bool _isSubtypeVariable, QatType *_type,
-                                llvm::LLVMContext &ctx);
+  useit static PointerType* get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, llvm::LLVMContext& ctx);
 
-  useit QatType *getSubType() const;
-  useit bool     isSubtypeVariable() const;
-  useit TypeKind typeKind() const override;
-  useit String   toString() const override;
-  useit Json     toJson() const override;
+  useit QatType*     getSubType() const;
+  useit PointerOwner getOwner() const;
+  useit bool         isSubtypeVariable() const;
+  useit TypeKind     typeKind() const override;
+  useit String       toString() const override;
+  useit Json         toJson() const override;
 };
 
 } // namespace qat::IR

@@ -31,21 +31,21 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
   llvm::Value* size   = nullptr;
   auto*        typRes = type->emit(ctx);
   if (typRes->isVoid()) {
-    size = llvm::ConstantExpr::getSizeOf(llvm::Type::getInt8Ty(ctx->llctx));
+    size = llvm::ConstantInt::get(
+        llvm::Type::getInt64Ty(ctx->llctx),
+        mod->getLLVMModule()->getDataLayout().getTypeAllocSize(llvm::Type::getInt8Ty(ctx->llctx)));
   } else {
-    size = llvm::ConstantExpr::getSizeOf(typRes->getLLVMType());
+    size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                  mod->getLLVMModule()->getDataLayout().getTypeAllocSize(typRes->getLLVMType()));
   }
   mod->linkNative(IR::NativeUnit::malloc);
   auto* resTy    = IR::PointerType::get(true, typRes, ctx->llctx);
   auto* mallocFn = mod->getLLVMModule()->getFunction("malloc");
-  return new IR::Value(
-      ctx->builder.CreatePointerCast(
-          ctx->builder.CreateCall(
-              mallocFn->getFunctionType(), mallocFn,
-              {ctx->builder.CreateMul(size, (count ? countRes->getLLVM()
-                                                   : llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 1u)))}),
-          resTy->getLLVMType()),
-      resTy, false, IR::Nature::temporary);
+  return new IR::Value(ctx->builder.CreatePointerCast(
+                           ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
+                                                   {count ? ctx->builder.CreateMul(size, countRes->getLLVM()) : size}),
+                           resTy->getLLVMType()),
+                       resTy, false, IR::Nature::temporary);
 }
 
 Json HeapGet::toJson() const {

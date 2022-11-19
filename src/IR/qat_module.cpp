@@ -93,7 +93,6 @@ QatModule::~QatModule() {
   for (auto* tCty : templateCoreTypes) {
     delete tCty;
   }
-  delete llvmModule;
 };
 
 QatModule* QatModule::Create(const String& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
@@ -1415,7 +1414,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                       filePath.lexically_relative(basePath)
                           .replace_filename(moduleInfo.outputName.value_or(name))
-                          .replace_extension(""))
+                          .replace_extension(cfg->getTargetTriple().find("windows") != String::npos ? "exe" : ""))
                          .string()
                          .append(" ");
       auto staticCommand = String("clang -static -o ").append(outPath).append(cmdOne).append(targetCMD).append(cmdTwo);

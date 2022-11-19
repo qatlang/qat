@@ -88,7 +88,7 @@ MemberFunction* MemberFunction::Create(CoreType* parent, bool is_variation, cons
                                        bool has_variadic_args, const utils::FileRange& fileRange,
                                        const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> args_info;
-  args_info.push_back(Argument::Create("''", PointerType::get(is_variation, parent, ctx), 0));
+  args_info.push_back(Argument::Create("''", ReferenceType::get(is_variation, parent, ctx), 0));
   for (const auto& arg : args) {
     args_info.push_back(arg);
   }
@@ -99,7 +99,7 @@ MemberFunction* MemberFunction::Create(CoreType* parent, bool is_variation, cons
 MemberFunction* MemberFunction::DefaultConstructor(CoreType* parent, const utils::VisibilityInfo& visibInfo,
                                                    utils::FileRange fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0));
   return new MemberFunction(MemberFnType::defaultConstructor, true, parent, "default", IR::VoidType::get(ctx), false,
                             false, std::move(argsInfo), false, false, {"", {0u, 0u}, {0u, 0u}}, visibInfo, ctx);
 }
@@ -107,7 +107,7 @@ MemberFunction* MemberFunction::DefaultConstructor(CoreType* parent, const utils
 MemberFunction* MemberFunction::CopyConstructor(CoreType* parent, const String& otherName,
                                                 const utils::FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0));
   argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(false, parent, ctx), 0));
   return new MemberFunction(MemberFnType::copyConstructor, true, parent, "copy", IR::VoidType::get(ctx), false, false,
                             std::move(argsInfo), false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
@@ -116,7 +116,7 @@ MemberFunction* MemberFunction::CopyConstructor(CoreType* parent, const String& 
 MemberFunction* MemberFunction::MoveConstructor(CoreType* parent, const String& otherName,
                                                 const utils::FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0u));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0u));
   argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent, ctx), 0u));
   return new MemberFunction(MemberFnType::moveConstructor, true, parent, "move", IR::VoidType::get(ctx), false, false,
                             std::move(argsInfo), false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
@@ -125,7 +125,7 @@ MemberFunction* MemberFunction::MoveConstructor(CoreType* parent, const String& 
 MemberFunction* MemberFunction::CopyAssignment(CoreType* parent, const String& otherName,
                                                const utils::FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0u));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0u));
   argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent, ctx), 0u));
   return new MemberFunction(MemberFnType::copyAssignment, true, parent, "copy=", IR::VoidType::get(ctx), false, false,
                             std::move(argsInfo), false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
@@ -134,7 +134,7 @@ MemberFunction* MemberFunction::CopyAssignment(CoreType* parent, const String& o
 MemberFunction* MemberFunction::MoveAssignment(CoreType* parent, const String& otherName,
                                                const utils::FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0u));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0u));
   argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent, ctx), 0u));
   return new MemberFunction(MemberFnType::moveAssignment, true, parent, "move=", IR::VoidType::get(ctx), false, false,
                             std::move(argsInfo), false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
@@ -145,7 +145,7 @@ MemberFunction* MemberFunction::CreateConstructor(CoreType* parent, const Vec<Ar
                                                   const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
   // FIXME - Change parent pointer type to reference type?
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0));
   for (const auto& arg : args) {
     argsInfo.push_back(arg);
   }
@@ -158,7 +158,7 @@ MemberFunction* MemberFunction::CreateFromConvertor(CoreType* parent, QatType* s
                                                     const utils::FileRange&      fileRange,
                                                     const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(true, parent, ctx), 0));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(true, parent, ctx), 0));
   SHOW("Created parent pointer argument")
   argsInfo.push_back(Argument::Create(name, sourceType, 1));
   SHOW("Created candidate type")
@@ -170,7 +170,7 @@ MemberFunction* MemberFunction::CreateToConvertor(CoreType* parent, QatType* des
                                                   const utils::FileRange&      fileRange,
                                                   const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
-  argsInfo.push_back(Argument::Create("''", PointerType::get(false, parent, ctx), 0));
+  argsInfo.push_back(Argument::Create("''", ReferenceType::get(false, parent, ctx), 0));
   return new MemberFunction(MemberFnType::toConvertor, false, parent, "to'" + destType->toString(), destType, false,
                             false, argsInfo, false, false, fileRange, visibInfo, ctx);
 }
@@ -189,7 +189,7 @@ MemberFunction* MemberFunction::CreateDestructor(CoreType* parent, const utils::
                                                  llvm::LLVMContext& ctx) {
   SHOW("Creating destructor")
   return new MemberFunction(MemberFnType::destructor, true, parent, "end", VoidType::get(ctx), false, false,
-                            Vec<Argument>({Argument::Create("''", PointerType::get(true, parent, ctx), 0)}), false,
+                            Vec<Argument>({Argument::Create("''", ReferenceType::get(true, parent, ctx), 0)}), false,
                             false, fileRange, utils::VisibilityInfo::pub(), ctx);
 }
 
@@ -198,7 +198,7 @@ MemberFunction* MemberFunction::CreateOperator(CoreType* parent, bool isBinary, 
                                                const utils::FileRange&      fileRange,
                                                const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> args_info;
-  args_info.push_back(Argument::Create("''", PointerType::get(isVariationFn, parent, ctx), 0));
+  args_info.push_back(Argument::Create("''", ReferenceType::get(isVariationFn, parent, ctx), 0));
   for (const auto& arg : args) {
     args_info.push_back(arg);
   }

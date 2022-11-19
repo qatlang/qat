@@ -61,7 +61,8 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
       }
       case TypeKind::pointer: {
         return (((PointerType*)this)->isSubtypeVariable() == ((PointerType*)other)->isSubtypeVariable()) &&
-               (((PointerType*)this)->getSubType()->isSame(((PointerType*)other)->getSubType()));
+               (((PointerType*)this)->getSubType()->isSame(((PointerType*)other)->getSubType())) &&
+               (((PointerType*)this)->getOwner().isSame(((PointerType*)other)->getOwner()));
       }
       case TypeKind::reference: {
         return (((ReferenceType*)this)->isSubtypeVariable() == ((ReferenceType*)other)->isSubtypeVariable()) &&

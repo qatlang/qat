@@ -294,11 +294,9 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
 }
 
 Function::~Function() {
-  SHOW("Deleting function: " << getFullName() << " ; address " << this)
   for (auto* blk : blocks) {
     delete blk;
   }
-  SHOW("Function deleted")
 }
 
 llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }

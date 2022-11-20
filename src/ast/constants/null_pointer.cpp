@@ -6,10 +6,7 @@ namespace qat::ast {
 
 NullPointer::NullPointer(utils::FileRange _fileRange) : ConstantExpression(std::move(_fileRange)) {}
 
-void NullPointer::setType(bool isVariable, IR::QatType* typ) {
-  isVariableType = isVariable;
-  candidateType  = typ;
-}
+void NullPointer::setType(IR::PointerType* typ) { candidateType = typ; }
 
 IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
@@ -17,10 +14,12 @@ IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
   }
   if (candidateType) {
     return new IR::ConstantValue(llvm::ConstantPointerNull::get(candidateType->getLLVMType()->getPointerTo()),
-                                 IR::PointerType::get(isVariableType, candidateType, ctx->llctx));
+                                 IR::PointerType::get(candidateType->isSubtypeVariable(), candidateType->getSubType(),
+                                                      candidateType->getOwner(), ctx->llctx));
   } else {
-    return new IR::ConstantValue(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-                                 IR::PointerType::get(isVariableType, IR::VoidType::get(ctx->llctx), ctx->llctx));
+    return new IR::ConstantValue(
+        llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
+        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), IR::PointerOwner::OfAnonymous(), ctx->llctx));
   }
 }
 

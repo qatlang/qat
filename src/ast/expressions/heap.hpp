@@ -8,41 +8,40 @@ namespace qat::ast {
 
 class HeapGet : public Expression {
 private:
-  QatType    *type;
-  Expression *count;
+  QatType*    type;
+  Expression* count = nullptr;
 
 public:
-  HeapGet(QatType *_type, Expression *_count, utils::FileRange _fileRange);
+  HeapGet(QatType* _type, Expression* _count, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGet; }
   useit Json       toJson() const final;
 };
 
 class HeapPut : public Expression {
 private:
-  Expression *ptr;
+  Expression* ptr;
 
 public:
-  HeapPut(Expression *pointer, utils::FileRange fileRange);
+  HeapPut(Expression* pointer, utils::FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapPut; }
   useit Json       toJson() const final;
 };
 
 class HeapGrow : public Expression {
 private:
-  QatType *type;
+  QatType* type;
 
-  Expression *ptr;
-  Expression *count;
+  Expression* ptr;
+  Expression* count;
 
 public:
-  HeapGrow(QatType *type, Expression *ptr, Expression *count,
-           utils::FileRange fileRange);
+  HeapGrow(QatType* type, Expression* ptr, Expression* count, utils::FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGrow; }
   useit Json       toJson() const final;
 };

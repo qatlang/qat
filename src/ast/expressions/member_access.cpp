@@ -82,8 +82,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
-            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), ctx->llctx), false,
-            IR::Nature::temporary);
+            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), // NOLINT(readability-magic-numbers)
+                                 IR::PointerOwner::OfAnonymous(), ctx->llctx),
+            false, IR::Nature::temporary);
       } else {
         // FIXME - Implement constant value support
         ctx->Error("Invalid value for String Slice and hence cannot get data", fileRange);

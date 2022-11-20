@@ -95,8 +95,7 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         }
       } else if (retType->isPointer()) {
         if (give_expr.value()->nodeType() == NodeType::nullPointer) {
-          ((NullPointer*)give_expr.value())
-              ->setType(retType->asPointer()->isSubtypeVariable(), retType->asPointer()->getSubType());
+          ((NullPointer*)give_expr.value())->setType(retType->asPointer());
         }
       }
       auto* retVal = give_expr.value()->emit(ctx);

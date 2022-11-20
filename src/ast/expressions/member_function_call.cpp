@@ -103,8 +103,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
           }
         } else if (arguments.at(i)->nodeType() == NodeType::nullPointer) {
           if (argTy->isPointer()) {
-            ((NullPointer*)arguments.at(i))
-                ->setType(argTy->asPointer()->isSubtypeVariable(), argTy->asPointer()->getSubType());
+            ((NullPointer*)arguments.at(i))->setType(argTy->asPointer());
           } else {
             ctx->Error("The expression provided does not match the type of the argument", arguments.at(i)->fileRange);
           }

@@ -23,9 +23,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         auto* local  = fun->getBlock()->getValue(name);
         auto* alloca = local->getAlloca();
         if (getExpectedKind() == ExpressionKind::assignable) {
-          if (local->isVariable() ||
-              (local->getType()->isReference() && local->getType()->asReference()->isSubtypeVariable())) {
-            auto* val = new IR::Value(alloca, local->getType(), true, IR::Nature::assignable);
+          if (local->getType()->isReference() ? local->getType()->asReference()->isSubtypeVariable()
+                                              : local->isVariable()) {
+            auto* val = new IR::Value(alloca, local->getType(), !local->isReference(), IR::Nature::assignable);
             val->setLocalID(local->getID());
             return val;
           } else {

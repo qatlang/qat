@@ -26,11 +26,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     if (rhsEmit->getType()->isPointer() ||
         (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isPointer())) {
       ((NullPointer*)lhs)
-          ->setType(rhsEmit->isReference()
-                        ? rhsEmit->getType()->asReference()->getSubType()->asPointer()->isSubtypeVariable()
-                        : rhsEmit->getType()->asPointer()->isSubtypeVariable(),
-                    rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()->getSubType()
-                                           : rhsEmit->getType()->asPointer()->getSubType());
+          ->setType(rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                           : rhsEmit->getType()->asPointer());
       lhsEmit = lhs->emit(ctx);
     } else {
       ctx->Error("Invalid type found to set for the null pointer. The LHS is a "
@@ -43,11 +40,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isPointer())) {
       SHOW("Set type for RHS null pointer")
       ((NullPointer*)rhs)
-          ->setType(lhsEmit->isReference()
-                        ? lhsEmit->getType()->asReference()->getSubType()->asPointer()->isSubtypeVariable()
-                        : lhsEmit->getType()->asPointer()->isSubtypeVariable(),
-                    lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()->getSubType()
-                                           : lhsEmit->getType()->asPointer()->getSubType());
+          ->setType(lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                           : lhsEmit->getType()->asPointer());
       rhsEmit = rhs->emit(ctx);
     } else {
       ctx->Error("Invalid type found to set for the null pointer. The LHS is a "

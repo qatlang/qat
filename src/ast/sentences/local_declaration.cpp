@@ -104,7 +104,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       return nullptr;
     }
   } else if (value && (value->nodeType() == NodeType::constructorCall) &&
-             !((((ast::ConstructorCall*)value))->isHeaped)) {
+             !((((ast::ConstructorCall*)value))->isOwning())) {
     auto* cons = (ast::ConstructorCall*)value;
     if (type) {
       declType = type->emit(ctx);
@@ -219,14 +219,12 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
         declType = type->emit(ctx);
         maybeTypeCheck();
         if (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer()) {
-          ((NullPointer*)value)
-              ->setType(declType->asMaybe()->getSubType()->asPointer()->isSubtypeVariable(),
-                        declType->asMaybe()->getSubType());
+          ((NullPointer*)value)->setType(declType->asMaybe()->getSubType()->asPointer());
         } else if (declType->isPointer() ||
                    (declType->isReference() && declType->asReference()->getSubType()->isPointer())) {
           auto* typeToSet =
               declType->isReference() ? declType->asReference()->getSubType()->asPointer() : declType->asPointer();
-          ((NullPointer*)value)->setType(typeToSet->isSubtypeVariable(), typeToSet->getSubType());
+          ((NullPointer*)value)->setType(typeToSet);
         } else {
           ctx->Error("Invalid type recognised for the value to be assigned, "
                      "which is a null pointer. Expected a pointer type in the "
@@ -308,7 +306,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
               "The value to be assigned is a pointer to a function, so please add a pointer hint to this declaration",
               fileRange);
         }
-        declType       = IR::PointerType::get(false, declType, ctx->llctx);
+        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), ctx->llctx);
         auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
         auto* newValue = block->newValue(name, declType, variability);
         ctx->builder.CreateStore(fnCast, newValue->getLLVM());

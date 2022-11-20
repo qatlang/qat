@@ -9,17 +9,30 @@ namespace qat::ast {
 class ConstructorCall : public Expression {
   friend class LocalDeclaration;
 
+public:
+  enum class OwnType {
+    heap,
+    type,
+    region,
+    parent,
+  };
+
 private:
   QatType*         type;
   Vec<Expression*> args;
-  bool             isHeaped;
+  Maybe<OwnType>   ownTy;
 
   mutable IR::LocalValue* local = nullptr;
   mutable String          irName;
   mutable bool            isVar = true;
 
+  IR::PointerOwner getIRPtrOwnerTy(IR::Context* ctx) const;
+  String           ownTyToString() const;
+
 public:
-  ConstructorCall(QatType* _type, Vec<Expression*> _args, bool _isHeap, utils::FileRange _fileRange);
+  ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, utils::FileRange _fileRange);
+
+  useit bool isOwning() const;
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::constructorCall; }

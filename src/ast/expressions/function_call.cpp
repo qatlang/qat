@@ -40,8 +40,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
           }
         } else if (values.at(i)->nodeType() == NodeType::nullPointer) {
           if (argTy->isPointer()) {
-            ((NullPointer*)values.at(i))
-                ->setType(argTy->asPointer()->isSubtypeVariable(), argTy->asPointer()->getSubType());
+            ((NullPointer*)values.at(i))->setType(argTy->asPointer());
           } else {
             ctx->Error("The expression provided does not match the type of the argument", values.at(i)->fileRange);
           }
@@ -66,6 +65,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     }
     Vec<llvm::Value*> argValues;
     for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
+      SHOW("Argument value type at " << i << " is: " << argsEmit.at(i)->getType()->toString())
       if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i)->isReference()) {
         if (!argsEmit.at(i)->isImplicitPointer()) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", values.at(i)->fileRange);

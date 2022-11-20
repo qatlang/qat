@@ -3,8 +3,35 @@
 
 namespace qat::ast {
 
-ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, bool isHeap, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), isHeaped(isHeap) {}
+ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
+                                 utils::FileRange _fileRange)
+    : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy) {}
+
+IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
+  switch (ownTy.value()) {
+    case OwnType::type:
+      return IR::PointerOwner::OfType(ctx->activeType);
+    case OwnType::heap:
+      return IR::PointerOwner::OfHeap();
+    case OwnType::parent:
+      return IR::PointerOwner::OfFunction(ctx->fn);
+    case OwnType::region:
+      return IR::PointerOwner::OfRegion();
+  }
+}
+
+String ConstructorCall::ownTyToString() const {
+  switch (ownTy.value()) {
+    case OwnType::type:
+      return "type";
+    case OwnType::heap:
+      return "heap";
+    case OwnType::parent:
+      return "parent";
+    case OwnType::region:
+      return "region";
+  }
+}
 
 IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   auto* typ = type->emit(ctx);
@@ -82,7 +109,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
     }
     llvm::Value* llAlloca;
-    if (isHeaped) {
+    if (ownTy.has_value()) {
       ctx->getMod()->linkNative(IR::NativeUnit::malloc);
       auto* mallocFn = ctx->getMod()->getLLVMModule()->getFunction("malloc");
       llAlloca =
@@ -117,8 +144,10 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       res->setLocalID(local->getLocalID());
       return res;
     } else {
-      auto* res = new IR::Value(llAlloca, isHeaped ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ctx->llctx) : cTy,
-                                isHeaped ? false : isVar, IR::Nature::temporary);
+      auto* res = new IR::Value(
+          llAlloca,
+          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, getIRPtrOwnerTy(ctx), ctx->llctx) : cTy,
+          ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (local) {
         res->setLocalID(local->getLocalID());
       }
@@ -130,7 +159,10 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
                    "called for this type",
                type->fileRange);
   }
+  return nullptr;
 }
+
+bool ConstructorCall::isOwning() const { return ownTy.has_value(); }
 
 Json ConstructorCall::toJson() const {
   Vec<JsonValue> argsJson;
@@ -141,7 +173,8 @@ Json ConstructorCall::toJson() const {
       ._("nodeType", "constructorCall")
       ._("type", type->toJson())
       ._("arguments", argsJson)
-      ._("isHeap", isHeaped)
+      ._("isOwn", ownTy.has_value())
+      ._("ownType", ownTy.has_value() ? JsonValue(ownTyToString()) : JsonValue())
       ._("fileRange", fileRange);
 }
 

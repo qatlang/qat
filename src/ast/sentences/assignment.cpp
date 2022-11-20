@@ -25,19 +25,14 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
   if (value->nodeType() == NodeType::nullPointer) {
     auto* nullVal = (NullPointer*)value;
     if (lhsVal->getType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asPointer()->isSubtypeVariable(),
-                       lhsVal->getType()->asPointer()->getSubType());
+      nullVal->setType(lhsVal->getType()->asPointer());
     } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asReference()->getSubType()->asPointer()->isSubtypeVariable(),
-                       lhsVal->getType()->asReference()->getSubType()->asPointer()->getSubType());
+      nullVal->setType(lhsVal->getType()->asReference()->getSubType()->asPointer());
     } else if (lhsVal->getType()->isMaybe() && lhsVal->getType()->asMaybe()->getSubType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asMaybe()->getSubType()->asPointer()->isSubtypeVariable(),
-                       lhsVal->getType()->asMaybe()->getSubType());
+      nullVal->setType(lhsVal->getType()->asMaybe()->getSubType()->asPointer());
     } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe() &&
                lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isPointer()) {
-      nullVal->setType(
-          lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->asPointer()->isSubtypeVariable(),
-          lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType());
+      nullVal->setType(lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->asPointer());
     } else {
       ctx->Error("Type of the LHS is not compatible with the RHS, which is a "
                  "null pointer",

@@ -457,11 +457,52 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (isNext(TokenType::bracketOpen, i)) {
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
-            auto bClose     = bCloseRes.value();
-            auto subTypeRes = parseType(ctx, i + 1, bClose);
-            i               = bClose;
-            cacheTy         = new ast::PointerType(subTypeRes.first, getVariability(),
-                                                   utils::FileRange(token.fileRange, RangeAt(bClose)));
+            auto bClose = bCloseRes.value();
+            if (isPrimaryWithin(TokenType::ternary, i + 1, bClose)) {
+              auto questionPos = firstPrimaryPosition(TokenType::ternary, i + 1).value();
+              auto subTypeRes  = parseType(ctx, i + 1, questionPos);
+              if (questionPos != (bClose - 1)) {
+                Error("Unexpected tokens after the anonymous ownership marker", RangeSpan(questionPos, bClose - 1));
+              }
+              cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::anonymous, None,
+                                             {token.fileRange, RangeAt(bClose)});
+            } else if (isPrimaryWithin(TokenType::child, i + 1, bClose)) {
+              auto childPos   = firstPrimaryPosition(TokenType::child, i + 1).value();
+              auto subTypeRes = parseType(ctx, i + 1, childPos);
+              if (isNext(TokenType::heap, childPos)) {
+                if (childPos + 2 != bClose) {
+                  Error("Invalid ownership 'heap", RangeSpan(childPos, bClose));
+                }
+                cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::heap, None,
+                                               {token.fileRange, RangeAt(bClose)});
+              } else if (isNext(TokenType::Type, childPos)) {
+                if (isNext(TokenType::parenthesisOpen, childPos + 1)) {
+                  auto pCloseRes =
+                      getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, childPos + 2, false);
+                  if (pCloseRes.has_value()) {
+                    // FIXME - Less assumptions about end of the type
+                    cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::type,
+                                                   parseType(preCtx, childPos + 2, pCloseRes.value()).first,
+                                                   {token.fileRange, RangeAt(bClose)});
+                  } else {
+                    Error("Expected end for (", RangeAt(childPos + 2));
+                  }
+                } else {
+                  if (childPos + 2 != bClose) {
+                    Error("Invalid ownership variant 'type", RangeSpan(childPos, bClose));
+                  }
+                  cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::typeParent, None,
+                                                 {token.fileRange, RangeAt(bClose)});
+                }
+              } else {
+                Error("Invalid ownership of the pointer", {token.fileRange, RangeAt(childPos)});
+              }
+            } else {
+              auto subTypeRes = parseType(ctx, i + 1, bClose);
+              cacheTy         = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::parent, None,
+                                                     {token.fileRange, RangeAt(bClose)});
+            }
+            i = bClose;
             break;
           } else {
             Error("Invalid end for pointer type", RangeAt(i));
@@ -2036,7 +2077,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
               cachedExpressions.push_back(new ast::ConstructorCall(
                   new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange), exps,
-                  false, {cachedSymbol->fileRange, RangeAt(pClose)}));
+                  None, {cachedSymbol->fileRange, RangeAt(pClose)}));
               cachedSymbol = None;
               i            = pClose;
             } else {
@@ -2085,7 +2126,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                   cachedExpressions.push_back(
                       new ast::ConstructorCall(new ast::TemplateNamedType(cachedSymbol->relative, cachedSymbol->name,
                                                                           types, false, cachedSymbol->fileRange),
-                                               exps, false, {cachedSymbol->fileRange, RangeAt(pClose)}));
+                                               exps, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
                   cachedSymbol = None;
                   i            = pClose;
                 } else {
@@ -2411,6 +2452,17 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::own: {
         auto start = i;
+        auto ownTy = ast::ConstructorCall::OwnType::parent;
+        if (isNext(TokenType::child, i)) {
+          if (isNext(TokenType::heap, i + 1)) {
+            ownTy = ast::ConstructorCall::OwnType::heap;
+          } else if (isNext(TokenType::Type, i + 1)) {
+            ownTy = ast::ConstructorCall::OwnType::type;
+          } else {
+            Error("Unexpected ownership type", RangeSpan(i, i + 1));
+          }
+          i += 2;
+        }
         // FIXME - Add heaped plain initialisation
         auto symRes  = parseSymbol(preCtx, i + 1);
         cachedSymbol = symRes.first;
@@ -2436,7 +2488,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             if (pCloseRes) {
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-              cachedExpressions.push_back(new ast::ConstructorCall(type, args, true, RangeSpan(start, pClose)));
+              cachedExpressions.push_back(new ast::ConstructorCall(type, args, ownTy, RangeSpan(start, pClose)));
               i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 2));

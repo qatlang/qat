@@ -42,8 +42,20 @@ bool QatType::checkTypeExists(const String& name) {
         return true;
       }
     }
-    return false;
-  };
+  }
+  return false;
+}
+
+bool QatType::isCompatible(QatType* other) {
+  if (isPointer() && other->isPointer()) {
+    if (asPointer()->getOwner().isAnonymous()) {
+      return true;
+    } else {
+      return isSame(other);
+    }
+  } else {
+    return isSame(other);
+  }
 }
 
 bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)

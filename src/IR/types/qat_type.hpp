@@ -45,6 +45,7 @@ public:
 
   useit static bool      checkTypeExists(const String& name);
   useit bool             isSame(QatType* other);
+  useit bool             isCompatible(QatType* other);
   useit bool             isDefinition() const;
   useit DefinitionType*  asDefinition() const;
   useit bool             isInteger() const;

@@ -292,6 +292,11 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     SHOW("Created entry block")
     block->setActive(ctx->builder);
     SHOW("Set new block as the active block")
+    SHOW("Calling module initialisers")
+    auto modInits = IR::QatModule::collectModuleInitialisers();
+    for (auto* modFn : modInits) {
+      (void)modFn->call(ctx, {}, ctx->getMod());
+    }
     SHOW("About to allocate necessary arguments")
     auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
     SHOW("Iteration run for function is: " << fnEmit->getName())

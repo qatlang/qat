@@ -108,7 +108,7 @@ private:
   Vec<Brought<TemplateCoreType>> broughtTemplateCoreTypes;
   Vec<GlobalEntity*>             globalEntities;
   Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
-  Function*                      globalInitialiser;
+  Function*                      moduleInitialiser;
   u64                            nonConstantGlobals = 0;
 
   Vec<u64>           integerBitwidths;
@@ -150,6 +150,8 @@ public:
   useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, String name,
                                         Vec<String> content, Vec<ast::Node*> nodes,
                                         const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
+
+  static Vec<Function*> collectModuleInitialisers();
 
   useit ModuleType getModuleType() const;
   useit String     getFullName() const;

@@ -100,6 +100,16 @@ QatModule* QatModule::Create(const String& name, const fs::path& filepath, const
   return new QatModule(name, filepath, basePath, type, visib_info, ctx);
 }
 
+Vec<Function*> QatModule::collectModuleInitialisers() {
+  Vec<Function*> res;
+  for (auto* mod : allModules) {
+    if (mod->nonConstantGlobals > 0) {
+      res.push_back(mod->moduleInitialiser);
+    }
+  }
+  return res;
+}
+
 ModuleType QatModule::getModuleType() const { return moduleType; }
 
 const utils::VisibilityInfo& QatModule::getVisibility() const { return visibility; }
@@ -285,14 +295,14 @@ String QatModule::getFullNameWithChild(const String& child) const {
 bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box || moduleType == ModuleType::lib); }
 
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
-  if (!globalInitialiser) {
-    globalInitialiser = IR::Function::Create(
+  if (!moduleInitialiser) {
+    moduleInitialiser = IR::Function::Create(
         this, "module'initialiser'" + utils::unique_id(), IR::VoidType::get(ctx->llctx), false, false, {}, false,
         utils::FileRange("", utils::FilePos{0u, 0u}, utils::FilePos{0u, 0u}), utils::VisibilityInfo::pub(), ctx->llctx);
-    auto* entry = new IR::Block(globalInitialiser, nullptr);
+    auto* entry = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
   }
-  return globalInitialiser;
+  return moduleInitialiser;
 }
 
 void QatModule::incrementNonConstGlobalCounter() { nonConstantGlobals++; }
@@ -1302,8 +1312,8 @@ void QatModule::emitNodes(IR::Context* ctx) {
       SHOW("About to emit for submodule: " << sub->getFullName())
       sub->emitNodes(ctx);
     }
-    if (globalInitialiser) {
-      globalInitialiser->getBlock()->setActive(ctx->builder);
+    if (moduleInitialiser) {
+      moduleInitialiser->getBlock()->setActive(ctx->builder);
       ctx->builder.CreateRetVoid();
     }
     SHOW("Module type is: " << (int)moduleType)

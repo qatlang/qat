@@ -22,11 +22,12 @@ private:
   QatType*             type;
   PtrOwnType           ownTyp;
   Maybe<ast::QatType*> ownerTyTy;
+  bool                 isMultiPtr;
 
   useit IR::PointerOwner getPointerOwner(IR::Context* ctx) const;
 
 public:
-  PointerType(QatType* _type, bool _variable, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy,
+  PointerType(QatType* _type, bool _variable, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy, bool _isMultiPtr,
               utils::FileRange _fileRange);
 
   useit IR::QatType* emit(IR::Context* ctx) final;

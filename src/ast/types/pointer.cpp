@@ -4,9 +4,10 @@
 
 namespace qat::ast {
 
-PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe<QatType*> _ownTyTy,
+PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe<QatType*> _ownTyTy, bool _isMultiPtr,
                          utils::FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy) {}
+    : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy),
+      isMultiPtr(_isMultiPtr) {}
 
 IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx) const {
   switch (ownTyp) {
@@ -42,7 +43,7 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
       ctx->Error("This pointer type is not inside a type and hence the pointer cannot be owned by type", fileRange);
     }
   }
-  return IR::PointerType::get(type->isVariable(), type->emit(ctx), getPointerOwner(ctx), ctx->llctx);
+  return IR::PointerType::get(type->isVariable(), type->emit(ctx), getPointerOwner(ctx), isMultiPtr, ctx->llctx);
 }
 
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
@@ -50,11 +51,14 @@ TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 Json PointerType::toJson() const {
   return Json()
       ._("typeKind", "pointer")
+      ._("isMulti", isMultiPtr)
       ._("subType", type->toJson())
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);
 }
 
-String PointerType::toString() const { return (isVariable() ? "var #[" : "#[") + type->toString() + "]"; }
+String PointerType::toString() const {
+  return String(isVariable() ? "var #[" : "#[") + (isMultiPtr ? "+ " : " ") + type->toString() + "]";
+}
 
 } // namespace qat::ast

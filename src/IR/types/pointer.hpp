@@ -48,15 +48,18 @@ private:
   QatType*     subType;
   bool         isSubtypeVar;
   PointerOwner owner;
+  bool         hasMulti;
 
-  PointerType(bool _isSubVar, QatType* _subtype, PointerOwner _owner, llvm::LLVMContext& ctx);
+  PointerType(bool _isSubVar, QatType* _subtype, PointerOwner _owner, bool _hasMulti, llvm::LLVMContext& ctx);
 
 public:
-  useit static PointerType* get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, llvm::LLVMContext& ctx);
+  useit static PointerType* get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
+                                llvm::LLVMContext& ctx);
 
   useit QatType*     getSubType() const;
   useit PointerOwner getOwner() const;
   useit bool         isSubtypeVariable() const;
+  useit bool         isMulti() const;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;
   useit Json         toJson() const override;

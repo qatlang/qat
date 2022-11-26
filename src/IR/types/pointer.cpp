@@ -1,6 +1,7 @@
 #include "./pointer.hpp"
 #include "../../memory_tracker.hpp"
 #include "../function.hpp"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
 
@@ -68,28 +69,38 @@ String PointerOwner::toString() const {
   }
 }
 
-PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, llvm::LLVMContext& ctx)
-    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner) {
-  llvmType = llvm::PointerType::get(subType->getLLVMType()->isVoidTy()
-                                        ? llvm::Type::getInt8Ty(subType->getLLVMType()->getContext())
-                                        : subType->getLLVMType(),
-                                    0U);
+PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
+                         llvm::LLVMContext& ctx)
+    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti) {
+  if (_hasMulti) {
+    llvmType = llvm::StructType::create(
+        {llvm::PointerType::get(
+             subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0u),
+         llvm::Type::getInt64Ty(ctx)},
+        "#[+" + subType->toString() + "]");
+  } else {
+    llvmType = llvm::PointerType::get(
+        subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0U);
+  }
 }
 
-PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, llvm::LLVMContext& ctx) {
+PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
+                              llvm::LLVMContext& ctx) {
   for (auto* typ : types) {
     if (typ->isPointer()) {
       if (typ->asPointer()->getSubType()->isSame(_type) &&
           (typ->asPointer()->isSubtypeVariable() == _isSubtypeVariable) &&
-          typ->asPointer()->getOwner().isSame(_owner)) {
+          typ->asPointer()->getOwner().isSame(_owner) && (typ->asPointer()->isMulti() == _hasMulti)) {
         return typ->asPointer();
       }
     }
   }
-  return new PointerType(_isSubtypeVariable, _type, _owner, ctx);
+  return new PointerType(_isSubtypeVariable, _type, _owner, _hasMulti, ctx);
 }
 
 bool PointerType::isSubtypeVariable() const { return isSubtypeVar; }
+
+bool PointerType::isMulti() const { return hasMulti; }
 
 QatType* PointerType::getSubType() const { return subType; }
 

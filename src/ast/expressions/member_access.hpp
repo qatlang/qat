@@ -8,15 +8,13 @@
 
 namespace qat::ast {
 class MemberAccess : public Expression {
-  Expression *instance;
+  Expression* instance;
   String      name;
-  bool        isPointer;
 
 public:
-  MemberAccess(Expression *_instance, bool _isPointer, String _name,
-               utils::FileRange _fileRange);
+  MemberAccess(Expression* _instance, String _name, utils::FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
+  useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
   useit NodeType   nodeType() const override { return NodeType::memberAccess; }
 };

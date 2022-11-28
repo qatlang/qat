@@ -16,20 +16,9 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     isVar    = instType->asReference()->isSubtypeVariable();
     instType = instType->asReference()->getSubType();
   }
-  if (isPointerCall) {
-    if (instType->isPointer()) {
-      inst->loadImplicitPointer(ctx->builder);
-      isVar    = instType->asPointer()->isSubtypeVariable();
-      instType = instType->asPointer()->getSubType();
-    } else {
-      ctx->Error("The expression type has to be a pointer to use > to access members", instance->fileRange);
-    }
-  } else {
-    if (instType->isPointer()) {
-      ctx->Error(String("The expression is of pointer type. Please use ") + (variation ? ">~" : ">-") +
-                     " to access member function",
-                 instance->fileRange);
-    }
+  if (instType->isPointer()) {
+    ctx->Error("The expression is of pointer type. Please dereference the pointer to call the member function",
+               instance->fileRange);
   }
   if (instType->isCoreType()) {
     if (memberName == "end") {
@@ -79,7 +68,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
                  fileRange);
     }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
-      inst = inst->createAlloca(ctx->builder);
+      inst->makeImplicitPointer(ctx, None);
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();

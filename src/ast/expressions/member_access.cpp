@@ -8,10 +8,11 @@
 
 namespace qat::ast {
 
-MemberAccess::MemberAccess(Expression* _instance, bool _isPointerAccess, String _name, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), instance(_instance), name(std::move(_name)), isPointer(_isPointerAccess) {}
+MemberAccess::MemberAccess(Expression* _instance, String _name, utils::FileRange _fileRange)
+    : Expression(std::move(_fileRange)), instance(_instance), name(std::move(_name)) {}
 
 IR::Value* MemberAccess::emit(IR::Context* ctx) {
+  // NOLINTBEGIN(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
   SHOW("Member variable emitting")
   if (instance->nodeType() == NodeType::entity) {
     ((ast::Entity*)instance)->setCanBeChoice();
@@ -23,19 +24,6 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     inst->loadImplicitPointer(ctx->builder);
     isVar    = instType->asReference()->isSubtypeVariable();
     instType = instType->asReference()->getSubType();
-  }
-  if (isPointer) {
-    if (instType->isPointer()) {
-      inst->loadImplicitPointer(ctx->builder);
-      isVar    = instType->asPointer()->isSubtypeVariable();
-      instType = instType->asPointer()->getSubType();
-    } else {
-      ctx->Error("The expression type has to be a pointer to use >- to access members", instance->fileRange);
-    }
-  } else {
-    if (instType->isPointer()) {
-      ctx->Error("The expression is of pointer type. Please use >- to access members", instance->fileRange);
-    }
   }
   if (instType->isChoice()) {
     auto* chTy = instType->asChoice();
@@ -61,29 +49,31 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isStringSlice()) {
     if (name == "length") {
-      if (inst->isImplicitPointer() || inst->isReference()) {
+      if (llvm::isa<llvm::Constant>(inst->getLLVM())) {
+        SHOW("String slice is a constant")
+        return new IR::ConstantValue(
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                   llvm::dyn_cast<llvm::ConstantInt>(
+                                       llvm::dyn_cast<llvm::ConstantStruct>(inst->getLLVM())->getAggregateElement(1u))
+                                       ->getValue()),
+            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx));
+      } else {
+        if (!inst->isReference() && !inst->isImplicitPointer()) {
+          inst->makeImplicitPointer(ctx, None);
+        }
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 1u),
             IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx), false,
             IR::Nature::temporary);
-      } else if (llvm::isa<llvm::Constant>(inst->getLLVM())) {
-        SHOW("String slice is a constant")
-        return new IR::Value(
-            llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
-                                   llvm::dyn_cast<llvm::ConstantDataArray>(inst->getLLVM())->getAsString().size()),
-            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx), false,
-            IR::Nature::temporary);
-      } else {
-        ctx->Error("Invalid value for String Slice and hence cannot get length", fileRange);
       }
     } else if (name == "buffer") {
-      if (inst->isImplicitPointer() || inst->isReference()) {
+      if (inst->isReference() || inst->isImplicitPointer()) {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
             IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), // NOLINT(readability-magic-numbers)
-                                 IR::PointerOwner::OfAnonymous(), ctx->llctx),
+                                 IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
             false, IR::Nature::temporary);
       } else {
         // FIXME - Implement constant value support
@@ -94,7 +84,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isFuture()) {
     if (name == "isDone") {
-      if (inst->isImplicitPointer() || inst->isReference()) {
+      if (inst->isReference() || inst->isImplicitPointer()) {
         return new IR::Value(
             ctx->builder.CreateICmpEQ(
                 ctx->builder.CreateLoad(
@@ -168,23 +158,39 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  fileRange);
     }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
-      inst = inst->createAlloca(ctx->builder);
+      inst->makeImplicitPointer(ctx, None);
     }
     return new IR::Value(ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
                                                       instType->asCore()->getIndexOf(name).value()),
                          IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name), ctx->llctx), false,
                          IR::Nature::temporary);
+  } else if (instType->isPointer()) {
+    if (name == "length") {
+      if (instType->asPointer()->isMulti()) {
+        if (!inst->isImplicitPointer() && !inst->isReference()) {
+          inst->makeImplicitPointer(ctx, None);
+        }
+        return new IR::Value(
+            ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                    ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 1u)),
+            IR::UnsignedType::get(64u, ctx->llctx), false, IR::Nature::temporary);
+      } else {
+        ctx->Error("The pointer is not a multi pointer and hence the length cannot be determined", fileRange);
+      }
+    } else {
+      ctx->Error("Invalid member name for pointer datatype", fileRange);
+    }
   } else {
     ctx->Error("Member access for this type is not supported", fileRange);
   }
   return nullptr;
+  // NOLINTEND(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
 }
 
 Json MemberAccess::toJson() const {
   return Json()
       ._("nodeType", "memberVariable")
       ._("instance", instance->toJson())
-      ._("isPointerAccess", isPointer)
       ._("member", name)
       ._("fileRange", fileRange);
 }

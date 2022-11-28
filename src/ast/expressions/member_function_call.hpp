@@ -11,27 +11,22 @@ namespace qat::ast {
 
 class MemberFunctionCall : public Expression {
 private:
-  Expression       *instance;
-  String            memberName;
-  Vec<Expression *> arguments;
-  bool              variation;
-  bool              isPointerCall;
+  Expression*      instance;
+  String           memberName;
+  Vec<Expression*> arguments;
+  bool             variation;
 
 public:
-  MemberFunctionCall(Expression *_instance, bool _isPointerCall,
-                     String _memberName, Vec<Expression *> _arguments,
-                     bool _variation, utils::FileRange _fileRange)
-      : Expression(std::move(_fileRange)), instance(_instance),
-        memberName(std::move(_memberName)), arguments(std::move(_arguments)),
-        variation(_variation), isPointerCall(_isPointerCall) {}
+  MemberFunctionCall(Expression* _instance, String _memberName, Vec<Expression*> _arguments, bool _variation,
+                     utils::FileRange _fileRange)
+      : Expression(std::move(_fileRange)), instance(_instance), memberName(std::move(_memberName)),
+        arguments(std::move(_arguments)), variation(_variation) {}
 
-  IR::Value *emit(IR::Context *ctx) override;
+  IR::Value* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 
-  useit NodeType nodeType() const override {
-    return NodeType::memberFunctionCall;
-  }
+  useit NodeType nodeType() const override { return NodeType::memberFunctionCall; }
 };
 
 } // namespace qat::ast

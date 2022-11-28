@@ -42,15 +42,16 @@ public:
   useit bool                 isVariable() const;
   useit virtual bool         isConstVal() const;
   useit ConstantValue*       asConst() const;
-  useit bool                 isLocalToFn() const;
-  useit String               getLocalID() const;
-  void                       setLocalID(const String& locID);
-  useit Nature               getNature() const;
-  useit IR::Value*     createAlloca(llvm::IRBuilder<>& builder);
-  useit bool           isImplicitPointer() const;
-  void                 makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
-  void                 loadImplicitPointer(llvm::IRBuilder<>& builder);
-  useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
+  useit bool                 isLLVMConstant() const;
+  useit llvm::Constant* getLLVMConstant() const;
+  useit bool            isLocalToFn() const;
+  useit String          getLocalID() const;
+  void                  setLocalID(const String& locID);
+  useit Nature          getNature() const;
+  useit bool            isImplicitPointer() const;
+  void                  makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
+  void                  loadImplicitPointer(llvm::IRBuilder<>& builder);
+  useit virtual Value*  call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
 
   static void clearAll();
 };

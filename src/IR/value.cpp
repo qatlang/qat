@@ -27,36 +27,6 @@ String Value::getLocalID() const { return localID.value(); }
 
 void Value::setLocalID(const String& locID) { localID = locID; }
 
-IR::Value* Value::createAlloca(llvm::IRBuilder<>& builder) {
-  auto              name  = utils::unique_id();
-  auto*             cBB   = builder.GetInsertBlock();
-  auto*             llFun = builder.GetInsertBlock()->getParent();
-  llvm::AllocaInst* alloc = nullptr;
-  if (llFun->getEntryBlock().getInstList().empty()) {
-    alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name, &(llFun->getEntryBlock()));
-  } else {
-    llvm::Instruction* inst = nullptr;
-    // NOLINTNEXTLINE(modernize-loop-convert)
-    for (auto instr = llFun->getEntryBlock().getInstList().begin(); instr != llFun->getEntryBlock().getInstList().end();
-         instr++) {
-      if (llvm::isa<llvm::AllocaInst>(&*instr)) {
-        continue;
-      } else {
-        inst = &*instr;
-        break;
-      }
-    }
-    if (inst) {
-      alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name, inst);
-    } else {
-      alloc = new llvm::AllocaInst(getType()->getLLVMType(), 0U, name, &(llFun->getEntryBlock()));
-    }
-  }
-  builder.SetInsertPoint(cBB);
-  builder.CreateStore(ll, alloc);
-  return new IR::Value(alloc, getType(), variable, nature);
-}
-
 bool Value::isImplicitPointer() const {
   return ll && (llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll));
 }
@@ -113,6 +83,10 @@ bool Value::isPointer() const { return (type->typeKind() == IR::TypeKind::pointe
 bool Value::isReference() const { return (type->typeKind() == IR::TypeKind::reference); }
 
 bool Value::isVariable() const { return variable; }
+
+bool Value::isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+
+llvm::Constant* Value::getLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
 
 bool Value::isConstVal() const { return false; }
 

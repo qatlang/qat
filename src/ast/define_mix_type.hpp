@@ -1,5 +1,5 @@
 #ifndef QAT_AST_DEFINE_MIX_TYPE_HPP
-#define QAT_AST_DEFINT_MIX_TYPE_HPP
+#define QAT_AST_DEFINE_MIX_TYPE_HPP
 
 #include "./node.hpp"
 #include "./types/qat_type.hpp"
@@ -9,25 +9,23 @@ namespace qat::ast {
 
 class DefineMixType : public Node {
 private:
-  String                              name;
-  Vec<Pair<String, Maybe<QatType *>>> subtypes;
-  bool                                isPacked;
-  Vec<QatType *>                      templates;
-  utils::VisibilityKind               visibility;
-  Vec<utils::FileRange>               fRanges;
-  Maybe<usize>                        defaultVal;
+  String                             name;
+  Vec<Pair<String, Maybe<QatType*>>> subtypes;
+  bool                               isPacked;
+  Vec<QatType*>                      templates;
+  utils::VisibilityKind              visibility;
+  Vec<utils::FileRange>              fRanges;
+  Maybe<usize>                       defaultVal;
 
 public:
-  DefineMixType(String name, Vec<Pair<String, Maybe<QatType *>>> subTypes,
-                Vec<utils::FileRange> ranges, Maybe<usize> defaultVal,
-                bool isPacked, utils::VisibilityKind visibility,
-                utils::FileRange fileRange);
+  DefineMixType(String name, Vec<Pair<String, Maybe<QatType*>>> subTypes, Vec<utils::FileRange> ranges,
+                Maybe<usize> defaultVal, bool isPacked, utils::VisibilityKind visibility, utils::FileRange fileRange);
 
-  void       createType(IR::Context *ctx);
-  void       defineType(IR::Context *ctx) final;
-  void       define(IR::Context *ctx) final {}
+  void       createType(IR::Context* ctx);
+  void       defineType(IR::Context* ctx) final;
+  void       define(IR::Context* ctx) final {}
   useit bool isTemplate() const;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::defineMixType; }
 };

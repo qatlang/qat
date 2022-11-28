@@ -76,8 +76,7 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
   // FIXME - Implement member argument syntax support for from convertors
-  auto* corePtrType = IR::PointerType::get(prototype->isFrom, prototype->coreType,
-                                           IR::PointerOwner::OfType(prototype->coreType), ctx->llctx);
+  auto* corePtrType = IR::ReferenceType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
   auto* self        = block->newValue("''", corePtrType, false);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0), self->getLLVM());
   ctx->selfVal = ctx->builder.CreateLoad(self->getType()->getLLVMType(), self->getLLVM());

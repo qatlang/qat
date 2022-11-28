@@ -457,7 +457,12 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (isNext(TokenType::bracketOpen, i)) {
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
-            auto bClose = bCloseRes.value();
+            auto bClose     = bCloseRes.value();
+            bool isMultiPtr = false;
+            if (isNext(TokenType::binaryOperator, i + 1) && (ValueAt(i + 2) == "+")) {
+              isMultiPtr = true;
+              i++;
+            }
             if (isPrimaryWithin(TokenType::ternary, i + 1, bClose)) {
               auto questionPos = firstPrimaryPosition(TokenType::ternary, i + 1).value();
               auto subTypeRes  = parseType(ctx, i + 1, questionPos);
@@ -465,7 +470,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                 Error("Unexpected tokens after the anonymous ownership marker", RangeSpan(questionPos, bClose - 1));
               }
               cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::anonymous, None,
-                                             {token.fileRange, RangeAt(bClose)});
+                                             isMultiPtr, {token.fileRange, RangeAt(bClose)});
             } else if (isPrimaryWithin(TokenType::child, i + 1, bClose)) {
               auto childPos   = firstPrimaryPosition(TokenType::child, i + 1).value();
               auto subTypeRes = parseType(ctx, i + 1, childPos);
@@ -474,7 +479,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                   Error("Invalid ownership 'heap", RangeSpan(childPos, bClose));
                 }
                 cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::heap, None,
-                                               {token.fileRange, RangeAt(bClose)});
+                                               isMultiPtr, {token.fileRange, RangeAt(bClose)});
               } else if (isNext(TokenType::Type, childPos)) {
                 if (isNext(TokenType::parenthesisOpen, childPos + 1)) {
                   auto pCloseRes =
@@ -482,7 +487,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                   if (pCloseRes.has_value()) {
                     // FIXME - Less assumptions about end of the type
                     cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::type,
-                                                   parseType(preCtx, childPos + 2, pCloseRes.value()).first,
+                                                   parseType(preCtx, childPos + 2, pCloseRes.value()).first, isMultiPtr,
                                                    {token.fileRange, RangeAt(bClose)});
                   } else {
                     Error("Expected end for (", RangeAt(childPos + 2));
@@ -492,7 +497,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                     Error("Invalid ownership variant 'type", RangeSpan(childPos, bClose));
                   }
                   cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::typeParent, None,
-                                                 {token.fileRange, RangeAt(bClose)});
+                                                 isMultiPtr, {token.fileRange, RangeAt(bClose)});
                 }
               } else {
                 Error("Invalid ownership of the pointer", {token.fileRange, RangeAt(childPos)});
@@ -500,7 +505,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
             } else {
               auto subTypeRes = parseType(ctx, i + 1, bClose);
               cacheTy         = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::parent, None,
-                                                     {token.fileRange, RangeAt(bClose)});
+                                                     isMultiPtr, {token.fileRange, RangeAt(bClose)});
             }
             i = bClose;
             break;
@@ -2633,8 +2638,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-                cachedExpressions.push_back(new ast::MemberFunctionCall(exp, false, ValueAt(i + 1), args, true,
-                                                                        {exp->fileRange, RangeAt(pClose)}));
+                cachedExpressions.push_back(
+                    new ast::MemberFunctionCall(exp, ValueAt(i + 1), args, true, {exp->fileRange, RangeAt(pClose)}));
                 i = pClose;
                 break;
               } else {
@@ -2694,7 +2699,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-                cachedExpressions.push_back(new ast::MemberFunctionCall(exp, false, ValueAt(i + 1), args, false,
+                cachedExpressions.push_back(new ast::MemberFunctionCall(exp, ValueAt(i + 1), args, false,
                                                                         {exp->fileRange, RangeSpan(i, pClose)}));
                 i = pClose;
                 break;
@@ -2703,7 +2708,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               }
             } else {
               cachedExpressions.push_back(
-                  new ast::MemberAccess(exp, false, ValueAt(i + 1), {exp->fileRange, RangeSpan(i, i + 1)}));
+                  new ast::MemberAccess(exp, ValueAt(i + 1), {exp->fileRange, RangeSpan(i, i + 1)}));
               i++;
             }
           } else if (isNext(TokenType::end, i)) {
@@ -2711,7 +2716,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
               if (pCloseRes) {
                 cachedExpressions.push_back(new ast::MemberFunctionCall(
-                    exp, false, "end", {}, false, {exp->fileRange, RangeSpan(i, pCloseRes.value())}));
+                    exp, "end", {}, false, {exp->fileRange, RangeSpan(i, pCloseRes.value())}));
                 i = pCloseRes.value();
                 break;
               } else {

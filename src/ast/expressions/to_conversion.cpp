@@ -62,9 +62,11 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
       loadRef();
       if (destTy->isCString()) {
         SHOW("Conversion from StringSlice to CString")
-        if (llvm::isa<llvm::Constant>(val->getLLVM())) {
+        if (val->isLLVMConstant()) {
           SHOW("String slice is a constant struct")
-          val = val->createAlloca(ctx->builder);
+          return new IR::ConstantValue(
+              llvm::dyn_cast<llvm::ConstantStruct>(val->getLLVMConstant())->getAggregateElement(0u),
+              IR::CStringType::get(ctx->llctx));
         }
         if (llvm::isa<llvm::AllocaInst>(val->getLLVM())) {
           return new IR::Value(

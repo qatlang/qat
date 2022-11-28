@@ -306,7 +306,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
               "The value to be assigned is a pointer to a function, so please add a pointer hint to this declaration",
               fileRange);
         }
-        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), ctx->llctx);
+        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx->llctx);
         auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
         auto* newValue = block->newValue(name, declType, variability);
         ctx->builder.CreateStore(fnCast, newValue->getLLVM());

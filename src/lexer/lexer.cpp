@@ -345,10 +345,6 @@ Token Lexer::tokeniser() {
       } else if (operatorValue == "<") {
         return Token::valued(TokenType::binaryOperator, "<", this->getPosition(1));
       } else if (operatorValue == ">") {
-        if (current == '-') {
-          read();
-          return Token::normal(TokenType::pointerAccess, this->getPosition(2));
-        }
         return Token::valued(TokenType::binaryOperator, ">", this->getPosition(1));
       }
       return Token::valued(TokenType::binaryOperator, operatorValue, this->getPosition(1));

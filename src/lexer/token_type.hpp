@@ -62,8 +62,6 @@ enum class TokenType {
   expose,
   packed,
   var,
-  pointerAccess,
-  pointerVariation,
   obtainPointer,
   givenTypeSeparator,
   Operator,

@@ -5,6 +5,7 @@
 #include "../constants/unsigned_literal.hpp"
 #include "default.hpp"
 #include "operator.hpp"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
 
@@ -120,6 +121,46 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   llvm::Value* lhsVal           = lhsEmit->getLLVM();
   llvm::Value* rhsVal           = rhsEmit->getLLVM();
   auto         referenceHandler = [&]() {
+    if ((lhsEmit->getType()->isReference()
+                     ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                     : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) ||
+        (rhsEmit->getType()->isReference()
+                     ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                     : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti()))) {
+      if (lhsEmit->getType()->isReference()
+                      ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                 lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                      : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) {
+        if (lhsEmit->getType()->isReference()) {
+          lhsEmit->loadImplicitPointer(ctx->builder);
+        }
+        auto* ptrType = lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                                                  : lhsEmit->getType()->asPointer();
+        lhsEmit = new IR::Value(
+            ctx->builder.CreateLoad(llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u)),
+            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
+            false, IR::Nature::temporary);
+      }
+      if (rhsEmit->getType()->isReference()
+                      ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                 rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                      : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti())) {
+        if (rhsEmit->getType()->isReference()) {
+          rhsEmit->loadImplicitPointer(ctx->builder);
+        }
+        auto* ptrType = rhsEmit->getType()->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                                                  : rhsEmit->getType()->asPointer();
+        rhsEmit = new IR::Value(
+            ctx->builder.CreateLoad(llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)),
+            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
+            false, IR::Nature::temporary);
+      }
+      return;
+    }
     SHOW("Loading implicit LHS")
     lhsEmit->loadImplicitPointer(ctx->builder);
     SHOW("Loaded LHS")
@@ -498,7 +539,10 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   } else if ((lhsType->isPointer() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isPointer())) &&
              (rhsType->isPointer() || (rhsType->isReference() && rhsType->asReference()->getSubType()->isPointer()))) {
     referenceHandler();
-    if (lhsType->asPointer()->getSubType()->isSame(rhsType->asPointer()->getSubType())) {
+    if ((lhsType->isReference() ? lhsType->asReference()->getSubType()->asPointer() : lhsType->asPointer())
+            ->getSubType()
+            ->isSame((rhsType->isReference() ? rhsType->asReference()->getSubType()->asPointer() : rhsType->asPointer())
+                         ->getSubType())) {
       if (op == Op::equalTo) {
         return new IR::Value(
             ctx->builder.CreateICmpEQ(
@@ -532,7 +576,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       if (cTy->hasBinaryOperator(OpStr, rhsType)) {
         SHOW("RHS is matched exactly")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
-          lhsEmit = lhsEmit->createAlloca(ctx->builder);
+          lhsEmit->makeImplicitPointer(ctx, None);
         }
         auto* opFn = cTy->getBinaryOperator(OpStr, rhsType);
         if (!opFn->isAccessible(ctx->getReqInfo())) {
@@ -546,7 +590,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       } else if (rhsType->isReference() && cTy->hasBinaryOperator(OpStr, rhsType->asReference()->getSubType())) {
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
-          lhsEmit = lhsEmit->createAlloca(ctx->builder);
+          lhsEmit->makeImplicitPointer(ctx, None);
         }
         auto* opFn = cTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
         if (!opFn->isAccessible(ctx->getReqInfo())) {

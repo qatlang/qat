@@ -14,12 +14,13 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
   auto* instType = inst->getType();
   auto* ind      = index->emit(ctx);
   auto* indType  = ind->getType();
+  auto* zero64   = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u);
   if (inst->getType()->isReference()) {
     instType = instType->asReference()->getSubType();
   }
   // TODO - Update when supporting operators for core types
   if (instType->isPointer() || instType->isArray() || instType->isTuple()) {
-    if (!instType->isArray()) {
+    if (!instType->isArray() && !instType->isPointer()) {
       inst->loadImplicitPointer(ctx->builder);
     }
     ind->loadImplicitPointer(ctx->builder);
@@ -44,21 +45,28 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       }
       if (!instType->isTuple()) {
         if (instType->isPointer()) {
+          if (!instType->asPointer()->isMulti()) {
+            ctx->Error("Only multi pointers can be indexed into", fileRange);
+          }
           Vec<llvm::Value*> idxs;
           idxs.push_back(ind->getLLVM());
           return new IR::Value(
-              ctx->builder.CreateInBoundsGEP(instType->asPointer()->getSubType()->getLLVMType(), inst->getLLVM(), idxs),
+              ctx->builder.CreateInBoundsGEP(
+                  instType->asPointer()->getSubType()->getLLVMType(),
+                  ctx->builder.CreateLoad(
+                      llvm::PointerType::get(instType->asPointer()->getSubType()->getLLVMType(), 0u),
+                      ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                  idxs),
               IR::ReferenceType::get(inst->isVariable(), instType->asPointer()->getSubType(), ctx->llctx),
               instType->asPointer()->isSubtypeVariable(),
               instType->asPointer()->isSubtypeVariable() ? IR::Nature::assignable : IR::Nature::temporary);
         } else {
           SHOW("Getting first element")
           auto* firstElem =
-              ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType(), inst->getLLVM(),
-                                             {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u),
-                                              llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)});
+              ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType(), inst->getLLVM(), {zero64, zero64});
           if (llvm::isa<llvm::ConstantInt>(ind->getLLVM())) {
             SHOW("Index Access : Index is a constant")
+            // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
             auto indConst = *(llvm::dyn_cast<llvm::ConstantInt>(ind->getLLVM())->getValue().getRawData());
             if (indConst == 0) {
               SHOW("Returning the first element from inbounds")
@@ -109,7 +117,6 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     }
     // FIXME - POSSIBLY THROW ERROR AT RUNTIME IF BOUNDS ARE EXCEEDED
     if (inst->isImplicitPointer() || inst->isReference()) {
-      auto* zero64 = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u);
       auto* strData =
           ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0);
       SHOW("Got string data")
@@ -160,7 +167,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       }
     }
     if (!inst->isImplicitPointer() && !inst->isReference()) {
-      inst = inst->createAlloca(ctx->builder);
+      inst->makeImplicitPointer(ctx, None);
     }
 
   } else {

@@ -66,13 +66,50 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     generatedTypes.push_back(genType);
   }
   SHOW("Types generated")
+  if (isMainFn) {
+    if (ctx->getMod()->hasMainFn()) {
+      ctx->Error(ctx->highlightError("main") + " function already exists in this module. Please check the codebase",
+                 fileRange);
+    } else {
+      if (generatedTypes.size() == 1) {
+        if (generatedTypes.at(0)->isPointer() && generatedTypes.at(0)->asPointer()->isMulti() &&
+            generatedTypes.at(0)->asPointer()->getOwner().isAnonymous()) {
+          mod->setHasMainFn();
+          ctx->hasMain = true;
+        } else {
+          ctx->Error("The first argument of the " + ctx->highlightError("main") + " function should be " +
+                         ctx->highlightError("#[+ cstring ?]"),
+                     arguments.at(0)->getFileRange());
+        }
+      } else if (generatedTypes.empty()) {
+        mod->setHasMainFn();
+        ctx->hasMain = true;
+      } else {
+        ctx->Error(
+            "Main function can either have one argument, or none at all. Please check the codebase and make necessary changes",
+            fileRange);
+      }
+    }
+  }
   Vec<IR::Argument> args;
   SHOW("Setting variability of arguments")
-  for (usize i = 0; i < generatedTypes.size(); i++) {
-    args.push_back(
-        arguments.at(i)->getType()->isVariable()
-            ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
-            : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
+  if (isMainFn) {
+    if (!arguments.empty()) {
+      args.push_back(
+          // NOLINTNEXTLINE(readability-magic-numbers)
+          IR::Argument::Create(arguments.at(0)->getName() + "'count", IR::UnsignedType::get(32u, ctx->llctx), 0u));
+      args.push_back(IR::Argument::Create(arguments.at(0)->getName() + "'data",
+                                          IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
+                                                               IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
+                                          1u));
+    }
+  } else {
+    for (usize i = 0; i < generatedTypes.size(); i++) {
+      args.push_back(
+          arguments.at(i)->getType()->isVariable()
+              ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
+              : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
+    }
   }
   SHOW("Variability setting complete")
   auto* retTy = returnType->emit(ctx);
@@ -85,48 +122,6 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* fun = mod->createFunction(fnName, retTy, returnType->isVariable(), isAsync, args, isVariadic, fileRange,
                                   ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
   SHOW("Created IR function")
-  if (isMainFn) {
-    if (ctx->getMod()->hasMainFn()) {
-      ctx->Error(ctx->highlightError("main") + " function already exists in this module. Please check the codebase",
-                 fileRange);
-    } else {
-      auto args = fun->getType()->asFunction()->getArgumentTypes();
-      if (args.size() == 2) {
-        if (args.at(0)->getType()->isUnsignedInteger() &&
-            (args.at(0)->getType()->asUnsignedInteger()->getBitwidth() == MainFirstArgBitwidth)) {
-          if (args.at(1)->getType()->isPointer() && ((!args.at(1)->getType()->asPointer()->isSubtypeVariable()) &&
-                                                     (args.at(1)->getType()->asPointer()->getSubType()->isCString()))) {
-            mod->setHasMainFn();
-            ctx->hasMain = true;
-          } else {
-            ctx->Error("The second argument of the " + ctx->highlightError("main") + " function should be " +
-                           ctx->highlightError("#[cstring]"),
-                       arguments.at(1)->getFileRange());
-          }
-        } else {
-          ctx->Error("The first argument of the " + ctx->highlightError("main") + " function should be " +
-                         ctx->highlightError("u32"),
-                     arguments.at(0)->getFileRange());
-        }
-      } else if (args.empty()) {
-        mod->setHasMainFn();
-        ctx->hasMain = true;
-      } else {
-        ctx->Error("Main function can either have two arguments, or none at "
-                   "all. Please check logic and make necessary changes",
-                   fileRange);
-      }
-      // else {
-      //   ctx->Error(
-      //       "The " + ctx->highlightError("main") +
-      //           " function needs 2 arguments, the first argument should be "
-      //           + ctx->highlightError("u32") +
-      //           ", and the second argument should be " +
-      //           ctx->highlightError("#[cstring]"),
-      //       fileRange);
-      // }
-    }
-  }
   return fun;
 }
 
@@ -292,21 +287,40 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     SHOW("Created entry block")
     block->setActive(ctx->builder);
     SHOW("Set new block as the active block")
-    SHOW("Calling module initialisers")
-    auto modInits = IR::QatModule::collectModuleInitialisers();
-    for (auto* modFn : modInits) {
-      (void)modFn->call(ctx, {}, ctx->getMod());
-    }
-    SHOW("About to allocate necessary arguments")
-    auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-    SHOW("Iteration run for function is: " << fnEmit->getName())
-    for (usize i = 0; i < argIRTypes.size(); i++) {
-      SHOW("Argument name is " << argIRTypes.at(i)->getName())
-      SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-      auto* argVal =
-          block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
-      SHOW("Created local value for the argument")
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+    bool isMainFn = fnEmit->getFullName() == "main";
+    if (isMainFn) {
+      SHOW("Calling module initialisers")
+      auto modInits = IR::QatModule::collectModuleInitialisers();
+      for (auto* modFn : modInits) {
+        (void)modFn->call(ctx, {}, ctx->getMod());
+      }
+      SHOW("Storing args for main function")
+      if (fnEmit->getType()->asFunction()->getArgumentCount() == 2u) {
+        auto* cmdArgsVal = block->newValue(fnEmit->argumentNameAt(0).substr(0, fnEmit->argumentNameAt(0).find('\'')),
+                                           IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
+                                                                IR::PointerOwner::OfAnonymous(), true, ctx->llctx),
+                                           false);
+        SHOW("Storing argument pointer")
+        ctx->builder.CreateStore(
+            fnEmit->getLLVMFunction()->getArg(1u),
+            ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 0u));
+        SHOW("Storing argument count")
+        ctx->builder.CreateStore(
+            ctx->builder.CreateIntCast(fnEmit->getLLVMFunction()->getArg(0u), llvm::Type::getInt64Ty(ctx->llctx), true),
+            ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 1u));
+      }
+    } else {
+      SHOW("About to allocate necessary arguments")
+      auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+      SHOW("Iteration run for function is: " << fnEmit->getName())
+      for (usize i = 0; i < argIRTypes.size(); i++) {
+        SHOW("Argument name is " << argIRTypes.at(i)->getName())
+        SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+        auto* argVal =
+            block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
+        SHOW("Created local value for the argument")
+        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+      }
     }
   }
   SHOW("Emitting sentences")

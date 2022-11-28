@@ -15,25 +15,38 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
   if (expTy->isPointer()) {
     if (expEmit->isReference()) {
       expEmit->loadImplicitPointer(ctx->builder);
-      expEmit = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expEmit->getLLVM()), expTy, false,
-                              IR::Nature::temporary);
+      if (!expTy->asPointer()->isMulti()) {
+        expEmit = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expEmit->getLLVM()), expTy, false,
+                                IR::Nature::temporary);
+      }
+    } else if (expEmit->isImplicitPointer()) {
+      if (!expTy->asPointer()->isMulti()) {
+        expEmit->loadImplicitPointer(ctx->builder);
+      }
     } else {
-      expEmit->loadImplicitPointer(ctx->builder);
+      if (expTy->asPointer()->isMulti()) {
+        expEmit->makeImplicitPointer(ctx, None);
+      }
     }
     return new IR::Value(
-        expEmit->getLLVM(),
+        expTy->asPointer()->isMulti()
+            ? ctx->builder.CreateLoad(llvm::PointerType::get(expTy->asPointer()->getSubType()->getLLVMType(), 0u),
+                                      ctx->builder.CreateStructGEP(expTy->getLLVMType(), expEmit->getLLVM(), 0u))
+            : expEmit->getLLVM(),
         IR::ReferenceType::get(expTy->asPointer()->isSubtypeVariable(), expTy->asPointer()->getSubType(), ctx->llctx),
         false, IR::Nature::temporary);
   } else if (expTy->isCoreType()) {
     if (expTy->asCore()->hasUnaryOperator("#")) {
-      if (expEmit->isImplicitPointer() || expEmit->isReference()) {
-        auto* uFn = expTy->asCore()->getUnaryOperator("#");
-        return uFn->call(ctx, {expEmit->getLLVM()}, ctx->getMod());
-      } else {
-        ctx->Error("Expression is of the invalid type", exp->fileRange);
+      if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
+        expEmit->makeImplicitPointer(ctx, None);
+      } else if (expEmit->isReference()) {
+        expEmit->loadImplicitPointer(ctx->builder);
       }
+      auto* uFn = expTy->asCore()->getUnaryOperator("#");
+      return uFn->call(ctx, {expEmit->getLLVM()}, ctx->getMod());
     } else {
-      ctx->Error("Core type " + ctx->highlightError(expTy->asCore()->getFullName()) + " does not have operator #",
+      ctx->Error("Core type " + ctx->highlightError(expTy->asCore()->getFullName()) +
+                     " does not have the dereference operator #",
                  exp->fileRange);
     }
   } else {

@@ -1,5 +1,6 @@
 #include "./heap.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/logic.hpp"
 #include "../../IR/types/void.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
@@ -52,13 +53,28 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
                                   mod->getLLVMModule()->getDataLayout().getTypeAllocSize(typRes->getLLVMType()));
   }
   mod->linkNative(IR::NativeUnit::malloc);
-  auto* resTy    = IR::PointerType::get(true, typRes, IR::PointerOwner::OfHeap(), ctx->llctx);
+  auto* resTy    = IR::PointerType::get(true, typRes, IR::PointerOwner::OfHeap(), count != nullptr, ctx->llctx);
   auto* mallocFn = mod->getLLVMModule()->getFunction("malloc");
-  return new IR::Value(ctx->builder.CreatePointerCast(
-                           ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
-                                                   {count ? ctx->builder.CreateMul(size, countRes->getLLVM()) : size}),
-                           resTy->getLLVMType()),
-                       resTy, false, IR::Nature::temporary);
+  if (resTy->isMulti()) {
+    SHOW("Creating alloca for multi pointer")
+    auto* llAlloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), resTy->getLLVMType());
+    ctx->builder.CreateStore(
+        ctx->builder.CreatePointerCast(
+            ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
+                                    {count ? ctx->builder.CreateMul(size, countRes->getLLVM()) : size}),
+            llvm::PointerType::get(resTy->getSubType()->getLLVMType(), 0u)),
+        ctx->builder.CreateStructGEP(resTy->getLLVMType(), llAlloca, 0u));
+    SHOW("Storing the size of the multi pointer")
+    ctx->builder.CreateStore(countRes->getLLVM(), ctx->builder.CreateStructGEP(resTy->getLLVMType(), llAlloca, 1u));
+    return new IR::Value(llAlloca, resTy, false, IR::Nature::temporary);
+  } else {
+    return new IR::Value(
+        ctx->builder.CreatePointerCast(
+            ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
+                                    {count ? ctx->builder.CreateMul(size, countRes->getLLVM()) : size}),
+            resTy->getLLVMType()),
+        resTy, false, IR::Nature::temporary);
+  }
 }
 
 Json HeapGet::toJson() const {
@@ -76,18 +92,21 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
     ctx->Error("Null pointer cannot be freed", ptr->fileRange);
   }
   auto* exp = ptr->emit(ctx);
-  if (exp->isImplicitPointer()) {
-    exp->loadImplicitPointer(ctx->builder);
-  }
   SHOW("Loaded implicit pointer")
-  if (exp->getType()->isReference()) {
+  if (exp->getType()->isReference() && exp->getType()->asReference()->getSubType()->isPointer()) {
     exp->loadImplicitPointer(ctx->builder);
-    exp = new IR::Value(
-        ctx->builder.CreateLoad(exp->getType()->asReference()->getSubType()->getLLVMType(), exp->getLLVM()),
-        exp->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+    if (!exp->getType()->asReference()->getSubType()->asPointer()->isMulti()) {
+      exp = new IR::Value(
+          ctx->builder.CreateLoad(exp->getType()->asReference()->getSubType()->getLLVMType(), exp->getLLVM()),
+          exp->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+    }
+  } else if (exp->isImplicitPointer() && exp->getType()->isPointer() && !exp->getType()->asPointer()->isMulti()) {
+    exp->loadImplicitPointer(ctx->builder);
   }
   SHOW("Loaded reference")
-  if (exp->getType()->isPointer()) {
+  if (exp->getType()->isPointer() ||
+      (exp->getType()->isReference() && exp->getType()->asReference()->getSubType()->isPointer() &&
+       exp->getType()->asReference()->getSubType()->asPointer()->isMulti())) {
     if (!exp->getType()->asPointer()->getOwner().isHeap()) {
       ctx->Error("The ownership of this pointer is " +
                      ctx->highlightError(exp->getType()->asPointer()->getOwner().toString()) +
@@ -100,8 +119,14 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
     auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
     restBlock->linkPrevBlock(currBlock);
     ctx->builder.CreateCondBr(
-        ctx->builder.CreateICmpNE(exp->getLLVM(), llvm::ConstantPointerNull::get(llvm::PointerType::get(
-                                                      exp->getType()->asPointer()->getSubType()->getLLVMType(), 0u))),
+        ctx->builder.CreateICmpNE(
+            exp->getType()->asPointer()->isMulti()
+                ? ctx->builder.CreateLoad(
+                      llvm::PointerType::get(exp->getType()->asPointer()->getSubType()->getLLVMType(), 0u),
+                      ctx->builder.CreateStructGEP(exp->getType()->getLLVMType(), exp->getLLVM(), 0u))
+                : exp->getLLVM(),
+            llvm::ConstantPointerNull::get(
+                llvm::PointerType::get(exp->getType()->asPointer()->getSubType()->getLLVMType(), 0u))),
         trueBlock->getBB(), restBlock->getBB());
     mod->linkNative(IR::NativeUnit::free);
     auto* freeFn = mod->getLLVMModule()->getFunction("free");
@@ -109,12 +134,20 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
     trueBlock->setActive(ctx->builder);
     ctx->builder.CreateCall(
         freeFn->getFunctionType(), freeFn,
-        {ctx->builder.CreatePointerCast(exp->getLLVM(), llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        {ctx->builder.CreatePointerCast(
+            exp->getType()->asPointer()->isMulti()
+                ? ctx->builder.CreateLoad(
+                      llvm::PointerType::get(exp->getType()->asPointer()->getSubType()->getLLVMType(), 0u),
+                      ctx->builder.CreateStructGEP(exp->getType()->getLLVMType(), exp->getLLVM(), 0u))
+                : exp->getLLVM(),
+            llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
     (void)IR::addBranch(ctx->builder, restBlock->getBB());
     restBlock->setActive(ctx->builder);
     return nullptr;
   } else {
-    ctx->Error("heap'put requires an expression that is of the pointer type", ptr->fileRange);
+    ctx->Error("heap'put requires an expression that is of the pointer type, but the provided expression is of type " +
+                   exp->getType()->toString(),
+               ptr->fileRange);
   }
   return nullptr;
 }
@@ -129,28 +162,26 @@ HeapGrow::HeapGrow(QatType* _type, Expression* _ptr, Expression* _count, utils::
 IR::Value* HeapGrow::emit(IR::Context* ctx) {
   auto* typ    = type->emit(ctx);
   auto* ptrVal = ptr->emit(ctx);
-  if (ptrVal->isImplicitPointer()) {
-    if (ptrVal->getType()->isPointer()) {
-      if (!ptrVal->getType()->asPointer()->getOwner().isHeap()) {
-        ctx->Error("The ownership of this pointer is " + ctx->highlightError("heap") +
-                       " and hence cannot be used in heap'grow",
-                   fileRange);
-      }
-      ptrVal->loadImplicitPointer(ctx->builder);
-    } else {
-      ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
+  // FIXME - Add check to see if the new size is lower than the previous size
+  IR::QatType* ptrType = nullptr;
+  if (ptrVal->isReference()) {
+    if (ptrVal->getType()->asReference()->isSubtypeVariable()) {
+      ctx->Error("This reference does not have variability and hence the pointer inside cannot be grown",
                  ptr->fileRange);
     }
-  } else if (ptrVal->isReference()) {
+    ptrType = ptrVal->getType()->asReference()->getSubType();
     if (ptrVal->getType()->asReference()->getSubType()->isPointer()) {
+      ptrVal->loadImplicitPointer(ctx->builder);
       if (!ptrVal->getType()->asReference()->getSubType()->asPointer()->getOwner().isHeap()) {
         ctx->Error("The ownership of this pointer is " + ctx->highlightError("heap") +
                        " and hence cannot be used in heap'grow",
                    fileRange);
       }
-      ptrVal = new IR::Value(
-          ctx->builder.CreateLoad(ptrVal->getType()->asReference()->getSubType()->getLLVMType(), ptrVal->getLLVM()),
-          ptrVal->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+      if (!ptrVal->getType()->asReference()->getSubType()->asPointer()->isMulti()) {
+        ctx->Error("The type of the expression is " + ptrVal->getType()->asReference()->getSubType()->toString() +
+                       " which is not a multi pointer and hence cannot be grown",
+                   ptr->fileRange);
+      }
       if (!ptrVal->getType()->asPointer()->getSubType()->isSame(typ)) {
         ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
                    ptr->fileRange);
@@ -159,6 +190,28 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
       ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
                  ptr->fileRange);
     }
+  } else if (ptrVal->isImplicitPointer()) {
+    if (ptrVal->getType()->isPointer()) {
+      if (ptrVal->isVariable()) {
+        ctx->Error("This expression is not a variable", fileRange);
+      }
+      ptrType = ptrVal->getType();
+      if (!ptrVal->getType()->asPointer()->getOwner().isHeap()) {
+        ctx->Error("The ownership of this pointer is " + ctx->highlightError("heap") +
+                       " and hence cannot be used in heap'grow",
+                   fileRange);
+      }
+      if (!ptrVal->getType()->asPointer()->isMulti()) {
+        ctx->Error("The type of the expression is " + ptrVal->getType()->toString() +
+                       " which is not a multi pointer and hence cannot be grown",
+                   ptr->fileRange);
+      }
+    } else {
+      ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
+                 ptr->fileRange);
+    }
+  } else {
+    ptrVal->makeImplicitPointer(ctx, None);
   }
   auto* countVal = count->emit(ctx);
   countVal->loadImplicitPointer(ctx->builder);
@@ -171,15 +224,20 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
       (countVal->getType()->asUnsignedInteger()->getBitwidth() == MALLOC_ARG_BITWIDTH)) {
     ctx->getMod()->linkNative(IR::NativeUnit::realloc);
     auto* reallocFn = ctx->getMod()->getLLVMModule()->getFunction("realloc");
-    return new IR::Value(
-        ctx->builder.CreatePointerCast(
-            ctx->builder.CreateCall(
-                reallocFn->getFunctionType(), reallocFn,
-                {ctx->builder.CreatePointerCast(ptrVal->getLLVM(), llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-                 ctx->builder.CreateMul(countVal->getLLVM(),
-                                        llvm::ConstantExpr::getSizeOf(ptrVal->getType()->getLLVMType()))}),
-            ptrVal->getType()->asPointer()->getLLVMType()),
-        ptrVal->getType()->asPointer(), false, IR::Nature::temporary);
+    auto* ptrRes    = ctx->builder.CreatePointerCast(
+        ctx->builder.CreateCall(
+            reallocFn->getFunctionType(), reallocFn,
+            {ctx->builder.CreatePointerCast(
+                 ctx->builder.CreateLoad(llvm::PointerType::get(typ->getLLVMType(), 0u),
+                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
+                 llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
+                ctx->builder.CreateMul(countVal->getLLVM(),
+                                       llvm::ConstantExpr::getSizeOf(ptrVal->getType()->getLLVMType()))}),
+        ptrVal->getType()->asPointer()->getLLVMType());
+    auto* resAlloc = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), ptrType->getLLVMType());
+    ctx->builder.CreateStore(ptrRes, ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 0u));
+    ctx->builder.CreateStore(countVal->getLLVM(), ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 1u));
+    return new IR::Value(ptrVal->getLLVM(), ptrVal->getType(), false, IR::Nature::temporary);
   } else {
     ctx->Error("The number of units to reallocate should of u64 type", count->fileRange);
   }

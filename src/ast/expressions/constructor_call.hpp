@@ -18,9 +18,10 @@ public:
   };
 
 private:
-  QatType*         type;
-  Vec<Expression*> args;
-  Maybe<OwnType>   ownTy;
+  QatType*           type;
+  Vec<Expression*>   args;
+  Maybe<OwnType>     ownTy;
+  Maybe<Expression*> ownCount;
 
   mutable IR::LocalValue* local = nullptr;
   mutable String          irName;
@@ -30,7 +31,8 @@ private:
   String           ownTyToString() const;
 
 public:
-  ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, utils::FileRange _fileRange);
+  ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<Expression*> _ownCount,
+                  utils::FileRange _fileRange);
 
   useit bool isOwning() const;
 

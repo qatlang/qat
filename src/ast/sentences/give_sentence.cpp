@@ -1,10 +1,12 @@
 #include "./give_sentence.hpp"
 #include "../../IR/types/future.hpp"
+#include "../../IR/types/maybe.hpp"
 #include "../../IR/types/void.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "../expressions/default.hpp"
+#include "../expressions/none.hpp"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {
@@ -85,17 +87,52 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                           : fun->getType()->asFunction()->getReturnType();
       retType       = fun->isAsyncFunction() ? retType->asFuture()->getSubType() : retType;
       if (give_expr.value()->nodeType() == NodeType::Default) {
-        ((Default*)give_expr.value())->setType(retType);
+        ((Default*)give_expr.value())->setType(retType->isFuture() ? retType->asFuture()->getSubType() : retType);
       }
-      if (retType->isInteger() || retType->isUnsignedInteger()) {
+      if (retType->isInteger() || retType->isUnsignedInteger() ||
+          (retType->isMaybe() &&
+           (retType->asMaybe()->getSubType()->isUnsignedInteger() || retType->asMaybe()->getSubType()->isInteger())) ||
+          (retType->isFuture() && ((retType->asFuture()->getSubType()->isUnsignedInteger() ||
+                                    retType->asFuture()->getSubType()->isInteger()) ||
+                                   (retType->asFuture()->getSubType()->isMaybe() &&
+                                    (retType->asFuture()->getSubType()->asMaybe()->isUnsignedInteger() ||
+                                     retType->asFuture()->getSubType()->asMaybe()->isInteger()))))) {
         if (give_expr.value()->nodeType() == NodeType::integerLiteral) {
-          ((IntegerLiteral*)give_expr.value())->setType(retType);
+          ((IntegerLiteral*)give_expr.value())
+              ->setType(retType->isMaybe()
+                            ? retType->asMaybe()->getSubType()
+                            : (retType->isFuture() ? (retType->asFuture()->getSubType()->isMaybe()
+                                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()
+                                                          : retType->asFuture()->getSubType())
+                                                   : retType));
         } else if (give_expr.value()->nodeType() == NodeType::unsignedLiteral) {
-          ((UnsignedLiteral*)give_expr.value())->setType(retType);
+          ((UnsignedLiteral*)give_expr.value())
+              ->setType(retType->isMaybe()
+                            ? retType->asMaybe()->getSubType()
+                            : (retType->isFuture() ? (retType->asFuture()->getSubType()->isMaybe()
+                                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()
+                                                          : retType->asFuture()->getSubType())
+                                                   : retType));
         }
-      } else if (retType->isPointer()) {
+      } else if (retType->isPointer() || (retType->isMaybe() && retType->asMaybe()->getSubType()->isPointer()) ||
+                 (retType->isFuture() && retType->asFuture()->getSubType()->isPointer()) ||
+                 (retType->isFuture() && retType->asFuture()->getSubType()->isMaybe() &&
+                  retType->asFuture()->getSubType()->asMaybe()->getSubType()->isPointer())) {
         if (give_expr.value()->nodeType() == NodeType::nullPointer) {
-          ((NullPointer*)give_expr.value())->setType(retType->asPointer());
+          ((NullPointer*)give_expr.value())
+              ->setType(retType->isPointer()
+                            ? retType->asPointer()
+                            : (retType->asMaybe()
+                                   ? (retType->asMaybe()->getSubType()->asPointer())
+                                   : ((retType->isFuture() && retType->asFuture()->getSubType()->isMaybe())
+                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()->asPointer()
+                                          : retType->asFuture()->getSubType()->asPointer())));
+        }
+      } else if (retType->isMaybe() || (retType->isFuture() && retType->asFuture()->getSubType()->isMaybe())) {
+        if (give_expr.value()->nodeType() == NodeType::none) {
+          ((NoneExpression*)give_expr.value())
+              ->setType(retType->isMaybe() ? retType->asMaybe()->getSubType()
+                                           : retType->asFuture()->getSubType()->asMaybe()->getSubType());
         }
       }
       auto* retVal = give_expr.value()->emit(ctx);

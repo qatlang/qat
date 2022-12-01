@@ -9,10 +9,13 @@ namespace qat::ast {
 class NoneExpression : public Expression {
   friend class Assignment;
   friend class LocalDeclaration;
-  QatType* type = nullptr;
+  QatType*     type   = nullptr;
+  IR::QatType* irType = nullptr;
 
 public:
   NoneExpression(QatType* _type, utils::FileRange _fileRange);
+
+  void setType(IR::QatType* _irType);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

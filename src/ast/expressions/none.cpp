@@ -7,9 +7,18 @@ namespace qat::ast {
 NoneExpression::NoneExpression(QatType* _type, utils::FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type) {}
 
+void NoneExpression::setType(IR::QatType* _irType) { irType = _irType; }
+
 IR::Value* NoneExpression::emit(IR::Context* ctx) {
-  if (type) {
-    auto* typ = type->emit(ctx);
+  if (type || irType) {
+    auto* typ = type ? type->emit(ctx) : irType;
+    if (irType && type) {
+      if (!typ->isSame(irType)) {
+        ctx->Error("The type provided for this none expression is " + ctx->highlightError(typ->toString()) +
+                       ", but the expected type is " + ctx->highlightError(irType->toString()),
+                   fileRange);
+      }
+    }
     SHOW("Type for none expression is: " << typ->toString())
     auto* mTy    = IR::MaybeType::get(typ, ctx->llctx);
     auto* newVal = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), mTy->getLLVMType());

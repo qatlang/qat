@@ -77,6 +77,16 @@ void QatSitter::init() {
           fs::remove_all(cfg->getOutputPath() / "llvm");
         }
 #endif
+        if (cfg->isRun()) {
+          for (const auto& exePath : ctx->executablePaths) {
+            SHOW("Running built executable at: " << exePath.c_str())
+            if (system(exePath.c_str())) {
+              std::cout << "\nThe built executable at " << exePath.string() << " exited with an error!"
+                        << "\n";
+            }
+          }
+          SHOW("Ran all compiled executables")
+        }
       } else {
         ctx->writeJsonResult(false);
         cli::Error("qat cannot find clang on path. Please make sure that you "

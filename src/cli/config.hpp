@@ -3,6 +3,7 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
+#include "llvm/Support/VersionTuple.h"
 #include <iostream>
 
 namespace qat::cli {
@@ -36,6 +37,8 @@ private:
 
   // The latest commit at the time of the build of the compiler
   String buildCommit;
+
+  llvm::VersionTuple versionTuple;
 
   // Whether the compiler should exit after initialisation of Config is
   // complete and arguments have been handled
@@ -123,6 +126,7 @@ public:
   useit bool     isWasmMode() const;
   useit bool     shouldBuildStatic() const;
   useit bool     shouldBuildShared() const;
+  useit const llvm::VersionTuple& getVersionTuple() const;
   // Whether compiler should exit after arguments are handled by Config
   //
   // This is usually true for simple actions like version display, about... and

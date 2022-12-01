@@ -78,6 +78,7 @@ QatModule::QatModule(String _name, fs::path _filepath, fs::path _basePath, Modul
   llvmModule->setModuleIdentifier(getFullName());
   llvmModule->setSourceFileName(filePath.string());
   llvmModule->setCodeModel(llvm::CodeModel::Small);
+  llvmModule->setSDKVersion(cli::Config::get()->getVersionTuple());
   llvmModule->setTargetTriple(cli::Config::get()->getTargetTriple());
   allModules.push_back(this);
 }

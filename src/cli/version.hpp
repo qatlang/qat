@@ -13,8 +13,8 @@
 
 #define BUILD_BRANCH STRINGIFY(QAT_BUILD_BRANCH)
 
-#define VERSION_STRING                                                         \
-  String(STRINGIFY(QAT_VERSION)) +                                             \
-      (QAT_IS_PRERELEASE ? "-" STRINGIFY(QAT_PRERELEASE) : "")
+#define VERSION_STRING String(STRINGIFY(QAT_VERSION)) + (QAT_IS_PRERELEASE ? "-" STRINGIFY(QAT_PRERELEASE) : "")
+
+#define VERSION_NUMBER STRINGIFY(QAT_VERSION)
 
 #endif

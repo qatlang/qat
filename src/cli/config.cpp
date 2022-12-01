@@ -3,7 +3,9 @@
 #include "../show.hpp"
 #include "./display.hpp"
 #include "error.hpp"
+#include "version.hpp"
 #include "llvm/Config/llvm-config.h"
+#include <cstdlib>
 #include <filesystem>
 
 namespace qat::cli {
@@ -30,6 +32,13 @@ Config* Config::get() { return Config::instance; }
 Config::Config(u64 count, const char** args)
     : exitAfter(false), verbose(false), saveDocs(false), showReport(false), export_ast(false), compile(false),
       run(false), releaseMode(false) {
+  String verNum(VERSION_NUMBER);
+  versionTuple = llvm::VersionTuple(
+      std::atoi(verNum.substr(0, verNum.find_first_of('.')).c_str()),
+      std::atoi(verNum.substr(verNum.find_first_of('.') + 1, verNum.find_last_of('.') - verNum.find_first_of('.') - 1)
+                    .c_str()),
+      std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
+  SHOW("Version tuple is: " << versionTuple.getAsString())
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];
@@ -217,5 +226,7 @@ bool Config::isWasmMode() const { return isWASM; }
 bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
 
 bool Config::shouldBuildShared() const { return buildShared.value_or(false); }
+
+const llvm::VersionTuple& Config::getVersionTuple() const { return versionTuple; }
 
 } // namespace qat::cli

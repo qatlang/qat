@@ -94,6 +94,7 @@ public:
   IR::CoreType*     activeType = nullptr; // Active core type
   Vec<LoopInfo*>    loopsInfo;
   Vec<Breakable*>   breakables;
+  Vec<fs::path>     executablePaths;
 
   // META
   bool                                                 hasMain;

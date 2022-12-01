@@ -1425,9 +1425,10 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                       filePath.lexically_relative(basePath)
                           .replace_filename(moduleInfo.outputName.value_or(name))
                           .replace_extension(cfg->getTargetTriple().find("windows") != String::npos ? "exe" : ""))
-                         .string()
-                         .append(" ");
-      auto staticCommand = String("clang -o ").append(outPath).append(cmdOne).append(targetCMD).append(cmdTwo);
+                         .string();
+      ctx->executablePaths.push_back(fs::absolute(outPath).lexically_normal());
+      auto staticCommand =
+          String("clang -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
       auto sharedCommand =
           String("clang -shared -fPIC -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
       if (cfg->shouldBuildStatic()) {

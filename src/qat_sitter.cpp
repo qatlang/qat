@@ -78,8 +78,12 @@ void QatSitter::init() {
         }
 #endif
         if (cfg->isRun()) {
+          bool hasMultiExecutables = ctx->executablePaths.size() > 1;
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.c_str())
+            if (hasMultiExecutables) {
+              std::cout << "\nExecuting built executable at: " << exePath << "\n";
+            }
             if (system(exePath.c_str())) {
               std::cout << "\nThe built executable at " << exePath.string() << " exited with an error!"
                         << "\n";

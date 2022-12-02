@@ -1920,10 +1920,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
 
   SHOW("Upto has value: " << upto.has_value())
 
-  Maybe<CacheSymbol> cachedSymbol = symbol;
-  Vec<Expression*>   cachedExpressions(std::move(cachedExps));
-  Vec<Token>         cachedBinaryOps;
-  Vec<Token>         cachedUnaryOps;
+  Maybe<CacheSymbol>              cachedSymbol = symbol;
+  Vec<Expression*>                cachedExpressions(std::move(cachedExps));
+  Maybe<Pair<Expression*, Token>> binaryOps;
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
   for (; upto.has_value() ? (i < upto.value()) : (i < tokens->size()); i++) {
@@ -2293,7 +2292,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
             cachedSymbol = None;
           }
-          if (cachedExpressions.empty() || !cachedBinaryOps.empty()) {
+          if (binaryOps || cachedExpressions.empty()) {
             auto bClose = bCloseRes.value();
             if (bClose == i + 1) {
               // Empty array literal
@@ -2319,7 +2318,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::parenthesisOpen: {
         SHOW("Found paranthesis")
-        if (cachedBinaryOps.empty() && (!cachedExpressions.empty() || cachedSymbol.has_value())) {
+        if (!binaryOps && (!cachedExpressions.empty() || cachedSymbol.has_value())) {
           // This parenthesis is supposed to indicate a function call
           auto p_close = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
           if (p_close.has_value()) {
@@ -2542,16 +2541,19 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::binaryOperator: {
+        if (binaryOps) {
+          Error("A binary expression already found before this, without having an RHS expression",
+                {binaryOps->first->fileRange, RangeAt(i)});
+        }
         SHOW("Binary operator found: " << token.value)
         if (cachedExpressions.empty() && !cachedSymbol.has_value()) {
           Error("No expression found on the left side of the binary operator " + token.value, token.fileRange);
         } else if (cachedSymbol.has_value()) {
-          cachedExpressions.push_back(
-              new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
-          cachedBinaryOps.push_back(token);
-          cachedSymbol = None;
+          binaryOps = Pair<ast::Expression*, Token>(
+              new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), token);
         } else {
-          cachedBinaryOps.push_back(token);
+          binaryOps = Pair<ast::Expression*, Token>(cachedExpressions.back(), token);
+          cachedExpressions.pop_back();
         }
         break;
       }
@@ -2771,26 +2773,23 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
       }
     }
-    if (!cachedBinaryOps.empty()) {
+    if (binaryOps) {
       SHOW("Binary ops are not empty")
-      if (cachedExpressions.size() >= 2) {
+      if (!cachedExpressions.empty()) {
         SHOW("Found lhs and rhs of binary exp")
         auto* rhs = cachedExpressions.back();
         cachedExpressions.pop_back();
-        auto* lhs = cachedExpressions.back();
-        cachedExpressions.clear();
-        cachedExpressions.push_back(new ast::BinaryExpression(lhs, cachedBinaryOps.back().value, rhs,
-                                                              utils::FileRange(lhs->fileRange, rhs->fileRange)));
-        cachedBinaryOps.clear();
-      } else if (!cachedExpressions.empty() && cachedSymbol.has_value()) {
-        SHOW("Found lhs exp and cached symbol")
-        auto* lhs = cachedExpressions.back();
-        cachedExpressions.clear();
+        cachedExpressions.push_back(
+            new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                      utils::FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+        binaryOps = None;
+      } else if (cachedSymbol.has_value()) {
         auto* rhs    = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
         cachedSymbol = None;
-        cachedExpressions.push_back(new ast::BinaryExpression(lhs, cachedBinaryOps.back().value, rhs,
-                                                              utils::FileRange(lhs->fileRange, rhs->fileRange)));
-        cachedBinaryOps.clear();
+        cachedExpressions.push_back(
+            new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                      utils::FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+        binaryOps = None;
       }
     }
   }
@@ -2800,15 +2799,15 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
     } else {
       Error("No expression found", RangeAt(from));
     }
-  } else if (!cachedBinaryOps.empty()) {
-    if (cachedExpressions.size() >= 2) {
+  } else if (binaryOps) {
+    if (cachedExpressions.size() == 1) {
       auto* rhs = cachedExpressions.back();
       cachedExpressions.pop_back();
-      auto* lhs = cachedExpressions.back();
-      cachedExpressions.pop_back();
-      return {new ast::BinaryExpression(lhs, cachedBinaryOps.back().value, rhs, {lhs->fileRange, rhs->fileRange}), i};
+      return {new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                        {binaryOps->first->fileRange, rhs->fileRange}),
+              i};
     } else {
-      Error("2 expressions required for binary expression not found", cachedBinaryOps.back().fileRange);
+      Error("RHS for the binary expression not found", {binaryOps->first->fileRange, binaryOps->second.fileRange});
     }
   } else {
     return {cachedExpressions.back(), i};

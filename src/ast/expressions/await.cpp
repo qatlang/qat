@@ -38,7 +38,7 @@ IR::Value* Await::emit(IR::Context* ctx) {
     auto* fun        = ctx->fn;
     auto* trueBlock  = new IR::Block(fun, fun->getBlock());
     auto* falseBlock = new IR::Block(fun, fun->getBlock());
-    auto* restBlock  = new IR::Block(fun, fun->getBlock()->getParent());
+    auto* restBlock  = new IR::Block(fun, nullptr);
     restBlock->linkPrevBlock(fun->getBlock());
     ctx->builder.CreateCondBr(
         ctx->builder.CreateICmpEQ(

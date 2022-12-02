@@ -129,7 +129,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
       }
       if (subTy->isCoreType() && subTy->asCore()->hasDestructor()) {
         auto* tagTrueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-        auto* restBlock    = new IR::Block(ctx->fn, ctx->fn->getBlock()->getParent());
+        auto* restBlock    = new IR::Block(ctx->fn, nullptr);
         restBlock->linkPrevBlock(ctx->fn->getBlock());
         ctx->builder.CreateCondBr(
             ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
@@ -197,7 +197,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* condFalseAndTrue = ctx->builder.CreateAnd(
               {ctx->builder.CreateICmpEQ(maybeTagLhs, falseBool), ctx->builder.CreateICmpEQ(maybeTagRhs, trueBool)});
           auto* thirdTrueBlock = new IR::Block(ctx->fn, currBlock);
-          auto* restBlock      = new IR::Block(ctx->fn, currBlock->getParent());
+          auto* restBlock      = new IR::Block(ctx->fn, nullptr);
           restBlock->linkPrevBlock(currBlock);
           ctx->builder.CreateCondBr(condFalseAndTrue, thirdTrueBlock->getBB(), restBlock->getBB());
           thirdTrueBlock->setActive(ctx->builder);
@@ -235,7 +235,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
           auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-          auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock()->getParent());
+          auto* restBlock = new IR::Block(ctx->fn, nullptr);
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), restBlock->getBB());
           trueBlock->setActive(ctx->builder);
@@ -261,7 +261,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
           auto* trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
           auto* falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-          auto* restBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
+          auto* restBlock  = new IR::Block(ctx->fn, nullptr);
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), falseBlock->getBB());
           trueBlock->setActive(ctx->builder);

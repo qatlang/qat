@@ -69,7 +69,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     isExpVariable = expEmit->isVariable();
   }
   auto* curr      = ctx->fn->getBlock();
-  auto* restBlock = new IR::Block(ctx->fn, curr);
+  auto* restBlock = new IR::Block(ctx->fn, nullptr);
   if (expTy->isMix()) {
     auto* mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {

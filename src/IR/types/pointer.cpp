@@ -109,7 +109,8 @@ PointerOwner PointerType::getOwner() const { return owner; }
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
 String PointerType::toString() const {
-  return "#[" + String(isSubtypeVariable() ? "var " : "") + subType->toString() + " " + owner.toString() + "]";
+  return "#[" + String(isMulti() ? "+ " : " ") + String(isSubtypeVariable() ? "var " : "") + subType->toString() + " " +
+         owner.toString() + "]";
 }
 
 Json PointerType::toJson() const {

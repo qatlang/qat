@@ -27,7 +27,8 @@ IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   }
   auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
   SHOW("Infinite loop true block " << trueBlock->getName())
-  auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  auto* restBlock = new IR::Block(ctx->fn, nullptr);
+  restBlock->linkPrevBlock(ctx->fn->getBlock());
   SHOW("Infinite loop rest block " << restBlock->getName())
   (void)IR::addBranch(ctx->builder, trueBlock->getBB());
   trueBlock->setActive(ctx->builder);

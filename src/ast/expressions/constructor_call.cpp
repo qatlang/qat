@@ -173,8 +173,8 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         } else {
           llAlloca = local->getAlloca();
         }
-      } else if (!irName.empty()) {
-        local    = ctx->fn->getBlock()->newValue(irName, cTy, isVar);
+      } else if (irName) {
+        local    = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar);
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
@@ -186,7 +186,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       auto* currBlock = ctx->fn->getBlock();
       auto* condBlock = new IR::Block(ctx->fn, currBlock);
       auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-      auto* restBlock = new IR::Block(ctx->fn, currBlock);
+      auto* restBlock = new IR::Block(ctx->fn, nullptr);
       restBlock->linkPrevBlock(currBlock);
       // NOLINTNEXTLINE(readability-magic-numbers)
       auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);

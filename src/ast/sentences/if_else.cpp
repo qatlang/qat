@@ -39,7 +39,8 @@ bool IfElse::isFalseTill(usize ind) const {
 }
 
 IR::Value* IfElse::emit(IR::Context* ctx) {
-  auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  auto* restBlock = new IR::Block(ctx->fn, nullptr);
+  restBlock->linkPrevBlock(ctx->fn->getBlock());
   for (usize i = 0; i < chain.size(); i++) {
     const auto& section = chain.at(i);
     auto*       exp     = section.first->emit(ctx);

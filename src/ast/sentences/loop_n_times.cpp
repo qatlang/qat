@@ -63,7 +63,8 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
     SHOW("loop times true block " << ctx->fn->getFullName() << "." << trueBlock->getName())
     auto* condBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
     SHOW("loop times cond block " << ctx->fn->getFullName() << "." << condBlock->getName())
-    auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    auto* restBlock = new IR::Block(ctx->fn, nullptr);
+    restBlock->linkPrevBlock(ctx->fn->getBlock());
     SHOW("loop times rest block " << ctx->fn->getFullName() << "." << restBlock->getName())
     ctx->builder.CreateCondBr(
         (countTy->isUnsignedInteger()

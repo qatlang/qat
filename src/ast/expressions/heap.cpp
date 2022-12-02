@@ -116,7 +116,7 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
     auto* mod       = ctx->getMod();
     auto* currBlock = ctx->fn->getBlock();
     auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    auto* restBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+    auto* restBlock = new IR::Block(ctx->fn, nullptr);
     restBlock->linkPrevBlock(currBlock);
     ctx->builder.CreateCondBr(
         ctx->builder.CreateICmpNE(

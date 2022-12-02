@@ -32,7 +32,7 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
     auto* fun       = ctx->fn;
     auto* trueBlock = new IR::Block(fun, fun->getBlock());
     auto* condBlock = new IR::Block(fun, fun->getBlock());
-    auto* restBlock = new IR::Block(fun, fun->getBlock());
+    auto* restBlock = new IR::Block(fun, nullptr);
     auto* llCond    = cond->getLLVM();
     if (cond->getType()->isReference()) {
       llCond = ctx->builder.CreateLoad(cond->getType()->asReference()->getSubType()->getLLVMType(), llCond);

@@ -533,25 +533,7 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
         }
       }
       ctx->getMod()->linkNative(NativeUnit::free);
-      auto* freeFn    = ctx->getMod()->getLLVMModule()->getFunction("free");
-      auto* currBlock = fun->getBlock();
-      auto* trueBlock = new IR::Block(fun, currBlock);
-      auto* restBlock = new IR::Block(fun, nullptr);
-      restBlock->linkPrevBlock(currBlock);
-      ctx->builder.CreateCondBr(
-          ctx->builder.CreateICmpNE(
-              ctx->builder.CreatePtrDiff(
-                  ptrTy->getSubType()->getLLVMType(),
-                  (ptrTy->isMulti()
-                       ? ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
-                                                 ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u))
-                       : ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM())),
-                  llvm::ConstantPointerNull::get(ptrTy->isMulti()
-                                                     ? ptrTy->getSubType()->getLLVMType()->getPointerTo()
-                                                     : llvm::dyn_cast<llvm::PointerType>(ptrTy->getLLVMType()))),
-              llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
-          trueBlock->getBB(), restBlock->getBB());
-      trueBlock->setActive(ctx->builder);
+      auto* freeFn = ctx->getMod()->getLLVMModule()->getFunction("free");
       ctx->builder.CreateCall(
           freeFn->getFunctionType(), freeFn,
           {ptrTy->isMulti()
@@ -561,8 +543,6 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
                      llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())
                : ctx->builder.CreatePointerCast(ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM()),
                                                 llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
-      (void)IR::addBranch(ctx->builder, restBlock->getBB());
-      restBlock->setActive(ctx->builder);
     }
     // FIXME - Add mix type support
   }
@@ -578,10 +558,10 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
         auto& mem = cTy->getMembers().at(i);
         if (mem->type->isPointer() && mem->type->asPointer()->getOwner().isType() &&
             (mem->type->asPointer()->getOwner().ownerAsType()->getID() == mem->type->getID())) {
-          auto* ptrTy = mem->type->asPointer();
+          auto* ptrTy  = mem->type->asPointer();
+          auto* memPtr = ctx->builder.CreateStructGEP(
+              ptrTy->getLLVMType(), ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, i), 0u);
           if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
-            auto* memPtr = ctx->builder.CreateStructGEP(
-                ptrTy->getLLVMType(), ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, i), 0u);
             auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
             if (ptrTy->isMulti()) {
               auto* currBlock = ctx->fn->getBlock();
@@ -642,6 +622,17 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
               restBlock->setActive(ctx->builder);
             }
           }
+          ctx->getMod()->linkNative(NativeUnit::free);
+          auto* freeFn = ctx->getMod()->getLLVMModule()->getFunction("free");
+          ctx->builder.CreateCall(
+              freeFn->getFunctionType(), freeFn,
+              {ptrTy->isMulti()
+                   ? ctx->builder.CreatePointerCast(
+                         ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                                 ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), memPtr, 0u)),
+                         llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())
+                   : ctx->builder.CreatePointerCast(ctx->builder.CreateLoad(ptrTy->getLLVMType(), memPtr),
+                                                    llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
         }
       }
       if (fun->getBlockCount() >= 1 && fun->getFirstBlock()->hasValue("''")) {

@@ -154,10 +154,12 @@ public:
   useit llvm::Function* getLLVMFunction();
   void                  setActiveBlock(usize index) const;
   useit Block*          getBlock() const;
+  useit Block*          getFirstBlock() const;
+  useit usize           getBlockCount() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
 
-  virtual ~Function() override;
+  ~Function() override;
 };
 
 class TemplateFunction : public Uniq {
@@ -185,6 +187,8 @@ public:
 };
 
 void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange);
+void destructorCaller(IR::Context* ctx, IR::Function* fun);
+void memberFunctionHandler(IR::Context* ctx, IR::Function* fun);
 void destroyLocalsFrom(IR::Context* ctx, IR::Block* block);
 
 } // namespace qat::IR

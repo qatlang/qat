@@ -7,13 +7,17 @@
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
+#include "control_flow.hpp"
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
 #include "types/reference.hpp"
+#include "types/unsigned.hpp"
 #include "types/void.hpp"
+#include "uniq.hpp"
 #include "value.hpp"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
@@ -187,8 +191,19 @@ void Block::setActive(llvm::IRBuilder<>& builder) {
 void Block::collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const {
   if (hasParent()) {
     parent->collectAllLocalValuesSoFar(vals);
-  } else {
-    for (auto* val : values) {
+  }
+  if (hasPrevBlock()) {
+    prevBlock->collectAllLocalValuesSoFar(vals);
+  }
+  for (auto* val : values) {
+    bool exists = false;
+    for (auto* collected : vals) {
+      if (collected->getLocalID() == val->getLocalID()) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists) {
       vals.push_back(val);
     }
   }
@@ -385,6 +400,10 @@ void Function::setActiveBlock(usize index) const { activeBlock = index; }
 
 Block* Function::getBlock() const { return blocks.at(activeBlock)->getActive(); }
 
+Block* Function::getFirstBlock() const { return blocks.at(0); };
+
+usize Function::getBlockCount() const { return blocks.size(); }
+
 usize& Function::getCopiedCounter() { return copiedCounter; }
 
 usize& Function::getMovedCounter() { return movedCounter; }
@@ -438,39 +457,217 @@ Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* 
   return fun;
 }
 
-void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange) {
-  auto destructorCaller = [&]() {
-    Vec<IR::LocalValue*> locals;
-    fun->getBlock()->collectAllLocalValuesSoFar(locals);
-    for (auto* loc : locals) {
-      if (loc->getType()->isCoreType()) {
-        auto* cTy        = loc->getType()->asCore();
-        auto* destructor = cTy->getDestructor();
-        (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
-      }
-    }
-    locals.clear();
-  };
-  auto* block          = fun->getBlock();
-  auto* retTy          = fun->getType()->asFunction()->getReturnType();
-  auto  zeroAssignSelf = [&]() {
-    if (fun->isMemberFunction()) {
-      if (((IR::MemberFunction*)fun)->getMemberFnType() == MemberFnType::destructor) {
-        if (fun->getBlock()->hasValue("''")) {
-          SHOW("Destructor self value is zero assigned")
-          auto* selfVal = fun->getBlock()->getValue("''");
-          ctx->builder.CreateStore(llvm::Constant::getNullValue(selfVal->getType()->getLLVMType()),
-                                    selfVal->getAlloca());
+void destructorCaller(IR::Context* ctx, IR::Function* fun) {
+  SHOW("DestructorCaller")
+  Vec<IR::LocalValue*> locals;
+  fun->getBlock()->collectAllLocalValuesSoFar(locals);
+  SHOW(locals.size() << " locals collected so far")
+  for (auto* loc : locals) {
+    SHOW("Local name is: " << loc->getName())
+    if (loc->getType()->isCoreType()) {
+      auto* cTy        = loc->getType()->asCore();
+      auto* destructor = cTy->getDestructor();
+      (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
+    } else if (loc->getType()->isPointer() && loc->getType()->asPointer()->getOwner().isFunction() &&
+               loc->getType()->asPointer()->getOwner().ownerAsFunction()->getID() == fun->getID()) {
+      auto* ptrTy = loc->getType()->asPointer();
+      if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
+        auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
+        if (ptrTy->isMulti()) {
+          auto* currBlock = ctx->fn->getBlock();
+          auto* condBlock = new IR::Block(ctx->fn, currBlock);
+          auto* trueBlock = new IR::Block(ctx->fn, currBlock);
+          auto* restBlock = new IR::Block(ctx->fn, nullptr);
+          restBlock->linkPrevBlock(currBlock);
+          // NOLINTNEXTLINE(readability-magic-numbers)
+          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);
+          ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
+                                   count->getLLVM());
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpNE(
+                  ctx->builder.CreatePtrDiff(
+                      ptrTy->getSubType()->getLLVMType(),
+                      ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                              ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u)),
+                      llvm::ConstantPointerNull::get(ptrTy->getSubType()->getLLVMType()->getPointerTo())),
+                  llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+              condBlock->getBB(), restBlock->getBB());
+          condBlock->setActive(ctx->builder);
+          SHOW("Set condition block active")
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpULT(
+                  ctx->builder.CreateLoad(count->getType()->getLLVMType(), count->getLLVM()),
+                  ctx->builder.CreateLoad(count->getType()->getLLVMType(),
+                                          ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 1u))),
+              trueBlock->getBB(), restBlock->getBB());
+          trueBlock->setActive(ctx->builder);
+          SHOW("Set trueblock active")
+          (void)dstrFn->call(
+              ctx,
+              {ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                       ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u))},
+              ctx->getMod());
+          ctx->builder.CreateStore(
+              ctx->builder.CreateAdd(llvm::ConstantInt::get(count->getType()->getLLVMType(), 1u, false),
+                                     ctx->builder.CreateLoad(count->getType()->getLLVMType(), count->getLLVM())),
+              count->getLLVM());
+          (void)IR::addBranch(ctx->builder, condBlock->getBB());
+          restBlock->setActive(ctx->builder);
         } else {
-          SHOW("Destructor has no self value")
+          auto* currBlock = ctx->fn->getBlock();
+          auto* trueBlock = new IR::Block(ctx->fn, currBlock);
+          auto* restBlock = new IR::Block(ctx->fn, nullptr);
+          restBlock->linkPrevBlock(currBlock);
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpNE(
+                  ctx->builder.CreatePtrDiff(
+                      ptrTy->getLLVMType(), ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM()),
+                      llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(ptrTy->getLLVMType()))),
+                  llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+              trueBlock->getBB(), restBlock->getBB());
+          trueBlock->setActive(ctx->builder);
+          ctx->builder.CreateCall(dstrFn->getLLVMFunction()->getFunctionType(), dstrFn->getLLVMFunction(),
+                                  {ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM())});
+          (void)IR::addBranch(ctx->builder, restBlock->getBB());
+          restBlock->setActive(ctx->builder);
         }
       }
+      ctx->getMod()->linkNative(NativeUnit::free);
+      auto* freeFn    = ctx->getMod()->getLLVMModule()->getFunction("free");
+      auto* currBlock = fun->getBlock();
+      auto* trueBlock = new IR::Block(fun, currBlock);
+      auto* restBlock = new IR::Block(fun, nullptr);
+      restBlock->linkPrevBlock(currBlock);
+      ctx->builder.CreateCondBr(
+          ctx->builder.CreateICmpNE(
+              ctx->builder.CreatePtrDiff(
+                  ptrTy->getSubType()->getLLVMType(),
+                  (ptrTy->isMulti()
+                       ? ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                                 ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u))
+                       : ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM())),
+                  llvm::ConstantPointerNull::get(ptrTy->isMulti()
+                                                     ? ptrTy->getSubType()->getLLVMType()->getPointerTo()
+                                                     : llvm::dyn_cast<llvm::PointerType>(ptrTy->getLLVMType()))),
+              llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+          trueBlock->getBB(), restBlock->getBB());
+      trueBlock->setActive(ctx->builder);
+      ctx->builder.CreateCall(
+          freeFn->getFunctionType(), freeFn,
+          {ptrTy->isMulti()
+               ? ctx->builder.CreatePointerCast(
+                     ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                             ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u)),
+                     llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())
+               : ctx->builder.CreatePointerCast(ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM()),
+                                                llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      restBlock->setActive(ctx->builder);
     }
-  };
+    // FIXME - Add mix type support
+  }
+  locals.clear();
+}
+
+void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
+  if (fun->isMemberFunction()) {
+    auto* mFn = (IR::MemberFunction*)fun;
+    auto* cTy = mFn->getParentType();
+    if (mFn->getMemberFnType() == MemberFnType::destructor) {
+      for (usize i = 0; i < cTy->getMembers().size(); i++) {
+        auto& mem = cTy->getMembers().at(i);
+        if (mem->type->isPointer() && mem->type->asPointer()->getOwner().isType() &&
+            (mem->type->asPointer()->getOwner().ownerAsType()->getID() == mem->type->getID())) {
+          auto* ptrTy = mem->type->asPointer();
+          if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
+            auto* memPtr = ctx->builder.CreateStructGEP(
+                ptrTy->getLLVMType(), ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, i), 0u);
+            auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
+            if (ptrTy->isMulti()) {
+              auto* currBlock = ctx->fn->getBlock();
+              auto* condBlock = new IR::Block(ctx->fn, currBlock);
+              auto* trueBlock = new IR::Block(ctx->fn, currBlock);
+              auto* restBlock = new IR::Block(ctx->fn, nullptr);
+              restBlock->linkPrevBlock(currBlock);
+              // NOLINTNEXTLINE(readability-magic-numbers)
+              auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);
+              ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
+                                       count->getLLVM());
+              ctx->builder.CreateCondBr(
+                  ctx->builder.CreateICmpNE(
+                      ctx->builder.CreatePtrDiff(
+                          ptrTy->getSubType()->getLLVMType(),
+                          ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                                  ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), memPtr, 0u)),
+                          llvm::ConstantPointerNull::get(ptrTy->getSubType()->getLLVMType()->getPointerTo())),
+                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+                  condBlock->getBB(), restBlock->getBB());
+              condBlock->setActive(ctx->builder);
+              SHOW("Set condition block active")
+              ctx->builder.CreateCondBr(
+                  ctx->builder.CreateICmpULT(
+                      ctx->builder.CreateLoad(count->getType()->getLLVMType(), count->getLLVM()),
+                      ctx->builder.CreateLoad(count->getType()->getLLVMType(),
+                                              ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), memPtr, 1u))),
+                  trueBlock->getBB(), restBlock->getBB());
+              trueBlock->setActive(ctx->builder);
+              SHOW("Set trueblock active")
+              (void)dstrFn->call(
+                  ctx,
+                  {ctx->builder.CreateLoad(ptrTy->getSubType()->getLLVMType()->getPointerTo(),
+                                           ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), memPtr, 0u))},
+                  ctx->getMod());
+              ctx->builder.CreateStore(
+                  ctx->builder.CreateAdd(llvm::ConstantInt::get(count->getType()->getLLVMType(), 1u, false),
+                                         ctx->builder.CreateLoad(count->getType()->getLLVMType(), count->getLLVM())),
+                  count->getLLVM());
+              (void)IR::addBranch(ctx->builder, condBlock->getBB());
+              restBlock->setActive(ctx->builder);
+            } else {
+              auto* currBlock = ctx->fn->getBlock();
+              auto* trueBlock = new IR::Block(ctx->fn, currBlock);
+              auto* restBlock = new IR::Block(ctx->fn, nullptr);
+              restBlock->linkPrevBlock(currBlock);
+              ctx->builder.CreateCondBr(
+                  ctx->builder.CreateICmpNE(
+                      ctx->builder.CreatePtrDiff(
+                          ptrTy->getLLVMType(), ctx->builder.CreateLoad(ptrTy->getLLVMType(), memPtr),
+                          llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(ptrTy->getLLVMType()))),
+                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+                  trueBlock->getBB(), restBlock->getBB());
+              trueBlock->setActive(ctx->builder);
+              ctx->builder.CreateCall(dstrFn->getLLVMFunction()->getFunctionType(), dstrFn->getLLVMFunction(),
+                                      {ctx->builder.CreateLoad(ptrTy->getLLVMType(), memPtr)});
+              (void)IR::addBranch(ctx->builder, restBlock->getBB());
+              restBlock->setActive(ctx->builder);
+            }
+          }
+        }
+      }
+      if (fun->getBlockCount() >= 1 && fun->getFirstBlock()->hasValue("''")) {
+        SHOW("Destructor self value is zero assigned")
+        auto* selfVal = fun->getFirstBlock()->getValue("''");
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(cTy->getLLVMType()),
+                                 ctx->builder.CreateLoad(selfVal->getType()->getLLVMType(), selfVal->getAlloca()));
+      } else {
+        SHOW("Destructor has no self value")
+      }
+    }
+  }
+}
+
+void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange) {
+  SHOW("Starting function return handle for: " << fun->getFullName())
+  // FIXME - Support destructors for types besides core types
+  auto* block = fun->getBlock();
+  auto* retTy = fun->getType()->asFunction()->getReturnType();
   if (block->getBB()->getInstList().empty()) {
+    SHOW("Empty instruction list in block")
     if (retTy->isVoid()) {
-      destructorCaller();
-      zeroAssignSelf();
+      SHOW("Calling destructor caller")
+      destructorCaller(ctx, fun);
+      SHOW("Calling member function caller")
+      memberFunctionHandler(ctx, fun);
       ctx->builder.CreateRetVoid();
     } else {
       ctx->Error("Missing given value in all control paths", fileRange);
@@ -478,9 +675,12 @@ void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::Fil
   } else {
     auto* lastInst = ((llvm::Instruction*)&block->getBB()->back());
     if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
+      SHOW("Last instruction is not a return")
       if (retTy->isVoid()) {
-        destructorCaller();
-        zeroAssignSelf();
+        SHOW("Calling destructor caller")
+        destructorCaller(ctx, fun);
+        SHOW("Calling member function handler")
+        memberFunctionHandler(ctx, fun);
         ctx->builder.CreateRetVoid();
       } else {
         ctx->Error("Missing given value in all control paths", fileRange);

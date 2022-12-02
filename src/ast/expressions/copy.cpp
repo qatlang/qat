@@ -8,8 +8,9 @@ Copy::Copy(Expression* _exp, utils::FileRange _fileRange) : Expression(std::move
 
 IR::Value* Copy::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);
-  if ((expEmit->getType()->isCoreType() && expEmit->isImplicitPointer()) ||
-      (expEmit->getType()->isReference() && expEmit->getType()->asReference()->getSubType()->isCoreType())) {
+  auto* expTy   = expEmit->getType();
+  if ((expTy->isCoreType() && expEmit->isImplicitPointer()) ||
+      (expTy->isReference() && expTy->asReference()->getSubType()->isCoreType())) {
     auto* cTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asCore()
                                        : expEmit->getType()->asCore();
     if (cTy->hasCopyConstructor()) {
@@ -46,9 +47,9 @@ IR::Value* Copy::emit(IR::Context* ctx) {
                  fileRange);
     }
   } else {
-    ctx->Error("Invalid value provided to copy expression. The value provided "
-               "should either be a reference or a local variable",
-               fileRange);
+    ctx->Error(
+        "The value provided should either be a reference or a local variable. The provided value does not reside in an address and hence cannot be copied from",
+        fileRange);
   }
   return nullptr;
 }

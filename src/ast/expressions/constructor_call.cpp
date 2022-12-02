@@ -1,5 +1,6 @@
 #include "./constructor_call.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/types/maybe.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "llvm/IR/Constants.h"
@@ -215,8 +216,16 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       restBlock->setActive(ctx->builder);
-      auto* ptrTy  = IR::PointerType::get(true, cTy, IR::PointerOwner::OfFunction(ctx->fn), true, ctx->llctx);
-      auto* resVal = restBlock->newValue(utils::unique_id(), ptrTy, false);
+      auto* ptrTy = IR::PointerType::get(true, cTy, IR::PointerOwner::OfFunction(ctx->fn), true, ctx->llctx);
+      auto* resVal =
+          local ? (local->getType()->isMaybe()
+                       ? new IR::Value(
+                             ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
+                             IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
+                                                    ctx->llctx),
+                             false, IR::Nature::temporary)
+                       : local)
+                : restBlock->newValue(irName.has_value() ? irName.value() : utils::unique_id(), ptrTy, isVar);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
       ctx->builder.CreateStore(oCount->getLLVM(),
                                ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 1u));
@@ -238,8 +247,8 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     } else {
       auto* res = new IR::Value(llAlloca,
                                 ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, getIRPtrOwnerTy(ctx),
-                                                                                       ownCount.has_value(), ctx->llctx)
-                                                  : cTy,
+                                                                                       hasOwnCount, ctx->llctx)
+                                                  : (IR::QatType*)cTy,
                                 ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (local) {
         res->setLocalID(local->getLocalID());

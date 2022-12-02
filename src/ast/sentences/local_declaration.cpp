@@ -103,20 +103,33 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       (void)plain->emit(ctx);
       return nullptr;
     }
-  } else if (value && (value->nodeType() == NodeType::constructorCall) &&
-             !((((ast::ConstructorCall*)value))->isOwning())) {
-    auto* cons = (ast::ConstructorCall*)value;
+  } else if (value && (value->nodeType() == NodeType::constructorCall)) {
+    auto* cons  = (ast::ConstructorCall*)value;
+    bool  isOwn = (((ast::ConstructorCall*)value))->isOwning();
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      if (!declType->isCoreType() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
+      if (!isOwn && !declType->isCoreType() &&
+          (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
         ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
                        " and is not a core type",
+                   fileRange);
+      } else if (isOwn &&
+                 (!declType->isPointer() ||
+                  (declType->isPointer() && !declType->asPointer()->getSubType()->isCoreType())) &&
+                 ((declType->isMaybe() && !declType->asMaybe()->getSubType()->isPointer()) ||
+                  (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer() &&
+                   !declType->asMaybe()->getSubType()->asPointer()->getSubType()->isCoreType()))) {
+        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
+                       " and is not a pointer",
                    fileRange);
       }
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* constrTy = cons->type->emit(ctx);
-      if (declType->isSame(constrTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(constrTy))) {
+      if (isOwn ? (declType->isMaybe() ? declType->asMaybe()->getSubType()->asPointer()->isSame(constrTy)
+                                       : declType->asPointer()->getSubType()->isSame(constrTy))
+                : (declType->isMaybe() ? declType->asMaybe()->getSubType()->isSame(constrTy)
+                                       : declType->isSame(constrTy))) {
         SHOW("Local Declaration => name : " << name << " type: " << declType->toString()
                                             << " variability: " << variability)
         auto* loc   = block->newValue(name, declType, variability);

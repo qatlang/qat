@@ -25,27 +25,6 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                                    ->getSubType()
                                    ->isVoid()
                              : fun->getType()->asFunction()->getReturnType()->isVoid()) {
-    if (fun->isMemberFunction() && ((IR::MemberFunction*)fun)->getMemberFnType() == IR::MemberFnType::destructor) {
-      auto* mFn = (IR::MemberFunction*)fun;
-      auto* cTy = mFn->getParentType();
-      for (usize i = 0; i < cTy->getMemberCount(); i++) {
-        if (cTy->getMemberAt(i)->type->isCoreType()) {
-          auto* memPtr     = ctx->builder.CreateStructGEP(mFn->getParentType()->getLLVMType(), ctx->selfVal, i);
-          auto* destructor = cTy->getDestructor();
-          (void)destructor->call(ctx, {memPtr}, ctx->getMod());
-        }
-      }
-    }
-    Vec<IR::LocalValue*> locals;
-    fun->getBlock()->collectAllLocalValuesSoFar(locals);
-    for (auto* loc : locals) {
-      if (loc->getType()->isCoreType()) {
-        auto* cTy        = loc->getType()->asCore();
-        auto* destructor = cTy->getDestructor();
-        (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
-      }
-    }
-    locals.clear();
     if (fun->isAsyncFunction()) {
       auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->getLLVMType();
       auto* futRet =
@@ -66,6 +45,8 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                      give_expr.value()->fileRange);
         }
       }
+      IR::destructorCaller(ctx, fun);
+      IR::memberFunctionHandler(ctx, fun);
       return new IR::Value(
           ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
           IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
@@ -78,6 +59,8 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                      give_expr.value()->fileRange);
         }
       }
+      IR::destructorCaller(ctx, fun);
+      IR::memberFunctionHandler(ctx, fun);
       return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
     }
   } else {
@@ -154,16 +137,6 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                        "the function call is complete",
                        fileRange);
         }
-        Vec<IR::LocalValue*> locals;
-        fun->getBlock()->collectAllLocalValuesSoFar(locals);
-        for (auto* loc : locals) {
-          if (loc->getType()->isCoreType()) {
-            auto* cTy        = loc->getType()->asCore();
-            auto* destructor = cTy->getDestructor();
-            (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
-          }
-        }
-        locals.clear();
         if (fun->isAsyncFunction()) {
           auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
           SHOW("Got future type")
@@ -184,10 +157,14 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
           auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
           ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
                                   {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+          IR::destructorCaller(ctx, fun);
+          IR::memberFunctionHandler(ctx, fun);
           return new IR::Value(ctx->builder.CreateRet(llvm::ConstantPointerNull::get(
                                    llvm::dyn_cast<llvm::PointerType>(fun->getAsyncSubFunction()->getReturnType()))),
                                IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
         } else {
+          IR::destructorCaller(ctx, fun);
+          IR::memberFunctionHandler(ctx, fun);
           return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retVal->getType(), false, IR::Nature::pure);
         }
       } else if (fun->isAsyncFunction() && retType->isFuture() &&
@@ -227,6 +204,8 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
         auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
         ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
                                 {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
+        IR::destructorCaller(ctx, fun);
+        IR::memberFunctionHandler(ctx, fun);
         return new IR::Value(
             ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
             IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);

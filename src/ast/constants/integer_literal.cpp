@@ -9,6 +9,11 @@ IR::ConstantValue* IntegerLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Integer literals are not assignable", fileRange);
   }
+  if (expected && (!expected->isInteger() && !expected->isUnsignedInteger())) {
+    ctx->Error("The inferred type of this expression is " + expected->toString() +
+                   ". The only supported types in type inference for integer literal are signed & unsigned integers",
+               fileRange);
+  }
   // NOLINTBEGIN(readability-magic-numbers)
   return new IR::ConstantValue(llvm::ConstantInt::get(expected ? (llvm::IntegerType*)(expected->getLLVMType())
                                                                : llvm::Type::getInt32Ty(ctx->llctx),

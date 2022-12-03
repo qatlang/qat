@@ -9,6 +9,11 @@ IR::ConstantValue* UnsignedLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Unsigned literals are not assignable", fileRange);
   }
+  if (expected && !expected->isUnsignedInteger()) {
+    ctx->Error("The inferred type of this expression is " + expected->toString() +
+                   ". Unsigned integer literal expects an unsigned integer type to be provided for type inference",
+               fileRange);
+  }
   // NOLINTBEGIN(readability-magic-numbers)
   return new IR::ConstantValue(llvm::ConstantInt::get(expected
                                                           ? llvm::dyn_cast<llvm::IntegerType>(expected->getLLVMType())

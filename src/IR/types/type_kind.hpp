@@ -27,6 +27,7 @@ enum class TypeKind {
   choice,
   future,
   maybe,
+  region,
 };
 
 } // namespace qat::IR

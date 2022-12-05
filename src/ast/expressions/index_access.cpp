@@ -30,7 +30,8 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     if (ind->getType()->isUnsignedInteger() || ind->getType()->isInteger() ||
         (ind->getType()->isReference() && (ind->getType()->asReference()->getSubType()->isUnsignedInteger() ||
                                            ind->getType()->asReference()->getSubType()->isInteger()))) {
-      if (inst->getType()->isReference()) {
+      if (inst->getType()->isReference() && (inst->getType()->asReference()->getSubType()->isPointer() &&
+                                             !inst->getType()->asReference()->getSubType()->asPointer()->isMulti())) {
         SHOW("Instance for member access is a Reference to: " << inst->getType()->toString())
         inst = new IR::Value(ctx->builder.CreateLoad(instType->getLLVMType(), inst->getLLVM()), instType,
                              inst->getType()->asReference()->isSubtypeVariable(),

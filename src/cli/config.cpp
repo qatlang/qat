@@ -38,7 +38,6 @@ Config::Config(u64 count, const char** args)
       std::atoi(verNum.substr(verNum.find_first_of('.') + 1, verNum.find_last_of('.') - verNum.find_first_of('.') - 1)
                     .c_str()),
       std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
-  SHOW("Version tuple is: " << versionTuple.getAsString())
   if (!hasInstance()) {
     Config::instance = this;
     invokePath       = args[0];

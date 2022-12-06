@@ -9,10 +9,10 @@ PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe
     : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy),
       isMultiPtr(_isMultiPtr) {}
 
-IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx) const {
+IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatType*> ownerVal) const {
   switch (ownTyp) {
     case PtrOwnType::type:
-      return IR::PointerOwner::OfType(ownerTyTy.value()->emit(ctx));
+      return IR::PointerOwner::OfType(ownerVal.value());
     case PtrOwnType::typeParent:
       return IR::PointerOwner::OfType(ctx->activeType);
     case PtrOwnType::anonymous:
@@ -27,7 +27,7 @@ IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx) const {
       }
     }
     case PtrOwnType::region:
-      return IR::PointerOwner::OfRegion();
+      return IR::PointerOwner::OfRegion(ownerVal.value()->asRegion());
   }
 }
 
@@ -43,7 +43,31 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
       ctx->Error("This pointer type is not inside a type and hence the pointer cannot be owned by type", fileRange);
     }
   }
-  return IR::PointerType::get(type->isVariable(), type->emit(ctx), getPointerOwner(ctx), isMultiPtr, ctx->llctx);
+  Maybe<IR::QatType*> ownerVal;
+  if (ownTyp == PtrOwnType::type) {
+    if (!ownerTyTy) {
+      ctx->Error("Expected a type to be provided", fileRange);
+    }
+    auto* typVal = ownerTyTy.value()->emit(ctx);
+    if (typVal->isRegion()) {
+      ctx->Error("The type provided is a region and hence pointer owner has to be " + ctx->highlightError("region"),
+                 fileRange);
+    }
+    ownerVal = typVal;
+  } else if (ownTyp == PtrOwnType::region) {
+    if (!ownerTyTy) {
+      ctx->Error("Expected a region to be provided", fileRange);
+    }
+    auto* regTy = ownerTyTy.value()->emit(ctx);
+    if (!regTy->isRegion()) {
+      ctx->Error("The provided type is not a region type and hence pointer owner cannot be " +
+                     ctx->highlightError("region"),
+                 fileRange);
+    }
+    ownerVal = regTy;
+  }
+  return IR::PointerType::get(type->isVariable(), type->emit(ctx), getPointerOwner(ctx, ownerVal), isMultiPtr,
+                              ctx->llctx);
 }
 
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }

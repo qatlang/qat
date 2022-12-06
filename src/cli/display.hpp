@@ -21,14 +21,14 @@ void version();
  *
  * @param buildCommit
  */
-void about(String buildCommit);
+void about(const String& buildCommit);
 
 /**
  *  Displays the build info
  *
  * @param buildCommit
  */
-void build_info(String buildCommit);
+void build_info(const String& buildCommit);
 
 /**
  *  Displays detailed information on how to use the CLI of the compiler.

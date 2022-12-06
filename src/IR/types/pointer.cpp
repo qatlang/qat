@@ -1,6 +1,7 @@
 #include "./pointer.hpp"
 #include "../../memory_tracker.hpp"
 #include "../function.hpp"
+#include "region.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
@@ -21,9 +22,13 @@ PointerOwner PointerOwner::OfFunction(Function* fun) {
   return PointerOwner{.owner = (void*)fun, .ownerTy = PointerOwnerType::function};
 }
 
-PointerOwner PointerOwner::OfRegion() { return PointerOwner{.owner = nullptr, .ownerTy = PointerOwnerType::region}; }
+PointerOwner PointerOwner::OfRegion(Region* region) {
+  return PointerOwner{.owner = region, .ownerTy = PointerOwnerType::region};
+}
 
 QatType* PointerOwner::ownerAsType() const { return (QatType*)owner; }
+
+Region* PointerOwner::ownerAsRegion() const { return ((QatType*)owner)->asRegion(); }
 
 Function* PointerOwner::ownerAsFunction() const { return (Function*)owner; }
 

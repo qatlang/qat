@@ -8,6 +8,7 @@
 namespace qat::IR {
 
 class Function;
+class Region;
 
 enum class PointerOwnerType {
   region,
@@ -27,9 +28,10 @@ public:
   useit static PointerOwner OfType(QatType* type);
   useit static PointerOwner OfFunction(Function* fun);
   // TODO - Add region
-  useit static PointerOwner OfRegion();
+  useit static PointerOwner OfRegion(Region* region);
 
   useit QatType*  ownerAsType() const;
+  useit Region*   ownerAsRegion() const;
   useit Function* ownerAsFunction() const;
 
   useit bool isType() const;

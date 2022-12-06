@@ -7,6 +7,7 @@
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
+#include "./types/region.hpp"
 #include "control_flow.hpp"
 #include "member_function.hpp"
 #include "types/qat_type.hpp"
@@ -547,6 +548,11 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
     // FIXME - Add mix type support
   }
   locals.clear();
+  if (fun->getFullName() == "main") {
+    for (auto* reg : QatType::allRegions()) {
+      reg->destroyObjects(ctx);
+    }
+  }
 }
 
 void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {

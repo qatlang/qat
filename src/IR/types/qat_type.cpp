@@ -11,6 +11,7 @@
 #include "./mix.hpp"
 #include "./pointer.hpp"
 #include "./reference.hpp"
+#include "./region.hpp"
 #include "./string_slice.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
@@ -22,6 +23,16 @@ namespace qat::IR {
 QatType::QatType() { types.push_back(this); }
 
 Vec<QatType*> QatType::types = {};
+
+Vec<Region*> QatType::allRegions() {
+  Vec<Region*> result;
+  for (auto* typ : types) {
+    if (typ->typeKind() == TypeKind::region) {
+      result.push_back(typ->asRegion());
+    }
+  }
+  return result;
+}
 
 void QatType::clearAll() {
   for (auto* typ : types) {
@@ -126,6 +137,11 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
       case TypeKind::core: {
         auto* thisVal  = (CoreType*)this;
         auto* otherVal = (CoreType*)other;
+        return (thisVal->getFullName() == otherVal->getFullName());
+      }
+      case TypeKind::region: {
+        auto* thisVal  = (Region*)this;
+        auto* otherVal = (Region*)this;
         return (thisVal->getFullName() == otherVal->getFullName());
       }
       case TypeKind::choice: {
@@ -298,7 +314,7 @@ CStringType* QatType::asCString() const {
 
 bool QatType::isFuture() const {
   return ((typeKind() == TypeKind::future) ||
-          (typeKind() == TypeKind::future && asDefinition()->getSubType()->isFuture()));
+          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isFuture()));
 }
 
 FutureType* QatType::asFuture() const {
@@ -307,11 +323,20 @@ FutureType* QatType::asFuture() const {
 
 bool QatType::isMaybe() const {
   return ((typeKind() == TypeKind::maybe) ||
-          (typeKind() == TypeKind::maybe && asDefinition()->getSubType()->isMaybe()));
+          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isMaybe()));
 }
 
 MaybeType* QatType::asMaybe() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMaybe() : (MaybeType*)this;
+}
+
+bool QatType::isRegion() const {
+  return ((typeKind() == TypeKind::region) ||
+          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isRegion()));
+}
+
+Region* QatType::asRegion() const {
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asRegion() : (Region*)this;
 }
 
 } // namespace qat::IR

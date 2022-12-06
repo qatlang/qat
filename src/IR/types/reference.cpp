@@ -1,5 +1,6 @@
 #include "./reference.hpp"
 #include "../../memory_tracker.hpp"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {

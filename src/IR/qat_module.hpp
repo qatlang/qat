@@ -57,6 +57,7 @@ public:
 };
 
 class QatModule : public Uniq {
+  friend class Region;
   friend class CoreType;
   friend class MixType;
   friend class ChoiceType;
@@ -108,6 +109,8 @@ private:
   Vec<Brought<TemplateCoreType>> broughtTemplateCoreTypes;
   Vec<GlobalEntity*>             globalEntities;
   Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
+  Vec<Region*>                   regions;
+  Vec<Brought<Region>>           broughtRegions;
   Function*                      moduleInitialiser;
   u64                            nonConstantGlobals = 0;
 
@@ -222,6 +225,13 @@ public:
   useit TemplateFunction* getTemplateFunction(const String& name, const utils::RequesterInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleTemplateFunctionInImports(const String&               name,
                                                                   const utils::RequesterInfo& reqInfo) const;
+
+  // REGION
+
+  useit bool hasRegion(const String& name) const;
+  useit bool hasBroughtRegion(const String& name) const;
+  useit Pair<bool, String> hasAccessibleRegionInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
+  useit Region*            getRegion(const String& name, const utils::RequesterInfo& reqInfo) const;
 
   // CORE TYPE
 

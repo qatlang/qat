@@ -9,6 +9,7 @@
 #include "types/core_type.hpp"
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
+#include "types/region.hpp"
 #include "types/void.hpp"
 #include "value.hpp"
 #include "llvm/Config/llvm-config.h"
@@ -715,6 +716,79 @@ TemplateFunction* QatModule::getTemplateFunction(const String& name, const utils
             bMod->hasAccessibleTemplateFunctionInImports(name, reqInfo).first) {
           if (bMod->getTemplateFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
             return bMod->getTemplateFunction(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+// REGION
+
+bool QatModule::hasRegion(const String& name) const {
+  for (auto* reg : regions) {
+    if (reg->getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasBroughtRegion(const String& name) const {
+  for (const auto& brought : broughtRegions) {
+    if (!brought.isNamed()) {
+      auto* reg = brought.get();
+      if (reg->getName() == name) {
+        return true;
+      }
+    } else if (brought.getName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleRegionInImports(const String&               name,
+                                                           const utils::RequesterInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName() && (bMod->hasRegion(name) || bMod->hasBroughtRegion(name) ||
+                                        bMod->hasAccessibleRegionInImports(name, reqInfo).first)) {
+        if (bMod->getRegion(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+          return {true, bMod->filePath.string()};
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+Region* QatModule::getRegion(const String& name, const utils::RequesterInfo& reqInfo) const {
+  for (auto* reg : regions) {
+    if (reg->getName() == name) {
+      return reg;
+    }
+  }
+  for (const auto& brought : broughtRegions) {
+    if (!brought.isNamed()) {
+      auto* reg = brought.get();
+      if (reg->getName() == name) {
+        return reg;
+      }
+    } else if (brought.getName() == name) {
+      return brought.get();
+    }
+  }
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasRegion(name) || bMod->hasBroughtRegion(name) ||
+            bMod->hasAccessibleRegionInImports(name, reqInfo).first) {
+          if (bMod->getRegion(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getRegion(name, reqInfo);
           }
         }
       }

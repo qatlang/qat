@@ -49,7 +49,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) && !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) && !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
-      !mod->hasChoiceType(name)) {
+      !mod->hasChoiceType(name) && !mod->hasRegion(name)) {
     SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
     Vec<IR::CoreType::Member*> mems;
     for (auto* mem : members) {
@@ -125,37 +125,50 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
   } else {
     if (mod->hasTemplateCoreType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing template core type in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasCoreType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing core type in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasTypeDef(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing type definition in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasMixType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing mix type in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasChoiceType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing choice type in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasFunction(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing function in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing function in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasGlobalEntity(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing global value in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasBox(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing box in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing box in this scope. Please change name of this type or check the codebase",
+          fileRange);
+    } else if (mod->hasRegion(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing region in this scope. Please change name of this region or check the codebase",
+          fileRange);
     }
   }
 }
@@ -166,7 +179,7 @@ void DefineCoreType::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   if ((isTemplate() || !mod->hasTemplateCoreType(name)) && !mod->hasCoreType(name) && !mod->hasFunction(name) &&
       !mod->hasGlobalEntity(name) && !mod->hasBox(name) && !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
-      !mod->hasChoiceType(name)) {
+      !mod->hasChoiceType(name) && !mod->hasRegion(name)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -177,37 +190,50 @@ void DefineCoreType::defineType(IR::Context* ctx) {
   } else {
     // TODO - Check type definitions
     if (mod->hasTemplateCoreType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing template core type in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasCoreType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing core type in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasTypeDef(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing type definition in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasMixType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing mix type in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasChoiceType(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing choice type in this scope. "
-                                             "Please change name of this core type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
+          fileRange);
     } else if (mod->hasFunction(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing function in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing function in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasGlobalEntity(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing global value in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
+          fileRange);
     } else if (mod->hasBox(name)) {
-      ctx->Error(ctx->highlightError(name) + " is the name of an existing box in this scope. "
-                                             "Please change name of this type or check the codebase",
-                 fileRange);
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing box in this scope. Please change name of this type or check the codebase",
+          fileRange);
+    } else if (mod->hasRegion(name)) {
+      ctx->Error(
+          ctx->highlightError(name) +
+              " is the name of an existing region in this scope. Please change name of this region or check the codebase",
+          fileRange);
     }
   }
 }

@@ -18,42 +18,42 @@ void DefineRegion::defineType(IR::Context* ctx) {
     if (mod->hasTemplateCoreType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
+              " is the name of an existing template core type in this scope. Please change name of region type or check the codebase",
           fileRange);
     } else if (mod->hasCoreType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
+              " is the name of an existing core type in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasTypeDef(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
+              " is the name of an existing type definition in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasMixType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
+              " is the name of an existing mix type in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasChoiceType(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
+              " is the name of an existing choice type in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasFunction(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing function in this scope. Please change name of this type or check the codebase",
+              " is the name of an existing function in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasGlobalEntity(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
+              " is the name of an existing global value in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasBox(name)) {
       ctx->Error(
           ctx->highlightError(name) +
-              " is the name of an existing box in this scope. Please change name of this type or check the codebase",
+              " is the name of an existing box in this scope. Please change name of this region or check the codebase",
           fileRange);
     } else if (mod->hasRegion(name)) {
       ctx->Error(

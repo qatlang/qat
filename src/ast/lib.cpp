@@ -80,6 +80,15 @@ void Lib::createModule(IR::Context* ctx) const {
     ctx->Error("A global entity named " + ctx->highlightError(name) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
+  } else if (mod->hasRegion(name)) {
+    ctx->Error("A region named " + ctx->highlightError(name) +
+                   " already exists in this module. Please change name of this "
+                   "lib or check the logic.",
+               fileRange);
+  } else if (mod->hasBroughtRegion(name)) {
+    ctx->Error("A region named " + ctx->highlightError(name) +
+                   " is brought into this module. Please change name of this lib.",
+               fileRange);
   }
   SHOW("Creating lib")
   mod->openLib(name, fileRange.file.string(), ctx->getVisibInfo(visibility), ctx->llctx);

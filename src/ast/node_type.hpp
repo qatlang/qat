@@ -86,6 +86,7 @@ enum class NodeType {
   Await,
   none,
   modInfo,
+  defineRegion,
 };
 
 } // namespace qat::ast

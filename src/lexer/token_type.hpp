@@ -108,6 +108,7 @@ enum class TokenType {
   maybe,
   none,
   meta,
+  region,
 };
 
 } // namespace qat::lexer

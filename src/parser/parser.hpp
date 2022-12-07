@@ -33,7 +33,7 @@ class Parser {
 private:
   //  Reference to a std::deque<lexer::Token> which is
   // usually a member of the corresponding IO::QatFile
-  Deque<lexer::Token>* tokens;
+  Deque<lexer::Token>* tokens = nullptr;
   Vec<fs::path>        broughtPaths;
   Vec<fs::path>        memberPaths;
   // Comments mapped to indices of the next AST member in the original

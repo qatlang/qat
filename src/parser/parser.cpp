@@ -10,6 +10,7 @@
 #include "../ast/constants/unsigned_literal.hpp"
 #include "../ast/constructor.hpp"
 #include "../ast/define_mix_type.hpp"
+#include "../ast/define_region.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/await.hpp"
@@ -759,6 +760,19 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           }
         } else {
           Error("Expected an identifier for the name of the choice type", RangeAt(i));
+        }
+        break;
+      }
+      case TokenType::region: {
+        if (isNext(TokenType::identifier, i)) {
+          if (isNext(TokenType::stop, i + 1)) {
+            result.push_back(new ast::DefineRegion(ValueAt(i + 1), getVisibility(), RangeSpan(i, i + 2)));
+            i += 2;
+          } else {
+            Error("Expected . to end the region declaration", RangeSpan(i, i + 1));
+          }
+        } else {
+          Error("Expected an identifier for the name of the region", RangeAt(i));
         }
         break;
       }
@@ -2083,7 +2097,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
               cachedExpressions.push_back(new ast::ConstructorCall(
                   new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange), exps,
-                  None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
+                  None, None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
               cachedSymbol = None;
               i            = pClose;
             } else {
@@ -2132,7 +2146,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                   cachedExpressions.push_back(
                       new ast::ConstructorCall(new ast::TemplateNamedType(cachedSymbol->relative, cachedSymbol->name,
                                                                           types, false, cachedSymbol->fileRange),
-                                               exps, None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
+                                               exps, None, None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
                   cachedSymbol = None;
                   i            = pClose;
                 } else {
@@ -2458,19 +2472,34 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::own: {
         SHOW("Found own")
-        auto               start = i;
-        auto               ownTy = ast::ConstructorCall::OwnType::parent;
-        Maybe<Expression*> ownCount;
+        auto                 start = i;
+        auto                 ownTy = ast::ConstructorCall::OwnType::parent;
+        Maybe<ast::QatType*> ownerType;
+        Maybe<Expression*>   ownCount;
         if (isNext(TokenType::child, i)) {
           SHOW("Custom own type")
           if (isNext(TokenType::heap, i + 1)) {
             ownTy = ast::ConstructorCall::OwnType::heap;
+            i += 2;
           } else if (isNext(TokenType::Type, i + 1)) {
             ownTy = ast::ConstructorCall::OwnType::type;
+            i += 2;
+          } else if (isNext(TokenType::region, i + 1)) {
+            ownTy = ast::ConstructorCall::OwnType::region;
+            if (isNext(TokenType::parenthesisOpen, i + 2)) {
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3, false);
+              if (pCloseRes.has_value()) {
+                ownerType = parseType(preCtx, i + 3, pCloseRes.value()).first;
+                i         = pCloseRes.value();
+              } else {
+                Error("Expected end for (", RangeAt(i + 3));
+              }
+            } else {
+              Error("Expected ( and ) to enclose the region for ownership", RangeAt(i + 3));
+            }
           } else {
             Error("Unexpected ownership type", RangeSpan(i, i + 1));
           }
-          i += 2;
         }
         if (isNext(TokenType::bracketOpen, i)) {
           SHOW("Multiple owns")
@@ -2509,7 +2538,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
               cachedExpressions.push_back(
-                  new ast::ConstructorCall(type, args, ownTy, ownCount, RangeSpan(start, pClose)));
+                  new ast::ConstructorCall(type, args, ownTy, ownerType, ownCount, RangeSpan(start, pClose)));
               i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 2));

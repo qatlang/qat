@@ -1,6 +1,7 @@
 #include "./constructor_call.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/maybe.hpp"
+#include "../../IR/types/region.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "llvm/IR/Constants.h"
@@ -8,19 +9,36 @@
 namespace qat::ast {
 
 ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
-                                 Maybe<Expression*> _ownCount, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy), ownCount(_ownCount) {}
+                                 Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount, utils::FileRange _fileRange)
+    : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy), ownerType(_ownerType),
+      ownCount(_ownCount) {}
 
 IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
   switch (ownTy.value()) {
-    case OwnType::type:
-      return IR::PointerOwner::OfType(ctx->activeType);
+    case OwnType::type: {
+      if (!ctx->fn->isMemberFunction()) {
+        ctx->Error("The current function is not a member function of any type", fileRange);
+      }
+      // FIXME - Add more checks when extension functions land
+      return IR::PointerOwner::OfType(((IR::MemberFunction*)ctx->fn)->getParentType());
+    }
     case OwnType::heap:
       return IR::PointerOwner::OfHeap();
     case OwnType::parent:
       return IR::PointerOwner::OfFunction(ctx->fn);
-    case OwnType::region:
-      return IR::PointerOwner::OfRegion();
+    case OwnType::region: {
+      if (!ownerType) {
+        ctx->Error("No region provided and hence the pointer cannot have " + ctx->highlightError("region") + " owner",
+                   fileRange);
+      }
+      auto* regionTy = ownerType.value()->emit(ctx);
+      if (!regionTy->isRegion()) {
+        ctx->Error("The provided owner is not a region type and hence the pointer cannot have " +
+                       ctx->highlightError("region") + " owner",
+                   fileRange);
+      }
+      return IR::PointerOwner::OfRegion(regionTy->asRegion());
+    }
   }
 }
 
@@ -54,6 +72,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   }
   auto* oCount      = ownCount.has_value() ? ownCount.value()->emit(ctx) : nullptr;
   bool  hasOwnCount = false;
+  auto  ownerValue  = getIRPtrOwnerTy(ctx);
   if (oCount) {
     hasOwnCount   = true;
     auto* countTy = oCount->isReference() ? oCount->getType()->asReference()->getSubType() : oCount->getType();
@@ -152,20 +171,28 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       ctx->getMod()->linkNative(IR::NativeUnit::malloc);
       auto* mallocFn = ctx->getMod()->getLLVMModule()->getFunction("malloc");
       if (hasOwnCount) {
-        llAlloca = ctx->builder.CreatePointerCast(
-            ctx->builder.CreateCall(
-                mallocFn->getFunctionType(), mallocFn,
-                {ctx->builder.CreateMul(
-                    llvm::ConstantInt::get(
-                        llvm::Type::getInt64Ty(ctx->llctx),
-                        ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(cTy->getLLVMType())),
-                    oCount->getLLVM())}),
-            cTy->getLLVMType()->getPointerTo());
+        if (ownTy.value() != OwnType::region) {
+          llAlloca = ctx->builder.CreatePointerCast(
+              ctx->builder.CreateCall(
+                  mallocFn->getFunctionType(), mallocFn,
+                  {ctx->builder.CreateMul(
+                      llvm::ConstantInt::get(
+                          llvm::Type::getInt64Ty(ctx->llctx),
+                          ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(cTy->getLLVMType())),
+                      oCount->getLLVM())}),
+              cTy->getLLVMType()->getPointerTo());
+        } else {
+          llAlloca = ownerValue.ownerAsRegion()->ownData(cTy, oCount->getLLVM(), ctx)->getLLVM();
+        }
       } else {
-        llAlloca =
-            ctx->builder.CreatePointerCast(ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
-                                                                   {llvm::ConstantExpr::getSizeOf(cTy->getLLVMType())}),
-                                           cTy->getLLVMType()->getPointerTo());
+        if (ownTy.value() != OwnType::region) {
+          llAlloca = ctx->builder.CreatePointerCast(
+              ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
+                                      {llvm::ConstantExpr::getSizeOf(cTy->getLLVMType())}),
+              cTy->getLLVMType()->getPointerTo());
+        } else {
+          llAlloca = ownerValue.ownerAsRegion()->ownData(cTy, None, ctx)->getLLVM();
+        }
       }
     } else {
       if (local) {
@@ -216,7 +243,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       restBlock->setActive(ctx->builder);
-      auto* ptrTy = IR::PointerType::get(true, cTy, IR::PointerOwner::OfFunction(ctx->fn), true, ctx->llctx);
+      auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx->llctx);
       auto* resVal =
           local ? (local->getType()->isMaybe()
                        ? new IR::Value(
@@ -245,11 +272,11 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       res->setLocalID(local->getLocalID());
       return res;
     } else {
-      auto* res = new IR::Value(llAlloca,
-                                ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, getIRPtrOwnerTy(ctx),
-                                                                                       hasOwnCount, ctx->llctx)
-                                                  : (IR::QatType*)cTy,
-                                ownTy.has_value() ? false : isVar, IR::Nature::temporary);
+      auto* res = new IR::Value(
+          llAlloca,
+          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ownerValue, hasOwnCount, ctx->llctx)
+                            : (IR::QatType*)cTy,
+          ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (local) {
         res->setLocalID(local->getLocalID());
       }

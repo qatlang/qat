@@ -105,8 +105,10 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     SHOW("Argument values generated for member function")
     for (usize i = 1; i < (fnArgsTy.size() - (memFn->hasReturnArgument() ? 1 : 0)); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
-          !(argsEmit.at(i - 1)->getType()->isReference() &&
-            fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
+          (!fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i - 1)->getType())) &&
+          (argsEmit.at(i - 1)->getType()->isReference() &&
+           !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()->asReference()->getSubType()) &&
+           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument of the function " +
                        ctx->highlightError(memFn->getName()),

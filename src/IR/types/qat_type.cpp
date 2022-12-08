@@ -59,7 +59,8 @@ bool QatType::checkTypeExists(const String& name) {
 
 bool QatType::isCompatible(QatType* other) {
   if (isPointer() && other->isPointer()) {
-    if (asPointer()->getOwner().isAnonymous()) {
+    if ((asPointer()->getSubType()->isSame(other->asPointer()->getSubType())) &&
+        asPointer()->getOwner().isAnonymous() && (asPointer()->isMulti() == other->asPointer()->isMulti())) {
       return true;
     } else {
       return isSame(other);

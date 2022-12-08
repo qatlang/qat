@@ -11,7 +11,6 @@
 #include "../expressions/move.hpp"
 #include "../expressions/none.hpp"
 #include "llvm/IR/Constants.h"
-#include <cerrno>
 
 namespace qat::ast {
 
@@ -323,9 +322,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
             if (expTy->isReference()) {
               expVal->loadImplicitPointer(ctx->builder);
             }
-            if (lhsTy->isSame(expVal->getType()) ||
-                (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isSame(
-                                             expTy->isReference() ? expTy->asReference()->getSubType() : expTy)) ||
+            if (lhsTy->isSame(expVal->getType()) || lhsTy->isCompatible(expVal->getType()) ||
+                (lhsTy->isReference() && (lhsTy->asReference()->getSubType()->isSame(
+                                              expTy->isReference() ? expTy->asReference()->getSubType() : expTy) ||
+                                          lhsTy->asReference()->getSubType()->isCompatible(
+                                              expTy->isReference() ? expTy->asReference()->getSubType() : expTy))) ||
                 (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
                                              lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy))) {
               auto* cTy = lhsTy->isCoreType() ? lhsTy->asCore() : lhsTy->asReference()->getSubType()->asCore();
@@ -354,9 +355,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
       SHOW("Getting IR types")
       auto* lhsTy = lhsVal->getType();
       auto* expTy = expVal->getType();
-      if (lhsTy->isSame(expTy) ||
-          (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isSame(
-                                       expTy->isReference() ? expTy->asReference()->getSubType() : expTy)) ||
+      if (lhsTy->isSame(expTy) || lhsTy->isCompatible(expTy) ||
+          (lhsTy->isReference() && (lhsTy->asReference()->getSubType()->isSame(
+                                        expTy->isReference() ? expTy->asReference()->getSubType() : expTy) ||
+                                    lhsTy->asReference()->getSubType()->isCompatible(
+                                        expTy->isReference() ? expTy->asReference()->getSubType() : expTy))) ||
           (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
                                        lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy))) {
         SHOW("The general types are the same")

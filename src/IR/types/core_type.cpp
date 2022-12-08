@@ -210,9 +210,12 @@ bool CoreType::hasConstructorWithTypes(Vec<IR::QatType*> types) const {
       bool result = true;
       for (usize i = 1; i < argTys.size(); i++) {
         auto* argType = argTys.at(i)->getType();
-        if ((!argType->isSame(types.at(i - 1))) &&
-            (!(argType->isReference() && argType->asReference()->getSubType()->isSame(types.at(i - 1)))) &&
-            (!(types.at(i - 1)->isReference() && types.at(i - 1)->asReference()->getSubType()->isSame(argType)))) {
+        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
+            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
+                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
+            (!(types.at(i - 1)->isReference() &&
+               (types.at(i - 1)->asReference()->getSubType()->isSame(argType) ||
+                types.at(i - 1)->asReference()->getSubType()->isCompatible(argType))))) {
           result = false;
           break;
         }
@@ -234,8 +237,9 @@ MemberFunction* CoreType::getConstructorWithTypes(Vec<IR::QatType*> types) const
       bool result = true;
       for (usize i = 1; i < argTys.size(); i++) {
         auto* argType = argTys.at(i)->getType();
-        if ((!argType->isSame(types.at(i - 1))) &&
-            (!(argType->isReference() && argType->asReference()->getSubType()->isSame(types.at(i - 1)))) &&
+        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
+            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
+                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
             (!(types.at(i - 1)->isReference() && types.at(i - 1)->asReference()->getSubType()->isSame(argType)))) {
           result = false;
           break;
@@ -254,7 +258,9 @@ MemberFunction* CoreType::getConstructorWithTypes(Vec<IR::QatType*> types) const
 bool CoreType::hasFromConvertor(IR::QatType* typ) const {
   for (auto* fconv : fromConvertors) {
     auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || (argTy->isReference() && argTy->asReference()->getSubType()->isSame(typ)) ||
+    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
+        (argTy->isReference() &&
+         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
         (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
       return true;
     }
@@ -265,7 +271,9 @@ bool CoreType::hasFromConvertor(IR::QatType* typ) const {
 MemberFunction* CoreType::getFromConvertor(IR::QatType* typ) const {
   for (auto* fconv : fromConvertors) {
     auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || (argTy->isReference() && argTy->asReference()->getSubType()->isSame(typ)) ||
+    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
+        (argTy->isReference() &&
+         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
         (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
       return fconv;
     }

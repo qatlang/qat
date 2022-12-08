@@ -3,6 +3,8 @@
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "default.hpp"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 
@@ -53,9 +55,11 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     SHOW("Argument values generated")
     auto fnArgsTy = fnTy->getArgumentTypes();
     for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
-      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) ||
+      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) &&
+          !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()) &&
           (argsEmit.at(i)->getType()->isReference() &&
-           !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()))) {
+           !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()) &&
+           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument at " +
                        ctx->highlightError(std::to_string(i)) + " of the function " +
@@ -65,12 +69,14 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     }
     Vec<llvm::Value*> argValues;
     for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
-      SHOW("Argument value type at " << i << " is: " << argsEmit.at(i)->getType()->toString())
-      if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i)->isReference()) {
-        if (!argsEmit.at(i)->isImplicitPointer()) {
-          ctx->Error("Cannot pass a value for the argument that expects a reference", values.at(i)->fileRange);
-        }
+      SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->getType()->toString())
+      if (fnArgsTy.at(i)->getType()->isReference() &&
+          (!argsEmit.at(i)->isReference() && !argsEmit.at(i)->isImplicitPointer())) {
+        ctx->Error(
+            "Cannot pass a value for the argument that expects a reference. The expression provided does not reside in an address",
+            values.at(i)->fileRange);
       } else if (argsEmit.at(i)->isReference()) {
+        argsEmit.at(i)->loadImplicitPointer(ctx->builder);
         argsEmit.at(i) =
             new IR::Value(ctx->builder.CreateLoad(argsEmit.at(i)->getType()->asReference()->getSubType()->getLLVMType(),
                                                   argsEmit.at(i)->getLLVM()),

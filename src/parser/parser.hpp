@@ -31,17 +31,11 @@ namespace qat::parser {
 //  Parser handles parsing of all tokens analysed by the lexer
 class Parser {
 private:
-  //  Reference to a std::deque<lexer::Token> which is
-  // usually a member of the corresponding IO::QatFile
-  Deque<lexer::Token>* tokens = nullptr;
-  Vec<fs::path>        broughtPaths;
-  Vec<fs::path>        memberPaths;
-  // Comments mapped to indices of the next AST member in the original
-  // analysed sequence
+  Deque<lexer::Token>*          tokens = nullptr;
+  Vec<fs::path>                 broughtPaths;
+  Vec<fs::path>                 memberPaths;
   std::map<usize, lexer::Token> comments;
-  // Context of this parser. This is specific to the current file and
-  // changes when the file changes
-  ParserContext g_ctx;
+  ParserContext                 g_ctx;
 
   // Filter all comments from the original token sequence and set a new
   // sequence that maps comments to the relevant AST members
@@ -50,7 +44,6 @@ private:
   void filterComments();
 
 public:
-  // Parser handles parsing of all tokens analysed by the lexer
   Parser();
   ~Parser();
 

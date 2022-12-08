@@ -321,7 +321,7 @@ llvm::StructType* Function::getAsyncArgType() const { return asyncArgTy.value();
 
 IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, QatModule* destMod) {
   SHOW("Linking function if it is external")
-  auto* llvmFunction = (llvm::Function*)ll;
+  auto* llvmFunction = llvm::dyn_cast<llvm::Function>(ll);
   if (destMod->getID() != mod->getID()) {
     // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
     if (!destMod->getLLVMModule()->getFunction(getFullName())) {

@@ -28,11 +28,7 @@ void QatSitter::init() {
   for (const auto& path : config->getPaths()) {
     handlePath(path, ctx);
   }
-  if (config->shouldExportAST()) {
-    for (auto* entity : fileEntities) {
-      entity->exportJsonFromAST(ctx);
-    }
-  } else if (config->isCompile() || config->isAnalyse()) {
+  if (config->isCompile() || config->isAnalyse()) {
     ctx->qatStartTime = std::chrono::steady_clock::now();
     for (auto* entity : fileEntities) {
       entity->createModules(ctx);
@@ -56,7 +52,12 @@ void QatSitter::init() {
       entity->emitNodes(ctx);
     }
     SHOW("Emitted nodes")
-    ctx->qatEndTime         = std::chrono::steady_clock::now();
+    ctx->qatEndTime = std::chrono::steady_clock::now();
+    if (cfg->shouldExportAST()) {
+      for (auto* entity : fileEntities) {
+        entity->exportJsonFromAST(ctx);
+      }
+    }
     ctx->clangLinkStartTime = std::chrono::steady_clock::now();
     if (cfg->isCompile()) {
       if (checkExecutableExists("clang")) {
@@ -93,7 +94,6 @@ void QatSitter::init() {
           SHOW("Ran all compiled executables")
         }
       } else {
-        ctx->writeJsonResult(false);
         ctx->Error("qat cannot find clang on path. Please make sure that you have clang installed and the "
                    "path to clang is available in the environment",
                    {"", {0u, 0u}, {0u, 0u}});

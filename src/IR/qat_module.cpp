@@ -1588,7 +1588,8 @@ fs::path QatModule::getResolvedOutputPath(const String& extension, IR::Context* 
 }
 
 void QatModule::exportJsonFromAST(IR::Context* ctx) {
-  if (moduleType == ModuleType::file) {
+  if ((moduleType == ModuleType::file) || rootLib) {
+    auto*          cfg    = cli::Config::get();
     auto           result = Json();
     Vec<JsonValue> contents;
     for (auto* node : nodes) {
@@ -1596,14 +1597,23 @@ void QatModule::exportJsonFromAST(IR::Context* ctx) {
     }
     result["contents"] = contents;
     std::fstream jsonStream;
-    jsonStream.open(getResolvedOutputPath(".json", ctx), std::ios_base::out);
-    if (jsonStream.is_open()) {
-      jsonStream << result;
-      jsonStream.close();
+    auto         jsonPath =
+        (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "AST" /
+        filePath.lexically_relative(basePath).replace_filename(filePath.filename().string()).replace_extension("json");
+    std::error_code errorCode;
+    fs::create_directories(jsonPath.parent_path(), errorCode);
+    if (!errorCode) {
+      jsonStream.open(jsonPath, std::ios_base::out);
+      if (jsonStream.is_open()) {
+        jsonStream << result;
+        jsonStream.close();
+      } else {
+        ctx->Error("Output file could not be opened for writing the JSON representation",
+                   {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+      }
     } else {
-      std::cout << "File could not be opened for writing. Outputting the "
-                   "JSON representation of AST...\n\n";
-      std::cout << result << "\n";
+      ctx->Error("Could not create parent directories for the JSON file for exporting AST",
+                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
     }
   }
 }

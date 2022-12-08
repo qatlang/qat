@@ -293,7 +293,7 @@ public:
   // void  bring_named_entity(const String& name, const String& entity, const utils::VisibilityInfo& _visibility);
   useit llvm::GlobalVariable* get_global_variable(String name, utils::RequesterInfo& req_info);
 
-  useit fs::path getResolvedOutputPath(const String& extension) const;
+  useit fs::path getResolvedOutputPath(const String& extension, IR::Context* ctx);
   useit llvm::Module* getLLVMModule() const;
 
   bool areNodesEmitted() const;
@@ -304,7 +304,7 @@ public:
   void emitNodes(IR::Context* ctx);
   void compileToObject(IR::Context* ctx);
   void bundleLibs(IR::Context* ctx);
-  void exportJsonFromAST() const;
+  void exportJsonFromAST(IR::Context* ctx);
   void linkNative(NativeUnit nval);
   void finaliseModule();
   Json toJson() const;

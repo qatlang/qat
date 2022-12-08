@@ -202,6 +202,7 @@ void Context::Error(const String& message, const utils::FileRange& fileRange) co
             << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
             << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
             << fileRange.end.character << Colored(colors::reset) << "\n";
+  MemoryTracker::report();
   ast::Node::clearAll();
   Value::clearAll();
   writeJsonResult(false);

@@ -132,7 +132,7 @@ QatModule* QatModule::getParentFile() { // NOLINT(misc-no-recursion)
       return parent->getParentFile();
     }
   }
-  return nullptr;
+  return this;
 }
 
 Pair<unsigned, String> QatModule::resolveNthParent(const String& name) const {
@@ -1402,7 +1402,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
              filePath.lexically_relative(basePath).replace_filename(fileName);
     std::error_code errorCode;
     SHOW("Creating all folders in llvm output path: " << llPath)
-    fs::create_directory(llPath.parent_path(), errorCode);
+    fs::create_directories(llPath.parent_path(), errorCode);
     if (!errorCode) {
       errorCode.clear();
       llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
@@ -1418,7 +1418,9 @@ void QatModule::emitNodes(IR::Context* ctx) {
       fStream.flush();
       SHOW("Flushed llvm IR file stream")
     } else {
-      SHOW("Error could not create directory")
+      ctx->Error("Error while creating parent directory for LLVM output file with path: " +
+                     ctx->highlightError(llPath.parent_path().string()) + " with error: " + errorCode.message(),
+                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
     }
     ctx->mod = oldMod;
   }
@@ -1451,15 +1453,23 @@ void QatModule::compileToObject(IR::Context* ctx) {
         fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
                      filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o")))
             .lexically_normal();
+    std::error_code errorCode;
     SHOW("Creating all folders in object file output path: " << objectFilePath.value())
-    fs::create_directory(objectFilePath.value().parent_path());
-    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
-    SHOW("Command is: " << compileCommand)
-    if (system(compileCommand.c_str())) {
-      ctx->writeJsonResult(false);
-      ctx->Error("Could not compile the LLVM file", {filePath, {0u, 0u}, {0u, 0u}});
+    fs::create_directories(objectFilePath.value().parent_path(), errorCode);
+    if (!errorCode) {
+      compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
+      SHOW("Command is: " << compileCommand)
+      if (system(compileCommand.c_str())) {
+        ctx->writeJsonResult(false);
+        ctx->Error("Could not compile the LLVM file", {filePath, {0u, 0u}, {0u, 0u}});
+      }
+      isCompiledToObject = true;
+    } else {
+      ctx->Error("Could not create parent directory for the Object file output: " +
+                     ctx->highlightError(objectFilePath.value().parent_path().string()) +
+                     " with error: " + errorCode.message(),
+                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
     }
-    isCompiledToObject = true;
   }
 }
 
@@ -1557,19 +1567,26 @@ bool QatModule::hasMainFn() const { return hasMain; }
 
 void QatModule::setHasMainFn() { hasMain = true; }
 
-fs::path QatModule::getResolvedOutputPath(const String& extension) const {
+fs::path QatModule::getResolvedOutputPath(const String& extension, IR::Context* ctx) {
   auto* config = cli::Config::get();
   auto  fPath  = filePath;
   auto  out    = fPath.replace_extension(extension);
   if (config->hasOutputPath()) {
     out = (config->getOutputPath() / filePath.lexically_relative(basePath).remove_filename());
-    fs::create_directories(out);
-    out = out / fPath.filename();
+    std::error_code errorCode;
+    fs::create_directories(out, errorCode);
+    if (!errorCode) {
+      out = out / fPath.filename();
+    } else {
+      ctx->Error("Could not create the parent directory of the output files with path: " +
+                     ctx->highlightError(out.string()) + " with error: " + errorCode.message(),
+                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+    }
   }
   return out;
 }
 
-void QatModule::exportJsonFromAST() const {
+void QatModule::exportJsonFromAST(IR::Context* ctx) {
   if (moduleType == ModuleType::file) {
     auto           result = Json();
     Vec<JsonValue> contents;
@@ -1578,7 +1595,7 @@ void QatModule::exportJsonFromAST() const {
     }
     result["contents"] = contents;
     std::fstream jsonStream;
-    jsonStream.open(getResolvedOutputPath(".json"), std::ios_base::out);
+    jsonStream.open(getResolvedOutputPath(".json", ctx), std::ios_base::out);
     if (jsonStream.is_open()) {
       jsonStream << result;
       jsonStream.close();

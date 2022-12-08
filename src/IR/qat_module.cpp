@@ -236,6 +236,12 @@ QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::pa
   return sub;
 }
 
+void QatModule::addMention(IR::QatModule* otherMod, utils::FileRange fileRange) {
+  mentions.push_back(Pair<IR::QatModule*, utils::FileRange>(otherMod, fileRange));
+}
+
+Vec<Pair<QatModule*, utils::FileRange>> const& QatModule::getMentions() const { return mentions; }
+
 String QatModule::getName() const { return name; }
 
 String QatModule::getFullName() const {
@@ -1388,6 +1394,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
       SHOW("About to emit for submodule: " << sub->getFullName())
       sub->emitNodes(ctx);
     }
+    SHOW("Emitted submodules")
     if (moduleInitialiser) {
       moduleInitialiser->getBlock()->setActive(ctx->builder);
       ctx->builder.CreateRetVoid();

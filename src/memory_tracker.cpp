@@ -32,7 +32,7 @@ void MemoryTracker::report() {
   SHOW("\nMemory Tracker")
   SHOW("Objects in heap memory :: " << objectsOnHeap)
   SHOW("Total heap memory      :: " << totalSize)
-  SHOW("Unbalanced deletes      :: " << negativeCounter << "\n")
+  SHOW("Unbalanced deletes     :: " << negativeCounter << "\n")
 }
 
 } // namespace qat

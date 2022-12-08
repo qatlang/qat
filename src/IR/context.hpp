@@ -12,6 +12,12 @@
 #include <string>
 #include <vector>
 
+namespace qat {
+
+class QatSitter;
+
+}
+
 namespace qat::IR {
 
 enum class LoopType {
@@ -80,8 +86,15 @@ public:
 };
 
 class Context {
+  friend class qat::QatSitter;
+
 private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
+
+  Vec<IR::QatModule*> modulesWithErrors;
+  bool                moduleAlreadyHasErrors(IR::QatModule* mod);
+  void                addError(String message, utils::FileRange fileRange);
+  QatSitter*          sitter = nullptr;
 
 public:
   Context();
@@ -114,7 +127,7 @@ public:
   useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
   void                        writeJsonResult(bool status) const;
 
-  void          Error(const String& message, const utils::FileRange& fileRange) const;
+  void          Error(const String& message, const utils::FileRange& fileRange);
   void          Warning(const String& message, const utils::FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::yellow);
   static String highlightWarning(const String& message, const char* color = colors::yellow);

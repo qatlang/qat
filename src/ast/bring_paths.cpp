@@ -55,12 +55,18 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("A brought module named " + ctx->highlightError(name) + " is already accessible in this scope",
                          names.at(i).value()->fileRange);
             }
-            mod->bringNamedModule(name, IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+            auto* folderModule = IR::QatModule::getFolderModule(path);
+            folderModule->addMention(mod, paths.at(i)->fileRange);
+            mod->bringNamedModule(name, folderModule, ctx->getVisibInfo(visibility));
           } else {
             if (isMember) {
-              mod->addMember(IR::QatModule::getFolderModule(path));
+              auto* folderModule = IR::QatModule::getFolderModule(path);
+              folderModule->addMention(mod, paths.at(i)->fileRange);
+              mod->addMember(folderModule);
             } else {
-              mod->bringModule(IR::QatModule::getFolderModule(path), ctx->getVisibInfo(visibility));
+              auto* folderModule = IR::QatModule::getFolderModule(path);
+              folderModule->addMention(mod, paths.at(i)->fileRange);
+              mod->bringModule(folderModule, ctx->getVisibInfo(visibility));
             }
           }
         } else {
@@ -99,12 +105,18 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("A brought module named " + ctx->highlightError(name) + " is already accessible in this scope",
                          names.at(i).value()->fileRange);
             }
-            mod->bringNamedModule(name, IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+            auto* fileModule = IR::QatModule::getFileModule(path);
+            fileModule->addMention(mod, paths.at(i)->fileRange);
+            mod->bringNamedModule(name, fileModule, ctx->getVisibInfo(visibility));
           } else {
             if (isMember) {
-              mod->addMember(IR::QatModule::getFileModule(path));
+              auto* fileModule = IR::QatModule::getFileModule(path);
+              fileModule->addMention(mod, paths.at(i)->fileRange);
+              mod->addMember(fileModule);
             } else {
-              mod->bringModule(IR::QatModule::getFileModule(path), ctx->getVisibInfo(visibility));
+              auto* fileModule = IR::QatModule::getFileModule(path);
+              fileModule->addMention(mod, paths.at(i)->fileRange);
+              mod->bringModule(fileModule, ctx->getVisibInfo(visibility));
             }
           }
         } else {

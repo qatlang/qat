@@ -21,7 +21,9 @@
 
 namespace qat {
 
-QatSitter::QatSitter() : ctx(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {}
+QatSitter::QatSitter() : ctx(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {
+  ctx->sitter = this;
+}
 
 void QatSitter::init() {
   auto* config = cli::Config::get();
@@ -294,7 +296,7 @@ bool QatSitter::checkExecutableExists(const String& name) {
 #endif
 }
 
-QatSitter::~QatSitter() {
+void QatSitter::destroy() {
   SHOW("About to delete filesystem entities")
   for (auto* mod : fileEntities) {
     delete mod;
@@ -323,5 +325,7 @@ QatSitter::~QatSitter() {
   IR::QatType::clearAll();
   SHOW("QatTypes cleared")
 }
+
+QatSitter::~QatSitter() { destroy(); }
 
 } // namespace qat

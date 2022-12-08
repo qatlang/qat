@@ -90,8 +90,8 @@ private:
   fs::path                       filePath;
   fs::path                       basePath;
   utils::VisibilityInfo          visibility;
-  QatModule*                     parent;
-  QatModule*                     active;
+  QatModule*                     parent = nullptr;
+  QatModule*                     active = nullptr;
   Vec<QatModule*>                submodules;
   Vec<Brought<QatModule>>        broughtModules;
   Vec<CoreType*>                 coreTypes;
@@ -112,12 +112,14 @@ private:
   Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
   Vec<Region*>                   regions;
   Vec<Brought<Region>>           broughtRegions;
-  Function*                      moduleInitialiser;
+  Function*                      moduleInitialiser  = nullptr;
   u64                            nonConstantGlobals = 0;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
   Vec<FloatTypeKind> floatKinds;
+
+  Vec<Pair<QatModule*, utils::FileRange>> mentions;
 
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
@@ -191,6 +193,9 @@ public:
   void       addFloatKind(FloatTypeKind kind);
   useit bool hasMainFn() const;
   void       setHasMainFn();
+
+  void                                           addMention(IR::QatModule* otherMod, utils::FileRange fileRange);
+  Vec<Pair<QatModule*, utils::FileRange>> const& getMentions() const;
 
   // LIB
 

@@ -4,6 +4,7 @@
 #include "../cli/config.hpp"
 #include "../lexer/lexer.hpp"
 #include "../parser/parser.hpp"
+#include "../qat_sitter.hpp"
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
@@ -178,7 +179,16 @@ void Context::writeJsonResult(bool status) const {
   }
 }
 
-void Context::Error(const String& message, const utils::FileRange& fileRange) const {
+bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
+  for (auto* module : modulesWithErrors) {
+    if (module->getID() == cand->getID()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void Context::addError(String message, utils::FileRange fileRange) {
   auto* cfg = cli::Config::get();
   if (activeTemplate) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeTemplate->name,
@@ -202,10 +212,22 @@ void Context::Error(const String& message, const utils::FileRange& fileRange) co
             << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
             << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
             << fileRange.end.character << Colored(colors::reset) << "\n";
-  MemoryTracker::report();
-  ast::Node::clearAll();
-  Value::clearAll();
+  if (!moduleAlreadyHasErrors(mod)) {
+    activeTemplate = None;
+    modulesWithErrors.push_back(mod);
+    for (const auto& modNRange : mod->getMentions()) {
+      mod = modNRange.first;
+      addError("Error occured in this file", modNRange.second);
+    }
+  }
+}
+
+void Context::Error(const String& message, const utils::FileRange& fileRange) {
+  addError(message, fileRange);
   writeJsonResult(false);
+  sitter->destroy();
+  delete cli::Config::get();
+  MemoryTracker::report();
   exit(0);
 }
 

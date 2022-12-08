@@ -20,11 +20,15 @@ namespace qat {
 namespace fs = std::filesystem;
 
 class QatSitter {
+  friend class qat::IR::Context;
+
 private:
   Deque<IR::QatModule*> fileEntities;
   IR::Context*          ctx;
   lexer::Lexer*         Lexer;
   parser::Parser*       Parser;
+
+  void destroy();
 
 public:
   QatSitter();

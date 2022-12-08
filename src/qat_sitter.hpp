@@ -31,7 +31,7 @@ public:
 
   void                                       init();
   void                                       removeEntityWithPath(const fs::path& path);
-  void                                       handlePath(const fs::path& path, llvm::LLVMContext& llctx);
+  void                                       handlePath(const fs::path& path, IR::Context* ctx);
   useit static bool                          checkExecutableExists(const String& name);
   useit static Maybe<Pair<String, fs::path>> detectLibFile(const fs::path& path);
   useit static bool                          isNameValid(const String& name);

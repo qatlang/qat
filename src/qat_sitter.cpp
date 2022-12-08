@@ -26,11 +26,11 @@ QatSitter::QatSitter() : ctx(new IR::Context()), Lexer(new lexer::Lexer()), Pars
 void QatSitter::init() {
   auto* config = cli::Config::get();
   for (const auto& path : config->getPaths()) {
-    handlePath(path, ctx->llctx);
+    handlePath(path, ctx);
   }
   if (config->shouldExportAST()) {
     for (auto* entity : fileEntities) {
-      entity->exportJsonFromAST();
+      entity->exportJsonFromAST(ctx);
     }
   } else if (config->isCompile() || config->isAnalyse()) {
     ctx->qatStartTime = std::chrono::steady_clock::now();
@@ -69,34 +69,34 @@ void QatSitter::init() {
         }
         ctx->clangLinkEndTime = std::chrono::steady_clock::now();
         ctx->writeJsonResult(true);
-#if IS_RELEASE
-        for (const auto& llPath : ctx->llvmOutputPaths) {
-          fs::remove(llPath);
+        if (!cfg->keepLLVM()) {
+          for (const auto& llPath : ctx->llvmOutputPaths) {
+            fs::remove(llPath);
+          }
+          if (cfg->hasOutputPath()) {
+            fs::remove_all(cfg->getOutputPath() / "llvm");
+          }
         }
-        if (cfg->hasOutputPath()) {
-          fs::remove_all(cfg->getOutputPath() / "llvm");
-        }
-#endif
         if (cfg->isRun()) {
           bool hasMultiExecutables = ctx->executablePaths.size() > 1;
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.c_str())
             if (hasMultiExecutables) {
-              std::cout << "\nExecuting built executable at: " << exePath << "\n";
+              std::cout << "\nExecuting built executable at: " << exePath.string() << "\n";
             }
             if (system(exePath.c_str())) {
-              std::cout << "\nThe built executable at " << exePath.string() << " exited with an error!"
-                        << "\n";
+              ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) +
+                             " exited with an error!",
+                         {exePath.string(), {0u, 0u}, {0u, 0u}});
             }
           }
           SHOW("Ran all compiled executables")
         }
       } else {
         ctx->writeJsonResult(false);
-        cli::Error("qat cannot find clang on path. Please make sure that you "
-                   "have clang installed and the path to clang is available in "
-                   "the environment",
-                   None);
+        ctx->Error("qat cannot find clang on path. Please make sure that you have clang installed and the "
+                   "path to clang is available in the environment",
+                   {"", {0u, 0u}, {0u, 0u}});
       }
     } else {
       ctx->writeJsonResult(true);
@@ -117,7 +117,7 @@ void QatSitter::removeEntityWithPath(const fs::path& path) {
 Maybe<Pair<String, fs::path>> QatSitter::detectLibFile(const fs::path& path) {
   if (fs::is_directory(path)) {
     SHOW("Path is a directory: " << fs::absolute(path).string())
-    for (auto item : fs::directory_iterator(path)) {
+    for (const auto& item : fs::directory_iterator(path)) {
       if (fs::is_regular_file(item)) {
         auto name = item.path().filename().string();
         if (name.ends_with(".lib.qat")) {
@@ -141,7 +141,7 @@ bool QatSitter::isNameValid(const String& name) {
   return (lexer::Lexer::wordToToken(name, nullptr).type == lexer::TokenType::identifier);
 }
 
-void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
+void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
   Vec<fs::path> broughtPaths;
   Vec<fs::path> memberPaths;
   SHOW("Handling path: " << mainPath.string())
@@ -152,7 +152,8 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value()) {
           if (!isNameValid(libCheckRes->first)) {
-            cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", libCheckRes->second);
+            ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
+                       {libCheckRes->second, {0u, 0u}, {0u, 0u}});
           }
           Lexer->changeFile(fs::absolute(libCheckRes->second));
           Lexer->analyse();
@@ -168,18 +169,19 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
           Parser->clearMemberPaths();
           fileEntities.push_back(IR::QatModule::CreateRootLib(
               parentMod, fs::absolute(libCheckRes->second), path, libCheckRes->first, Lexer->getContent(),
-              std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
+              std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
         } else {
-          auto* subfolder = IR::QatModule::CreateSubmodule(parentMod, item.path(), path,
-                                                           fs::absolute(item.path().filename()).string(),
-                                                           IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
+          auto* subfolder = IR::QatModule::CreateSubmodule(
+              parentMod, item.path(), path, fs::absolute(item.path().filename()).string(), IR::ModuleType::folder,
+              utils::VisibilityInfo::pub(), ctx->llctx);
           fileEntities.push_back(subfolder);
           recursiveModuleCreator(subfolder, item);
         }
       } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
         auto libCheckRes = detectLibFile(item);
         if (!isNameValid(libCheckRes->first)) {
-          cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", item);
+          ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
+                     {item, {0u, 0u}, {0u, 0u}});
         }
         Lexer->changeFile(item.path().string());
         Lexer->analyse();
@@ -196,11 +198,11 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
         if (libCheckRes.has_value()) {
           fileEntities.push_back(IR::QatModule::CreateRootLib(parentMod, fs::absolute(item), path, libCheckRes->first,
                                                               Lexer->getContent(), std::move(parseRes),
-                                                              utils::VisibilityInfo::pub(), llctx));
+                                                              utils::VisibilityInfo::pub(), ctx->llctx));
         } else {
-          fileEntities.push_back(IR::QatModule::CreateFile(parentMod, fs::absolute(item), path,
-                                                           item.path().filename().string(), Lexer->getContent(),
-                                                           std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
+          fileEntities.push_back(IR::QatModule::CreateFile(
+              parentMod, fs::absolute(item), path, item.path().filename().string(), Lexer->getContent(),
+              std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
         }
       }
     }
@@ -212,7 +214,8 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value()) {
       if (!isNameValid(libCheckRes->first)) {
-        cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", libCheckRes->second);
+        ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
+                   {libCheckRes->second, {0u, 0u}, {0u, 0u}});
       }
       Lexer->changeFile(libCheckRes->second);
       Lexer->analyse();
@@ -228,17 +231,18 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
       Parser->clearMemberPaths();
       fileEntities.push_back(IR::QatModule::CreateFile(nullptr, libCheckRes->second, mainPath, libCheckRes->first,
                                                        Lexer->getContent(), std::move(parseRes),
-                                                       utils::VisibilityInfo::pub(), llctx));
+                                                       utils::VisibilityInfo::pub(), ctx->llctx));
     } else {
       auto* subfolder = IR::QatModule::Create(mainPath.filename().string(), mainPath, mainPath.parent_path(),
-                                              IR::ModuleType::folder, utils::VisibilityInfo::pub(), llctx);
+                                              IR::ModuleType::folder, utils::VisibilityInfo::pub(), ctx->llctx);
       fileEntities.push_back(subfolder);
       recursiveModuleCreator(subfolder, mainPath);
     }
   } else if (fs::is_regular_file(mainPath) && !IR::QatModule::hasFileModule(mainPath)) {
     auto libCheckRes = detectLibFile(mainPath);
     if (!isNameValid(libCheckRes->first)) {
-      cli::Error("The name of the library is `" + libCheckRes->first + "` which is illegal", mainPath);
+      ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
+                 {mainPath, {0u, 0u}, {0u, 0u}});
     }
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);
@@ -256,15 +260,15 @@ void QatSitter::handlePath(const fs::path& mainPath, llvm::LLVMContext& llctx) {
     if (libCheckRes.has_value()) {
       fileEntities.push_back(IR::QatModule::CreateRootLib(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
                                                           libCheckRes->first, Lexer->getContent(), std::move(parseRes),
-                                                          utils::VisibilityInfo::pub(), llctx));
+                                                          utils::VisibilityInfo::pub(), ctx->llctx));
     } else {
       fileEntities.push_back(IR::QatModule::CreateFile(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
                                                        mainPath.filename().string(), Lexer->getContent(),
-                                                       std::move(parseRes), utils::VisibilityInfo::pub(), llctx));
+                                                       std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
     }
   }
   for (const auto& bPath : broughtPaths) {
-    handlePath(bPath, llctx);
+    handlePath(bPath, ctx);
   }
   broughtPaths.clear();
   for (const auto& mPath : memberPaths) {

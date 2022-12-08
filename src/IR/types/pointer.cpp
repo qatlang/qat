@@ -78,11 +78,15 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _
                          llvm::LLVMContext& ctx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti) {
   if (_hasMulti) {
-    llvmType = llvm::StructType::create(
-        {llvm::PointerType::get(
-             subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0u),
-         llvm::Type::getInt64Ty(ctx)},
-        "#[+" + subType->toString() + "]");
+    if (llvm::StructType::getTypeByName(ctx, "#[+" + subType->toString() + "]")) {
+      llvmType = llvm::StructType::getTypeByName(ctx, "#[+" + subType->toString() + "]");
+    } else {
+      llvmType = llvm::StructType::create(
+          {llvm::PointerType::get(
+               subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0u),
+           llvm::Type::getInt64Ty(ctx)},
+          "#[+" + subType->toString() + "]");
+    }
   } else {
     llvmType = llvm::PointerType::get(
         subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0U);

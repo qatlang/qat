@@ -29,7 +29,7 @@ Vec<QatModule*> QatModule::allModules{};
 
 bool QatModule::hasFileModule(const fs::path& fPath) {
   for (auto* mod : allModules) {
-    if (mod->moduleType == ModuleType::file) {
+    if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
       if (fs::equivalent(mod->filePath, fPath)) {
         return true;
       }
@@ -51,7 +51,7 @@ bool QatModule::hasFolderModule(const fs::path& fPath) {
 
 QatModule* QatModule::getFileModule(const fs::path& fPath) {
   for (auto* mod : allModules) {
-    if (mod->moduleType == ModuleType::file) {
+    if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
       if (fs::equivalent(mod->filePath, fPath)) {
         return mod;
       }
@@ -125,7 +125,7 @@ QatModule* QatModule::getActive() { // NOLINT(misc-no-recursion)
 }
 
 QatModule* QatModule::getParentFile() { // NOLINT(misc-no-recursion)
-  if (moduleType == ModuleType::file) {
+  if ((moduleType == ModuleType::file) || rootLib) {
     return this;
   } else {
     if (parent) {
@@ -227,6 +227,7 @@ QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::pa
   auto* sub =
       new QatModule(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
   sub->content = std::move(content);
+  sub->rootLib = true;
   if (parent) {
     sub->parent = parent;
     parent->submodules.push_back(sub);
@@ -266,7 +267,7 @@ String QatModule::getWritableName() const {
   }
   switch (moduleType) {
     case ModuleType::lib: {
-      result += ("lib-" + name);
+      result += ((rootLib ? "file-" : "lib-") + name);
       break;
     }
     case ModuleType::box: {

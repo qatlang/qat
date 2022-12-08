@@ -84,6 +84,7 @@ public:
 private:
   String                         name;
   ModuleType                     moduleType;
+  bool                           rootLib = false;
   ModuleInfo                     moduleInfo;
   bool                           isModuleInfoProvided = false;
   fs::path                       filePath;

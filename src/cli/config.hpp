@@ -75,6 +75,8 @@ private:
 
   Maybe<bool> buildStatic;
 
+  bool keepLLVMFiles = false;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -126,6 +128,7 @@ public:
   useit bool     isWasmMode() const;
   useit bool     shouldBuildStatic() const;
   useit bool     shouldBuildShared() const;
+  useit bool     keepLLVM() const;
   useit const llvm::VersionTuple& getVersionTuple() const;
   // Whether compiler should exit after arguments are handled by Config
   //

@@ -27,6 +27,8 @@ bool Config::hasInstance() { return Config::instance != nullptr; }
 
 bool Config::shouldExit() const { return exitAfter; }
 
+bool Config::keepLLVM() const { return keepLLVMFiles; }
+
 Config* Config::get() { return Config::instance; }
 
 Config::Config(u64 count, const char** args)
@@ -101,11 +103,6 @@ Config::Config(u64 count, const char** args)
         proceed   = 3;
         exitAfter = true;
       }
-    } else if (command == "export-ast") {
-      export_ast = true;
-      if (count == 2) {
-        paths.push_back(fs::current_path());
-      }
     }
     for (usize i = proceed; ((i < count) && !exitAfter); i++) {
       String arg = args[i];
@@ -128,6 +125,8 @@ Config::Config(u64 count, const char** args)
         } else {
           cli::Error("Expected valid path for sysroot", None);
         }
+      } else if (arg == "--export-ast") {
+        export_ast = true;
       } else if (arg == "--sysroot") {
         if (i + 1 < count) {
           sysRoot = args[i + 1];
@@ -171,6 +170,8 @@ Config::Config(u64 count, const char** args)
         buildStatic = true;
       } else if (arg == "--shared") {
         buildShared = true;
+      } else if (arg == "--keep-llvm") {
+        keepLLVMFiles = true;
       } else {
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));

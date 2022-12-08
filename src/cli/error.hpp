@@ -7,8 +7,8 @@
 
 namespace qat::cli {
 
-void Error(const String &message, Maybe<fs::path> path);
-void Warning(const String &message, Maybe<fs::path> path);
+void Error(const String& message, Maybe<fs::path> path);
+void Warning(const String& message, Maybe<fs::path> path);
 
 } // namespace qat::cli
 

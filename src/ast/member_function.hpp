@@ -16,7 +16,7 @@ class MemberPrototype : public Node {
 
 private:
   bool                  isVariationFn;
-  String                name;
+  Identifier            name;
   bool                  isAsync;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
@@ -27,17 +27,17 @@ private:
   mutable IR::CoreType*       coreType;
   mutable IR::MemberFunction* memberFn = nullptr;
 
-  MemberPrototype(bool isStatic, bool _isVariationFn, String _name, Vec<Argument*> _arguments, bool _isVariadic,
-                  QatType* _returnType, bool _is_async, utils::VisibilityKind kind, const utils::FileRange& _fileRange);
+  MemberPrototype(bool isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
+                  QatType* _returnType, bool _is_async, utils::VisibilityKind kind, FileRange _fileRange);
 
 public:
-  static MemberPrototype* Normal(bool _isVariationFn, const String& _name, const Vec<Argument*>& _arguments,
+  static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
                                  bool _isVariadic, QatType* _returnType, bool _is_async, utils::VisibilityKind _kind,
-                                 const utils::FileRange& _fileRange);
+                                 const FileRange& _fileRange);
 
-  static MemberPrototype* Static(const String& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
+  static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
                                  QatType* _returnType, bool _is_async, utils::VisibilityKind _kind,
-                                 const utils::FileRange& _fileRange);
+                                 const FileRange& _fileRange);
 
   void setCoreType(IR::CoreType* _coreType) const;
 
@@ -54,7 +54,7 @@ private:
   MemberPrototype* prototype;
 
 public:
-  MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
+  MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
   void setCoreType(IR::CoreType* coreType) const;
 

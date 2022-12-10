@@ -26,7 +26,7 @@ bool LoopInfo::isTimes() const { return type == LoopType::nTimes; }
 Breakable::Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock)
     : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock) {}
 
-CodeProblem::CodeProblem(bool _isError, String _message, utils::FileRange _range)
+CodeProblem::CodeProblem(bool _isError, String _message, FileRange _range)
     : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
 
 CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
@@ -188,7 +188,7 @@ bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
   return false;
 }
 
-void Context::addError(String message, utils::FileRange fileRange) {
+void Context::addError(String message, FileRange fileRange) {
   auto* cfg = cli::Config::get();
   if (activeTemplate) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeTemplate->name,
@@ -222,7 +222,7 @@ void Context::addError(String message, utils::FileRange fileRange) {
   }
 }
 
-void Context::Error(const String& message, const utils::FileRange& fileRange) {
+void Context::Error(const String& message, const FileRange& fileRange) {
   addError(message, fileRange);
   writeJsonResult(false);
   sitter->destroy();
@@ -231,7 +231,7 @@ void Context::Error(const String& message, const utils::FileRange& fileRange) {
   exit(0);
 }
 
-void Context::Warning(const String& message, const utils::FileRange& fileRange) const {
+void Context::Warning(const String& message, const FileRange& fileRange) const {
   if (activeTemplate) {
     activeTemplate->warningCount++;
   }

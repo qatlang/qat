@@ -13,7 +13,7 @@ class NoneExpression : public Expression {
   IR::QatType* irType = nullptr;
 
 public:
-  NoneExpression(QatType* _type, utils::FileRange _fileRange);
+  NoneExpression(QatType* _type, FileRange _fileRange);
 
   void setType(IR::QatType* _irType);
 

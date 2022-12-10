@@ -14,16 +14,15 @@ namespace qat::ast {
 // but exists merely to avoid conflict between
 // libraries
 class Box : public Node {
-  String                name;
-  Vec<Node *>           members;
+  Identifier            name;
+  Vec<Node*>            members;
   utils::VisibilityKind visibility;
 
 public:
-  Box(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
-      utils::FileRange _fileRange);
+  Box(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibility, FileRange _fileRange);
 
-  void  createModule(IR::Context *ctx) const final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  createModule(IR::Context* ctx) const final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::box; }
 };

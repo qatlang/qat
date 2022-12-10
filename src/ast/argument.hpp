@@ -11,28 +11,19 @@ namespace qat::ast {
 
 class Argument {
 private:
-  String name;
+  Identifier name;
+  QatType*   type;
+  bool       isMember;
 
-  utils::FileRange fileRange;
-
-  QatType *type;
-
-  bool isMember;
-
-  Argument(String _name, utils::FileRange _fileRange, QatType *_type,
-           bool _isMember);
+  Argument(Identifier _name, QatType* _type, bool _isMember);
 
 public:
-  static Argument *Normal(String name, utils::FileRange fileRange,
-                          QatType *type);
+  static Argument* Normal(Identifier name, QatType* type);
+  static Argument* ForConstructor(Identifier name, QatType* type, bool isMember);
 
-  static Argument *ForConstructor(String name, utils::FileRange fileRange,
-                                  QatType *type, bool isMember);
-
-  useit String getName() const;
-  useit utils::FileRange getFileRange() const;
-  useit QatType         *getType();
-  useit bool             isTypeMember() const;
+  useit Identifier getName() const;
+  useit QatType*   getType();
+  useit bool       isTypeMember() const;
 };
 
 } // namespace qat::ast

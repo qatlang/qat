@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-MemberAccess::MemberAccess(Expression* _instance, String _name, utils::FileRange _fileRange)
+MemberAccess::MemberAccess(Expression* _instance, String _name, FileRange _fileRange)
     : Expression(std::move(_fileRange)), instance(_instance), name(std::move(_name)) {}
 
 IR::Value* MemberAccess::emit(IR::Context* ctx) {

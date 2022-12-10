@@ -1,10 +1,11 @@
 #include "./mod_info.hpp"
+#include "constants/string_literal.hpp"
 #include <filesystem>
 
 namespace qat::ast {
 
-ModInfo::ModInfo(Maybe<Pair<String, utils::FileRange>> _outputName, Maybe<KeyValue<String>> _foreignID,
-                 Vec<Pair<String, utils::FileRange>> _nativeLibs, utils::FileRange _fileRange)
+ModInfo::ModInfo(Maybe<StringLiteral*> _outputName, Maybe<KeyValue<String>> _foreignID, Vec<StringLiteral*> _nativeLibs,
+                 FileRange _fileRange)
     : Node(std::move(_fileRange)), foreignID(std::move(_foreignID)), outputName(std::move(_outputName)),
       linkLibs(std::move(_nativeLibs)) {}
 
@@ -17,7 +18,7 @@ void ModInfo::createModule(IR::Context* ctx) const {
     mod->isModuleInfoProvided = true;
   }
   if (outputName.has_value()) {
-    mod->moduleInfo.outputName = outputName->first;
+    mod->moduleInfo.outputName = outputName.value()->get_value();
   }
   if (foreignID.has_value()) {
     if (foreignID->value != "C++") {
@@ -28,11 +29,11 @@ void ModInfo::createModule(IR::Context* ctx) const {
   if (!linkLibs.empty()) {
     for (usize i = 0; i < linkLibs.size(); i++) {
       for (usize j = i + 1; j < linkLibs.size(); j++) {
-        if (linkLibs.at(i).first == linkLibs.at(j).first) {
-          ctx->Error("This native library name is repeating", linkLibs.at(j).second);
+        if (linkLibs.at(i)->get_value() == linkLibs.at(j)->get_value()) {
+          ctx->Error("This native library name is repeating", linkLibs.at(j)->fileRange);
         }
       }
-      mod->moduleInfo.nativeLibsToLink.push_back(linkLibs.at(i).first);
+      mod->moduleInfo.nativeLibsToLink.push_back(linkLibs.at(i)->get_value());
     }
   }
 }
@@ -40,13 +41,17 @@ void ModInfo::createModule(IR::Context* ctx) const {
 Json ModInfo::toJson() const {
   Vec<JsonValue> nativeLibsJson;
   for (auto const& nLib : linkLibs) {
-    nativeLibsJson.push_back(Json()._("name", nLib.first)._("range", nLib.second));
+    nativeLibsJson.push_back(nLib->toJson());
   }
   return Json()
       ._("nodeType", "modInfo")
       ._("hasForeignID", foreignID.has_value())
-      ._("foreignID",
-         foreignID.has_value() ? Json()._("value", foreignID->value)._("range", foreignID->valueRange) : Json())
+      ._("foreignID", foreignID.has_value() ? Json()
+                                                  ._("key", foreignID->key.value)
+                                                  ._("keyRange", foreignID->key.range)
+                                                  ._("value", foreignID->value)
+                                                  ._("range", foreignID->valueRange)
+                                            : Json())
       ._("nativeLibs", nativeLibsJson)
       ._("fileRange", fileRange);
 }

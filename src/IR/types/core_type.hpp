@@ -1,6 +1,7 @@
 #ifndef QAT_IR_TYPES_CORE_TYPE_HPP
 #define QAT_IR_TYPES_CORE_TYPE_HPP
 
+#include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../member_function.hpp"
 #include "../static_member.hpp"
@@ -20,25 +21,25 @@ namespace qat::IR {
  *  This represents a core type in the language
  *
  */
-class CoreType : public QatType {
+class CoreType final : public QatType {
   friend class MemberFunction;
 
 public:
   class Member {
   public:
-    Member(String _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
+    Member(Identifier _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
         : name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
 
     ~Member() = default;
 
-    String                name;
+    Identifier            name;
     QatType*              type;
     utils::VisibilityInfo visibility;
     bool                  variability;
   };
 
 private:
-  String             name;
+  Identifier         name;
   QatModule*         parent;
   Vec<Member*>       members;
   Vec<StaticMember*> staticMembers;
@@ -64,16 +65,16 @@ private:
   // TODO - Add support for extension functions
 
 public:
-  CoreType(QatModule* mod, String _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
+  CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
            llvm::LLVMContext& ctx);
 
-  ~CoreType();
+  ~CoreType() final;
 
   useit Maybe<usize> getIndexOf(const String& member) const;
   useit bool         hasMember(const String& member) const;
   useit Member*      getMember(const String& name) const;
   useit String       getFullName() const;
-  useit String       getName() const;
+  useit Identifier   getName() const;
   useit u64          getMemberCount() const;
   useit Member*      getMemberAt(u64 index);
   useit String       getMemberNameAt(u64 index) const;
@@ -119,7 +120,7 @@ public:
   useit Json                  toJson() const override;
   useit TypeKind              typeKind() const override;
   useit String                toString() const override;
-  void                        addStaticMember(const String& name, QatType* type, bool variability, Value* initial,
+  void                        addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
                                               const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
   void                        setExplicitCopy();
   void                        setExplicitMove();
@@ -127,7 +128,7 @@ public:
 
 class TemplateCoreType : public Uniq {
 private:
-  String                   name;
+  Identifier               name;
   Vec<ast::TemplatedType*> templates;
   ast::DefineCoreType*     defineCoreType;
   QatModule*               parent;
@@ -136,17 +137,17 @@ private:
   mutable Vec<TemplateVariant<CoreType>> variants;
 
 public:
-  TemplateCoreType(String name, Vec<ast::TemplatedType*> templates, ast::DefineCoreType* defineCoreType,
+  TemplateCoreType(Identifier name, Vec<ast::TemplatedType*> templates, ast::DefineCoreType* defineCoreType,
                    QatModule* parent, const utils::VisibilityInfo& visibInfo);
 
   ~TemplateCoreType() = default;
 
-  useit String getName() const;
+  useit Identifier getName() const;
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
   useit usize                 getVariantCount() const;
   useit QatModule*            getModule() const;
-  useit CoreType*             fillTemplates(Vec<QatType*>& templates, IR::Context* ctx, utils::FileRange range);
+  useit CoreType*             fillTemplates(Vec<QatType*>& templates, IR::Context* ctx, FileRange range);
 };
 
 } // namespace qat::IR

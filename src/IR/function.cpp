@@ -29,8 +29,8 @@
 
 namespace qat::IR {
 
-LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* fun)
-    : Value(nullptr, _type, _isVar, Nature::assignable), name(std::move(_name)) {
+LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* fun, Maybe<FileRange> _fileRange)
+    : Value(nullptr, _type, _isVar, Nature::assignable), name(std::move(_name)), fileRange(_fileRange) {
   SHOW("Type is " << type->toString())
   SHOW("Creating llvm::AllocaInst for " << name)
   if (type->getLLVMType()) {
@@ -123,32 +123,10 @@ LocalValue* Block::getValue(const String& name) const {
   return nullptr;
 }
 
-LocalValue* Block::newValue(const String& name, IR::QatType* type, bool isVar) {
-  values.push_back(new LocalValue(name, type, isVar, fn));
+LocalValue* Block::newValue(const String& name, IR::QatType* type, bool isVar, Maybe<FileRange> fileRange) {
+  values.push_back(new LocalValue(name, type, isVar, fn, std::move(fileRange)));
   SHOW("Heap allocated LocalValue")
   return values.back();
-}
-
-bool Block::hasAlias(const String& name) const {
-  for (const auto& alias : aliases) {
-    if (alias.first == name) {
-      return true;
-    }
-  }
-  return false;
-}
-
-IR::Value* Block::getAlias(const String& name) const {
-  for (const auto& alias : aliases) {
-    if (alias.first == name) {
-      return alias.second;
-    }
-  }
-  return nullptr;
-}
-
-void Block::addAlias(String name, IR::Value* value) const {
-  aliases.push_back(Pair<String, IR::Value*>(std::move(name), value));
 }
 
 void Block::setGhost(bool value) const { isGhost = value; }
@@ -267,19 +245,19 @@ void Block::destroyLocals(IR::Context* ctx) {
   }
 }
 
-Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isRetTypeVariable, bool _is_async,
-                   Vec<Argument> _args, bool _isVariadicArguments, utils::FileRange _fileRange,
+Function::Function(QatModule* _mod, Identifier _name, QatType* returnType, bool _isRetTypeVariable, bool _is_async,
+                   Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
                    const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn,
                    llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)), isReturnValueVariable(_isRetTypeVariable),
       mod(_mod), arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
       is_async(_is_async), hasVariadicArguments(_isVariadicArguments) //
 {
-  SHOW("Function name :: " << name << " ; " << this)
+  SHOW("Function name :: " << name.value << " ; " << this)
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
     argTypes.push_back(
-        new ArgumentType(arg.getName(), arg.getType(), arg.isMemberArg(), arg.get_variability(), arg.isRetArg()));
+        new ArgumentType(arg.getName().value, arg.getType(), arg.isMemberArg(), arg.get_variability(), arg.isRetArg()));
   }
   if (is_async) {
     SHOW("Argument type for future return is: " << returnType->toString())
@@ -290,11 +268,12 @@ Function::Function(QatModule* _mod, String _name, QatType* returnType, bool _isR
     type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
   }
   if (isMemberFn) {
-    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name,
+    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name.value,
                                 mod->getLLVMModule());
   } else {
     ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U,
-                                (ignoreParentName ? name : mod->getFullNameWithChild(name)), mod->getLLVMModule());
+                                (ignoreParentName ? name.value : mod->getFullNameWithChild(name.value)),
+                                mod->getLLVMModule());
   }
   if (is_async) {
     asyncFn = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(),
@@ -359,10 +338,10 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   }
 }
 
-Function* Function::Create(QatModule* mod, String name, QatType* returnTy, const bool isReturnTypeVariable,
-                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs,
-                           utils::FileRange fileRange, const utils::VisibilityInfo& visibilityInfo,
-                           llvm::LLVMContext& ctx, llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
+Function* Function::Create(QatModule* mod, Identifier name, QatType* returnTy, const bool isReturnTypeVariable,
+                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
+                           const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+                           llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
   return new Function(mod, std::move(name), returnTy, isReturnTypeVariable, isAsync, std::move(args), hasVariadicArgs,
                       std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
 }
@@ -371,11 +350,11 @@ bool Function::hasVariadicArgs() const { return hasVariadicArguments; }
 
 bool Function::isAsyncFunction() const { return is_async; }
 
-String Function::argumentNameAt(u32 index) const { return arguments.at(index).getName(); }
+Identifier Function::argumentNameAt(u32 index) const { return arguments.at(index).getName(); }
 
-String Function::getName() const { return name; }
+Identifier Function::getName() const { return name; }
 
-String Function::getFullName() const { return mod->getFullNameWithChild(name); }
+String Function::getFullName() const { return mod->getFullNameWithChild(name.value); }
 
 bool Function::isAccessible(const utils::RequesterInfo& req_info) const {
   return utils::Visibility::isAccessible(visibility_info, req_info);
@@ -409,7 +388,7 @@ usize& Function::getCopiedCounter() { return copiedCounter; }
 
 usize& Function::getMovedCounter() { return movedCounter; }
 
-TemplateFunction::TemplateFunction(String _name, Vec<ast::TemplatedType*> _templates,
+TemplateFunction::TemplateFunction(Identifier _name, Vec<ast::TemplatedType*> _templates,
                                    ast::FunctionDefinition* _functionDef, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
     : name(std::move(_name)), templates(std::move(_templates)), functionDefinition(_functionDef), parent(_parent),
@@ -417,7 +396,7 @@ TemplateFunction::TemplateFunction(String _name, Vec<ast::TemplatedType*> _templ
   parent->templateFunctions.push_back(this);
 }
 
-String TemplateFunction::getName() const { return name; }
+Identifier TemplateFunction::getName() const { return name; }
 
 utils::VisibilityInfo TemplateFunction::getVisibility() const { return visibInfo; }
 
@@ -427,8 +406,7 @@ usize TemplateFunction::getVariantCount() const { return variants.size(); }
 
 QatModule* TemplateFunction::getModule() const { return parent; }
 
-Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* ctx,
-                                          const utils::FileRange& fileRange) {
+Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* ctx, const FileRange& fileRange) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
@@ -437,7 +415,7 @@ Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* 
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
-  auto variantName = IR::Logic::getTemplateVariantName(name, types);
+  auto variantName = IR::Logic::getTemplateVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
   auto prevTemp       = ctx->activeTemplate;
   ctx->activeTemplate = IR::TemplateEntityMarker{variantName, IR::TemplateEntityType::function, fileRange};
@@ -481,7 +459,7 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
           auto* restBlock = new IR::Block(ctx->fn, nullptr);
           restBlock->linkPrevBlock(currBlock);
           // NOLINTNEXTLINE(readability-magic-numbers)
-          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);
+          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, None);
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
                                    count->getLLVM());
           ctx->builder.CreateCondBr(
@@ -653,7 +631,7 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
   }
 }
 
-void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const utils::FileRange& fileRange) {
+void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const FileRange& fileRange) {
   SHOW("Starting function return handle for: " << fun->getFullName())
   // FIXME - Support destructors for types besides core types
   auto* block = fun->getBlock();

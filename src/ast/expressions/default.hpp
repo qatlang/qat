@@ -9,17 +9,17 @@ class Default : public Expression {
   friend class LocalDeclaration;
 
 private:
-  IR::QatType *candidateType = nullptr;
+  IR::QatType* candidateType = nullptr;
 
   Maybe<String> irName;
   bool          isVar = false;
 
 public:
-  explicit Default(utils::FileRange _fileRange);
+  explicit Default(FileRange _fileRange);
 
-  void setType(IR::QatType *typ);
+  void setType(IR::QatType* typ);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Default; }
   useit Json       toJson() const final;
 };

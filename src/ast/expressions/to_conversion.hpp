@@ -8,17 +8,15 @@ namespace qat::ast {
 
 class ToConversion : public Expression {
 private:
-  Expression *source;
-  QatType    *destinationType;
+  Expression* source;
+  QatType*    destinationType;
 
 public:
-  ToConversion(Expression *_source, QatType *_destinationType,
-               utils::FileRange _fileRange)
-      : Expression(_fileRange), source(_source),
-        destinationType(_destinationType){SHOW("Creating ToConversion")}
+  ToConversion(Expression* _source, QatType* _destinationType, FileRange _fileRange)
+      : Expression(_fileRange), source(_source), destinationType(_destinationType){SHOW("Creating ToConversion")}
 
-            useit IR::Value
-            * emit(IR::Context * ctx) override;
+                                                     useit IR::Value
+                                                     * emit(IR::Context * ctx) override;
 
   useit Json toJson() const override;
 

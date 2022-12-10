@@ -11,7 +11,7 @@ private:
   u32 bitWidth;
 
 public:
-  UnsignedType(u64 _bitWidth, bool _variable, utils::FileRange _fileRange);
+  UnsignedType(u64 _bitWidth, bool _variable, FileRange _fileRange);
 
   IR::QatType* emit(IR::Context* ctx);
   TypeKind     typeKind() const final;

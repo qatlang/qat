@@ -10,7 +10,7 @@ private:
   Expression* exp;
 
 public:
-  Await(Expression* exp, utils::FileRange fileRange);
+  Await(Expression* exp, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Await; }

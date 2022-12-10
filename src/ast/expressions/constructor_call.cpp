@@ -9,7 +9,7 @@
 namespace qat::ast {
 
 ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
-                                 Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount, utils::FileRange _fileRange)
+                                 Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount, FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy), ownerType(_ownerType),
       ownCount(_ownCount) {}
 

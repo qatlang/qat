@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-IntegerLiteral::IntegerLiteral(String _value, utils::FileRange _fileRange)
+IntegerLiteral::IntegerLiteral(String _value, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::ConstantValue* IntegerLiteral::emit(IR::Context* ctx) {

@@ -3,10 +3,8 @@
 
 namespace qat::ast {
 
-TemplatedType::TemplatedType(String _id, String _name, bool isVariable,
-                             utils::FileRange _fileRange)
-    : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)),
-      name(std::move(_name)) {
+TemplatedType::TemplatedType(String _id, String _name, bool isVariable, FileRange _fileRange)
+    : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)), name(std::move(_name)) {
   templates.push_back(this);
 }
 
@@ -14,8 +12,8 @@ String TemplatedType::getID() const { return id; }
 
 String TemplatedType::getName() const { return name; }
 
-void TemplatedType::setType(IR::QatType *typ) const {
-  for (auto *temp : templates) {
+void TemplatedType::setType(IR::QatType* typ) const {
+  for (auto* temp : templates) {
     if (temp->id == id) {
       temp->typeValue = typ;
     }
@@ -25,7 +23,7 @@ void TemplatedType::setType(IR::QatType *typ) const {
 bool TemplatedType::isSet() const { return typeValue != nullptr; }
 
 void TemplatedType::unsetType() const {
-  for (auto *temp : templates) {
+  for (auto* temp : templates) {
     if (temp->id == id) {
       temp->typeValue = nullptr;
     }
@@ -38,7 +36,7 @@ String TemplatedType::getTemplateName() const { return name; }
 
 TypeKind TemplatedType::typeKind() const { return TypeKind::templated; }
 
-IR::QatType *TemplatedType::emit(IR::Context *ctx) {
+IR::QatType* TemplatedType::emit(IR::Context* ctx) {
   if (typeValue) {
     return typeValue;
   } else {

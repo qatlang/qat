@@ -17,7 +17,7 @@ class ExpressionSentence : public Sentence {
    *  Expression in this sentence
    *
    */
-  Expression *expr;
+  Expression* expr;
 
 public:
   /**
@@ -26,9 +26,9 @@ public:
    * @param _exp Expression in the sentence
    * @param _fileRange
    */
-  ExpressionSentence(Expression *_expr, utils::FileRange _fileRange);
+  ExpressionSentence(Expression* _expr, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value* emit(IR::Context* ctx);
 
   Json toJson() const;
 

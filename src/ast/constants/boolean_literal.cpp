@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-BooleanLiteral::BooleanLiteral(bool _value, utils::FileRange _fileRange)
+BooleanLiteral::BooleanLiteral(bool _value, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(_value) {}
 
 IR::ConstantValue* BooleanLiteral::emit(IR::Context* ctx) {

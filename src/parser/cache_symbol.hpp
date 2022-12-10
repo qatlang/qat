@@ -3,6 +3,7 @@
 
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
+#include "../utils/identifier.hpp"
 #include "../utils/macros.hpp"
 
 namespace qat::parser {
@@ -14,17 +15,16 @@ namespace qat::parser {
  */
 class CacheSymbol {
 public:
-  CacheSymbol(String _name, usize _tokenIndex, utils::FileRange _fileRange);
-  CacheSymbol(u32 _relative, String _name, usize _tokenIndex,
-              utils::FileRange _fileRange);
+  CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
+  CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
 
-  u32              relative;
-  String           name;
-  utils::FileRange fileRange;
-  usize            tokenIndex;
+  u32             relative;
+  Vec<Identifier> name;
+  FileRange       fileRange;
+  usize           tokenIndex;
 
-  useit bool hasRelative() const;
-  useit utils::FileRange extend_fileRange(utils::FileRange upto);
+  useit bool      hasRelative() const;
+  useit FileRange extend_fileRange(const FileRange& upto);
 };
 
 } // namespace qat::parser

@@ -12,7 +12,7 @@ class MemberAccess : public Expression {
   String      name;
 
 public:
-  MemberAccess(Expression* _instance, String _name, utils::FileRange _fileRange);
+  MemberAccess(Expression* _instance, String _name, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

@@ -4,8 +4,8 @@
 
 namespace qat::ast {
 
-PlainInitialiser::PlainInitialiser(QatType* _type, Vec<Pair<String, utils::FileRange>> _fields,
-                                   Vec<Expression*> _fieldValues, utils::FileRange _fileRange)
+PlainInitialiser::PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
+                                   FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), fields(std::move(_fields)), fieldValues(std::move(_fieldValues)) {
 }
 
@@ -66,7 +66,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         for (usize i = 0; i < fieldValues.size(); i++) {
           auto* mem = cTy->getMemberAt(i);
           if (!mem->visibility.isAccessible(reqInfo)) {
-            ctx->Error("Member " + ctx->highlightError(mem->name) + " of core type " +
+            ctx->Error("Member " + ctx->highlightError(mem->name.value) + " of core type " +
                            ctx->highlightError(cTy->getFullName()) +
                            " is not accessible here and hence plain "
                            "initialiser cannot be used for this type",

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 
-namespace qat::utils {
+namespace qat {
 
 // Position indicates a line and character number in a file
 struct FilePos {
@@ -26,6 +26,8 @@ struct FilePos {
 /** FileRange represents a particular range in a file */
 class FileRange {
 public:
+  FileRange(fs::path _filePath);
+
   /**
    *  FileRange represents a particular range in a file
    *
@@ -67,6 +69,6 @@ public:
   operator JsonValue() const;
 };
 
-} // namespace qat::utils
+} // namespace qat
 
 #endif

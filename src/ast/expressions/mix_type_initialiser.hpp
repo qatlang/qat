@@ -10,22 +10,20 @@ class MixTypeInitialiser : public Expression {
   friend class LocalDeclaration;
 
 private:
-  QatType            *type;
-  String              subName;
-  Maybe<Expression *> expression;
+  QatType*           type;
+  String             subName;
+  Maybe<Expression*> expression;
 
-  IR::LocalValue *local = nullptr;
+  IR::LocalValue* local = nullptr;
   String          irName;
   bool            isVar = false;
 
 public:
-  MixTypeInitialiser(QatType *type, String subName,
-                     Maybe<Expression *> expression,
-                     utils::FileRange    fileRange);
+  MixTypeInitialiser(QatType* type, String subName, Maybe<Expression*> expression, FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::mixTypeInitialiser; }
+  useit NodeType   nodeType() const final { return NodeType::mixTypeInitialiser; }
 };
 
 } // namespace qat::ast

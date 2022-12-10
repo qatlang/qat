@@ -7,10 +7,10 @@
 
 namespace qat::ast {
 
-MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, String _name, Vec<Argument*> _arguments,
+MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments,
                                  bool _isVariadic, QatType* _returnType, bool _is_async, utils::VisibilityKind kind,
-                                 const utils::FileRange& _fileRange)
-    : Node(_fileRange), isVariationFn(_isVariationFn), name(std::move(_name)), isAsync(_is_async),
+                                 FileRange _fileRange)
+    : Node(std::move(_fileRange)), isVariationFn(_isVariationFn), name(std::move(_name)), isAsync(_is_async),
       arguments(std::move(_arguments)), isVariadic(_isVariadic), returnType(_returnType), kind(kind),
       isStatic(_isStatic) {}
 
@@ -20,16 +20,16 @@ MemberPrototype::~MemberPrototype() {
   }
 }
 
-MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const String& _name, const Vec<Argument*>& _arguments,
+MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
                                          bool _isVariadic, QatType* _returnType, bool _is_async,
-                                         utils::VisibilityKind kind, const utils::FileRange& _fileRange) {
+                                         utils::VisibilityKind kind, const FileRange& _fileRange) {
   return new MemberPrototype(false, _isVariationFn, _name, _arguments, _isVariadic, _returnType, _is_async, kind,
                              _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Static(const String& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
+MemberPrototype* MemberPrototype::Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
                                          QatType* _returnType, bool _is_async, utils::VisibilityKind kind,
-                                         const utils::FileRange& _fileRange) {
+                                         const FileRange& _fileRange) {
   return new MemberPrototype(true, false, _name, _arguments, _isVariadic, _returnType, _is_async, kind, _fileRange);
 }
 
@@ -37,8 +37,8 @@ void MemberPrototype::define(IR::Context* ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this member function", fileRange);
   }
-  if (coreType->hasMemberFunction(name)) {
-    ctx->Error("Member function named " + ctx->highlightError(name) + " already exists in core type " +
+  if (coreType->hasMemberFunction(name.value)) {
+    ctx->Error("Member function named " + ctx->highlightError(name.value) + " already exists in core type " +
                    ctx->highlightError(coreType->getFullName()),
                fileRange);
   }
@@ -54,18 +54,18 @@ void MemberPrototype::define(IR::Context* ctx) {
   for (auto* arg : arguments) {
     if (arg->isTypeMember()) {
       if (!isStatic) {
-        if (coreType->hasMember(arg->getName())) {
+        if (coreType->hasMember(arg->getName().value)) {
           if (isVariationFn) {
-            auto* memTy = coreType->getTypeOfMember(arg->getName());
+            auto* memTy = coreType->getTypeOfMember(arg->getName().value);
             if (memTy->isReference()) {
               if (memTy->asReference()->isSubtypeVariable()) {
                 memTy = memTy->asReference()->getSubType();
               } else {
-                ctx->Error("Member " + ctx->highlightError(arg->getName()) + " of core type " +
+                ctx->Error("Member " + ctx->highlightError(arg->getName().value) + " of core type " +
                                ctx->highlightError(coreType->getFullName()) +
                                " is not a variable reference and hence cannot "
                                "be reassigned",
-                           arg->getFileRange());
+                           arg->getName().range);
               }
             }
             generatedTypes.push_back(memTy);
@@ -75,14 +75,16 @@ void MemberPrototype::define(IR::Context* ctx) {
                        fileRange);
           }
         } else {
-          ctx->Error("No non-static member named " + arg->getName() + " in the core type " + coreType->getFullName(),
-                     arg->getFileRange());
+          ctx->Error("No non-static member named " + arg->getName().value + " in the core type " +
+                         coreType->getFullName(),
+                     arg->getName().range);
         }
       } else {
-        ctx->Error("Function " + name + " is a static member function of the core type: " + coreType->getFullName() +
+        ctx->Error("Function " + name.value +
+                       " is a static member function of the core type: " + coreType->getFullName() +
                        ". So it "
                        "cannot use the member argument syntax",
-                   arg->getFileRange());
+                   arg->getName().range);
       }
     } else {
       generatedTypes.push_back(arg->getType()->emit(ctx));
@@ -93,10 +95,10 @@ void MemberPrototype::define(IR::Context* ctx) {
   SHOW("Setting variability of arguments")
   for (usize i = 0; i < generatedTypes.size(); i++) {
     if (arguments.at(i)->isTypeMember()) {
-      SHOW("Argument at " << i << " named " << arguments.at(i)->getName() << " is a type member")
+      SHOW("Argument at " << i << " named " << arguments.at(i)->getName().value << " is a type member")
       args.push_back(IR::Argument::CreateMember(arguments.at(i)->getName(), generatedTypes.at(i), i));
     } else {
-      SHOW("Argument at " << i << " named " << arguments.at(i)->getName() << " is not a type member")
+      SHOW("Argument at " << i << " named " << arguments.at(i)->getName().value << " is not a type member")
       args.push_back(
           arguments.at(i)->getType()->isVariable()
               ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
@@ -124,8 +126,7 @@ Json MemberPrototype::toJson() const {
     auto aJson = Json()
                      ._("name", arg->getName())
                      ._("type", arg->getType() ? arg->getType()->toJson() : Json())
-                     ._("isMemberArg", arg->isTypeMember())
-                     ._("fileRange", arg->getFileRange());
+                     ._("isMemberArg", arg->isTypeMember());
     args.push_back(aJson);
   }
   return Json()
@@ -139,7 +140,7 @@ Json MemberPrototype::toJson() const {
       ._("isVariadic", isVariadic);
 }
 
-MemberDefinition::MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange)
+MemberDefinition::MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void MemberDefinition::define(IR::Context* ctx) { prototype->define(ctx); }

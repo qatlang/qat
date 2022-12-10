@@ -10,20 +10,20 @@ class PlainInitialiser : public Expression {
   friend class LocalDeclaration;
 
 private:
-  QatType                            *type;
-  Vec<Pair<String, utils::FileRange>> fields;
-  Vec<u64>                            indices;
-  Vec<Expression *>                   fieldValues;
+  QatType*                     type;
+  Vec<Pair<String, FileRange>> fields;
+  Vec<u64>                     indices;
+  Vec<Expression*>             fieldValues;
 
-  IR::LocalValue *local = nullptr;
+  IR::LocalValue* local = nullptr;
   String          irName;
   bool            isVar = false;
 
 public:
-  PlainInitialiser(QatType *_type, Vec<Pair<String, utils::FileRange>> _fields,
-                   Vec<Expression *> _fieldValues, utils::FileRange _fileRange);
+  PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
+                   FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::plainInitialiser; }
   useit Json       toJson() const final;
 };

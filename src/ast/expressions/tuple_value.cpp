@@ -2,10 +2,9 @@
 
 namespace qat::ast {
 
-TupleValue::TupleValue(Vec<Expression *> _members, utils::FileRange _fileRange)
-    : members(_members), Expression(_fileRange) {}
+TupleValue::TupleValue(Vec<Expression*> _members, FileRange _fileRange) : members(_members), Expression(_fileRange) {}
 
-IR::Value *TupleValue::emit(IR::Context *ctx) {
+IR::Value* TupleValue::emit(IR::Context* ctx) {
   // TODO - Implement this
 }
 
@@ -14,10 +13,7 @@ Json TupleValue::toJson() const {
   for (auto mem : members) {
     mems.push_back(mem->toJson());
   }
-  return Json()
-      ._("nodeType", "tupleValue")
-      ._("members", mems)
-      ._("fileRange", fileRange);
+  return Json()._("nodeType", "tupleValue")._("members", mems)._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

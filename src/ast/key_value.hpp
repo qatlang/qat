@@ -3,23 +3,26 @@
 
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
+#include "../utils/identifier.hpp"
 #include "../utils/macros.hpp"
 
 namespace qat::ast {
 
 template <typename ValueTy> class KeyValue {
 public:
-  KeyValue(String _key, utils::FileRange _keyRange, ValueTy _value, utils::FileRange _valueRange)
-      : key(std::move(_key)), keyRange(std::move(_keyRange)), value(std::move(_value)),
-        valueRange(std::move(_valueRange)) {}
+  KeyValue(Identifier _key, ValueTy _value, FileRange _valueRange)
+      : key(std::move(_key)), value(std::move(_value)), valueRange(std::move(_valueRange)) {}
 
-  String           key;
-  utils::FileRange keyRange;
+  Identifier key;
 
-  ValueTy          value;
-  utils::FileRange valueRange;
+  ValueTy   value;
+  FileRange valueRange;
 
-  useit utils::FileRange getRange() const { return {keyRange, valueRange}; }
+  operator JsonValue() {
+    return Json()._("key", key.value)._("keyRange", key.range)._("value", value)._("valueRange", valueRange);
+  }
+
+  useit FileRange getRange() const { return {key.range, valueRange}; }
 };
 
 } // namespace qat::ast

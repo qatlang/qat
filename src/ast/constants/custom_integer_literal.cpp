@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-CustomIntegerLiteral::CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, utils::FileRange _fileRange)
+CustomIntegerLiteral::CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth),
       isUnsigned(_isUnsigned) {}
 

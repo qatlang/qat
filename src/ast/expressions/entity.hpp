@@ -15,19 +15,19 @@ namespace qat::ast {
 class Entity : public Expression {
 
 private:
-  String name;
-  u32    relative;
+  Vec<Identifier> names;
+  u32             relative;
 
   bool canBeChoice = false;
 
 public:
-  Entity(u32 relative, String _name, utils::FileRange _fileRange);
+  Entity(u32 relative, Vec<Identifier> _name, FileRange _fileRange);
 
   void setCanBeChoice();
 
-  useit IR::Value *emit(IR::Context *ctx);
-  useit Json       toJson() const;
-  useit NodeType   nodeType() const { return NodeType::entity; }
+  useit IR::Value* emit(IR::Context* ctx);
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::entity; }
 };
 
 } // namespace qat::ast

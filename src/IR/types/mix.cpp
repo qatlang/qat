@@ -12,23 +12,21 @@ namespace qat::IR {
 #define TWO_POWER_16 65536ULL
 #define TWO_POWER_32 4294967296ULL
 
-MixType::MixType(String _name, QatModule *_parent,
-                 Vec<Pair<String, Maybe<QatType *>>> _subtypes,
-                 Maybe<usize> _defaultVal, llvm::LLVMContext &ctx,
-                 bool _isPacked, const utils::VisibilityInfo &_visibility)
-    : name(std::move(_name)), parent(_parent), subtypes(std::move(_subtypes)),
-      isPack(_isPacked), visibility(_visibility), defaultVal(_defaultVal) {
-  for (const auto &sub : subtypes) {
+MixType::MixType(Identifier _name, QatModule* _parent, Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes,
+                 Maybe<usize> _defaultVal, llvm::LLVMContext& ctx, bool _isPacked,
+                 const utils::VisibilityInfo& _visibility, FileRange _fileRange)
+    : name(std::move(_name)), parent(_parent), subtypes(std::move(_subtypes)), isPack(_isPacked),
+      visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
+  for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
-      auto *typ = sub.second.value();
+      auto* typ = sub.second.value();
       SHOW("Getting size of the subtype in SUM TYPE")
-      auto *llSize = llvm::ConstantInt::get(
-          llvm::Type::getInt64Ty(ctx),
-          parent->getLLVMModule()->getDataLayout().getTypeStoreSizeInBits(
-              typ->getLLVMType()));
+      auto* llSize =
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx),
+                                 parent->getLLVMModule()->getDataLayout().getTypeStoreSizeInBits(typ->getLLVMType()));
       SHOW("Size query type ID: " << llSize->getType()->getTypeID())
       auto size = *(llSize->getValue().getRawData());
-      SHOW("Got size " << size << " of subtype named " << sub.first)
+      SHOW("Got size " << size << " of subtype named " << sub.first.value)
       if (size > maxSize) {
         maxSize = size;
       }
@@ -37,10 +35,8 @@ MixType::MixType(String _name, QatModule *_parent,
   findTagBitWidth(subtypes.size());
   SHOW("Tag bitwidth is " << tagBitWidth)
   llvmType =
-      llvm::StructType::create(ctx,
-                               {llvm::Type::getIntNTy(ctx, tagBitWidth),
-                                llvm::Type::getIntNTy(ctx, maxSize)},
-                               parent->getFullNameWithChild(name), _isPacked);
+      llvm::StructType::create(ctx, {llvm::Type::getIntNTy(ctx, tagBitWidth), llvm::Type::getIntNTy(ctx, maxSize)},
+                               parent->getFullNameWithChild(name.value), _isPacked);
   if (parent) {
     parent->mixTypes.push_back(this);
   }
@@ -54,15 +50,13 @@ void MixType::findTagBitWidth(usize typeCount) {
   }
 }
 
-String MixType::getName() const { return name; }
+Identifier MixType::getName() const { return name; }
 
-String MixType::getFullName() const {
-  return parent->getFullNameWithChild(name);
-}
+String MixType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
-usize MixType::getIndexOfName(const String &name) const {
+usize MixType::getIndexOfName(const String& name) const {
   for (usize i = 0; i < subtypes.size(); i++) {
-    if (subtypes.at(i).first == name) {
+    if (subtypes.at(i).first.value == name) {
       return i;
     }
   }
@@ -73,29 +67,29 @@ bool MixType::hasDefault() const { return defaultVal.has_value(); }
 
 usize MixType::getDefault() const { return defaultVal.value_or(0u); }
 
-Pair<bool, bool> MixType::hasSubTypeWithName(const String &sname) const {
-  for (const auto &sTy : subtypes) {
-    if (sTy.first == sname) {
+Pair<bool, bool> MixType::hasSubTypeWithName(const String& sname) const {
+  for (const auto& sTy : subtypes) {
+    if (sTy.first.value == sname) {
       return {true, sTy.second.has_value()};
     }
   }
   return {false, false};
 }
 
-QatType *MixType::getSubTypeWithName(const String &sname) const {
-  for (const auto &sTy : subtypes) {
-    if (sTy.first == sname) {
+QatType* MixType::getSubTypeWithName(const String& sname) const {
+  for (const auto& sTy : subtypes) {
+    if (sTy.first.value == sname) {
       return sTy.second.value();
     }
   }
   return nullptr;
 }
 
-void MixType::getMissingNames(Vec<String> &vals, Vec<String> &missing) const {
-  for (const auto &sub : subtypes) {
+void MixType::getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const {
+  for (const auto& sub : subtypes) {
     bool result = false;
-    for (const auto &val : vals) {
-      if (sub.first == val) {
+    for (const auto& val : vals) {
+      if (sub.first.value == val.value) {
         result = true;
         break;
       }
@@ -108,7 +102,7 @@ void MixType::getMissingNames(Vec<String> &vals, Vec<String> &missing) const {
 
 usize MixType::getSubTypeCount() const { return subtypes.size(); }
 
-QatModule *MixType::getParent() const { return parent; }
+QatModule* MixType::getParent() const { return parent; }
 
 bool MixType::isPacked() const { return isPack; }
 
@@ -116,13 +110,11 @@ usize MixType::getTagBitwidth() const { return tagBitWidth; }
 
 u64 MixType::getDataBitwidth() const { return maxSize; }
 
-bool MixType::isAccessible(const utils::RequesterInfo &reqInfo) const {
-  return visibility.isAccessible(reqInfo);
-}
+bool MixType::isAccessible(const utils::RequesterInfo& reqInfo) const { return visibility.isAccessible(reqInfo); }
 
-const utils::VisibilityInfo &MixType::getVisibility() const {
-  return visibility;
-}
+const utils::VisibilityInfo& MixType::getVisibility() const { return visibility; }
+
+FileRange MixType::getFileRange() const { return fileRange; }
 
 String MixType::toString() const { return getFullName(); }
 

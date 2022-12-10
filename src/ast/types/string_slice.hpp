@@ -8,9 +8,9 @@ namespace qat::ast {
 
 class StringSliceType : public QatType {
 public:
-  StringSliceType(bool _variable, utils::FileRange _fileRange);
+  StringSliceType(bool _variable, FileRange _fileRange);
 
-  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;

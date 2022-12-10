@@ -2,10 +2,9 @@
 
 namespace qat::ast {
 
-Block::Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange)
-    : Sentence(_fileRange), sentences(_sentences) {}
+Block::Block(Vec<Sentence*> _sentences, FileRange _fileRange) : Sentence(_fileRange), sentences(_sentences) {}
 
-IR::Value *Block::emit(IR::Context *ctx) {
+IR::Value* Block::emit(IR::Context* ctx) {
   // TODO - Implement this
 }
 
@@ -14,10 +13,7 @@ Json Block::toJson() const {
   for (auto sentence : sentences) {
     snts.push_back(sentence->toJson());
   }
-  return Json()
-      ._("nodeType", "block")
-      ._("sentences", snts)
-      ._("fileRange", fileRange);
+  return Json()._("nodeType", "block")._("sentences", snts)._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

@@ -41,60 +41,63 @@ private:
   bool         isStatic;
   bool         isVariation;
   MemberFnType fnType;
-  String       selfName;
+  Identifier   selfName;
 
-  MemberFunction(MemberFnType fnType, bool _isVariation, CoreType* _parent, const String& _name, QatType* returnType,
-                 bool isReturnTypeVariable, bool _is_async, Vec<Argument> _args, bool has_variadic_arguments,
-                 bool _is_static, const utils::FileRange& _fileRange, const utils::VisibilityInfo& _visibility_info,
-                 llvm::LLVMContext& ctx);
+  MemberFunction(MemberFnType fnType, bool _isVariation, CoreType* _parent, const Identifier& _name,
+                 QatType* returnType, bool isReturnTypeVariable, bool _is_async, Vec<Argument> _args,
+                 bool has_variadic_arguments, bool _is_static, const FileRange& _fileRange,
+                 const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx);
 
 public:
-  static MemberFunction* Create(CoreType* parent, bool is_variation, const String& name, QatType* return_type,
+  static MemberFunction* Create(CoreType* parent, bool is_variation, const Identifier& name, QatType* return_type,
                                 bool isReturnTypeVariable, bool is_async, const Vec<Argument>& args,
-                                bool has_variadic_args, const utils::FileRange& fileRange,
+                                bool has_variadic_args, const FileRange& fileRange,
                                 const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
 
-  static MemberFunction* DefaultConstructor(CoreType* parent, const utils::VisibilityInfo& visibInfo,
-                                            utils::FileRange fileRange, llvm::LLVMContext& ctx);
+  static MemberFunction* DefaultConstructor(CoreType* parent, FileRange nameRange,
+                                            const utils::VisibilityInfo& visibInfo, FileRange fileRange,
+                                            llvm::LLVMContext& ctx);
 
-  static MemberFunction* CopyConstructor(CoreType* parent, const String& otherName, const utils::FileRange& fileRange,
-                                         llvm::LLVMContext& ctx);
+  static MemberFunction* CopyConstructor(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+                                         const FileRange& fileRange, llvm::LLVMContext& ctx);
 
-  static MemberFunction* MoveConstructor(CoreType* parent, const String& otherName, const utils::FileRange& fileRange,
-                                         llvm::LLVMContext& ctx);
+  static MemberFunction* MoveConstructor(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+                                         const FileRange& fileRange, llvm::LLVMContext& ctx);
 
-  static MemberFunction* CopyAssignment(CoreType* parent, const String& otherName, const utils::FileRange& fileRange,
-                                        llvm::LLVMContext& ctx);
+  static MemberFunction* CopyAssignment(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+                                        const FileRange& fileRange, llvm::LLVMContext& ctx);
 
-  static MemberFunction* MoveAssignment(CoreType* parent, const String& otherName, const utils::FileRange& fileRange,
-                                        llvm::LLVMContext& ctx);
+  static MemberFunction* MoveAssignment(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+                                        const FileRange& fileRange, llvm::LLVMContext& ctx);
 
-  static MemberFunction* CreateConstructor(CoreType* parent, const Vec<Argument>& args, bool hasVariadicArgs,
-                                           const utils::FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
-                                           llvm::LLVMContext& ctx);
-
-  static MemberFunction* CreateFromConvertor(CoreType* parent, QatType* sourceType, const String& name,
-                                             const utils::FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
-                                             llvm::LLVMContext& ctx);
-
-  static MemberFunction* CreateToConvertor(CoreType* parent, QatType* destType, const utils::FileRange& fileRange,
+  static MemberFunction* CreateConstructor(CoreType* parent, FileRange nameRange, const Vec<Argument>& args,
+                                           bool hasVariadicArgs, const FileRange& fileRange,
                                            const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
 
-  static MemberFunction* CreateDestructor(CoreType* parent, const utils::FileRange& fileRange, llvm::LLVMContext& ctx);
+  static MemberFunction* CreateFromConvertor(CoreType* parent, FileRange nameRange, QatType* sourceType,
+                                             const Identifier& name, const FileRange& fileRange,
+                                             const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
 
-  static MemberFunction* CreateOperator(CoreType* parent, bool isBinary, bool isVariationFn, const String& opr,
-                                        IR::QatType* returnType, const Vec<Argument>& args,
-                                        const utils::FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
+  static MemberFunction* CreateToConvertor(CoreType* parent, FileRange nameRange, QatType* destType,
+                                           const FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
+                                           llvm::LLVMContext& ctx);
+
+  static MemberFunction* CreateDestructor(CoreType* parent, FileRange nameRange, const FileRange& fileRange,
+                                          llvm::LLVMContext& ctx);
+
+  static MemberFunction* CreateOperator(CoreType* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
+                                        const String& opr, IR::QatType* returnType, const Vec<Argument>& args,
+                                        const FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
                                         llvm::LLVMContext& ctx);
 
-  static MemberFunction* CreateStatic(CoreType* parent, const String& name, QatType* return_type,
+  static MemberFunction* CreateStatic(CoreType* parent, const Identifier& name, QatType* return_type,
                                       bool is_return_type_variable, bool is_async, const Vec<Argument>& args,
-                                      bool has_variadic_args, const utils::FileRange& fileRange,
+                                      bool has_variadic_args, const FileRange& fileRange,
                                       const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
 
   ~MemberFunction() override;
 
-  useit String       getName() const final;
+  useit Identifier   getName() const final;
   useit MemberFnType getMemberFnType();
   useit bool         isVariationFunction() const;
   useit bool         isStaticFunction() const;

@@ -16,7 +16,7 @@ namespace qat::ast {
 
 #define MAX_RESPONSIVE_BITWIDTH 64u
 
-Assignment::Assignment(Expression* _lhs, Expression* _value, utils::FileRange _fileRange)
+Assignment::Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), lhs(_lhs), value(_value) {}
 
 IR::Value* Assignment::emit(IR::Context* ctx) {

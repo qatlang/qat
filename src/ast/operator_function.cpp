@@ -6,11 +6,11 @@
 
 namespace qat::ast {
 
-OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op, Vec<Argument*> _arguments, QatType* _returnType,
-                                     utils::VisibilityKind kind, const utils::FileRange& _fileRange,
-                                     Maybe<String> _argName)
+OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
+                                     QatType* _returnType, utils::VisibilityKind kind, const FileRange& _fileRange,
+                                     Maybe<Identifier> _argName)
     : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op), arguments(std::move(_arguments)),
-      returnType(_returnType), kind(kind), argName(std::move(_argName)) {}
+      returnType(_returnType), kind(kind), argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
 
 OperatorPrototype::~OperatorPrototype() {
   for (auto* arg : arguments) {
@@ -28,7 +28,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
                      ctx->highlightError(coreType->getFullName()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::CopyAssignment(coreType, argName.value(), fileRange, ctx->llctx);
+    memberFn = IR::MemberFunction::CopyAssignment(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
     return;
   } else if (opr == Op::moveAssignment) {
     if (coreType->hasMoveAssignment()) {
@@ -36,7 +36,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
                      ctx->highlightError(coreType->getFullName()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::MoveAssignment(coreType, argName.value(), fileRange, ctx->llctx);
+    memberFn = IR::MemberFunction::MoveAssignment(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
     return;
   }
   if (opr == Op::subtract) {
@@ -62,17 +62,18 @@ void OperatorPrototype::define(IR::Context* ctx) {
   SHOW("Generating types")
   for (auto* arg : arguments) {
     if (arg->isTypeMember()) {
-      if (coreType->hasMember(arg->getName())) {
+      if (coreType->hasMember(arg->getName().value)) {
         if (isVariationFn) {
-          generatedTypes.push_back(coreType->getTypeOfMember(arg->getName()));
+          generatedTypes.push_back(coreType->getTypeOfMember(arg->getName().value));
         } else {
           ctx->Error("This operator is not marked as a variation. It "
                      "cannot use the member argument syntax",
                      fileRange);
         }
       } else {
-        ctx->Error("No non-static member named " + arg->getName() + " in the core type " + coreType->getFullName(),
-                   arg->getFileRange());
+        ctx->Error("No non-static member named " + arg->getName().value + " in the core type " +
+                       coreType->getFullName(),
+                   arg->getName().range);
       }
     } else {
       generatedTypes.push_back(arg->getType()->emit(ctx));
@@ -108,7 +109,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
   SHOW("Variability setting complete")
   SHOW("About to create operator function")
   memberFn =
-      IR::MemberFunction::CreateOperator(coreType, !isUnaryOp(opr), isVariationFn, OpToString(opr),
+      IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
                                          returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(kind), ctx->llctx);
 }
 
@@ -122,8 +123,7 @@ Json OperatorPrototype::toJson() const {
     auto aJson = Json()
                      ._("name", arg->getName())
                      ._("type", arg->getType() ? arg->getType()->toJson() : Json())
-                     ._("isMemberArg", arg->isTypeMember())
-                     ._("fileRange", arg->getFileRange());
+                     ._("isMemberArg", arg->isTypeMember());
     args.push_back(aJson);
   }
   return Json()
@@ -135,8 +135,7 @@ Json OperatorPrototype::toJson() const {
       ._("fileRange", fileRange);
 }
 
-OperatorDefinition::OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                       utils::FileRange _fileRange)
+OperatorDefinition::OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void OperatorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }

@@ -43,7 +43,7 @@ public:
   useit Deque<Token>* getTokens();
   useit Vec<String> getContent() const;
   useit Token       tokeniser();
-  useit utils::FileRange getPosition(u64 length);
+  useit FileRange   getPosition(u64 length);
 };
 
 } // namespace qat::lexer

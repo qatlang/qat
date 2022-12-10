@@ -2,6 +2,7 @@
 #define QAT_AST_LIB_HPP
 
 #include "../IR/context.hpp"
+#include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
 #include "./node.hpp"
 #include <vector>
@@ -11,16 +12,15 @@ namespace qat::ast {
 // Library in the language
 class Lib : public Node {
 private:
-  String                name;
-  Vec<Node *>           members;
+  Identifier            name;
+  Vec<Node*>            members;
   utils::VisibilityKind visibility;
 
 public:
-  Lib(String _name, Vec<Node *> _members, utils::VisibilityKind _visibility,
-      const utils::FileRange &_file_range);
+  Lib(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibility, const FileRange& _file_range);
 
-  void  createModule(IR::Context *ctx) const final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  createModule(IR::Context* ctx) const final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::lib; }
 };

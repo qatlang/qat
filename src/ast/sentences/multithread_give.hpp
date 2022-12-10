@@ -17,7 +17,7 @@ private:
    *  Expression to be returned from the multithread block.
    *
    */
-  Expression *expression;
+  Expression* expression;
 
 public:
   /**
@@ -27,9 +27,9 @@ public:
    block
    * @param _fileRange
    */
-  MultithreadGive(Expression *_expression, utils::FileRange _fileRange);
+  MultithreadGive(Expression* _expression, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value* emit(IR::Context* ctx);
 
   Json toJson() const;
 

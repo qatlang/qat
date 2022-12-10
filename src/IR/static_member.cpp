@@ -3,26 +3,20 @@
 
 namespace qat::IR {
 
-StaticMember::StaticMember(CoreType *_parent, String _name, QatType *_type,
-                           bool _isVariable, Value *_initial,
-                           const utils::VisibilityInfo &_visibility)
-    : Value(nullptr, _type, _isVariable, Nature::assignable),
-      name(std::move(_name)), parent(_parent), initial(_initial), loads(0),
-      stores(0), refers(0), visibility(_visibility) {
+StaticMember::StaticMember(CoreType* _parent, Identifier _name, QatType* _type, bool _isVariable, Value* _initial,
+                           const utils::VisibilityInfo& _visibility)
+    : Value(nullptr, _type, _isVariable, Nature::assignable), name(std::move(_name)), parent(_parent),
+      initial(_initial), loads(0), stores(0), refers(0), visibility(_visibility) {
   // TODO
 }
 
-CoreType *StaticMember::getParentType() { return parent; }
+CoreType* StaticMember::getParentType() { return parent; }
 
-String StaticMember::getName() const { return name; }
+Identifier StaticMember::getName() const { return name; }
 
-String StaticMember::getFullName() const {
-  return parent->getFullName() + ":" + name;
-}
+String StaticMember::getFullName() const { return parent->getFullName() + ":" + name.value; }
 
-const utils::VisibilityInfo &StaticMember::getVisibility() const {
-  return visibility;
-}
+const utils::VisibilityInfo& StaticMember::getVisibility() const { return visibility; }
 
 bool StaticMember::hasInitial() const { return (initial != nullptr); }
 

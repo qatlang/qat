@@ -85,8 +85,8 @@ void Lexer::read() {
   }
 }
 
-utils::FileRange Lexer::getPosition(u64 length) {
-  utils::FilePos end = {lineNumber, characterNumber};
+FileRange Lexer::getPosition(u64 length) {
+  FilePos end = {lineNumber, characterNumber};
   if (characterNumber == 0) {
     if (previousLineEnd.has_value()) {
       end = {lineNumber - 1, previousLineEnd.value()};
@@ -541,7 +541,7 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     if (lexInst) {
       return lexInst->getPosition(len);
     } else {
-      return utils::FileRange("", {0u, 0u}, {0u, 0u});
+      return FileRange("", {0u, 0u}, {0u, 0u});
     }
   };
 
@@ -608,8 +608,6 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     return Token::normal(TokenType::mix, getPos(5));
   } else if (value == "match") {
     return Token::normal(TokenType::match, getPos(5));
-  } else if (value == "alias") {
-    return Token::normal(TokenType::alias, getPos(5));
   } else if (value == "copy") {
     return Token::normal(TokenType::copy, getPos(4));
   } else if (value == "move") {
@@ -638,8 +636,6 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     return Token::valued(TokenType::floatType, "128", getPos(4));
   } else if (value == "str") {
     return Token::normal(TokenType::stringSliceType, getPos(3));
-  } else if (value == "alias") {
-    return Token::normal(TokenType::alias, getPos(5));
   } else if (value == "for") {
     return Token::normal(TokenType::For, getPos(3));
   } else if (value == "give") {

@@ -14,10 +14,10 @@
 
 namespace qat::ast {
 
-FunctionPrototype::FunctionPrototype(String _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType,
-                                     bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
-                                     utils::VisibilityKind _visibility, const utils::FileRange& _fileRange,
-                                     Vec<ast::TemplatedType*> _templates)
+FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
+                                     QatType* _returnType, bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType,
+                                     String _callingConv, utils::VisibilityKind _visibility,
+                                     const FileRange& _fileRange, Vec<ast::TemplatedType*> _templates)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
       templates(std::move(_templates)), linkageType(_linkageType) {}
@@ -28,11 +28,6 @@ FunctionPrototype::~FunctionPrototype() {
   }
 }
 
-FunctionPrototype::FunctionPrototype(const FunctionPrototype& ref)
-    : Node(ref.fileRange), name(ref.name), isAsync(ref.isAsync), arguments(ref.arguments), isVariadic(ref.isVariadic),
-      returnType(ref.returnType), callingConv(ref.callingConv), visibility(ref.visibility), templates(ref.templates),
-      linkageType(ref.linkageType), function(ref.function) {}
-
 bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
 
 Vec<TemplatedType*> FunctionPrototype::getTemplates() const { return templates; }
@@ -41,7 +36,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   Vec<IR::QatType*> generatedTypes;
   auto*             mod      = ctx->getMod();
   bool              isMainFn = false;
-  String            fnName   = name;
+  String            fnName   = name.value;
   SHOW("Creating function")
   if (templateFn) {
     fnName = variantName.value();
@@ -60,7 +55,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     if (arg->isTypeMember()) {
       ctx->Error("Function is not a member function of a core type and cannot "
                  "use member argument syntax",
-                 arg->getFileRange());
+                 arg->getName().range);
     }
     auto* genType = arg->getType()->emit(ctx);
     generatedTypes.push_back(genType);
@@ -79,7 +74,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
         } else {
           ctx->Error("The first argument of the " + ctx->highlightError("main") + " function should be " +
                          ctx->highlightError("#[+ cstring ?]"),
-                     arguments.at(0)->getFileRange());
+                     arguments.at(0)->getName().range);
         }
       } else if (generatedTypes.empty()) {
         mod->setHasMainFn();
@@ -97,11 +92,14 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     if (!arguments.empty()) {
       args.push_back(
           // NOLINTNEXTLINE(readability-magic-numbers)
-          IR::Argument::Create(arguments.at(0)->getName() + "'count", IR::UnsignedType::get(32u, ctx->llctx), 0u));
-      args.push_back(IR::Argument::Create(arguments.at(0)->getName() + "'data",
-                                          IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
-                                                               IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
-                                          1u));
+          IR::Argument::Create(
+              Identifier(arguments.at(0)->getName().value + "'count", arguments.at(0)->getName().range),
+              IR::UnsignedType::get(32u, ctx->llctx), 0u));
+      args.push_back(
+          IR::Argument::Create(Identifier(arguments.at(0)->getName().value + "'data", arguments.at(0)->getName().range),
+                               IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
+                                                    IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
+                               1u));
     }
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
@@ -119,8 +117,8 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     }
   }
   SHOW("About to create function")
-  auto* fun = mod->createFunction(fnName, retTy, returnType->isVariable(), isAsync, args, isVariadic, fileRange,
-                                  ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+  auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, returnType->isVariable(), isAsync, args,
+                                  isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
   SHOW("Created IR function")
   return fun;
 }
@@ -148,10 +146,7 @@ IR::Value* FunctionPrototype::emit(IR::Context* ctx) {
 Json FunctionPrototype::toJson() const {
   Vec<JsonValue> args;
   for (auto* arg : arguments) {
-    auto aJson = Json()
-                     ._("name", arg->getName())
-                     ._("type", arg->getType() ? arg->getType()->toJson() : Json())
-                     ._("fileRange", arg->getFileRange());
+    auto aJson = Json()._("name", arg->getName())._("type", arg->getType() ? arg->getType()->toJson() : Json());
     args.push_back(aJson);
   }
   return Json()
@@ -164,8 +159,7 @@ Json FunctionPrototype::toJson() const {
       ._("callingConvention", callingConv);
 }
 
-FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences,
-                                       utils::FileRange _fileRange)
+FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void FunctionDefinition::define(IR::Context* ctx) {
@@ -296,10 +290,11 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
       }
       SHOW("Storing args for main function")
       if (fnEmit->getType()->asFunction()->getArgumentCount() == 2u) {
-        auto* cmdArgsVal = block->newValue(fnEmit->argumentNameAt(0).substr(0, fnEmit->argumentNameAt(0).find('\'')),
-                                           IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
-                                                                IR::PointerOwner::OfAnonymous(), true, ctx->llctx),
-                                           false);
+        auto* cmdArgsVal =
+            block->newValue(fnEmit->argumentNameAt(0).value.substr(0, fnEmit->argumentNameAt(0).value.find('\'')),
+                            IR::PointerType::get(false, IR::CStringType::get(ctx->llctx),
+                                                 IR::PointerOwner::OfAnonymous(), true, ctx->llctx),
+                            false, fnEmit->argumentNameAt(0).range);
         SHOW("Storing argument pointer")
         ctx->builder.CreateStore(
             fnEmit->getLLVMFunction()->getArg(1u),
@@ -312,7 +307,7 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     } else {
       SHOW("About to allocate necessary arguments")
       auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-      SHOW("Iteration run for function is: " << fnEmit->getName())
+      SHOW("Iteration run for function is: " << fnEmit->getName().value)
       for (usize i = 0; i < argIRTypes.size(); i++) {
         SHOW("Argument name is " << argIRTypes.at(i)->getName())
         SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())

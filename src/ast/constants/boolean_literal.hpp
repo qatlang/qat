@@ -11,7 +11,7 @@ private:
   bool value;
 
 public:
-  BooleanLiteral(bool _value, utils::FileRange _fileRange);
+  BooleanLiteral(bool _value, FileRange _fileRange);
 
   useit IR::ConstantValue* emit(IR::Context* ctx) final;
   useit Json               toJson() const final;

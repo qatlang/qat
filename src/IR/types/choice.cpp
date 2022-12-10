@@ -3,10 +3,11 @@
 
 namespace qat::IR {
 
-ChoiceType::ChoiceType(String _name, QatModule* _parent, Vec<String> _fields, Maybe<Vec<i64>> _values,
-                       Maybe<usize> _defaultVal, const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
+ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
+                       Maybe<usize> _defaultVal, const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
+                       FileRange _fileRange)
     : name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
-      visibility(_visibility), defaultVal(_defaultVal) {
+      visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
   if (!values.has_value()) {
     findBitwidthNormal();
     llvmType = llvm::Type::getIntNTy(ctx, bitwidth);
@@ -19,9 +20,9 @@ ChoiceType::ChoiceType(String _name, QatModule* _parent, Vec<String> _fields, Ma
   }
 }
 
-String ChoiceType::getName() const { return name; }
+Identifier ChoiceType::getName() const { return name; }
 
-String ChoiceType::getFullName() const { return parent->getFullNameWithChild(name); }
+String ChoiceType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
 QatModule* ChoiceType::getParent() const { return parent; }
 
@@ -37,7 +38,7 @@ i64 ChoiceType::getDefault() const {
 
 bool ChoiceType::hasField(const String& name) const {
   for (const auto& field : fields) {
-    if (field == name) {
+    if (field.value == name) {
       return true;
     }
   }
@@ -47,7 +48,7 @@ bool ChoiceType::hasField(const String& name) const {
 i64 ChoiceType::getValueFor(const String& name) const {
   usize index = 0;
   for (usize i = 0; i < fields.size(); i++) {
-    if (fields.at(i) == name) {
+    if (fields.at(i).value == name) {
       index = i;
       break;
     }
@@ -92,11 +93,11 @@ void ChoiceType::findBitwidthForValues() const {
   bitwidth = hasNegative ? (result + 1) : result;
 }
 
-void ChoiceType::getMissingNames(Vec<String>& vals, Vec<String>& missing) const {
+void ChoiceType::getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const {
   for (const auto& sub : fields) {
     bool result = false;
     for (const auto& val : vals) {
-      if (sub == val) {
+      if (sub.value == val.value) {
         result = true;
         break;
       }

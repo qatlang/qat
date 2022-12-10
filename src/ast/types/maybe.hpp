@@ -9,7 +9,7 @@ private:
   QatType* subTyp;
 
 public:
-  MaybeType(bool isVariable, QatType* subty, utils::FileRange range);
+  MaybeType(bool isVariable, QatType* subty, FileRange range);
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final { return TypeKind::maybe; }

@@ -12,9 +12,9 @@ namespace qat::ast {
  */
 class Self : public Expression {
 public:
-  explicit Self(utils::FileRange _fileRange);
+  explicit Self(FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
+  useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
   useit NodeType   nodeType() const override { return NodeType::self; }
 };

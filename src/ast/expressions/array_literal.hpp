@@ -10,19 +10,19 @@ class ArrayLiteral : public Expression {
   friend class LocalDeclaration;
 
 private:
-  Vec<Expression *> values;
+  Vec<Expression*> values;
 
   //
 
-  IR::LocalValue *local;
+  IR::LocalValue* local;
   String          name;
   bool            isVar;
 
 public:
-  ArrayLiteral(Vec<Expression *> _values, utils::FileRange _fileRange);
+  ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange);
 
   useit bool hasLocal() const;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::arrayLiteral; }
 };

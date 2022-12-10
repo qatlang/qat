@@ -25,12 +25,11 @@ public:
    * @param _kind Nature of the float
    * @param _fileRange
    */
-  FloatType(const IR::FloatTypeKind _kind, const bool _variable,
-            const utils::FileRange _fileRange);
+  FloatType(const IR::FloatTypeKind _kind, const bool _variable, const FileRange _fileRange);
 
   static String kindToString(IR::FloatTypeKind kind);
 
-  IR::QatType *emit(IR::Context *ctx);
+  IR::QatType* emit(IR::Context* ctx);
 
   TypeKind typeKind() const;
 

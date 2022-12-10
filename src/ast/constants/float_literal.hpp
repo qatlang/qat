@@ -20,7 +20,7 @@ public:
    * @param _value String representation of the floating point number
    * @param _fileRange
    */
-  FloatLiteral(String _value, utils::FileRange _fileRange);
+  FloatLiteral(String _value, FileRange _fileRange);
 
   IR::ConstantValue* emit(IR::Context* ctx) override;
 

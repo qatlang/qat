@@ -5,24 +5,16 @@
 
 namespace qat::ast {
 
-CStringType::CStringType(bool _variable, utils::FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)) {}
+CStringType::CStringType(bool _variable, FileRange _fileRange) : QatType(_variable, std::move(_fileRange)) {}
 
-IR::QatType *CStringType::emit(IR::Context *ctx) {
-  return IR::CStringType::get(ctx->llctx);
-}
+IR::QatType* CStringType::emit(IR::Context* ctx) { return IR::CStringType::get(ctx->llctx); }
 
 TypeKind CStringType::typeKind() const { return TypeKind::cstring; }
 
 Json CStringType::toJson() const {
-  return Json()
-      ._("typeKind", "cstring")
-      ._("isVariable", isVariable())
-      ._("fileRange", fileRange);
+  return Json()._("typeKind", "cstring")._("isVariable", isVariable())._("fileRange", fileRange);
 }
 
-String CStringType::toString() const {
-  return isVariable() ? "var cstring" : "cstring";
-}
+String CStringType::toString() const { return isVariable() ? "var cstring" : "cstring"; }
 
 } // namespace qat::ast

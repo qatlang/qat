@@ -17,7 +17,7 @@ private:
 
 public:
   BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-             Maybe<utils::VisibilityKind> _visibility, utils::FileRange _fileRange);
+             Maybe<utils::VisibilityKind> _visibility, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   void             handleBrings(IR::Context* ctx) const override;

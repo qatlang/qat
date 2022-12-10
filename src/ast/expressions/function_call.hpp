@@ -8,14 +8,13 @@ namespace qat::ast {
 // FunctionCall represents a normal call to a function in the language
 class FunctionCall : public Expression {
 private:
-  Expression       *fnExpr;
-  Vec<Expression *> values;
+  Expression*      fnExpr;
+  Vec<Expression*> values;
 
 public:
-  FunctionCall(Expression *_fnExpr, Vec<Expression *> _arguments,
-               utils::FileRange _fileRange);
+  FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::functionCall; }
 };

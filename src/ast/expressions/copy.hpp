@@ -16,7 +16,7 @@ private:
   bool            isVar = false;
 
 public:
-  Copy(Expression* exp, utils::FileRange fileRange);
+  Copy(Expression* exp, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::copyExpression; }

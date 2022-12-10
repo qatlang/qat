@@ -14,13 +14,13 @@ namespace qat::ast {
 class Block : public Sentence {
 private:
   // All sentences in the block
-  Vec<Sentence *> sentences;
-  IR::Block      *irBlock;
+  Vec<Sentence*> sentences;
+  IR::Block*     irBlock;
 
 public:
-  Block(Vec<Sentence *> _sentences, utils::FileRange _fileRange);
+  Block(Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::block; }
 };

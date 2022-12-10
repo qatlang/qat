@@ -14,7 +14,7 @@
 
 namespace qat::IR {
 
-CoreType::CoreType(QatModule* mod, String _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
+CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
                    llvm::LLVMContext& ctx)
     : name(std::move(_name)), parent(mod), members(std::move(_members)), visibility(_visibility) {
   SHOW("Generating LLVM Type for core type members")
@@ -23,7 +23,7 @@ CoreType::CoreType(QatModule* mod, String _name, Vec<Member*> _members, const ut
     subtypes.push_back(mem->type->getLLVMType());
   }
   SHOW("All members' LLVM types obtained")
-  llvmType = llvm::StructType::create(ctx, subtypes, mod->getFullNameWithChild(name), false);
+  llvmType = llvm::StructType::create(ctx, subtypes, mod->getFullNameWithChild(name.value), false);
   if (mod) {
     mod->coreTypes.push_back(this);
   }
@@ -35,9 +35,9 @@ CoreType::~CoreType() {
   }
 }
 
-String CoreType::getFullName() const { return parent->getFullNameWithChild(name); }
+String CoreType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
-String CoreType::getName() const { return name; }
+Identifier CoreType::getName() const { return name; }
 
 u64 CoreType::getMemberCount() const { return members.size(); }
 
@@ -45,7 +45,7 @@ Vec<CoreType::Member*>& CoreType::getMembers() { return members; }
 
 bool CoreType::hasMember(const String& member) const {
   for (auto* mem : members) {
-    if (mem->name == member) {
+    if (mem->name.value == member) {
       return true;
     }
   }
@@ -54,7 +54,7 @@ bool CoreType::hasMember(const String& member) const {
 
 CoreType::Member* CoreType::getMember(const String& member) const {
   for (auto* mem : members) {
-    if (mem->name == member) {
+    if (mem->name.value == member) {
       return mem;
     }
   }
@@ -66,7 +66,7 @@ CoreType::Member* CoreType::getMemberAt(u64 index) { return members.at(index); }
 Maybe<usize> CoreType::getIndexOf(const String& member) const {
   Maybe<usize> result;
   for (usize i = 0; i < members.size(); i++) {
-    if (members.at(i)->name == member) {
+    if (members.at(i)->name.value == member) {
       result = i;
       break;
     }
@@ -74,12 +74,14 @@ Maybe<usize> CoreType::getIndexOf(const String& member) const {
   return result;
 }
 
-String CoreType::getMemberNameAt(u64 index) const { return (index < members.size()) ? members.at(index)->name : ""; }
+String CoreType::getMemberNameAt(u64 index) const {
+  return (index < members.size()) ? members.at(index)->name.value : "";
+}
 
 QatType* CoreType::getTypeOfMember(const String& member) const {
   Maybe<usize> result;
   for (usize i = 0; i < members.size(); i++) {
-    if (members.at(i)->name == member) {
+    if (members.at(i)->name.value == member) {
       result = i;
       break;
     }
@@ -94,7 +96,7 @@ QatType* CoreType::getTypeOfMember(const String& member) const {
 bool CoreType::hasStatic(const String& _name) const {
   bool result = false;
   for (auto* stm : staticMembers) {
-    if (stm->getName() == _name) {
+    if (stm->getName().value == _name) {
       return true;
     }
   }
@@ -103,8 +105,8 @@ bool CoreType::hasStatic(const String& _name) const {
 
 bool CoreType::hasMemberFunction(const String& fnName) const {
   for (auto* memberFunction : memberFunctions) {
-    SHOW("Found member function: " << memberFunction->getName())
-    if (memberFunction->getName() == fnName) {
+    SHOW("Found member function: " << memberFunction->getName().value)
+    if (memberFunction->getName().value == fnName) {
       return true;
     }
   }
@@ -113,7 +115,7 @@ bool CoreType::hasMemberFunction(const String& fnName) const {
 
 MemberFunction* CoreType::getMemberFunction(const String& fnName) const {
   for (auto* memberFunction : memberFunctions) {
-    if (memberFunction->getName() == fnName) {
+    if (memberFunction->getName().value == fnName) {
       return memberFunction;
     }
   }
@@ -122,7 +124,7 @@ MemberFunction* CoreType::getMemberFunction(const String& fnName) const {
 
 bool CoreType::hasStaticFunction(const String& fnName) const {
   for (const auto& fun : staticFunctions) {
-    if (fun->getName() == fnName) {
+    if (fun->getName().value == fnName) {
       return true;
     }
   }
@@ -131,21 +133,21 @@ bool CoreType::hasStaticFunction(const String& fnName) const {
 
 MemberFunction* CoreType::getStaticFunction(const String& fnName) const {
   for (auto* staticFunction : staticFunctions) {
-    if (staticFunction->getName() == fnName) {
+    if (staticFunction->getName().value == fnName) {
       return staticFunction;
     }
   }
   return nullptr;
 }
 
-void CoreType::addStaticMember(const String& name, QatType* type, bool variability, Value* initial,
+void CoreType::addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
                                const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx) {
   staticMembers.push_back(new StaticMember(this, name, type, variability, initial, visibility));
 }
 
 bool CoreType::hasBinaryOperator(const String& opr, IR::QatType* type) const {
   for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
       auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
       if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
         return true;
@@ -157,7 +159,7 @@ bool CoreType::hasBinaryOperator(const String& opr, IR::QatType* type) const {
 
 MemberFunction* CoreType::getBinaryOperator(const String& opr, IR::QatType* type) const {
   for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
       auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
       if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
         return bin;
@@ -169,7 +171,7 @@ MemberFunction* CoreType::getBinaryOperator(const String& opr, IR::QatType* type
 
 bool CoreType::hasUnaryOperator(const String& opr) const {
   for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName(), "'")[1] == opr) {
+    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
       return true;
     }
   }
@@ -178,7 +180,7 @@ bool CoreType::hasUnaryOperator(const String& opr) const {
 
 MemberFunction* CoreType::getUnaryOperator(const String& opr) const {
   for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName(), "'")[1] == opr) {
+    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
       return unr;
     }
   }
@@ -188,7 +190,7 @@ MemberFunction* CoreType::getUnaryOperator(const String& opr) const {
 u64 CoreType::getOperatorVariantIndex(const String& opr) const {
   u64 index = 0;
   for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName(), "'")[1] == opr) {
+    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
       index++;
     }
   }
@@ -350,7 +352,7 @@ void CoreType::setExplicitCopy() { explicitCopy = true; }
 
 void CoreType::setExplicitMove() { explicitMove = true; }
 
-TemplateCoreType::TemplateCoreType(String _name, Vec<ast::TemplatedType*> _templates,
+TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::TemplatedType*> _templates,
                                    ast::DefineCoreType* _defineCoreType, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
     : name(std::move(_name)), templates(std::move(_templates)), defineCoreType(_defineCoreType), parent(_parent),
@@ -359,7 +361,7 @@ TemplateCoreType::TemplateCoreType(String _name, Vec<ast::TemplatedType*> _templ
   parent->templateCoreTypes.push_back(this);
 }
 
-String TemplateCoreType::getName() const { return name; }
+Identifier TemplateCoreType::getName() const { return name; }
 
 utils::VisibilityInfo TemplateCoreType::getVisibility() const { return visibility; }
 
@@ -369,7 +371,7 @@ usize TemplateCoreType::getVariantCount() const { return variants.size(); }
 
 QatModule* TemplateCoreType::getModule() const { return parent; }
 
-CoreType* TemplateCoreType::fillTemplates(Vec<QatType*>& types, IR::Context* ctx, utils::FileRange range) {
+CoreType* TemplateCoreType::fillTemplates(Vec<QatType*>& types, IR::Context* ctx, FileRange range) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
@@ -378,7 +380,7 @@ CoreType* TemplateCoreType::fillTemplates(Vec<QatType*>& types, IR::Context* ctx
   for (usize i = 0; i < templates.size(); i++) {
     templates.at(i)->setType(types.at(i));
   }
-  auto variantName = IR::Logic::getTemplateVariantName(name, types);
+  auto variantName = IR::Logic::getTemplateVariantName(name.value, types);
   defineCoreType->setVariantName(variantName);
   auto prevTemp       = ctx->activeTemplate;
   ctx->activeTemplate = IR::TemplateEntityMarker{variantName, IR::TemplateEntityType::coreType, range};

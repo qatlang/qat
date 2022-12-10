@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-Default::Default(utils::FileRange _fileRange) : Expression(std::move(_fileRange)) {}
+Default::Default(FileRange _fileRange) : Expression(std::move(_fileRange)) {}
 
 void Default::setType(IR::QatType* typ) { candidateType = typ; }
 

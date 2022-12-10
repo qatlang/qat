@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-Copy::Copy(Expression* _exp, utils::FileRange _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
+Copy::Copy(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
 
 IR::Value* Copy::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);

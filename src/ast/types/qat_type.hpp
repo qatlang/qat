@@ -20,8 +20,8 @@ private:
   static Vec<QatType*> allTypes;
 
 public:
-  QatType(bool _variable, utils::FileRange _fileRange);
-  utils::FileRange fileRange;
+  QatType(bool _variable, FileRange _fileRange);
+  FileRange fileRange;
 
   virtual ~QatType() = default;
   useit bool                 isConstant() const { return !variable; }

@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-CustomFloatLiteral::CustomFloatLiteral(String _value, String _kind, utils::FileRange _fileRange)
+CustomFloatLiteral::CustomFloatLiteral(String _value, String _kind, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(std::move(_value)), kind(std::move(_kind)) {}
 
 IR::ConstantValue* CustomFloatLiteral::emit(IR::Context* ctx) {

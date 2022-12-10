@@ -38,7 +38,7 @@ enum class TemplateEntityType {
 struct TemplateEntityMarker {
   String             name;
   TemplateEntityType type;
-  utils::FileRange   fileRange;
+  FileRange          fileRange;
   u64                warningCount = 0;
 };
 
@@ -76,12 +76,12 @@ public:
 };
 
 class CodeProblem {
-  bool             isError;
-  String           message;
-  utils::FileRange range;
+  bool      isError;
+  String    message;
+  FileRange range;
 
 public:
-  CodeProblem(bool isError, String message, utils::FileRange range);
+  CodeProblem(bool isError, String message, FileRange range);
   operator Json() const;
 };
 
@@ -93,7 +93,7 @@ private:
 
   Vec<IR::QatModule*> modulesWithErrors;
   bool                moduleAlreadyHasErrors(IR::QatModule* mod);
-  void                addError(String message, utils::FileRange fileRange);
+  void                addError(String message, FileRange fileRange);
   QatSitter*          sitter = nullptr;
 
 public:
@@ -127,8 +127,8 @@ public:
   useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
   void                        writeJsonResult(bool status) const;
 
-  void          Error(const String& message, const utils::FileRange& fileRange);
-  void          Warning(const String& message, const utils::FileRange& fileRange) const;
+  void          Error(const String& message, const FileRange& fileRange);
+  void          Warning(const String& message, const FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::yellow);
   static String highlightWarning(const String& message, const char* color = colors::yellow);
   ~Context();

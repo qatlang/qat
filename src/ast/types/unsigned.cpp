@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, utils::FileRange _fileRange)
+UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth) {}
 
 IR::QatType* UnsignedType::emit(IR::Context* ctx) {

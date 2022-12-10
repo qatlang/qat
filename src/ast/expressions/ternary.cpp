@@ -10,7 +10,7 @@
 namespace qat::ast {
 
 TernaryExpression::TernaryExpression(Expression* _condition, Expression* _trueExpr, Expression* _falseExpr,
-                                     utils::FileRange _fileRange)
+                                     FileRange _fileRange)
     : Expression(std::move(_fileRange)), condition(_condition), trueExpr(_trueExpr), falseExpr(_falseExpr) {}
 
 IR::Value* TernaryExpression::emit(IR::Context* ctx) {

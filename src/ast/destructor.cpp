@@ -3,8 +3,8 @@
 
 namespace qat::ast {
 
-DestructorDefinition::DestructorDefinition(Vec<Sentence*> _sentences, utils::FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)) {}
+DestructorDefinition::DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
+    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), nameRange(std::move(_nameRange)) {}
 
 void DestructorDefinition::setCoreType(IR::CoreType* _coreType) const { coreType = _coreType; }
 
@@ -18,7 +18,7 @@ void DestructorDefinition::define(IR::Context* ctx) {
                    "necessary changes",
                fileRange);
   }
-  memberFn = IR::MemberFunction::CreateDestructor(coreType, fileRange, ctx->llctx);
+  memberFn = IR::MemberFunction::CreateDestructor(coreType, nameRange, fileRange, ctx->llctx);
 }
 
 IR::Value* DestructorDefinition::emit(IR::Context* ctx) {

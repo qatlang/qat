@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, utils::FileRange _fileRange)
+LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
 IR::Value* LoopInfinite::emit(IR::Context* ctx) {

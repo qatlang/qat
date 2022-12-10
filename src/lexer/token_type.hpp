@@ -39,7 +39,6 @@ enum class TokenType {
   bracketOpen,
   bracketClose,
   colon,
-  alias,
   For,
   constant,
   Static,

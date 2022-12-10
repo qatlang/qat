@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-FutureType::FutureType(bool _isVar, ast::QatType* _subType, utils::FileRange _fileRange)
+FutureType::FutureType(bool _isVar, ast::QatType* _subType, FileRange _fileRange)
     : QatType(_isVar, std::move(_fileRange)), subType(_subType) {}
 
 IR::QatType* FutureType::emit(IR::Context* ctx) { return IR::FutureType::get(subType->emit(ctx), ctx); }

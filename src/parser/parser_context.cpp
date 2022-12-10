@@ -5,25 +5,8 @@ namespace qat::parser {
 
 ParserContext::ParserContext() = default;
 
-ParserContext::ParserContext(ParserContext &other)
-    : aliases(other.aliases), templates(other.templates) {}
-
-void ParserContext::add_alias(const String name, const String value) {
-  if (!aliases.contains(name)) {
-    aliases.insert({name, value});
-  }
-}
-
-String ParserContext::get_alias(const String name) const {
-  return aliases.find(name)->second;
-}
-
-bool ParserContext::has_alias(const String name) const {
-  return aliases.contains(name);
-}
-
-bool ParserContext::hasTemplate(const String &name) const {
-  for (auto *tname : templates) {
+bool ParserContext::hasTemplate(const String& name) const {
+  for (auto* tname : templates) {
     if (tname->getName() == name) {
       return true;
     }
@@ -31,11 +14,9 @@ bool ParserContext::hasTemplate(const String &name) const {
   return false;
 }
 
-void ParserContext::addTemplate(ast::TemplatedType *templateType) {
-  templates.push_back(templateType);
-}
+void ParserContext::addTemplate(ast::TemplatedType* templateType) { templates.push_back(templateType); }
 
-void ParserContext::removeTemplate(const String &name) {
+void ParserContext::removeTemplate(const String& name) {
   for (auto temp = templates.begin(); temp != templates.end(); temp++) {
     if ((*temp)->getName() == name) {
       templates.erase(temp);
@@ -44,8 +25,8 @@ void ParserContext::removeTemplate(const String &name) {
   }
 }
 
-ast::TemplatedType *ParserContext::getTemplate(const String &name) {
-  for (auto *temp : templates) {
+ast::TemplatedType* ParserContext::getTemplate(const String& name) {
+  for (auto* temp : templates) {
     if (temp->getName() == name) {
       return temp;
     }
@@ -53,10 +34,8 @@ ast::TemplatedType *ParserContext::getTemplate(const String &name) {
   return nullptr;
 }
 
-ast::TemplatedType *
-ParserContext::duplicateTemplate(const String &name, bool isVariable,
-                                 utils::FileRange fileRange) {
-  for (auto *temp : templates) {
+ast::TemplatedType* ParserContext::duplicateTemplate(const String& name, bool isVariable, FileRange fileRange) {
+  for (auto* temp : templates) {
     if (temp->getName() == name) {
       return new ast::TemplatedType(temp->getID(), name, isVariable, fileRange);
     }

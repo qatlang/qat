@@ -28,7 +28,7 @@ private:
 
 public:
   PointerType(QatType* _type, bool _variable, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy, bool _isMultiPtr,
-              utils::FileRange _fileRange);
+              FileRange _fileRange);
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;

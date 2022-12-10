@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-NullPointer::NullPointer(utils::FileRange _fileRange) : ConstantExpression(std::move(_fileRange)) {}
+NullPointer::NullPointer(FileRange _fileRange) : ConstantExpression(std::move(_fileRange)) {}
 
 void NullPointer::setType(IR::PointerType* typ) { candidateType = typ; }
 

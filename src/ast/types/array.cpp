@@ -3,12 +3,10 @@
 
 namespace qat::ast {
 
-ArrayType::ArrayType(QatType *_element_type, const uint64_t _length,
-                     const bool _variable, const utils::FileRange _fileRange)
-    : element_type(_element_type), length(_length),
-      QatType(_variable, _fileRange) {}
+ArrayType::ArrayType(QatType* _element_type, const uint64_t _length, const bool _variable, const FileRange _fileRange)
+    : element_type(_element_type), length(_length), QatType(_variable, _fileRange) {}
 
-IR::QatType *ArrayType::emit(IR::Context *ctx) {
+IR::QatType* ArrayType::emit(IR::Context* ctx) {
   return IR::ArrayType::get(element_type->emit(ctx), length, ctx->llctx);
 }
 
@@ -23,8 +21,7 @@ Json ArrayType::toJson() const {
 }
 
 String ArrayType::toString() const {
-  return (isVariable() ? "var " : "") + element_type->toString() + "[" +
-         std::to_string(length) + "]";
+  return (isVariable() ? "var " : "") + element_type->toString() + "[" + std::to_string(length) + "]";
 }
 
 } // namespace qat::ast

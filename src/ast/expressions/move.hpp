@@ -16,7 +16,7 @@ private:
   bool            isVar = false;
 
 public:
-  Move(Expression* exp, utils::FileRange fileRange);
+  Move(Expression* exp, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::moveExpression; }

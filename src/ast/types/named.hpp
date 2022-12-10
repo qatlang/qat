@@ -14,16 +14,15 @@ namespace qat::ast {
 // NamedType is a type, usually a core type, that can be identified by a name
 class NamedType : public QatType {
 private:
-  u32    relative;
-  String name;
+  u32             relative;
+  Vec<Identifier> names;
 
 public:
-  NamedType(u32 relative, String name, bool variable,
-            utils::FileRange fileRange);
+  NamedType(u32 relative, Vec<Identifier> names, bool variable, FileRange fileRange);
 
   useit String getName() const;
   useit u32    getRelative() const;
-  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;

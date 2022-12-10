@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-Await::Await(Expression* _exp, utils::FileRange _range) : Expression(std::move(_range)), exp(_exp) {}
+Await::Await(Expression* _exp, FileRange _range) : Expression(std::move(_range)), exp(_exp) {}
 
 IR::Value* Await::emit(IR::Context* ctx) {
   SHOW("Exp nodetype is: " << (int)exp->nodeType())

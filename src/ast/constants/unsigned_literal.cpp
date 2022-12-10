@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-UnsignedLiteral::UnsignedLiteral(String _value, utils::FileRange _fileRange)
+UnsignedLiteral::UnsignedLiteral(String _value, FileRange _fileRange)
     : Expression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::ConstantValue* UnsignedLiteral::emit(IR::Context* ctx) {

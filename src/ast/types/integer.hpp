@@ -11,7 +11,7 @@ private:
   const u32 bitWidth;
 
 public:
-  IntegerType(u32 _bitWidth, bool _variable, utils::FileRange _fileRange);
+  IntegerType(u32 _bitWidth, bool _variable, FileRange _fileRange);
 
   IR::QatType* emit(IR::Context* ctx);
   TypeKind     typeKind() const;

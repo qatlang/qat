@@ -6,34 +6,27 @@
 
 namespace qat::IR {
 
-DefinitionType::DefinitionType(String _name, QatType *_subType, QatModule *_mod,
-                               const utils::VisibilityInfo &_visibInfo)
-    : name(std::move(_name)), subType(_subType), parent(_mod),
-      visibInfo(_visibInfo) {
+DefinitionType::DefinitionType(Identifier _name, QatType* _subType, QatModule* _mod,
+                               const utils::VisibilityInfo& _visibInfo)
+    : name(std::move(_name)), subType(_subType), parent(_mod), visibInfo(_visibInfo) {
   parent->typeDefs.push_back(this);
   llvmType = subType->getLLVMType();
 }
 
-utils::VisibilityInfo DefinitionType::getVisibility() const {
-  return visibInfo;
-}
+utils::VisibilityInfo DefinitionType::getVisibility() const { return visibInfo; }
 
-String DefinitionType::getName() const { return name; }
+Identifier DefinitionType::getName() const { return name; }
 
-String DefinitionType::getFullName() const {
-  return parent ? parent->getFullNameWithChild(name) : name;
-}
+String DefinitionType::getFullName() const { return parent ? parent->getFullNameWithChild(name.value) : name.value; }
 
-QatModule *DefinitionType::getParent() { return parent; }
+QatModule* DefinitionType::getParent() { return parent; }
 
-QatType *DefinitionType::getSubType() { return subType; }
+QatType* DefinitionType::getSubType() { return subType; }
 
 TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 
-String DefinitionType::toString() const { return name; }
+String DefinitionType::toString() const { return name.value; }
 
-Json DefinitionType::toJson() const {
-  return Json()._("type", "definition")._("subtype", subType->getID());
-}
+Json DefinitionType::toJson() const { return Json()._("type", "definition")._("subtype", subType->getID()); }
 
 } // namespace qat::IR

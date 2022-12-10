@@ -11,13 +11,13 @@ namespace qat::ast {
 
 class BroughtGroup {
 private:
-  String           parent;
-  Vec<String>      members;
-  utils::FileRange fileRange;
+  String      parent;
+  Vec<String> members;
+  FileRange   fileRange;
 
 public:
-  BroughtGroup(String _parent, Vec<String> _members, utils::FileRange _fileRange);
-  BroughtGroup(String _parent, utils::FileRange _range);
+  BroughtGroup(String _parent, Vec<String> _members, FileRange _fileRange);
+  BroughtGroup(String _parent, FileRange _range);
 
   useit String getParent() const;
   useit Vec<String> getMembers() const;
@@ -31,7 +31,7 @@ private:
   utils::VisibilityInfo visibility;
 
 public:
-  BringEntities(Vec<BroughtGroup*> _entities, const utils::VisibilityInfo& _visibility, utils::FileRange _fileRange);
+  BringEntities(Vec<BroughtGroup*> _entities, const utils::VisibilityInfo& _visibility, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

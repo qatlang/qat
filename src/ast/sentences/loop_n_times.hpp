@@ -13,17 +13,15 @@ namespace qat::ast {
  *
  */
 class LoopNTimes : public Sentence {
-  Vec<Sentence *> sentences;
-  Expression     *count;
-  Maybe<String>   tag;
-  bool            isAlias;
+  Vec<Sentence*>    sentences;
+  Expression*       count;
+  Maybe<Identifier> tag;
 
 public:
-  LoopNTimes(Expression *_count, Vec<Sentence *> _snts, Maybe<String> _tag,
-             bool _isAlias, utils::FileRange _fileRange);
+  LoopNTimes(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange);
 
   useit bool hasTag() const;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::loopTimes; }
   useit Json       toJson() const final;
 };

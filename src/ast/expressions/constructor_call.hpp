@@ -33,7 +33,7 @@ private:
 
 public:
   ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<QatType*> _ownerType,
-                  Maybe<Expression*> _ownCount, utils::FileRange _fileRange);
+                  Maybe<Expression*> _ownCount, FileRange _fileRange);
 
   useit bool isOwning() const;
 

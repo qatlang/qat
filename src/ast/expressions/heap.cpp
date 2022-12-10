@@ -11,7 +11,7 @@ namespace qat::ast {
 
 #define MALLOC_ARG_BITWIDTH 64
 
-HeapGet::HeapGet(ast::QatType* _type, ast::Expression* _count, utils::FileRange _fileRange)
+HeapGet::HeapGet(ast::QatType* _type, ast::Expression* _count, FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), count(_count) {}
 
 IR::Value* HeapGet::emit(IR::Context* ctx) {
@@ -85,7 +85,7 @@ Json HeapGet::toJson() const {
       ._("fileRange", fileRange);
 }
 
-HeapPut::HeapPut(Expression* pointer, utils::FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
+HeapPut::HeapPut(Expression* pointer, FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
 
 IR::Value* HeapPut::emit(IR::Context* ctx) {
   if (ptr->nodeType() == NodeType::nullPointer) {
@@ -156,7 +156,7 @@ Json HeapPut::toJson() const {
   return Json()._("nodeType", "heapPut")._("pointer", ptr->toJson())._("fileRange", fileRange);
 }
 
-HeapGrow::HeapGrow(QatType* _type, Expression* _ptr, Expression* _count, utils::FileRange _fileRange)
+HeapGrow::HeapGrow(QatType* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), ptr(_ptr), count(_count) {}
 
 IR::Value* HeapGrow::emit(IR::Context* ctx) {

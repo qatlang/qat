@@ -3,6 +3,7 @@
 
 #include "../memory_tracker.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
 #include "./function.hpp"
@@ -71,7 +72,7 @@ class QatModule : public Uniq {
   friend class TemplateCoreType;
 
 public:
-  QatModule(String _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
+  QatModule(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
             const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
 
   static Vec<QatModule*> allModules;
@@ -82,7 +83,7 @@ public:
   useit static QatModule* getFolderModule(const fs::path& fPath);
 
 private:
-  String                         name;
+  Identifier                     name;
   ModuleType                     moduleType;
   bool                           rootLib = false;
   ModuleInfo                     moduleInfo;
@@ -119,7 +120,7 @@ private:
   Vec<u64>           unsignedBitwidths;
   Vec<FloatTypeKind> floatKinds;
 
-  Vec<Pair<QatModule*, utils::FileRange>> mentions;
+  Vec<Pair<QatModule*, FileRange>> mentions;
 
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
@@ -137,7 +138,7 @@ private:
 
   void addMember(QatModule* mod);
 
-  void       addNamedSubmodule(const String& name, const String& _filename, ModuleType type,
+  void       addNamedSubmodule(const Identifier& name, const String& _filename, ModuleType type,
                                const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
   void       closeSubmodule();
   useit bool shouldPrefixName() const;
@@ -145,15 +146,15 @@ private:
 public:
   ~QatModule();
 
-  useit static QatModule* Create(const String& name, const fs::path& filepath, const fs::path& basePath,
+  useit static QatModule* Create(const Identifier& name, const fs::path& filepath, const fs::path& basePath,
                                  ModuleType type, const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
-  useit static QatModule* CreateSubmodule(QatModule* parent, fs::path _filepath, fs::path basePath, String name,
+  useit static QatModule* CreateSubmodule(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
                                           ModuleType type, const utils::VisibilityInfo& visibilityInfo,
                                           llvm::LLVMContext& ctx);
-  useit static QatModule* CreateFile(QatModule* parent, fs::path _filepath, fs::path basePath, String name,
+  useit static QatModule* CreateFile(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
                                      Vec<String> content, Vec<ast::Node*>, utils::VisibilityInfo visibilityInfo,
                                      llvm::LLVMContext& ctx);
-  useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, String name,
+  useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, Identifier name,
                                         Vec<String> content, Vec<ast::Node*> nodes,
                                         const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
 
@@ -163,6 +164,7 @@ public:
   useit String     getFullName() const;
   useit String     getWritableName() const;
   useit String     getName() const;
+  useit Identifier getNameIdentifier() const;
   useit String     getFullNameWithChild(const String& name) const;
   useit QatModule* getActive();
   useit QatModule* getParentFile();
@@ -170,6 +172,8 @@ public:
   useit Function*  getGlobalInitialiser(IR::Context* ctx);
   void             incrementNonConstGlobalCounter();
   useit bool       shouldCallInitialiser() const;
+  void             setFileRange(FileRange fileRange);
+  FileRange        getFileRange() const;
 
   useit bool       hasClosestParentLib() const;
   useit QatModule* getClosestParentLib();
@@ -179,8 +183,8 @@ public:
   useit bool                   hasNthParent(u32 n) const;
   useit QatModule*             getNthParent(u32 n);
   useit const utils::VisibilityInfo& getVisibility() const;
-  useit Function* createFunction(const String& name, QatType* returnType, bool isReturnTypeVariable, bool isAsync,
-                                 Vec<Argument> args, bool isVariadic, const utils::FileRange& fileRange,
+  useit Function* createFunction(const Identifier& name, QatType* returnType, bool isReturnTypeVariable, bool isAsync,
+                                 Vec<Argument> args, bool isVariadic, const FileRange& fileRange,
                                  const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
                                  llvm::LLVMContext& ctx);
   useit bool      isSubmodule() const;
@@ -194,8 +198,8 @@ public:
   useit bool hasMainFn() const;
   void       setHasMainFn();
 
-  void                                           addMention(IR::QatModule* otherMod, utils::FileRange fileRange);
-  Vec<Pair<QatModule*, utils::FileRange>> const& getMentions() const;
+  void                                    addMention(IR::QatModule* otherMod, FileRange fileRange);
+  Vec<Pair<QatModule*, FileRange>> const& getMentions() const;
 
   // LIB
 
@@ -203,9 +207,9 @@ public:
   useit bool hasBroughtLib(const String& name) const;
   useit Pair<bool, String> hasAccessibleLibInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit QatModule*         getLib(const String& name, const utils::RequesterInfo& reqInfo);
-  void                     openLib(const String& name, const String& filename, const utils::VisibilityInfo& visib_info,
-                                   llvm::LLVMContext& ctx);
-  void                     closeLib();
+  void openLib(const Identifier& name, const String& filename, const utils::VisibilityInfo& visib_info,
+               llvm::LLVMContext& ctx);
+  void closeLib();
 
   // BOX
 
@@ -213,7 +217,7 @@ public:
   useit bool       hasBroughtBox(const String& name) const;
   useit QatModule* getBox(const String& name, const utils::RequesterInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleBoxInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
-  void                     openBox(const String& name, Maybe<utils::VisibilityInfo> visib_info);
+  void                     openBox(const Identifier& name, Maybe<utils::VisibilityInfo> visib_info);
   void                     closeBox();
 
   // FUNCTION
@@ -294,7 +298,7 @@ public:
   // BRING ENTITIES
 
   void bringModule(QatModule* other, const utils::VisibilityInfo& _visibility);
-  void bringNamedModule(const String& _name, QatModule* other, const utils::VisibilityInfo& _visibility);
+  void bringNamedModule(const Identifier& _name, QatModule* other, const utils::VisibilityInfo& _visibility);
   // void  bring_entity(const String& name, const utils::VisibilityInfo& _visibility);
   // void  bring_named_entity(const String& name, const String& entity, const utils::VisibilityInfo& _visibility);
   useit llvm::GlobalVariable* get_global_variable(String name, utils::RequesterInfo& req_info);

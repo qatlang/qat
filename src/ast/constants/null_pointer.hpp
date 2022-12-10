@@ -15,7 +15,7 @@ private:
   IR::PointerType* candidateType = nullptr;
 
 public:
-  explicit NullPointer(utils::FileRange _fileRange);
+  explicit NullPointer(FileRange _fileRange);
 
   void setType(IR::PointerType* typ);
 

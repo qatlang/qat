@@ -15,7 +15,7 @@ private:
   String kind;
 
 public:
-  CustomFloatLiteral(String _value, String _kind, utils::FileRange _fileRange);
+  CustomFloatLiteral(String _value, String _kind, FileRange _fileRange);
 
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;

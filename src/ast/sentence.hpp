@@ -7,15 +7,15 @@ namespace qat::ast {
 
 class Sentence : public Node {
 public:
-  Sentence(utils::FileRange _fileRange) : Node(std::move(_fileRange)) {}
+  Sentence(FileRange _fileRange) : Node(std::move(_fileRange)) {}
 
-  useit IR::Value *emit(IR::Context *ctx) override = 0;
+  useit IR::Value* emit(IR::Context* ctx) override = 0;
   useit NodeType   nodeType() const override       = 0;
   useit Json       toJson() const override         = 0;
   ~Sentence() override                             = default;
 };
 
-void emitSentences(const Vec<Sentence *> &sentences, IR::Context *ctx);
+void emitSentences(const Vec<Sentence*>& sentences, IR::Context* ctx);
 
 } // namespace qat::ast
 

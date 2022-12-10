@@ -2,12 +2,10 @@
 
 namespace qat::ast {
 
-RadixLiteral::RadixLiteral(String _value, u64 _radix,
-                           utils::FileRange _fileRange)
-    : value(std::move(_value)), radix(_radix),
-      Expression(std::move(_fileRange)) {}
+RadixLiteral::RadixLiteral(String _value, u64 _radix, FileRange _fileRange)
+    : value(std::move(_value)), radix(_radix), Expression(std::move(_fileRange)) {}
 
-IR::Value *RadixLiteral::emit(IR::Context *ctx) {
+IR::Value* RadixLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("This expression is not assignable", fileRange);
   }
@@ -28,10 +26,7 @@ IR::Value *RadixLiteral::emit(IR::Context *ctx) {
 }
 
 Json RadixLiteral::toJson() const {
-  return Json()
-      ._("nodeType", "radixLiteral")
-      ._("value", value)
-      ._("fileRange", fileRange);
+  return Json()._("nodeType", "radixLiteral")._("value", value)._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

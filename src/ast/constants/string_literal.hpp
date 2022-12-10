@@ -15,9 +15,9 @@ private:
 
 public:
   // StringLiteral is used to represent literal strings
-  StringLiteral(String _value, utils::FileRange _fileRange);
+  StringLiteral(String _value, FileRange _fileRange);
 
-  void addValue(const String& val, const utils::FileRange& fRange);
+  void addValue(const String& val, const FileRange& fRange);
 
   // Get the value of the string
   useit String get_value() const;

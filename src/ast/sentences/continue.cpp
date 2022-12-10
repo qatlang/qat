@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-Continue::Continue(Maybe<String> _tag, utils::FileRange _fileRange)
+Continue::Continue(Maybe<Identifier> _tag, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), tag(std::move(_tag)) {}
 
 IR::Value* Continue::emit(IR::Context* ctx) {
@@ -13,7 +13,7 @@ IR::Value* Continue::emit(IR::Context* ctx) {
   } else {
     if (tag.has_value()) {
       for (usize i = (ctx->loopsInfo.size() - 1); i >= 0; i--) {
-        if (tag.value() == ctx->loopsInfo.at(i)->name) {
+        if (tag.value().value == ctx->loopsInfo.at(i)->name) {
           if (ctx->loopsInfo.at(i)->type == IR::LoopType::infinite) {
             IR::destroyLocalsFrom(ctx, ctx->loopsInfo.at(i)->mainBlock);
             return new IR::Value(IR::addBranch(ctx->builder, ctx->loopsInfo.at(i)->mainBlock->getBB()),
@@ -26,7 +26,7 @@ IR::Value* Continue::emit(IR::Context* ctx) {
           return nullptr;
         }
       }
-      ctx->Error("The provided tag " + ctx->highlightError(tag.value()) +
+      ctx->Error("The provided tag " + ctx->highlightError(tag->value) +
                      " does not match the tag of any parent loops or switches",
                  fileRange);
     } else {
@@ -50,6 +50,8 @@ IR::Value* Continue::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-Json Continue::toJson() const { return Json()._("hasTag", tag.has_value())._("tag", tag.value_or("")); }
+Json Continue::toJson() const {
+  return Json()._("hasTag", tag.has_value())._("tag", tag.has_value() ? tag.value() : JsonValue());
+}
 
 } // namespace qat::ast

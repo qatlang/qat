@@ -15,6 +15,7 @@
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/helpers.hpp"
+#include "../utils/identifier.hpp"
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
 #include "./token_family.hpp"
@@ -54,24 +55,23 @@ public:
   void clearBroughtPaths();
   void setTokens(Deque<lexer::Token>* tokens);
   void parseCoreType(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
-  void parseMixType(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<String, Maybe<ast::QatType*>>>& uRef,
-                    Vec<utils::FileRange>& fileRanges, Maybe<usize>& defaultVal);
-  void parseChoiceType(usize from, usize upto,
-                       Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>>& fields,
-                       Maybe<usize>&                                                                 defaultVal);
+  void parseMixType(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef,
+                    Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
+  void parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
+                       Maybe<usize>& defaultVal);
   void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
                           Vec<Pair<ast::MatchValue*, Vec<ast::Sentence*>>>& chain, Maybe<Vec<ast::Sentence*>>& elseCase,
                           bool isTypeMatch);
-  void Error(const String& message, const utils::FileRange& fileRange);
-  static void Warning(const String& message, const utils::FileRange& fileRange);
+  void Error(const String& message, const FileRange& fileRange);
+  static void Warning(const String& message, const FileRange& fileRange);
 
   useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);
   useit ast::BringPaths* parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
-                                           const utils::FileRange& start);
+                                           const FileRange& start);
   useit Vec<fs::path>& getBroughtPaths();
   useit Vec<fs::path>& getMemberPaths();
   void                 clearMemberPaths();
-  useit ast::ModInfo* parseModuleInfo(usize from, usize upto, const utils::FileRange& startRange);
+  useit ast::ModInfo* parseModuleInfo(usize from, usize upto, const FileRange& startRange);
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
   useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);

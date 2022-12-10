@@ -7,31 +7,25 @@ namespace qat::ast {
 
 class DefineChoiceType : public Node {
 public:
-  struct Field {
-    String           name;
-    utils::FileRange range;
-  };
-
   struct Value {
-    i64              data;
-    utils::FileRange range;
+    i64       data;
+    FileRange range;
   };
 
 private:
-  String                         name;
-  Vec<Pair<Field, Maybe<Value>>> fields;
-  utils::VisibilityKind          visibility;
-  Maybe<usize>                   defaultVal;
+  Identifier                          name;
+  Vec<Pair<Identifier, Maybe<Value>>> fields;
+  utils::VisibilityKind               visibility;
+  Maybe<usize>                        defaultVal;
 
 public:
-  DefineChoiceType(String name, Vec<Pair<Field, Maybe<Value>>> fields,
-                   Maybe<usize> defaultVal, utils::VisibilityKind visibility,
-                   utils::FileRange fileRange);
+  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<Value>>> fields, Maybe<usize> defaultVal,
+                   utils::VisibilityKind visibility, FileRange fileRange);
 
-  void  createType(IR::Context *ctx);
-  void  defineType(IR::Context *ctx) final;
-  void  define(IR::Context *ctx) final {}
-  useit IR::Value *emit(IR::Context *ctx) final { return nullptr; }
+  void  createType(IR::Context* ctx);
+  void  defineType(IR::Context* ctx) final;
+  void  define(IR::Context* ctx) final {}
+  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::defineChoiceType; }
 };

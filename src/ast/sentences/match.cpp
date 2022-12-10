@@ -7,42 +7,32 @@ MixMatchValue*        MatchValue::asMix() { return (MixMatchValue*)this; }
 ChoiceMatchValue*     MatchValue::asChoice() { return (ChoiceMatchValue*)this; }
 ExpressionMatchValue* MatchValue::asExp() { return (ExpressionMatchValue*)this; }
 
-MixMatchValue::MixMatchValue(Pair<String, utils::FileRange> _name, Maybe<Pair<String, utils::FileRange>> _valueName,
-                             bool _isVar)
+MixMatchValue::MixMatchValue(Identifier _name, Maybe<Identifier> _valueName, bool _isVar)
     : name(std::move(_name)), valueName(std::move(_valueName)), isVar(_isVar) {}
 
-String MixMatchValue::getName() const { return name.first; }
-
-utils::FileRange MixMatchValue::getNameRange() const { return name.second; }
+Identifier MixMatchValue::getName() const { return name; }
 
 bool MixMatchValue::hasValueName() const { return valueName.has_value(); }
 
 bool MixMatchValue::isVariable() const { return isVar; }
 
-String MixMatchValue::getValueName() const { return valueName->first; }
-
-utils::FileRange MixMatchValue::getValueRange() const { return valueName->second; }
+Identifier MixMatchValue::getValueName() const { return valueName.value(); }
 
 Json MixMatchValue::toJson() const {
   return Json()
       ._("matchValueType", "mix")
-      ._("name", name.first)
-      ._("nameFileRange", name.second)
+      ._("name", name)
       ._("hasValue", valueName.has_value())
-      ._("valueName", valueName.has_value() ? valueName->first : "")
-      ._("valueFileRange", valueName.has_value() ? valueName->second : JsonValue());
+      ._("valueName", valueName.has_value() ? valueName.value() : JsonValue());
 }
 
-ChoiceMatchValue::ChoiceMatchValue(String _name, utils::FileRange fileRange)
-    : name(std::move(_name)), range(std::move(fileRange)) {}
+ChoiceMatchValue::ChoiceMatchValue(Identifier _name) : name(std::move(_name)) {}
 
-String ChoiceMatchValue::getName() const { return name; }
+Identifier ChoiceMatchValue::getName() const { return name; }
 
-utils::FileRange ChoiceMatchValue::getFileRange() const { return range; }
+FileRange ChoiceMatchValue::getFileRange() const { return name.range; }
 
-Json ChoiceMatchValue::toJson() const {
-  return Json()._("matchValueType", "enum")._("name", name)._("nameFileRange", range);
-}
+Json ChoiceMatchValue::toJson() const { return Json()._("matchValueType", "choice")._("name", name); }
 
 ExpressionMatchValue::ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
 
@@ -53,7 +43,7 @@ Json ExpressionMatchValue::toJson() const {
 }
 
 Match::Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<MatchValue*, Vec<Sentence*>>> _chain,
-             Maybe<Vec<Sentence*>> _elseCase, utils::FileRange _fileRange)
+             Maybe<Vec<Sentence*>> _elseCase, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(std::move(_chain)),
       elseCase(std::move(_elseCase)) {}
 
@@ -75,7 +65,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
       ctx->Error("Invalid value for matching", candidate->fileRange);
     }
-    Vec<String> mentionedFields;
+    Vec<Identifier> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto& section = chain.at(i);
       if (section.first->getType() != MatchType::mix) {
@@ -89,26 +79,26 @@ IR::Value* Match::emit(IR::Context* ctx) {
           ctx->Error("The expression being matched does not possess variability and "
                      "hence the matched "
                      "case cannot use a variable reference to the subtype value",
-                     uMatch->getValueRange());
+                     uMatch->getValueName().range);
         }
       }
-      auto subRes = mTy->hasSubTypeWithName(uMatch->getName());
+      auto subRes = mTy->hasSubTypeWithName(uMatch->getName().value);
       if (!subRes.first) {
-        ctx->Error("No field named " + ctx->highlightError(uMatch->getName()) + " in mix type " +
+        ctx->Error("No field named " + ctx->highlightError(uMatch->getName().value) + " in mix type " +
                        ctx->highlightError(mTy->getFullName()),
-                   uMatch->getNameRange());
+                   uMatch->getName().range);
       }
       if (!subRes.second && uMatch->hasValueName()) {
-        ctx->Error("Sub-field " + ctx->highlightError(uMatch->getName()) + " of mix type " +
+        ctx->Error("Sub-field " + ctx->highlightError(uMatch->getName().value) + " of mix type " +
                        ctx->highlightError(mTy->getFullName()) +
                        " does not have a type associated with it, and hence you "
                        "cannot use a name for the value here",
-                   uMatch->getValueRange());
+                   uMatch->getValueName().range);
       }
       for (usize j = i + 1; j < chain.size(); j++) {
-        if (uMatch->getName() == chain.at(j).first->asMix()->getName()) {
+        if (uMatch->getName().value == chain.at(j).first->asMix()->getName().value) {
           ctx->Error("Repeating subfield of the mix type " + ctx->highlightError(mTy->getFullName()),
-                     chain.at(j).first->asMix()->getNameRange());
+                     chain.at(j).first->asMix()->getName().range);
         }
       }
       mentionedFields.push_back(uMatch->getName());
@@ -118,7 +108,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
           ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
                                              ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 0)),
           llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
-                                            mTy->getIndexOfName(uMatch->getName())));
+                                            mTy->getIndexOfName(uMatch->getName().value)));
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         falseBlock = new IR::Block(ctx->fn, curr);
         ctx->builder.CreateCondBr(cond, trueBlock->getBB(), falseBlock->getBB());
@@ -128,23 +118,24 @@ IR::Value* Match::emit(IR::Context* ctx) {
       trueBlock->setActive(ctx->builder);
       SHOW("True block name is: " << trueBlock->getName())
       if (section.first->asMix()->hasValueName()) {
-        SHOW("Match case has value name: " << section.first->asMix()->getValueName())
-        if (trueBlock->hasValue(uMatch->getValueName())) {
+        SHOW("Match case has value name: " << section.first->asMix()->getValueName().value)
+        if (trueBlock->hasValue(uMatch->getValueName().value)) {
           SHOW("Local entity with match case value name exists")
-          ctx->Error("Local entity named " + ctx->highlightError(section.first->asMix()->getValueName()) +
+          ctx->Error("Local entity named " + ctx->highlightError(section.first->asMix()->getValueName().value) +
                          " exists already in this scope",
-                     section.first->asMix()->getValueRange());
+                     section.first->asMix()->getValueName().range);
         } else {
-          SHOW("Creating local entity for match case value named: " << uMatch->getValueName())
-          auto* loc = trueBlock->newValue(
-              uMatch->getValueName(),
-              IR::ReferenceType::get(uMatch->isVariable(), mTy->getSubTypeWithName(uMatch->getName()), ctx->llctx),
-              false);
+          SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
+          auto* loc =
+              trueBlock->newValue(uMatch->getValueName().value,
+                                  IR::ReferenceType::get(uMatch->isVariable(),
+                                                         mTy->getSubTypeWithName(uMatch->getName().value), ctx->llctx),
+                                  false, uMatch->getValueName().range);
           SHOW("Local Entity for match case created")
-          ctx->builder.CreateStore(
-              ctx->builder.CreatePointerCast(ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 1),
-                                             mTy->getSubTypeWithName(uMatch->getName())->getLLVMType()->getPointerTo()),
-              loc->getAlloca());
+          ctx->builder.CreateStore(ctx->builder.CreatePointerCast(
+                                       ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 1),
+                                       mTy->getSubTypeWithName(uMatch->getName().value)->getLLVMType()->getPointerTo()),
+                                   loc->getAlloca());
         }
       }
       emitSentences(section.second, ctx);
@@ -155,7 +146,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         falseBlock->setActive(ctx->builder);
       }
     }
-    Vec<String> missingFields;
+    Vec<Identifier> missingFields;
     mTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
@@ -185,7 +176,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     } else {
       choiceVal = expEmit->getLLVM();
     }
-    Vec<String> mentionedFields;
+    Vec<Identifier> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto&  section = chain.at(i);
       llvm::Value* caseVal;
@@ -213,8 +204,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
       } else {
         auto* cMatch = section.first->asChoice();
         for (const auto& mField : mentionedFields) {
-          if (mField == cMatch->getName()) {
-            ctx->Error("The variant " + ctx->highlightError(cMatch->getName()) + " of choice type " +
+          if (mField.value == cMatch->getName().value) {
+            ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
                            ctx->highlightError(chTy->getFullName()) +
                            " is repeating here. Please check logic and make "
                            "necessary changes",
@@ -222,13 +213,13 @@ IR::Value* Match::emit(IR::Context* ctx) {
           }
         }
         mentionedFields.push_back(cMatch->getName());
-        if (chTy->hasField(cMatch->getName())) {
+        if (chTy->hasField(cMatch->getName().value)) {
           caseVal = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
-                                           (u64)chTy->getValueFor(cMatch->getName()));
+                                           (u64)chTy->getValueFor(cMatch->getName().value));
         } else {
-          ctx->Error("No variant named " + ctx->highlightError(cMatch->getName()) + " in choice type " +
+          ctx->Error("No variant named " + ctx->highlightError(cMatch->getName().value) + " in choice type " +
                          ctx->highlightError(chTy->getFullName()),
-                     cMatch->getFileRange());
+                     cMatch->getName().range);
         }
       }
       auto*      trueBlock  = new IR::Block(ctx->fn, curr);
@@ -249,7 +240,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         falseBlock->setActive(ctx->builder);
       }
     }
-    Vec<String> missingFields;
+    Vec<Identifier> missingFields;
     chTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {

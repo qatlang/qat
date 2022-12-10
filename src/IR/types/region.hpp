@@ -11,22 +11,25 @@ class QatModule;
 
 class Region : public QatType {
 private:
-  String                name;
+  Identifier            name;
   QatModule*            parent;
   utils::VisibilityInfo visibInfo;
+  FileRange             fileRange;
 
   llvm::GlobalVariable* blocks;
   llvm::GlobalVariable* blockCount;
   llvm::Function*       ownFn;
   llvm::Function*       destructor;
 
-  Region(String _name, QatModule* _module, const utils::VisibilityInfo& visibInfo, IR::Context* ctx);
+  Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
+         FileRange fileRange);
 
 public:
-  static Region* get(String name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx);
+  static Region* get(Identifier name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
+                     FileRange fileRange);
 
-  useit String getName() const;
-  useit String getFullName() const;
+  useit Identifier getName() const;
+  useit String     getFullName() const;
   useit IR::Value* ownData(IR::QatType* _type, Maybe<llvm::Value*> count, IR::Context* ctx);
   void             destroyObjects(IR::Context* ctx);
 

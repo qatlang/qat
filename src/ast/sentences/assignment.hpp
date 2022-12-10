@@ -21,14 +21,14 @@ private:
    *  The left hand side of the expression
    *
    */
-  Expression *lhs;
+  Expression* lhs;
 
   /**
    *  Expression instance that represents the expression that has to be
    * assigned to the variable
    *
    */
-  Expression *value;
+  Expression* value;
 
 public:
   /**
@@ -42,9 +42,9 @@ public:
    * @param _fileRange FilePLacement instance that represents the range
    * spanned by the tokens making up this AST member
    */
-  Assignment(Expression *_lhs, Expression *_value, utils::FileRange _fileRange);
+  Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value* emit(IR::Context* ctx);
 
   Json toJson() const;
 

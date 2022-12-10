@@ -10,9 +10,9 @@ private:
   String name;
 
 public:
-  SelfMember(String name, utils::FileRange fileRange);
+  SelfMember(String name, FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::selfMember; }
   useit Json       toJson() const final;
 };

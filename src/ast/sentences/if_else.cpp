@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-IfElse::IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, utils::FileRange _fileRange)
+IfElse::IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), chain(std::move(_chain)), elseCase(std::move(_else)) {}
 
 Pair<bool, usize> IfElse::trueKnownValue(usize ind) const {

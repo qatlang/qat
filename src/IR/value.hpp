@@ -2,7 +2,6 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../utils/json.hpp"
-#include "llvm_helper.hpp"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"

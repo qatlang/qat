@@ -13,15 +13,14 @@ namespace qat::ast {
  *
  */
 class LoopWhile : public Sentence {
-  Expression     *condition;
-  Vec<Sentence *> sentences;
-  Maybe<String>   tag;
+  Expression*       condition;
+  Vec<Sentence*>    sentences;
+  Maybe<Identifier> tag;
 
 public:
-  LoopWhile(Expression *_condition, Vec<Sentence *> _sentences,
-            Maybe<String> _tag, utils::FileRange _fileRange);
+  LoopWhile(Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::loopWhile; }
 };

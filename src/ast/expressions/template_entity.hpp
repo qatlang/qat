@@ -8,15 +8,14 @@ namespace qat::ast {
 
 class TemplateEntity : public Expression {
 private:
-  u32            relative;
-  String         name;
-  Vec<QatType *> templateTypes;
+  u32             relative;
+  Vec<Identifier> names;
+  Vec<QatType*>   templateTypes;
 
 public:
-  TemplateEntity(u32 _relative, String _name, Vec<QatType *> _templateTypes,
-                 utils::FileRange _fileRange);
+  TemplateEntity(u32 _relative, Vec<Identifier> _names, Vec<QatType*> _templateTypes, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::templateEntity; }
 };

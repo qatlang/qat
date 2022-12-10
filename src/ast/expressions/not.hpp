@@ -9,7 +9,7 @@ class Not : public Expression {
   Expression* exp;
 
 public:
-  Not(Expression* exp, utils::FileRange range);
+  Not(Expression* exp, FileRange range);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Not; }

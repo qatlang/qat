@@ -1,5 +1,6 @@
 #include "./define_core_type.hpp"
 #include "../IR/types/core_type.hpp"
+#include "../utils/identifier.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
 #include "types/templated.hpp"
@@ -7,7 +8,7 @@
 namespace qat::ast {
 
 DefineCoreType::Member::Member( //
-    QatType* _type, String _name, bool _variability, utils::VisibilityKind _kind, utils::FileRange _fileRange)
+    QatType* _type, Identifier _name, bool _variability, utils::VisibilityKind _kind, FileRange _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability), visibilityKind(_kind),
       fileRange(std::move(_fileRange)) {}
 
@@ -21,8 +22,8 @@ Json DefineCoreType::Member::toJson() const {
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::StaticMember::StaticMember(QatType* _type, String _name, bool _variability, Expression* _value,
-                                           utils::VisibilityKind _kind, utils::FileRange _fileRange)
+DefineCoreType::StaticMember::StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
+                                           utils::VisibilityKind _kind, FileRange _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability), value(_value), visibilityKind(_kind),
       fileRange(std::move(_fileRange)) {}
 
@@ -36,32 +37,33 @@ Json DefineCoreType::StaticMember::toJson() const {
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::DefineCoreType(String _name, const utils::VisibilityKind _visibility, utils::FileRange _fileRange,
+DefineCoreType::DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
                                Vec<ast::TemplatedType*> _templates, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
       templates(std::move(_templates)) {
-  SHOW("Created define core type " + name)
+  SHOW("Created define core type " + name.value)
 }
 
 bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  if ((isTemplate() || !mod->hasTemplateCoreType(name)) && !mod->hasCoreType(name) && !mod->hasFunction(name) &&
-      !mod->hasGlobalEntity(name) && !mod->hasBox(name) && !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
-      !mod->hasChoiceType(name) && !mod->hasRegion(name)) {
+  if ((isTemplate() || !mod->hasTemplateCoreType(name.value)) && !mod->hasCoreType(name.value) &&
+      !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) && !mod->hasBox(name.value) &&
+      !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) && !mod->hasChoiceType(name.value) &&
+      !mod->hasRegion(name.value)) {
     SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
     Vec<IR::CoreType::Member*> mems;
     for (auto* mem : members) {
       mems.push_back(new IR::CoreType::Member(mem->name, mem->type->emit(ctx), mem->variability,
                                               (mem->visibilityKind == utils::VisibilityKind::type)
-                                                  ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name))
+                                                  ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name.value))
                                                   : ctx->getVisibInfo(mem->visibilityKind)));
     }
     SHOW("Emitted IR for all members")
     auto cTyName = name;
     if (isTemplate()) {
-      cTyName = variantName.value();
+      cTyName = Identifier(variantName.value(), name.range);
     }
     coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
     SHOW("Created core type in IR")
@@ -120,53 +122,53 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     if (destructorDefinition) {
       destructorDefinition->setCoreType(coreType);
     } else {
-      destructorDefinition = new ast::DestructorDefinition({}, {"", {0u, 0u}, {0u, 0u}});
+      destructorDefinition = new ast::DestructorDefinition(fileRange, {}, {"", {0u, 0u}, {0u, 0u}});
       destructorDefinition->setCoreType(coreType);
     }
   } else {
-    if (mod->hasTemplateCoreType(name)) {
+    if (mod->hasTemplateCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasCoreType(name)) {
+    } else if (mod->hasCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasTypeDef(name)) {
+    } else if (mod->hasTypeDef(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasMixType(name)) {
+    } else if (mod->hasMixType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasChoiceType(name)) {
+    } else if (mod->hasChoiceType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasFunction(name)) {
+    } else if (mod->hasFunction(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing function in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasGlobalEntity(name)) {
+    } else if (mod->hasGlobalEntity(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasBox(name)) {
+    } else if (mod->hasBox(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing box in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasRegion(name)) {
+    } else if (mod->hasRegion(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing region in this scope. Please change name of this region or check the codebase",
           fileRange);
     }
@@ -177,61 +179,62 @@ IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  if ((isTemplate() || !mod->hasTemplateCoreType(name)) && !mod->hasCoreType(name) && !mod->hasFunction(name) &&
-      !mod->hasGlobalEntity(name) && !mod->hasBox(name) && !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
-      !mod->hasChoiceType(name) && !mod->hasRegion(name)) {
+  if ((isTemplate() || !mod->hasTemplateCoreType(name.value)) && !mod->hasCoreType(name.value) &&
+      !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) && !mod->hasBox(name.value) &&
+      !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) && !mod->hasChoiceType(name.value) &&
+      !mod->hasRegion(name.value)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
-      SHOW("Creating template core type: " << name)
+      SHOW("Creating template core type: " << name.value)
       templateCoreType = new IR::TemplateCoreType(name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
       SHOW("Created templated core type")
     }
   } else {
     // TODO - Check type definitions
-    if (mod->hasTemplateCoreType(name)) {
+    if (mod->hasTemplateCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasCoreType(name)) {
+    } else if (mod->hasCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasTypeDef(name)) {
+    } else if (mod->hasTypeDef(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasMixType(name)) {
+    } else if (mod->hasMixType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasChoiceType(name)) {
+    } else if (mod->hasChoiceType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasFunction(name)) {
+    } else if (mod->hasFunction(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing function in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasGlobalEntity(name)) {
+    } else if (mod->hasGlobalEntity(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasBox(name)) {
+    } else if (mod->hasBox(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing box in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasRegion(name)) {
+    } else if (mod->hasRegion(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing region in this scope. Please change name of this region or check the codebase",
           fileRange);
     }
@@ -315,12 +318,12 @@ IR::Value* DefineCoreType::emit(IR::Context* ctx) {
 }
 
 void DefineCoreType::addMember(Member* mem) {
-  SHOW("Added core type member: " + mem->name)
+  SHOW("Added core type member: " + mem->name.value)
   members.push_back(mem);
 }
 
 void DefineCoreType::addStaticMember(StaticMember* stm) {
-  SHOW("Added core type static member: " + stm->name)
+  SHOW("Added core type static member: " + stm->name.value)
   staticMembers.push_back(stm);
 }
 

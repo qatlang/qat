@@ -16,7 +16,7 @@ private:
    *  Type of the element of the array
    *
    */
-  QatType *element_type;
+  QatType* element_type;
 
   /**
    *  The length of the array (number of items in it)
@@ -32,10 +32,9 @@ public:
    * @param _length
    * @param _fileRange
    */
-  ArrayType(QatType *_element_type, const uint64_t _length,
-            const bool _variable, const utils::FileRange _fileRange);
+  ArrayType(QatType* _element_type, const uint64_t _length, const bool _variable, const FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
+  IR::QatType* emit(IR::Context* ctx);
 
   TypeKind typeKind() const;
 

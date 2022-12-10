@@ -7,11 +7,11 @@
 
 namespace qat::ast {
 
-ConstructorPrototype::ConstructorPrototype(ConstructorType _type, Vec<Argument*> _arguments,
-                                           utils::VisibilityKind _visibility, utils::FileRange _fileRange,
-                                           Maybe<String> _argName)
+ConstructorPrototype::ConstructorPrototype(ConstructorType _type, FileRange _nameRange, Vec<Argument*> _arguments,
+                                           utils::VisibilityKind _visibility, FileRange _fileRange,
+                                           Maybe<Identifier> _argName)
     : Node(std::move(_fileRange)), arguments(std::move(_arguments)), visibility(_visibility), type(_type),
-      argName(std::move(_argName)) {}
+      argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
 
 ConstructorPrototype::~ConstructorPrototype() {
   for (auto* arg : arguments) {
@@ -19,23 +19,25 @@ ConstructorPrototype::~ConstructorPrototype() {
   }
 }
 
-ConstructorPrototype* ConstructorPrototype::Normal(Vec<Argument*> args, utils::VisibilityKind visibility,
-                                                   utils::FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::normal, std::move(args), visibility, std::move(fileRange));
+ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args,
+                                                   utils::VisibilityKind visibility, FileRange fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::normal, nameRange, std::move(args), visibility,
+                                       std::move(fileRange));
 }
 
-ConstructorPrototype* ConstructorPrototype::Default(utils::VisibilityKind visibility, utils::FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::Default, {}, visibility, std::move(fileRange));
+ConstructorPrototype* ConstructorPrototype::Default(utils::VisibilityKind visibility, FileRange nameRange,
+                                                    FileRange fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::Default, nameRange, {}, visibility, std::move(fileRange));
 }
 
-ConstructorPrototype* ConstructorPrototype::Copy(utils::FileRange fileRange, String _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::copy, {}, utils::VisibilityKind::pub, std::move(fileRange),
-                                       _argName);
+ConstructorPrototype* ConstructorPrototype::Copy(FileRange nameRange, FileRange fileRange, Identifier _argName) {
+  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, utils::VisibilityKind::pub,
+                                       std::move(fileRange), _argName);
 }
 
-ConstructorPrototype* ConstructorPrototype::Move(utils::FileRange fileRange, String _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::move, {}, utils::VisibilityKind::pub, std::move(fileRange),
-                                       _argName);
+ConstructorPrototype* ConstructorPrototype::Move(FileRange nameRange, FileRange fileRange, Identifier _argName) {
+  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, utils::VisibilityKind::pub,
+                                       std::move(fileRange), _argName);
 }
 
 IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
@@ -51,16 +53,17 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     for (auto* arg : arguments) {
       if (arg->isTypeMember()) {
         SHOW("Arg is type member")
-        if (coreType->hasMember(arg->getName())) {
-          auto* mem = coreType->getMember(arg->getName());
-          SHOW("Getting core type member: " << arg->getName())
+        if (coreType->hasMember(arg->getName().value)) {
+          auto* mem = coreType->getMember(arg->getName().value);
+          SHOW("Getting core type member: " << arg->getName().value)
           if (mem->type->isReference()) {
             presentRefMembers.push_back(mem);
           }
           generatedTypes.push_back(mem->type);
         } else {
-          ctx->Error("No non-static member named " + arg->getName() + " in the core type " + coreType->getFullName(),
-                     arg->getFileRange());
+          ctx->Error("No non-static member named " + arg->getName().value + " in the core type " +
+                         coreType->getFullName(),
+                     arg->getName().range);
         }
       } else {
         generatedTypes.push_back(arg->getType()->emit(ctx));
@@ -78,7 +81,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     Vec<IR::CoreType::Member*> refMembers;
     for (auto* mem : allMembers) {
       if (mem->type->isReference()) {
-        SHOW("Ref member name: " << mem->name)
+        SHOW("Ref member name: " << mem->name.value)
         refMembers.push_back(mem);
       }
     }
@@ -86,16 +89,16 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     Vec<IR::CoreType::Member*> absentMembers;
     for (auto* mem : refMembers) {
       if (mem->type->isReference()) {
-        SHOW("Member " << mem->name << " is a reference")
+        SHOW("Member " << mem->name.value << " is a reference")
         bool memRes = false;
         for (auto* ref : presentRefMembers) {
-          if (mem->name == ref->name) {
+          if (mem->name.value == ref->name.value) {
             memRes = true;
             break;
           }
         }
         if (!memRes) {
-          SHOW("Ref member " << mem->name << " not present")
+          SHOW("Ref member " << mem->name.value << " not present")
           absentMembers.push_back(mem);
           allRefsPresent = false;
         }
@@ -105,8 +108,8 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
       SHOW("Absent member count: " << absentMembers.size())
       String message;
       for (usize i = 0; i < absentMembers.size(); i++) {
-        SHOW("Absent member name is: " << absentMembers.at(i)->name)
-        message += ctx->highlightError(absentMembers.at(i)->name);
+        SHOW("Absent member name is: " << absentMembers.at(i)->name.value)
+        message += ctx->highlightError(absentMembers.at(i)->name.value);
         if (absentMembers.size() > 1) {
           if (i == (absentMembers.size() - 2)) {
             message += " and ";
@@ -138,8 +141,8 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
       }
     }
     SHOW("About to create function")
-    function = IR::MemberFunction::CreateConstructor(coreType, args, false, fileRange, ctx->getVisibInfo(visibility),
-                                                     ctx->llctx);
+    function = IR::MemberFunction::CreateConstructor(coreType, nameRange, args, false, fileRange,
+                                                     ctx->getVisibInfo(visibility), ctx->llctx);
     SHOW("Constructor created in the IR")
     // TODO - Set calling convention
     return function;
@@ -152,13 +155,14 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-    function = IR::MemberFunction::DefaultConstructor(coreType, ctx->getVisibInfo(visibility), fileRange, ctx->llctx);
+    function = IR::MemberFunction::DefaultConstructor(coreType, nameRange, ctx->getVisibInfo(visibility), fileRange,
+                                                      ctx->llctx);
     return function;
   } else if (type == ConstructorType::copy) {
-    function = IR::MemberFunction::CopyConstructor(coreType, argName.value(), fileRange, ctx->llctx);
+    function = IR::MemberFunction::CopyConstructor(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
     return function;
   } else if (type == ConstructorType::move) {
-    function = IR::MemberFunction::MoveConstructor(coreType, argName.value(), fileRange, ctx->llctx);
+    function = IR::MemberFunction::MoveConstructor(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
     return function;
   }
   // FIXME - Support copy & move constructors
@@ -172,8 +176,7 @@ Json ConstructorPrototype::toJson() const {
     auto aJson = Json()
                      ._("name", arg->getName())
                      ._("type", arg->getType() ? arg->getType()->toJson() : Json())
-                     ._("isMemberArg", arg->isTypeMember())
-                     ._("fileRange", arg->getFileRange());
+                     ._("isMemberArg", arg->isTypeMember());
     args.push_back(aJson);
   }
   return Json()
@@ -184,7 +187,7 @@ Json ConstructorPrototype::toJson() const {
 }
 
 ConstructorDefinition::ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                             utils::FileRange _fileRange)
+                                             FileRange _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void ConstructorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
@@ -201,7 +204,7 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
   auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
   // FIXME - Check if variability should be true
-  auto* self = block->newValue("''", corePtrTy, true);
+  auto* self = block->newValue("''", corePtrTy, true, corePtrTy->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
   ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
   for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -213,7 +216,8 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
     } else {
       SHOW("Argument is variable")
-      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true);
+      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
+                                     prototype->arguments.at(i - 1)->getName().range);
       SHOW("Created local value for the argument")
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
     }

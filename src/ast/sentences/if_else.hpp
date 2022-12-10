@@ -18,7 +18,7 @@ private:
   Vec<Maybe<bool>>                       knownVals;
 
 public:
-  IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, utils::FileRange _fileRange);
+  IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange);
 
   useit Pair<bool, usize> trueKnownValue(usize ind) const;
   useit bool              getKnownValue(usize ind) const;

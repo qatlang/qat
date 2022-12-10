@@ -16,19 +16,16 @@ namespace qat::ast {
  */
 class TernaryExpression : public Expression {
 private:
-  Expression *condition;
-  Expression *trueExpr;
-  Expression *falseExpr;
+  Expression* condition;
+  Expression* trueExpr;
+  Expression* falseExpr;
 
 public:
-  TernaryExpression(Expression *_condition, Expression *_trueExpr,
-                    Expression *_falseExpr, utils::FileRange _fileRange);
+  TernaryExpression(Expression* _condition, Expression* _trueExpr, Expression* _falseExpr, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) override;
+  useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
-  useit NodeType   nodeType() const override {
-    return NodeType::ternaryExpression;
-  }
+  useit NodeType   nodeType() const override { return NodeType::ternaryExpression; }
 };
 
 } // namespace qat::ast

@@ -8,12 +8,12 @@
 namespace qat::ast {
 
 class TupleValue : public Expression {
-  Vec<Expression *> members;
+  Vec<Expression*> members;
 
 public:
-  TupleValue(Vec<Expression *> _members, utils::FileRange _fileRange);
+  TupleValue(Vec<Expression*> _members, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value* emit(IR::Context* ctx);
 
   Json toJson() const;
 

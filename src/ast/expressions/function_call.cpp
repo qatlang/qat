@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-FunctionCall::FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, utils::FileRange _fileRange)
+FunctionCall::FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
     : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(std::move(_arguments)) {}
 
 IR::Value* FunctionCall::emit(IR::Context* ctx) {
@@ -63,7 +63,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument at " +
                        ctx->highlightError(std::to_string(i)) + " of the function " +
-                       (fun.has_value() ? ctx->highlightError(fun.value()->getName()) : ""),
+                       (fun.has_value() ? ctx->highlightError(fun.value()->getName().value) : ""),
                    values.at(i)->fileRange);
       }
     }

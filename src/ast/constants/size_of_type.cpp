@@ -4,23 +4,17 @@ namespace qat::ast {
 
 #define LLVM_SIZEOF_RESULT_BITWIDTH 64
 
-SizeOfType::SizeOfType(QatType *_type, utils::FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), type(_type) {}
+SizeOfType::SizeOfType(QatType* _type, FileRange _fileRange) : ConstantExpression(std::move(_fileRange)), type(_type) {}
 
-IR::ConstantValue *SizeOfType::emit(IR::Context *ctx) {
-  return new IR::ConstantValue(
-      llvm::ConstantInt::get(
-          llvm::Type::getInt64Ty(ctx->llctx),
-          ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSize(
-              type->emit(ctx)->getLLVMType())),
-      IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
+IR::ConstantValue* SizeOfType::emit(IR::Context* ctx) {
+  return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
+                                                      ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSize(
+                                                          type->emit(ctx)->getLLVMType())),
+                               IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
 }
 
 Json SizeOfType::toJson() const {
-  return Json()
-      ._("nodeType", "sizeOfType")
-      ._("type", type->toJson())
-      ._("fileRange", fileRange);
+  return Json()._("nodeType", "sizeOfType")._("type", type->toJson())._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

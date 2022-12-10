@@ -4,14 +4,12 @@
 
 namespace qat::ast {
 
-TupleType::TupleType(Vec<ast::QatType *> _types, bool _isPacked, bool _variable,
-                     utils::FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), types(std::move(_types)),
-      isPacked(_isPacked) {}
+TupleType::TupleType(Vec<ast::QatType*> _types, bool _isPacked, bool _variable, FileRange _fileRange)
+    : QatType(_variable, std::move(_fileRange)), types(std::move(_types)), isPacked(_isPacked) {}
 
-IR::QatType *TupleType::emit(IR::Context *ctx) {
-  Vec<IR::QatType *> irTypes;
-  for (auto *type : types) {
+IR::QatType* TupleType::emit(IR::Context* ctx) {
+  Vec<IR::QatType*> irTypes;
+  for (auto* type : types) {
     if (type->typeKind() == ast::TypeKind::Void) {
       ctx->Error("Tuple member type cannot be `void`", fileRange);
     }
@@ -24,7 +22,7 @@ TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 
 Json TupleType::toJson() const {
   Vec<JsonValue> mems;
-  for (auto *mem : types) {
+  for (auto* mem : types) {
     mems.push_back(mem->toJson());
   }
   return Json()

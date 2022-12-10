@@ -21,14 +21,15 @@ private:
   Vec<Argument*>        arguments;
   QatType*              returnType;
   utils::VisibilityKind kind;
-  Maybe<String>         argName;
+  Maybe<Identifier>     argName;
+  FileRange             nameRange;
 
   mutable IR::CoreType*       coreType = nullptr;
   mutable IR::MemberFunction* memberFn = nullptr;
 
 public:
-  OperatorPrototype(bool _isVariationFn, Op _op, Vec<Argument*> _arguments, QatType* _returnType,
-                    utils::VisibilityKind kind, const utils::FileRange& _fileRange, Maybe<String> _argName = None);
+  OperatorPrototype(bool _isVariationFn, Op _op, FileRange nameRange, Vec<Argument*> _arguments, QatType* _returnType,
+                    utils::VisibilityKind kind, const FileRange& _fileRange, Maybe<Identifier> _argName);
 
   void setCoreType(IR::CoreType* _coreType) const;
 
@@ -36,7 +37,7 @@ public:
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::operatorPrototype; }
-  ~OperatorPrototype();
+  ~OperatorPrototype() final;
 };
 
 class OperatorDefinition : public Node {
@@ -45,7 +46,7 @@ private:
   OperatorPrototype* prototype;
 
 public:
-  OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
+  OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
   void setCoreType(IR::CoreType* coreType) const;
 

@@ -18,9 +18,9 @@ public:
    *
    * @param _fileRange
    */
-  VoidType(const bool _variable, const utils::FileRange _fileRange);
+  VoidType(const bool _variable, const FileRange _fileRange);
 
-  IR::QatType *emit(IR::Context *ctx);
+  IR::QatType* emit(IR::Context* ctx);
 
   TypeKind typeKind() const;
 

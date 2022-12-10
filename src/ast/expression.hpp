@@ -22,12 +22,12 @@ private:
   ExpressionKind expected;
 
 public:
-  Expression(utils::FileRange _fileRange);
+  Expression(FileRange _fileRange);
 
   void                 setExpectedKind(ExpressionKind _kind);
   useit ExpressionKind getExpectedKind();
   useit bool           isExpectedKind(ExpressionKind _kind);
-  useit IR::Value *emit(IR::Context *ctx) override = 0;
+  useit IR::Value* emit(IR::Context* ctx) override = 0;
   useit NodeType   nodeType() const override       = 0;
   useit Json       toJson() const override         = 0;
   ~Expression() override                           = default;
@@ -35,9 +35,9 @@ public:
 
 class ConstantExpression : public Expression {
 public:
-  ConstantExpression(utils::FileRange fileRange);
+  ConstantExpression(FileRange fileRange);
 
-  useit IR::ConstantValue *emit(IR::Context *ctx) override = 0;
+  useit IR::ConstantValue* emit(IR::Context* ctx) override = 0;
   useit NodeType           nodeType() const override       = 0;
   useit Json               toJson() const override         = 0;
   ~ConstantExpression() override                           = default;

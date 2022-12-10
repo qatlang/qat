@@ -10,7 +10,7 @@ private:
   ast::QatType* subType;
 
 public:
-  FutureType(bool isVariable, ast::QatType* subType, utils::FileRange fileRange);
+  FutureType(bool isVariable, ast::QatType* subType, FileRange fileRange);
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;

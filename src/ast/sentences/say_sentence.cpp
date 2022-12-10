@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-SayLike::SayLike(SayType _sayTy, Vec<Expression*> _expressions, utils::FileRange _fileRange)
+SayLike::SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), expressions(std::move(_expressions)), sayType(_sayTy) {}
 
 IR::Value* SayLike::emit(IR::Context* ctx) {

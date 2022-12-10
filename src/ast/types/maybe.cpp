@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-MaybeType::MaybeType(bool _isVariable, QatType* _subType, utils::FileRange _fileRange)
+MaybeType::MaybeType(bool _isVariable, QatType* _subType, FileRange _fileRange)
     : QatType(_isVariable, std::move(_fileRange)), subTyp(_subType) {}
 
 IR::QatType* MaybeType::emit(IR::Context* ctx) {

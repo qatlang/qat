@@ -111,7 +111,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
            !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument of the function " +
-                       ctx->highlightError(memFn->getName()),
+                       ctx->highlightError(memFn->getName().value),
                    arguments.at(i - 1)->fileRange);
       }
     }

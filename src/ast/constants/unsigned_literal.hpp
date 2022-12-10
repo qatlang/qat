@@ -12,7 +12,7 @@ private:
   mutable IR::QatType* expected = nullptr;
 
 public:
-  UnsignedLiteral(String _value, utils::FileRange _fileRange);
+  UnsignedLiteral(String _value, FileRange _fileRange);
 
   void  setType(IR::QatType* typ) const;
   useit IR::ConstantValue* emit(IR::Context* ctx) override;

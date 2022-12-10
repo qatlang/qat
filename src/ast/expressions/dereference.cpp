@@ -2,8 +2,7 @@
 
 namespace qat::ast {
 
-Dereference::Dereference(Expression* _exp, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), exp(_exp) {}
+Dereference::Dereference(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
 
 IR::Value* Dereference::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);

@@ -5,7 +5,7 @@
 namespace qat::ast {
 
 MixTypeInitialiser::MixTypeInitialiser(QatType* _type, String _subName, Maybe<Expression*> _expression,
-                                       utils::FileRange _fileRange)
+                                       FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
 IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {

@@ -5,8 +5,8 @@
 
 namespace qat::ast {
 
-GlobalDeclaration::GlobalDeclaration(String _name, QatType* _type, Expression* _value, bool _isVariable,
-                                     utils::VisibilityKind _kind, utils::FileRange _fileRange)
+GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
+                                     utils::VisibilityKind _kind, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value), isVariable(_isVariable),
       visibility(_kind) {}
 
@@ -28,12 +28,12 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   if (val->isConstVal()) {
     gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), isVariable,
                                     llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                                    llvm::dyn_cast<llvm::Constant>(val->getLLVM()), name);
+                                    llvm::dyn_cast<llvm::Constant>(val->getLLVM()), name.value);
   } else {
     mod->incrementNonConstGlobalCounter();
     gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), false,
                                     llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                                    llvm::Constant::getNullValue(typ->getLLVMType()), name);
+                                    llvm::Constant::getNullValue(typ->getLLVMType()), name.value);
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
   globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, gvar, ctx->getVisibInfo(visibility));

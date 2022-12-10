@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-ReferenceType::ReferenceType(QatType* _type, bool _variable, utils::FileRange _fileRange)
+ReferenceType::ReferenceType(QatType* _type, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), type(_type) {}
 
 IR::QatType* ReferenceType::emit(IR::Context* ctx) {

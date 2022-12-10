@@ -1,6 +1,8 @@
 #ifndef QAT_IR_CHOICE_HPP
 #define QAT_IR_CHOICE_HPP
 
+#include "../../utils/file_range.hpp"
+#include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
@@ -11,9 +13,9 @@ class QatModule;
 
 class ChoiceType : public QatType {
 private:
-  String                name;
+  Identifier            name;
   QatModule*            parent;
-  Vec<String>           fields;
+  Vec<Identifier>       fields;
   Maybe<Vec<i64>>       values;
   utils::VisibilityInfo visibility;
   Maybe<usize>          defaultVal;
@@ -21,11 +23,14 @@ private:
   mutable u64  bitwidth = 1;
   mutable bool hasNegative;
 
-public:
-  ChoiceType(String name, QatModule* parent, Vec<String> fields, Maybe<Vec<i64>> values, Maybe<usize> defaultVal,
-             const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
+  FileRange fileRange;
 
-  useit String     getName() const;
+public:
+  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values,
+             Maybe<usize> defaultVal, const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx,
+             FileRange fileRange);
+
+  useit Identifier getName() const;
   useit String     getFullName() const;
   useit QatModule* getParent() const;
   useit bool       hasCustomValue() const;
@@ -37,11 +42,11 @@ public:
   useit u64        getBitwidth() const;
   useit const utils::VisibilityInfo& getVisibility() const;
   useit TypeKind                     typeKind() const final { return TypeKind::choice; }
-  useit Json                         toJson() const final { return Json(); }
+  useit Json                         toJson() const final { return {}; }
   useit String                       toString() const final { return getFullName(); }
   void                               findBitwidthNormal() const;
   void                               findBitwidthForValues() const;
-  void                               getMissingNames(Vec<String>& vals, Vec<String>& missing) const;
+  void                               getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 };
 
 } // namespace qat::IR

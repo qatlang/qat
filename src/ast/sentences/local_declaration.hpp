@@ -19,7 +19,7 @@ private:
 
 public:
   LocalDeclaration(QatType* _type, bool isRef, bool isPtr, String _name, Expression* _value, bool _variability,
-                   utils::FileRange _fileRange);
+                   FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

@@ -2,9 +2,9 @@
 
 namespace qat::ast {
 
-DefineMixType::DefineMixType(String _name, Vec<Pair<String, Maybe<QatType*>>> _subTypes, Vec<utils::FileRange> _ranges,
+DefineMixType::DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes, Vec<FileRange> _ranges,
                              Maybe<usize> _defaultVal, bool _isPacked, utils::VisibilityKind _visibility,
-                             utils::FileRange _fileRange)
+                             FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), subtypes(std::move(_subTypes)), isPacked(_isPacked),
       visibility(_visibility), fRanges(std::move(_ranges)), defaultVal(_defaultVal) {}
 
@@ -14,13 +14,14 @@ void DefineMixType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   if
       //   ((isTemplate() || !mod->hasTemplateMixType(name)) &&
-      (!mod->hasCoreType(name) && !mod->hasFunction(name) && !mod->hasGlobalEntity(name) && !mod->hasBox(name) &&
-       !mod->hasTypeDef(name) && !mod->hasMixType(name) && !mod->hasChoiceType(name) && !mod->hasRegion(name)) {
-    Vec<Pair<String, Maybe<IR::QatType*>>> subTypesIR;
-    bool                                   hasAssociatedType = false;
+      (!mod->hasCoreType(name.value) && !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) &&
+       !mod->hasBox(name.value) && !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) &&
+       !mod->hasChoiceType(name.value) && !mod->hasRegion(name.value)) {
+    Vec<Pair<Identifier, Maybe<IR::QatType*>>> subTypesIR;
+    bool                                       hasAssociatedType = false;
     for (usize i = 0; i < subtypes.size(); i++) {
       for (usize j = i + 1; j < subtypes.size(); j++) {
-        if (subtypes.at(i).first == subtypes.at(j).first) {
+        if (subtypes.at(i).first.value == subtypes.at(j).first.value) {
           ctx->Error("The name of the subtype of the union is repeating here. Please "
                      "check logic & make necessary changes",
                      fRanges.at(j));
@@ -38,7 +39,7 @@ void DefineMixType::createType(IR::Context* ctx) {
           }
         }
       }
-      subTypesIR.push_back(Pair<String, Maybe<IR::QatType*>>(
+      subTypesIR.push_back(Pair<Identifier, Maybe<IR::QatType*>>(
           subtypes.at(i).first,
           subtypes.at(i).second.has_value() ? Maybe<IR::QatType*>(subtypes.at(i).second.value()->emit(ctx)) : None));
     }
@@ -47,51 +48,51 @@ void DefineMixType::createType(IR::Context* ctx) {
                  "Please change this type to a choice type",
                  fileRange);
     }
-    new IR::MixType(name, mod, subTypesIR, defaultVal, ctx->llctx, isPacked, ctx->getVisibInfo(visibility));
+    new IR::MixType(name, mod, subTypesIR, defaultVal, ctx->llctx, isPacked, ctx->getVisibInfo(visibility), fileRange);
   } else {
-    if (mod->hasTemplateCoreType(name)) {
+    if (mod->hasTemplateCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing template core type in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasCoreType(name)) {
+    } else if (mod->hasCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing core type in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasTypeDef(name)) {
+    } else if (mod->hasTypeDef(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing type definition in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasMixType(name)) {
+    } else if (mod->hasMixType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing mix type in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasChoiceType(name)) {
+    } else if (mod->hasChoiceType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing choice type in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasFunction(name)) {
+    } else if (mod->hasFunction(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing function in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasGlobalEntity(name)) {
+    } else if (mod->hasGlobalEntity(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing global value in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasBox(name)) {
+    } else if (mod->hasBox(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing box in this scope. Please change name of this union type or check the codebase",
           fileRange);
-    } else if (mod->hasRegion(name)) {
+    } else if (mod->hasRegion(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing region in this scope. Please change name of this region or check the codebase",
           fileRange);
     }
@@ -100,9 +101,9 @@ void DefineMixType::createType(IR::Context* ctx) {
 
 void DefineMixType::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  if ((isTemplate() || !mod->hasTemplateCoreType(name)) && !mod->hasCoreType(name) && !mod->hasFunction(name) &&
-      !mod->hasGlobalEntity(name) && !mod->hasBox(name) && !mod->hasTypeDef(name) && !mod->hasMixType(name) &&
-      !mod->hasRegion(name)) {
+  if ((isTemplate() || !mod->hasTemplateCoreType(name.value)) && !mod->hasCoreType(name.value) &&
+      !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) && !mod->hasBox(name.value) &&
+      !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) && !mod->hasRegion(name.value)) {
     if (!isTemplate()) {
       createType(ctx);
     } else {
@@ -113,49 +114,49 @@ void DefineMixType::defineType(IR::Context* ctx) {
     }
   } else {
     // TODO - Check type definitions
-    if (mod->hasTemplateCoreType(name)) {
+    if (mod->hasTemplateCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasCoreType(name)) {
+    } else if (mod->hasCoreType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasTypeDef(name)) {
+    } else if (mod->hasTypeDef(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasMixType(name)) {
+    } else if (mod->hasMixType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasChoiceType(name)) {
+    } else if (mod->hasChoiceType(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
           fileRange);
-    } else if (mod->hasFunction(name)) {
+    } else if (mod->hasFunction(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing function in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasGlobalEntity(name)) {
+    } else if (mod->hasGlobalEntity(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasBox(name)) {
+    } else if (mod->hasBox(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing box in this scope. Please change name of this type or check the codebase",
           fileRange);
-    } else if (mod->hasRegion(name)) {
+    } else if (mod->hasRegion(name.value)) {
       ctx->Error(
-          ctx->highlightError(name) +
+          ctx->highlightError(name.value) +
               " is the name of an existing region in this scope. Please change name of this region or check the codebase",
           fileRange);
     }

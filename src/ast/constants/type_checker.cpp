@@ -5,7 +5,7 @@ namespace qat::ast {
 
 #define LLVM_SIZEOF_RESULT_BITWIDTH 64u
 
-TypeChecker::TypeChecker(String _name, Vec<ast::QatType*> _args, utils::FileRange _fileRange)
+TypeChecker::TypeChecker(String _name, Vec<ast::QatType*> _args, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), name(std::move(_name)), args(std::move(_args)) {}
 
 IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {

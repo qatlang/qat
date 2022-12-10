@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-FloatLiteral::FloatLiteral(String _value, utils::FileRange _fileRange)
+FloatLiteral::FloatLiteral(String _value, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::ConstantValue* FloatLiteral::emit(IR::Context* ctx) {

@@ -10,10 +10,10 @@ private:
   String indexName;
 
 public:
-  LoopIndex(String indexName, utils::FileRange _fileRange);
+  LoopIndex(String indexName, FileRange _fileRange);
 
   useit bool hasName() const;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::loopIndex; }
 };

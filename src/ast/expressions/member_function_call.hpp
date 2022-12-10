@@ -18,7 +18,7 @@ private:
 
 public:
   MemberFunctionCall(Expression* _instance, String _memberName, Vec<Expression*> _arguments, bool _variation,
-                     utils::FileRange _fileRange)
+                     FileRange _fileRange)
       : Expression(std::move(_fileRange)), instance(_instance), memberName(std::move(_memberName)),
         arguments(std::move(_arguments)), variation(_variation) {}
 

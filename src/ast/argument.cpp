@@ -2,26 +2,18 @@
 
 namespace qat::ast {
 
-Argument::Argument(String _name, utils::FileRange _fileRange, QatType *_type,
-                   bool _isMember)
-    : name(std::move(_name)), fileRange(std::move(_fileRange)), type(_type),
-      isMember(_isMember) {}
+Argument::Argument(Identifier _name, QatType* _type, bool _isMember)
+    : name(std::move(_name)), type(_type), isMember(_isMember) {}
 
-Argument *Argument::Normal(String name, utils::FileRange fileRange,
-                           QatType *type) {
-  return new Argument(std::move(name), std::move(fileRange), type, false);
+Argument* Argument::Normal(Identifier name, QatType* type) { return new Argument(std::move(name), type, false); }
+
+Argument* Argument::ForConstructor(Identifier name, QatType* type, bool isMember) {
+  return new Argument(std::move(name), type, isMember);
 }
 
-Argument *Argument::ForConstructor(String name, utils::FileRange fileRange,
-                                   QatType *type, bool isMember) {
-  return new Argument(std::move(name), std::move(fileRange), type, isMember);
-}
+Identifier Argument::getName() const { return name; }
 
-String Argument::getName() const { return name; }
-
-utils::FileRange Argument::getFileRange() const { return fileRange; }
-
-auto Argument::getType() -> QatType * { return type; }
+auto Argument::getType() -> QatType* { return type; }
 
 bool Argument::isTypeMember() const { return isMember; }
 

@@ -18,7 +18,7 @@ private:
   SayType          sayType;
 
 public:
-  SayLike(SayType _sayTy, Vec<Expression*> _expressions, utils::FileRange _fileRange);
+  SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::saySentence; }

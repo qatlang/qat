@@ -9,17 +9,17 @@ namespace qat::ast {
 
 class DefineMixType : public Node {
 private:
-  String                             name;
-  Vec<Pair<String, Maybe<QatType*>>> subtypes;
-  bool                               isPacked;
-  Vec<QatType*>                      templates;
-  utils::VisibilityKind              visibility;
-  Vec<utils::FileRange>              fRanges;
-  Maybe<usize>                       defaultVal;
+  Identifier                             name;
+  Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
+  bool                                   isPacked;
+  Vec<QatType*>                          templates;
+  utils::VisibilityKind                  visibility;
+  Vec<FileRange>                         fRanges;
+  Maybe<usize>                           defaultVal;
 
 public:
-  DefineMixType(String name, Vec<Pair<String, Maybe<QatType*>>> subTypes, Vec<utils::FileRange> ranges,
-                Maybe<usize> defaultVal, bool isPacked, utils::VisibilityKind visibility, utils::FileRange fileRange);
+  DefineMixType(Identifier name, Vec<Pair<Identifier, Maybe<QatType*>>> subTypes, Vec<FileRange> ranges,
+                Maybe<usize> defaultVal, bool isPacked, utils::VisibilityKind visibility, FileRange fileRange);
 
   void       createType(IR::Context* ctx);
   void       defineType(IR::Context* ctx) final;

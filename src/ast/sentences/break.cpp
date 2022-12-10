@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-Break::Break(Maybe<String> _tag, utils::FileRange _fileRange) : Sentence(std::move(_fileRange)), tag(std::move(_tag)) {}
+Break::Break(Maybe<Identifier> _tag, FileRange _fileRange) : Sentence(std::move(_fileRange)), tag(std::move(_tag)) {}
 
 IR::Value* Break::emit(IR::Context* ctx) {
   if (ctx->breakables.empty()) {
@@ -13,16 +13,16 @@ IR::Value* Break::emit(IR::Context* ctx) {
     if (tag.has_value()) {
       for (auto* brk : ctx->breakables) {
         if (brk->tag.has_value()) {
-          if (tag.value() == brk->tag.value()) {
+          if (tag.value().value == brk->tag.value()) {
             IR::destroyLocalsFrom(ctx, brk->trueBlock);
             return new IR::Value(IR::addBranch(ctx->builder, brk->restBlock->getBB()), IR::VoidType::get(ctx->llctx),
                                  false, IR::Nature::pure);
           }
         }
       }
-      ctx->Error("The provided tag " + ctx->highlightError(tag.value()) +
+      ctx->Error("The provided tag " + ctx->highlightError(tag->value) +
                      " does not match the tag of any parent loops or switches",
-                 fileRange);
+                 tag->range);
     } else {
       if (ctx->breakables.size() == 1) {
         IR::destroyLocalsFrom(ctx, ctx->breakables.front()->trueBlock);
@@ -38,6 +38,8 @@ IR::Value* Break::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-Json Break::toJson() const { return Json()._("hasTag", tag.has_value())._("tag", tag.value_or("")); }
+Json Break::toJson() const {
+  return Json()._("hasTag", tag.has_value())._("tag", tag.has_value() ? tag->value : JsonValue());
+}
 
 } // namespace qat::ast

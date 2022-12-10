@@ -12,7 +12,7 @@ private:
   Vec<ast::QatType*> args;
 
 public:
-  TypeChecker(String name, Vec<ast::QatType*> args, utils::FileRange fileRange);
+  TypeChecker(String name, Vec<ast::QatType*> args, FileRange fileRange);
 
   useit IR::ConstantValue* emit(IR::Context* ctx) final;
   useit Json               toJson() const final;

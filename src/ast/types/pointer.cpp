@@ -5,7 +5,7 @@
 namespace qat::ast {
 
 PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe<QatType*> _ownTyTy, bool _isMultiPtr,
-                         utils::FileRange _fileRange)
+                         FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy),
       isMultiPtr(_isMultiPtr) {}
 

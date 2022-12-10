@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-Not::Not(Expression* _exp, utils::FileRange range) : Expression(std::move(range)), exp(_exp) {}
+Not::Not(Expression* _exp, FileRange range) : Expression(std::move(range)), exp(_exp) {}
 
 IR::Value* Not::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);

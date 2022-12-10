@@ -14,7 +14,7 @@ namespace qat::ast {
 class FunctionPrototype : public Node {
 private:
   friend class FunctionDefinition;
-  String                name;
+  Identifier            name;
   bool                  isAsync;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
@@ -30,12 +30,10 @@ private:
   mutable IR::Function*                   function = nullptr;
 
 public:
-  FunctionPrototype(String _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
+  FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
-                    utils::VisibilityKind _visibility, const utils::FileRange& _fileRange,
+                    utils::VisibilityKind _visibility, const FileRange& _fileRange,
                     Vec<TemplatedType*> _templates = {});
-
-  FunctionPrototype(const FunctionPrototype& ref);
 
   useit bool isTemplate() const;
   useit Vec<TemplatedType*> getTemplates() const;
@@ -55,7 +53,7 @@ private:
   Vec<Sentence*> sentences;
 
 public:
-  FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
+  FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
   FunctionPrototype* prototype;
 

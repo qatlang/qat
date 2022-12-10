@@ -12,7 +12,7 @@ namespace qat::ast {
  */
 class ReferenceType : public QatType {
 private:
-  QatType *type;
+  QatType* type;
 
 public:
   /**
@@ -21,9 +21,9 @@ public:
    * @param _type Datatype to which the pointer is pointing to
    * @param _fileRange
    */
-  ReferenceType(QatType *_type, bool _variable, utils::FileRange _fileRange);
+  ReferenceType(QatType* _type, bool _variable, FileRange _fileRange);
 
-  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;

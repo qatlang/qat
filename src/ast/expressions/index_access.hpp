@@ -8,16 +8,15 @@
 namespace qat::ast {
 
 class IndexAccess : public Expression {
-  Expression *instance;
-  Expression *index;
+  Expression* instance;
+  Expression* index;
 
 public:
-  IndexAccess(Expression *_instance, Expression *_index,
-              utils::FileRange _fileRange);
+  IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::memberIndexAccess; }
+  useit NodeType   nodeType() const final { return NodeType::memberIndexAccess; }
 };
 
 } // namespace qat::ast

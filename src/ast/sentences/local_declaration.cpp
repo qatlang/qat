@@ -17,7 +17,7 @@
 namespace qat::ast {
 
 LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, String _name, Expression* _value,
-                                   bool _variability, utils::FileRange _fileRange)
+                                   bool _variability, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
       isRef(_isRef), isPtr(_isPtr){SHOW("Name for local declaration is " << name)}
 
@@ -26,11 +26,6 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
   auto* block = ctx->fn->getBlock();
   if (block->hasValue(name)) {
     ctx->Error("A local value named " + ctx->highlightError(name) +
-                   " already exists in this scope. Please change name of this "
-                   "declaration or check the logic",
-               fileRange);
-  } else if (block->hasAlias(name)) {
-    ctx->Error("An alias named " + ctx->highlightError(name) +
                    " already exists in this scope. Please change name of this "
                    "declaration or check the logic",
                fileRange);

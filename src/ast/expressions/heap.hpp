@@ -12,7 +12,7 @@ private:
   Expression* count = nullptr;
 
 public:
-  HeapGet(QatType* _type, Expression* _count, utils::FileRange _fileRange);
+  HeapGet(QatType* _type, Expression* _count, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGet; }
@@ -24,7 +24,7 @@ private:
   Expression* ptr;
 
 public:
-  HeapPut(Expression* pointer, utils::FileRange fileRange);
+  HeapPut(Expression* pointer, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapPut; }
@@ -39,7 +39,7 @@ private:
   Expression* count;
 
 public:
-  HeapGrow(QatType* type, Expression* ptr, Expression* count, utils::FileRange fileRange);
+  HeapGrow(QatType* type, Expression* ptr, Expression* count, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::heapGrow; }

@@ -16,7 +16,7 @@ private:
   bool isUnsigned;
 
 public:
-  CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, utils::FileRange _fileRange);
+  CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, FileRange _fileRange);
 
   IR::ConstantValue* emit(IR::Context* ctx) override;
 

@@ -4,14 +4,14 @@
 
 namespace qat::ast {
 
-StringLiteral::StringLiteral(String _value, utils::FileRange _fileRange)
+StringLiteral::StringLiteral(String _value, FileRange _fileRange)
     : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 String StringLiteral::get_value() const { return value; }
 
-void StringLiteral::addValue(const String& val, const utils::FileRange& fRange) {
+void StringLiteral::addValue(const String& val, const FileRange& fRange) {
   value += val;
-  fileRange = utils::FileRange(fileRange, fRange);
+  fileRange = FileRange(fileRange, fRange);
 }
 
 IR::ConstantValue* StringLiteral::emit(IR::Context* ctx) {

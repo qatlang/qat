@@ -35,7 +35,7 @@ private:
   Vec<ArgumentType*> argTypes;
 
 public:
-  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, utils::FileRange _fileRange);
+  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange);
 
   ~FunctionType() override;
 

@@ -20,11 +20,11 @@ namespace qat::ast {
 class Multithread : public Sentence {
 private:
   //  The number of threads to spawn. This should be of integer type
-  Expression *count;
+  Expression* count;
 
   // The optional type of the entity to store the results of the
   // execution of the threads
-  Maybe<QatType *> type;
+  Maybe<QatType*> type;
 
   // The optional name of the entity to store the results of the
   // execution of the threads
@@ -32,22 +32,22 @@ private:
 
   // Main block of the multithread sentence. This is executed successfully in
   // each thread spawned if the number of threads specified is greater than 0.
-  Block *block;
+  Block* block;
 
   // Block for adding declarations and other sentences that are related
   // to multithreading
-  Block *cache_block;
+  Block* cache_block;
 
   //  Cache block to add the loop that starts different threads
-  Block *call_block;
+  Block* call_block;
 
   // Cache block to add the loop that joins different threads
-  Block *join_block;
+  Block* join_block;
 
   // The block after the main block. This is not part of the multithread
   // sentence, except that the result obtained from the threads are
   // recognised to be declared in the scope of this variable
-  Block *after;
+  Block* after;
 
 public:
   /**
@@ -63,8 +63,7 @@ public:
    * @param _after Block present after the multithread block
    * @param _fileRange
    */
-  Multithread(Expression *_count, Block *_main, Block *_after,
-              utils::FileRange _fileRange);
+  Multithread(Expression* _count, Block* _main, Block* _after, FileRange _fileRange);
 
   /**
    *  Multithread represents a sentence that allows spawning n number
@@ -81,10 +80,9 @@ public:
    * @param _after Block present after the multithread block
    * @param _fileRange
    */
-  Multithread(Expression *_count, String _name, QatType *_type, Block *_main,
-              Block *_after, utils::FileRange _fileRange);
+  Multithread(Expression* _count, String _name, QatType* _type, Block* _main, Block* _after, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx);
+  IR::Value* emit(IR::Context* ctx);
 
   Json toJson() const;
 

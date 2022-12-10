@@ -7,12 +7,12 @@ namespace qat::ast {
 
 class Dereference : public Expression {
 private:
-  Expression *exp;
+  Expression* exp;
 
 public:
-  Dereference(Expression *exp, utils::FileRange fileRange);
+  Dereference(Expression* exp, FileRange fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::dereference; }
   useit Json       toJson() const final;
 };

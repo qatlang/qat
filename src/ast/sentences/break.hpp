@@ -6,12 +6,12 @@
 namespace qat::ast {
 
 class Break : public Sentence {
-  Maybe<String> tag;
+  Maybe<Identifier> tag;
 
 public:
-  Break(Maybe<String> _tag, utils::FileRange _fileRange);
+  Break(Maybe<Identifier> _tag, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Break; }
   useit Json       toJson() const final;
 };

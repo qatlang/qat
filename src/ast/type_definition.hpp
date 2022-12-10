@@ -8,16 +8,15 @@ namespace qat::ast {
 
 class TypeDefinition : public Node {
 private:
-  String                name;
-  QatType              *subType;
+  Identifier            name;
+  QatType*              subType;
   utils::VisibilityKind visibKind;
 
 public:
-  TypeDefinition(String _name, QatType *_subType, utils::FileRange _fileRange,
-                 utils::VisibilityKind _visibKind);
+  TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange, utils::VisibilityKind _visibKind);
 
-  void  defineType(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *_) final { return nullptr; }
+  void  defineType(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* _) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::typeDefinition; }
   useit Json       toJson() const final;
 };

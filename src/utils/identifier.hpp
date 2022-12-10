@@ -8,12 +8,14 @@ namespace qat {
 
 class Identifier {
 public:
-  Identifier(String value, utils::FileRange range);
+  Identifier(String value, FileRange range);
 
-  String           value;
-  utils::FileRange range;
+  String    value;
+  FileRange range;
 
   operator JsonValue() const;
+
+  static Identifier fullName(Vec<Identifier> ids);
 };
 
 } // namespace qat

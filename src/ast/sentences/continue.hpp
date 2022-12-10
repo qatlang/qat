@@ -6,12 +6,12 @@
 namespace qat::ast {
 
 class Continue : public Sentence {
-  Maybe<String> tag;
+  Maybe<Identifier> tag;
 
 public:
-  Continue(Maybe<String> _tag, utils::FileRange _fileRange);
+  Continue(Maybe<Identifier> _tag, FileRange _fileRange);
 
-  useit IR::Value *emit(IR::Context *ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Continue; }
   useit Json       toJson() const final;
 };

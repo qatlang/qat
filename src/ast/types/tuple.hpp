@@ -15,16 +15,15 @@ namespace qat::ast {
  */
 class TupleType : public QatType {
 private:
-  Vec<QatType *> types;
+  Vec<QatType*> types;
 
   // Whether this tuple should be packed
   bool isPacked;
 
 public:
-  TupleType(const Vec<QatType *> _types, const bool _isPacked,
-            const bool _variable, const utils::FileRange _fileRange);
+  TupleType(const Vec<QatType*> _types, const bool _isPacked, const bool _variable, const FileRange _fileRange);
 
-  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;

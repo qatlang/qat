@@ -53,7 +53,6 @@
 #include "../ast/sentences/loop_infinite.hpp"
 #include "../ast/sentences/loop_n_times.hpp"
 #include "../ast/sentences/loop_while.hpp"
-#include "../ast/sentences/new_alias.hpp"
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
@@ -76,8 +75,9 @@
 #include <string>
 #include <utility>
 
-#define ValueAt(ind) tokens->at(ind).value
-#define RangeAt(ind) tokens->at(ind).fileRange
+#define IdentifierAt(ind) Identifier(tokens->at(ind).value, tokens->at(ind).fileRange)
+#define ValueAt(ind)      tokens->at(ind).value
+#define RangeAt(ind)      tokens->at(ind).fileRange
 #define RangeSpan(ind1, ind2)                                                                                          \
   { tokens->at(ind1).fileRange, tokens->at(ind2).fileRange }
 
@@ -107,8 +107,8 @@ void Parser::filterComments() {}
 
 ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, usize from, usize upto) {
   using lexer::TokenType;
-  Vec<String>        result;
-  Maybe<CacheSymbol> csym = None;
+  Vec<Vec<Identifier>> result;
+  Maybe<CacheSymbol>   csym = None;
 
   for (usize i = from + 1; i < upto; i++) {
     auto token = tokens->at(i);
@@ -127,7 +127,7 @@ ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, usize from,
             } else {
               Warning("Expected multiple entities to be brought. Remove the "
                       "curly braces since only one entity is being brought.",
-                      utils::FileRange(RangeAt(i + 1), RangeAt(bClose)));
+                      FileRange(RangeAt(i + 1), RangeAt(bClose)));
               if (isNext(TokenType::identifier, i + 1)) {
                 entities.push_back(ValueAt(i + 2));
               } else {
@@ -162,10 +162,10 @@ Vec<fs::path>& Parser::getMemberPaths() { return memberPaths; }
 
 void Parser::clearMemberPaths() { memberPaths.clear(); }
 
-ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const utils::FileRange& startRange) {
-  Maybe<Pair<String, utils::FileRange>> outputName;
-  Maybe<ast::KeyValue<String>>          foreignID;
-  Vec<Pair<String, utils::FileRange>>   nativeLibs;
+ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const FileRange& startRange) {
+  Maybe<ast::StringLiteral*>   outputName;
+  Maybe<ast::KeyValue<String>> foreignID;
+  Vec<ast::StringLiteral*>     nativeLibs;
   using lexer::TokenType;
   for (usize i = from + 1; i < upto; i++) {
     auto token = tokens->at(i);
@@ -179,14 +179,14 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const utils::FileR
             if (foreignID) {
               Error("Foreign module information is already provided", RangeSpan(i, i + 2));
             }
-            foreignID = ast::KeyValue<String>("foreign", RangeAt(i), ValueAt(i + 2), RangeAt(i + 2));
+            foreignID = ast::KeyValue<String>({"foreign", RangeAt(i)}, ValueAt(i + 2), RangeAt(i + 2));
             i += 2;
           } else {
             Error("Expected a string for the parent identity of the foreign module", RangeAt(i));
           }
         } else if (token.value == "outputName") {
           if (isNext(TokenType::StringLiteral, i + 1)) {
-            outputName = Pair<String, utils::FileRange>(ValueAt(i + 2), RangeAt(i + 2));
+            outputName = new ast::StringLiteral(ValueAt(i + 2), RangeAt(i + 2));
             i += 2;
           } else {
             Error("Expected name for the output file", RangeSpan(i, i + 1));
@@ -207,12 +207,11 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const utils::FileR
       }
     }
   }
-  return new ast::ModInfo(std::move(outputName), std::move(foreignID), std::move(nativeLibs),
-                          {startRange, RangeAt(upto)});
+  return new ast::ModInfo(outputName, std::move(foreignID), std::move(nativeLibs), {startRange, RangeAt(upto)});
 }
 
 ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
-                                           const utils::FileRange& startRange) {
+                                           const FileRange& startRange) {
   using lexer::TokenType;
   Vec<ast::StringLiteral*>        paths;
   Vec<Maybe<ast::StringLiteral*>> names;
@@ -308,8 +307,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
           if (pCloseRes.has_value()) {
             auto hasPrimary = isPrimaryWithin(TokenType::semiColon, i, pCloseRes.value());
             if (hasPrimary) {
-              Error("Tuple type found after another type",
-                    utils::FileRange(token.fileRange, RangeAt(pCloseRes.value())));
+              Error("Tuple type found after another type", FileRange(token.fileRange, RangeAt(pCloseRes.value())));
             } else {
               return {cacheTy.value(), i - 1};
             }
@@ -415,10 +413,10 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto symRes = parseSymbol(ctx, i);
         auto name   = symRes.first.name;
         i           = symRes.second;
-        SHOW("Checking templates for: " << name)
-        if (preCtx.hasTemplate(name)) {
-          cacheTy = new ast::TemplatedType(preCtx.getTemplate(name)->getTemplateID(), name, getVariability(),
-                                           symRes.first.fileRange);
+        if ((name.size() == 1u) && preCtx.hasTemplate(name.front().value)) {
+          SHOW("Has templates for: " << name.front().value)
+          cacheTy = new ast::TemplatedType(preCtx.getTemplate(name.front().value)->getTemplateID(), name.front().value,
+                                           getVariability(), name.front().range);
           break;
         } else {
           if (isNext(TokenType::templateTypeStart, i)) {
@@ -448,7 +446,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         }
         auto subRes = parseType(ctx, i, upto);
         i           = subRes.second;
-        cacheTy = new ast::ReferenceType(subRes.first, getVariability(), utils::FileRange(token.fileRange, RangeAt(i)));
+        cacheTy     = new ast::ReferenceType(subRes.first, getVariability(), FileRange(token.fileRange, RangeAt(i)));
         break;
       }
       case TokenType::pointerType: {
@@ -683,13 +681,12 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               typ = parseType(preCtx, i + 2, endRes.value()).first;
             }
           }
-          result.push_back(new ast::GlobalDeclaration(ValueAt(i + 1), typ, exp, isVar, getVisibility(),
+          result.push_back(new ast::GlobalDeclaration(IdentifierAt(i + 1), typ, exp, isVar, getVisibility(),
                                                       RangeSpan(start, endRes.value())));
           i = endRes.value();
         } else {
           Error("Expected name for the global declaration",
-                isVar ? utils::FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
-                      : RangeAt(start));
+                isVar ? FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange) : RangeAt(start));
         }
         break;
       }
@@ -720,13 +717,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
             if (bCloseRes.has_value()) {
-              auto                                    bClose = bCloseRes.value();
-              Vec<Pair<String, Maybe<ast::QatType*>>> subTypes;
-              Vec<utils::FileRange>                   fileRanges;
-              Maybe<usize>                            defaultVal;
+              auto                                        bClose = bCloseRes.value();
+              Vec<Pair<Identifier, Maybe<ast::QatType*>>> subTypes;
+              Vec<FileRange>                              fileRanges;
+              Maybe<usize>                                defaultVal;
               parseMixType(preCtx, i + 2, bClose, subTypes, fileRanges, defaultVal);
               // FIXME - Support packing
-              result.push_back(new ast::DefineMixType(ValueAt(i + 1), std::move(subTypes), std::move(fileRanges),
+              result.push_back(new ast::DefineMixType(IdentifierAt(i + 1), std::move(subTypes), std::move(fileRanges),
                                                       defaultVal, false, getVisibility(), RangeSpan(i, bClose)));
               i = bClose;
             } else {
@@ -745,12 +742,12 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
             if (bCloseRes.has_value()) {
-              auto                                                                         bClose = bCloseRes.value();
-              Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>> fields;
-              Maybe<usize>                                                                 defaultVal;
+              auto                                                       bClose = bCloseRes.value();
+              Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>> fields;
+              Maybe<usize>                                               defaultVal;
               parseChoiceType(i + 2, bClose, fields, defaultVal);
-              result.push_back(new ast::DefineChoiceType(ValueAt(i + 1), std::move(fields), defaultVal, getVisibility(),
-                                                         RangeSpan(i, bClose)));
+              result.push_back(new ast::DefineChoiceType(IdentifierAt(i + 1), std::move(fields), defaultVal,
+                                                         getVisibility(), RangeSpan(i, bClose)));
               i = bClose;
             } else {
               Error("Expected end for {", RangeAt(i + 2));
@@ -766,7 +763,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::region: {
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::stop, i + 1)) {
-            result.push_back(new ast::DefineRegion(ValueAt(i + 1), getVisibility(), RangeSpan(i, i + 2)));
+            result.push_back(new ast::DefineRegion(IdentifierAt(i + 1), getVisibility(), RangeSpan(i, i + 2)));
             i += 2;
           } else {
             Error("Expected . to end the region declaration", RangeSpan(i, i + 1));
@@ -780,7 +777,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         // TODO - Consider other possible tokens and template types instead of
         // just identifiers
         if (isNext(TokenType::identifier, i)) {
-          auto&                    name = ValueAt(i + 1);
+          auto                     name = IdentifierAt(i + 1);
           Vec<ast::TemplatedType*> templates;
           auto                     ctx = ParserContext();
           i++;
@@ -834,8 +831,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
             if (bClose.has_value()) {
               auto contents = parse(ctx, i + 2, bClose.value());
-              result.push_back(new ast::Lib(ValueAt(i + 1), contents, getVisibility(),
-                                            utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
+              result.push_back(new ast::Lib(IdentifierAt(i + 1), contents, getVisibility(),
+                                            FileRange(token.fileRange, RangeAt(bClose.value()))));
               i = bClose.value();
             } else {
               Error("Expected } to close the lib", RangeAt(i + 2));
@@ -854,8 +851,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
             if (bClose.has_value()) {
               auto contents = parse(ctx, i + 2, bClose.value());
-              result.push_back(new ast::Box(ValueAt(i + 1), contents, getVisibility(),
-                                            utils::FileRange(token.fileRange, RangeAt(bClose.value()))));
+              result.push_back(new ast::Box(IdentifierAt(i + 1), contents, getVisibility(),
+                                            FileRange(token.fileRange, RangeAt(bClose.value()))));
               i = bClose.value();
             } else {
               Error("Expected } to close the box", RangeAt(i + 2));
@@ -865,35 +862,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           }
         } else {
           Error("Expected name for the box", token.fileRange);
-        }
-        break;
-      }
-      case TokenType::alias: {
-        /* Alias declaration */
-        if (isNext(TokenType::identifier, i)) {
-          auto t_ident = tokens->at(i + 1);
-          if (ctx.has_alias(t_ident.value)) {
-            Error("An alias with the name " + t_ident.value + " already exists", t_ident.fileRange);
-          } else {
-            if (isNext(TokenType::assignment, i + 1)) {
-              auto end_res = firstPrimaryPosition(TokenType::stop, i + 2);
-              if (end_res.has_value()) {
-                if (isNext(TokenType::identifier, i + 2)) {
-                  auto sym_res = parseSymbol(ctx, i + 3);
-                  ctx.add_alias(t_ident.value, sym_res.first.name);
-                  i = end_res.value();
-                } else {
-                  Error("Expected an identifier representing an entity for the alias", RangeAt(i + 2));
-                }
-              } else {
-                Error("Invalid end for the sentence", utils::FileRange(token.fileRange, RangeAt(i + 2)));
-              }
-            } else {
-              Error("Expected assignment after alias name", utils::FileRange(token.fileRange, RangeAt(i + 1)));
-            }
-          }
-        } else {
-          Error("Expected name for the type alias", token.fileRange);
         }
         break;
       }
@@ -975,8 +943,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             SHOW("Creating prototype")
             auto  IsAsync   = getAsync();
             auto* prototype = new ast::FunctionPrototype(
-                ValueAt(start), argResult.first, argResult.second, retType, IsAsync, llvm::GlobalValue::WeakAnyLinkage,
-                callConv, getVisibility(),
+                IdentifierAt(start), argResult.first, argResult.second, retType, IsAsync,
+                llvm::GlobalValue::WeakAnyLinkage, callConv, getVisibility(),
                 RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), templates);
             SHOW("Prototype created")
             if (isNext(TokenType::bracketOpen, i)) {
@@ -1050,17 +1018,20 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           }
           SHOW("Argument count: " << argResult.first.size())
           for (auto* arg : argResult.first) {
-            SHOW("Arg name " << arg->getName())
+            SHOW("Arg name " << arg->getName().value)
           }
-          bool  IsAsync   = getAsync();
-          auto  cacheSym  = getCachedSymbol();
+          bool IsAsync  = getAsync();
+          auto cacheSym = getCachedSymbol();
+          if (cacheSym.name.size() > 1) {
+            Error("Function name should be just one identifier", cacheSym.fileRange);
+          }
           auto* prototype = new ast::FunctionPrototype(
-              cacheSym.name, argResult.first, argResult.second, retType, IsAsync,
+              cacheSym.name.front(), argResult.first, argResult.second, retType, IsAsync,
               isExternal ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::WeakAnyLinkage, callConv,
               getVisibility(),
               isPrev(TokenType::Async, cacheSym.tokenIndex)
-                  ? utils::FileRange{RangeAt(cacheSym.tokenIndex - 1), token.fileRange}
-                  : utils::FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange});
+                  ? FileRange{RangeAt(cacheSym.tokenIndex - 1), token.fileRange}
+                  : FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange});
           SHOW("Prototype created")
           if (!isExternal) {
             if (isNext(TokenType::bracketOpen, pClose)) {
@@ -1073,8 +1044,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               SHOW("Starting sentence parsing")
               auto sentences = parseSentences(ctx, pClose + 1, bClose);
               SHOW("Sentence parsing completed")
-              auto* definition = new ast::FunctionDefinition(prototype, sentences,
-                                                             utils::FileRange(RangeAt(pClose + 1), RangeAt(bClose)));
+              auto* definition =
+                  new ast::FunctionDefinition(prototype, sentences, FileRange(RangeAt(pClose + 1), RangeAt(bClose)));
               SHOW("Function definition created")
               result.push_back(definition);
               i = bClose;
@@ -1256,10 +1227,10 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   SHOW("Creating member function prototype")
                   coreTy->addMemberDefinition(new ast::MemberDefinition(
                       getStatic()
-                          ? ast::MemberPrototype::Static(ValueAt(start), argsRes.first, argsRes.second, retTy,
+                          ? ast::MemberPrototype::Static(IdentifierAt(start), argsRes.first, argsRes.second, retTy,
                                                          getAsync(), getVisibility(), RangeSpan(start, pClose + 1))
-                          : ast::MemberPrototype::Normal(getVariation(), ValueAt(start), argsRes.first, argsRes.second,
-                                                         retTy, getAsync(), getVisibility(),
+                          : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), argsRes.first,
+                                                         argsRes.second, retTy, getAsync(), getVisibility(),
                                                          RangeSpan(start, pClose + 1)),
                       snts, RangeSpan(start, bClose)));
                   i = bClose;
@@ -1275,9 +1246,9 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           auto stop = firstPrimaryPosition(TokenType::stop, i + 1);
           if (stop.has_value()) {
             auto typeRes = parseType(preCtx, i + 1, stop.value());
-            coreTy->addMember(
-                new ast::DefineCoreType::Member(typeRes.first, token.value, !getConst(), getVisibility(),
-                                                utils::FileRange(typeRes.first->fileRange, token.fileRange)));
+            coreTy->addMember(new ast::DefineCoreType::Member(typeRes.first, Identifier(token.value, token.fileRange),
+                                                              !getConst(), getVisibility(),
+                                                              FileRange(typeRes.first->fileRange, token.fileRange)));
             cacheTy = None;
             i       = stop.value();
           } else {
@@ -1293,6 +1264,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::Default: {
+        auto start = i;
         if (coreTy->hasDefaultConstructor()) {
           Error("A default destructor is already defined for the core type", RangeAt(i));
         }
@@ -1301,9 +1273,9 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           if (bCloseRes.has_value()) {
             auto bClose = bCloseRes.value();
             auto snts   = parseSentences(preCtx, i + 1, bClose);
-            coreTy->setDefaultConstructor(
-                new ast::ConstructorDefinition(ast::ConstructorPrototype::Default(getVisibility(), RangeAt(i)),
-                                               std::move(snts), RangeSpan(i, bClose)));
+            coreTy->setDefaultConstructor(new ast::ConstructorDefinition(
+                ast::ConstructorPrototype::Default(getVisibility(), RangeAt(start), RangeAt(i)), std::move(snts),
+                RangeSpan(i, bClose)));
             i = bClose;
           } else {
             Error("Expected end for [", RangeAt(i + 1));
@@ -1314,19 +1286,20 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::copy: {
+        auto start = i;
         if (coreTy->hasCopyConstructor()) {
           Error("A copy constructor is already defined for the core type", RangeAt(i));
         }
         if (isNext(TokenType::identifier, i)) {
-          auto argName = ValueAt(i + 1);
+          auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
-              coreTy->setCopyConstructor(
-                  new ast::ConstructorDefinition(ast::ConstructorPrototype::Copy(RangeSpan(i, i + 1), argName),
-                                                 std::move(snts), RangeSpan(i, bClose)));
+              coreTy->setCopyConstructor(new ast::ConstructorDefinition(
+                  ast::ConstructorPrototype::Copy(RangeAt(start), RangeSpan(i, i + 1), argName), std::move(snts),
+                  RangeSpan(i, bClose)));
               i = bClose;
             } else {
               Error("Expected end for [", RangeAt(i + 2));
@@ -1342,19 +1315,20 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::move: {
+        auto start = i;
         if (coreTy->hasMoveConstructor()) {
           Error("A move constructor is already defined for the core type", RangeAt(i));
         }
         if (isNext(TokenType::identifier, i)) {
-          auto argName = ValueAt(i + 1);
+          auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
-              coreTy->setMoveConstructor(
-                  new ast::ConstructorDefinition(ast::ConstructorPrototype::Move(RangeSpan(i, i + 1), argName),
-                                                 std::move(snts), RangeSpan(i, bClose)));
+              coreTy->setMoveConstructor(new ast::ConstructorDefinition(
+                  ast::ConstructorPrototype::Move(RangeAt(start), RangeSpan(i, i + 1), argName), std::move(snts),
+                  RangeSpan(i, bClose)));
               i = bClose;
             } else {
               Error("Expected end for [", RangeAt(i + 2));
@@ -1384,14 +1358,14 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                 if (argsRes.first.size() == 1) {
                   // NOTE - Convertor
                   coreTy->addConvertorDefinition(new ast::ConvertorDefinition(
-                      ast::ConvertorPrototype::From(argsRes.first.front()->getName(), argsRes.first.front()->getType(),
-                                                    argsRes.first.front()->isTypeMember(), getVisibility(),
-                                                    RangeSpan(start, pClose)),
+                      ast::ConvertorPrototype::From(
+                          RangeAt(start), argsRes.first.front()->getName(), argsRes.first.front()->getType(),
+                          argsRes.first.front()->isTypeMember(), getVisibility(), RangeSpan(start, pClose)),
                       snts, RangeSpan(start, bClose)));
                 } else {
                   // NOTE = Constructor
                   coreTy->addConstructorDefinition(new ast::ConstructorDefinition(
-                      ast::ConstructorPrototype::Normal(std::move(argsRes.first), getVisibility(),
+                      ast::ConstructorPrototype::Normal(RangeAt(start), std::move(argsRes.first), getVisibility(),
                                                         RangeSpan(start, pClose)),
                       snts, RangeSpan(start, bClose)));
                 }
@@ -1409,6 +1383,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::Operator: {
+        auto start = i;
         if (isNext(TokenType::copy, i)) {
           if (coreTy->hasCopyAssignment()) {
             Error("The copy assignment operator is already defined for this core "
@@ -1423,8 +1398,9 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto bClose = bCloseRes.value();
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setCopyAssignment(new ast::OperatorDefinition(
-                      new ast::OperatorPrototype(true, ast::Op::copyAssignment, {}, nullptr, utils::VisibilityKind::pub,
-                                                 RangeSpan(i, i + 3), ValueAt(i + 3)),
+                      new ast::OperatorPrototype(true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {},
+                                                 nullptr, utils::VisibilityKind::pub, RangeSpan(i, i + 3),
+                                                 IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
                 } else {
@@ -1458,8 +1434,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto bClose = bCloseRes.value();
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setMoveAssignment(new ast::OperatorDefinition(
-                      new ast::OperatorPrototype(true, ast::Op::moveAssignment, {}, nullptr, utils::VisibilityKind::pub,
-                                                 RangeSpan(i, i + 3), ValueAt(i + 3)),
+                      new ast::OperatorPrototype(true, ast::Op::moveAssignment, RangeAt(start), {}, nullptr,
+                                                 utils::VisibilityKind::pub, RangeSpan(i, i + 3), IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
                 } else {
@@ -1480,10 +1456,10 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           }
           break;
         }
-        auto                start = i;
+        start = i;
         String              opr;
         bool                isUnary  = false;
-        ast::QatType*       returnTy = new ast::VoidType(false, utils::FileRange{"", {0u, 0u}, {0u, 0u}});
+        ast::QatType*       returnTy = new ast::VoidType(false, FileRange{"", {0u, 0u}, {0u, 0u}});
         Vec<ast::Argument*> args;
         if (isNext(TokenType::binaryOperator, i)) {
           SHOW("Binary operator for core type: " << ValueAt(i + 1))
@@ -1543,7 +1519,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         }
         auto* prototype = new ast::OperatorPrototype(
             getVariation(), isUnary ? (opr == "-" ? ast::Op::minus : ast::OpFromString(opr)) : ast::OpFromString(opr),
-            args, returnTy, getVisibility(), RangeSpan(start, i));
+            RangeAt(start), args, returnTy, getVisibility(), RangeSpan(start, i), None);
         if (isNext(TokenType::bracketOpen, i)) {
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
           if (bCloseRes.has_value()) {
@@ -1570,8 +1546,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
               coreTy->addConvertorDefinition(new ast::ConvertorDefinition(
-                  ast::ConvertorPrototype::To(typRes.first, getVisibility(), RangeSpan(start, i + 1)), std::move(snts),
-                  RangeSpan(start, bClose)));
+                  ast::ConvertorPrototype::To(RangeAt(start), typRes.first, getVisibility(), RangeSpan(start, i + 1)),
+                  std::move(snts), RangeSpan(start, bClose)));
               i = bClose;
               break;
             } else {
@@ -1586,6 +1562,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         break;
       }
       case TokenType::end: {
+        auto start = i;
         if (coreTy->hasDestructor()) {
           Error("A destructor is already defined for the core type", RangeAt(i));
         }
@@ -1593,7 +1570,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
           if (bCloseRes) {
             auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
-            coreTy->setDestructorDefinition(new ast::DestructorDefinition(snts, RangeSpan(i, bCloseRes.value())));
+            coreTy->setDestructorDefinition(
+                new ast::DestructorDefinition(RangeAt(start), snts, RangeSpan(i, bCloseRes.value())));
             i = bCloseRes.value();
           } else {
             Error("Expected end for [", RangeAt(i + 1));
@@ -1609,8 +1587,9 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
   }
 }
 
-void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto, Vec<Pair<String, Maybe<ast::QatType*>>>& uRef,
-                          Vec<utils::FileRange>& fileRanges, Maybe<usize>& defaultVal) {
+void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto,
+                          Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef, Vec<FileRange>& fileRanges,
+                          Maybe<usize>& defaultVal) {
   using lexer::TokenType;
 
   for (auto i = from + 1; i < upto; i++) {
@@ -1631,9 +1610,9 @@ void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto, Vec<Pai
       case TokenType::identifier: {
         auto start = i;
         if (isNext(TokenType::separator, i) || (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
-          uRef.push_back(Pair<String, Maybe<ast::QatType*>>(ValueAt(start), None));
+          uRef.push_back(Pair<Identifier, Maybe<ast::QatType*>>(IdentifierAt(start), None));
           fileRanges.push_back(isPrev(TokenType::Default, start)
-                                   ? utils::FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+                                   ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
                                    : RangeAt(start));
           i++;
         } else if (isNext(TokenType::typeSeparator, i)) {
@@ -1646,9 +1625,9 @@ void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto, Vec<Pai
             typ = parseType(preCtx, i + 1, upto).first;
             i   = upto;
           }
-          uRef.push_back(Pair<String, Maybe<ast::QatType*>>(ValueAt(start), typ));
+          uRef.push_back(Pair<Identifier, Maybe<ast::QatType*>>(IdentifierAt(start), typ));
           fileRanges.push_back(isPrev(TokenType::Default, start)
-                                   ? utils::FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+                                   ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
                                    : RangeAt(start));
         } else {
           Error("Invalid token found after identifier in mix type definition", RangeAt(i));
@@ -1662,9 +1641,8 @@ void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto, Vec<Pai
   }
 }
 
-void Parser::parseChoiceType(usize from, usize upto,
-                             Vec<Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>>& fields,
-                             Maybe<usize>&                                                                 defaultVal) {
+void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
+                             Maybe<usize>& defaultVal) {
   using lexer::TokenType;
 
   for (usize i = from + 1; i < upto; i++) {
@@ -1685,9 +1663,9 @@ void Parser::parseChoiceType(usize from, usize upto,
       case TokenType::identifier: {
         auto start = i;
         if (isNext(TokenType::separator, i)) {
-          fields.push_back(Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>(
+          fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
               {ValueAt(i), isPrev(TokenType::Default, i)
-                               ? utils::FileRange(tokens->at(i - 1).fileRange, tokens->at(i).fileRange)
+                               ? FileRange(tokens->at(i - 1).fileRange, tokens->at(i).fileRange)
                                : RangeAt(i)},
               None));
           i++;
@@ -1702,8 +1680,8 @@ void Parser::parseChoiceType(usize from, usize upto,
           } else {
             i += 1;
           }
-          i64              val = 0;
-          utils::FileRange valRange{"", {0u, 0u}, {0u, 0u}};
+          i64       val = 0;
+          FileRange valRange{"", {0u, 0u}, {0u, 0u}};
           if (isNext(TokenType::integerLiteral, i) || isNext(TokenType::unsignedLiteral, i)) {
             if (ValueAt(i + 1).find('_') != String::npos) {
               val = std::stoi(ValueAt(i + 1).substr(0, ValueAt(i + 1).find('_')));
@@ -1720,11 +1698,10 @@ void Parser::parseChoiceType(usize from, usize upto,
             val = -val;
           }
           if (isNext(TokenType::separator, i) || isNext(TokenType::curlybraceClose, i)) {
-            fields.push_back(Pair<ast::DefineChoiceType::Field, Maybe<ast::DefineChoiceType::Value>>(
-                ast::DefineChoiceType::Field{
-                    ValueAt(start), isPrev(TokenType::Default, start)
-                                        ? utils::FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
-                                        : RangeAt(start)},
+            fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
+                Identifier{ValueAt(start), isPrev(TokenType::Default, start)
+                                               ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+                                               : RangeAt(start)},
                 ast::DefineChoiceType::Value{val, valRange}));
             i++;
           } else {
@@ -1753,9 +1730,9 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
       case TokenType::typeSeparator: {
         auto start = i;
         if (isNext(TokenType::identifier, i)) {
-          Pair<String, utils::FileRange>        fieldName = {ValueAt(i + 1), RangeAt(i + 1)};
-          Maybe<Pair<String, utils::FileRange>> valueName;
-          bool                                  isVar = false;
+          Identifier        fieldName = {ValueAt(i + 1), RangeAt(i + 1)};
+          Maybe<Identifier> valueName;
+          bool              isVar = false;
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
             auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
             if (pCloseRes) {
@@ -1767,8 +1744,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               }
               if (isNext(TokenType::identifier, i)) {
                 SHOW("Value name is: " << ValueAt(i + 1))
-                valueName = Pair<String, utils::FileRange>(
-                    ValueAt(i + 1), isVar ? utils::FileRange(RangeAt(i), RangeAt(i + 1)) : RangeAt(i + 1));
+                valueName = Identifier(ValueAt(i + 1), isVar ? FileRange(RangeAt(i), RangeAt(i + 1)) : RangeAt(i + 1));
                 if (isNext(TokenType::parenthesisClose, i + 1)) {
                   i = pCloseRes.value();
                 } else {
@@ -1812,7 +1788,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
               chain.push_back(Pair<ast::MatchValue*, Vec<ast::Sentence*>>(
-                  new ast::ChoiceMatchValue(ValueAt(i + 1), RangeAt(i + 1)), std::move(snts)));
+                  new ast::ChoiceMatchValue(IdentifierAt(i + 1)), std::move(snts)));
               i = bClose;
             } else {
               Error("Expected end for [", RangeAt(i + 2));
@@ -1883,11 +1859,11 @@ ast::PlainInitialiser* Parser::parsePlainInitialiser(ParserContext& preCtx, ast:
                                                      usize upto) {
   using lexer::TokenType;
   if (isPrimaryWithin(TokenType::associatedAssignment, from, upto)) {
-    Vec<Pair<String, utils::FileRange>> fields;
-    Vec<ast::Expression*>               fieldValues;
+    Vec<Pair<String, FileRange>> fields;
+    Vec<ast::Expression*>        fieldValues;
     for (usize j = from + 1; j < upto; j++) {
       if (isNext(TokenType::identifier, j - 1)) {
-        fields.push_back(Pair<String, utils::FileRange>(ValueAt(j), RangeAt(j)));
+        fields.push_back(Pair<String, FileRange>(ValueAt(j), RangeAt(j)));
         if (isNext(TokenType::associatedAssignment, j)) {
           if (isPrimaryWithin(TokenType::separator, j + 1, upto)) {
             auto sepRes = firstPrimaryPosition(TokenType::separator, j + 1);
@@ -2021,7 +1997,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           auto pos = i;
           while (isNext(TokenType::StringLiteral, pos)) {
             val += ValueAt(pos + 1);
-            fRange = utils::FileRange(fRange, RangeAt(pos + 1));
+            fRange = FileRange(fRange, RangeAt(pos + 1));
             pos++;
           }
           i = pos;
@@ -2362,9 +2338,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                         {token.fileRange, RangeAt(p_close.value())});
                 }
               } else {
-                auto* funCall = new ast::FunctionCall(
-                    cachedExpressions.back(), args,
-                    utils::FileRange(cachedExpressions.back()->fileRange, RangeAt(p_close.value())));
+                auto* funCall =
+                    new ast::FunctionCall(cachedExpressions.back(), args,
+                                          FileRange(cachedExpressions.back()->fileRange, RangeAt(p_close.value())));
                 cachedExpressions.pop_back();
                 cachedExpressions.push_back(funCall);
                 cachedSymbol = None;
@@ -2401,8 +2377,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               }
               values.push_back(parseExpression(preCtx, cachedSymbol, separations.back(), p_close).first);
             }
-            cachedExpressions.push_back(
-                new ast::TupleValue(values, utils::FileRange(token.fileRange, RangeAt(p_close))));
+            cachedExpressions.push_back(new ast::TupleValue(values, FileRange(token.fileRange, RangeAt(p_close))));
             i = p_close;
           } else {
             auto* exp = parseExpression(preCtx, None, i, p_close).first;
@@ -2617,8 +2592,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         if (source) {
           auto destTyRes = parseType(preCtx, i, upto);
-          cachedExpressions.push_back(new ast::ToConversion(
-              source, destTyRes.first, utils::FileRange(source->fileRange, RangeAt(destTyRes.second))));
+          cachedExpressions.push_back(
+              new ast::ToConversion(source, destTyRes.first, FileRange(source->fileRange, RangeAt(destTyRes.second))));
           i = destTyRes.second;
         } else {
           Error("No expression found for conversion", token.fileRange);
@@ -2808,16 +2783,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         SHOW("Found lhs and rhs of binary exp")
         auto* rhs = cachedExpressions.back();
         cachedExpressions.pop_back();
-        cachedExpressions.push_back(
-            new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                      utils::FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+        cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
         binaryOps = None;
       } else if (cachedSymbol.has_value()) {
         auto* rhs    = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
         cachedSymbol = None;
-        cachedExpressions.push_back(
-            new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                      utils::FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+        cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
         binaryOps = None;
       }
     }
@@ -2885,7 +2858,7 @@ Vec<ast::QatType*> Parser::parseSeparatedTypes(ParserContext& preCtx, usize from
 
 Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext& preCtx, const usize start) {
   using lexer::TokenType;
-  String name;
+  Vec<Identifier> name;
   if (isNext(TokenType::identifier, start - 1) || isNext(TokenType::super, start - 1)) {
     u32  relative = isNext(TokenType::super, start - 1);
     auto prev     = tokens->at(start).type;
@@ -2916,28 +2889,20 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext& preCtx, const usize 
       auto tok = tokens->at(i);
       if (tok.type == TokenType::identifier) {
         if (i == start || prev != TokenType::identifier) {
-          name += tok.value;
+          name.push_back(Identifier(tok.value, tok.fileRange));
           prev = TokenType::identifier;
         } else {
           return {CacheSymbol(relative, name, start, RangeAt(start)), i - 1};
         }
       } else if (tok.type == TokenType::colon) {
         if (prev == TokenType::identifier) {
-          name += ":";
           prev = TokenType::colon;
         } else {
-          Error("No identifier found before `:`. Anonymous boxes are "
-                "not allowed",
-                tok.fileRange);
+          Error("No identifier found before `:`. Anonymous modules are not allowed in `qat`", tok.fileRange);
         }
       } else {
         break;
       }
-    }
-    // If there already is an alias, set the value of the alias as the name of
-    // the symbol
-    if (preCtx.has_alias(name)) {
-      name = preCtx.get_alias(name);
     }
     return {CacheSymbol(relative, name, start, RangeSpan(start, i - 1)), i - 1};
   } else {
@@ -2983,11 +2948,10 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   cacheSymbol = None;
                   i           = endRes.value();
                   result.push_back(
-                      new ast::ExpressionSentence(exp, utils::FileRange(token.fileRange, RangeAt(endRes.value()))));
+                      new ast::ExpressionSentence(exp, FileRange(token.fileRange, RangeAt(endRes.value()))));
                   break;
                 } else {
-                  Error("End for the sentence not found",
-                        utils::FileRange(token.fileRange, RangeAt(bCloseRes.value())));
+                  Error("End for the sentence not found", FileRange(token.fileRange, RangeAt(bCloseRes.value())));
                 }
               } else {
                 Error("Invalid end for definition of closure", RangeAt(pClose + 2));
@@ -3040,7 +3004,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           }
           SHOW("Symbol or type found")
           if (cacheSymbol) {
-            SHOW("Symbol: " << cacheSymbol->name)
+            SHOW("Symbol: " << Identifier::fullName(cacheSymbol->name).value)
           } else if (!cacheTy.empty()) {
             SHOW("Type: " << cacheTy.back()->toString())
           }
@@ -3126,25 +3090,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         }
         break;
       }
-      case TokenType::alias: {
-        if (isNext(TokenType::identifier, i)) {
-          if (isNext(TokenType::altArrow, i + 1)) {
-            auto stop = firstPrimaryPosition(TokenType::stop, i + 2);
-            if (stop.has_value()) {
-              auto* exp = parseExpression(preCtx, None, i + 2, stop.value()).first;
-              result.push_back(new ast::NewAlias(ValueAt(i + 1), exp, RangeSpan(i, stop.value())));
-              i = stop.value();
-            } else {
-              Error("Expected end for alias declaration", RangeSpan(i, i + 2));
-            }
-          } else {
-            Error("Expected => after name for the alias", RangeSpan(i, i + 1));
-          }
-        } else {
-          Error("Expected identifier for alias declaration", RangeAt(i));
-        }
-        break;
-      }
       case TokenType::assignment: {
         SHOW("Assignment found")
         /* Assignment */
@@ -3156,8 +3101,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           auto  end = end_res.value();
           auto* exp = parseExpression(ctx, None, i, end).first;
           auto* lhs = new ast::Entity(cacheSymbol->relative, cacheSymbol->name, cacheSymbol->fileRange);
-          result.push_back(
-              new ast::Assignment(lhs, exp, utils::FileRange(cacheSymbol.value().fileRange, RangeAt(end))));
+          result.push_back(new ast::Assignment(lhs, exp, FileRange(cacheSymbol.value().fileRange, RangeAt(end))));
           var = false;
           cacheTy.clear();
           cacheSymbol = None;
@@ -3331,7 +3275,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::If: {
         Vec<Pair<ast::Expression*, Vec<ast::Sentence*>>> chain;
         Maybe<Vec<ast::Sentence*>>                       elseCase;
-        utils::FileRange                                 fileRange = token.fileRange;
+        FileRange                                        fileRange = token.fileRange;
         while (true) {
           if (isNext(TokenType::parenthesisOpen, i)) {
             auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
@@ -3341,7 +3285,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                 auto bCloseRes =
                     getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pCloseRes.value() + 1, false);
                 if (bCloseRes.has_value()) {
-                  fileRange = utils::FileRange(fileRange, RangeAt(bCloseRes.value()));
+                  fileRange = FileRange(fileRange, RangeAt(bCloseRes.value()));
                   auto snts = parseSentences(preCtx, pCloseRes.value() + 1, bCloseRes.value());
                   chain.push_back(Pair<ast::Expression*, Vec<ast::Sentence*>>(exp, snts));
                   if (isNext(TokenType::Else, bCloseRes.value())) {
@@ -3354,7 +3298,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                       auto bOp    = bCloseRes.value() + 2;
                       auto bClRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, bOp, false);
                       if (bClRes) {
-                        fileRange = utils::FileRange(fileRange, RangeAt(bClRes.value()));
+                        fileRange = FileRange(fileRange, RangeAt(bClRes.value()));
                         elseCase  = parseSentences(preCtx, bOp, bClRes.value());
                         i         = bClRes.value();
                         break;
@@ -3411,16 +3355,14 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         } else if (isNext(TokenType::parenthesisOpen, i)) {
           auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
           if (pCloseRes.has_value()) {
-            auto          pClose  = pCloseRes.value();
-            Maybe<String> loopTag = None;
-            bool          isAlias = false;
-            auto*         count   = parseExpression(preCtx, None, i + 1, pClose).first;
-            auto          pos     = pClose;
+            auto              pClose  = pCloseRes.value();
+            Maybe<Identifier> loopTag = None;
+            auto*             count   = parseExpression(preCtx, None, i + 1, pClose).first;
+            auto              pos     = pClose;
             if (isNext(TokenType::colon, pClose)) {
               if (isNext(TokenType::New, pClose + 1)) {
                 if (isNext(TokenType::identifier, pClose + 2)) {
-                  isAlias = true;
-                  loopTag = ValueAt(pClose + 3);
+                  loopTag = IdentifierAt(pClose + 3);
                   pos     = pClose + 3;
                 } else {
                   Error("Expected an identifier for the tag for the loop after "
@@ -3428,7 +3370,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                         RangeAt(pClose + 2));
                 }
               } else if (isNext(TokenType::identifier, pClose + 1)) {
-                loopTag = ValueAt(pClose + 2);
+                loopTag = IdentifierAt(pClose + 2);
                 pos     = pClose + 2;
               } else {
                 Error("Expected an identifier for the tag for the loop", RangeAt(pClose + 1));
@@ -3439,7 +3381,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               if (bCloseRes.has_value()) {
                 auto snts = parseSentences(preCtx, pos + 1, bCloseRes.value());
                 result.push_back(new ast::LoopNTimes(count, parseSentences(preCtx, pos + 1, bCloseRes.value()), loopTag,
-                                                     isAlias, RangeSpan(i, bCloseRes.value())));
+                                                     RangeSpan(i, bCloseRes.value())));
                 i = bCloseRes.value();
               } else {
                 Error("Expected end for [", RangeAt(pos + 1));
@@ -3471,7 +3413,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                     if (bCloseRes) {
                       auto snts = parseSentences(preCtx, pClose + 3, bCloseRes.value());
                       result.push_back(
-                          new ast::LoopWhile(cond, snts, ValueAt(pClose + 2), RangeSpan(i, bCloseRes.value())));
+                          new ast::LoopWhile(cond, snts, IdentifierAt(pClose + 2), RangeSpan(i, bCloseRes.value())));
                       i = bCloseRes.value();
                     } else {
                       Error("Expected end for [", RangeAt(pClose + 3));
@@ -3500,7 +3442,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         SHOW("give sentence found")
         if (isNext(TokenType::stop, i)) {
           i++;
-          result.push_back(new ast::GiveSentence(None, utils::FileRange(token.fileRange, RangeAt(i + 1))));
+          result.push_back(new ast::GiveSentence(None, FileRange(token.fileRange, RangeAt(i + 1))));
         } else {
           auto end = firstPrimaryPosition(TokenType::stop, i);
           if (!end.has_value()) {
@@ -3511,7 +3453,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           auto* exp   = parseExpression(ctx, cacheSymbol, i, end.value()).first;
           i           = end.value();
           cacheSymbol = None;
-          result.push_back(new ast::GiveSentence(exp, utils::FileRange(token.fileRange, RangeAt(end.value()))));
+          result.push_back(new ast::GiveSentence(exp, FileRange(token.fileRange, RangeAt(end.value()))));
         }
         break;
       }
@@ -3525,7 +3467,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::Break: {
         if (isNext(TokenType::child, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
-            result.push_back(new ast::Break(ValueAt(i + 2), RangeSpan(i, i + 2)));
+            result.push_back(new ast::Break(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
             i += 2;
           } else {
             Error("Expected an identifier after break'", RangeSpan(i, i + 2));
@@ -3541,7 +3483,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::Continue: {
         if (isNext(TokenType::child, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
-            result.push_back(new ast::Continue(ValueAt(i + 2), RangeSpan(i, i + 2)));
+            result.push_back(new ast::Continue(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
             i += 2;
           } else {
             Error("Expected an identifier after continue'", RangeSpan(i, i + 2));
@@ -3612,7 +3554,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
       }
       case TokenType::variadic: {
         if (isNext(TokenType::identifier, i)) {
-          args.push_back(ast::Argument::Normal(ValueAt(i + 1), RangeSpan(i, i + 1), nullptr));
+          args.push_back(ast::Argument::Normal({ValueAt(i + 1), FileRange RangeSpan(i, i + 1)}, nullptr));
           if (isNext(TokenType::parenthesisClose, i + 1) ||
               (isNext(TokenType::separator, i + 1) && isNext(TokenType::parenthesisClose, i + 2))) {
             return {args, true};
@@ -3627,7 +3569,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
       case TokenType::self: {
         if (isNext(TokenType::identifier, i)) {
           SHOW("Creating member argument: " << ValueAt(i + 1))
-          args.push_back(ast::Argument::ForConstructor(ValueAt(i + 1), RangeSpan(i, i + 1), nullptr, true));
+          args.push_back(ast::Argument::ForConstructor({ValueAt(i + 1), FileRange RangeSpan(i, i + 1)}, nullptr, true));
           if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
             i += 2;
           } else {
@@ -3643,7 +3585,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
         typ          = typeRes.first;
         i            = typeRes.second;
         if (isNext(TokenType::identifier, i)) {
-          args.push_back(ast::Argument::Normal(ValueAt(i + 1), {typ.value()->fileRange}, typ.value()));
+          args.push_back(ast::Argument::Normal({ValueAt(i + 1), typ.value()->fileRange}, typ.value()));
           if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
             i += 2;
           } else {
@@ -3795,7 +3737,7 @@ Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate, usize from
   return result;
 }
 
-void Parser::Error(const String& message, const utils::FileRange& fileRange) {
+void Parser::Error(const String& message, const FileRange& fileRange) {
   std::cout << colors::highIntensityBackground::red << " parser error " << colors::reset << "▌ " << colors::bold::red
             << message << colors::reset << " | " << colors::underline::green << fileRange.file.string() << ":"
             << fileRange.start.line << ":" << fileRange.start.character << colors::reset << " >> "
@@ -3806,7 +3748,7 @@ void Parser::Error(const String& message, const utils::FileRange& fileRange) {
   exit(0);
 }
 
-void Parser::Warning(const String& message, const utils::FileRange& fileRange) {
+void Parser::Warning(const String& message, const FileRange& fileRange) {
   std::cout << colors::highIntensityBackground::yellow << " parser warning " << colors::reset << "▌ "
             << colors::bold::yellow << message << colors::reset << " | " << colors::underline::green
             << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character

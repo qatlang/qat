@@ -7,11 +7,11 @@ namespace qat::ast {
 
 class DefineRegion : public Node {
 private:
-  String                name;
+  Identifier            name;
   utils::VisibilityKind visibKind;
 
 public:
-  DefineRegion(String name, utils::VisibilityKind kind, utils::FileRange fileRange);
+  DefineRegion(Identifier name, utils::VisibilityKind kind, FileRange fileRange);
 
   void  defineType(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }

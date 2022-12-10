@@ -10,17 +10,16 @@ class TemplatedType : public QatType {
   String id;
   String name;
 
-  mutable IR::QatType *typeValue = nullptr;
+  mutable IR::QatType* typeValue = nullptr;
 
 public:
   // NOLINTNEXTLINE(readability-identifier-length)
-  TemplatedType(String id, String name, bool _variable,
-                utils::FileRange _fileRange);
+  TemplatedType(String id, String name, bool _variable, FileRange _fileRange);
 
   useit String getID() const;
   useit String getName() const;
 
-  void setType(IR::QatType *typ) const;
+  void setType(IR::QatType* typ) const;
   void unsetType() const;
 
   useit bool isSet() const;
@@ -28,7 +27,7 @@ public:
   useit String getTemplateID() const;
   useit String getTemplateName() const;
 
-  useit IR::QatType *emit(IR::Context *ctx) final;
+  useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;

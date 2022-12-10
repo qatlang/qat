@@ -22,9 +22,9 @@ public:
    * @param _radix Radix value
    * @param _fileRange
    */
-  RadixLiteral(String _value, u64 _radix, utils::FileRange _fileRange);
+  RadixLiteral(String _value, u64 _radix, FileRange _fileRange);
 
-  IR::Value *emit(IR::Context *ctx) override;
+  IR::Value* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 

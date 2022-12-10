@@ -3,23 +3,21 @@
 
 namespace qat::ast {
 
-LoopWhile::LoopWhile(Expression* _condition, Vec<Sentence*> _sentences, Maybe<String> _tag, utils::FileRange _fileRange)
+LoopWhile::LoopWhile(Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), condition(_condition), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
 IR::Value* LoopWhile::emit(IR::Context* ctx) {
   String uniq;
   if (tag.has_value()) {
-    uniq = tag.value();
+    uniq = tag->value;
     for (const auto& info : ctx->loopsInfo) {
       if (info->name == uniq) {
         ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
-        ctx->Error("The tag provided for the loop is already used by another "
-                   "loop or switch",
-                   fileRange);
+      if (brek->tag.has_value() && (brek->tag.value() == tag->value)) {
+        ctx->Error("The tag provided for the loop is already used by another loop or switch", tag->range);
       }
     }
   } else {

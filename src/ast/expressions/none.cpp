@@ -4,8 +4,7 @@
 
 namespace qat::ast {
 
-NoneExpression::NoneExpression(QatType* _type, utils::FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type) {}
+NoneExpression::NoneExpression(QatType* _type, FileRange _fileRange) : Expression(std::move(_fileRange)), type(_type) {}
 
 void NoneExpression::setType(IR::QatType* _irType) { irType = _irType; }
 

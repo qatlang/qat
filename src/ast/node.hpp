@@ -32,7 +32,7 @@ private:
   static Vec<Node*> allNodes;
 
 public:
-  utils::FileRange fileRange;
+  FileRange fileRange;
 
   // Node is the base class for all AST members of the language, and it
   // requires a FileRange instance that indicates its position in the
@@ -40,7 +40,7 @@ public:
   //
   // `_fileRange` FileRange instance that represents the range
   // spanned by the tokens that made up this AST member
-  explicit Node(utils::FileRange _fileRange);
+  explicit Node(FileRange _fileRange);
   virtual ~Node() = default;
   virtual void             createModule(IR::Context* ctx) const {}
   virtual void             handleBrings(IR::Context* ctx) const {}

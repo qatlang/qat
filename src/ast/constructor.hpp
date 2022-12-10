@@ -28,17 +28,18 @@ private:
   Vec<Argument*>        arguments;
   utils::VisibilityKind visibility;
   ConstructorType       type;
-  Maybe<String>         argName;
+  Maybe<Identifier>     argName;
+  FileRange             nameRange;
 
-  ConstructorPrototype(ConstructorType constType, Vec<Argument*> _arguments, utils::VisibilityKind _visibility,
-                       utils::FileRange _fileRange, Maybe<String> argName = None);
+  ConstructorPrototype(ConstructorType constrType, FileRange nameRange, Vec<Argument*> _arguments,
+                       utils::VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> argName = None);
 
 public:
-  static ConstructorPrototype* Normal(Vec<Argument*> args, utils::VisibilityKind visibility,
-                                      utils::FileRange fileRange);
-  static ConstructorPrototype* Default(utils::VisibilityKind visibility, utils::FileRange fileRange);
-  static ConstructorPrototype* Copy(utils::FileRange fileRange, String argName);
-  static ConstructorPrototype* Move(utils::FileRange fileRange, String argName);
+  static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, utils::VisibilityKind visibility,
+                                      FileRange fileRange);
+  static ConstructorPrototype* Default(utils::VisibilityKind visibility, FileRange nameRange, FileRange fileRange);
+  static ConstructorPrototype* Copy(FileRange nameRange, FileRange fileRange, Identifier argName);
+  static ConstructorPrototype* Move(FileRange nameRange, FileRange fileRange, Identifier argName);
 
   void setCoreType(IR::CoreType* _coreType);
 
@@ -55,7 +56,7 @@ private:
   ConstructorPrototype* prototype;
 
 public:
-  ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, utils::FileRange _fileRange);
+  ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
   void setCoreType(IR::CoreType* coreType) const;
 

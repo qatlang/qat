@@ -2,14 +2,12 @@
 
 namespace qat::ast {
 
-Node::Node(utils::FileRange _fileRange) : fileRange(std::move(_fileRange)) {
-  Node::allNodes.push_back(this);
-}
+Node::Node(FileRange _fileRange) : fileRange(std::move(_fileRange)) { Node::allNodes.push_back(this); }
 
-Vec<Node *> Node::allNodes = {};
+Vec<Node*> Node::allNodes = {};
 
 void Node::clearAll() {
-  for (auto *node : allNodes) {
+  for (auto* node : allNodes) {
     delete node;
   }
   allNodes.clear();

@@ -13,18 +13,19 @@ namespace qat::ast {
 
 class DestructorDefinition : public Node {
 private:
-  Vec<Sentence *> sentences;
+  FileRange      nameRange;
+  Vec<Sentence*> sentences;
 
-  mutable IR::MemberFunction *memberFn = nullptr;
-  mutable IR::CoreType       *coreType = nullptr;
+  mutable IR::MemberFunction* memberFn = nullptr;
+  mutable IR::CoreType*       coreType = nullptr;
 
 public:
-  DestructorDefinition(Vec<Sentence *> _sentences, utils::FileRange _fileRange);
+  DestructorDefinition(FileRange nameRange, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::CoreType *coreType) const;
+  void setCoreType(IR::CoreType* coreType) const;
 
-  void  define(IR::Context *ctx) final;
-  useit IR::Value *emit(IR::Context *ctx) final;
+  void  define(IR::Context* ctx) final;
+  useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::memberDefinition; }
 };

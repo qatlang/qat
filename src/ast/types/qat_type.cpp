@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-QatType::QatType(bool _variable, utils::FileRange _fileRange) : variable(_variable), fileRange(std::move(_fileRange)) {
+QatType::QatType(bool _variable, FileRange _fileRange) : variable(_variable), fileRange(std::move(_fileRange)) {
   allTypes.push_back(this);
 }
 

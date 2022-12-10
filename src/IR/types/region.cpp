@@ -15,12 +15,14 @@
 
 namespace qat::IR {
 
-Region* Region::get(String name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx) {
-  return new Region(std::move(name), parent, visibInfo, ctx);
+Region* Region::get(Identifier name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
+                    FileRange fileRange) {
+  return new Region(std::move(name), parent, visibInfo, ctx, std::move(fileRange));
 }
 
-Region::Region(String _name, QatModule* _module, const utils::VisibilityInfo& _visibInfo, IR::Context* ctx)
-    : name(std::move(_name)), parent(_module), visibInfo(_visibInfo) {
+Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo& _visibInfo, IR::Context* ctx,
+               FileRange _fileRange)
+    : name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
   parent->regions.push_back(this);
   auto& llCtx     = ctx->llctx;
   auto* Ty64Int   = llvm::Type::getInt64Ty(llCtx);
@@ -30,21 +32,21 @@ Region::Region(String _name, QatModule* _module, const utils::VisibilityInfo& _v
       new llvm::GlobalVariable(*mod->getLLVMModule(), llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u), false,
                                llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
                                llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u)),
-                               "qat'region(" + parent->getFullNameWithChild(name) + ")'blocks");
+                               "qat'region(" + parent->getFullNameWithChild(name.value) + ")'blocks");
   blockCount = new llvm::GlobalVariable(*mod->getLLVMModule(), Ty64Int, false,
                                         llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage, zero64Bit,
-                                        "qat'region(" + parent->getFullNameWithChild(name) + ")'count");
+                                        "qat'region(" + parent->getFullNameWithChild(name.value) + ")'count");
   ownFn      = llvm::Function::Create(
       llvm::FunctionType::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u),
                                    {/* Count */ Ty64Int, /* Size of type */ Ty64Int,
                                /* Destructor Pointer */ llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u)},
                                    false),
-      llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage, "qat'region(" + parent->getFullNameWithChild(name) + ")'own",
-      mod->getLLVMModule());
+      llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
+      "qat'region(" + parent->getFullNameWithChild(name.value) + ")'own", mod->getLLVMModule());
   destructor =
       llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {}, false),
                              llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-                             "qat'region(" + parent->getFullNameWithChild(name) + ")'end", mod->getLLVMModule());
+                             "qat'region(" + parent->getFullNameWithChild(name.value) + ")'end", mod->getLLVMModule());
   // #if NDEBUG
   // #define LogInProgram(val)
   // #else
@@ -399,9 +401,9 @@ Region::Region(String _name, QatModule* _module, const utils::VisibilityInfo& _v
   }
 }
 
-String Region::getName() const { return name; }
+Identifier Region::getName() const { return name; }
 
-String Region::getFullName() const { return parent->getFullNameWithChild(name); }
+String Region::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
 bool Region::isAccessible(const utils::RequesterInfo& reqInfo) const { return visibInfo.isAccessible(reqInfo); }
 
@@ -432,6 +434,6 @@ void Region::destroyObjects(IR::Context* ctx) {
   ctx->builder.CreateCall(destructor->getFunctionType(), destructor, {});
 }
 
-String Region::toString() const { return parent->getFullNameWithChild(name); }
+String Region::toString() const { return parent->getFullNameWithChild(name.value); }
 
 } // namespace qat::IR

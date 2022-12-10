@@ -2,91 +2,91 @@
 
 namespace qat::ast {
 
-Lib::Lib(String _name, Vec<Node*> _members, utils::VisibilityKind _visibility, const utils::FileRange& _file_range)
+Lib::Lib(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibility, const FileRange& _file_range)
     : Node(std::move(_file_range)), name(_name), members(std::move(_members)), visibility(_visibility) {}
 
 void Lib::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  if (mod->hasLib(name)) {
-    ctx->Error("A lib named " + ctx->highlightError(name) +
+  if (mod->hasLib(name.value)) {
+    ctx->Error("A lib named " + ctx->highlightError(name.value) +
                    " already exists in this module. Libs cannot be reopened like "
                    "boxes. Please change name of this lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtLib(name)) {
-    ctx->Error("A lib named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtLib(name.value)) {
+    ctx->Error("A lib named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasBox(name)) {
+  } else if (mod->hasBox(name.value)) {
     SHOW("HAS BOX WITH NAME")
-    ctx->Error("A box named " + ctx->highlightError(name) +
+    ctx->Error("A box named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtBox(name)) {
-    ctx->Error("A box named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtBox(name.value)) {
+    ctx->Error("A box named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasFunction(name)) {
-    ctx->Error("A function named " + ctx->highlightError(name) +
+  } else if (mod->hasFunction(name.value)) {
+    ctx->Error("A function named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtFunction(name)) {
-    ctx->Error("A function named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtFunction(name.value)) {
+    ctx->Error("A function named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasCoreType(name)) {
-    ctx->Error("A core type named " + ctx->highlightError(name) +
+  } else if (mod->hasCoreType(name.value)) {
+    ctx->Error("A core type named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtCoreType(name)) {
-    ctx->Error("A core type named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtCoreType(name.value)) {
+    ctx->Error("A core type named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasMixType(name)) {
-    ctx->Error("A mix type named " + ctx->highlightError(name) +
+  } else if (mod->hasMixType(name.value)) {
+    ctx->Error("A mix type named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtMixType(name)) {
-    ctx->Error("A mix type named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtMixType(name.value)) {
+    ctx->Error("A mix type named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasChoiceType(name)) {
-    ctx->Error("A choice type named " + ctx->highlightError(name) +
+  } else if (mod->hasChoiceType(name.value)) {
+    ctx->Error("A choice type named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtChoiceType(name)) {
-    ctx->Error("A choice type named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtChoiceType(name.value)) {
+    ctx->Error("A choice type named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasTypeDef(name)) {
-    ctx->Error("A type definition named " + ctx->highlightError(name) +
+  } else if (mod->hasTypeDef(name.value)) {
+    ctx->Error("A type definition named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtTypeDef(name)) {
-    ctx->Error("A type definition named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtTypeDef(name.value)) {
+    ctx->Error("A type definition named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasGlobalEntity(name)) {
-    ctx->Error("A global entity named " + ctx->highlightError(name) +
+  } else if (mod->hasGlobalEntity(name.value)) {
+    ctx->Error("A global entity named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtGlobalEntity(name)) {
-    ctx->Error("A global entity named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtGlobalEntity(name.value)) {
+    ctx->Error("A global entity named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
-  } else if (mod->hasRegion(name)) {
-    ctx->Error("A region named " + ctx->highlightError(name) +
+  } else if (mod->hasRegion(name.value)) {
+    ctx->Error("A region named " + ctx->highlightError(name.value) +
                    " already exists in this module. Please change name of this "
                    "lib or check the logic.",
                fileRange);
-  } else if (mod->hasBroughtRegion(name)) {
-    ctx->Error("A region named " + ctx->highlightError(name) +
+  } else if (mod->hasBroughtRegion(name.value)) {
+    ctx->Error("A region named " + ctx->highlightError(name.value) +
                    " is brought into this module. Please change name of this lib.",
                fileRange);
   }

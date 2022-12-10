@@ -7,8 +7,8 @@ namespace qat::IR {
 
 class Logic {
 public:
-  static llvm::AllocaInst* newAlloca(IR::Function* fun, const String& name, llvm::Type* type);
-  static String            getTemplateVariantName(String mainName, Vec<IR::QatType*>& types);
+  useit static llvm::AllocaInst* newAlloca(IR::Function* fun, const String& name, llvm::Type* type);
+  useit static String            getTemplateVariantName(String mainName, Vec<IR::QatType*>& types);
 };
 
 } // namespace qat::IR

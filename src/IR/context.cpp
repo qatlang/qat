@@ -42,6 +42,177 @@ Context::~Context() {
   }
 }
 
+void Context::nameCheck(const Identifier& name, const String& entityType) {
+  auto reqInfo = getReqInfo();
+  if (mod->hasCoreType(name.value)) {
+    Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtCoreType(name.value)) {
+    Error("A core type named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).first) {
+    Error("A core type named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasTemplateCoreType(name.value)) {
+    Error("A generic core type named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtTemplateCoreType(name.value)) {
+    Error("A generic core type named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleTemplateCoreTypeInImports(name.value, reqInfo).first) {
+    Error("A generic core type named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleTemplateCoreTypeInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasMixType(name.value)) {
+    Error("A mix type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtMixType(name.value)) {
+    Error("A mix type named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleMixTypeInImports(name.value, reqInfo).first) {
+    Error("A mix type named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleMixTypeInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasChoiceType(name.value)) {
+    Error("A choice type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtChoiceType(name.value)) {
+    Error("A choice type named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
+    Error("A choice type named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasTypeDef(name.value)) {
+    Error("A type definition named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtTypeDef(name.value)) {
+    Error("A type definition named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
+    Error("A type definition named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleTypeDefInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasFunction(name.value)) {
+    Error("A function named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtFunction(name.value)) {
+    Error("A function named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleFunctionInImports(name.value, reqInfo).first) {
+    Error("A function named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleFunctionInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasTemplateFunction(name.value)) {
+    Error("A generic function named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtTemplateFunction(name.value)) {
+    Error("A generic function named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).first) {
+    Error("A generic function named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasGlobalEntity(name.value)) {
+    Error("A global entity named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtGlobalEntity(name.value)) {
+    Error("A global entity named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).first) {
+    Error("A global entity named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasRegion(name.value)) {
+    Error("A region named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtRegion(name.value)) {
+    Error("A region named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleRegionInImports(name.value, reqInfo).first) {
+    Error("A region named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBox(name.value)) {
+    Error("A box named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtBox(name.value)) {
+    Error("A box named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleBoxInImports(name.value, reqInfo).first) {
+    Error("A box named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasLib(name.value)) {
+    Error("A lib named " + highlightError(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasBroughtLib(name.value)) {
+    Error("A lib named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->hasAccessibleLibInImports(name.value, reqInfo).first) {
+    Error("A lib named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  }
+}
+
 QatModule* Context::getMod() const { return mod->getActive(); }
 
 String Context::getGlobalStringName() const {

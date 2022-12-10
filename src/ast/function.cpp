@@ -33,17 +33,14 @@ bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
 Vec<TemplatedType*> FunctionPrototype::getTemplates() const { return templates; }
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
+  auto* mod = ctx->getMod();
+  ctx->nameCheck(name, isTemplate() ? "generic function" : "function");
   Vec<IR::QatType*> generatedTypes;
-  auto*             mod      = ctx->getMod();
   bool              isMainFn = false;
   String            fnName   = name.value;
   SHOW("Creating function")
   if (templateFn) {
     fnName = variantName.value();
-  }
-  SHOW("Checking function exists or not")
-  if (mod->hasFunction(fnName)) {
-    ctx->Error("A function named " + fnName + " exists already in this scope", fileRange);
   }
   if ((fnName == "main") && (mod->getFullNameWithChild("main") == "main")) {
     SHOW("Is main function")

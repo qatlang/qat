@@ -30,27 +30,7 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
-            if (mod->hasLib(name.value)) {
-              ctx->Error("A lib named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBox(name.value)) {
-              ctx->Error("A box named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBroughtLib(name.value)) {
-              ctx->Error("A brought lib named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBroughtBox(name.value)) {
-              ctx->Error("A brought box named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasAccessibleBoxInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A box named " + ctx->highlightError(name.value) + " is already accessible in this scope",
-                         name.range);
-            } else if (mod->hasAccessibleLibInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A lib named " + ctx->highlightError(name.value) + " is already accessible in this scope",
-                         name.range);
-            } else if (mod->hasBroughtModule(name.value)) {
-              ctx->Error("A brought module named " + ctx->highlightError(name.value) + " is in this scope", name.range);
-            } else if (mod->hasAccessibleBroughtModuleInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A brought module named " + ctx->highlightError(name.value) +
-                             " is already accessible in this scope",
-                         name.range);
-            }
+            ctx->nameCheck(name, "named folder module");
             auto* folderModule = IR::QatModule::getFolderModule(path);
             folderModule->addMention(mod, paths.at(i)->fileRange);
             mod->bringNamedModule(name, folderModule, ctx->getVisibInfo(visibility));
@@ -76,27 +56,7 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
-            if (mod->hasLib(name.value)) {
-              ctx->Error("A lib named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBox(name.value)) {
-              ctx->Error("A box named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBroughtLib(name.value)) {
-              ctx->Error("A brought lib named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasBroughtBox(name.value)) {
-              ctx->Error("A brought box named " + ctx->highlightError(name.value) + " exists already", name.range);
-            } else if (mod->hasAccessibleBoxInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A box named " + ctx->highlightError(name.value) + " is already accessible in this scope",
-                         name.range);
-            } else if (mod->hasAccessibleLibInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A lib named " + ctx->highlightError(name.value) + " is already accessible in this scope",
-                         name.range);
-            } else if (mod->hasBroughtModule(name.value)) {
-              ctx->Error("A brought module named " + ctx->highlightError(name.value) + " is in this scope", name.range);
-            } else if (mod->hasAccessibleBroughtModuleInImports(name.value, ctx->getReqInfo()).first) {
-              ctx->Error("A brought module named " + ctx->highlightError(name.value) +
-                             " is already accessible in this scope",
-                         name.range);
-            }
+            ctx->nameCheck(name, "named file module");
             auto* fileModule = IR::QatModule::getFileModule(path);
             fileModule->addMention(mod, paths.at(i)->fileRange);
             mod->bringNamedModule(name, fileModule, ctx->getVisibInfo(visibility));

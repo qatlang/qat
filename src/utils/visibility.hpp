@@ -46,8 +46,7 @@ class RequesterInfo;
  */
 class VisibilityInfo {
 private:
-  VisibilityInfo(VisibilityKind _kind, String _value)
-      : kind(_kind), value(std::move(_value)) {}
+  VisibilityInfo(VisibilityKind _kind, String _value) : kind(_kind), value(std::move(_value)) {}
 
 public:
   // Nature of the Visibility of the entity
@@ -56,28 +55,18 @@ public:
   // library name, box name or file path.
   String value;
 
-  VisibilityInfo(const VisibilityInfo &other);
+  VisibilityInfo(const VisibilityInfo& other);
 
-  static VisibilityInfo type(std::string typeName) {
-    return {VisibilityKind::type, std::move(typeName)};
-  }
+  static VisibilityInfo type(std::string typeName) { return {VisibilityKind::type, std::move(typeName)}; }
   static VisibilityInfo pub() { return {VisibilityKind::pub, ""}; }
-  static VisibilityInfo lib(String name) {
-    return {VisibilityKind::lib, std::move(name)};
-  }
-  static VisibilityInfo file(String path) {
-    return {VisibilityKind::file, std::move(path)};
-  }
-  static VisibilityInfo folder(String path) {
-    return {VisibilityKind::folder, std::move(path)};
-  }
-  static VisibilityInfo box(String name) {
-    return {VisibilityKind::box, std::move(name)};
-  }
+  static VisibilityInfo lib(String name) { return {VisibilityKind::lib, std::move(name)}; }
+  static VisibilityInfo file(String path) { return {VisibilityKind::file, std::move(path)}; }
+  static VisibilityInfo folder(String path) { return {VisibilityKind::folder, std::move(path)}; }
+  static VisibilityInfo box(String name) { return {VisibilityKind::box, std::move(name)}; }
 
-  useit bool isAccessible(const RequesterInfo &reqInfo) const;
+  useit bool isAccessible(const RequesterInfo& reqInfo) const;
 
-  useit bool operator==(const VisibilityInfo &other) const;
+  useit bool operator==(const VisibilityInfo& other) const;
              operator Json() const;
              operator JsonValue() const;
 };
@@ -95,8 +84,7 @@ private:
   Maybe<String> type;
 
 public:
-  RequesterInfo(Maybe<String> _lib, Maybe<String> _box, String _file,
-                Maybe<String> _type);
+  RequesterInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type);
 
   useit bool   hasLib() const;
   useit bool   hasBox() const;
@@ -113,9 +101,8 @@ public:
   static const std::map<String, VisibilityKind> value_kind_map;
 
   useit static String         getValue(VisibilityKind kind);
-  useit static VisibilityKind getKind(const String &value);
-  useit static bool           isAccessible(const VisibilityInfo &visibility,
-                                           const RequesterInfo  &reqInfo);
+  useit static VisibilityKind getKind(const String& value);
+  useit static bool           isAccessible(const VisibilityInfo& visibility, const RequesterInfo& reqInfo);
 };
 
 } // namespace qat::utils

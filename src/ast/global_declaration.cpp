@@ -11,7 +11,8 @@ GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expressio
       visibility(_kind) {}
 
 void GlobalDeclaration::define(IR::Context* ctx) {
-  auto* mod  = ctx->getMod();
+  auto* mod = ctx->getMod();
+  ctx->nameCheck(name, "global value");
   auto* init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;
   init->getBlock()->setActive(ctx->builder);
@@ -21,19 +22,18 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   if (!value) {
     ctx->Error("Expected a value to be assigned for global declaration", fileRange);
   }
-  // FIXME - Perform name collision checks & scoped naming
   auto*                 typ  = type->emit(ctx);
   auto*                 val  = value->emit(ctx);
   llvm::GlobalVariable* gvar = nullptr;
   if (val->isConstVal()) {
-    gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), isVariable,
-                                    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                                    llvm::dyn_cast<llvm::Constant>(val->getLLVM()), name.value);
+    gvar = new llvm::GlobalVariable(
+        *mod->getLLVMModule(), typ->getLLVMType(), isVariable, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+        llvm::dyn_cast<llvm::Constant>(val->getLLVM()), mod->getFullNameWithChild(name.value));
   } else {
     mod->incrementNonConstGlobalCounter();
-    gvar = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), false,
-                                    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                                    llvm::Constant::getNullValue(typ->getLLVMType()), name.value);
+    gvar = new llvm::GlobalVariable(
+        *mod->getLLVMModule(), typ->getLLVMType(), false, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+        llvm::Constant::getNullValue(typ->getLLVMType()), mod->getFullNameWithChild(name.value));
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
   globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, gvar, ctx->getVisibInfo(visibility));

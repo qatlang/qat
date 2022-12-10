@@ -1,4 +1,5 @@
 #include "./define_core_type.hpp"
+#include "../IR/logic.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../utils/identifier.hpp"
 #include "constructor.hpp"
@@ -48,130 +49,79 @@ bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  if ((isTemplate() || !mod->hasTemplateCoreType(name.value)) && !mod->hasCoreType(name.value) &&
-      !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) && !mod->hasBox(name.value) &&
-      !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) && !mod->hasChoiceType(name.value) &&
-      !mod->hasRegion(name.value)) {
-    SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
-    Vec<IR::CoreType::Member*> mems;
-    for (auto* mem : members) {
-      mems.push_back(new IR::CoreType::Member(mem->name, mem->type->emit(ctx), mem->variability,
-                                              (mem->visibilityKind == utils::VisibilityKind::type)
-                                                  ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name.value))
-                                                  : ctx->getVisibInfo(mem->visibilityKind)));
+  ctx->nameCheck(name, "core type");
+  SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
+  Vec<IR::CoreType::Member*> mems;
+  for (auto* mem : members) {
+    mems.push_back(new IR::CoreType::Member(mem->name, mem->type->emit(ctx), mem->variability,
+                                            (mem->visibilityKind == utils::VisibilityKind::type)
+                                                ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name.value))
+                                                : ctx->getVisibInfo(mem->visibilityKind)));
+  }
+  SHOW("Emitted IR for all members")
+  auto cTyName = name;
+  if (isTemplate()) {
+    cTyName = Identifier(variantName.value(), name.range);
+  }
+  coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
+  SHOW("Created core type in IR")
+  for (auto* stm : staticMembers) {
+    coreType->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
+                              stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
+                              ctx->llctx);
+  }
+  if (defaultConstructor) {
+    defaultConstructor->setCoreType(coreType);
+  }
+  if (copyConstructor) {
+    copyConstructor->setCoreType(coreType);
+    if (!copyAssignment) {
+      ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+                     ", and hence copy assignment operator is also required to be defined",
+                 fileRange);
     }
-    SHOW("Emitted IR for all members")
-    auto cTyName = name;
-    if (isTemplate()) {
-      cTyName = Identifier(variantName.value(), name.range);
+  }
+  if (moveConstructor) {
+    moveConstructor->setCoreType(coreType);
+    if (!moveAssignment) {
+      ctx->Error("Move constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+                     ", and hence move assignment operator is also required to be defined",
+                 fileRange);
     }
-    coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
-    SHOW("Created core type in IR")
-    for (auto* stm : staticMembers) {
-      coreType->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
-                                stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
-                                ctx->llctx);
+  }
+  for (auto* conv : convertorDefinitions) {
+    conv->setCoreType(coreType);
+  }
+  for (auto* cons : constructorDefinitions) {
+    cons->setCoreType(coreType);
+  }
+  for (auto* memDef : memberDefinitions) {
+    memDef->setCoreType(coreType);
+  }
+  for (auto* oprDef : operatorDefinitions) {
+    oprDef->setCoreType(coreType);
+  }
+  if (copyAssignment) {
+    copyAssignment->setCoreType(coreType);
+    if (!copyConstructor) {
+      ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+                     ", and hence copy constructor is also required to be defined",
+                 fileRange);
     }
-    if (defaultConstructor) {
-      defaultConstructor->setCoreType(coreType);
+  }
+  if (moveAssignment) {
+    moveAssignment->setCoreType(coreType);
+    if (!moveConstructor) {
+      ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+                     ", and hence move constructor is also required to be defined",
+                 fileRange);
     }
-    if (copyConstructor) {
-      copyConstructor->setCoreType(coreType);
-      if (!copyAssignment) {
-        ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
-                       ", and hence copy assignment operator is also required to be defined",
-                   fileRange);
-      }
-    }
-    if (moveConstructor) {
-      moveConstructor->setCoreType(coreType);
-      if (!moveAssignment) {
-        ctx->Error("Move constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
-                       ", and hence move assignment operator is also required to be defined",
-                   fileRange);
-      }
-    }
-    for (auto* conv : convertorDefinitions) {
-      conv->setCoreType(coreType);
-    }
-    for (auto* cons : constructorDefinitions) {
-      cons->setCoreType(coreType);
-    }
-    for (auto* memDef : memberDefinitions) {
-      memDef->setCoreType(coreType);
-    }
-    for (auto* oprDef : operatorDefinitions) {
-      oprDef->setCoreType(coreType);
-    }
-    if (copyAssignment) {
-      copyAssignment->setCoreType(coreType);
-      if (!copyConstructor) {
-        ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
-                       ", and hence copy constructor is also required to be defined",
-                   fileRange);
-      }
-    }
-    if (moveAssignment) {
-      moveAssignment->setCoreType(coreType);
-      if (!moveConstructor) {
-        ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
-                       ", and hence move constructor is also required to be defined",
-                   fileRange);
-      }
-    }
-    if (destructorDefinition) {
-      destructorDefinition->setCoreType(coreType);
-    } else {
-      destructorDefinition = new ast::DestructorDefinition(fileRange, {}, {"", {0u, 0u}, {0u, 0u}});
-      destructorDefinition->setCoreType(coreType);
-    }
+  }
+  if (destructorDefinition) {
+    destructorDefinition->setCoreType(coreType);
   } else {
-    if (mod->hasTemplateCoreType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasCoreType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasTypeDef(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasMixType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasChoiceType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasFunction(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing function in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasGlobalEntity(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasBox(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing box in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasRegion(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing region in this scope. Please change name of this region or check the codebase",
-          fileRange);
-    }
+    destructorDefinition = new ast::DestructorDefinition(fileRange, {}, {"", {0u, 0u}, {0u, 0u}});
+    destructorDefinition->setCoreType(coreType);
   }
 }
 
@@ -179,65 +129,12 @@ IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  if ((isTemplate() || !mod->hasTemplateCoreType(name.value)) && !mod->hasCoreType(name.value) &&
-      !mod->hasFunction(name.value) && !mod->hasGlobalEntity(name.value) && !mod->hasBox(name.value) &&
-      !mod->hasTypeDef(name.value) && !mod->hasMixType(name.value) && !mod->hasChoiceType(name.value) &&
-      !mod->hasRegion(name.value)) {
-    if (!isTemplate()) {
-      createType(ctx);
-    } else {
-      SHOW("Creating template core type: " << name.value)
-      templateCoreType = new IR::TemplateCoreType(name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
-      SHOW("Created templated core type")
-    }
+  if (!isTemplate()) {
+    createType(ctx);
   } else {
-    // TODO - Check type definitions
-    if (mod->hasTemplateCoreType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing template core type in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasCoreType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing core type in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasTypeDef(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing type definition in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasMixType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing mix type in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasChoiceType(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing choice type in this scope. Please change name of this core type or check the codebase",
-          fileRange);
-    } else if (mod->hasFunction(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing function in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasGlobalEntity(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing global value in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasBox(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing box in this scope. Please change name of this type or check the codebase",
-          fileRange);
-    } else if (mod->hasRegion(name.value)) {
-      ctx->Error(
-          ctx->highlightError(name.value) +
-              " is the name of an existing region in this scope. Please change name of this region or check the codebase",
-          fileRange);
-    }
+    SHOW("Creating template core type: " << name.value)
+    templateCoreType = new IR::TemplateCoreType(name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
+    SHOW("Created templated core type")
   }
 }
 

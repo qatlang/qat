@@ -236,11 +236,15 @@ QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::pa
   return sub;
 }
 
-void QatModule::addMention(IR::QatModule* otherMod, FileRange fileRange) {
-  mentions.push_back(Pair<IR::QatModule*, FileRange>(otherMod, fileRange));
+void QatModule::addMention(String kind, FileRange origin, FileRange source) {
+  getParentFile()->allMentions.emplace_back(kind, origin, source);
 }
 
-Vec<Pair<QatModule*, FileRange>> const& QatModule::getMentions() const { return mentions; }
+void QatModule::addBroughtMention(IR::QatModule* otherMod, FileRange fileRange) {
+  broughtMentions.push_back(Pair<IR::QatModule*, FileRange>(otherMod, fileRange));
+}
+
+Vec<Pair<QatModule*, FileRange>> const& QatModule::getBroughtMentions() const { return broughtMentions; }
 
 String QatModule::getName() const { return name.value; }
 

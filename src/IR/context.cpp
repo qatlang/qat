@@ -386,7 +386,7 @@ void Context::addError(String message, FileRange fileRange) {
   if (!moduleAlreadyHasErrors(mod)) {
     activeTemplate = None;
     modulesWithErrors.push_back(mod);
-    for (const auto& modNRange : mod->getMentions()) {
+    for (const auto& modNRange : mod->getBroughtMentions()) {
       mod = modNRange.first;
       addError("Error occured in this file", modNRange.second);
     }

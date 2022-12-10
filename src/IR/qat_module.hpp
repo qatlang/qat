@@ -11,8 +11,10 @@
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
 #include "./types/mix.hpp"
+#include "mention.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
+#include <bits/types/FILE.h>
 #include <vector>
 
 namespace qat::ast {
@@ -120,7 +122,9 @@ private:
   Vec<u64>           unsignedBitwidths;
   Vec<FloatTypeKind> floatKinds;
 
-  Vec<Pair<QatModule*, FileRange>> mentions;
+  // Potentially change this to have mentions inside entities
+  Vec<Mention>                     allMentions;
+  Vec<Pair<QatModule*, FileRange>> broughtMentions;
 
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
@@ -198,8 +202,9 @@ public:
   useit bool hasMainFn() const;
   void       setHasMainFn();
 
-  void                                    addMention(IR::QatModule* otherMod, FileRange fileRange);
-  Vec<Pair<QatModule*, FileRange>> const& getMentions() const;
+  void                                    addMention(String kind, FileRange origin, FileRange source);
+  void                                    addBroughtMention(IR::QatModule* otherMod, FileRange fileRange);
+  Vec<Pair<QatModule*, FileRange>> const& getBroughtMentions() const;
 
   // LIB
 

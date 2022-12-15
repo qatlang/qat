@@ -6,7 +6,14 @@ namespace qat::IR {
 ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
                        Maybe<usize> _defaultVal, const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
                        FileRange _fileRange)
-    : name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
+    : EntityOverview("choiceType",
+                     Json()
+                         ._("moduleID", _parent->getID())
+                         ._("hasValues", _values.has_value())
+                         ._("hasDefault", _defaultVal.has_value())
+                         ._("visibility", _visibility),
+                     _name.range),
+      name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
       visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
   if (!values.has_value()) {
     findBitwidthNormal();
@@ -109,5 +116,28 @@ void ChoiceType::getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing
 }
 
 const utils::VisibilityInfo& ChoiceType::getVisibility() const { return visibility; }
+
+void ChoiceType::updateOverview() {
+  Vec<JsonValue> fieldsJson;
+  for (const auto& field : fields) {
+    fieldsJson.push_back(field);
+  }
+  auto valuesJson = Json();
+  if (values) {
+    Vec<JsonValue> valsValsJson;
+    for (auto val : values.value()) {
+      valsValsJson.push_back((unsigned long long)val);
+    }
+  }
+  ovInfo._("fields", fieldsJson)
+      ._("values", valuesJson)
+      ._("typeID", getID())
+      ._("fullName", getFullName())
+      ._("bitWidth", (unsigned long long)bitwidth)
+      ._("hasNegative", hasNegative);
+  if (defaultVal) {
+    ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
+  }
+}
 
 } // namespace qat::IR

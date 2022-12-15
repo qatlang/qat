@@ -4,6 +4,7 @@
 #include "../../utils/file_range.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
+#include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -11,7 +12,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class ChoiceType : public QatType {
+class ChoiceType : public QatType, public EntityOverview {
 private:
   Identifier            name;
   QatModule*            parent;
@@ -47,6 +48,7 @@ public:
   void                               findBitwidthNormal() const;
   void                               findBitwidthForValues() const;
   void                               getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void                               updateOverview() final;
 };
 
 } // namespace qat::IR

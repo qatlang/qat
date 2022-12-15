@@ -8,7 +8,8 @@ namespace qat::IR {
 
 DefinitionType::DefinitionType(Identifier _name, QatType* _subType, QatModule* _mod,
                                const utils::VisibilityInfo& _visibInfo)
-    : name(std::move(_name)), subType(_subType), parent(_mod), visibInfo(_visibInfo) {
+    : EntityOverview("typeDefinition", Json(), _name.range), name(std::move(_name)), subType(_subType), parent(_mod),
+      visibInfo(_visibInfo) {
   parent->typeDefs.push_back(this);
   llvmType = subType->getLLVMType();
 }
@@ -22,6 +23,14 @@ String DefinitionType::getFullName() const { return parent ? parent->getFullName
 QatModule* DefinitionType::getParent() { return parent; }
 
 QatType* DefinitionType::getSubType() { return subType; }
+
+void DefinitionType::updateOverview() {
+  ovInfo._("fullName", getFullName())
+      ._("typeID", getID())
+      ._("subTypeID", subType->getID())
+      ._("visibility", visibInfo)
+      ._("moduleID", parent->getID());
+}
 
 TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 

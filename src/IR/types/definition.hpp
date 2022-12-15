@@ -5,6 +5,7 @@
 #include "../../utils/helpers.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
+#include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -12,7 +13,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class DefinitionType : public QatType {
+class DefinitionType : public QatType, public EntityOverview {
 private:
   Identifier            name;
   QatType*              subType;
@@ -26,6 +27,7 @@ public:
   useit String     getFullName() const;
   useit QatModule* getParent();
   useit QatType*   getSubType();
+  void             updateOverview() final;
   useit TypeKind   typeKind() const override;
   useit String     toString() const override;
   useit Json       toJson() const override;

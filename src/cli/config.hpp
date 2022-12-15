@@ -77,6 +77,8 @@ private:
 
   bool keepLLVMFiles = false;
 
+  bool exportCodeInfo = false;
+
 public:
   /**
    *  The pointer to the only instance of Config. If this is nullptr, the
@@ -129,6 +131,7 @@ public:
   useit bool     shouldBuildStatic() const;
   useit bool     shouldBuildShared() const;
   useit bool     keepLLVM() const;
+  useit bool     exportCodeMetadata() const;
   useit const llvm::VersionTuple& getVersionTuple() const;
   // Whether compiler should exit after arguments are handled by Config
   //

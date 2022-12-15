@@ -127,6 +127,8 @@ Config::Config(u64 count, const char** args)
         }
       } else if (arg == "--export-ast") {
         export_ast = true;
+      } else if (arg == "--export-code-info") {
+        exportCodeInfo = true;
       } else if (arg == "--sysroot") {
         if (i + 1 < count) {
           sysRoot = args[i + 1];
@@ -197,7 +199,7 @@ bool Config::shouldSaveDocs() const { return saveDocs; }
 
 bool Config::hasOutputPath() const { return outputPath.has_value(); }
 
-fs::path Config::getOutputPath() const { return outputPath.value(); }
+fs::path Config::getOutputPath() const { return outputPath.value_or(fs::current_path()); }
 
 bool Config::shouldShowReport() const { return showReport; }
 
@@ -226,6 +228,8 @@ bool Config::isWasmMode() const { return isWASM; }
 bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
 
 bool Config::shouldBuildShared() const { return buildShared.value_or(false); }
+
+bool Config::exportCodeMetadata() const { return exportCodeInfo; }
 
 const llvm::VersionTuple& Config::getVersionTuple() const { return versionTuple; }
 

@@ -343,7 +343,7 @@ void Context::writeJsonResult(bool status) const {
       ._("clangTime", clangTime)
       ._("hasMain", hasMain);
   std::fstream output;
-  output.open((cli::Config::get()->getOutputPath() / "qat_result.json").string().c_str(), std::ios_base::out);
+  output.open((cli::Config::get()->getOutputPath() / "QatCompilationResult.json").string().c_str(), std::ios_base::out);
   if (output.is_open()) {
     output << result;
     output.close();

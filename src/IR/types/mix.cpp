@@ -15,7 +15,13 @@ namespace qat::IR {
 MixType::MixType(Identifier _name, QatModule* _parent, Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes,
                  Maybe<usize> _defaultVal, llvm::LLVMContext& ctx, bool _isPacked,
                  const utils::VisibilityInfo& _visibility, FileRange _fileRange)
-    : name(std::move(_name)), parent(_parent), subtypes(std::move(_subtypes)), isPack(_isPacked),
+    : EntityOverview("mixType",
+                     Json()
+                         ._("moduleID", _parent->getID())
+                         ._("hasDefaultValue", _defaultVal.has_value())
+                         ._("visibility", _visibility),
+                     _name.range),
+      name(std::move(_name)), parent(_parent), subtypes(std::move(_subtypes)), isPack(_isPacked),
       visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
@@ -39,6 +45,25 @@ MixType::MixType(Identifier _name, QatModule* _parent, Vec<Pair<Identifier, Mayb
                                parent->getFullNameWithChild(name.value), _isPacked);
   if (parent) {
     parent->mixTypes.push_back(this);
+  }
+}
+
+void MixType::updateOverview() {
+  Vec<JsonValue> subTyJson;
+  for (auto const& sub : subtypes) {
+    subTyJson.push_back(Json()
+                            ._("name", sub.first)
+                            ._("hasType", sub.second.has_value())
+                            ._("typeID", sub.second.has_value() ? sub.second.value()->getID() : JsonValue())
+                            ._("type", sub.second.has_value() ? sub.second.value()->toString() : JsonValue()));
+  }
+  ovInfo._("typeID", getID())
+      ._("fullName", getFullName())
+      ._("tagBitWidth", (unsigned long long)tagBitWidth)
+      ._("isPacked", isPack)
+      ._("subTypes", subTyJson);
+  if (hasDefault()) {
+    ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
   }
 }
 

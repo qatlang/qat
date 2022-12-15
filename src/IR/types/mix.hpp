@@ -4,6 +4,7 @@
 #include "../../utils/file_range.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
+#include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -11,7 +12,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class MixType : public QatType {
+class MixType : public QatType, public EntityOverview {
 private:
   Identifier                             name;
   QatModule*                             parent;
@@ -49,6 +50,7 @@ public:
   useit TypeKind                     typeKind() const final;
   // FIXME - Maybe remove this
   useit Json toJson() const final { return Json()._("name", name); }
+  void       updateOverview() final;
   void       getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 };
 

@@ -16,7 +16,8 @@ namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
                    llvm::LLVMContext& ctx)
-    : name(std::move(_name)), parent(mod), members(std::move(_members)), visibility(_visibility) {
+    : EntityOverview("coreType", Json(), _name.range), name(std::move(_name)), parent(mod),
+      members(std::move(_members)), visibility(_visibility) {
   SHOW("Generating LLVM Type for core type members")
   Vec<llvm::Type*> subtypes;
   for (auto* mem : members) {
@@ -33,6 +34,35 @@ CoreType::~CoreType() {
   for (auto* mem : members) {
     delete mem;
   }
+}
+
+void CoreType::updateOverview() {
+  Vec<JsonValue> memJson;
+  for (auto* mem : members) {
+    memJson.push_back(mem->overviewToJson());
+  }
+  Vec<JsonValue> statMemJson;
+  for (auto* statMem : staticMembers) {
+    statMemJson.push_back(statMem->overviewToJson());
+  }
+  Vec<JsonValue> memFnJson;
+  for (auto* mFn : memberFunctions) {
+    memFnJson.push_back(mFn->overviewToJson());
+  }
+  ovInfo = Json()
+               ._("typeID", getID())
+               ._("fullName", getFullName())
+               ._("moduleID", parent->getID())
+               ._("members", memJson)
+               ._("staticMembers", statMemJson)
+               ._("memberFunctions", memFnJson)
+               ._("hasDefaultConstructor", defaultConstructor != nullptr)
+               ._("hasDestructor", destructor != nullptr)
+               ._("hasCopyConstructor", copyConstructor.has_value())
+               ._("hasMoveConstructor", moveConstructor.has_value())
+               ._("hasCopyAssignment", copyAssignment.has_value())
+               ._("hasMoveAssignment", moveAssignment.has_value())
+               ._("visibility", visibility);
 }
 
 String CoreType::getFullName() const { return parent->getFullNameWithChild(name.value); }
@@ -355,7 +385,14 @@ void CoreType::setExplicitMove() { explicitMove = true; }
 TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::TemplatedType*> _templates,
                                    ast::DefineCoreType* _defineCoreType, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
-    : name(std::move(_name)), templates(std::move(_templates)), defineCoreType(_defineCoreType), parent(_parent),
+    : EntityOverview("genericCoreType",
+                     Json()
+                         ._("name", _name.value)
+                         ._("fullName", _parent->getFullNameWithChild(_name.value))
+                         ._("visibility", _visibInfo)
+                         ._("moduleID", _parent->getID()),
+                     _name.range),
+      name(std::move(_name)), templates(std::move(_templates)), defineCoreType(_defineCoreType), parent(_parent),
       visibility(_visibInfo) {
   SHOW("Adding template core type to parent module")
   parent->templateCoreTypes.push_back(this);

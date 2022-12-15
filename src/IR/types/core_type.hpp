@@ -21,14 +21,22 @@ namespace qat::IR {
  *  This represents a core type in the language
  *
  */
-class CoreType final : public QatType {
+class CoreType final : public QatType, public EntityOverview {
   friend class MemberFunction;
 
 public:
-  class Member {
+  class Member : public EntityOverview {
   public:
     Member(Identifier _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
-        : name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
+        : EntityOverview("coreTypeMember",
+                         Json()
+                             ._("name", _name.value)
+                             ._("type", _type->toString())
+                             ._("typeID", _type->getID())
+                             ._("isVariable", _variability)
+                             ._("visibility", _visibility),
+                         _name.range),
+          name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
 
     ~Member() = default;
 
@@ -124,9 +132,10 @@ public:
                                               const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
   void                        setExplicitCopy();
   void                        setExplicitMove();
+  void                        updateOverview() final;
 };
 
-class TemplateCoreType : public Uniq {
+class TemplateCoreType : public Uniq, public EntityOverview {
 private:
   Identifier               name;
   Vec<ast::TemplatedType*> templates;

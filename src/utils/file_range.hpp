@@ -26,7 +26,7 @@ struct FilePos {
 /** FileRange represents a particular range in a file */
 class FileRange {
 public:
-  FileRange(const fs::path& _filePath);
+  FileRange(fs::path _filePath);
 
   /**
    *  FileRange represents a particular range in a file
@@ -35,7 +35,7 @@ public:
    * @param start The beginning position of the fileRange
    * @param end The ending position of the fileRange
    */
-  FileRange(const fs::path& _file, FilePos _start, FilePos _end);
+  FileRange(fs::path _file, FilePos _start, FilePos _end);
 
   FileRange(Json json);
 

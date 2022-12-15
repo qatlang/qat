@@ -85,17 +85,19 @@ bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
 
 VisibilityInfo::operator Json() const { return Json()._("nature", Visibility::getValue(kind))._("value", value); }
 
-VisibilityInfo::operator JsonValue() const { return {(Json)(*this)}; }
+VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
 
 VisibilityInfo::VisibilityInfo(const VisibilityInfo& other) = default;
 
 const std::map<VisibilityKind, String> Visibility::kind_value_map = {
-    {VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"}, {VisibilityKind::lib, "library"},
-    {VisibilityKind::file, "file"},  {VisibilityKind::box, "box"},   {VisibilityKind::parent, "parent"}};
+    {VisibilityKind::pub, "public"},   {VisibilityKind::type, "type"}, {VisibilityKind::lib, "library"},
+    {VisibilityKind::file, "file"},    {VisibilityKind::box, "box"},   {VisibilityKind::parent, "parent"},
+    {VisibilityKind::folder, "folder"}};
 
 const std::map<String, VisibilityKind> Visibility::value_kind_map = {
-    {"public", VisibilityKind::pub}, {"type", VisibilityKind::type}, {"library", VisibilityKind::lib},
-    {"file", VisibilityKind::file},  {"box", VisibilityKind::box},   {"parent", VisibilityKind::parent}};
+    {"public", VisibilityKind::pub},   {"type", VisibilityKind::type}, {"library", VisibilityKind::lib},
+    {"file", VisibilityKind::file},    {"box", VisibilityKind::box},   {"parent", VisibilityKind::parent},
+    {"folder", VisibilityKind::folder}};
 
 String Visibility::getValue(VisibilityKind kind) { return kind_value_map.find(kind)->second; }
 

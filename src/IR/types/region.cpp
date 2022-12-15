@@ -22,7 +22,8 @@ Region* Region::get(Identifier name, QatModule* parent, const utils::VisibilityI
 
 Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo& _visibInfo, IR::Context* ctx,
                FileRange _fileRange)
-    : name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
+    : EntityOverview("region", Json()._("moduleID", _module->getID())._("visibility", _visibInfo), _name.range),
+      name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
   parent->regions.push_back(this);
   auto& llCtx     = ctx->llctx;
   auto* Ty64Int   = llvm::Type::getInt64Ty(llCtx);
@@ -433,6 +434,8 @@ IR::Value* Region::ownData(IR::QatType* otype, Maybe<llvm::Value*> _count, IR::C
 void Region::destroyObjects(IR::Context* ctx) {
   ctx->builder.CreateCall(destructor->getFunctionType(), destructor, {});
 }
+
+void Region::updateOverview() { ovInfo._("typeID", getID())._("fullName", getFullName()); }
 
 String Region::toString() const { return parent->getFullNameWithChild(name.value); }
 

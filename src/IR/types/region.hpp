@@ -9,7 +9,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class Region : public QatType {
+class Region : public QatType, public EntityOverview {
 private:
   Identifier            name;
   QatModule*            parent;
@@ -35,6 +35,8 @@ public:
 
   useit bool  isAccessible(const utils::RequesterInfo& reqInfo) const;
   useit const utils::VisibilityInfo& getVisibility() const;
+
+  void updateOverview() final;
 
   useit TypeKind typeKind() const final { return TypeKind::region; }
   useit String   toString() const final;

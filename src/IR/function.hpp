@@ -7,6 +7,7 @@
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./value.hpp"
+#include "entity_overview.hpp"
 #include "template_variant.hpp"
 #include "types/qat_type.hpp"
 #include "uniq.hpp"
@@ -37,16 +38,17 @@ enum class ExternFnType {
   CPP,
 };
 
-class LocalValue : public Value, public Uniq {
-  String           name;
-  Maybe<FileRange> fileRange;
+class LocalValue final : public Value, public Uniq, public EntityOverview {
+  String    name;
+  FileRange fileRange;
 
 public:
-  LocalValue(String name, IR::QatType* type, bool isVariable, Function* fun, Maybe<FileRange> fileRange = None);
-  ~LocalValue() = default;
+  LocalValue(String name, IR::QatType* type, bool isVariable, Function* fun, FileRange fileRange);
+  ~LocalValue() final = default;
 
   useit String getName() const;
   useit llvm::AllocaInst* getAlloca() const;
+  useit FileRange         getFileRange() const;
 };
 
 class Block : public Uniq {
@@ -86,7 +88,7 @@ public:
   useit Function*   getFn() const;
   useit bool        hasValue(const String& name) const;
   useit LocalValue* getValue(const String& name) const;
-  useit LocalValue* newValue(const String& name, IR::QatType* type, bool isVar, Maybe<FileRange> fileRange = None);
+  useit LocalValue* newValue(const String& name, IR::QatType* type, bool isVar, FileRange fileRange);
   useit bool        isMoved(const String& locID) const;
   useit bool        hasGiveInAllControlPaths() const;
   useit Block*      getActive();
@@ -98,10 +100,11 @@ public:
   void                    collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const;
   void                    collectLocalsFrom(Vec<LocalValue*>& vals) const;
   void                    destroyLocals(IR::Context* ctx);
+  void                    outputLocalOverview(Vec<JsonValue>& jsonVals);
 };
 
 // Function represents a normal function in the language
-class Function : public Value, public Uniq {
+class Function : public Value, public Uniq, public EntityOverview {
   friend class Block;
 
 protected:
@@ -158,10 +161,12 @@ public:
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
 
+  void updateOverview() override;
+
   ~Function() override;
 };
 
-class TemplateFunction : public Uniq {
+class TemplateFunction : public Uniq, public EntityOverview {
 private:
   Identifier               name;
   Vec<ast::TemplatedType*> templates;

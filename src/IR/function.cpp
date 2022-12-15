@@ -29,8 +29,16 @@
 
 namespace qat::IR {
 
-LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* fun, Maybe<FileRange> _fileRange)
-    : Value(nullptr, _type, _isVar, Nature::assignable), name(std::move(_name)), fileRange(_fileRange) {
+LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* fun, FileRange _fileRange)
+    : Value(nullptr, _type, _isVar, Nature::assignable), EntityOverview("localValue",
+                                                                        Json()
+                                                                            ._("name", _name)
+                                                                            ._("typeID", _type->getID())
+                                                                            ._("type", _type->toString())
+                                                                            ._("isVariable", _isVar)
+                                                                            ._("functionID", fun->getID()),
+                                                                        _fileRange),
+      name(std::move(_name)), fileRange(std::move(_fileRange)) {
   SHOW("Type is " << type->toString())
   SHOW("Creating llvm::AllocaInst for " << name)
   if (type->getLLVMType()) {
@@ -46,6 +54,8 @@ LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* 
 String LocalValue::getName() const { return name; }
 
 llvm::AllocaInst* LocalValue::getAlloca() const { return (llvm::AllocaInst*)ll; }
+
+FileRange LocalValue::getFileRange() const { return fileRange; }
 
 Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0), active(0) {
   if (parent) {
@@ -123,7 +133,7 @@ LocalValue* Block::getValue(const String& name) const {
   return nullptr;
 }
 
-LocalValue* Block::newValue(const String& name, IR::QatType* type, bool isVar, Maybe<FileRange> fileRange) {
+LocalValue* Block::newValue(const String& name, IR::QatType* type, bool isVar, FileRange fileRange) {
   values.push_back(new LocalValue(name, type, isVar, fn, std::move(fileRange)));
   SHOW("Heap allocated LocalValue")
   return values.back();
@@ -245,13 +255,23 @@ void Block::destroyLocals(IR::Context* ctx) {
   }
 }
 
+void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
+  for (auto* loc : values) {
+    jsonVals.push_back(loc->overviewToJson());
+  }
+  for (auto* child : children) {
+    child->outputLocalOverview(jsonVals);
+  }
+}
+
 Function::Function(QatModule* _mod, Identifier _name, QatType* returnType, bool _isRetTypeVariable, bool _is_async,
                    Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
                    const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn,
                    llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
-    : Value(nullptr, nullptr, false, Nature::pure), name(std::move(_name)), isReturnValueVariable(_isRetTypeVariable),
-      mod(_mod), arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
-      is_async(_is_async), hasVariadicArguments(_isVariadicArguments) //
+    : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
+      name(std::move(_name)), isReturnValueVariable(_isRetTypeVariable), mod(_mod), arguments(std::move(_args)),
+      visibility_info(_visibility_info), fileRange(std::move(_fileRange)), is_async(_is_async),
+      hasVariadicArguments(_isVariadicArguments) //
 {
   SHOW("Function name :: " << name.value << " ; " << this)
   Vec<ArgumentType*> argTypes;
@@ -346,6 +366,20 @@ Function* Function::Create(QatModule* mod, Identifier name, QatType* returnTy, c
                       std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
 }
 
+void Function::updateOverview() {
+  Vec<JsonValue> localsJson;
+  for (auto* block : blocks) {
+    block->outputLocalOverview(localsJson);
+  }
+  ovInfo._("fullName", getFullName())
+      ._("functionID", getID())
+      ._("moduleID", mod->getID())
+      ._("visibility", visibility_info)
+      ._("isAsync", is_async)
+      ._("isVariadic", hasVariadicArguments)
+      ._("locals", localsJson);
+}
+
 bool Function::hasVariadicArgs() const { return hasVariadicArguments; }
 
 bool Function::isAsyncFunction() const { return is_async; }
@@ -391,7 +425,13 @@ usize& Function::getMovedCounter() { return movedCounter; }
 TemplateFunction::TemplateFunction(Identifier _name, Vec<ast::TemplatedType*> _templates,
                                    ast::FunctionDefinition* _functionDef, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
-    : name(std::move(_name)), templates(std::move(_templates)), functionDefinition(_functionDef), parent(_parent),
+    : EntityOverview("genericFunction",
+                     Json()
+                         ._("fullName", _parent->getFullNameWithChild(_name.value))
+                         ._("moduleID", _parent->getID())
+                         ._("visibility", _visibInfo),
+                     _name.range),
+      name(std::move(_name)), templates(std::move(_templates)), functionDefinition(_functionDef), parent(_parent),
       visibInfo(_visibInfo) {
   parent->templateFunctions.push_back(this);
 }
@@ -459,7 +499,7 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
           auto* restBlock = new IR::Block(ctx->fn, nullptr);
           restBlock->linkPrevBlock(currBlock);
           // NOLINTNEXTLINE(readability-magic-numbers)
-          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, None);
+          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
                                    count->getLLVM());
           ctx->builder.CreateCondBr(
@@ -554,7 +594,7 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
               auto* restBlock = new IR::Block(ctx->fn, nullptr);
               restBlock->linkPrevBlock(currBlock);
               // NOLINTNEXTLINE(readability-magic-numbers)
-              auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);
+              auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
               ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
                                        count->getLLVM());
               ctx->builder.CreateCondBr(

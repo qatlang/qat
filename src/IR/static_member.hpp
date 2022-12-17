@@ -4,6 +4,7 @@
 #include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
 #include "./value.hpp"
+#include "entity_overview.hpp"
 
 #include <optional>
 #include <string>
@@ -13,20 +14,14 @@ namespace qat::IR {
 class CoreType;
 class QatModule;
 
-class StaticMember : public Value {
+class StaticMember final : public Value, public EntityOverview {
 private:
-  Identifier name;
-
-  CoreType* parent;
-
-  Value* initial;
-
-  u64 loads;
-
-  u64 stores;
-
-  u64 refers;
-
+  Identifier            name;
+  CoreType*             parent;
+  Value*                initial;
+  u64                   loads;
+  u64                   stores;
+  u64                   refers;
   utils::VisibilityInfo visibility;
 
 public:
@@ -42,6 +37,9 @@ public:
   useit u64                          getStoreCount() const;
   useit u64                          getReferCount() const;
   useit Json                         toJson() const;
+  void                               updateOverview() final;
+
+  ~StaticMember() final = default;
 };
 
 } // namespace qat::IR

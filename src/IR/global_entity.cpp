@@ -1,12 +1,13 @@
 #include "./global_entity.hpp"
 #include "./qat_module.hpp"
+#include "entity_overview.hpp"
 
 namespace qat::IR {
 
 GlobalEntity::GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable, llvm::Value* _value,
                            const utils::VisibilityInfo& _visibility)
-    : Value(_value, _type, _is_variable, Nature::assignable), name(std::move(_name)), visibility(_visibility),
-      parent(_parent) {
+    : Value(_value, _type, _is_variable, Nature::assignable), name(std::move(_name)),
+      EntityOverview("global", Json(), _name.range), visibility(_visibility), parent(_parent) {
   parent->globalEntities.push_back(this);
 }
 

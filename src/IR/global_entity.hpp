@@ -4,6 +4,7 @@
 #include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
 #include "./value.hpp"
+#include "entity_overview.hpp"
 
 #include <optional>
 #include <string>
@@ -12,7 +13,7 @@ namespace qat::IR {
 
 class QatModule;
 
-class GlobalEntity : public Value {
+class GlobalEntity : public Value, public EntityOverview {
 private:
   Identifier            name;
   utils::VisibilityInfo visibility;

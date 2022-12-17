@@ -73,8 +73,8 @@ QatModule* QatModule::getFolderModule(const fs::path& fPath) {
 
 QatModule::QatModule(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _type,
                      const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
-    : name(std::move(_name)), moduleType(_type), filePath(std::move(_filepath)), basePath(std::move(_basePath)),
-      visibility(_visibility) {
+    : EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
+      filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
   llvmModule = new llvm::Module(getFullName(), ctx);
   llvmModule->setModuleIdentifier(getFullName());
   llvmModule->setSourceFileName(filePath.string());
@@ -236,15 +236,95 @@ QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::pa
   return sub;
 }
 
-void QatModule::addMention(String kind, FileRange origin, FileRange source) {
-  getParentFile()->allMentions.emplace_back(kind, origin, source);
+void QatModule::addBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange) {
+  fsBroughtMentions.push_back(Pair<IR::QatModule*, FileRange>(otherMod, fileRange));
 }
 
-void QatModule::addBroughtMention(IR::QatModule* otherMod, FileRange fileRange) {
-  broughtMentions.push_back(Pair<IR::QatModule*, FileRange>(otherMod, fileRange));
+Vec<Pair<QatModule*, FileRange>> const& QatModule::getBroughtMentions() const { return fsBroughtMentions; }
+
+void QatModule::updateOverview() {
+  String moduleTyStr;
+  switch (moduleType) {
+    case ModuleType::box: {
+      moduleTyStr = "box";
+      break;
+    }
+    case ModuleType::file: {
+      moduleTyStr = "file";
+      break;
+    }
+    case ModuleType::folder: {
+      moduleTyStr = "folder";
+      break;
+    }
+    case ModuleType::lib: {
+      moduleTyStr = "lib";
+      break;
+    }
+  }
+  Vec<JsonValue> integerBitsVal;
+  Vec<JsonValue> unsignedBitsVal;
+  for (auto bit : integerBitwidths) {
+    integerBitsVal.push_back(JsonValue((unsigned long long)bit));
+  }
+  for (auto bit : unsignedBitwidths) {
+    unsignedBitsVal.push_back(JsonValue((unsigned long long)bit));
+  }
+  Vec<JsonValue> fsBroughtMentionsJson;
+  for (auto const& men : fsBroughtMentions) {
+    fsBroughtMentionsJson.push_back(men.second);
+  }
+  ovInfo._("moduleID", getID())
+      ._("fullName", getFullName())
+      ._("isFilesystemLib", rootLib)
+      ._("moduleType", moduleTyStr)
+      ._("visibility", visibility)
+      ._("hasModuleInitialiser", ((moduleInitialiser != nullptr) && (nonConstantGlobals > 0)))
+      ._("integerBitwidths", integerBitsVal)
+      ._("unsignedBitwidths", unsignedBitsVal)
+      ._("filesystemBroughtMentions", fsBroughtMentionsJson);
+  if (isModuleInfoProvided) {
+    ovInfo._("moduleInfo", moduleInfo);
+  }
 }
 
-Vec<Pair<QatModule*, FileRange>> const& QatModule::getBroughtMentions() const { return broughtMentions; }
+void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
+                                  Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
+                                  Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson,
+                                  Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson) {
+  if (!isOverviewOutputted) {
+    isOverviewOutputted = true;
+    modulesJson.push_back(overviewToJson());
+    for (auto* fun : functions) {
+      functionsJson.push_back(fun->overviewToJson());
+    }
+    for (auto* fun : templateFunctions) {
+      genericFunctionsJson.push_back(fun->overviewToJson());
+    }
+    for (auto* cTy : coreTypes) {
+      coreTypesJson.push_back(cTy->overviewToJson());
+    }
+    for (auto* cTy : templateCoreTypes) {
+      genericCoreTypesJson.push_back(cTy->overviewToJson());
+    }
+    for (auto* mTy : mixTypes) {
+      mixTypesJson.push_back(mTy->overviewToJson());
+    }
+    for (auto* reg : regions) {
+      regionJson.push_back(reg->overviewToJson());
+    }
+    for (auto* chTy : choiceTypes) {
+      choiceJson.push_back(chTy->overviewToJson());
+    }
+    for (auto* tDef : typeDefs) {
+      defsJson.push_back(tDef->overviewToJson());
+    }
+    for (auto* sub : submodules) {
+      sub->outputAllOverview(modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
+                             mixTypesJson, regionJson, choiceJson, defsJson);
+    }
+  }
+}
 
 String QatModule::getName() const { return name.value; }
 

@@ -11,7 +11,7 @@
 #include "./types/core_type.hpp"
 #include "./types/float.hpp"
 #include "./types/mix.hpp"
-#include "mention.hpp"
+#include "entity_overview.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <bits/types/FILE.h>
@@ -57,9 +57,18 @@ private:
 
 public:
   ModuleInfo() = default;
+
+  operator JsonValue() {
+    return Json()
+        ._("linksPThread", linkPthread)
+        ._("hasForeignID", foreignID.has_value())
+        ._("hasOutputName", outputName.has_value())
+        ._("outputName", outputName.has_value() ? outputName.value() : JsonValue())
+        ._("foreignID", foreignID.has_value() ? foreignID.value() : JsonValue());
+  }
 };
 
-class QatModule : public Uniq {
+class QatModule : public Uniq, public EntityOverview {
   friend class Region;
   friend class CoreType;
   friend class MixType;
@@ -122,9 +131,7 @@ private:
   Vec<u64>           unsignedBitwidths;
   Vec<FloatTypeKind> floatKinds;
 
-  // Potentially change this to have mentions inside entities
-  Vec<Mention>                     allMentions;
-  Vec<Pair<QatModule*, FileRange>> broughtMentions;
+  Vec<Pair<QatModule*, FileRange>> fsBroughtMentions;
 
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
@@ -132,13 +139,14 @@ private:
   bool                  hasMain = false;
   fs::path              llPath;
   Maybe<fs::path>       objectFilePath;
-  mutable bool          hasCreatedModules  = false;
-  mutable bool          hasHandledBrings   = false;
-  mutable bool          hasDefinedTypes    = false;
-  mutable bool          hasDefinedNodes    = false;
-  mutable bool          isEmitted          = false;
-  bool                  isCompiledToObject = false;
-  bool                  isBundled          = false;
+  mutable bool          hasCreatedModules   = false;
+  mutable bool          hasHandledBrings    = false;
+  mutable bool          hasDefinedTypes     = false;
+  mutable bool          hasDefinedNodes     = false;
+  mutable bool          isEmitted           = false;
+  mutable bool          isOverviewOutputted = false;
+  bool                  isCompiledToObject  = false;
+  bool                  isBundled           = false;
 
   void addMember(QatModule* mod);
 
@@ -202,9 +210,13 @@ public:
   useit bool hasMainFn() const;
   void       setHasMainFn();
 
-  void                                    addMention(String kind, FileRange origin, FileRange source);
-  void                                    addBroughtMention(IR::QatModule* otherMod, FileRange fileRange);
+  void                                    addBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange);
   Vec<Pair<QatModule*, FileRange>> const& getBroughtMentions() const;
+  void                                    updateOverview() final;
+  void                                    outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
+                                                            Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
+                                                            Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson,
+                                                            Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson);
 
   // LIB
 

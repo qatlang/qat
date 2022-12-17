@@ -3569,7 +3569,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
       case TokenType::self: {
         if (isNext(TokenType::identifier, i)) {
           SHOW("Creating member argument: " << ValueAt(i + 1))
-          args.push_back(ast::Argument::ForConstructor({ValueAt(i + 1), FileRange RangeSpan(i, i + 1)}, nullptr, true));
+          args.push_back(ast::Argument::ForConstructor({ValueAt(i + 1), RangeAt(i + 1)}, nullptr, true));
           if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
             i += 2;
           } else {

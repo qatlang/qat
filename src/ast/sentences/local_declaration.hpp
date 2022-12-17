@@ -11,14 +11,14 @@ namespace qat::ast {
 class LocalDeclaration : public Sentence {
 private:
   QatType*    type = nullptr;
-  String      name;
+  Identifier  name;
   Expression* value = nullptr;
   bool        variability;
   bool        isRef;
   bool        isPtr;
 
 public:
-  LocalDeclaration(QatType* _type, bool isRef, bool isPtr, String _name, Expression* _value, bool _variability,
+  LocalDeclaration(QatType* _type, bool isRef, bool isPtr, Identifier _name, Expression* _value, bool _variability,
                    FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;

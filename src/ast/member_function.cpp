@@ -230,12 +230,13 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
       IR::LocalValue* localArg = nullptr;
       SHOW("Creating arg at " << i << " for async fn")
       if (i == 0) {
-        localArg = block->newValue("''", fnOrigArgs.at(0)->getType(), false);
+        localArg = block->newValue("''", fnOrigArgs.at(0)->getType(), false,
+                                   fnOrigArgs.at(0)->getType()->asReference()->getSubType()->asCore()->getName().range);
       } else if (i == (fnOrigArgs.size() - 1)) {
-        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable(), {""});
       } else {
-        localArg =
-            block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+        localArg = block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(),
+                                   fnOrigArgs.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
       };
       SHOW("Storing arg for async fn")
       SHOW("Arg alloca for future is: " << localArg->getType()->asReference()->toString())
@@ -256,7 +257,7 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
     SHOW("About to allocate necessary arguments")
     auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
     auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
-    auto* self       = block->newValue("''", corePtrTy, false);
+    auto* self       = block->newValue("''", corePtrTy, false, corePtrTy->getSubType()->asCore()->getName().range);
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
     ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
     SHOW("Arguments size is " << argIRTypes.size())
@@ -274,8 +275,8 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
       } else {
         SHOW("Argument is variable")
-        auto* argVal =
-            block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
+        auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
+                                       argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
         SHOW("Created local value for the argument")
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
       }

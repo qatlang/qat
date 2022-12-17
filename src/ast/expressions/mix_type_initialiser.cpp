@@ -67,8 +67,8 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
           } else {
             ctx->Error("The type of the local declaration is not compatible here", fileRange);
           }
-        } else if (!irName.empty()) {
-          local    = ctx->fn->getBlock()->newValue(irName, uTy, isVar);
+        } else if (irName) {
+          local    = ctx->fn->getBlock()->newValue(irName->value, uTy, isVar, irName->range);
           newValue = local->getAlloca();
         } else {
           newValue = ctx->builder.CreateAlloca(uTy->getLLVMType(), 0u);

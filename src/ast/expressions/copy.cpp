@@ -24,7 +24,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
                      ? ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u)
                      : local->getAlloca();
       } else if (irName.has_value()) {
-        local  = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar);
+        local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         alloca = local->getAlloca();
       } else {
         alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());

@@ -11,8 +11,8 @@ class Default : public Expression {
 private:
   IR::QatType* candidateType = nullptr;
 
-  Maybe<String> irName;
-  bool          isVar = false;
+  Maybe<Identifier> irName;
+  bool              isVar = false;
 
 public:
   explicit Default(FileRange _fileRange);

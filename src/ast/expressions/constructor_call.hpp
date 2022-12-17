@@ -24,9 +24,9 @@ private:
   Maybe<QatType*>    ownerType;
   Maybe<Expression*> ownCount;
 
-  mutable IR::LocalValue* local = nullptr;
-  mutable Maybe<String>   irName;
-  mutable bool            isVar = true;
+  mutable IR::LocalValue*   local = nullptr;
+  mutable Maybe<Identifier> irName;
+  mutable bool              isVar = true;
 
   IR::PointerOwner getIRPtrOwnerTy(IR::Context* ctx) const;
   String           ownTyToString() const;

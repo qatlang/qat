@@ -52,8 +52,9 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
     llvm::AllocaInst* alloca;
     if (hasLocal()) {
       alloca = local->getAlloca();
-    } else if (!name.empty()) {
-      auto* loc = ctx->fn->getBlock()->newValue(name, IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar);
+    } else if (name) {
+      auto* loc = ctx->fn->getBlock()->newValue(name->value, IR::ArrayType::get(elemTy, values.size(), ctx->llctx),
+                                                isVar, name->range);
       alloca    = loc->getAlloca();
     } else {
       alloca = ctx->builder.CreateAlloca(llvm::ArrayType::get(elemTy->getLLVMType(), values.size()));

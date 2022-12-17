@@ -37,7 +37,8 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
       llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
     }
     auto  uniq      = hasTag() ? tag.value().value : utils::unique_id();
-    auto* loopIndex = ctx->fn->getBlock()->newValue("loop'index'" + utils::unique_id(), countTy, false);
+    auto* loopIndex = ctx->fn->getBlock()->newValue("loop'index'" + utils::unique_id(), countTy, false,
+                                                    tag.has_value() ? tag->range : fileRange);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u), loopIndex->getAlloca());
     auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
     SHOW("loop times true block " << ctx->fn->getFullName() << "." << trueBlock->getName())

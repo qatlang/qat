@@ -15,9 +15,9 @@ private:
   Vec<u64>                     indices;
   Vec<Expression*>             fieldValues;
 
-  IR::LocalValue* local = nullptr;
-  String          irName;
-  bool            isVar = false;
+  IR::LocalValue*   local = nullptr;
+  Maybe<Identifier> irName;
+  bool              isVar = false;
 
 public:
   PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,

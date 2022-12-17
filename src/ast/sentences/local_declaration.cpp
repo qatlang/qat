@@ -16,16 +16,16 @@
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, String _name, Expression* _value,
+LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Identifier _name, Expression* _value,
                                    bool _variability, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
-      isRef(_isRef), isPtr(_isPtr){SHOW("Name for local declaration is " << name)}
+      isRef(_isRef), isPtr(_isPtr){SHOW("Name for local declaration is " << name.value)}
 
                          IR::Value
                          * LocalDeclaration::emit(IR::Context * ctx) {
   auto* block = ctx->fn->getBlock();
-  if (block->hasValue(name)) {
-    ctx->Error("A local value named " + ctx->highlightError(name) +
+  if (block->hasValue(name.value)) {
+    ctx->Error("A local value named " + ctx->highlightError(name.value) +
                    " already exists in this scope. Please change name of this "
                    "declaration or check the logic",
                fileRange);
@@ -56,7 +56,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
                        ", but the provided value is not compatible",
                    value->fileRange);
       }
-      auto* loc  = block->newValue(name, declType, variability);
+      auto* loc  = block->newValue(name.value, declType, variability, name.range);
       arr->local = loc;
       (void)arr->emit(ctx);
       return nullptr;
@@ -83,7 +83,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* plainTy = plain->type->emit(ctx);
       if (declType->isSame(plainTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(plainTy))) {
-        auto* loc    = block->newValue(name, declType, variability);
+        auto* loc    = block->newValue(name.value, declType, variability, name.range);
         plain->local = loc;
         (void)plain->emit(ctx);
         return nullptr;
@@ -125,9 +125,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
                                        : declType->asPointer()->getSubType()->isSame(constrTy))
                 : (declType->isMaybe() ? declType->asMaybe()->getSubType()->isSame(constrTy)
                                        : declType->isSame(constrTy))) {
-        SHOW("Local Declaration => name : " << name << " type: " << declType->toString()
+        SHOW("Local Declaration => name : " << name.value << " type: " << declType->toString()
                                             << " variability: " << variability)
-        auto* loc   = block->newValue(name, declType, variability);
+        auto* loc   = block->newValue(name.value, declType, variability, name.range);
         cons->local = loc;
         if (type) {
           cons->isVar = variability;
@@ -158,7 +158,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* mixTy = mixTyIn->type->emit(ctx);
       if (declType->isSame(mixTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(mixTy))) {
-        auto* loc      = block->newValue(name, declType, variability);
+        auto* loc      = block->newValue(name.value, declType, variability, name.range);
         mixTyIn->local = loc;
         (void)mixTyIn->emit(ctx);
         return nullptr;
@@ -192,7 +192,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      moveVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
+      moveVal->local = ctx->fn->getBlock()->newValue(name.value, declType, variability, name.range);
       (void)moveVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {
@@ -207,7 +207,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      copyVal->local = ctx->fn->getBlock()->newValue(name, declType, variability);
+      copyVal->local = ctx->fn->getBlock()->newValue(name.value, declType, variability, name.range);
       (void)copyVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {
@@ -278,7 +278,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
       }
     }
     expVal = value->emit(ctx);
-    SHOW("Type of value to be assigned to local value " << name << " is " << expVal->getType()->toString())
+    SHOW("Type of value to be assigned to local value " << name.value << " is " << expVal->getType()->toString())
   }
   SHOW("Type inference for value is complete")
   if (type) {
@@ -292,7 +292,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
                    !declType->asReference()->getSubType()->isSame(expVal->getType())) &&
                   (declType->isMaybe() && !(declType->asMaybe()->getSubType()->isSame(expVal->getType()))) &&
                   !declType->isSame(expVal->getType()))) {
-      ctx->Error("Type of the local value " + ctx->highlightError(name) + " is " +
+      ctx->Error("Type of the local value " + ctx->highlightError(name.value) + " is " +
                      ctx->highlightError(declType->toString()) +
                      " does not match the expression to be assigned which is of type " +
                      ctx->highlightError(expVal->getType()->toString()),
@@ -316,7 +316,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
         }
         declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx->llctx);
         auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
-        auto* newValue = block->newValue(name, declType, variability);
+        auto* newValue = block->newValue(name.value, declType, variability, name.range);
         ctx->builder.CreateStore(fnCast, newValue->getLLVM());
         return nullptr;
       }
@@ -339,7 +339,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Str
     }
   }
   SHOW("Creating new value")
-  auto* newValue = block->newValue(name, declType, variability);
+  auto* newValue = block->newValue(name.value, declType, variability, name.range);
   if (expVal) {
     if (declType->isMaybe()) {
       SHOW("Got sub type")

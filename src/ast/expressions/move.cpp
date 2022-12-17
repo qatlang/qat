@@ -24,7 +24,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
                      : local->getAlloca();
       } else if (irName.has_value()) {
         SHOW("Created local for move from name")
-        local  = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar);
+        local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         alloca = local->getAlloca();
       } else {
         alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());

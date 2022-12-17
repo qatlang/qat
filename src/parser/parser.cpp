@@ -3023,7 +3023,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   (cacheTy.empty() ? (new ast::NamedType(cacheSymbol.value().relative, cacheSymbol.value().name, false,
                                                          cacheSymbol.value().fileRange))
                                    : cacheTy.back()),
-                  false, false, token.value, exp, var, token.fileRange));
+                  false, false, {token.value, token.fileRange}, exp, var, token.fileRange));
               var = false;
               cacheTy.clear();
               cacheSymbol = None;
@@ -3224,7 +3224,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             if (endRes.has_value()) {
               auto  end = endRes.value();
               auto* exp = parseExpression(preCtx, None, i + 2, end).first;
-              result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, ValueAt(i + 1), exp, isVarDecl,
+              result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, IdentifierAt(i + 1), exp, isVarDecl,
                                                          RangeSpan(start, end)));
               cacheSymbol = None;
               cacheTy.clear();
@@ -3240,13 +3240,13 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                 auto  asgnPos = firstPrimaryPosition(TokenType::assignment, i + 2).value();
                 auto* typeRes = parseType(preCtx, i + 2, asgnPos).first;
                 auto* exp     = parseExpression(preCtx, None, asgnPos, endRes.value()).first;
-                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, ValueAt(i + 1), exp, isVarDecl,
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), exp, isVarDecl,
                                                            RangeSpan(start, endRes.value())));
               } else {
                 // No value for the assignment
                 auto* typeRes = parseType(preCtx, i + 2, endRes.value()).first;
-                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, ValueAt(i + 1), nullptr, isVarDecl,
-                                                           RangeSpan(start, endRes.value())));
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), nullptr,
+                                                           isVarDecl, RangeSpan(start, endRes.value())));
               }
               i = endRes.value();
               break;

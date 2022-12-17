@@ -14,9 +14,9 @@ private:
 
   //
 
-  IR::LocalValue* local;
-  String          name;
-  bool            isVar;
+  IR::LocalValue*   local;
+  Maybe<Identifier> name;
+  bool              isVar;
 
 public:
   ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange);

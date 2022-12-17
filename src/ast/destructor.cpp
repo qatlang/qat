@@ -31,7 +31,7 @@ IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes = memberFn->getType()->asFunction()->getArgumentTypes();
   auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
-  auto* self       = block->newValue("''", corePtrTy, true);
+  auto* self       = block->newValue("''", corePtrTy, true, corePtrTy->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(memberFn->getLLVMFunction()->getArg(0u), self->getLLVM());
   ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
   emitSentences(sentences, ctx);

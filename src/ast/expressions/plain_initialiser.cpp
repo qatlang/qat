@@ -22,8 +22,8 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
             llvm::AllocaInst* alloca = nullptr;
             if (local) {
               alloca = local->getAlloca();
-            } else if (!irName.empty()) {
-              local  = ctx->fn->getBlock()->newValue(irName, cTy, isVar);
+            } else if (irName) {
+              local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
               alloca = local->getAlloca();
             } else {
               alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
@@ -128,8 +128,8 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       llvm::AllocaInst* alloca;
       if (local) {
         alloca = local->getAlloca();
-      } else if (!irName.empty()) {
-        local  = ctx->fn->getBlock()->newValue(irName, cTy, isVar);
+      } else if (irName) {
+        local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         alloca = local->getAlloca();
       } else {
         alloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), 0u);

@@ -17,7 +17,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
                    fileRange);
       if (irName.has_value()) {
         auto* block = ctx->fn->getBlock();
-        auto* loc   = block->newValue(irName.value(), candidateType, isVar);
+        auto* loc   = block->newValue(irName->value, candidateType, isVar, irName->range);
         ctx->builder.CreateStore(llvm::ConstantInt::get(candidateType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
       } else {
@@ -32,7 +32,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
                    fileRange);
       if (irName.has_value()) {
         auto* block = ctx->fn->getBlock();
-        auto* loc   = block->newValue(irName.value(), candidateType, isVar);
+        auto* loc   = block->newValue(irName->value, candidateType, isVar, irName->range);
         ctx->builder.CreateStore(llvm::ConstantInt::get(candidateType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
       } else {
@@ -52,11 +52,11 @@ IR::Value* Default::emit(IR::Context* ctx) {
         auto* defFn = cTy->getDefaultConstructor();
         auto* block = ctx->fn->getBlock();
         if (irName.has_value()) {
-          auto* loc = block->newValue(irName.value(), candidateType, isVar);
+          auto* loc = block->newValue(irName->value, candidateType, isVar, irName->range);
           (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
           return loc;
         } else {
-          auto* loc = block->newValue(utils::unique_id(), cTy, true);
+          auto* loc = block->newValue(utils::unique_id(), cTy, true, fileRange);
           (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
           auto* res = new IR::Value(loc->getAlloca(), cTy, false, IR::Nature::temporary);
           res->setLocalID(loc->getLocalID());
@@ -71,7 +71,8 @@ IR::Value* Default::emit(IR::Context* ctx) {
     } else if (candidateType->isMaybe()) {
       auto* mTy   = candidateType->asMaybe();
       auto* block = ctx->fn->getBlock();
-      auto* loc   = block->newValue(irName.has_value() ? irName.value() : utils::unique_id(), mTy, true);
+      auto* loc   = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
+                                  irName.has_value() ? irName->range : fileRange);
       ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
                                ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getAlloca(), 0u));
       ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),

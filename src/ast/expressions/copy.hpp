@@ -10,10 +10,10 @@ class Copy : public Expression {
   friend class LocalDeclaration;
 
 private:
-  Expression*     exp;
-  IR::LocalValue* local = nullptr;
-  Maybe<String>   irName;
-  bool            isVar = false;
+  Expression*       exp;
+  IR::LocalValue*   local = nullptr;
+  Maybe<Identifier> irName;
+  bool              isVar = false;
 
 public:
   Copy(Expression* exp, FileRange fileRange);

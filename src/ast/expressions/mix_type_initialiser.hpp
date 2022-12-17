@@ -14,9 +14,9 @@ private:
   String             subName;
   Maybe<Expression*> expression;
 
-  IR::LocalValue* local = nullptr;
-  String          irName;
-  bool            isVar = false;
+  IR::LocalValue*   local = nullptr;
+  Maybe<Identifier> irName;
+  bool              isVar = false;
 
 public:
   MixTypeInitialiser(QatType* type, String subName, Maybe<Expression*> expression, FileRange fileRange);

@@ -204,7 +204,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           llAlloca = local->getAlloca();
         }
       } else if (irName) {
-        local    = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar, fileRange);
+        local    = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
@@ -247,15 +247,15 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       restBlock->setActive(ctx->builder);
       auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx->llctx);
       auto* resVal =
-          local
-              ? (local->getType()->isMaybe()
-                     ? new IR::Value(
-                           ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
-                           IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
-                                                  ctx->llctx),
-                           false, IR::Nature::temporary)
-                     : local)
-              : restBlock->newValue(irName.has_value() ? irName.value() : utils::unique_id(), ptrTy, isVar, fileRange);
+          local ? (local->getType()->isMaybe()
+                       ? new IR::Value(
+                             ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
+                             IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
+                                                    ctx->llctx),
+                             false, IR::Nature::temporary)
+                       : local)
+                : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy, isVar,
+                                      irName.has_value() ? irName->range : fileRange);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
       ctx->builder.CreateStore(oCount->getLLVM(),
                                ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 1u));

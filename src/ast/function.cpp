@@ -260,10 +260,11 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
       IR::LocalValue* localArg = nullptr;
       SHOW("Creating arg at " << i << " for async fn")
       if (i == (fnOrigArgs.size() - 1)) {
-        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable(),
+                                   prototype->name.range);
       } else {
-        localArg =
-            block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable());
+        localArg = block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(),
+                                   fnOrigArgs.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
       };
       SHOW("Storing arg for async fn")
       SHOW("Arg alloca for future is: " << localArg->getType()->asReference()->toString())
@@ -308,8 +309,8 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
       for (usize i = 0; i < argIRTypes.size(); i++) {
         SHOW("Argument name is " << argIRTypes.at(i)->getName())
         SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-        auto* argVal =
-            block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), argIRTypes.at(i)->isVariable());
+        auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
+                                       argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
         SHOW("Created local value for the argument")
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
       }

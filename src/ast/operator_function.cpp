@@ -151,7 +151,8 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
   auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
-  auto* self       = block->newValue("''", corePtrTy, prototype->isVariationFn);
+  auto* self =
+      block->newValue("''", corePtrTy, prototype->isVariationFn, corePtrTy->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
   ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
   for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -163,7 +164,8 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
     } else {
       SHOW("Argument is variable")
-      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true);
+      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
+                                     prototype->arguments.at(i)->getName().range);
       SHOW("Created local value for the argument")
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
     }

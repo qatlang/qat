@@ -28,6 +28,8 @@ enum class MemberFnType {
   defaultConstructor,
 };
 
+String memberFnTypeToString(MemberFnType type);
+
 class CoreType;
 
 /**
@@ -104,6 +106,7 @@ public:
   useit String       getFullName() const final;
   useit bool         isMemberFunction() const final;
   useit CoreType*    getParentType();
+  void               updateOverview() final;
   useit Json         toJson() const;
 };
 

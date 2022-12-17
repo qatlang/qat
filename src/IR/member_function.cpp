@@ -1,6 +1,7 @@
 #include "./member_function.hpp"
 #include "../memory_tracker.hpp"
 #include "../show.hpp"
+#include "./qat_module.hpp"
 #include "argument.hpp"
 #include "function.hpp"
 #include "types/core_type.hpp"
@@ -79,6 +80,37 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, CoreType
       parent->unaryOperators.push_back(this);
       break;
     }
+  }
+}
+
+String memberFnTypeToString(MemberFnType type) {
+  switch (type) {
+    case MemberFnType::normal:
+      return "normalMemberFn";
+    case MemberFnType::staticFn:
+      return "staticFunction";
+    case MemberFnType::fromConvertor:
+      return "fromConvertor";
+    case MemberFnType::toConvertor:
+      return "toConvertor";
+    case MemberFnType::constructor:
+      return "constructor";
+    case MemberFnType::copyConstructor:
+      return "copyConstructor";
+    case MemberFnType::moveConstructor:
+      return "moveConstructor";
+    case MemberFnType::copyAssignment:
+      return "copyAssignment";
+    case MemberFnType::moveAssignment:
+      return "moveAssignment";
+    case MemberFnType::destructor:
+      return "destructor";
+    case MemberFnType::binaryOperator:
+      return "binaryOperator";
+    case MemberFnType::unaryOperator:
+      return "unaryOperator";
+    case MemberFnType::defaultConstructor:
+      return "defaultConstructor";
   }
 }
 
@@ -253,6 +285,25 @@ bool MemberFunction::isMemberFunction() const { return true; }
 CoreType* MemberFunction::getParentType() { return parent; }
 
 MemberFnType MemberFunction::getMemberFnType() { return fnType; }
+
+void MemberFunction::updateOverview() {
+  Vec<JsonValue> localsJson;
+  for (auto* block : blocks) {
+    block->outputLocalOverview(localsJson);
+  }
+  ovRange = selfName.range;
+  ovInfo._("fullName", getFullName())
+      ._("selfName", selfName)
+      ._("parentTypeID", parent->getID())
+      ._("moduleID", parent->getParent()->getID())
+      ._("isStatic", isStatic)
+      ._("isVariation", isVariation)
+      ._("memberFunctionType", memberFnTypeToString(fnType))
+      ._("visibility", visibility_info)
+      ._("isAsync", is_async)
+      ._("isVariadic", hasVariadicArguments)
+      ._("locals", localsJson);
+}
 
 Json MemberFunction::toJson() const {
   // TODO - Implement remaining

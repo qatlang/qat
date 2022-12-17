@@ -14,7 +14,7 @@ ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<O
       ownCount(_ownCount) {}
 
 IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
-  switch (ownTy.value()) {
+  switch (ownTy.value_or(OwnType::parent)) {
     case OwnType::type: {
       if (!ctx->fn->isMemberFunction()) {
         ctx->Error("The current function is not a member function of any type", fileRange);
@@ -74,6 +74,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   bool  hasOwnCount = false;
   auto  ownerValue  = getIRPtrOwnerTy(ctx);
   if (oCount) {
+    SHOW("Has own count")
     hasOwnCount   = true;
     auto* countTy = oCount->isReference() ? oCount->getType()->asReference()->getSubType() : oCount->getType();
     if (!countTy->isUnsignedInteger()) {
@@ -131,6 +132,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         ctx->Error("No matching constructor found for core type " + ctx->highlightError(cTy->getFullName()), fileRange);
       }
     }
+    SHOW("Found convertor/constructor")
     // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
     auto argTys = cons->getType()->asFunction()->getArgumentTypes();
     for (usize i = 1; i < argTys.size(); i++) {
@@ -202,7 +204,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           llAlloca = local->getAlloca();
         }
       } else if (irName) {
-        local    = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar);
+        local    = ctx->fn->getBlock()->newValue(irName.value(), cTy, isVar, fileRange);
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
@@ -217,7 +219,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       auto* restBlock = new IR::Block(ctx->fn, nullptr);
       restBlock->linkPrevBlock(currBlock);
       // NOLINTNEXTLINE(readability-magic-numbers)
-      auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true);
+      auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
       ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false), count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       condBlock->setActive(ctx->builder);
@@ -245,14 +247,15 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       restBlock->setActive(ctx->builder);
       auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx->llctx);
       auto* resVal =
-          local ? (local->getType()->isMaybe()
-                       ? new IR::Value(
-                             ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
-                             IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
-                                                    ctx->llctx),
-                             false, IR::Nature::temporary)
-                       : local)
-                : restBlock->newValue(irName.has_value() ? irName.value() : utils::unique_id(), ptrTy, isVar);
+          local
+              ? (local->getType()->isMaybe()
+                     ? new IR::Value(
+                           ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
+                           IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
+                                                  ctx->llctx),
+                           false, IR::Nature::temporary)
+                     : local)
+              : restBlock->newValue(irName.has_value() ? irName.value() : utils::unique_id(), ptrTy, isVar, fileRange);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
       ctx->builder.CreateStore(oCount->getLLVM(),
                                ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 1u));

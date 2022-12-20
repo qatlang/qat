@@ -121,6 +121,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   llvm::Value* lhsVal           = lhsEmit->getLLVM();
   llvm::Value* rhsVal           = rhsEmit->getLLVM();
   auto         referenceHandler = [&]() {
+    SHOW("Reference handler ::")
     if ((lhsEmit->getType()->isReference()
                      ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
                 lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
@@ -133,31 +134,53 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                       ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
                  lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
                       : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) {
+        SHOW("LHS side")
         if (lhsEmit->getType()->isReference()) {
+          SHOW("Loading LHS")
           lhsEmit->loadImplicitPointer(ctx->builder);
         }
+        SHOW("LHS: Getting pointer type")
         auto* ptrType = lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
                                                                   : lhsEmit->getType()->asPointer();
-        lhsEmit = new IR::Value(
-            ctx->builder.CreateLoad(llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
-                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u)),
+        SHOW("LHS got pointer type")
+        lhsType            = ptrType;
+        bool isLHSConstant = llvm::isa<llvm::Constant>(lhsEmit->getLLVM());
+        lhsEmit            = new IR::Value(
+            isLHSConstant ? llvm::dyn_cast<llvm::Value>(
+                                llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u))
+                          : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
+                                llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u))),
             IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
             false, IR::Nature::temporary);
+        lhsVal = lhsEmit->getLLVM();
+        SHOW("Set LhsEmit")
       }
       if (rhsEmit->getType()->isReference()
                       ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
                  rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
                       : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti())) {
+        SHOW("RHS side")
         if (rhsEmit->getType()->isReference()) {
+          SHOW("Loading RHS")
           rhsEmit->loadImplicitPointer(ctx->builder);
         }
+        SHOW("RHS: Getting pointer type")
         auto* ptrType = rhsEmit->getType()->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
                                                                   : rhsEmit->getType()->asPointer();
-        rhsEmit = new IR::Value(
-            ctx->builder.CreateLoad(llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
-                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)),
+        SHOW("RHS got pointer type")
+        rhsType            = ptrType;
+        bool isRHSConstant = llvm::isa<llvm::Constant>(rhsEmit->getLLVM());
+        rhsEmit            = new IR::Value(
+            (isRHSConstant ? llvm::dyn_cast<llvm::Value>(
+                                 llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u))
+                                              : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
+                                 llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                 ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)))),
             IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
             false, IR::Nature::temporary);
+        rhsVal = rhsEmit->getLLVM();
+        SHOW("Set RhsEmit")
       }
       return;
     }
@@ -538,7 +561,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     }
   } else if ((lhsType->isPointer() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isPointer())) &&
              (rhsType->isPointer() || (rhsType->isReference() && rhsType->asReference()->getSubType()->isPointer()))) {
+    SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
     referenceHandler();
+    SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
     if ((lhsType->isReference() ? lhsType->asReference()->getSubType()->asPointer() : lhsType->asPointer())
             ->getSubType()
             ->isSame((rhsType->isReference() ? rhsType->asReference()->getSubType()->asPointer() : rhsType->asPointer())

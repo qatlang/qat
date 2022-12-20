@@ -1,6 +1,7 @@
 #include "./loop_n_times.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../utils/unique_id.hpp"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
 
@@ -23,6 +24,9 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
+    if (ctx->fn->getBlock()->hasValue(tag->value)) {
+      ctx->Error("There already exists another local value with the same name as this tag", tag->range);
+    }
   }
   auto* limit   = count->emit(ctx);
   auto* countTy = limit->getType();
@@ -37,8 +41,7 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
       llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
     }
     auto  uniq      = hasTag() ? tag.value().value : utils::unique_id();
-    auto* loopIndex = ctx->fn->getBlock()->newValue("loop'index'" + utils::unique_id(), countTy, false,
-                                                    tag.has_value() ? tag->range : fileRange);
+    auto* loopIndex = ctx->fn->getBlock()->newValue(uniq, countTy, false, tag.has_value() ? tag->range : fileRange);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u), loopIndex->getAlloca());
     auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
     SHOW("loop times true block " << ctx->fn->getFullName() << "." << trueBlock->getName())

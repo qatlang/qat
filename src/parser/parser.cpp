@@ -2150,7 +2150,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
             // FIXME - Self member function call
           } else {
-            cachedExpressions.push_back(new ast::SelfMember(ValueAt(i + 1), RangeSpan(i, i + 1)));
+            cachedExpressions.push_back(new ast::SelfMember(IdentifierAt(i + 1), RangeSpan(i, i + 1)));
             i++;
           }
         } else {
@@ -2431,6 +2431,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         } else {
           Error("Expected ( to start the expression to copy", RangeAt(i));
         }
+        break;
       }
       case TokenType::unaryOperator: {
         if (ValueAt(i) == "!" || ValueAt(i) == "-") {
@@ -2555,6 +2556,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         } else if (cachedSymbol.has_value()) {
           binaryOps = Pair<ast::Expression*, Token>(
               new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), token);
+          cachedSymbol = None;
         } else {
           binaryOps = Pair<ast::Expression*, Token>(cachedExpressions.back(), token);
           cachedExpressions.pop_back();
@@ -2673,6 +2675,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             }
           }
         }
+        break;
       }
       case TokenType::typeSeparator: {
         if (cachedSymbol.has_value()) {
@@ -2793,6 +2796,23 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                                                               FileRange(binaryOps->first->fileRange, rhs->fileRange)));
         binaryOps = None;
       }
+    }
+  }
+  if (binaryOps) {
+    SHOW("Binary ops are not empty")
+    if (!cachedExpressions.empty()) {
+      SHOW("Found lhs and rhs of binary exp")
+      auto* rhs = cachedExpressions.back();
+      cachedExpressions.pop_back();
+      cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                            FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+      binaryOps = None;
+    } else if (cachedSymbol.has_value()) {
+      auto* rhs    = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
+      cachedSymbol = None;
+      cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                            FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+      binaryOps = None;
     }
   }
   if (cachedExpressions.empty()) {

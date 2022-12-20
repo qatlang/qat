@@ -7,6 +7,7 @@
 #include "llvm/Config/llvm-config.h"
 #include <cstdlib>
 #include <filesystem>
+#include <system_error>
 
 namespace qat::cli {
 
@@ -150,9 +151,14 @@ Config::Config(u64 count, const char** args)
                          out);
             }
           } else {
-            cli::Error("Provided output path does not exist! Please provide "
-                       "path to an existing directory",
-                       out);
+            std::error_code errorCode;
+            fs::create_directories(out, errorCode);
+            if (errorCode) {
+              cli::Error(
+                  "Provided output path did not exist and creating the directory was unsuccessful with the error: " +
+                      errorCode.message(),
+                  out);
+            }
           }
           i++;
         } else {

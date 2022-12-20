@@ -1,5 +1,6 @@
 #include "./match.hpp"
 #include "../../IR/control_flow.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
@@ -60,6 +61,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
   }
   auto* curr      = ctx->fn->getBlock();
   auto* restBlock = new IR::Block(ctx->fn, nullptr);
+  restBlock->linkPrevBlock(curr);
   if (expTy->isMix()) {
     auto* mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
@@ -179,7 +181,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     Vec<Identifier> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto&  section = chain.at(i);
-      llvm::Value* caseVal;
+      llvm::Value* caseVal = nullptr;
       if (section.first->getType() == MatchType::mix) {
         ctx->Error("Expected the name of a variant of the choice type " +
                        ctx->highlightError(expTy->asMix()->getFullName()),
@@ -262,10 +264,117 @@ IR::Value* Match::emit(IR::Context* ctx) {
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
     restBlock->setActive(ctx->builder);
+  } else if (expTy->isStringSlice()) {
+    auto*        strTy = expTy->asStringSlice();
+    llvm::Value* strBuff;
+    llvm::Value* strCount;
+    bool         isStringConstant = false;
+    if (expEmit->isConstVal()) {
+      isStringConstant = true;
+      strBuff          = expEmit->asConst()->getLLVMConstant()->getAggregateElement(0u);
+      strCount         = expEmit->asConst()->getLLVMConstant()->getAggregateElement(1u);
+    } else {
+      if (expEmit->isImplicitPointer() || expEmit->isReference()) {
+        if (expEmit->isReference()) {
+          expEmit->loadImplicitPointer(ctx->builder);
+        }
+      } else {
+        expEmit->makeImplicitPointer(ctx, None);
+      }
+      strBuff  = ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
+                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 0u));
+      strCount = ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 1u));
+    }
+    for (auto& section : chain) {
+      if (section.first->getType() != MatchType::Exp) {
+        ctx->Error(
+            "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
+            section.first->getMainRange());
+      }
+      auto*        expMatchVal  = section.first->asExp();
+      IR::Value*   caseIR       = expMatchVal->getExpression()->emit(ctx);
+      llvm::Value* caseStrBuff  = nullptr;
+      llvm::Value* caseStrCount = nullptr;
+      // FIXME - Add optimisation for constant strings
+      if (caseIR->getType()->isStringSlice() ||
+          (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
+        auto* elemIter = curr->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
+        if (caseIR->isConstVal()) {
+          caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
+          caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
+        } else {
+          if (caseIR->isReference()) {
+            caseIR->loadImplicitPointer(ctx->builder);
+          } else if (!caseIR->isImplicitPointer()) {
+            caseIR->makeImplicitPointer(ctx, None);
+          }
+          caseStrBuff =
+              ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
+                                      ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+          caseStrCount =
+              ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                      ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+        }
+        auto* Ty64Int           = llvm::Type::getInt64Ty(ctx->llctx);
+        auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
+        auto* checkFalseBlock   = new IR::Block(ctx->fn, curr);
+        ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(strCount, caseStrCount), lenCheckTrueBlock->getBB(),
+                                  checkFalseBlock->getBB());
+        lenCheckTrueBlock->setActive(ctx->builder);
+        ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), elemIter->getLLVM());
+        auto* iterCondBlock  = new IR::Block(ctx->fn, lenCheckTrueBlock);
+        auto* iterTrueBlock  = new IR::Block(ctx->fn, lenCheckTrueBlock);
+        auto* iterFalseBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+        (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+        iterCondBlock->setActive(ctx->builder);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()), caseStrCount),
+            iterTrueBlock->getBB(), iterFalseBlock->getBB());
+        iterTrueBlock->setActive(ctx->builder);
+        auto* Ty8Int        = llvm::Type::getInt8Ty(ctx->llctx);
+        auto* iterIncrBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(
+                ctx->builder.CreateLoad(
+                    Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, strBuff,
+                                                           {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())})),
+                ctx->builder.CreateLoad(
+                    Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, caseStrBuff,
+                                                           {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())}))),
+            iterIncrBlock->getBB(), iterFalseBlock->getBB());
+        iterIncrBlock->setActive(ctx->builder);
+        ctx->builder.CreateStore(ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()),
+                                                        llvm::ConstantInt::get(Ty64Int, 1u)),
+                                 elemIter->getLLVM());
+        (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+        iterFalseBlock->setActive(ctx->builder);
+        auto* caseTrueBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(strCount, ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())),
+            caseTrueBlock->getBB(), checkFalseBlock->getBB());
+        caseTrueBlock->setActive(ctx->builder);
+        emitSentences(section.second, ctx);
+        caseTrueBlock->destroyLocals(ctx);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        checkFalseBlock->setActive(ctx->builder);
+      } else {
+        ctx->Error("Expected a string slice to be the expression for this match case",
+                   expMatchVal->getExpression()->fileRange);
+      }
+    }
+    if (elseCase.has_value()) {
+      emitSentences(elseCase.value(), ctx);
+      ctx->fn->getBlock()->destroyLocals(ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    } else {
+      ctx->Error(
+          "A string slice has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
+          fileRange);
+    }
+    restBlock->setActive(ctx->builder);
   }
-  // FIXME - Support Enum types
-  else {
-  }
+  // TODO - Add regexp support
   return nullptr;
 }
 

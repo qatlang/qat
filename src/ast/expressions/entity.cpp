@@ -12,11 +12,12 @@ IR::Value* Entity::emit(IR::Context* ctx) {
   if (fun) {
     auto* mod = ctx->getMod();
     if ((names.size() == 1) && (relative == 0)) {
-      auto singleName = names.front().value;
+      auto singleName = names.front();
       SHOW("Checking block " << fun->getBlock()->getName())
-      if (fun->getBlock()->hasValue(singleName)) {
-        SHOW("Found local value: " << singleName)
-        auto* local  = fun->getBlock()->getValue(singleName);
+      if (fun->getBlock()->hasValue(singleName.value)) {
+        SHOW("Found local value: " << singleName.value)
+        auto* local = fun->getBlock()->getValue(singleName.value);
+        local->addMention(singleName.range);
         auto* alloca = local->getAlloca();
         if (getExpectedKind() == ExpressionKind::assignable) {
           if (local->getType()->isReference() ? local->getType()->asReference()->isSubtypeVariable()
@@ -25,7 +26,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
             val->setLocalID(local->getID());
             return val;
           } else {
-            ctx->Error(ctx->highlightError(singleName) + " is not a variable and is not assignable",
+            ctx->Error(ctx->highlightError(singleName.value) + " is not a variable and is not assignable",
                        names.front().range);
           }
         } else {
@@ -35,38 +36,40 @@ IR::Value* Entity::emit(IR::Context* ctx) {
           return val;
         }
       } else {
-        SHOW("No local value with name: " << singleName)
+        SHOW("No local value with name: " << singleName.value)
         // Checking arguments
         // Currently this is unnecessary, since all arguments are allocated as
         // local values first
         auto argTypes = fun->getType()->asFunction()->getArgumentTypes();
         for (usize i = 0; i < argTypes.size(); i++) {
-          if (fun->argumentNameAt(i).value == singleName) {
+          if (fun->argumentNameAt(i).value == singleName.value) {
             if ((getExpectedKind() == ExpressionKind::assignable) && !argTypes.at(i)->isVariable()) {
-              ctx->Error("Argument " + singleName +
+              ctx->Error("Argument " + singleName.value +
                              " is not assignable. If the argument should be "
                              "reassigned in the function, make it var",
-                         fileRange);
+                         singleName.range);
             } else {
-              return new IR::Value(((llvm::Function*)(fun->getLLVM()))->getArg(i), argTypes.at(i)->getType(), false,
-                                   IR::Nature::pure);
+              //   mod->addMention("parameter", singleName.range, fun->argumentNameAt(i).range);
+              return new IR::Value(llvm::dyn_cast<llvm::Function>(fun->getLLVM())->getArg(i), argTypes.at(i)->getType(),
+                                   false, IR::Nature::pure);
             }
           }
         }
         // Checking functions
-        if (mod->hasFunction(singleName) || mod->hasBroughtFunction(singleName) ||
-            mod->hasAccessibleFunctionInImports(singleName, reqInfo).first) {
-          return mod->getFunction(singleName, reqInfo);
-        } else if (mod->hasGlobalEntity(singleName) || mod->hasBroughtGlobalEntity(singleName) ||
-                   mod->hasAccessibleGlobalEntityInImports(singleName, reqInfo).first) {
-          auto* gEnt = mod->getGlobalEntity(singleName, reqInfo);
+        if (mod->hasFunction(singleName.value) || mod->hasBroughtFunction(singleName.value) ||
+            mod->hasAccessibleFunctionInImports(singleName.value, reqInfo).first) {
+          return mod->getFunction(singleName.value, reqInfo);
+        } else if (mod->hasGlobalEntity(singleName.value) || mod->hasBroughtGlobalEntity(singleName.value) ||
+                   mod->hasAccessibleGlobalEntityInImports(singleName.value, reqInfo).first) {
+          auto* gEnt = mod->getGlobalEntity(singleName.value, reqInfo);
           return new IR::Value(gEnt->getLLVM(), gEnt->getType(), gEnt->isVariable(), gEnt->getNature());
-        } else if (mod->hasChoiceType(singleName) || mod->hasBroughtChoiceType(singleName) ||
-                   mod->hasAccessibleChoiceTypeInImports(singleName, reqInfo).first) {
+        } else if (mod->hasChoiceType(singleName.value) || mod->hasBroughtChoiceType(singleName.value) ||
+                   mod->hasAccessibleChoiceTypeInImports(singleName.value, reqInfo).first) {
           if (canBeChoice) {
-            return new IR::Value(nullptr, mod->getChoiceType(singleName, reqInfo), false, IR::Nature::pure);
+            return new IR::Value(nullptr, mod->getChoiceType(singleName.value, reqInfo), false, IR::Nature::pure);
           } else {
-            ctx->Error(ctx->highlightError(singleName) + " is a choice type and cannnot be used as a value", fileRange);
+            ctx->Error(ctx->highlightError(singleName.value) + " is a choice type and cannnot be used as a value",
+                       singleName.range);
           }
         }
         ctx->Error("No value named " + ctx->highlightError(Identifier::fullName(names).value) + " found", fileRange);
@@ -94,16 +97,19 @@ IR::Value* Entity::emit(IR::Context* ctx) {
             if (!mod->getVisibility().isAccessible(reqInfo)) {
               ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
             }
+            mod->addMention(split.range);
           } else if (mod->hasBox(split.value)) {
             mod = mod->getBox(split.value, reqInfo);
             SHOW("Box module " << mod)
             if (!mod->getVisibility().isAccessible(reqInfo)) {
               ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
             }
+            mod->addMention(split.range);
           } else if (mod->hasBroughtModule(split.value) ||
                      mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
             mod = mod->getBroughtModule(split.value, reqInfo);
             SHOW("Brought module" << mod)
+            mod->addMention(split.range);
           } else {
             ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside scope ", split.range);
           }
@@ -115,6 +121,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         if (!fun->isAccessible(reqInfo)) {
           ctx->Error("Function " + ctx->highlightError(fun->getFullName()) + " is not accessible here", fileRange);
         }
+        fun->addMention(entityName.range);
         return fun;
       } else if (mod->hasGlobalEntity(entityName.value) || mod->hasBroughtGlobalEntity(entityName.value) ||
                  mod->hasAccessibleGlobalEntityInImports(entityName.value, reqInfo).first) {
@@ -123,39 +130,41 @@ IR::Value* Entity::emit(IR::Context* ctx) {
           ctx->Error("Global entity " + ctx->highlightError(gEnt->getFullName()) + " is not accessible here",
                      fileRange);
         }
+        gEnt->addMention(entityName.range);
         return new IR::Value(gEnt->getLLVM(), gEnt->getType(), gEnt->isVariable(), gEnt->getNature());
       } else {
         if (mod->hasLib(entityName.value) || mod->hasBroughtLib(entityName.value) ||
             mod->hasAccessibleLibInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getLib(entityName.value, reqInfo)->getFullName() +
                          " is a lib and cannot be used as a value in an expression",
-                     fileRange);
+                     entityName.range);
         } else if (mod->hasBox(entityName.value) || mod->hasBroughtBox(entityName.value) ||
                    mod->hasAccessibleBoxInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getBox(entityName.value, reqInfo)->getFullName() +
                          " is a box and cannot be used as a value in an expression",
-                     fileRange);
+                     entityName.range);
         } else if (mod->hasCoreType(entityName.value) || mod->hasBroughtCoreType(entityName.value) ||
                    mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getCoreType(entityName.value, reqInfo)->getFullName() +
                          " is a core type and cannot be used as a value in "
                          "an expression",
-                     fileRange);
+                     entityName.range);
         } else if (mod->hasMixType(entityName.value) || mod->hasBroughtMixType(entityName.value) ||
                    mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getMixType(entityName.value, reqInfo)->getFullName() +
                          " is a mix type and cannot be used as a value in an "
                          "expression",
-                     fileRange);
+                     entityName.range);
         } else if (mod->hasChoiceType(entityName.value) || mod->hasBroughtChoiceType(entityName.value) ||
                    mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
           auto* chTy = mod->getChoiceType(entityName.value, reqInfo);
           if (canBeChoice) {
             if (chTy->getVisibility().isAccessible(reqInfo)) {
+              chTy->addMention(entityName.range);
               return new IR::Value(nullptr, chTy, false, IR::Nature::pure);
             } else {
               ctx->Error("Choice type " + ctx->highlightError(chTy->getFullName()) + " is not accessible here",
-                         fileRange);
+                         entityName.range);
             }
           } else {
             ctx->Error(chTy->getFullName() + " is a mix type and cannot be used as a value in an "

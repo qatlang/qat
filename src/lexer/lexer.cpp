@@ -269,6 +269,9 @@ Token Lexer::tokeniser() {
       if (current == '=') {
         read();
         return Token::valued(TokenType::assignedBinaryOperator, "&=", this->getPosition(2));
+      } else if (current == '&') {
+        read();
+        return Token::valued(TokenType::binaryOperator, "&&", this->getPosition(2));
       } else {
         return Token::valued(TokenType::binaryOperator, "&", this->getPosition(1));
       }
@@ -278,6 +281,9 @@ Token Lexer::tokeniser() {
       if (current == '=') {
         read();
         return Token::valued(TokenType::assignedBinaryOperator, "|=", this->getPosition(2));
+      } else if (current == '|') {
+        read();
+        return Token::valued(TokenType::binaryOperator, "||", this->getPosition(2));
       } else {
         return Token::valued(TokenType::binaryOperator, "|", this->getPosition(1));
       }

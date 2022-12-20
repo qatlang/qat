@@ -28,11 +28,13 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
         if (!mod->getVisibility().isAccessible(reqInfo)) {
           ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", fileRange);
         }
+        mod->addMention(split.range);
       } else if (mod->hasBox(split.value)) {
         mod = mod->getBox(split.value, reqInfo);
         if (!mod->getVisibility().isAccessible(reqInfo)) {
           ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
         }
+        mod->addMention(split.range);
       } else {
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
                        ctx->highlightError(mod->getFullName()) + " or any of its submodules",
@@ -52,6 +54,7 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
       ctx->Error("Template core type " + ctx->highlightError(fullName.value) + " is not accessible here",
                  fullName.range);
     }
+    tempCoreTy->addMention(entityName.range);
     ctx->mod = tempCoreTy->getModule();
     if (tempCoreTy->getTypeCount() != templateTypes.size()) {
       ctx->Error("Template core type " + ctx->highlightError(tempCoreTy->getName().value) + " has " +

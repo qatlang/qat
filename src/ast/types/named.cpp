@@ -26,11 +26,13 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
         if (!mod->getVisibility().isAccessible(reqInfo)) {
           ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
         }
+        mod->addMention(split.range);
       } else if (mod->hasBox(split.value)) {
         mod = mod->getBox(split.value, reqInfo);
         if (!mod->getVisibility().isAccessible(reqInfo)) {
           ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
         }
+        mod->addMention(split.range);
       } else {
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
                        ctx->highlightError(mod->getFullName()) + " or any of its submodules",
@@ -46,6 +48,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                      ctx->highlightError(mod->getFullName()) + " is not accessible here",
                  entityName.range);
     }
+    cTy->addMention(entityName.range);
     return cTy;
   } else if (mod->hasTypeDef(entityName.value) || mod->hasBroughtTypeDef(entityName.value) ||
              mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
@@ -55,6 +58,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                      ctx->highlightError(mod->getFullName()) + " is not accessible here",
                  entityName.range);
     }
+    dTy->addMention(entityName.range);
     return dTy;
   } else if (mod->hasMixType(entityName.value) || mod->hasBroughtMixType(entityName.value) ||
              mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
@@ -64,6 +68,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                      ctx->highlightError(mod->getFullName()) + " is not accessible here",
                  entityName.range);
     }
+    mTy->addMention(entityName.range);
     return mTy;
   } else if (mod->hasChoiceType(entityName.value) || mod->hasBroughtChoiceType(entityName.value) ||
              mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
@@ -73,6 +78,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                      ctx->highlightError(mod->getFullName()) + " is not accessible here",
                  entityName.range);
     }
+    chTy->addMention(entityName.range);
     return chTy;
   } else if (mod->hasRegion(entityName.value) || mod->hasBroughtRegion(entityName.value) ||
              mod->hasAccessibleRegionInImports(entityName.value, reqInfo).first) {
@@ -82,6 +88,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                      ctx->highlightError(mod->getFullName()) + " is not accessible here",
                  entityName.range);
     }
+    reg->addMention(entityName.range);
     return reg;
   } else {
     ctx->Error("No type named " + Identifier::fullName(names).value + " found in scope", fileRange);

@@ -37,6 +37,7 @@ void ConvertorPrototype::define(IR::Context* ctx) {
                      ctx->highlightError(coreType->getFullName()),
                  fileRange);
     }
+    coreType->getMember(argName->value)->addMention(argName->range);
   }
   auto* candidate = isMemberArgument ? coreType->getTypeOfMember(argName->value) : candidateType->emit(ctx);
   SHOW("Candidate type generated")
@@ -80,24 +81,24 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
   // FIXME - Implement member argument syntax support for from convertors
-  auto* corePtrType = IR::ReferenceType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
-  auto* self        = block->newValue("''", corePtrType, false);
+  auto* coreRefType = IR::ReferenceType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
+  auto* self        = block->newValue("''", coreRefType, false, coreRefType->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0), self->getLLVM());
-  ctx->selfVal = ctx->builder.CreateLoad(self->getType()->getLLVMType(), self->getLLVM());
+  self->loadImplicitPointer(ctx->builder);
   if (prototype->isFrom) {
     if (prototype->isMemberArgument) {
       auto* memPtr = ctx->builder.CreateStructGEP(
-          corePtrType->getSubType()->getLLVMType(), ctx->selfVal,
-          corePtrType->getSubType()->asCore()->getIndexOf(prototype->argName->value).value());
+          coreRefType->getSubType()->getLLVMType(), self->getLLVM(),
+          coreRefType->getSubType()->asCore()->getIndexOf(prototype->argName->value).value());
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1), memPtr, false);
     } else {
-      auto* argTy  = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);
-      auto* argVal = block->newValue(argTy->getName(), argTy->getType(), argTy->isVariable());
+      auto* argTy = fnEmit->getType()->asFunction()->getArgumentTypeAt(1);
+      auto* argVal =
+          block->newValue(argTy->getName(), argTy->getType(), argTy->isVariable(), prototype->argName->range);
       ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1), argVal->getLLVM());
     }
   }
   emitSentences(sentences, ctx);
-  ctx->selfVal = nullptr;
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   return nullptr;

@@ -395,7 +395,8 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
                                    expVal->isVariable(), expVal->getNature());
           }
         }
-        SHOW("Creating store")
+        SHOW("Creating store with LHS type: " << lhsVal->getType()->toString()
+                                              << " and RHS type: " << expVal->getType()->toString())
         ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
         return nullptr;
       } else if (expVal->isConstVal() &&

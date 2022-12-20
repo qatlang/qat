@@ -2,29 +2,29 @@
 
 namespace qat::ast {
 
-SelfMember::SelfMember(String _name, FileRange _fileRange)
+SelfMember::SelfMember(Identifier _name, FileRange _fileRange)
     : Expression(std::move(_fileRange)), name(std::move(_name)) {}
 
 IR::Value* SelfMember::emit(IR::Context* ctx) {
-  SHOW("Emitting self member")
+  SHOW("Emitting self member at: " << (Json)fileRange)
   auto* fun = ctx->fn;
   if (fun->isMemberFunction()) {
     auto* mFn = (IR::MemberFunction*)fun;
     if (mFn->isStaticFunction()) {
       ctx->Error("Function " + ctx->highlightError(mFn->getFullName()) +
-                     " is a static function and cannot use the expression " + ctx->highlightError("''" + name),
+                     " is a static function and cannot use the expression " + ctx->highlightError("''" + name.value),
                  fileRange);
     }
     auto* cTy = mFn->getParentType();
-    if (cTy->hasMember(name)) {
-      auto  index   = cTy->getIndexOf(name).value();
-      auto* mem     = cTy->getMemberAt(index);
+    if (cTy->hasMember(name.value)) {
+      auto  index = cTy->getIndexOf(name.value).value();
+      auto* mem   = cTy->getMemberAt(index);
+      mem->addMention(name.range);
       auto* selfVal = mFn->getBlock()->getValue("''");
-      auto* res =
-          new IR::Value(ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, index),
-                        IR::ReferenceType::get(selfVal->getType()->asPointer()->isSubtypeVariable() && mem->variability,
-                                               mem->type, ctx->llctx),
-                        false, IR::Nature::temporary);
+      auto* res     = new IR::Value(
+          ctx->builder.CreateStructGEP(cTy->getLLVMType(), selfVal->getLLVM(), index),
+          IR::ReferenceType::get(selfVal->getType()->asReference()->isSubtypeVariable(), mem->type, ctx->llctx), false,
+          IR::Nature::temporary);
       while (res->getType()->isReference() && res->getType()->asReference()->getSubType()->isReference()) {
         res = new IR::Value(
             ctx->builder.CreateLoad(res->getType()->asReference()->getSubType()->getLLVMType(), res->getLLVM()),
@@ -34,11 +34,11 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
     } else {
       ctx->Error("The parent type of this member function does not have a "
                  "member named " +
-                     ctx->highlightError(name),
+                     ctx->highlightError(name.value),
                  fileRange);
     }
   } else {
-    ctx->Error(ctx->highlightError("''" + name) + " cannot be used here because the function " +
+    ctx->Error(ctx->highlightError("''" + name.value) + " cannot be used here because the function " +
                    ctx->highlightError(fun->getFullName()) + " is not a member function of any type",
                fileRange);
   }

@@ -245,7 +245,7 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
       SHOW("Arg val loaded")
       ctx->builder.CreateStore(argValLoad, localArg->getAlloca());
       if (i == 0) {
-        ctx->selfVal = ctx->builder.CreateLoad(fnOrigArgs.at(0)->getType()->getLLVMType(), localArg->getAlloca());
+        localArg->loadImplicitPointer(ctx->builder);
       }
       SHOW("Arg val stored")
     }
@@ -256,19 +256,19 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
     SHOW("Set new block as the active block")
     SHOW("About to allocate necessary arguments")
     auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-    auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
-    auto* self       = block->newValue("''", corePtrTy, false, corePtrTy->getSubType()->asCore()->getName().range);
+    auto* coreRefTy  = argIRTypes.at(0)->getType()->asReference();
+    auto* self       = block->newValue("''", coreRefTy, false, coreRefTy->getSubType()->asCore()->getName().range);
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
-    ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
+    self->loadImplicitPointer(ctx->builder);
     SHOW("Arguments size is " << argIRTypes.size())
     for (usize i = 1; i < argIRTypes.size(); i++) {
       SHOW("Argument name in member function is " << argIRTypes.at(i)->getName())
       SHOW("Argument type in member function is " << argIRTypes.at(i)->getType()->toString())
       if (argIRTypes.at(i)->isMemberArgument()) {
         auto* memPtr = ctx->builder.CreateStructGEP(
-            corePtrTy->getSubType()->getLLVMType(), ctx->selfVal,
-            corePtrTy->getSubType()->asCore()->getIndexOf(argIRTypes.at(i)->getName()).value());
-        auto* memTy = corePtrTy->getSubType()->asCore()->getTypeOfMember(argIRTypes.at(i)->getName());
+            coreRefTy->getSubType()->getLLVMType(), self->getLLVM(),
+            coreRefTy->getSubType()->asCore()->getIndexOf(argIRTypes.at(i)->getName()).value());
+        auto* memTy = coreRefTy->getSubType()->asCore()->getTypeOfMember(argIRTypes.at(i)->getName());
         if (memTy->isReference()) {
           memPtr = ctx->builder.CreateLoad(memTy->asReference()->getLLVMType(), memPtr);
         }
@@ -276,14 +276,13 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
       } else {
         SHOW("Argument is variable")
         auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
-                                       argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
+                                       argIRTypes.at(i)->isVariable(), prototype->arguments.at(i - 1)->getName().range);
         SHOW("Created local value for the argument")
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
       }
     }
   }
   emitSentences(sentences, ctx);
-  ctx->selfVal = nullptr;
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   return nullptr;

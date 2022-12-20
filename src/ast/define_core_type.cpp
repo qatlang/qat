@@ -49,7 +49,9 @@ bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "core type");
+  if (!isTemplate()) {
+    ctx->nameCheck(name, "core type");
+  }
   SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
   Vec<IR::CoreType::Member*> mems;
   for (auto* mem : members) {
@@ -128,6 +130,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
 IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
+  SHOW("Defining type")
   auto* mod = ctx->getMod();
   if (!isTemplate()) {
     createType(ctx);

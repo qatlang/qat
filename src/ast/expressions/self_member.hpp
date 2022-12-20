@@ -7,10 +7,10 @@ namespace qat::ast {
 
 class SelfMember : public Expression {
 private:
-  String name;
+  Identifier name;
 
 public:
-  SelfMember(String name, FileRange fileRange);
+  SelfMember(Identifier name, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::selfMember; }

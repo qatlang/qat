@@ -13,6 +13,7 @@ IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Null pointer is not assignable", fileRange);
   }
+  SHOW("Null pointer has type provided " << (candidateType != nullptr))
   if (candidateType) {
     return new IR::ConstantValue(
         candidateType->isMulti()

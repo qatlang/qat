@@ -584,7 +584,8 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
             (mem->type->asPointer()->getOwner().ownerAsType()->getID() == mem->type->getID())) {
           auto* ptrTy  = mem->type->asPointer();
           auto* memPtr = ctx->builder.CreateStructGEP(
-              ptrTy->getLLVMType(), ctx->builder.CreateStructGEP(cTy->getLLVMType(), ctx->selfVal, i), 0u);
+              ptrTy->getLLVMType(),
+              ctx->builder.CreateStructGEP(cTy->getLLVMType(), mFn->getFirstBlock()->getValue("''")->getLLVM(), i), 0u);
           if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
             auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
             if (ptrTy->isMulti()) {
@@ -662,8 +663,7 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
       if (fun->getBlockCount() >= 1 && fun->getFirstBlock()->hasValue("''")) {
         SHOW("Destructor self value is zero assigned")
         auto* selfVal = fun->getFirstBlock()->getValue("''");
-        ctx->builder.CreateStore(llvm::Constant::getNullValue(cTy->getLLVMType()),
-                                 ctx->builder.CreateLoad(selfVal->getType()->getLLVMType(), selfVal->getAlloca()));
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(cTy->getLLVMType()), selfVal->getAlloca());
       } else {
         SHOW("Destructor has no self value")
       }

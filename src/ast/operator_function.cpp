@@ -150,28 +150,35 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-  auto* corePtrTy  = argIRTypes.at(0)->getType()->asPointer();
+  auto* coreRefTy  = argIRTypes.at(0)->getType()->asReference();
   auto* self =
-      block->newValue("''", corePtrTy, prototype->isVariationFn, corePtrTy->getSubType()->asCore()->getName().range);
+      block->newValue("''", coreRefTy, prototype->isVariationFn, coreRefTy->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
-  ctx->selfVal = ctx->builder.CreateLoad(corePtrTy->getLLVMType(), self->getAlloca());
-  for (usize i = 1; i < argIRTypes.size(); i++) {
-    SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-    if (argIRTypes.at(i)->isMemberArgument()) {
-      auto* memPtr = ctx->builder.CreateStructGEP(
-          corePtrTy->getSubType()->getLLVMType(), ctx->selfVal,
-          corePtrTy->getSubType()->asCore()->getIndexOf(argIRTypes.at(i)->getName()).value());
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
-    } else {
-      SHOW("Argument is variable")
-      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
-                                     prototype->arguments.at(i)->getName().range);
-      SHOW("Created local value for the argument")
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+  self->loadImplicitPointer(ctx->builder);
+  if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
+    auto* argVal = block->newValue(
+        prototype->argName->value,
+        IR::ReferenceType::get(prototype->opr == Op::moveAssignment, coreRefTy->getSubType(), ctx->llctx), false,
+        prototype->argName->range);
+    ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1u), argVal->getLLVM());
+  } else {
+    for (usize i = 1; i < argIRTypes.size(); i++) {
+      SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+      if (argIRTypes.at(i)->isMemberArgument()) {
+        auto* memPtr = ctx->builder.CreateStructGEP(
+            coreRefTy->getSubType()->getLLVMType(), self->getLLVM(),
+            coreRefTy->getSubType()->asCore()->getIndexOf(argIRTypes.at(i)->getName()).value());
+        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
+      } else {
+        SHOW("Argument is variable")
+        auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
+                                       prototype->arguments.at(i - 1)->getName().range);
+        SHOW("Created local value for the argument")
+        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+      }
     }
   }
   emitSentences(sentences, ctx);
-  ctx->selfVal = nullptr;
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   return nullptr;

@@ -103,7 +103,6 @@ public:
   IRBuilderTy       builder;
   QatModule*        mod        = nullptr;
   IR::Function*     fn         = nullptr; // Active function
-  llvm::Value*      selfVal    = nullptr;
   IR::CoreType*     activeType = nullptr; // Active core type
   Vec<LoopInfo*>    loopsInfo;
   Vec<Breakable*>   breakables;

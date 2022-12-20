@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <system_error>
 
 #if PLATFORM_IS_WINDOWS
 #include "processenv.h"
@@ -56,6 +57,43 @@ void QatSitter::init() {
     }
     SHOW("Emitted nodes")
     ctx->qatEndTime = std::chrono::steady_clock::now();
+    //
+    //
+    if (cfg->exportCodeMetadata()) {
+      // NOLINTNEXTLINE(readability-isolate-declaration)
+      Vec<JsonValue> modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
+          mixTypesJson, regionJson, choiceJson, defsJson;
+      for (auto* entity : fileEntities) {
+        entity->outputAllOverview(modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
+                                  mixTypesJson, regionJson, choiceJson, defsJson);
+      }
+      auto            codeStructFilePath = cfg->getOutputPath() / "QatCodeInfo.json";
+      std::error_code errorCode;
+      fs::create_directories(codeStructFilePath.parent_path(), errorCode);
+      if (!errorCode) {
+        std::fstream mStream;
+        mStream.open(codeStructFilePath, std::ios_base::out);
+        if (mStream.is_open()) {
+          mStream << Json()
+                         ._("modules", modulesJson)
+                         ._("functions", functionsJson)
+                         ._("genericFunctions", genericFunctionsJson)
+                         ._("coreTypes", coreTypesJson)
+                         ._("genericCoreTypes", genericCoreTypesJson)
+                         ._("mixTypes", mixTypesJson)
+                         ._("regions", regionJson)
+                         ._("choiceTypes", choiceJson)
+                         ._("typeDefinitions", defsJson);
+          mStream.close();
+        } else {
+          ctx->Error("Could not open the symbol mention JSON file for output", codeStructFilePath);
+        }
+      } else {
+        ctx->Error("Could not create parent directory of the symbol mention JSON file", {codeStructFilePath});
+      }
+    }
+    //
+    //
     if (cfg->shouldExportAST()) {
       for (auto* entity : fileEntities) {
         entity->exportJsonFromAST(ctx);
@@ -147,11 +185,13 @@ bool QatSitter::isNameValid(const String& name) {
 void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
   Vec<fs::path> broughtPaths;
   Vec<fs::path> memberPaths;
+  auto*         cfg = cli::Config::get();
   SHOW("Handling path: " << mainPath.string())
   std::function<void(IR::QatModule*, const fs::path&)> recursiveModuleCreator = [&](IR::QatModule*  parentMod,
                                                                                     const fs::path& path) {
     for (auto const& item : fs::directory_iterator(path)) {
-      if (fs::is_directory(item) && !IR::QatModule::hasFolderModule(item)) {
+      if (fs::is_directory(item) && !fs::equivalent(item, cfg->getOutputPath()) &&
+          !IR::QatModule::hasFolderModule(item)) {
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value()) {
           if (!isNameValid(libCheckRes->first)) {
@@ -212,7 +252,8 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
   };
   // FIXME - Check if modules are already part of another module
   SHOW("Created recursive module creator")
-  if (fs::is_directory(mainPath) && !IR::QatModule::hasFolderModule(mainPath)) {
+  if (fs::is_directory(mainPath) && !fs::equivalent(mainPath, cfg->getOutputPath()) &&
+      !IR::QatModule::hasFolderModule(mainPath)) {
     SHOW("Is directory")
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value()) {
@@ -246,7 +287,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     auto libCheckRes = detectLibFile(mainPath);
     if (!isNameValid(libCheckRes->first)) {
       ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
-                 {mainPath, {0u, 0u}, {0u, 0u}});
+                 {mainPath});
     }
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);

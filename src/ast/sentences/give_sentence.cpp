@@ -120,9 +120,16 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
       }
       auto* retVal = give_expr.value()->emit(ctx);
       SHOW("ret val emitted")
+      SHOW("RetType: " << retType->toString() << "\nRetValType: " << retVal->getType()->toString())
       if (retType->isSame(retVal->getType()) ||
-          (retType->isReference() && retType->asReference()->getSubType()->isSame(retVal->getType()) &&
-           retVal->isImplicitPointer()) ||
+          (retType->isReference() &&
+           retType->asReference()->getSubType()->isSame(
+               retVal->isReference() ? retVal->getType()->asReference()->getSubType() : retVal->getType()) &&
+           (retType->asReference()->isSubtypeVariable()
+                ? (retVal->isImplicitPointer()
+                       ? retVal->isVariable()
+                       : (retVal->isReference() && retVal->getType()->asReference()->isSubtypeVariable()))
+                : true)) ||
           (retVal->getType()->isReference() && retVal->getType()->asReference()->getSubType()->isSame(retType))) {
         SHOW("Return type is same")
         if (retVal->getType()->isReference() && !(retType->isReference())) {

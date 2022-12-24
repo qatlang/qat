@@ -65,6 +65,12 @@ bool QatType::isCompatible(QatType* other) {
     } else {
       return isSame(other);
     }
+  } else if (isUnsignedInteger() && other->isUnsignedInteger()) {
+    if (asUnsignedInteger()->getBitwidth() == other->asUnsignedInteger()->getBitwidth()) {
+      return true;
+    } else {
+      return isSame(other);
+    }
   } else {
     return isSame(other);
   }
@@ -99,7 +105,8 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
         return ((MaybeType*)this)->getSubType()->isSame(((MaybeType*)other)->getSubType());
       }
       case TypeKind::unsignedInteger: {
-        return (((UnsignedType*)this)->getBitwidth() == ((UnsignedType*)other)->getBitwidth());
+        return (((UnsignedType*)this)->getBitwidth() == ((UnsignedType*)other)->getBitwidth()) &&
+               (((UnsignedType*)this)->isBoolean() == ((UnsignedType*)other)->isBoolean());
       }
       case TypeKind::integer: {
         return (((IntegerType*)this)->getBitwidth() == ((IntegerType*)other)->getBitwidth());

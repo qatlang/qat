@@ -676,6 +676,8 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     return Token::normal(TokenType::meta, getPos(4));
   } else if (value == "region") {
     return Token::normal(TokenType::region, getPos(6));
+  } else if (value == "bool") {
+    return Token::valued(TokenType::unsignedIntegerType, "bool", getPos(4));
   } else {
     return Token::valued(TokenType::identifier, value, getPos(value.length()));
   }

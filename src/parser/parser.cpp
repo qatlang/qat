@@ -367,11 +367,12 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (cacheTy.has_value()) {
           return {cacheTy.value(), i - 1};
         }
-        cacheTy = new ast::UnsignedType(token.value == "usize"
+        // FIXME - Change usize to work in cross compilation
+        cacheTy = new ast::UnsignedType((token.value == "usize")
                                             // NOLINTNEXTLINE(readability-magic-numbers)
                                             ? (sizeof(usize) * 8u)
-                                            : std::stoul(token.value),
-                                        getVariability(), token.fileRange);
+                                            : ((token.value == "bool") ? 1u : std::stoul(token.value)),
+                                        getVariability(), token.value == "bool", token.fileRange);
         break;
       }
       case TokenType::integerType: {

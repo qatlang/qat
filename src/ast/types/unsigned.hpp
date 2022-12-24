@@ -8,16 +8,17 @@ namespace qat::ast {
 
 class UnsignedType : public QatType {
 private:
-  u32 bitWidth;
+  u32  bitWidth;
+  bool isBool;
 
 public:
-  UnsignedType(u64 _bitWidth, bool _variable, FileRange _fileRange);
+  UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange);
 
-  IR::QatType* emit(IR::Context* ctx);
-  TypeKind     typeKind() const final;
-  bool         isBitWidth(const u32 width) const;
-  Json         toJson() const;
-  String       toString() const;
+  useit IR::QatType* emit(IR::Context* ctx);
+  useit TypeKind     typeKind() const final;
+  useit bool         isBitWidth(u32 width) const;
+  useit Json         toJson() const final;
+  useit String       toString() const final;
 };
 
 } // namespace qat::ast

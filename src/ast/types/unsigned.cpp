@@ -3,12 +3,16 @@
 
 namespace qat::ast {
 
-UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth) {}
+UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange)
+    : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth), isBool(_isBool) {}
 
 IR::QatType* UnsignedType::emit(IR::Context* ctx) {
   if (ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
-    return IR::UnsignedType::get(bitWidth, ctx->llctx);
+    if (isBool) {
+      return IR::UnsignedType::getBool(ctx->llctx);
+    } else {
+      return IR::UnsignedType::get(bitWidth, ctx->llctx);
+    }
   } else {
     ctx->Error("This unsigned integer bitwidth is not allowed to be used since it is not brought into the module scope",
                fileRange);
@@ -23,11 +27,15 @@ TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 Json UnsignedType::toJson() const {
   return Json()
       ._("typeKind", "unsignedInteger")
+      ._("isBool", isBool)
       ._("bitWidth", bitWidth)
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);
 }
 
-String UnsignedType::toString() const { return (isVariable() ? "var u" : "u") + std::to_string(bitWidth); }
+String UnsignedType::toString() const {
+  return (isVariable() ? (isBool ? "var bool" : "var u") : (isBool ? "bool" : "u")) +
+         (!isBool ? std::to_string(bitWidth) : "");
+}
 
 } // namespace qat::ast

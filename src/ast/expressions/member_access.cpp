@@ -94,7 +94,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                         ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
                     true),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for future and hence cannot get data", fileRange);
       }
@@ -109,7 +109,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                         ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
                     true),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for future and hence cannot get data", fileRange);
       }
@@ -125,7 +125,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                 ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
                                         ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for maybe and hence cannot get data", fileRange);
       }
@@ -136,7 +136,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                 ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
                                         ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::get(1u, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for maybe and hence cannot get data", fileRange);
       }

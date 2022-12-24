@@ -237,32 +237,32 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         case Op::equalTo: {
           llRes   = ctx->builder.CreateICmpEQ(lhsVal, rhsVal);
           llRes   = ctx->builder.CreateIntCast(llRes, llvm::Type::getIntNTy(ctx->llctx, 1), false);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->builder.CreateICmpNE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->builder.CreateICmpSLT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->builder.CreateICmpSGT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->builder.CreateICmpSLE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->builder.CreateICmpSGE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::bitwiseAnd: {
@@ -291,12 +291,12 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         case Op::And: {
           llRes   = ctx->builder.CreateAnd(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::Or: {
           llRes   = ctx->builder.CreateOr(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
       }
@@ -356,32 +356,32 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         case Op::equalTo: {
           llRes   = ctx->builder.CreateICmpEQ(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->builder.CreateICmpNE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->builder.CreateICmpULT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->builder.CreateICmpUGT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->builder.CreateICmpULE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->builder.CreateICmpUGE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::bitwiseAnd: {
@@ -410,12 +410,12 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         case Op::And: {
           llRes   = ctx->builder.CreateAnd(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::Or: {
           llRes   = ctx->builder.CreateOr(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
       }
@@ -475,32 +475,32 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         case Op::equalTo: {
           llRes   = ctx->builder.CreateFCmpOEQ(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->builder.CreateFCmpONE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->builder.CreateFCmpOLT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->builder.CreateFCmpOGT(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->builder.CreateFCmpOLE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->builder.CreateFCmpOGE(lhsVal, rhsVal);
-          resType = IR::UnsignedType::get(1, ctx->llctx);
+          resType = IR::UnsignedType::getBool(ctx->llctx);
           break;
         }
         case Op::bitwiseAnd: {
@@ -573,13 +573,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             ctx->builder.CreateICmpEQ(
                 ctx->builder.CreatePtrDiff(lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal, rhsVal),
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::get(1, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else if (op == Op::notEqualTo) {
         return new IR::Value(
             ctx->builder.CreateICmpNE(
                 ctx->builder.CreatePtrDiff(lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal, rhsVal),
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::get(1, ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("The operands are pointers, and the operation " + ctx->highlightError(OpToString(op)) +
                        " is not supported for pointers",

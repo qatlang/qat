@@ -1553,7 +1553,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
     if (!errorCode) {
       compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
       SHOW("Command is: " << compileCommand)
-      if (system(compileCommand.c_str())) {
+      if (std::system(compileCommand.c_str())) {
         ctx->writeJsonResult(false);
         ctx->Error("Could not compile the LLVM file", {filePath, {0u, 0u}, {0u, 0u}});
       }
@@ -1612,13 +1612,13 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           String("clang -shared -fPIC -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
       if (cfg->shouldBuildStatic()) {
         SHOW("Static Build Command :: " << staticCommand)
-        if (system(staticCommand.c_str())) {
+        if (std::system(staticCommand.c_str())) {
           ctx->Error("Statically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
       if (cfg->shouldBuildShared()) {
         SHOW("Dynamic Build Command :: " << sharedCommand)
-        if (system(sharedCommand.c_str())) {
+        if (std::system(sharedCommand.c_str())) {
           ctx->Error("Dynamically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
         }
       }
@@ -1630,7 +1630,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                            .string()
                            .append(" ");
         SHOW("Archiving library " << String("ar r ").append(outPath).append(cmdTwo).c_str())
-        if (system(String("ar r ").append(outPath).append(cmdTwo).c_str())) {
+        if (std::system(String("ar r ").append(outPath).append(cmdTwo).c_str())) {
           ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed",
                      {filePath, {0u, 0u}, {0u, 0u}});
         }
@@ -1641,13 +1641,13 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             moduleInfo.outputName.value_or(getWritableName()).append(".so")))
                            .string()
                            .append(" ");
-        if (system(String("clang ")
-                       .append(hasMain ? "-fuse-ld=lld" : "")
-                       .append(" -shared -o ")
-                       .append(outPath)
-                       .append(cmdOne)
-                       .append(cmdTwo)
-                       .c_str())) {
+        if (std::system(String("clang ")
+                            .append(hasMain ? "-fuse-ld=lld" : "")
+                            .append(" -shared -o ")
+                            .append(outPath)
+                            .append(cmdOne)
+                            .append(cmdTwo)
+                            .c_str())) {
           ctx->Error("Dynamic build of module " + ctx->highlightError(filePath.string()) + " failed",
                      {filePath, {0u, 0u}, {0u, 0u}});
         }

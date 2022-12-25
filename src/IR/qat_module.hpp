@@ -68,7 +68,7 @@ public:
   }
 };
 
-class QatModule : public Uniq, public EntityOverview {
+class QatModule final : public Uniq, public EntityOverview {
   friend class Region;
   friend class CoreType;
   friend class MixType;

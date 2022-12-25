@@ -101,6 +101,7 @@ void QatSitter::init() {
     }
     ctx->clangLinkStartTime = std::chrono::steady_clock::now();
     if (cfg->isCompile()) {
+      SHOW("Checking whether clang exists or not")
       if (checkExecutableExists("clang")) {
         for (auto* entity : fileEntities) {
           entity->compileToObject(ctx);
@@ -126,7 +127,7 @@ void QatSitter::init() {
             if (hasMultiExecutables) {
               std::cout << "\nExecuting built executable at: " << exePath.string() << "\n";
             }
-            if (system(exePath.c_str())) {
+            if (std::system(exePath.c_str())) {
               ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) +
                              " exited with an error!",
                          {exePath.string(), {0u, 0u}, {0u, 0u}});
@@ -326,12 +327,12 @@ bool QatSitter::checkExecutableExists(const String& name) {
 #if PLATFORM_IS_WINDOWS
   LPSTR lpFilePart;
   char  fileName[2000];
-  if (!SearchPath(NULL, name.c_str(), ".exe", 2000, fileName, &lpFilePart)) {
+  if (!SearchPath(NULL, (name + " > nul").c_str(), ".exe", 2000, fileName, &lpFilePart)) {
     return false;
   }
   return true;
 #else
-  if (system(("which " + name).c_str())) {
+  if (std::system(("which " + name + " > /dev/null").c_str())) {
     return false;
   } else {
     return true;

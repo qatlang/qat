@@ -71,14 +71,14 @@ public:
 
 class Match : public Sentence {
 private:
-  bool                                   isTypeMatch;
-  Expression*                            candidate;
-  Vec<Pair<MatchValue*, Vec<Sentence*>>> chain;
-  Maybe<Vec<Sentence*>>                  elseCase;
+  bool                                        isTypeMatch;
+  Expression*                                 candidate;
+  Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain;
+  Maybe<Pair<Vec<Sentence*>, FileRange>>      elseCase;
 
 public:
-  Match(bool _isTypeMatch, Expression* candidate, Vec<Pair<MatchValue*, Vec<Sentence*>>> chain,
-        Maybe<Vec<Sentence*>> elseCase, FileRange fileRange);
+  Match(bool _isTypeMatch, Expression* candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain,
+        Maybe<Pair<Vec<Sentence*>, FileRange>> elseCase, FileRange fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::match; }

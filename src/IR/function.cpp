@@ -66,13 +66,12 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
     fn->blocks.push_back(this);
   }
   name = (hasParent() ? (parent->getName() + ".") : "") + std::to_string(index) + "_bb";
-  SHOW("Name of the block set in function: " << fn->getFullName())
   if (fn->isAsyncFunction()) {
     bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getAsyncSubFunction());
   } else {
     bb = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getLLVMFunction());
   }
-  SHOW("Created llvm::BasicBlock" << name)
+  SHOW("Created llvm::BasicBlock " << name)
 }
 
 String Block::getName() const { return name; }
@@ -167,6 +166,7 @@ bool Block::hasGiveInAllControlPaths() const {
 }
 
 void Block::setActive(llvm::IRBuilder<>& builder) {
+  SHOW("Setting active block: " << getName())
   active = None;
   if (hasParent()) {
     parent->setActive(builder);

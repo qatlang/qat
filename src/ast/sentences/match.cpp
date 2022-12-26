@@ -43,8 +43,8 @@ Json ExpressionMatchValue::toJson() const {
   return Json()._("matchValueType", "expression")._("expression", exp->toJson());
 }
 
-Match::Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<MatchValue*, Vec<Sentence*>>> _chain,
-             Maybe<Vec<Sentence*>> _elseCase, FileRange _fileRange)
+Match::Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
+             Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(std::move(_chain)),
       elseCase(std::move(_elseCase)) {}
 
@@ -70,12 +70,12 @@ IR::Value* Match::emit(IR::Context* ctx) {
     Vec<Identifier> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
       const auto& section = chain.at(i);
-      if (section.first->getType() != MatchType::mix) {
+      if (section.first.front()->getType() != MatchType::mix) {
         ctx->Error("Expected the name of a variant of the mix type " +
                        ctx->highlightError(expTy->asMix()->getFullName()),
-                   section.first->getMainRange());
+                   section.first.front()->getMainRange());
       }
-      auto* uMatch = section.first->asMix();
+      auto* uMatch = section.first.front()->asMix();
       if (uMatch->isVariable()) {
         if (!isExpVariable) {
           ctx->Error("The expression being matched does not possess variability and "
@@ -98,9 +98,9 @@ IR::Value* Match::emit(IR::Context* ctx) {
                    uMatch->getValueName().range);
       }
       for (usize j = i + 1; j < chain.size(); j++) {
-        if (uMatch->getName().value == chain.at(j).first->asMix()->getName().value) {
+        if (uMatch->getName().value == chain.at(j).first.front()->asMix()->getName().value) {
           ctx->Error("Repeating subfield of the mix type " + ctx->highlightError(mTy->getFullName()),
-                     chain.at(j).first->asMix()->getName().range);
+                     chain.at(j).first.front()->asMix()->getName().range);
         }
       }
       mentionedFields.push_back(uMatch->getName());
@@ -119,13 +119,13 @@ IR::Value* Match::emit(IR::Context* ctx) {
       }
       trueBlock->setActive(ctx->builder);
       SHOW("True block name is: " << trueBlock->getName())
-      if (section.first->asMix()->hasValueName()) {
-        SHOW("Match case has value name: " << section.first->asMix()->getValueName().value)
+      if (section.first.front()->asMix()->hasValueName()) {
+        SHOW("Match case has value name: " << section.first.front()->asMix()->getValueName().value)
         if (trueBlock->hasValue(uMatch->getValueName().value)) {
           SHOW("Local entity with match case value name exists")
-          ctx->Error("Local entity named " + ctx->highlightError(section.first->asMix()->getValueName().value) +
+          ctx->Error("Local entity named " + ctx->highlightError(section.first.front()->asMix()->getValueName().value) +
                          " exists already in this scope",
-                     section.first->asMix()->getValueName().range);
+                     section.first.front()->asMix()->getValueName().range);
         } else {
           SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
           auto* loc =
@@ -165,7 +165,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       }
     }
     if (elseCase.has_value()) {
-      emitSentences(elseCase.value(), ctx);
+      emitSentences(elseCase.value().first, ctx);
       ctx->fn->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
@@ -180,53 +180,65 @@ IR::Value* Match::emit(IR::Context* ctx) {
     }
     Vec<Identifier> mentionedFields;
     for (usize i = 0; i < chain.size(); i++) {
-      const auto&  section = chain.at(i);
-      llvm::Value* caseVal = nullptr;
-      if (section.first->getType() == MatchType::mix) {
-        ctx->Error("Expected the name of a variant of the choice type " +
-                       ctx->highlightError(expTy->asMix()->getFullName()),
-                   section.first->getMainRange());
-      } else if (section.first->getType() == MatchType::Exp) {
-        auto* eMatch  = section.first->asExp();
-        auto* caseExp = eMatch->getExpression()->emit(ctx);
-        if (caseExp->getType()->isChoice() ||
-            (caseExp->getType()->isReference() && caseExp->getType()->asReference()->getSubType()->isChoice())) {
-          if (caseExp->getType()->isChoice() && caseExp->isImplicitPointer()) {
-            caseVal = ctx->builder.CreateLoad(chTy->getLLVMType(), caseExp->getLLVM());
-          } else if (caseExp->getType()->isReference()) {
-            caseExp->loadImplicitPointer(ctx->builder);
-            caseVal = ctx->builder.CreateLoad(chTy->getLLVMType(), caseExp->getLLVM());
+      const auto&       section = chain.at(i);
+      Vec<llvm::Value*> caseComparisons;
+      for (auto* caseValElem : section.first) {
+        if (caseValElem->getType() == MatchType::mix) {
+          ctx->Error("Expected the name of a variant of the choice type " +
+                         ctx->highlightError(expTy->asMix()->getFullName()),
+                     caseValElem->getMainRange());
+        } else if (caseValElem->getType() == MatchType::Exp) {
+          auto* eMatch  = caseValElem->asExp();
+          auto* caseExp = eMatch->getExpression()->emit(ctx);
+          if (caseExp->getType()->isChoice() ||
+              (caseExp->getType()->isReference() && caseExp->getType()->asReference()->getSubType()->isChoice())) {
+            if (caseExp->getType()->isChoice() && caseExp->isImplicitPointer()) {
+              caseComparisons.push_back(ctx->builder.CreateICmpEQ(
+                  choiceVal, ctx->builder.CreateLoad(chTy->getLLVMType(), caseExp->getLLVM())));
+            } else if (caseExp->getType()->isReference()) {
+              caseExp->loadImplicitPointer(ctx->builder);
+              caseComparisons.push_back(ctx->builder.CreateICmpEQ(
+                  choiceVal, ctx->builder.CreateLoad(chTy->getLLVMType(), caseExp->getLLVM())));
+            }
+          } else {
+            ctx->Error("Expected either the name of a variant of, "
+                       "or an expression of type " +
+                           ctx->highlightError(chTy->getFullName()),
+                       eMatch->getMainRange());
+          }
+        } else if (caseValElem->getType() == MatchType::choice) {
+          auto* cMatch = caseValElem->asChoice();
+          for (const auto& mField : mentionedFields) {
+            if (mField.value == cMatch->getName().value) {
+              ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
+                             ctx->highlightError(chTy->getFullName()) +
+                             " is repeating here. Please check logic and make "
+                             "necessary changes",
+                         cMatch->getFileRange());
+            }
+          }
+          mentionedFields.push_back(cMatch->getName());
+          if (chTy->hasField(cMatch->getName().value)) {
+            caseComparisons.push_back(ctx->builder.CreateICmpEQ(
+                choiceVal, llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
+                                                  (u64)chTy->getValueFor(cMatch->getName().value))));
+          } else {
+            ctx->Error("No variant named " + ctx->highlightError(cMatch->getName().value) + " in choice type " +
+                           ctx->highlightError(chTy->getFullName()),
+                       cMatch->getName().range);
           }
         } else {
-          ctx->Error("Expected either the name of a variant of, "
-                     "or an expression of type " +
-                         ctx->highlightError(chTy->getFullName()),
-                     eMatch->getMainRange());
-        }
-      } else {
-        auto* cMatch = section.first->asChoice();
-        for (const auto& mField : mentionedFields) {
-          if (mField.value == cMatch->getName().value) {
-            ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
-                           ctx->highlightError(chTy->getFullName()) +
-                           " is repeating here. Please check logic and make "
-                           "necessary changes",
-                       cMatch->getFileRange());
-          }
-        }
-        mentionedFields.push_back(cMatch->getName());
-        if (chTy->hasField(cMatch->getName().value)) {
-          caseVal = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
-                                           (u64)chTy->getValueFor(cMatch->getName().value));
-        } else {
-          ctx->Error("No variant named " + ctx->highlightError(cMatch->getName().value) + " in choice type " +
-                         ctx->highlightError(chTy->getFullName()),
-                     cMatch->getName().range);
+          ctx->Error("Unexpected match value type here", caseValElem->getMainRange());
         }
       }
-      auto*      trueBlock  = new IR::Block(ctx->fn, curr);
-      IR::Block* falseBlock = nullptr;
-      auto*      cond       = ctx->builder.CreateICmpEQ(choiceVal, caseVal);
+      auto*        trueBlock  = new IR::Block(ctx->fn, curr);
+      IR::Block*   falseBlock = nullptr;
+      llvm::Value* cond;
+      if (caseComparisons.size() > 1) {
+        cond = ctx->builder.CreateOr(caseComparisons);
+      } else {
+        cond = ctx->builder.CreateICmpEQ(choiceVal, caseComparisons.front());
+      }
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         falseBlock = new IR::Block(ctx->fn, curr);
         ctx->builder.CreateCondBr(cond, trueBlock->getBB(), falseBlock->getBB());
@@ -246,20 +258,17 @@ IR::Value* Match::emit(IR::Context* ctx) {
     chTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
-        ctx->Error("All possible variants of the choice type are already "
-                   "mentioned in the match sentence. No need to use else case "
-                   "for the match statement",
-                   fileRange);
+        ctx->Error(
+            "All possible variants of the choice type are already mentioned in the match sentence. No need to use else case for the match statement",
+            elseCase.value().second);
       }
-    } else {
-      if (!elseCase.has_value()) {
-        ctx->Error("Not all possible variants of the choice type are provided. "
-                   "Please add the else case to handle all missing variants",
-                   fileRange);
-      }
+    } else if (!elseCase.has_value()) {
+      ctx->Error(
+          "Not all possible variants of the choice type are provided. Please add the else case to handle all missing variants",
+          fileRange);
     }
     if (elseCase.has_value()) {
-      emitSentences(elseCase.value(), ctx);
+      emitSentences(elseCase.value().first, ctx);
       ctx->fn->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
@@ -287,84 +296,103 @@ IR::Value* Match::emit(IR::Context* ctx) {
                                          ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 1u));
     }
     for (auto& section : chain) {
-      if (section.first->getType() != MatchType::Exp) {
-        ctx->Error(
-            "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
-            section.first->getMainRange());
-      }
-      auto*        expMatchVal  = section.first->asExp();
-      IR::Value*   caseIR       = expMatchVal->getExpression()->emit(ctx);
-      llvm::Value* caseStrBuff  = nullptr;
-      llvm::Value* caseStrCount = nullptr;
-      // FIXME - Add optimisation for constant strings
-      if (caseIR->getType()->isStringSlice() ||
-          (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
-        auto* elemIter = curr->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
-        if (caseIR->isConstVal()) {
-          caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
-          caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
+      SHOW("Creating case true block")
+      auto* caseTrueBlock = new IR::Block(ctx->fn, curr);
+      SHOW("Creating case false block")
+      auto* checkFalseBlock = new IR::Block(ctx->fn, curr);
+      SHOW("Setting thisCaseFalseBlock")
+      IR::Block* thisCaseFalseBlock;
+      SHOW("Number of match values for this case: " << section.first.size())
+      for (usize j = 0; j < section.first.size(); j++) {
+        if (j == section.first.size() - 1) {
+          thisCaseFalseBlock = checkFalseBlock;
         } else {
-          if (caseIR->isReference()) {
-            caseIR->loadImplicitPointer(ctx->builder);
-          } else if (!caseIR->isImplicitPointer()) {
-            caseIR->makeImplicitPointer(ctx, None);
-          }
-          caseStrBuff =
-              ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
-                                      ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
-          caseStrCount =
-              ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                      ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+          thisCaseFalseBlock = new IR::Block(ctx->fn, curr);
         }
-        auto* Ty64Int           = llvm::Type::getInt64Ty(ctx->llctx);
-        auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
-        auto* checkFalseBlock   = new IR::Block(ctx->fn, curr);
-        ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(strCount, caseStrCount), lenCheckTrueBlock->getBB(),
-                                  checkFalseBlock->getBB());
-        lenCheckTrueBlock->setActive(ctx->builder);
-        ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), elemIter->getLLVM());
-        auto* iterCondBlock  = new IR::Block(ctx->fn, lenCheckTrueBlock);
-        auto* iterTrueBlock  = new IR::Block(ctx->fn, lenCheckTrueBlock);
-        auto* iterFalseBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
-        (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
-        iterCondBlock->setActive(ctx->builder);
-        ctx->builder.CreateCondBr(
-            ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()), caseStrCount),
-            iterTrueBlock->getBB(), iterFalseBlock->getBB());
-        iterTrueBlock->setActive(ctx->builder);
-        auto* Ty8Int        = llvm::Type::getInt8Ty(ctx->llctx);
-        auto* iterIncrBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
-        ctx->builder.CreateCondBr(
-            ctx->builder.CreateICmpEQ(
-                ctx->builder.CreateLoad(
-                    Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, strBuff,
-                                                           {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())})),
-                ctx->builder.CreateLoad(
-                    Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, caseStrBuff,
-                                                           {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())}))),
-            iterIncrBlock->getBB(), iterFalseBlock->getBB());
-        iterIncrBlock->setActive(ctx->builder);
-        ctx->builder.CreateStore(ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()),
-                                                        llvm::ConstantInt::get(Ty64Int, 1u)),
-                                 elemIter->getLLVM());
-        (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
-        iterFalseBlock->setActive(ctx->builder);
-        auto* caseTrueBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
-        ctx->builder.CreateCondBr(
-            ctx->builder.CreateICmpEQ(strCount, ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())),
-            caseTrueBlock->getBB(), checkFalseBlock->getBB());
-        caseTrueBlock->setActive(ctx->builder);
-        emitSentences(section.second, ctx);
-        caseTrueBlock->destroyLocals(ctx);
-        (void)IR::addBranch(ctx->builder, restBlock->getBB());
-        checkFalseBlock->setActive(ctx->builder);
-      } else {
-        ctx->Error("Expected a string slice to be the expression for this match case",
-                   expMatchVal->getExpression()->fileRange);
+        if (section.first.at(j)->getType() != MatchType::Exp) {
+          ctx->Error(
+              "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
+              section.first.at(j)->getMainRange());
+        }
+        auto*        expMatchVal  = section.first.at(j)->asExp();
+        IR::Value*   caseIR       = expMatchVal->getExpression()->emit(ctx);
+        llvm::Value* caseStrBuff  = nullptr;
+        llvm::Value* caseStrCount = nullptr;
+        // FIXME - Add optimisation for constant strings
+        if (caseIR->getType()->isStringSlice() ||
+            (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
+          auto* elemIter = curr->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
+          if (caseIR->isConstVal()) {
+            caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
+            caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
+          } else {
+            if (caseIR->isReference()) {
+              caseIR->loadImplicitPointer(ctx->builder);
+            } else if (!caseIR->isImplicitPointer()) {
+              caseIR->makeImplicitPointer(ctx, None);
+            }
+            caseStrBuff =
+                ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+            caseStrCount =
+                ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+          }
+          auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+          SHOW("Creating lenCheckTrueBlock")
+          auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
+          ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(strCount, caseStrCount), lenCheckTrueBlock->getBB(),
+                                    thisCaseFalseBlock->getBB());
+          lenCheckTrueBlock->setActive(ctx->builder);
+          ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), elemIter->getLLVM());
+          SHOW("Creating iter cond block")
+          auto* iterCondBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          SHOW("Creating iter true block")
+          auto* iterTrueBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          SHOW("Creating iter false block")
+          auto* iterFalseBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+          iterCondBlock->setActive(ctx->builder);
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()), caseStrCount),
+              iterTrueBlock->getBB(), iterFalseBlock->getBB());
+          iterTrueBlock->setActive(ctx->builder);
+          auto* Ty8Int = llvm::Type::getInt8Ty(ctx->llctx);
+          SHOW("Creating iter incr block")
+          auto* iterIncrBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpEQ(
+                  ctx->builder.CreateLoad(
+                      Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, strBuff,
+                                                             {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())})),
+                  ctx->builder.CreateLoad(
+                      Ty8Int, ctx->builder.CreateInBoundsGEP(Ty8Int, caseStrBuff,
+                                                             {ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())}))),
+              iterIncrBlock->getBB(), iterFalseBlock->getBB());
+          iterIncrBlock->setActive(ctx->builder);
+          ctx->builder.CreateStore(ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM()),
+                                                          llvm::ConstantInt::get(Ty64Int, 1u)),
+                                   elemIter->getLLVM());
+          (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+          iterFalseBlock->setActive(ctx->builder);
+          ctx->builder.CreateCondBr(
+              ctx->builder.CreateICmpEQ(strCount, ctx->builder.CreateLoad(Ty64Int, elemIter->getLLVM())),
+              caseTrueBlock->getBB(), thisCaseFalseBlock->getBB());
+        } else {
+          ctx->Error("Expected a string slice to be the expression for this match case",
+                     expMatchVal->getExpression()->fileRange);
+        }
+        SHOW("Setting thisCaseFalseBlock active")
+        thisCaseFalseBlock->setActive(ctx->builder);
       }
+      caseTrueBlock->setActive(ctx->builder);
+      emitSentences(section.second, ctx);
+      caseTrueBlock->destroyLocals(ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      checkFalseBlock->setActive(ctx->builder);
     }
     if (elseCase.has_value()) {
-      emitSentences(elseCase.value(), ctx);
+      emitSentences(elseCase.value().first, ctx);
       ctx->fn->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     } else {
@@ -385,11 +413,15 @@ Json Match::toJson() const {
     for (auto* snt : elem.second) {
       sentencesJson.push_back(snt->toJson());
     }
-    chainJson.push_back(Json()._("matchValue", elem.first->toJson())._("sentences", sentencesJson));
+    Vec<JsonValue> matchValsJson;
+    for (auto* mVal : elem.first) {
+      matchValsJson.push_back(mVal->toJson());
+    }
+    chainJson.push_back(Json()._("matchValues", matchValsJson)._("sentences", sentencesJson));
   }
   Vec<JsonValue> elseJson;
   if (elseCase.has_value()) {
-    for (auto* snt : elseCase.value()) {
+    for (auto* snt : elseCase.value().first) {
       elseJson.push_back(snt->toJson());
     }
   }
@@ -397,7 +429,8 @@ Json Match::toJson() const {
       ._("candidate", candidate->toJson())
       ._("matchChain", chainJson)
       ._("hasElse", elseCase.has_value())
-      ._("elseSentences", elseJson);
+      ._("elseSentences", elseJson)
+      ._("elseRange", elseCase.has_value() ? Json() : (Json)elseCase->second);
 }
 
 } // namespace qat::ast

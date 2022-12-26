@@ -1629,8 +1629,16 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             moduleInfo.outputName.value_or(getWritableName()).append(".a")))
                            .string()
                            .append(" ");
-        SHOW("Archiving library " << String("ar r ").append(outPath).append(cmdTwo).c_str())
-        if (std::system(String("ar r ").append(outPath).append(cmdTwo).c_str())) {
+        SHOW("Archiving library " << String("ar r ")
+                                         .append(outPath)
+                                         .append(cmdTwo)
+                                         .append(PLATFORM_IS_WINDOWS ? " > nul" : " > /dev/null")
+                                         .c_str())
+        if (std::system(String("ar r ")
+                            .append(outPath)
+                            .append(cmdTwo)
+                            .append(PLATFORM_IS_WINDOWS ? " > nul" : " > /dev/null")
+                            .c_str())) {
           ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed",
                      {filePath, {0u, 0u}, {0u, 0u}});
         }

@@ -1718,8 +1718,8 @@ void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<
 }
 
 void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
-                                Vec<Pair<ast::MatchValue*, Vec<ast::Sentence*>>>& chain,
-                                Maybe<Vec<ast::Sentence*>>& elseCase, bool isTypeMatch) {
+                                Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
+                                Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch) {
   using lexer::TokenType;
 
   for (usize i = from + 1; i < upto; i++) {
@@ -1763,8 +1763,8 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
             if (bCloseRes) {
               auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
-              chain.push_back(Pair<ast::MatchValue*, Vec<ast::Sentence*>>(
-                  new ast::MixMatchValue(std::move(fieldName), std::move(valueName), isVar), std::move(snts)));
+              chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
+                  {new ast::MixMatchValue(std::move(fieldName), std::move(valueName), isVar)}, std::move(snts)));
               i = bCloseRes.value();
             } else {
               Error("Expected end of [", RangeAt(i + 1));
@@ -1778,21 +1778,68 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
         break;
       }
       case TokenType::child: {
+        auto start = i;
         if (isNext(TokenType::identifier, i)) {
-          auto variantName = ValueAt(i + 1);
-          if (isNext(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+          Vec<ast::MatchValue*> matchVals;
+          matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(i + 1)));
+          usize j = i + 1;
+          while (isNext(TokenType::separator, j)) {
+            if (isNext(TokenType::child, j + 1)) {
+              if (isNext(TokenType::identifier, j + 2)) {
+                matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(j + 3)));
+                j += 3;
+                if (isNext(TokenType::altArrow, j)) {
+                  SHOW("Found altArrow after list of trivial choice values")
+                  i = j + 1;
+                  break;
+                }
+              } else {
+                Error("Expected name of the variant of the choice type to match", RangeAt(j + 1));
+              }
+            } else {
+              if (isPrimaryWithin(TokenType::altArrow, j + 1, upto)) {
+                auto valueEnd = firstPrimaryPosition(TokenType::altArrow, j + 1);
+                if (isPrimaryWithin(TokenType::separator, j + 1, upto)) {
+                  auto sepPos = primaryPositionsWithin(TokenType::separator, j + 1, upto);
+                  matchVals.push_back(
+                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, sepPos.front()).first));
+                  for (usize k = 1; k < sepPos.size(); k++) {
+                    if (isNext(TokenType::child, sepPos.at(k - 1))) {
+                      Error(
+                          "Can't use trivial choice value if at least one of the list of values to match is not a trivial value",
+                          RangeAt(sepPos.at(k - 1) + 1));
+                    } else {
+                      matchVals.push_back(new ast::ExpressionMatchValue(
+                          parseExpression(preCtx, None, sepPos.at(k - 1), sepPos.at(k)).first));
+                    }
+                  }
+                  matchVals.push_back(
+                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPos.back(), valueEnd).first));
+                } else {
+                  matchVals.push_back(
+                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, valueEnd).first));
+                }
+                i = valueEnd.value();
+                break;
+              } else {
+                Error(
+                    "Using normal expressions as cases for matching choice types requires the list of values to end with =>",
+                    RangeAt(j + 1));
+              }
+            }
+          }
+          if (isNext(TokenType::bracketOpen, i)) {
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
             if (bCloseRes) {
               auto bClose = bCloseRes.value();
-              auto snts   = parseSentences(preCtx, i + 2, bClose);
-              chain.push_back(Pair<ast::MatchValue*, Vec<ast::Sentence*>>(
-                  new ast::ChoiceMatchValue(IdentifierAt(i + 1)), std::move(snts)));
+              auto snts   = parseSentences(preCtx, i + 1, bClose);
+              chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(matchVals, std::move(snts)));
               i = bClose;
             } else {
-              Error("Expected end for [", RangeAt(i + 2));
+              Error("Expected end for [", RangeAt(i + 1));
             }
           } else {
-            Error("Expected [ to start the sentences in this match case block", RangeSpan(i, i + 1));
+            Error("Expected [ to start the sentences in this match case block", RangeSpan(start, i));
           }
         } else {
           Error("Expected name of the variant of the choice type to match", RangeAt(i));
@@ -1800,6 +1847,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
         break;
       }
       case TokenType::Else: {
+        auto start = i;
         if (elseCase.has_value()) {
           Error("Else case for match sentence is already provided. Please check "
                 "logic and make neceassary changes",
@@ -1809,8 +1857,9 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
           if (bCloseRes.has_value()) {
             auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
-            elseCase  = std::move(snts);
-            i         = bCloseRes.value();
+            elseCase =
+                Pair<Vec<ast::Sentence*>, FileRange>{std::move(snts), FileRange RangeSpan(start, bCloseRes.value())};
+            i = bCloseRes.value();
             if (i + 1 != upto) {
               Error("Expected match sentence to end after the else case. Make "
                     "sure "
@@ -1827,16 +1876,28 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
       }
       default: {
         if (isPrimaryWithin(TokenType::altArrow, i, upto)) {
-          auto  start  = i;
-          auto  expEnd = firstPrimaryPosition(TokenType::altArrow, i).value();
-          auto* exp    = parseExpression(preCtx, None, i - 1, expEnd).first;
-          i            = expEnd;
+          auto                  start       = i;
+          auto                  matchValEnd = firstPrimaryPosition(TokenType::altArrow, i).value();
+          Vec<ast::MatchValue*> matchVals;
+          if (isPrimaryWithin(TokenType::separator, i, matchValEnd)) {
+            auto sepPoss = primaryPositionsWithin(TokenType::separator, i, matchValEnd);
+            matchVals.push_back(
+                new ast::ExpressionMatchValue(parseExpression(preCtx, None, i - 1, sepPoss.front()).first));
+            for (usize j = 1; j < sepPoss.size(); j++) {
+              matchVals.push_back(
+                  new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPoss.at(j - 1), sepPoss.at(j)).first));
+            }
+            matchVals.push_back(
+                new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPoss.back(), matchValEnd).first));
+          } else {
+            matchVals.push_back(new ast::ExpressionMatchValue(parseExpression(preCtx, None, i - 1, matchValEnd).first));
+          }
+          i = matchValEnd;
           if (isNext(TokenType::bracketOpen, i)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
             if (bCloseRes.has_value()) {
-              auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
-              chain.push_back(
-                  Pair<ast::MatchValue*, Vec<ast::Sentence*>>(new ast::ExpressionMatchValue(exp), std::move(snts)));
+              chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
+                  matchVals, parseSentences(preCtx, i + 1, bCloseRes.value())));
               i = bCloseRes.value();
             } else {
               Error("Expected end for [", RangeAt(i + 1));
@@ -1845,9 +1906,10 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
             Error("Expected [ to start the sentences in the match case block", RangeSpan(start, i));
           }
           break;
+        } else {
+          SHOW("Token type: " << (int)token.type)
+          Error("Maybe you forgot to end the expression to match with =>", token.fileRange);
         }
-        SHOW("Token type: " << (int)token.type)
-        Error("Unexpected token found inside match block", token.fileRange);
       }
     }
   }
@@ -3192,8 +3254,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             if (isNext(TokenType::bracketOpen, i)) {
               auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
               if (bCloseRes) {
-                Vec<Pair<ast::MatchValue*, Vec<ast::Sentence*>>> chain;
-                Maybe<Vec<ast::Sentence*>>                       elseCase;
+                Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>> chain;
+                Maybe<Pair<Vec<ast::Sentence*>, FileRange>>           elseCase;
                 parseMatchContents(preCtx, i + 1, bCloseRes.value(), chain, elseCase, isTypeMatch);
                 result.push_back(new ast::Match(isTypeMatch, cand, std::move(chain), std::move(elseCase),
                                                 RangeSpan(start, bCloseRes.value())));

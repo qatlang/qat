@@ -60,8 +60,8 @@ public:
   void parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
                        Maybe<usize>& defaultVal);
   void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
-                          Vec<Pair<ast::MatchValue*, Vec<ast::Sentence*>>>& chain, Maybe<Vec<ast::Sentence*>>& elseCase,
-                          bool isTypeMatch);
+                          Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
+                          Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
   void Error(const String& message, const FileRange& fileRange);
   static void Warning(const String& message, const FileRange& fileRange);
 

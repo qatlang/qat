@@ -1663,7 +1663,7 @@ void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<
       }
       case TokenType::identifier: {
         auto start = i;
-        if (isNext(TokenType::separator, i)) {
+        if (isNext(TokenType::separator, i) || (i + 1 == upto)) {
           fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
               {ValueAt(i), isPrev(TokenType::Default, i)
                                ? FileRange(tokens->at(i - 1).fileRange, tokens->at(i).fileRange)
@@ -1676,8 +1676,6 @@ void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<
           if (isNext(TokenType::binaryOperator, i + 1) && ValueAt(i + 2) == "-") {
             isNegative = true;
             i += 2;
-          } else if (isNext(TokenType::binaryOperator, i + 1)) {
-            Error("Invalid token found inside choice definition", RangeAt(i + 2));
           } else {
             i += 1;
           }
@@ -1691,14 +1689,13 @@ void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<
             }
             i++;
           } else {
-            Error("Expected an integer or unsigned integer literal as the value "
-                  "for the variant of the choice type",
+            Error("Expected an integer or unsigned integer literal as the value for the variant of the choice type",
                   RangeAt(i));
           }
           if (isNegative) {
             val = -val;
           }
-          if (isNext(TokenType::separator, i) || isNext(TokenType::curlybraceClose, i)) {
+          if (isNext(TokenType::separator, i) || (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
             fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
                 Identifier{ValueAt(start), isPrev(TokenType::Default, start)
                                                ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)

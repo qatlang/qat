@@ -1,11 +1,17 @@
 #include "binary_expression.hpp"
+#include "../../IR/control_flow.hpp"
 #include "../../IR/types/reference.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "default.hpp"
 #include "operator.hpp"
+#include "llvm/IR/Constant.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/Support/Casting.h"
+
+#define QAT_COMPARISON_INDEX "qat'str'comparisonIndex"
 
 namespace qat::ast {
 
@@ -558,6 +564,114 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                        " and right hand side is of type " + rhsType->toString() + ". Please check the logic.",
                    fileRange);
       }
+    }
+  } else if ((lhsType->isStringSlice() ||
+              (lhsType->isReference() && lhsType->asReference()->getSubType()->isStringSlice())) &&
+             (rhsType->isStringSlice() ||
+              (rhsType->isReference() && rhsType->asReference()->getSubType()->isStringSlice()))) {
+    if (op == Op::equalTo || op == Op::notEqualTo) { // NOLINTNEXTLINE(readability-isolate-declaration)
+      llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
+      if (lhsEmit->isLLVMConstant()) {
+        lhsBuff  = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
+        lhsCount = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
+      } else {
+        if (lhsType->isReference()) {
+          lhsEmit->loadImplicitPointer(ctx->builder);
+        } else if (!lhsEmit->isImplicitPointer()) {
+          lhsEmit->makeImplicitPointer(ctx, None);
+        }
+        lhsBuff = ctx->builder.CreateLoad(
+            llvm::Type::getInt8PtrTy(ctx->llctx),
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 0u));
+        lhsCount = ctx->builder.CreateLoad(
+            llvm::Type::getInt64Ty(ctx->llctx),
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 1u));
+      }
+      if (rhsEmit->isLLVMConstant()) {
+        rhsBuff  = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
+        rhsCount = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
+      } else {
+        if (rhsType->isReference()) {
+          rhsEmit->loadImplicitPointer(ctx->builder);
+        } else if (!rhsEmit->isImplicitPointer()) {
+          rhsEmit->makeImplicitPointer(ctx, None);
+        }
+        rhsBuff = ctx->builder.CreateLoad(
+            llvm::Type::getInt8PtrTy(ctx->llctx),
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 0u));
+        rhsCount = ctx->builder.CreateLoad(
+            llvm::Type::getInt64Ty(ctx->llctx),
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 1u));
+      }
+      auto* curr              = ctx->fn->getBlock();
+      auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
+      auto* strCmpTrueBlock   = new IR::Block(ctx->fn, curr);
+      auto* strCmpFalseBlock  = new IR::Block(ctx->fn, curr);
+      auto* iterCondBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
+      auto* iterTrueBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
+      auto* iterIncrBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
+      auto* iterFalseBlock    = new IR::Block(ctx->fn, lenCheckTrueBlock);
+      auto* restBlock         = new IR::Block(ctx->fn, nullptr);
+      restBlock->linkPrevBlock(curr);
+      auto* Ty64Int        = llvm::Type::getInt64Ty(ctx->llctx);
+      auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->llctx);
+      auto* qatStrCmpIndex = ctx->fn->getStrComparisonIndex();
+      // NOTE - Length equality check
+      ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(lhsCount, rhsCount), lenCheckTrueBlock->getBB(),
+                                strCmpFalseBlock->getBB());
+      //
+      // NOTE - Length matches
+      lenCheckTrueBlock->setActive(ctx->builder);
+      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u),
+                               qatStrCmpIndex->getLLVM());
+      (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+      //
+      // NOTE - Checking the iteration count
+      iterCondBlock->setActive(ctx->builder);
+      ctx->builder.CreateCondBr(
+          ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->getLLVM()), lhsCount),
+          iterTrueBlock->getBB(), iterFalseBlock->getBB());
+      //
+      // NOTE - Iteration check is true
+      iterTrueBlock->setActive(ctx->builder);
+      ctx->builder.CreateCondBr(
+          ctx->builder.CreateICmpEQ(
+              ctx->builder.CreateLoad(
+                  Ty8Int, ctx->builder.CreateInBoundsGEP(
+                              Ty8Int, lhsBuff, {ctx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->getLLVM())})),
+              ctx->builder.CreateLoad(
+                  Ty8Int, ctx->builder.CreateInBoundsGEP(
+                              Ty8Int, rhsBuff, {ctx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->getLLVM())}))),
+          iterIncrBlock->getBB(), iterFalseBlock->getBB());
+      //
+      // NOTE - Increment string slice iteration count
+      iterIncrBlock->setActive(ctx->builder);
+      ctx->builder.CreateStore(ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->getLLVM()),
+                                                      llvm::ConstantInt::get(Ty64Int, 1u)),
+                               qatStrCmpIndex->getLLVM());
+      (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
+      //
+      // NOTE - Iteration check is false, time to check if the count matches
+      iterFalseBlock->setActive(ctx->builder);
+      ctx->builder.CreateCondBr(
+          ctx->builder.CreateICmpEQ(lhsCount, ctx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->getLLVM())),
+          strCmpTrueBlock->getBB(), strCmpFalseBlock->getBB());
+      //
+      // NOTE - Merging branches to the resume block
+      strCmpTrueBlock->setActive(ctx->builder);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      strCmpFalseBlock->setActive(ctx->builder);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      //
+      // NOTE - Control flow resumes
+      restBlock->setActive(ctx->builder);
+      auto* Ty1Int    = llvm::Type::getInt1Ty(ctx->llctx);
+      auto* strCmpRes = ctx->builder.CreatePHI(Ty1Int, 2);
+      strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 1u : 0u), strCmpTrueBlock->getBB());
+      strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 0u : 1u), strCmpFalseBlock->getBB());
+      return new IR::Value(strCmpRes, IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+    } else {
+      ctx->Error("String slice does not support the " + ctx->highlightError(OpToString(op)) + " operator", fileRange);
     }
   } else if ((lhsType->isPointer() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isPointer())) &&
              (rhsType->isPointer() || (rhsType->isReference() && rhsType->asReference()->getSubType()->isPointer()))) {

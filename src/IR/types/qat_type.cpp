@@ -213,6 +213,10 @@ UnsignedType* QatType::asUnsignedInteger() const {
                                               : (UnsignedType*)this;
 }
 
+bool QatType::isBool() const { return isUnsignedInteger() && asUnsignedInteger()->isBoolean(); }
+
+UnsignedType* QatType::asBool() const { return asUnsignedInteger(); }
+
 bool QatType::isFloat() const {
   return (typeKind() == TypeKind::Float) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isFloat());

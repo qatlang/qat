@@ -53,6 +53,8 @@ public:
   useit IntegerType*        asInteger() const;
   useit bool                isUnsignedInteger() const;
   useit UnsignedType*       asUnsignedInteger() const;
+  useit bool                isBool() const;
+  useit UnsignedType*       asBool() const;
   useit bool                isFloat() const;
   useit FloatType*          asFloat() const;
   useit bool                isReference() const;

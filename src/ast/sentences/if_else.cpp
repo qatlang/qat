@@ -48,8 +48,10 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
     if (expTy->isReference()) {
       expTy = expTy->asReference()->getSubType();
     }
-    if (!expTy->isUnsignedInteger()) {
-      ctx->Error("Expression in if sentence should be of unsigned integer type", section.first->fileRange);
+    if (!expTy->isBool()) {
+      ctx->Error("Condition in an " + ctx->highlightError("if") + " block should be of " + ctx->highlightError("bool") +
+                     " type",
+                 section.first->fileRange);
     }
     if (exp->isConstVal()) {
       auto condConstVal = *(llvm::dyn_cast<llvm::ConstantInt>(exp->asConst()->getLLVM())->getValue().getRawData());

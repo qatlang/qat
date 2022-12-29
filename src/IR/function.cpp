@@ -394,6 +394,16 @@ bool Function::isAccessible(const utils::RequesterInfo& req_info) const {
   return utils::Visibility::isAccessible(visibility_info, req_info);
 }
 
+IR::LocalValue* Function::getStrComparisonIndex() {
+  if (!strComparisonIndex) {
+    strComparisonIndex =
+        getFirstBlock()->newValue("qat'str'comparisonIndex",
+                                  // NOLINTNEXTLINE(readability-magic-numbers)
+                                  IR::UnsignedType::get(64u, getLLVMFunction()->getContext()), true, name.range);
+  }
+  return strComparisonIndex;
+}
+
 utils::VisibilityInfo Function::getVisibility() const { return visibility_info; }
 
 bool Function::isMemberFunction() const { return false; }

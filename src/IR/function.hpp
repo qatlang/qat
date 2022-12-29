@@ -117,6 +117,7 @@ protected:
   bool                  is_async;
   bool                  hasVariadicArguments;
   Vec<Block*>           blocks;
+  IR::LocalValue*       strComparisonIndex = nullptr;
 
   mutable usize activeBlock   = 0;
   mutable usize copiedCounter = 0;
@@ -160,6 +161,7 @@ public:
   useit usize           getBlockCount() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
+  useit IR::LocalValue* getStrComparisonIndex();
 
   void updateOverview() override;
 

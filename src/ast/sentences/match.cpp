@@ -321,7 +321,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         // FIXME - Add optimisation for constant strings
         if (caseIR->getType()->isStringSlice() ||
             (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
-          auto* elemIter = curr->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
+          auto* elemIter = ctx->fn->getStrComparisonIndex();
           if (caseIR->isConstVal()) {
             caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
             caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);

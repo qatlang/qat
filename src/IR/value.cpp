@@ -86,7 +86,7 @@ bool Value::isVariable() const { return variable; }
 
 bool Value::isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
 
-llvm::Constant* Value::getLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+llvm::Constant* Value::getLLVMConstant() const { return llvm::cast<llvm::Constant>(ll); }
 
 bool Value::isConstVal() const { return false; }
 

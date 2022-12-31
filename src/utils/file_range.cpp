@@ -1,4 +1,5 @@
 #include "./file_range.hpp"
+#include "../show.hpp"
 #include "./json.hpp"
 #include <filesystem>
 namespace qat {
@@ -24,7 +25,16 @@ FileRange::FileRange(Json json)
     : file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
 
 FileRange::operator Json() const {
-  return Json()._("path", fs::absolute(file).lexically_normal().string())._("start", start)._("end", end);
+  String absPath;
+  try {
+    absPath = fs::absolute(file).lexically_normal().string();
+  } catch (std::exception& e) {
+    SHOW("Exception while making path absolute:")
+    SHOW("Path: " << file)
+    SHOW("Exception is: " << e.what())
+    absPath = file.string();
+  }
+  return Json()._("path", absPath)._("start", start)._("end", end);
 }
 
 FileRange::operator JsonValue() const { return (Json)(*this); }

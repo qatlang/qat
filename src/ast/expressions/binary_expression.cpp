@@ -1,5 +1,6 @@
 #include "binary_expression.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/logic.hpp"
 #include "../../IR/types/reference.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
@@ -9,6 +10,9 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Operator.h"
 #include "llvm/Support/Casting.h"
 
 #define QAT_COMPARISON_INDEX "qat'str'comparisonIndex"
@@ -571,9 +575,12 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
               (rhsType->isReference() && rhsType->asReference()->getSubType()->isStringSlice()))) {
     if (op == Op::equalTo || op == Op::notEqualTo) { // NOLINTNEXTLINE(readability-isolate-declaration)
       llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
+      bool         isConstantLHS, isConstantRHS = false;
+      auto*        Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
       if (lhsEmit->isLLVMConstant()) {
-        lhsBuff  = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
-        lhsCount = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
+        lhsBuff       = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
+        lhsCount      = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
+        isConstantLHS = true;
       } else {
         if (lhsType->isReference()) {
           lhsEmit->loadImplicitPointer(ctx->builder);
@@ -584,12 +591,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             llvm::Type::getInt8PtrTy(ctx->llctx),
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 0u));
         lhsCount = ctx->builder.CreateLoad(
-            llvm::Type::getInt64Ty(ctx->llctx),
+            Ty64Int,
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 1u));
       }
       if (rhsEmit->isLLVMConstant()) {
-        rhsBuff  = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
-        rhsCount = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
+        rhsBuff       = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
+        rhsCount      = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
+        isConstantRHS = true;
       } else {
         if (rhsType->isReference()) {
           rhsEmit->loadImplicitPointer(ctx->builder);
@@ -600,8 +608,17 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             llvm::Type::getInt8PtrTy(ctx->llctx),
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 0u));
         rhsCount = ctx->builder.CreateLoad(
-            llvm::Type::getInt64Ty(ctx->llctx),
+            Ty64Int,
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 1u));
+      }
+      if (isConstantLHS && isConstantRHS) {
+        SHOW("Both string slices are constant")
+        auto strCmpRes = IR::Logic::compareConstantStrings(
+            llvm::cast<llvm::Constant>(lhsBuff), llvm::cast<llvm::Constant>(lhsCount),
+            llvm::cast<llvm::Constant>(rhsBuff), llvm::cast<llvm::Constant>(rhsCount), ctx->llctx);
+        return new IR::ConstantValue(
+            llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), (op == Op::equalTo) ? strCmpRes : !strCmpRes),
+            IR::UnsignedType::getBool(ctx->llctx));
       }
       auto* curr              = ctx->fn->getBlock();
       auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
@@ -613,7 +630,6 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       auto* iterFalseBlock    = new IR::Block(ctx->fn, lenCheckTrueBlock);
       auto* restBlock         = new IR::Block(ctx->fn, nullptr);
       restBlock->linkPrevBlock(curr);
-      auto* Ty64Int        = llvm::Type::getInt64Ty(ctx->llctx);
       auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->llctx);
       auto* qatStrCmpIndex = ctx->fn->getStrComparisonIndex();
       // NOTE - Length equality check

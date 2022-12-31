@@ -88,7 +88,10 @@ bool Block::hasNextBlock() const { return nextBlock != nullptr; }
 
 Block* Block::getNextBlock() const { return nextBlock; }
 
-void Block::linkPrevBlock(Block* block) { prevBlock = block; }
+void Block::linkPrevBlock(Block* block) {
+  prevBlock        = block;
+  block->nextBlock = this;
+}
 
 Block* Block::getParent() const { return parent; }
 

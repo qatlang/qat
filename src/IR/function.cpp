@@ -253,8 +253,11 @@ void Block::destroyLocals(IR::Context* ctx) {
       }
     }
   }
-  if (prevBlock) {
-    prevBlock->destroyLocals(ctx);
+  for (auto* sub : children) {
+    sub->destroyLocals(ctx);
+  }
+  if (nextBlock) {
+    nextBlock->destroyLocals(ctx);
   }
 }
 

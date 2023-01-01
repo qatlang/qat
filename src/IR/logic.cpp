@@ -5,7 +5,11 @@
 #include "types/core_type.hpp"
 #include "types/reference.hpp"
 #include "value.hpp"
+#include "llvm/IR/ConstantFold.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/InstrTypes.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
@@ -52,28 +56,20 @@ llvm::AllocaInst* Logic::newAlloca(IR::Function* fun, const String& name, llvm::
 bool Logic::compareConstantStrings(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
                                    llvm::Constant* rhsCount, llvm::LLVMContext& llCtx) {
   SHOW("Starting constant string comparison")
+  SHOW("LHS length: " << (*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData())
+                      << " RHS length: " << (*llvm::cast<llvm::ConstantInt>(rhsCount)->getValue().getRawData()))
   if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) ==
       (*llvm::cast<llvm::ConstantInt>(rhsCount)->getValue().getRawData())) {
     SHOW("Constant string length matches")
-    bool result = true;
-    for (usize i = 0; i < (*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()); i++) {
-      if (!llvm::cast<llvm::ConstantInt>(
-               llvm::ConstantExpr::getICmp(
-                   llvm::ICmpInst::ICMP_EQ,
-                   llvm::ConstantExpr::getInBoundsGetElementPtr(
-                       llvm::Type::getInt8Ty(llCtx), lhsBuff, llvm::ConstantInt::get(llvm::Type::getInt64Ty(llCtx), i)),
-                   llvm::ConstantExpr::getInBoundsGetElementPtr(
-                       llvm::Type::getInt8Ty(llCtx), rhsBuff,
-                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(llCtx), i))))
-               ->getValue()
-               .getBoolValue()) {
-        SHOW("Constant string aren't equal")
-        result = false;
-        break;
-      }
-    }
-    return result;
+    return llvm::cast<llvm::ConstantDataArray>(
+               llvm::cast<llvm::GlobalVariable>(lhsBuff->getOperand(0u))->getInitializer())
+               ->getRawDataValues()
+               .str() == llvm::cast<llvm::ConstantDataArray>(
+                             llvm::cast<llvm::GlobalVariable>(rhsBuff->getOperand(0u))->getInitializer())
+                             ->getRawDataValues()
+                             .str();
   } else {
+    SHOW("Constant string comparison result: false")
     return false;
   }
 }

@@ -245,11 +245,53 @@ Block* Block::getActive() {
 
 void Block::destroyLocals(IR::Context* ctx) {
   SHOW("Locals being destroyed for " << name)
+  auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
   for (auto* loc : values) { // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
     if (loc->getType()->isCoreType()) {
       if (loc->getType()->asCore()->hasDestructor()) {
         auto* dFn = loc->getType()->asCore()->getDestructor();
-        (void)dFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
+        (void)dFn->call(ctx, {loc->getLLVM()}, ctx->getMod());
+      } else if (loc->getType()->isPointer() && loc->getType()->asPointer()->getOwner().isFunction()) {
+        auto* ptrTy = loc->getType()->asPointer();
+        ctx->getMod()->linkNative(NativeUnit::free);
+        auto* freeFn = ctx->getMod()->getLLVMModule()->getFunction("free");
+        if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
+          auto* dFn = ptrTy->getSubType()->asCore()->getDestructor();
+          if (ptrTy->isMulti()) {
+            auto* commInd = fn->getFunctionCommonIndex();
+            auto* ptrLen  = ctx->builder.CreateLoad(
+                Ty64Int, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 1u));
+            ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), commInd->getLLVM());
+            auto* curr         = ctx->fn->getBlock();
+            auto* indCondBlock = new IR::Block(ctx->fn, curr);
+            auto* indTrueBlock = new IR::Block(ctx->fn, curr);
+            auto* restBlock    = new IR::Block(ctx->fn, curr);
+            (void)IR::addBranch(ctx->builder, indCondBlock->getBB());
+            indCondBlock->setActive(ctx->builder);
+            ctx->builder.CreateCondBr(
+                ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, commInd->getLLVM()), ptrLen),
+                indTrueBlock->getBB(), restBlock->getBB());
+            indTrueBlock->setActive(ctx->builder);
+            ctx->builder.CreateInBoundsGEP(
+                llvm::PointerType::get(ptrTy->getSubType()->getLLVMType(), 0u),
+                ctx->builder.CreateLoad(llvm::PointerType::get(ptrTy->getSubType()->getLLVMType(), 0u),
+                                        ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u)),
+                {ctx->builder.CreateLoad(Ty64Int, commInd->getLLVM())});
+            ctx->builder.CreateStore(ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, commInd->getLLVM()),
+                                                            llvm::ConstantInt::get(Ty64Int, 1u)),
+                                     commInd->getLLVM());
+            (void)IR::addBranch(ctx->builder, indCondBlock->getBB());
+            restBlock->setActive(ctx->builder);
+            ctx->builder.CreateCall(
+                freeFn->getFunctionType(), freeFn,
+                {ctx->builder.CreateLoad(llvm::PointerType::get(ptrTy->getSubType()->getLLVMType(), 0u),
+                                         ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), loc->getLLVM(), 0u))});
+          } else {
+            (void)dFn->call(ctx, {ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM())}, ctx->getMod());
+            ctx->builder.CreateCall(freeFn->getFunctionType(), freeFn,
+                                    {ctx->builder.CreateLoad(ptrTy->getLLVMType(), loc->getLLVM())});
+          }
+        }
       }
     }
   }
@@ -400,10 +442,10 @@ bool Function::isAccessible(const utils::RequesterInfo& req_info) const {
   return utils::Visibility::isAccessible(visibility_info, req_info);
 }
 
-IR::LocalValue* Function::getStrComparisonIndex() {
+IR::LocalValue* Function::getFunctionCommonIndex() {
   if (!strComparisonIndex) {
     strComparisonIndex =
-        getFirstBlock()->newValue("qat'str'comparisonIndex",
+        getFirstBlock()->newValue("qat'function'commonIndex",
                                   // NOLINTNEXTLINE(readability-magic-numbers)
                                   IR::UnsignedType::get(64u, getLLVMFunction()->getContext()), true, name.range);
   }

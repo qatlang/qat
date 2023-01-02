@@ -631,7 +631,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       auto* restBlock         = new IR::Block(ctx->fn, nullptr);
       restBlock->linkPrevBlock(curr);
       auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->llctx);
-      auto* qatStrCmpIndex = ctx->fn->getStrComparisonIndex();
+      auto* qatStrCmpIndex = ctx->fn->getFunctionCommonIndex();
       // NOTE - Length equality check
       ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(lhsCount, rhsCount), lenCheckTrueBlock->getBB(),
                                 strCmpFalseBlock->getBB());

@@ -161,7 +161,7 @@ public:
   useit usize           getBlockCount() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
-  useit IR::LocalValue* getStrComparisonIndex();
+  useit IR::LocalValue* getFunctionCommonIndex();
 
   void updateOverview() override;
 

@@ -237,7 +237,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       if (caseComparisons.size() > 1) {
         cond = ctx->builder.CreateOr(caseComparisons);
       } else {
-        cond = ctx->builder.CreateICmpEQ(choiceVal, caseComparisons.front());
+        cond = caseComparisons.front();
       }
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         falseBlock = new IR::Block(ctx->fn, curr);

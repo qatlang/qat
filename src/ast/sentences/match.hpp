@@ -69,6 +69,12 @@ public:
   useit Json        toJson() const final;
 };
 
+struct CaseResult {
+  Maybe<bool> result;
+  bool        areAllConstant = false;
+  CaseResult(Maybe<bool> result, bool areAllConstant);
+};
+
 class Match : public Sentence {
 private:
   bool                                        isTypeMatch;
@@ -76,9 +82,15 @@ private:
   Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain;
   Maybe<Pair<Vec<Sentence*>, FileRange>>      elseCase;
 
+  Vec<CaseResult> matchResult;
+
 public:
   Match(bool _isTypeMatch, Expression* candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain,
         Maybe<Pair<Vec<Sentence*>, FileRange>> elseCase, FileRange fileRange);
+
+  useit bool hasConstResultForAllCases();
+  useit bool isFalseForAllCases();
+  useit bool isTrueForACase();
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::match; }

@@ -1709,13 +1709,14 @@ void QatModule::exportJsonFromAST(IR::Context* ctx) {
         jsonStream << result;
         jsonStream.close();
       } else {
-        ctx->Error("Output file could not be opened for writing the JSON representation",
-                   {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+        ctx->Error("Output file could not be opened for writing the JSON representation", {getParentFile()->filePath});
       }
     } else {
       ctx->Error("Could not create parent directories for the JSON file for exporting AST",
-                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+                 {getParentFile()->filePath});
     }
+  } else {
+    SHOW("Module type not suitable for exporting AST")
   }
 }
 

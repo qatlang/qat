@@ -1,5 +1,6 @@
 #include "./match.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/logic.hpp"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {
@@ -40,8 +41,11 @@ ExpressionMatchValue::ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
 Expression* ExpressionMatchValue::getExpression() const { return exp; }
 
 Json ExpressionMatchValue::toJson() const {
+  SHOW("Expression node type is: " << (int)exp->nodeType())
   return Json()._("matchValueType", "expression")._("expression", exp->toJson());
 }
+
+CaseResult::CaseResult(Maybe<bool> _result, bool _areAllConst) : result(_result), areAllConstant(_areAllConst) {}
 
 Match::Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
              Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
@@ -62,6 +66,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
   auto* curr      = ctx->fn->getBlock();
   auto* restBlock = new IR::Block(ctx->fn, nullptr);
   restBlock->linkPrevBlock(curr);
+  bool forgiveMissingElse = false;
   if (expTy->isMix()) {
     auto* mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
@@ -157,6 +162,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
                    "for the match statement",
                    fileRange);
       }
+      forgiveMissingElse = true;
     } else {
       if (!elseCase.has_value()) {
         ctx->Error("Not all possible variants of the mix type are provided. "
@@ -164,12 +170,6 @@ IR::Value* Match::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-    if (elseCase.has_value()) {
-      emitSentences(elseCase.value().first, ctx);
-      ctx->fn->getBlock()->destroyLocals(ctx);
-      (void)IR::addBranch(ctx->builder, restBlock->getBB());
-    }
-    restBlock->setActive(ctx->builder);
   } else if (expTy->isChoice()) {
     auto*        chTy = expTy->asChoice();
     llvm::Value* choiceVal;
@@ -262,26 +262,21 @@ IR::Value* Match::emit(IR::Context* ctx) {
             "All possible variants of the choice type are already mentioned in the match sentence. No need to use else case for the match statement",
             elseCase.value().second);
       }
+      forgiveMissingElse = true;
     } else if (!elseCase.has_value()) {
       ctx->Error(
           "Not all possible variants of the choice type are provided. Please add the else case to handle all missing variants",
           fileRange);
     }
-    if (elseCase.has_value()) {
-      emitSentences(elseCase.value().first, ctx);
-      ctx->fn->getBlock()->destroyLocals(ctx);
-      (void)IR::addBranch(ctx->builder, restBlock->getBB());
-    }
-    restBlock->setActive(ctx->builder);
   } else if (expTy->isStringSlice()) {
     auto*        strTy = expTy->asStringSlice();
     llvm::Value* strBuff;
     llvm::Value* strCount;
-    bool         isStringConstant = false;
+    bool         isMatchStrConstant = false;
     if (expEmit->isConstVal()) {
-      isStringConstant = true;
-      strBuff          = expEmit->asConst()->getLLVMConstant()->getAggregateElement(0u);
-      strCount         = expEmit->asConst()->getLLVMConstant()->getAggregateElement(1u);
+      isMatchStrConstant = true;
+      strBuff            = expEmit->asConst()->getLLVMConstant()->getAggregateElement(0u);
+      strCount           = expEmit->asConst()->getLLVMConstant()->getAggregateElement(1u);
     } else {
       if (expEmit->isImplicitPointer() || expEmit->isReference()) {
         if (expEmit->isReference()) {
@@ -296,32 +291,78 @@ IR::Value* Match::emit(IR::Context* ctx) {
                                          ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 1u));
     }
     for (auto& section : chain) {
+      SHOW("Number of match values for this case: " << section.first.size())
+      Vec<IR::Value*> irStrVals;
+      bool            hasConstantVals   = false;
+      bool            areAllConstValues = true;
+      for (auto* strExp : section.first) {
+        if (strExp->getType() != MatchType::Exp) {
+          ctx->Error(
+              "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
+              strExp->getMainRange());
+        }
+        auto* strEmit = strExp->asExp()->getExpression()->emit(ctx);
+        irStrVals.push_back(strEmit);
+        if (strEmit->isConstVal()) {
+          hasConstantVals = true;
+        } else {
+          areAllConstValues = false;
+        }
+      }
+      if (hasConstantVals && isMatchStrConstant) {
+        bool caseRes = false;
+        for (auto* irStr : irStrVals) {
+          if (irStr->isConstVal()) {
+            auto* irStrConst = irStr->getLLVMConstant();
+            SHOW("Comparing constant string in match block")
+            if (IR::Logic::compareConstantStrings(
+                    llvm::cast<llvm::Constant>(strBuff), llvm::cast<llvm::Constant>(strCount),
+                    irStrConst->getAggregateElement(0u), irStrConst->getAggregateElement(1u), ctx->llctx)) {
+              caseRes = true;
+              break;
+            }
+          }
+        }
+        matchResult.push_back(CaseResult(caseRes, areAllConstValues));
+        SHOW("Case constant result: " << (caseRes ? "true" : "false"))
+        if (caseRes) {
+          auto* trueBlock = new IR::Block(ctx->fn, curr);
+          (void)IR::addBranch(ctx->builder, trueBlock->getBB());
+          trueBlock->setActive(ctx->builder);
+          emitSentences(section.second, ctx);
+          trueBlock->destroyLocals(ctx);
+          (void)IR::addBranch(ctx->builder, restBlock->getBB());
+          break;
+        } else {
+          if (areAllConstValues) {
+            continue;
+          }
+        }
+      } else {
+        matchResult.push_back(CaseResult(None, false));
+      }
       SHOW("Creating case true block")
       auto* caseTrueBlock = new IR::Block(ctx->fn, curr);
       SHOW("Creating case false block")
       auto* checkFalseBlock = new IR::Block(ctx->fn, curr);
       SHOW("Setting thisCaseFalseBlock")
       IR::Block* thisCaseFalseBlock;
-      SHOW("Number of match values for this case: " << section.first.size())
       for (usize j = 0; j < section.first.size(); j++) {
+        if (irStrVals.at(j)->isConstVal() && isMatchStrConstant) {
+          continue;
+        }
         if (j == section.first.size() - 1) {
           thisCaseFalseBlock = checkFalseBlock;
         } else {
           thisCaseFalseBlock = new IR::Block(ctx->fn, curr);
         }
-        if (section.first.at(j)->getType() != MatchType::Exp) {
-          ctx->Error(
-              "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
-              section.first.at(j)->getMainRange());
-        }
-        auto*        expMatchVal  = section.first.at(j)->asExp();
-        IR::Value*   caseIR       = expMatchVal->getExpression()->emit(ctx);
+        IR::Value*   caseIR       = irStrVals.at(j);
         llvm::Value* caseStrBuff  = nullptr;
         llvm::Value* caseStrCount = nullptr;
         // FIXME - Add optimisation for constant strings
         if (caseIR->getType()->isStringSlice() ||
             (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
-          auto* elemIter = ctx->fn->getStrComparisonIndex();
+          auto* elemIter = ctx->fn->getFunctionCommonIndex();
           if (caseIR->isConstVal()) {
             caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
             caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
@@ -336,7 +377,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
             caseStrCount =
                 ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 1u));
           }
           auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
           SHOW("Creating lenCheckTrueBlock")
@@ -380,7 +421,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
               caseTrueBlock->getBB(), thisCaseFalseBlock->getBB());
         } else {
           ctx->Error("Expected a string slice to be the expression for this match case",
-                     expMatchVal->getExpression()->fileRange);
+                     section.first.at(j)->getMainRange());
         }
         SHOW("Setting thisCaseFalseBlock active")
         thisCaseFalseBlock->setActive(ctx->builder);
@@ -391,30 +432,81 @@ IR::Value* Match::emit(IR::Context* ctx) {
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
       checkFalseBlock->setActive(ctx->builder);
     }
-    if (elseCase.has_value()) {
+  }
+  if (elseCase.has_value()) {
+    // FIXME - Fix when match blocks can return a value
+    if (isFalseForAllCases() && hasConstResultForAllCases()) {
+      auto* elseBlock = new IR::Block(ctx->fn, curr);
+      (void)IR::addBranch(ctx->builder, elseBlock->getBB());
+      elseBlock->setActive(ctx->builder);
       emitSentences(elseCase.value().first, ctx);
-      ctx->fn->getBlock()->destroyLocals(ctx);
+      elseBlock->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
-    } else {
+    } else if (!isTrueForACase()) {
+      auto* activeBlock = ctx->fn->getBlock();
+      emitSentences(elseCase.value().first, ctx);
+      activeBlock->destroyLocals(ctx);
+      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    }
+  } else {
+    if (!forgiveMissingElse && !isTrueForACase()) {
       ctx->Error(
           "A string slice has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
           fileRange);
     }
-    restBlock->setActive(ctx->builder);
   }
+  restBlock->setActive(ctx->builder);
   // TODO - Add regexp support
   return nullptr;
+}
+
+bool Match::hasConstResultForAllCases() {
+  for (auto& val : matchResult) {
+    if (!val.result.has_value() || !val.areAllConstant) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Match::isFalseForAllCases() {
+  for (auto& val : matchResult) {
+    if (val.result.has_value()) {
+      if (val.result.value()) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Match::isTrueForACase() {
+  for (auto& val : matchResult) {
+    if (val.result.has_value()) {
+      if (val.result.value()) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 Json Match::toJson() const {
   Vec<JsonValue> chainJson;
   for (const auto& elem : chain) {
     Vec<JsonValue> sentencesJson;
+    SHOW("Converting sentences to JSON")
     for (auto* snt : elem.second) {
+      SHOW("Sentence node type is: ")
+      SHOW((int)snt->nodeType())
+      SHOW("Got node type")
       sentencesJson.push_back(snt->toJson());
     }
     Vec<JsonValue> matchValsJson;
     for (auto* mVal : elem.first) {
+      SHOW("Match value type is: " << (int)mVal->getType())
       matchValsJson.push_back(mVal->toJson());
     }
     chainJson.push_back(Json()._("matchValues", matchValsJson)._("sentences", sentencesJson));
@@ -430,7 +522,7 @@ Json Match::toJson() const {
       ._("matchChain", chainJson)
       ._("hasElse", elseCase.has_value())
       ._("elseSentences", elseJson)
-      ._("elseRange", elseCase.has_value() ? Json() : (Json)elseCase->second);
+      ._("elseRange", elseCase.has_value() ? (JsonValue)(elseCase->second) : Json());
 }
 
 } // namespace qat::ast

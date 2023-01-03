@@ -66,7 +66,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
   auto* curr      = ctx->fn->getBlock();
   auto* restBlock = new IR::Block(ctx->fn, nullptr);
   restBlock->linkPrevBlock(curr);
-  bool forgiveMissingElse = false;
+  bool elseNotRequired = false;
   if (expTy->isMix()) {
     auto* mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
@@ -162,7 +162,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
                    "for the match statement",
                    fileRange);
       }
-      forgiveMissingElse = true;
+      elseNotRequired = true;
     } else {
       if (!elseCase.has_value()) {
         ctx->Error("Not all possible variants of the mix type are provided. "
@@ -258,11 +258,11 @@ IR::Value* Match::emit(IR::Context* ctx) {
     chTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
-        ctx->Error(
+        ctx->Warning(
             "All possible variants of the choice type are already mentioned in the match sentence. No need to use else case for the match statement",
             elseCase.value().second);
       }
-      forgiveMissingElse = true;
+      elseNotRequired = true;
     } else if (!elseCase.has_value()) {
       ctx->Error(
           "Not all possible variants of the choice type are provided. Please add the else case to handle all missing variants",
@@ -434,22 +434,26 @@ IR::Value* Match::emit(IR::Context* ctx) {
     }
   }
   if (elseCase.has_value()) {
-    // FIXME - Fix when match blocks can return a value
-    if (isFalseForAllCases() && hasConstResultForAllCases()) {
-      auto* elseBlock = new IR::Block(ctx->fn, curr);
-      (void)IR::addBranch(ctx->builder, elseBlock->getBB());
-      elseBlock->setActive(ctx->builder);
-      emitSentences(elseCase.value().first, ctx);
-      elseBlock->destroyLocals(ctx);
-      (void)IR::addBranch(ctx->builder, restBlock->getBB());
-    } else if (!isTrueForACase()) {
-      auto* activeBlock = ctx->fn->getBlock();
-      emitSentences(elseCase.value().first, ctx);
-      activeBlock->destroyLocals(ctx);
-      (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    // FIXME - Fix condition when match blocks can return a value
+    if (elseNotRequired) {
+      ctx->Warning("else case is not required in this match block", elseCase.value().second);
+    } else {
+      if (isFalseForAllCases() && hasConstResultForAllCases()) {
+        auto* elseBlock = new IR::Block(ctx->fn, curr);
+        (void)IR::addBranch(ctx->builder, elseBlock->getBB());
+        elseBlock->setActive(ctx->builder);
+        emitSentences(elseCase.value().first, ctx);
+        elseBlock->destroyLocals(ctx);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      } else if (!isTrueForACase()) {
+        auto* activeBlock = ctx->fn->getBlock();
+        emitSentences(elseCase.value().first, ctx);
+        activeBlock->destroyLocals(ctx);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      }
     }
   } else {
-    if (!forgiveMissingElse && !isTrueForACase()) {
+    if (!elseNotRequired && !isTrueForACase()) {
       ctx->Error(
           "A string slice has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
           fileRange);

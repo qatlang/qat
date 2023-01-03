@@ -266,6 +266,7 @@ void Block::destroyLocals(IR::Context* ctx) {
             auto* indCondBlock = new IR::Block(ctx->fn, curr);
             auto* indTrueBlock = new IR::Block(ctx->fn, curr);
             auto* restBlock    = new IR::Block(ctx->fn, curr);
+            restBlock->linkPrevBlock(curr);
             (void)IR::addBranch(ctx->builder, indCondBlock->getBB());
             indCondBlock->setActive(ctx->builder);
             ctx->builder.CreateCondBr(
@@ -294,9 +295,6 @@ void Block::destroyLocals(IR::Context* ctx) {
         }
       }
     }
-  }
-  for (auto* sub : children) {
-    sub->destroyLocals(ctx);
   }
   if (nextBlock) {
     nextBlock->destroyLocals(ctx);

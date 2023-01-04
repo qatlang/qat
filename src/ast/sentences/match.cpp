@@ -73,6 +73,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       ctx->Error("Invalid value for matching", candidate->fileRange);
     }
     Vec<Identifier> mentionedFields;
+    IR::Block*      falseBlock = nullptr;
     for (usize i = 0; i < chain.size(); i++) {
       const auto& section = chain.at(i);
       if (section.first.front()->getType() != MatchType::mix) {
@@ -163,6 +164,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
                    fileRange);
       }
       elseNotRequired = true;
+      if (falseBlock) {
+        falseBlock->setActive(ctx->builder);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      }
     } else {
       if (!elseCase.has_value()) {
         ctx->Error("Not all possible variants of the mix type are provided. "
@@ -179,6 +184,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       choiceVal = expEmit->getLLVM();
     }
     Vec<Identifier> mentionedFields;
+    IR::Block*      falseBlock = nullptr;
     for (usize i = 0; i < chain.size(); i++) {
       const auto&       section = chain.at(i);
       Vec<llvm::Value*> caseComparisons;
@@ -231,8 +237,9 @@ IR::Value* Match::emit(IR::Context* ctx) {
           ctx->Error("Unexpected match value type here", caseValElem->getMainRange());
         }
       }
-      auto*        trueBlock  = new IR::Block(ctx->fn, curr);
-      IR::Block*   falseBlock = nullptr;
+      auto* trueBlock = new IR::Block(ctx->fn, curr);
+      // NOTE - Maybe change this?
+      falseBlock = nullptr;
       llvm::Value* cond;
       if (caseComparisons.size() > 1) {
         cond = ctx->builder.CreateOr(caseComparisons);
@@ -263,6 +270,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
             elseCase.value().second);
       }
       elseNotRequired = true;
+      if (falseBlock) {
+        falseBlock->setActive(ctx->builder);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+      }
     } else if (!elseCase.has_value()) {
       ctx->Error(
           "Not all possible variants of the choice type are provided. Please add the else case to handle all missing variants",

@@ -17,7 +17,8 @@ void StringLiteral::addValue(const String& val, const FileRange& fRange) {
 IR::ConstantValue* StringLiteral::emit(IR::Context* ctx) {
   return new IR::ConstantValue(
       llvm::ConstantStruct::get(
-          (llvm::StructType*)IR::StringSliceType::get(ctx->llctx)->getLLVMType(),
+          llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
+          // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function
           {ctx->builder.CreateGlobalStringPtr(value, ctx->getGlobalStringName(), 0U, ctx->getMod()->getLLVMModule()),
            llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), value.length())}),
       IR::StringSliceType::get(ctx->llctx));

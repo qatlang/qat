@@ -42,6 +42,7 @@ public:
   // spanned by the tokens that made up this AST member
   explicit Node(FileRange _fileRange);
   virtual ~Node() = default;
+  useit virtual bool       isConstantNode() const { return false; }
   virtual void             createModule(IR::Context* ctx) const {}
   virtual void             handleBrings(IR::Context* ctx) const {}
   virtual void             defineType(IR::Context* ctx) {}

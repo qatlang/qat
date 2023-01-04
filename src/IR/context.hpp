@@ -127,7 +127,7 @@ public:
   useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
   void                        writeJsonResult(bool status) const;
 
-  void          Error(const String& message, const FileRange& fileRange);
+  exitFn void   Error(const String& message, const FileRange& fileRange);
   void          Warning(const String& message, const FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::yellow);
   static String highlightWarning(const String& message, const char* color = colors::yellow);

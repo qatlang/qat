@@ -62,7 +62,7 @@ public:
   void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
                           Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
                           Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
-  void Error(const String& message, const FileRange& fileRange);
+  exitFn void Error(const String& message, const FileRange& fileRange);
   static void Warning(const String& message, const FileRange& fileRange);
 
   useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);

@@ -1726,13 +1726,16 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
     auto& token = tokens->at(i);
     switch (token.type) {
       case TokenType::typeSeparator: {
-        auto start = i;
+        auto                  start            = i;
+        bool                  isValueRequested = false;
+        Vec<ast::MatchValue*> matchVals;
         if (isNext(TokenType::identifier, i)) {
-          Identifier        fieldName = {ValueAt(i + 1), RangeAt(i + 1)};
+          auto              fieldName = IdentifierAt(i + 1);
           Maybe<Identifier> valueName;
           bool              isVar = false;
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+            isValueRequested = true;
+            auto pCloseRes   = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
             if (pCloseRes) {
               if (isNext(TokenType::var, i + 2)) {
                 isVar = true;
@@ -1742,7 +1745,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               }
               if (isNext(TokenType::identifier, i)) {
                 SHOW("Value name is: " << ValueAt(i + 1))
-                valueName = Identifier(ValueAt(i + 1), isVar ? FileRange(RangeAt(i), RangeAt(i + 1)) : RangeAt(i + 1));
+                matchVals.push_back(new ast::MixMatchValue(fieldName, IdentifierAt(i + 1), isVar));
                 if (isNext(TokenType::parenthesisClose, i + 1)) {
                   i = pCloseRes.value();
                 } else {
@@ -1757,20 +1760,53 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               Error("Expected end for (", RangeAt(i + 2));
             }
           } else {
+            matchVals.push_back(new ast::MixMatchValue(IdentifierAt(i + 1), None, false));
             i++;
           }
-          if (isNext(TokenType::bracketOpen, i)) {
+          auto j = i;
+          while (isNext(TokenType::separator, j)) {
+            if (isValueRequested) {
+              Error("Matched value is requested once and hence a list of subfields to match cannot be provided",
+                    RangeSpan(start, j));
+            }
+            if (isNext(TokenType::typeSeparator, j + 1)) {
+              if (isNext(TokenType::identifier, j + 2)) {
+                if (isNext(TokenType::parenthesisOpen, j + 3)) {
+                  Error("Cannot request value for the matched subfield, since a list of values to match are provided",
+                        RangeAt(j + 4));
+                }
+                matchVals.push_back(new ast::MixMatchValue(IdentifierAt(j + 3), None, false));
+                if (isNext(TokenType::givenTypeSeparator, j + 3)) {
+                  i = j + 3;
+                  break;
+                } else {
+                  j += 3;
+                }
+              } else {
+                Error("Expected name for the subfield of the mix type to match", RangeAt(j + 2));
+              }
+            } else {
+              Error("Using normal expressions as cases for matching mix types is not supported yet", RangeAt(j + 1));
+            }
+          }
+          if (isNext(TokenType::givenTypeSeparator, i)) {
+            if (!isNext(TokenType::bracketOpen, i + 1)) {
+              Error(
+                  "Expected [ after -> to start the case block that contains the sentences to be executed for this case",
+                  RangeAt(i + 1));
+            }
+            i++;
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
             if (bCloseRes) {
-              auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
               chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
-                  {new ast::MixMatchValue(std::move(fieldName), std::move(valueName), isVar)}, std::move(snts)));
+                  matchVals, parseSentences(preCtx, i + 1, bCloseRes.value())));
               i = bCloseRes.value();
             } else {
               Error("Expected end of [", RangeAt(i + 1));
             }
           } else {
-            Error("Expected [ to start the sentences in this match case block", RangeSpan(i, i + 1));
+            Error("Expected -> to before the block that contains sentences to be executed for this case",
+                  RangeSpan(i, i + 1));
           }
         } else {
           Error("Expected name for the subfield of the mix type to match", RangeAt(i));
@@ -1782,53 +1818,83 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
         if (isNext(TokenType::identifier, i)) {
           Vec<ast::MatchValue*> matchVals;
           matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(i + 1)));
-          usize j = i + 1;
-          while (isNext(TokenType::separator, j)) {
-            if (isNext(TokenType::child, j + 1)) {
-              if (isNext(TokenType::identifier, j + 2)) {
-                matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(j + 3)));
-                j += 3;
-                if (isNext(TokenType::altArrow, j)) {
-                  SHOW("Found altArrow after list of trivial choice values")
-                  i = j + 1;
-                  break;
-                }
-              } else {
-                Error("Expected name of the variant of the choice type to match", RangeAt(j + 1));
-              }
-            } else {
-              if (isPrimaryWithin(TokenType::altArrow, j + 1, upto)) {
-                auto valueEnd = firstPrimaryPosition(TokenType::altArrow, j + 1);
-                if (isPrimaryWithin(TokenType::separator, j + 1, upto)) {
-                  auto sepPos = primaryPositionsWithin(TokenType::separator, j + 1, upto);
-                  matchVals.push_back(
-                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, sepPos.front()).first));
-                  for (usize k = 1; k < sepPos.size(); k++) {
-                    if (isNext(TokenType::child, sepPos.at(k - 1))) {
-                      Error(
-                          "Can't use trivial choice value if at least one of the list of values to match is not a trivial value",
-                          RangeAt(sepPos.at(k - 1) + 1));
-                    } else {
-                      matchVals.push_back(new ast::ExpressionMatchValue(
-                          parseExpression(preCtx, None, sepPos.at(k - 1), sepPos.at(k)).first));
-                    }
+          if (isNext(TokenType::separator, i + 1)) {
+            usize j = i + 1;
+            while (isNext(TokenType::separator, j)) {
+              if (isNext(TokenType::child, j + 1)) {
+                if (isNext(TokenType::identifier, j + 2)) {
+                  matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(j + 3)));
+                  j += 3;
+                  if (isNext(TokenType::givenTypeSeparator, j)) {
+                    SHOW("Found givenTypeSeparator after list of trivial choice values")
+                    i = j;
+                    break;
                   }
-                  matchVals.push_back(
-                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPos.back(), valueEnd).first));
                 } else {
-                  matchVals.push_back(
-                      new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, valueEnd).first));
+                  Error("Expected name of the variant of the choice type to match", RangeAt(j + 1));
                 }
-                i = valueEnd.value();
-                break;
               } else {
-                Error(
-                    "Using normal expressions as cases for matching choice types requires the list of values to end with =>",
-                    RangeAt(j + 1));
+                if (isPrimaryWithin(TokenType::givenTypeSeparator, j + 1, upto)) {
+                  auto valueEnd = firstPrimaryPosition(TokenType::givenTypeSeparator, j + 1);
+                  if (isPrimaryWithin(TokenType::separator, j + 1, upto)) {
+                    auto sepPos = primaryPositionsWithin(TokenType::separator, j + 1, upto);
+                    matchVals.push_back(
+                        new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, sepPos.front()).first));
+                    for (usize k = 1; k < sepPos.size(); k++) {
+                      if (isNext(TokenType::child, sepPos.at(k - 1))) {
+                        if (isNext(TokenType::identifier, sepPos.at(k - 1) + 1)) {
+                          if (isNext(TokenType::separator, sepPos.at(k - 1) + 2)) {
+                            matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(sepPos.at(k - 1) + 2)));
+                          } else {
+                            Error("Unexpected token found after the choice value",
+                                  RangeSpan(sepPos.at(k - 1) + 1, sepPos.at(k - 1) + 2));
+                          }
+                        } else {
+                          Error("Expected name of the variant of the choice type to match",
+                                RangeAt(sepPos.at(k - 1) + 1));
+                        }
+                      } else {
+                        matchVals.push_back(new ast::ExpressionMatchValue(
+                            parseExpression(preCtx, None, sepPos.at(k - 1), sepPos.at(k)).first));
+                      }
+                    }
+                    if (isNext(TokenType::child, sepPos.back())) {
+                      if (isNext(TokenType::identifier, sepPos.back() + 1)) {
+                        if (isNext(TokenType::givenTypeSeparator, sepPos.back() + 2)) {
+                          matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(sepPos.back() + 2)));
+                        } else {
+                          Error("Unexpected token found after the choice value",
+                                RangeSpan(sepPos.back(), sepPos.back() + 1));
+                        }
+                      } else {
+                        Error("Expected name of the variant of the choice type to match", RangeAt(sepPos.back() + 1));
+                      }
+                    } else {
+                      matchVals.push_back(
+                          new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPos.back(), valueEnd).first));
+                    }
+                  } else {
+                    matchVals.push_back(
+                        new ast::ExpressionMatchValue(parseExpression(preCtx, None, j + 1, valueEnd).first));
+                  }
+                  i = valueEnd.value();
+                  break;
+                } else {
+                  Error(
+                      "Using normal expressions as cases for matching choice types requires the list of values to end with ->",
+                      RangeAt(j + 1));
+                }
               }
             }
+          } else {
+            i++;
           }
-          if (isNext(TokenType::bracketOpen, i)) {
+          if (isNext(TokenType::givenTypeSeparator, i)) {
+            if (!isNext(TokenType::bracketOpen, i + 1)) {
+              Error("Expected [ after -> to start the block that contains the sentences to be executed for this case",
+                    RangeAt(i + 1));
+            }
+            i++;
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
             if (bCloseRes) {
               auto bClose = bCloseRes.value();
@@ -1839,7 +1905,8 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               Error("Expected end for [", RangeAt(i + 1));
             }
           } else {
-            Error("Expected [ to start the sentences in this match case block", RangeSpan(start, i));
+            Error("Expected -> before the block that contains sentences to be executed for this case",
+                  RangeSpan(start, i));
           }
         } else {
           Error("Expected name of the variant of the choice type to match", RangeAt(i));
@@ -1861,34 +1928,85 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
                 Pair<Vec<ast::Sentence*>, FileRange>{std::move(snts), FileRange RangeSpan(start, bCloseRes.value())};
             i = bCloseRes.value();
             if (i + 1 != upto) {
-              Error("Expected match sentence to end after the else case. Make "
-                    "sure "
-                    "that the else case is the last branch in a match sentence",
-                    RangeSpan(i + 1, bCloseRes.value()));
+              Warning(
+                  "Expected match sentence to end after the else case. Make sure that the else case is the last branch in a match sentence",
+                  RangeSpan(i + 1, bCloseRes.value()));
             }
           } else {
             Error("Expected end for [", RangeAt(i + 1));
           }
+        } else if (isNext(TokenType::givenTypeSeparator, i)) {
+          Error("error case for match block doesn't need -> before the block", RangeAt(i));
         } else {
           Error("Expected sentences for the else case in match sentence", RangeAt(i));
         }
         break;
       }
       default: {
-        if (isPrimaryWithin(TokenType::altArrow, i, upto)) {
+        if (isPrimaryWithin(TokenType::givenTypeSeparator, i, upto)) {
           auto                  start       = i;
-          auto                  matchValEnd = firstPrimaryPosition(TokenType::altArrow, i).value();
+          auto                  matchValEnd = firstPrimaryPosition(TokenType::givenTypeSeparator, i).value();
           Vec<ast::MatchValue*> matchVals;
           if (isPrimaryWithin(TokenType::separator, i, matchValEnd)) {
             auto sepPoss = primaryPositionsWithin(TokenType::separator, i, matchValEnd);
             matchVals.push_back(
                 new ast::ExpressionMatchValue(parseExpression(preCtx, None, i - 1, sepPoss.front()).first));
             for (usize j = 1; j < sepPoss.size(); j++) {
-              matchVals.push_back(
-                  new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPoss.at(j - 1), sepPoss.at(j)).first));
+              if (isNext(TokenType::child, sepPoss.at(j - 1))) {
+                if (isNext(TokenType::identifier, sepPoss.at(j - 1) + 1)) {
+                  if (isNext(TokenType::separator, sepPoss.at(j - 1) + 2)) {
+                    matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(sepPoss.at(j - 1) + 2)));
+                  } else {
+                    Error("Unexpected token found after the choice value",
+                          RangeSpan(sepPoss.at(j - 1) + 1, sepPoss.at(j - 1) + 2));
+                  }
+                } else {
+                  Error("Expected name of the variant of the choice type to match", RangeAt(sepPoss.at(j - 1) + 1));
+                }
+              } else if (isNext(TokenType::typeSeparator, sepPoss.at(j - 1))) {
+                if (isNext(TokenType::identifier, sepPoss.at(j - 1) + 1)) {
+                  if (isNext(TokenType::separator, sepPoss.at(j - 1) + 2)) {
+                    matchVals.push_back(new ast::MixMatchValue(IdentifierAt(sepPoss.at(j - 1) + 2), None, false));
+                  } else if (isNext(TokenType::parenthesisOpen, sepPoss.at(j - 1) + 2)) {
+                    Error(
+                        "Multiple values are provided to be matched for this case, so the matched value of the mix type subfield variant cannot be retrieved for use",
+                        RangeSpan(sepPoss.at(j - 1) + 1, sepPoss.at(j - 1) + 2));
+                  } else {
+                    Error("Unexpected token found after mix subfield name",
+                          RangeSpan(sepPoss.at(j - 1) + 1, sepPoss.at(j - 1) + 2));
+                  }
+                } else {
+                  Error("Expected name for the subfield of the mix type to match", RangeAt(sepPoss.at(j - 1) + 1));
+                }
+              } else {
+                matchVals.push_back(new ast::ExpressionMatchValue(
+                    parseExpression(preCtx, None, sepPoss.at(j - 1), sepPoss.at(j)).first));
+              }
             }
-            matchVals.push_back(
-                new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPoss.back(), matchValEnd).first));
+            if (isNext(TokenType::child, sepPoss.back())) {
+              if (isNext(TokenType::identifier, sepPoss.back() + 1)) {
+                if (isNext(TokenType::givenTypeSeparator, sepPoss.back() + 2)) {
+                  matchVals.push_back(new ast::ChoiceMatchValue(IdentifierAt(sepPoss.back() + 2)));
+                } else {
+                  Error("Unexpected token found after the choice value", RangeSpan(sepPoss.back(), sepPoss.back() + 1));
+                }
+              } else {
+                Error("Expected name of the variant of the choice type to match", RangeAt(sepPoss.back() + 1));
+              }
+            } else if (isNext(TokenType::typeSeparator, sepPoss.back())) {
+              if (isNext(TokenType::identifier, sepPoss.back() + 1)) {
+                if (isNext(TokenType::givenTypeSeparator, sepPoss.back() + 2)) {
+                  matchVals.push_back(new ast::MixMatchValue(IdentifierAt(sepPoss.back() + 2), None, false));
+                } else {
+                  Error("Unexpected token found after the choice value", RangeSpan(sepPoss.back(), sepPoss.back() + 1));
+                }
+              } else {
+                Error("Expected name for the subfield of the mix type to match", RangeAt(sepPoss.back() + 1));
+              }
+            } else {
+              matchVals.push_back(
+                  new ast::ExpressionMatchValue(parseExpression(preCtx, None, sepPoss.back(), matchValEnd).first));
+            }
           } else {
             matchVals.push_back(new ast::ExpressionMatchValue(parseExpression(preCtx, None, i - 1, matchValEnd).first));
           }
@@ -1903,12 +2021,14 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
               Error("Expected end for [", RangeAt(i + 1));
             }
           } else {
-            Error("Expected [ to start the sentences in the match case block", RangeSpan(start, i));
+            Error("Expected [ to start the case block that contains sentences to be executed for this case block",
+                  RangeSpan(start, i));
           }
           break;
         } else {
-          SHOW("Token type: " << (int)token.type)
-          Error("Maybe you forgot to end the expression to match with =>", token.fileRange);
+          Error(
+              "You forgot to add -> at the end of the expression/list of expressions to match to, which is expected if expressions are used or if there are multiple values to match to",
+              token.fileRange);
         }
       }
     }

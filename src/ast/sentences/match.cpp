@@ -70,68 +70,96 @@ IR::Value* Match::emit(IR::Context* ctx) {
   if (expTy->isMix()) {
     auto* mTy = expTy->asMix();
     if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
-      ctx->Error("Invalid value for matching", candidate->fileRange);
+      expEmit->makeImplicitPointer(ctx, None);
     }
     Vec<Identifier> mentionedFields;
     IR::Block*      falseBlock = nullptr;
     for (usize i = 0; i < chain.size(); i++) {
-      const auto& section = chain.at(i);
-      if (section.first.front()->getType() != MatchType::mix) {
-        ctx->Error("Expected the name of a variant of the mix type " +
-                       ctx->highlightError(expTy->asMix()->getFullName()),
-                   section.first.front()->getMainRange());
-      }
-      auto* uMatch = section.first.front()->asMix();
-      if (uMatch->isVariable()) {
-        if (!isExpVariable) {
-          ctx->Error("The expression being matched does not possess variability and "
-                     "hence the matched "
-                     "case cannot use a variable reference to the subtype value",
+      const auto&       section = chain.at(i);
+      Vec<llvm::Value*> conditions;
+      for (usize k = 0; k < section.first.size(); k++) {
+        if (section.first.at(k)->getType() != MatchType::mix) {
+          ctx->Error("Expected the name of a variant of the mix type " +
+                         ctx->highlightError(expTy->asMix()->getFullName()),
+                     section.first.at(k)->getMainRange());
+        }
+        auto* uMatch = section.first.at(k)->asMix();
+        if (uMatch->isVariable()) {
+          if (!isExpVariable) {
+            ctx->Error("The expression being matched does not possess variability and "
+                       "hence the matched "
+                       "case cannot use a variable reference to the subtype value",
+                       uMatch->getValueName().range);
+          }
+        }
+        auto subRes = mTy->hasSubTypeWithName(uMatch->getName().value);
+        if (!subRes.first) {
+          ctx->Error("No field named " + ctx->highlightError(uMatch->getName().value) + " in mix type " +
+                         ctx->highlightError(mTy->getFullName()),
+                     uMatch->getName().range);
+        }
+        if (uMatch->hasValueName()) {
+          if (section.first.size() > 1) {
+            ctx->Error(
+                "Multiple values are provided to be matched for this case, and hence the matched value cannot be requested for use",
+                uMatch->getMainRange());
+          }
+        }
+        if (!subRes.second && uMatch->hasValueName()) {
+          ctx->Error("Sub-field " + ctx->highlightError(uMatch->getName().value) + " of mix type " +
+                         ctx->highlightError(mTy->getFullName()) +
+                         " does not have a type associated with it, and hence you "
+                         "cannot use a name for the value here",
                      uMatch->getValueName().range);
         }
-      }
-      auto subRes = mTy->hasSubTypeWithName(uMatch->getName().value);
-      if (!subRes.first) {
-        ctx->Error("No field named " + ctx->highlightError(uMatch->getName().value) + " in mix type " +
-                       ctx->highlightError(mTy->getFullName()),
-                   uMatch->getName().range);
-      }
-      if (!subRes.second && uMatch->hasValueName()) {
-        ctx->Error("Sub-field " + ctx->highlightError(uMatch->getName().value) + " of mix type " +
-                       ctx->highlightError(mTy->getFullName()) +
-                       " does not have a type associated with it, and hence you "
-                       "cannot use a name for the value here",
-                   uMatch->getValueName().range);
-      }
-      for (usize j = i + 1; j < chain.size(); j++) {
-        if (uMatch->getName().value == chain.at(j).first.front()->asMix()->getName().value) {
-          ctx->Error("Repeating subfield of the mix type " + ctx->highlightError(mTy->getFullName()),
-                     chain.at(j).first.front()->asMix()->getName().range);
+        // NOTE - When expressions are supported for mix types, take care of this
+        for (usize mixValIdx = k + 1; mixValIdx < section.first.size(); mixValIdx++) {
+          if (uMatch->getName().value == chain.at(i).first.at(mixValIdx)->asMix()->getName().value) {
+            ctx->Error("Repeating subfield of the mix type ",
+                       chain.at(i).first.at(mixValIdx)->asMix()->getName().range);
+          }
         }
+        for (usize j = i + 1; j < chain.size(); j++) {
+          for (auto* matchVal : chain.at(j).first) {
+            if (uMatch->getName().value == matchVal->asMix()->getName().value) {
+              ctx->Error("Repeating subfield of the mix type " + ctx->highlightError(mTy->getFullName()),
+                         matchVal->asMix()->getName().range);
+            }
+          }
+        }
+        mentionedFields.push_back(uMatch->getName());
+        conditions.push_back(ctx->builder.CreateICmpEQ(
+            ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
+                                    ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 0)),
+            llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
+                                   mTy->getIndexOfName(uMatch->getName().value))));
       }
-      mentionedFields.push_back(uMatch->getName());
-      auto*      trueBlock  = new IR::Block(ctx->fn, curr);
-      IR::Block* falseBlock = nullptr;
-      auto*      cond       = ctx->builder.CreateICmpEQ(
-          ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
-                                             ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 0)),
-          llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
-                                            mTy->getIndexOfName(uMatch->getName().value)));
+      auto* trueBlock = new IR::Block(ctx->fn, curr);
+      falseBlock      = nullptr;
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         falseBlock = new IR::Block(ctx->fn, curr);
-        ctx->builder.CreateCondBr(cond, trueBlock->getBB(), falseBlock->getBB());
+        if (conditions.size() == 1) {
+          ctx->builder.CreateCondBr(conditions.front(), trueBlock->getBB(), falseBlock->getBB());
+        } else {
+          ctx->builder.CreateCondBr(ctx->builder.CreateOr(conditions), trueBlock->getBB(), falseBlock->getBB());
+        }
       } else {
-        ctx->builder.CreateCondBr(cond, trueBlock->getBB(), restBlock->getBB());
+        if (conditions.size() == 1) {
+          ctx->builder.CreateCondBr(conditions.front(), trueBlock->getBB(), restBlock->getBB());
+        } else {
+          ctx->builder.CreateCondBr(ctx->builder.CreateOr(conditions), trueBlock->getBB(), restBlock->getBB());
+        }
       }
       trueBlock->setActive(ctx->builder);
       SHOW("True block name is: " << trueBlock->getName())
-      if (section.first.front()->asMix()->hasValueName()) {
-        SHOW("Match case has value name: " << section.first.front()->asMix()->getValueName().value)
+      if ((section.first.size() == 1) && section.first.front()->asMix()->hasValueName()) {
+        auto* uMatch = section.first.front()->asMix();
+        SHOW("Match case has value name: " << uMatch->getValueName().value)
         if (trueBlock->hasValue(uMatch->getValueName().value)) {
           SHOW("Local entity with match case value name exists")
-          ctx->Error("Local entity named " + ctx->highlightError(section.first.front()->asMix()->getValueName().value) +
+          ctx->Error("Local entity named " + ctx->highlightError(uMatch->getValueName().value) +
                          " exists already in this scope",
-                     section.first.front()->asMix()->getValueName().range);
+                     uMatch->getValueName().range);
         } else {
           SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
           auto* loc =
@@ -158,10 +186,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
     mTy->getMissingNames(mentionedFields, missingFields);
     if (missingFields.empty()) {
       if (elseCase.has_value()) {
-        ctx->Error("All possible variants of the mix type are already "
-                   "mentioned in the match sentence. No need to use else case "
-                   "for the match statement",
-                   fileRange);
+        ctx->Warning("All possible variants of the mix type are already "
+                     "mentioned in the match sentence. No need to use else case "
+                     "for the match statement",
+                     elseCase.value().second);
       }
       elseNotRequired = true;
       if (falseBlock) {
@@ -447,7 +475,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
   if (elseCase.has_value()) {
     // FIXME - Fix condition when match blocks can return a value
     if (elseNotRequired) {
-      ctx->Warning("else case is not required in this match block", elseCase.value().second);
+      ctx->Warning(
+          ctx->highlightWarning("else") +
+              " case is not required in this match block. Sentences inside the else block will not be emitted/compiled",
+          elseCase.value().second);
     } else {
       if (isFalseForAllCases() && hasConstResultForAllCases()) {
         auto* elseBlock = new IR::Block(ctx->fn, curr);

@@ -120,7 +120,7 @@ public:
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkStartTime;
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkEndTime;
 
-  void             nameCheck(const Identifier& name, const String& entityType);
+  void             nameCheck(const Identifier& name, const String& entityType, Maybe<String> templateID);
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;

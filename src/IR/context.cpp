@@ -42,7 +42,7 @@ Context::~Context() {
   }
 }
 
-void Context::nameCheck(const Identifier& name, const String& entityType) {
+void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<String> templateID) {
   auto reqInfo = getReqInfo();
   if (mod->hasCoreType(name.value)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
@@ -60,11 +60,17 @@ void Context::nameCheck(const Identifier& name, const String& entityType) {
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasTemplateCoreType(name.value)) {
+    if (templateID.has_value() && mod->getTemplateCoreType(name.value, getReqInfo())->getID() == templateID.value()) {
+      return;
+    }
     Error("A generic core type named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasBroughtTemplateCoreType(name.value)) {
+    if (templateID.has_value() && mod->getTemplateCoreType(name.value, getReqInfo())->getID() == templateID.value()) {
+      return;
+    }
     Error("A generic core type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -137,16 +143,25 @@ void Context::nameCheck(const Identifier& name, const String& entityType) {
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasTemplateFunction(name.value)) {
+    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+      return;
+    }
     Error("A generic function named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasBroughtTemplateFunction(name.value)) {
+    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+      return;
+    }
     Error("A generic function named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).first) {
+    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+      return;
+    }
     Error("A generic function named " + highlightError(name.value) + " is present inside the module " +
               highlightError(mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +

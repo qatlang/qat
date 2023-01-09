@@ -1,4 +1,5 @@
 #include "./qat_type.hpp"
+#include "../../show.hpp"
 #include "./array.hpp"
 #include "./choice.hpp"
 #include "./core_type.hpp"
@@ -8,6 +9,7 @@
 #include "./function.hpp"
 #include "./future.hpp"
 #include "./integer.hpp"
+#include "./maybe.hpp"
 #include "./mix.hpp"
 #include "./pointer.hpp"
 #include "./reference.hpp"
@@ -16,7 +18,6 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
-#include "maybe.hpp"
 
 namespace qat::IR {
 
@@ -189,6 +190,16 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
     }
   }
 }
+
+bool QatType::isExpanded() const { return false; }
+
+ExpandedType* QatType::asExpanded() const {
+  return (typeKind() == TypeKind::definition) ? asDefinition()->getSubType()->asExpanded() : (ExpandedType*)this;
+}
+
+bool QatType::isDestructible() const { return false; }
+
+void QatType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
 
 bool QatType::isDefinition() const { return typeKind() == TypeKind::definition; }
 

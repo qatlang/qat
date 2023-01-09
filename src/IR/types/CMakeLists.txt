@@ -4,6 +4,7 @@ add_library(QAT_IR_TYPES
 	core_type.cpp
 	cstring.cpp
 	definition.cpp
+	expanded_type.cpp
 	float.cpp
 	function.cpp
 	future.cpp

@@ -14,20 +14,22 @@ namespace qat::IR {
  */
 class ArrayType : public QatType {
 private:
-  QatType *element_type;
+  QatType* element_type;
   u64      length;
 
-  ArrayType(QatType *_element_type, u64 _length, llvm::LLVMContext &ctx);
+  ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& ctx);
 
 public:
-  useit static ArrayType *get(QatType *elementType, u64 length,
-                              llvm::LLVMContext &ctx);
+  useit static ArrayType* get(QatType* elementType, u64 length, llvm::LLVMContext& ctx);
 
-  useit QatType *getElementType();
+  useit QatType* getElementType();
   useit u64      getLength() const;
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   useit Json     toJson() const override;
+
+  useit bool isDestructible() const final;
+  void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

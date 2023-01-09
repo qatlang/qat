@@ -5,9 +5,7 @@
 #include "../../utils/split_string.hpp"
 #include "../logic.hpp"
 #include "../qat_module.hpp"
-#include "definition.hpp"
-#include "function.hpp"
-#include "reference.hpp"
+#include "expanded_type.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include <utility>
@@ -16,8 +14,8 @@ namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
                    llvm::LLVMContext& ctx)
-    : EntityOverview("coreType", Json(), _name.range), name(std::move(_name)), parent(mod),
-      members(std::move(_members)), visibility(_visibility) {
+    : ExpandedType(std::move(_name), mod, _visibility), EntityOverview("coreType", Json(), _name.range),
+      members(std::move(_members)) {
   SHOW("Generating LLVM Type for core type members")
   Vec<llvm::Type*> subtypes;
   for (auto* mem : members) {
@@ -33,6 +31,12 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, cons
 CoreType::~CoreType() {
   for (auto* mem : members) {
     delete mem;
+  }
+}
+
+void CoreType::createDestructor(FileRange fRange, llvm::LLVMContext& ctx) {
+  if (destructor == nullptr) {
+    destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
   }
 }
 
@@ -64,10 +68,6 @@ void CoreType::updateOverview() {
                ._("hasMoveAssignment", moveAssignment.has_value())
                ._("visibility", visibility);
 }
-
-String CoreType::getFullName() const { return parent->getFullNameWithChild(name.value); }
-
-Identifier CoreType::getName() const { return name; }
 
 u64 CoreType::getMemberCount() const { return members.size(); }
 
@@ -133,254 +133,16 @@ bool CoreType::hasStatic(const String& _name) const {
   return result;
 }
 
-bool CoreType::hasMemberFunction(const String& fnName) const {
-  for (auto* memberFunction : memberFunctions) {
-    SHOW("Found member function: " << memberFunction->getName().value)
-    if (memberFunction->getName().value == fnName) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getMemberFunction(const String& fnName) const {
-  for (auto* memberFunction : memberFunctions) {
-    if (memberFunction->getName().value == fnName) {
-      return memberFunction;
-    }
-  }
-  return nullptr;
-}
-
-bool CoreType::hasStaticFunction(const String& fnName) const {
-  for (const auto& fun : staticFunctions) {
-    if (fun->getName().value == fnName) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getStaticFunction(const String& fnName) const {
-  for (auto* staticFunction : staticFunctions) {
-    if (staticFunction->getName().value == fnName) {
-      return staticFunction;
-    }
-  }
-  return nullptr;
-}
-
 void CoreType::addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
                                const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx) {
   staticMembers.push_back(new StaticMember(this, name, type, variability, initial, visibility));
 }
-
-bool CoreType::hasBinaryOperator(const String& opr, IR::QatType* type) const {
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
-      auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-      if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getBinaryOperator(const String& opr, IR::QatType* type) const {
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
-      auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-      if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
-        return bin;
-      }
-    }
-  }
-  return nullptr;
-}
-
-bool CoreType::hasUnaryOperator(const String& opr) const {
-  for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getUnaryOperator(const String& opr) const {
-  for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
-      return unr;
-    }
-  }
-  return nullptr;
-}
-
-u64 CoreType::getOperatorVariantIndex(const String& opr) const {
-  u64 index = 0;
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
-      index++;
-    }
-  }
-  return index;
-}
-
-bool CoreType::hasDefaultConstructor() const { return defaultConstructor != nullptr; }
-
-MemberFunction* CoreType::getDefaultConstructor() const { return defaultConstructor; }
-
-bool CoreType::hasAnyConstructor() const { return (!constructors.empty()) || (defaultConstructor != nullptr); }
-
-bool CoreType::hasAnyFromConvertor() const { return !fromConvertors.empty(); }
-
-bool CoreType::hasConstructorWithTypes(Vec<IR::QatType*> types) const {
-  for (auto* con : constructors) {
-    auto argTys = con->getType()->asFunction()->getArgumentTypes();
-    if (types.size() == (argTys.size() - 1)) {
-      bool result = true;
-      for (usize i = 1; i < argTys.size(); i++) {
-        auto* argType = argTys.at(i)->getType();
-        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
-            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
-                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
-            (!(types.at(i - 1)->isReference() &&
-               (types.at(i - 1)->asReference()->getSubType()->isSame(argType) ||
-                types.at(i - 1)->asReference()->getSubType()->isCompatible(argType))))) {
-          result = false;
-          break;
-        }
-      }
-      if (result) {
-        return true;
-      }
-    } else {
-      continue;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getConstructorWithTypes(Vec<IR::QatType*> types) const {
-  for (auto* con : constructors) {
-    auto argTys = con->getType()->asFunction()->getArgumentTypes();
-    if (types.size() == (argTys.size() - 1)) {
-      bool result = true;
-      for (usize i = 1; i < argTys.size(); i++) {
-        auto* argType = argTys.at(i)->getType();
-        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
-            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
-                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
-            (!(types.at(i - 1)->isReference() && types.at(i - 1)->asReference()->getSubType()->isSame(argType)))) {
-          result = false;
-          break;
-        }
-      }
-      if (result) {
-        return con;
-      }
-    } else {
-      continue;
-    }
-  }
-  return nullptr;
-}
-
-bool CoreType::hasFromConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
-    auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
-        (argTy->isReference() &&
-         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getFromConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
-    auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
-        (argTy->isReference() &&
-         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
-      return fconv;
-    }
-  }
-  return nullptr;
-}
-
-bool CoreType::hasToConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
-    auto* retTy = fconv->getType()->asFunction()->getReturnType();
-    if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* CoreType::getToConvertor(IR::QatType* typ) const {
-  for (auto* tconv : fromConvertors) {
-    auto* retTy = tconv->getType()->asFunction()->getReturnType();
-    if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
-      return tconv;
-    }
-  }
-  return nullptr;
-}
-
-bool CoreType::hasCopyConstructor() const { return copyConstructor.has_value(); }
-
-MemberFunction* CoreType::getCopyConstructor() const { return copyConstructor.value_or(nullptr); }
-
-bool CoreType::hasMoveConstructor() const { return moveConstructor.has_value(); }
-
-MemberFunction* CoreType::getMoveConstructor() const { return moveConstructor.value_or(nullptr); }
-
-bool CoreType::hasCopyAssignment() const { return copyAssignment.has_value(); }
-
-MemberFunction* CoreType::getCopyAssignment() const { return copyAssignment.value_or(nullptr); }
-
-bool CoreType::hasMoveAssignment() const { return moveAssignment.has_value(); }
-
-MemberFunction* CoreType::getMoveAssignment() const { return moveAssignment.value_or(nullptr); }
-
-bool CoreType::isTriviallyCopyable() const {
-  return (constructors.empty() && fromConvertors.empty() && !hasDestructor() && !hasCopyConstructor() &&
-          !hasMoveConstructor());
-}
-
-bool CoreType::hasCopy() const { return hasCopyConstructor() && hasCopyAssignment(); }
-
-bool CoreType::hasMove() const { return hasMoveConstructor() && hasMoveAssignment(); }
-
-bool CoreType::hasDestructor() const { return destructor != nullptr; }
-
-IR::MemberFunction* CoreType::getDestructor() const { return destructor; }
-
-utils::VisibilityInfo CoreType::getVisibility() const { return visibility; }
-
-QatModule* CoreType::getParent() { return parent; }
 
 TypeKind CoreType::typeKind() const { return TypeKind::core; }
 
 String CoreType::toString() const { return getFullName(); }
 
 Json CoreType::toJson() const { return Json()._("id", getID())._("name", name); }
-
-bool CoreType::isCopyExplicit() const { return explicitCopy; }
-
-bool CoreType::isMoveExplicit() const { return explicitMove; }
-
-void CoreType::setExplicitCopy() { explicitCopy = true; }
-
-void CoreType::setExplicitMove() { explicitMove = true; }
 
 TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::TemplatedType*> _templates,
                                    ast::DefineCoreType* _defineCoreType, QatModule* _parent,

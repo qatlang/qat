@@ -17,6 +17,8 @@ protected:
 public:
   EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
 
+  virtual ~EntityOverview() = default;
+
   void addMention(FileRange _range);
 
   virtual void updateOverview() {}

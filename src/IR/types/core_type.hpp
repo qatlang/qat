@@ -6,6 +6,7 @@
 #include "../member_function.hpp"
 #include "../static_member.hpp"
 #include "./qat_type.hpp"
+#include "expanded_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <string>
 #include <utility>
@@ -21,11 +22,11 @@ namespace qat::IR {
  *  This represents a core type in the language
  *
  */
-class CoreType final : public QatType, public EntityOverview {
+class CoreType final : public ExpandedType, public EntityOverview {
   friend class MemberFunction;
 
 public:
-  class Member : public EntityOverview {
+  class Member final : public EntityOverview {
   public:
     Member(Identifier _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
         : EntityOverview("coreTypeMember",
@@ -38,7 +39,7 @@ public:
                          _name.range),
           name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
 
-    ~Member() = default;
+    ~Member() final;
 
     Identifier            name;
     QatType*              type;
@@ -47,28 +48,8 @@ public:
   };
 
 private:
-  Identifier         name;
-  QatModule*         parent;
   Vec<Member*>       members;
   Vec<StaticMember*> staticMembers;
-
-  MemberFunction*        defaultConstructor = nullptr;
-  Vec<MemberFunction*>   memberFunctions;      // Normal
-  Vec<MemberFunction*>   binaryOperators;      //
-  Vec<MemberFunction*>   unaryOperators;       //
-  Vec<MemberFunction*>   constructors;         // Constructors
-  Vec<MemberFunction*>   fromConvertors;       // From Convertors
-  Vec<MemberFunction*>   toConvertors;         // To Convertors
-  Vec<MemberFunction*>   staticFunctions;      // Static
-  MemberFunction*        destructor = nullptr; // Destructor
-  Maybe<MemberFunction*> copyConstructor;      // Copy constructor
-  Maybe<MemberFunction*> moveConstructor;      // Move constructor
-  Maybe<MemberFunction*> copyAssignment;       // Copy assignment operator
-  Maybe<MemberFunction*> moveAssignment;       // Move assignment operator
-  bool                   explicitCopy = false;
-  bool                   explicitMove = false;
-
-  utils::VisibilityInfo visibility;
 
   // TODO - Add support for extension functions
 
@@ -81,58 +62,21 @@ public:
   useit Maybe<usize> getIndexOf(const String& member) const;
   useit bool         hasMember(const String& member) const;
   useit Member*      getMember(const String& name) const;
-  useit String       getFullName() const;
-  useit Identifier   getName() const;
   useit u64          getMemberCount() const;
   useit Member*      getMemberAt(u64 index);
   useit String       getMemberNameAt(u64 index) const;
   useit QatType*     getTypeOfMember(const String& member) const;
-  useit Vec<Member*>&   getMembers();
-  useit bool            hasStatic(const String& name) const;
-  useit bool            hasMemberFunction(const String& fnName) const;
-  useit MemberFunction* getMemberFunction(const String& fnName) const;
-  useit bool            hasStaticFunction(const String& fnName) const;
-  useit MemberFunction* getStaticFunction(const String& fnName) const;
-  useit bool            hasBinaryOperator(const String& opr, IR::QatType* type) const;
-  useit MemberFunction* getBinaryOperator(const String& opr, IR::QatType* type) const;
-  useit bool            hasUnaryOperator(const String& opr) const;
-  useit MemberFunction* getUnaryOperator(const String& opr) const;
-  useit u64             getOperatorVariantIndex(const String& opr) const;
-  useit bool            hasFromConvertor(IR::QatType* type) const;
-  useit MemberFunction* getFromConvertor(IR::QatType* type) const;
-  useit bool            hasToConvertor(IR::QatType* type) const;
-  useit MemberFunction* getToConvertor(IR::QatType* type) const;
-  useit bool            hasConstructorWithTypes(Vec<IR::QatType*> types) const;
-  useit MemberFunction* getConstructorWithTypes(Vec<IR::QatType*> types) const;
-  useit bool            hasDefaultConstructor() const;
-  useit MemberFunction* getDefaultConstructor() const;
-  useit bool            hasAnyFromConvertor() const;
-  useit bool            hasAnyConstructor() const;
-  useit bool            hasCopyConstructor() const;
-  useit MemberFunction* getCopyConstructor() const;
-  useit bool            isCopyExplicit() const;
-  useit bool            hasMoveConstructor() const;
-  useit MemberFunction* getMoveConstructor() const;
-  useit bool            hasCopyAssignment() const;
-  useit MemberFunction* getCopyAssignment() const;
-  useit bool            hasMoveAssignment() const;
-  useit MemberFunction* getMoveAssignment() const;
-  useit bool            isMoveExplicit() const;
-  useit bool            isTriviallyCopyable() const;
-  useit bool            hasCopy() const;
-  useit bool            hasMove() const;
-  useit bool            hasDestructor() const;
-  useit MemberFunction* getDestructor() const;
-  useit utils::VisibilityInfo getVisibility() const;
-  useit QatModule*            getParent();
-  useit Json                  toJson() const override;
-  useit TypeKind              typeKind() const override;
-  useit String                toString() const override;
-  void                        addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                                              const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
-  void                        setExplicitCopy();
-  void                        setExplicitMove();
-  void                        updateOverview() final;
+  useit Vec<Member*>& getMembers();
+  useit bool          hasStatic(const String& name) const;
+
+  void createDestructor(FileRange fileRange, llvm::LLVMContext& ctx);
+
+  useit Json     toJson() const override;
+  useit TypeKind typeKind() const override;
+  useit String   toString() const override;
+  void           addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
+                                 const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
+  void           updateOverview() final;
 };
 
 class TemplateCoreType : public Uniq, public EntityOverview {

@@ -126,7 +126,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           }
         }
       }
-      if (subTy->isCoreType() && subTy->asCore()->hasDestructor()) {
+      if (subTy->isExpanded() && subTy->asExpanded()->hasDestructor()) {
         auto* tagTrueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
         auto* restBlock    = new IR::Block(ctx->fn, nullptr);
         restBlock->linkPrevBlock(ctx->fn->getBlock());
@@ -135,7 +135,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
                                       llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
             tagTrueBlock->getBB(), restBlock->getBB());
         tagTrueBlock->setActive(ctx->builder);
-        auto* dstrFn = subTy->asCore()->getDestructor();
+        auto* dstrFn = subTy->asExpanded()->getDestructor();
         (void)dstrFn->call(ctx, {maybeValueLhsRef}, ctx->getMod());
         ctx->builder.CreateBr(restBlock->getBB());
         restBlock->setActive(ctx->builder);
@@ -152,7 +152,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
            mTy->getSubType()->isSame(exp->getType()->asReference()->getSubType()->asMaybe()->getSubType()))) {
         // NOTE - Both are references
         if (subTy->isCoreType()) {
-          auto* cTy         = subTy->asCore();
+          auto* exTy        = subTy->asExpanded();
           auto* falseBool   = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u);
           auto* trueBool    = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u);
           auto* maybeTagLhs = ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef);
@@ -166,16 +166,16 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* firstFalseBlock = new IR::Block(ctx->fn, currBlock);
           ctx->builder.CreateCondBr(condBothTrue, firstTrueBlock->getBB(), firstFalseBlock->getBB());
           firstTrueBlock->setActive(ctx->builder);
-          if (cTy->hasCopyAssignment() || cTy->hasMoveAssignment()) {
+          if (exTy->hasCopyAssignment() || exTy->hasMoveAssignment()) {
             IR::Function* candFn = nullptr;
-            if (cTy->hasCopyAssignment()) {
-              candFn = cTy->getCopyAssignment();
+            if (exTy->hasCopyAssignment()) {
+              candFn = exTy->getCopyAssignment();
             } else {
-              candFn = cTy->getMoveAssignment();
+              candFn = exTy->getMoveAssignment();
             }
             (void)candFn->call(ctx, {maybeValueLhsRef, maybeValueRhsRef}, ctx->getMod());
           } else {
-            ctx->builder.CreateStore(ctx->builder.CreateLoad(cTy->getLLVMType(), maybeValueRhsRef), maybeValueLhsRef);
+            ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), maybeValueRhsRef), maybeValueLhsRef);
           }
           (void)IR::addBranch(ctx->builder, firstFalseBlock->getBB());
           firstFalseBlock->setActive(ctx->builder);
@@ -185,12 +185,12 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* secFalseBlock = new IR::Block(ctx->fn, currBlock);
           ctx->builder.CreateCondBr(condTrueAndFalse, secTrueBlock->getBB(), secFalseBlock->getBB());
           secTrueBlock->setActive(ctx->builder);
-          if (cTy->hasDestructor()) {
-            (void)cTy->getDestructor()->call(ctx, {maybeTagLhsRef}, ctx->getMod());
+          if (exTy->hasDestructor()) {
+            (void)exTy->getDestructor()->call(ctx, {maybeTagLhsRef}, ctx->getMod());
           }
           ctx->builder.CreateStore(falseBool, maybeTagLhsRef);
           // FIXME - Storing null for the value is necessary only if there is no destructor
-          ctx->builder.CreateStore(llvm::Constant::getNullValue(cTy->getLLVMType()), maybeValueLhsRef);
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(exTy->getLLVMType()), maybeValueLhsRef);
           (void)IR::addBranch(ctx->builder, secFalseBlock->getBB());
           secFalseBlock->setActive(ctx->builder);
           auto* condFalseAndTrue = ctx->builder.CreateAnd(
@@ -200,16 +200,16 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->linkPrevBlock(currBlock);
           ctx->builder.CreateCondBr(condFalseAndTrue, thirdTrueBlock->getBB(), restBlock->getBB());
           thirdTrueBlock->setActive(ctx->builder);
-          if (cTy->hasCopyConstructor() || cTy->hasMoveConstructor()) {
+          if (exTy->hasCopyConstructor() || exTy->hasMoveConstructor()) {
             IR::Function* candFn = nullptr;
-            if (cTy->hasCopyConstructor()) {
-              candFn = cTy->getCopyConstructor();
+            if (exTy->hasCopyConstructor()) {
+              candFn = exTy->getCopyConstructor();
             } else {
-              candFn = cTy->getMoveConstructor();
+              candFn = exTy->getMoveConstructor();
             }
             (void)candFn->call(ctx, {maybeValueLhsRef, maybeValueRhsRef}, ctx->getMod());
           } else {
-            ctx->builder.CreateStore(ctx->builder.CreateLoad(cTy->getLLVMType(), maybeValueRhsRef), maybeValueLhsRef);
+            ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), maybeValueRhsRef), maybeValueLhsRef);
           }
           ctx->builder.CreateStore(trueBool, maybeTagLhsRef);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
@@ -229,7 +229,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         return nullptr;
       } else if (exp->getType()->isMaybe() && exp->getType()->asMaybe()->getSubType()->isSame(mTy->getSubType())) {
         // NOTE - Assigning absolute value to the reference
-        if (subTy->isCoreType() && subTy->asCore()->hasDestructor()) {
+        if (subTy->isExpanded() && subTy->asExpanded()->hasDestructor()) {
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
@@ -238,7 +238,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), restBlock->getBB());
           trueBlock->setActive(ctx->builder);
-          (void)subTy->asCore()->getDestructor()->call(
+          (void)subTy->asExpanded()->getDestructor()->call(
               ctx, {ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u)}, ctx->getMod());
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           restBlock->setActive(ctx->builder);
@@ -251,10 +251,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         if (exp->getType()->isReference()) {
           exp->loadImplicitPointer(ctx->builder);
         }
-        if (subTy->isCoreType() &&
+        if (subTy->isExpanded() &&
             ((exp->getType()->isSame(mTy->getSubType()) && exp->isImplicitPointer()) || exp->isReference()) &&
-            (subTy->asCore()->hasCopy() || subTy->asCore()->hasMove() || subTy->asCore()->hasDestructor())) {
-          auto* cTy = subTy->asCore();
+            (subTy->asExpanded()->hasCopy() || subTy->asExpanded()->hasMove() ||
+             subTy->asExpanded()->hasDestructor())) {
+          auto* exTy = subTy->asExpanded();
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
@@ -264,23 +265,23 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), falseBlock->getBB());
           trueBlock->setActive(ctx->builder);
-          if (cTy->hasCopyAssignment() || cTy->hasMoveAssignment()) {
-            auto* candFn = cTy->hasCopyAssignment() ? cTy->getCopyAssignment() : cTy->getMoveAssignment();
+          if (exTy->hasCopyAssignment() || exTy->hasMoveAssignment()) {
+            auto* candFn = exTy->hasCopyAssignment() ? exTy->getCopyAssignment() : exTy->getMoveAssignment();
             (void)candFn->call(ctx, {maybeValueLhsRef, exp->getLLVM()}, ctx->getMod());
           } else {
-            if (cTy->hasDestructor()) {
-              auto* dstrFn = cTy->getDestructor();
+            if (exTy->hasDestructor()) {
+              auto* dstrFn = exTy->getDestructor();
               (void)dstrFn->call(ctx, {maybeValueLhsRef}, ctx->getMod());
             }
-            ctx->builder.CreateStore(ctx->builder.CreateLoad(cTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
+            ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
           }
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           falseBlock->setActive(ctx->builder);
-          if (cTy->hasCopyConstructor() || cTy->hasMoveConstructor()) {
-            auto* constrFn = cTy->hasCopyConstructor() ? cTy->getCopyConstructor() : cTy->getMoveConstructor();
+          if (exTy->hasCopyConstructor() || exTy->hasMoveConstructor()) {
+            auto* constrFn = exTy->hasCopyConstructor() ? exTy->getCopyConstructor() : exTy->getMoveConstructor();
             (void)constrFn->call(ctx, {maybeValueLhsRef, exp->getLLVM()}, ctx->getMod());
           } else {
-            ctx->builder.CreateStore(ctx->builder.CreateLoad(cTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
+            ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
           }
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u), maybeTagLhsRef);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
@@ -308,17 +309,17 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
     if (lhsVal->isImplicitPointer() || lhsVal->getType()->isReference()) {
       if (value->nodeType() == NodeType::copyExpression || value->nodeType() == NodeType::moveExpression) {
         auto isCopy = value->nodeType() == NodeType::copyExpression;
-        if ((lhsVal->getType()->isCoreType() && (isCopy ? lhsVal->getType()->asCore()->hasCopyAssignment()
-                                                        : lhsVal->getType()->asCore()->hasMoveAssignment())) ||
+        if ((lhsVal->getType()->isExpanded() && (isCopy ? lhsVal->getType()->asExpanded()->hasCopyAssignment()
+                                                        : lhsVal->getType()->asExpanded()->hasMoveAssignment())) ||
             (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isCoreType() &&
-             ((isCopy ? lhsVal->getType()->asReference()->getSubType()->asCore()->hasCopyAssignment()
-                      : lhsVal->getType()->asReference()->getSubType()->asCore()->hasMoveAssignment())))) {
+             ((isCopy ? lhsVal->getType()->asReference()->getSubType()->asExpanded()->hasCopyAssignment()
+                      : lhsVal->getType()->asReference()->getSubType()->asExpanded()->hasMoveAssignment())))) {
           auto* val    = isCopy ? ((Copy*)value)->exp : ((Move*)value)->exp;
           auto* expVal = val->emit(ctx);
           auto* lhsTy  = lhsVal->getType();
           auto* expTy  = expVal->getType();
-          if ((expTy->isCoreType() && expVal->isImplicitPointer()) ||
-              (expTy->isReference() && expTy->asReference()->getSubType()->isCoreType())) {
+          if ((expTy->isExpanded() && expVal->isImplicitPointer()) ||
+              (expTy->isReference() && expTy->asReference()->getSubType()->isExpanded())) {
             if (expTy->isReference()) {
               expVal->loadImplicitPointer(ctx->builder);
             }
@@ -329,7 +330,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
                                               expTy->isReference() ? expTy->asReference()->getSubType() : expTy))) ||
                 (expTy->isReference() && expTy->asReference()->getSubType()->isSame(
                                              lhsTy->isReference() ? lhsTy->asReference()->getSubType() : lhsTy))) {
-              auto* cTy = lhsTy->isCoreType() ? lhsTy->asCore() : lhsTy->asReference()->getSubType()->asCore();
+              auto* cTy = lhsTy->isCoreType() ? lhsTy->asExpanded() : lhsTy->asReference()->getSubType()->asExpanded();
               if (lhsVal->isImplicitPointer() && lhsVal->isReference()) {
                 SHOW("LHS is implicit pointer")
                 lhsVal->loadImplicitPointer(ctx->builder);
@@ -374,17 +375,18 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
             SHOW("Expression for assignment is of type " << expTy->asReference()->getSubType()->toString())
             expTy = expTy->asReference()->getSubType();
           }
-          if (expTy->isCoreType() && (expTy->asCore()->hasCopyAssignment() || expTy->asCore()->hasMoveAssignment())) {
-            auto* cTy = expTy->asCore();
-            if (cTy->hasCopyAssignment()) {
-              auto* cpFn = cTy->getCopyAssignment();
-              ctx->Warning("Copy assignment of core type " + ctx->highlightWarning(cTy->getFullName()) +
+          if (expTy->isCoreType() &&
+              (expTy->asExpanded()->hasCopyAssignment() || expTy->asExpanded()->hasMoveAssignment())) {
+            auto* eTy = expTy->asExpanded();
+            if (eTy->hasCopyAssignment()) {
+              auto* cpFn = eTy->getCopyAssignment();
+              ctx->Warning("Copy assignment of core type " + ctx->highlightWarning(eTy->getFullName()) +
                                " is invoked here. Please make the copy explicit",
                            fileRange);
               (void)cpFn->call(ctx, {lhsVal->getLLVM(), expVal->getLLVM()}, ctx->getMod());
             } else {
-              auto* mvFn = cTy->getMoveAssignment();
-              ctx->Warning("Move assignment of core type " + ctx->highlightWarning(cTy->getFullName()) +
+              auto* mvFn = eTy->getMoveAssignment();
+              ctx->Warning("Move assignment of core type " + ctx->highlightWarning(eTy->getFullName()) +
                                " is invoked here. Please make the move explicit",
                            fileRange);
               (void)mvFn->call(ctx, {lhsVal->getLLVM(), expVal->getLLVM()}, ctx->getMod());

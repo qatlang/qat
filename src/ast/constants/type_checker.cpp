@@ -165,16 +165,14 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
     }
     return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
                                  IR::UnsignedType::getBool(ctx->llctx));
-  } else if (name == "hasDestructor") {
+  } else if (name == "isDestructible") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasDestructor()) {
-          res = false;
-        }
+      if (typ->isDestructible()) {
+        continue;
       } else {
-        // TODO - Change if mix types get destructors
         res = false;
+        break;
       }
     }
     return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
@@ -182,8 +180,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasAnyConstructor") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasAnyConstructor()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasAnyConstructor()) {
           res = false;
         }
       } else {
@@ -195,8 +193,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasAnyFromConvertor") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasAnyFromConvertor()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasAnyFromConvertor()) {
           res = false;
         }
       } else {
@@ -208,8 +206,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasCopyConstructor") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasCopyConstructor()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasCopyConstructor()) {
           res = false;
         }
       } else {
@@ -221,8 +219,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasMoveConstructor") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasMoveConstructor()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasMoveConstructor()) {
           res = false;
         }
       } else {
@@ -234,8 +232,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasCopyAssignment") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasCopyAssignment()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasCopyAssignment()) {
           res = false;
         }
       } else {
@@ -247,8 +245,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
   } else if (name == "hasMoveAssignment") {
     bool res = true;
     for (auto* typ : typs) {
-      if (typ->isCoreType()) {
-        if (!typ->asCore()->hasMoveAssignment()) {
+      if (typ->isExpanded()) {
+        if (!typ->asExpanded()->hasMoveAssignment()) {
           res = false;
         }
       } else {

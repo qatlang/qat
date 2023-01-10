@@ -32,6 +32,9 @@ public:
   useit String     toString() const override;
   useit Json       toJson() const override;
   useit utils::VisibilityInfo getVisibility() const;
+  useit bool                  isExpanded() const final;
+  useit bool                  isDestructible() const final;
+  void                        destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

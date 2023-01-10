@@ -16,6 +16,14 @@ DefinitionType::DefinitionType(Identifier _name, QatType* _subType, QatModule* _
 
 utils::VisibilityInfo DefinitionType::getVisibility() const { return visibInfo; }
 
+bool DefinitionType::isExpanded() const { return subType->isExpanded(); }
+
+bool DefinitionType::isDestructible() const { return subType->isDestructible(); }
+
+void DefinitionType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+  subType->destroyValue(ctx, vals, fun);
+}
+
 Identifier DefinitionType::getName() const { return name; }
 
 String DefinitionType::getFullName() const { return parent ? parent->getFullNameWithChild(name.value) : name.value; }

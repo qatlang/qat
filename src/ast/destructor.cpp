@@ -6,19 +6,13 @@ namespace qat::ast {
 DestructorDefinition::DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), nameRange(std::move(_nameRange)) {}
 
-void DestructorDefinition::setCoreType(IR::CoreType* _coreType) const { coreType = _coreType; }
+void DestructorDefinition::setCoreType(IR::ExpandedType* _expType) const { expType = _expType; }
 
 void DestructorDefinition::define(IR::Context* ctx) {
-  if (!coreType) {
-    ctx->Error("No core type found for this member function", fileRange);
+  if (!expType) {
+    ctx->Error("No parent type found for this member function", fileRange);
   }
-  if (coreType->hasDestructor()) {
-    ctx->Error("Core type " + ctx->highlightError(coreType->getFullName()) +
-                   " already has a destructor. Please check logic and make "
-                   "necessary changes",
-               fileRange);
-  }
-  memberFn = IR::MemberFunction::CreateDestructor(coreType, nameRange, fileRange, ctx->llctx);
+  memberFn = expType->getDestructor();
 }
 
 IR::Value* DestructorDefinition::emit(IR::Context* ctx) {

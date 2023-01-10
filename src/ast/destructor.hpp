@@ -17,12 +17,12 @@ private:
   Vec<Sentence*> sentences;
 
   mutable IR::MemberFunction* memberFn = nullptr;
-  mutable IR::CoreType*       coreType = nullptr;
+  mutable IR::ExpandedType*   expType  = nullptr;
 
 public:
   DestructorDefinition(FileRange nameRange, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::CoreType* coreType) const;
+  void setCoreType(IR::ExpandedType* coreType) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

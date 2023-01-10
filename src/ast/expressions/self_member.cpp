@@ -1,4 +1,5 @@
 #include "./self_member.hpp"
+#include "../../IR/types/void.hpp"
 
 namespace qat::ast {
 
@@ -15,14 +16,15 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
                      " is a static function and cannot use the expression " + ctx->highlightError("''" + name.value),
                  fileRange);
     }
-    auto* cTy = mFn->getParentType();
-    if (cTy->hasMember(name.value)) {
+    auto* expandedTy = mFn->getParentType();
+    if (expandedTy->isCoreType() && expandedTy->asCore()->hasMember(name.value)) {
+      auto* cTy   = expandedTy->asCore();
       auto  index = cTy->getIndexOf(name.value).value();
       auto* mem   = cTy->getMemberAt(index);
       mem->addMention(name.range);
       auto* selfVal = mFn->getBlock()->getValue("''");
       auto* res     = new IR::Value(
-          ctx->builder.CreateStructGEP(cTy->getLLVMType(), selfVal->getLLVM(), index),
+          ctx->builder.CreateStructGEP(expandedTy->getLLVMType(), selfVal->getLLVM(), index),
           IR::ReferenceType::get(selfVal->getType()->asReference()->isSubtypeVariable(), mem->type, ctx->llctx), false,
           IR::Nature::temporary);
       while (res->getType()->isReference() && res->getType()->asReference()->getSubType()->isReference()) {
@@ -31,9 +33,14 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
             res->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
       }
       return res;
+    } else if (expandedTy->isMix()) {
+      ctx->Error("Cannot access member fields by name since the parent type " +
+                     ctx->highlightError(expandedTy->getFullName()) + " of this member function is a mix type",
+                 fileRange);
     } else {
-      ctx->Error("The parent type of this member function does not have a "
-                 "member named " +
+      ctx->Error("The parent type of this member function " + ctx->highlightError(expandedTy->getFullName()) +
+                     " does not have a "
+                     "member field named " +
                      ctx->highlightError(name.value),
                  fileRange);
     }

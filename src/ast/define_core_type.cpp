@@ -49,13 +49,17 @@ bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  if (!isTemplate()) {
-    ctx->nameCheck(name, "core type");
-  }
+  ctx->nameCheck(name, isTemplate() ? "generic core type" : "core type",
+                 isTemplate() ? Maybe<String>(templateCoreType->getID()) : None);
   SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
+  bool                       needsDestructor = false;
   Vec<IR::CoreType::Member*> mems;
   for (auto* mem : members) {
-    mems.push_back(new IR::CoreType::Member(mem->name, mem->type->emit(ctx), mem->variability,
+    auto* memTy = mem->type->emit(ctx);
+    if (memTy->isDestructible()) {
+      needsDestructor = true;
+    }
+    mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
                                             (mem->visibilityKind == utils::VisibilityKind::type)
                                                 ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name.value))
                                                 : ctx->getVisibInfo(mem->visibilityKind)));
@@ -66,6 +70,15 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     cTyName = Identifier(variantName.value(), name.range);
   }
   coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
+  if (destructorDefinition) {
+    coreType->hasDefinedDestructor = true;
+  }
+  if (needsDestructor) {
+    coreType->needsImplicitDestructor = true;
+  }
+  if (destructorDefinition || needsDestructor) {
+    coreType->createDestructor(fileRange, ctx->llctx);
+  }
   SHOW("Created core type in IR")
   for (auto* stm : staticMembers) {
     coreType->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
@@ -131,7 +144,6 @@ IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   SHOW("Defining type")
-  auto* mod = ctx->getMod();
   if (!isTemplate()) {
     createType(ctx);
   } else {

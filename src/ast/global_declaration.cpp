@@ -12,7 +12,7 @@ GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expressio
 
 void GlobalDeclaration::define(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "global value");
+  ctx->nameCheck(name, "global value", None);
   auto* init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;
   init->getBlock()->setActive(ctx->builder);
@@ -25,9 +25,10 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   auto*                 typ  = type->emit(ctx);
   auto*                 val  = value->emit(ctx);
   llvm::GlobalVariable* gvar = nullptr;
+  SHOW("Global is a variable: " << (isVariable ? "true" : "false"))
   if (val->isConstVal()) {
     gvar = new llvm::GlobalVariable(
-        *mod->getLLVMModule(), typ->getLLVMType(), isVariable, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+        *mod->getLLVMModule(), typ->getLLVMType(), !isVariable, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
         llvm::dyn_cast<llvm::Constant>(val->getLLVM()), mod->getFullNameWithChild(name.value));
   } else {
     mod->incrementNonConstGlobalCounter();

@@ -56,7 +56,7 @@ private:
   String                                name;
   llvm::BasicBlock*                     bb;
   Vec<LocalValue*>                      values;
-  Block*                                parent;
+  Block*                                parent = nullptr;
   Vec<Block*>                           children;
   Function*                             fn;
   usize                                 index;

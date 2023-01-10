@@ -34,7 +34,8 @@ Vec<TemplatedType*> FunctionPrototype::getTemplates() const { return templates; 
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, isTemplate() ? "generic function" : "function");
+  ctx->nameCheck(name, isTemplate() ? "generic function" : "function",
+                 isTemplate() ? Maybe<String>(templateFn->getID()) : None);
   Vec<IR::QatType*> generatedTypes;
   bool              isMainFn = false;
   String            fnName   = name.value;

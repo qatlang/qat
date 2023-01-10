@@ -9,7 +9,7 @@ TypeDefinition::TypeDefinition(Identifier _name, QatType* _subType, FileRange _f
 
 void TypeDefinition::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "type definition");
+  ctx->nameCheck(name, "type definition", None);
   SHOW("Creating new type definition")
   new IR::DefinitionType(name, subType->emit(ctx), mod, ctx->getVisibInfo(visibKind));
   SHOW("Type definition created")

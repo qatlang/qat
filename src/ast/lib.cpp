@@ -7,7 +7,7 @@ Lib::Lib(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibilit
 
 void Lib::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "lib");
+  ctx->nameCheck(name, "lib", None);
   SHOW("Creating lib")
   mod->openLib(name, fileRange.file.string(), ctx->getVisibInfo(visibility), ctx->llctx);
   mod->getActive()->nodes = members;

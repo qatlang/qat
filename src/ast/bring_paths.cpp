@@ -30,7 +30,7 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
-            ctx->nameCheck(name, "named folder module");
+            ctx->nameCheck(name, "named folder module", None);
             auto* folderModule = IR::QatModule::getFolderModule(path);
             folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
             mod->bringNamedModule(name, folderModule, ctx->getVisibInfo(visibility));
@@ -56,7 +56,7 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
               ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
-            ctx->nameCheck(name, "named file module");
+            ctx->nameCheck(name, "named file module", None);
             auto* fileModule = IR::QatModule::getFileModule(path);
             fileModule->addBroughtMention(mod, paths.at(i)->fileRange);
             mod->bringNamedModule(name, fileModule, ctx->getVisibInfo(visibility));

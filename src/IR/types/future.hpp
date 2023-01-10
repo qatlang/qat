@@ -11,8 +11,6 @@ class FutureType : public QatType {
 private:
   QatType* subTy;
 
-  llvm::Function* destructor = nullptr;
-
   FutureType(QatType* subType, IR::Context* ctx);
 
 public:
@@ -22,6 +20,8 @@ public:
   useit String   toString() const final;
   useit TypeKind typeKind() const final;
   useit Json     toJson() const final { return {}; }
+  useit bool     isDestructible() const final;
+  void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

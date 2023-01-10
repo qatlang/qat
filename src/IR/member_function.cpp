@@ -13,7 +13,7 @@
 
 namespace qat::IR {
 
-MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, CoreType* _parent, const Identifier& _name,
+MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, ExpandedType* _parent, const Identifier& _name,
                                QatType* returnType, bool _isReturnTypeVariable, bool _is_async, Vec<Argument> _args,
                                bool is_variable_arguments, bool _is_static, const FileRange& _fileRange,
                                const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx)
@@ -116,9 +116,9 @@ String memberFnTypeToString(MemberFnType type) {
 
 MemberFunction::~MemberFunction() = default;
 
-MemberFunction* MemberFunction::Create(CoreType* parent, bool is_variation, const Identifier& name, QatType* returnTy,
-                                       bool _isReturnTypeVariable, bool _is_async, const Vec<Argument>& args,
-                                       bool has_variadic_args, const FileRange& fileRange,
+MemberFunction* MemberFunction::Create(ExpandedType* parent, bool is_variation, const Identifier& name,
+                                       QatType* returnTy, bool _isReturnTypeVariable, bool _is_async,
+                                       const Vec<Argument>& args, bool has_variadic_args, const FileRange& fileRange,
                                        const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> args_info;
   args_info.push_back(
@@ -130,7 +130,7 @@ MemberFunction* MemberFunction::Create(CoreType* parent, bool is_variation, cons
                             _is_async, std::move(args_info), has_variadic_args, false, fileRange, visibilityInfo, ctx);
 }
 
-MemberFunction* MemberFunction::DefaultConstructor(CoreType* parent, FileRange nameRange,
+MemberFunction* MemberFunction::DefaultConstructor(ExpandedType* parent, FileRange nameRange,
                                                    const utils::VisibilityInfo& visibInfo, FileRange fileRange,
                                                    llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
@@ -141,7 +141,7 @@ MemberFunction* MemberFunction::DefaultConstructor(CoreType* parent, FileRange n
                             {"", {0u, 0u}, {0u, 0u}}, visibInfo, ctx);
 }
 
-MemberFunction* MemberFunction::CopyConstructor(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+MemberFunction* MemberFunction::CopyConstructor(ExpandedType* parent, FileRange nameRange, const Identifier& otherName,
                                                 const FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create({"''", parent->getName().range}, ReferenceType::get(true, parent, ctx), 0));
@@ -151,7 +151,7 @@ MemberFunction* MemberFunction::CopyConstructor(CoreType* parent, FileRange name
                             utils::VisibilityInfo::pub(), ctx);
 }
 
-MemberFunction* MemberFunction::MoveConstructor(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+MemberFunction* MemberFunction::MoveConstructor(ExpandedType* parent, FileRange nameRange, const Identifier& otherName,
                                                 const FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create({"''", parent->getName().range}, ReferenceType::get(true, parent, ctx), 0u));
@@ -161,7 +161,7 @@ MemberFunction* MemberFunction::MoveConstructor(CoreType* parent, FileRange name
                             utils::VisibilityInfo::pub(), ctx);
 }
 
-MemberFunction* MemberFunction::CopyAssignment(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+MemberFunction* MemberFunction::CopyAssignment(ExpandedType* parent, FileRange nameRange, const Identifier& otherName,
                                                const FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
@@ -172,7 +172,7 @@ MemberFunction* MemberFunction::CopyAssignment(CoreType* parent, FileRange nameR
                             ctx);
 }
 
-MemberFunction* MemberFunction::MoveAssignment(CoreType* parent, FileRange nameRange, const Identifier& otherName,
+MemberFunction* MemberFunction::MoveAssignment(ExpandedType* parent, FileRange nameRange, const Identifier& otherName,
                                                const FileRange& fileRange, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(
@@ -183,7 +183,7 @@ MemberFunction* MemberFunction::MoveAssignment(CoreType* parent, FileRange nameR
                             ctx);
 }
 
-MemberFunction* MemberFunction::CreateConstructor(CoreType* parent, FileRange nameRange, const Vec<Argument>& args,
+MemberFunction* MemberFunction::CreateConstructor(ExpandedType* parent, FileRange nameRange, const Vec<Argument>& args,
                                                   bool hasVariadicArgs, const FileRange& fileRange,
                                                   const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
@@ -199,7 +199,7 @@ MemberFunction* MemberFunction::CreateConstructor(CoreType* parent, FileRange na
                             ctx);
 }
 
-MemberFunction* MemberFunction::CreateFromConvertor(CoreType* parent, FileRange nameRange, QatType* sourceType,
+MemberFunction* MemberFunction::CreateFromConvertor(ExpandedType* parent, FileRange nameRange, QatType* sourceType,
                                                     const Identifier& name, const FileRange& fileRange,
                                                     const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
@@ -213,7 +213,7 @@ MemberFunction* MemberFunction::CreateFromConvertor(CoreType* parent, FileRange 
                             argsInfo, false, false, fileRange, visibInfo, ctx);
 }
 
-MemberFunction* MemberFunction::CreateToConvertor(CoreType* parent, FileRange nameRange, QatType* destType,
+MemberFunction* MemberFunction::CreateToConvertor(ExpandedType* parent, FileRange nameRange, QatType* destType,
                                                   const FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
                                                   llvm::LLVMContext& ctx) {
   Vec<Argument> argsInfo;
@@ -224,7 +224,7 @@ MemberFunction* MemberFunction::CreateToConvertor(CoreType* parent, FileRange na
                             false, false, fileRange, visibInfo, ctx);
 }
 
-MemberFunction* MemberFunction::CreateStatic(CoreType* parent, const Identifier& name, QatType* returnTy,
+MemberFunction* MemberFunction::CreateStatic(ExpandedType* parent, const Identifier& name, QatType* returnTy,
                                              bool isReturnTypeVariable, bool is_async, const Vec<Argument>& args,
                                              bool has_variadic_args, const FileRange& fileRange,
                                              const utils::VisibilityInfo& visib_info,
@@ -234,7 +234,7 @@ MemberFunction* MemberFunction::CreateStatic(CoreType* parent, const Identifier&
                             has_variadic_args, true, fileRange, visib_info, ctx);
 }
 
-MemberFunction* MemberFunction::CreateDestructor(CoreType* parent, FileRange nameRange, const FileRange& fileRange,
+MemberFunction* MemberFunction::CreateDestructor(ExpandedType* parent, FileRange nameRange, const FileRange& fileRange,
                                                  llvm::LLVMContext& ctx) {
   SHOW("Creating destructor")
   return new MemberFunction(MemberFnType::destructor, true, parent, Identifier("end", nameRange), VoidType::get(ctx),
@@ -244,10 +244,10 @@ MemberFunction* MemberFunction::CreateDestructor(CoreType* parent, FileRange nam
                             false, false, fileRange, utils::VisibilityInfo::pub(), ctx);
 }
 
-MemberFunction* MemberFunction::CreateOperator(CoreType* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
-                                               const String& opr, IR::QatType* returnType, const Vec<Argument>& args,
-                                               const FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
-                                               llvm::LLVMContext& ctx) {
+MemberFunction* MemberFunction::CreateOperator(ExpandedType* parent, FileRange nameRange, bool isBinary,
+                                               bool isVariationFn, const String& opr, IR::QatType* returnType,
+                                               const Vec<Argument>& args, const FileRange& fileRange,
+                                               const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx) {
   Vec<Argument> args_info;
   args_info.push_back(
       Argument::Create(Identifier("''", parent->getName().range), ReferenceType::get(isVariationFn, parent, ctx), 0));
@@ -282,7 +282,7 @@ bool MemberFunction::isStaticFunction() const { return isStatic; }
 
 bool MemberFunction::isMemberFunction() const { return true; }
 
-CoreType* MemberFunction::getParentType() { return parent; }
+ExpandedType* MemberFunction::getParentType() { return parent; }
 
 MemberFnType MemberFunction::getMemberFnType() { return fnType; }
 

@@ -20,32 +20,31 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     ctx->Error("The expression is of pointer type. Please dereference the pointer to call the member function",
                instance->fileRange);
   }
-  if (instType->isCoreType()) {
+  if (instType->isExpanded()) {
     if (memberName == "end") {
-      if (!instType->asCore()->hasDestructor()) {
-        ctx->Error("Core type " + ctx->highlightError(instType->asCore()->getFullName()) +
-                       " does not have a destructor",
+      if (!instType->asExpanded()->hasDestructor()) {
+        ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->getFullName()) + " does not have a destructor",
                    fileRange);
       }
-      auto* desFn = instType->asCore()->getDestructor();
+      auto* desFn = instType->asExpanded()->getDestructor();
       if (inst->isImplicitPointer() || inst->isReference()) {
         return desFn->call(ctx, {inst->getLLVM()}, ctx->getMod());
       } else {
         ctx->Error("Invalid expression to call the destructor of", fileRange);
       }
     }
-    if (!instType->asCore()->hasMemberFunction(memberName)) {
-      ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) +
+    if (!instType->asExpanded()->hasMemberFunction(memberName)) {
+      ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
                      " does not have a member function named " + ctx->highlightError(memberName) +
                      ". Please check the logic",
                  fileRange);
     }
-    auto* cTy   = instType->asCore();
-    auto* memFn = cTy->getMemberFunction(memberName);
+    auto* eTy   = instType->asExpanded();
+    auto* memFn = eTy->getMemberFunction(memberName);
     if (variation) {
       if (!memFn->isVariationFunction()) {
-        ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
-                       ctx->highlightError(cTy->getFullName()) +
+        ctx->Error("Member function " + ctx->highlightError(memberName) + " of type " +
+                       ctx->highlightError(eTy->getFullName()) +
                        " is not a variation and hence cannot be called as a variation",
                    fileRange);
       }
@@ -57,14 +56,14 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     } else {
       if (memFn->isVariationFunction()) {
         ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
-                       ctx->highlightError(cTy->getFullName()) +
+                       ctx->highlightError(eTy->getFullName()) +
                        " is a variation and hence should be called as a variation",
                    fileRange);
       }
     }
     if (!memFn->isAccessible(ctx->getReqInfo())) {
       ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
-                     ctx->highlightError(cTy->getFullName()) + " is not accessible here",
+                     ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {

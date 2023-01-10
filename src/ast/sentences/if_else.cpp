@@ -7,7 +7,7 @@ namespace qat::ast {
 IfElse::IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), chain(std::move(_chain)), elseCase(std::move(_else)) {}
 
-Pair<bool, usize> IfElse::trueKnownValue(usize ind) const {
+Pair<bool, usize> IfElse::trueKnownValueBefore(usize ind) const {
   for (usize i = 0; i < ind; i++) {
     if (knownVals.at(i).has_value() && knownVals.at(i).value()) {
       return {true, i};
@@ -26,7 +26,7 @@ bool IfElse::getKnownValue(usize ind) const {
 bool IfElse::hasValueAt(usize ind) const { return knownVals.at(ind).has_value(); }
 
 bool IfElse::isFalseTill(usize ind) const {
-  for (usize i = 0; i < ind; i++) {
+  for (usize i = 0; (i < ind) && (i < knownVals.size()); i++) {
     if (knownVals.at(i).has_value()) {
       if (knownVals.at(i).value()) {
         return false;
@@ -54,12 +54,13 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
                  section.first->fileRange);
     }
     if (exp->isConstVal()) {
+      SHOW("Is const condition in if-else")
       auto condConstVal = *(llvm::dyn_cast<llvm::ConstantInt>(exp->asConst()->getLLVM())->getValue().getRawData());
       knownVals.push_back(condConstVal == 1u);
     } else {
       knownVals.push_back(None);
     }
-    if (!trueKnownValue(i).first) {
+    if (!trueKnownValueBefore(i).first) {
       if (hasValueAt(i) && isFalseTill(i)) {
         if (getKnownValue(i)) {
           auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
@@ -102,7 +103,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       emitSentences(elseCase.value(), ctx);
       elseBlock->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
-    } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && trueKnownValue(knownVals.size()).first)) {
+    } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !trueKnownValueBefore(knownVals.size()).first)) {
       emitSentences(elseCase.value(), ctx);
       ctx->fn->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());

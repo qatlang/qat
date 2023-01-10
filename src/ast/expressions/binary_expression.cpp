@@ -628,7 +628,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       auto* iterTrueBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
       auto* iterIncrBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
       auto* iterFalseBlock    = new IR::Block(ctx->fn, lenCheckTrueBlock);
-      auto* restBlock         = new IR::Block(ctx->fn, nullptr);
+      auto* restBlock         = new IR::Block(ctx->fn, curr->getParent());
       restBlock->linkPrevBlock(curr);
       auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->llctx);
       auto* qatStrCmpIndex = ctx->fn->getFunctionCommonIndex();

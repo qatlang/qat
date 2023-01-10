@@ -20,7 +20,7 @@ private:
 public:
   IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange);
 
-  useit Pair<bool, usize> trueKnownValue(usize ind) const;
+  useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
   useit bool              getKnownValue(usize ind) const;
   useit bool              hasValueAt(usize ind) const;
   useit bool              isFalseTill(usize ind) const;

@@ -32,11 +32,7 @@ MixType::MixType(Identifier _name, QatModule* _parent, Vec<Pair<Identifier, Mayb
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
       SHOW("Getting size of the subtype in SUM TYPE")
-      auto* llSize =
-          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
-                                 parent->getLLVMModule()->getDataLayout().getTypeStoreSizeInBits(typ->getLLVMType()));
-      SHOW("Size query type ID: " << llSize->getType()->getTypeID())
-      auto size = *(llSize->getValue().getRawData());
+      usize size = parent->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(typ->getLLVMType());
       SHOW("Got size " << size << " of subtype named " << sub.first.value)
       if (size > maxSize) {
         maxSize = size;

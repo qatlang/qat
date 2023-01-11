@@ -573,13 +573,15 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
               (lhsType->isReference() && lhsType->asReference()->getSubType()->isStringSlice())) &&
              (rhsType->isStringSlice() ||
               (rhsType->isReference() && rhsType->asReference()->getSubType()->isStringSlice()))) {
-    if (op == Op::equalTo || op == Op::notEqualTo) { // NOLINTNEXTLINE(readability-isolate-declaration)
+    if (op == Op::equalTo || op == Op::notEqualTo) {
+      // NOLINTBEGIN(readability-isolate-declaration)
       llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
-      bool         isConstantLHS, isConstantRHS = false;
-      auto*        Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+      bool         isConstantLHS = false, isConstantRHS = false;
+      // NOLINTEND(readability-isolate-declaration)
+      auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
       if (lhsEmit->isLLVMConstant()) {
-        lhsBuff       = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
-        lhsCount      = llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
+        lhsBuff       = llvm::cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
+        lhsCount      = llvm::cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
         isConstantLHS = true;
       } else {
         if (lhsType->isReference()) {
@@ -595,8 +597,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 1u));
       }
       if (rhsEmit->isLLVMConstant()) {
-        rhsBuff       = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
-        rhsCount      = llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
+        rhsBuff       = llvm::cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
+        rhsCount      = llvm::cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
         isConstantRHS = true;
       } else {
         if (rhsType->isReference()) {

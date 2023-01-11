@@ -39,7 +39,7 @@ public:
                          _name.range),
           name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
 
-    ~Member() final;
+    ~Member() final = default;
 
     Identifier            name;
     QatType*              type;

@@ -3622,7 +3622,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                     // FIXME - Implement single statement loop
                   }
                 } else {
-                  Error("Expected name for the tag for the loop", RangeAt(pCloseRes.value()));
+                  Error("Expected name for the tag for the loop", RangeAt(pClose + 1));
                 }
               } else {
                 // FIXME - Implement single statement loop

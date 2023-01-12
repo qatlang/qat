@@ -25,14 +25,15 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
   }
   auto* cond = condition->emit(ctx);
   cond->loadImplicitPointer(ctx->builder);
-  if (cond->getType()->isUnsignedInteger() ||
-      (cond->getType()->isReference() && cond->getType()->asReference()->getSubType()->isUnsignedInteger())) {
+  if (cond->getType()->isBool() ||
+      (cond->getType()->isReference() && cond->getType()->asReference()->getSubType()->isBool())) {
     auto* fun       = ctx->fn;
     auto* trueBlock = new IR::Block(fun, fun->getBlock());
     auto* condBlock = new IR::Block(fun, fun->getBlock());
     auto* restBlock = new IR::Block(fun, nullptr);
     auto* llCond    = cond->getLLVM();
     if (cond->getType()->isReference()) {
+      cond->loadImplicitPointer(ctx->builder);
       llCond = ctx->builder.CreateLoad(cond->getType()->asReference()->getSubType()->getLLVMType(), llCond);
     }
     ctx->builder.CreateCondBr(llCond, trueBlock->getBB(), restBlock->getBB());
@@ -55,8 +56,9 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
     ctx->builder.CreateCondBr(llCond, trueBlock->getBB(), restBlock->getBB());
     restBlock->setActive(ctx->builder);
   } else {
-    ctx->Error("The type of expression for the condition is not of unsigned "
-               "integer type",
+    ctx->Error("The expression used for the condition of " + ctx->highlightError("loop while") + " should be of " +
+                   ctx->highlightError("bool") +
+                   " type. Please check if you forgot to add a comparison, or made a mistake in the expression",
                condition->fileRange);
   }
   return nullptr;

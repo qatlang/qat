@@ -96,9 +96,11 @@ public:
   useit Identifier getName() const;
   useit utils::VisibilityInfo getVisibility() const;
   useit usize                 getTypeCount() const;
-  useit usize                 getVariantCount() const;
-  useit QatModule*            getModule() const;
-  useit CoreType*             fillTemplates(Vec<QatType*>& templates, IR::Context* ctx, FileRange range);
+  useit bool                  allTypesHaveDefaults() const;
+  useit Vec<IR::QatType*> getDefaults(IR::Context* ctx) const;
+  useit usize             getVariantCount() const;
+  useit QatModule*        getModule() const;
+  useit CoreType*         fillTemplates(Vec<QatType*>& templates, IR::Context* ctx, FileRange range);
 };
 
 } // namespace qat::IR

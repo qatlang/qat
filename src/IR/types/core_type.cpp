@@ -6,6 +6,7 @@
 #include "../logic.hpp"
 #include "../qat_module.hpp"
 #include "expanded_type.hpp"
+#include "qat_type.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include <utility>
@@ -31,12 +32,6 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, cons
 CoreType::~CoreType() {
   for (auto* mem : members) {
     delete mem;
-  }
-}
-
-void CoreType::createDestructor(FileRange fRange, llvm::LLVMContext& ctx) {
-  if (destructor == nullptr) {
-    destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
   }
 }
 
@@ -163,6 +158,23 @@ TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::TemplatedType*> _t
 Identifier TemplateCoreType::getName() const { return name; }
 
 utils::VisibilityInfo TemplateCoreType::getVisibility() const { return visibility; }
+
+Vec<IR::QatType*> TemplateCoreType::getDefaults(IR::Context* ctx) const {
+  Vec<IR::QatType*> result;
+  for (auto* typ : templates) {
+    result.push_back(typ->emit(ctx));
+  }
+  return result;
+}
+
+bool TemplateCoreType::allTypesHaveDefaults() const {
+  for (auto typ : templates) {
+    if (!typ->hasDefault()) {
+      return false;
+    }
+  }
+  return true;
+}
 
 usize TemplateCoreType::getTypeCount() const { return templates.size(); }
 

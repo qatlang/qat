@@ -234,6 +234,12 @@ bool ExpandedType::hasMove() const { return hasMoveConstructor() && hasMoveAssig
 
 bool ExpandedType::hasDestructor() const { return destructor != nullptr; }
 
+void ExpandedType::createDestructor(FileRange fRange, llvm::LLVMContext& ctx) {
+  if (destructor == nullptr) {
+    destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
+  }
+}
+
 IR::MemberFunction* ExpandedType::getDestructor() const { return destructor; }
 
 utils::VisibilityInfo ExpandedType::getVisibility() const { return visibility; }

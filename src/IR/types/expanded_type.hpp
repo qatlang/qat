@@ -76,6 +76,7 @@ public:
   useit bool            hasCopy() const;
   useit bool            hasMove() const;
   useit bool            hasDestructor() const;
+  void                  createDestructor(FileRange range, llvm::LLVMContext& ctx);
   useit MemberFunction* getDestructor() const;
   useit QatModule*      getParent();
 

@@ -69,8 +69,6 @@ public:
   useit Vec<Member*>& getMembers();
   useit bool          hasStatic(const String& name) const;
 
-  void createDestructor(FileRange fileRange, llvm::LLVMContext& ctx);
-
   useit Json     toJson() const override;
   useit TypeKind typeKind() const override;
   useit String   toString() const override;

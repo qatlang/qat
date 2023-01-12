@@ -3,14 +3,19 @@
 
 namespace qat::ast {
 
-TemplatedType::TemplatedType(String _id, String _name, bool isVariable, FileRange _fileRange)
-    : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)), name(std::move(_name)) {
+TemplatedType::TemplatedType(String _id, String _name, bool isVariable, Maybe<ast::QatType*> _defaultTy,
+                             FileRange _fileRange)
+    : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)), name(std::move(_name)), defaultTy(_defaultTy) {
   templates.push_back(this);
 }
 
 String TemplatedType::getID() const { return id; }
 
 String TemplatedType::getName() const { return name; }
+
+bool TemplatedType::hasDefault() const { return defaultTy.has_value(); }
+
+Maybe<ast::QatType*> TemplatedType::getDefault() const { return defaultTy; }
 
 void TemplatedType::setType(IR::QatType* typ) const {
   for (auto* temp : templates) {
@@ -20,7 +25,7 @@ void TemplatedType::setType(IR::QatType* typ) const {
   }
 }
 
-bool TemplatedType::isSet() const { return typeValue != nullptr; }
+bool TemplatedType::isSet() const { return (typeValue != nullptr) || (defaultTy.has_value()); }
 
 void TemplatedType::unsetType() const {
   for (auto* temp : templates) {
@@ -40,7 +45,11 @@ IR::QatType* TemplatedType::emit(IR::Context* ctx) {
   if (typeValue) {
     return typeValue;
   } else {
-    ctx->Error("No type provided for the template type", fileRange);
+    if (hasDefault()) {
+      return defaultTy.value()->emit(ctx);
+    } else {
+      ctx->Error("No type provided for the template type", fileRange);
+    }
   }
   return nullptr;
 }

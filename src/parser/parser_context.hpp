@@ -19,14 +19,14 @@ public:
   ParserContext();
 
   useit bool hasTemplate(const String& name) const;
-  void       addTemplate(ast::TemplatedType* templateType);
+  void       addTemplate(ast::GenericAbstractType* templateType);
   void       removeTemplate(const String& name);
-  useit ast::TemplatedType* getTemplate(const String& name);
-  useit ast::TemplatedType* duplicateTemplate(const String& name, bool isVariable, FileRange fileRange);
+  useit ast::GenericAbstractType* getTemplate(const String& name);
+  useit ast::GenericAbstractType* duplicateTemplate(const String& name, bool isVariable, FileRange fileRange);
 
 private:
   // All template typenames available in the current scope
-  Deque<ast::TemplatedType*> templates;
+  Deque<ast::GenericAbstractType*> templates;
 };
 
 } // namespace qat::parser

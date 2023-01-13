@@ -3,7 +3,7 @@
 #include "../IR/types/future.hpp"
 #include "../show.hpp"
 #include "sentence.hpp"
-#include "types/templated.hpp"
+#include "types/generic_abstract.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -17,7 +17,7 @@ namespace qat::ast {
 FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
                                      QatType* _returnType, bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType,
                                      String _callingConv, utils::VisibilityKind _visibility,
-                                     const FileRange& _fileRange, Vec<ast::TemplatedType*> _templates)
+                                     const FileRange& _fileRange, Vec<ast::GenericAbstractType*> _templates)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
       templates(std::move(_templates)), linkageType(_linkageType) {}
@@ -30,7 +30,7 @@ FunctionPrototype::~FunctionPrototype() {
 
 bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
 
-Vec<TemplatedType*> FunctionPrototype::getTemplates() const { return templates; }
+Vec<GenericAbstractType*> FunctionPrototype::getTemplates() const { return templates; }
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* mod = ctx->getMod();

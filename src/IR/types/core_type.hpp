@@ -79,16 +79,16 @@ public:
 
 class TemplateCoreType : public Uniq, public EntityOverview {
 private:
-  Identifier               name;
-  Vec<ast::TemplatedType*> templates;
-  ast::DefineCoreType*     defineCoreType;
-  QatModule*               parent;
-  utils::VisibilityInfo    visibility;
+  Identifier                     name;
+  Vec<ast::GenericAbstractType*> templates;
+  ast::DefineCoreType*           defineCoreType;
+  QatModule*                     parent;
+  utils::VisibilityInfo          visibility;
 
   mutable Vec<TemplateVariant<CoreType>> variants;
 
 public:
-  TemplateCoreType(Identifier name, Vec<ast::TemplatedType*> templates, ast::DefineCoreType* defineCoreType,
+  TemplateCoreType(Identifier name, Vec<ast::GenericAbstractType*> templates, ast::DefineCoreType* defineCoreType,
                    QatModule* parent, const utils::VisibilityInfo& visibInfo);
 
   ~TemplateCoreType() = default;

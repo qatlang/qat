@@ -1,6 +1,6 @@
 #include "./function.hpp"
 #include "../ast/function.hpp"
-#include "../ast/types/templated.hpp"
+#include "../ast/types/generic_abstract.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
 #include "./logic.hpp"
@@ -437,7 +437,7 @@ usize& Function::getCopiedCounter() { return copiedCounter; }
 
 usize& Function::getMovedCounter() { return movedCounter; }
 
-TemplateFunction::TemplateFunction(Identifier _name, Vec<ast::TemplatedType*> _templates,
+TemplateFunction::TemplateFunction(Identifier _name, Vec<ast::GenericAbstractType*> _templates,
                                    ast::FunctionDefinition* _functionDef, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",

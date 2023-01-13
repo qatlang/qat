@@ -1,6 +1,6 @@
 #include "core_type.hpp"
 #include "../../ast/define_core_type.hpp"
-#include "../../ast/types/templated.hpp"
+#include "../../ast/types/generic_abstract.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
 #include "../logic.hpp"
@@ -139,7 +139,7 @@ String CoreType::toString() const { return getFullName(); }
 
 Json CoreType::toJson() const { return Json()._("id", getID())._("name", name); }
 
-TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::TemplatedType*> _templates,
+TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _templates,
                                    ast::DefineCoreType* _defineCoreType, QatModule* _parent,
                                    const utils::VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",

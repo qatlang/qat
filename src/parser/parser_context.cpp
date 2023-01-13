@@ -1,5 +1,5 @@
 #include "./parser_context.hpp"
-#include "../ast/types/templated.hpp"
+#include "../ast/types/generic_abstract.hpp"
 
 namespace qat::parser {
 
@@ -14,7 +14,7 @@ bool ParserContext::hasTemplate(const String& name) const {
   return false;
 }
 
-void ParserContext::addTemplate(ast::TemplatedType* templateType) { templates.push_back(templateType); }
+void ParserContext::addTemplate(ast::GenericAbstractType* templateType) { templates.push_back(templateType); }
 
 void ParserContext::removeTemplate(const String& name) {
   for (auto temp = templates.begin(); temp != templates.end(); temp++) {
@@ -25,7 +25,7 @@ void ParserContext::removeTemplate(const String& name) {
   }
 }
 
-ast::TemplatedType* ParserContext::getTemplate(const String& name) {
+ast::GenericAbstractType* ParserContext::getTemplate(const String& name) {
   for (auto* temp : templates) {
     if (temp->getName() == name) {
       return temp;
@@ -34,10 +34,10 @@ ast::TemplatedType* ParserContext::getTemplate(const String& name) {
   return nullptr;
 }
 
-ast::TemplatedType* ParserContext::duplicateTemplate(const String& name, bool isVariable, FileRange fileRange) {
+ast::GenericAbstractType* ParserContext::duplicateTemplate(const String& name, bool isVariable, FileRange fileRange) {
   for (auto* temp : templates) {
     if (temp->getName() == name) {
-      return new ast::TemplatedType(temp->getID(), name, isVariable, fileRange);
+      return new ast::GenericAbstractType(temp->getID(), name, isVariable, temp->getDefault(), fileRange);
     }
   }
   return nullptr;

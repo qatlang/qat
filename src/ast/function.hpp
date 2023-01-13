@@ -5,7 +5,7 @@
 #include "./argument.hpp"
 #include "./node.hpp"
 #include "./sentence.hpp"
-#include "types/templated.hpp"
+#include "types/generic_abstract.hpp"
 #include <iostream>
 #include <string>
 
@@ -22,9 +22,9 @@ private:
   String                callingConv;
   utils::VisibilityKind visibility;
 
-  Vec<TemplatedType*>   templates;
-  IR::TemplateFunction* templateFn = nullptr;
-  mutable Maybe<String> variantName;
+  Vec<GenericAbstractType*> templates;
+  IR::TemplateFunction*     templateFn = nullptr;
+  mutable Maybe<String>     variantName;
 
   mutable llvm::GlobalValue::LinkageTypes linkageType;
   mutable IR::Function*                   function = nullptr;
@@ -33,13 +33,13 @@ public:
   FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
                     utils::VisibilityKind _visibility, const FileRange& _fileRange,
-                    Vec<TemplatedType*> _templates = {});
+                    Vec<GenericAbstractType*> _templates = {});
 
   useit bool isTemplate() const;
-  useit Vec<TemplatedType*> getTemplates() const;
-  void                      setVariantName(const String& value) const;
-  void                      unsetVariantName() const;
-  IR::Function*             createFunction(IR::Context* ctx) const;
+  useit Vec<GenericAbstractType*> getTemplates() const;
+  void                            setVariantName(const String& value) const;
+  void                            unsetVariantName() const;
+  IR::Function*                   createFunction(IR::Context* ctx) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

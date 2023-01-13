@@ -9,7 +9,7 @@
 #include "./types/qat_type.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
-#include "types/templated.hpp"
+#include "types/generic_abstract.hpp"
 #include <optional>
 #include <string>
 #include <vector>
@@ -64,14 +64,14 @@ private:
   mutable DestructorDefinition*  destructorDefinition = nullptr;
   utils::VisibilityKind          visibility;
 
-  Vec<ast::TemplatedType*>      templates;
-  mutable Maybe<String>         variantName;
-  mutable IR::CoreType*         coreType         = nullptr;
-  mutable IR::TemplateCoreType* templateCoreType = nullptr;
+  Vec<ast::GenericAbstractType*> templates;
+  mutable Maybe<String>          variantName;
+  mutable IR::CoreType*          coreType         = nullptr;
+  mutable IR::TemplateCoreType*  templateCoreType = nullptr;
 
 public:
   DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
-                 Vec<ast::TemplatedType*> _templates, bool _isPacked = false);
+                 Vec<ast::GenericAbstractType*> _templates, bool _isPacked = false);
 
   useit bool isTemplate() const;
 

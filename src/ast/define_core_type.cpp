@@ -4,7 +4,7 @@
 #include "../utils/identifier.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
-#include "types/templated.hpp"
+#include "types/generic_abstract.hpp"
 
 namespace qat::ast {
 
@@ -39,7 +39,7 @@ Json DefineCoreType::StaticMember::toJson() const {
 }
 
 DefineCoreType::DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
-                               Vec<ast::TemplatedType*> _templates, bool _isPacked)
+                               Vec<ast::GenericAbstractType*> _templates, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
       templates(std::move(_templates)) {
   SHOW("Created define core type " + name.value)

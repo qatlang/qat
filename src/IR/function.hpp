@@ -23,7 +23,7 @@
 
 namespace qat::ast {
 class FunctionDefinition;
-class TemplatedType;
+class GenericAbstractType;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -170,16 +170,16 @@ public:
 
 class TemplateFunction : public Uniq, public EntityOverview {
 private:
-  Identifier               name;
-  Vec<ast::TemplatedType*> templates;
-  ast::FunctionDefinition* functionDefinition;
-  QatModule*               parent;
-  utils::VisibilityInfo    visibInfo;
+  Identifier                     name;
+  Vec<ast::GenericAbstractType*> templates;
+  ast::FunctionDefinition*       functionDefinition;
+  QatModule*                     parent;
+  utils::VisibilityInfo          visibInfo;
 
   mutable Vec<TemplateVariant<Function>> variants;
 
 public:
-  TemplateFunction(Identifier name, Vec<ast::TemplatedType*> templates, ast::FunctionDefinition* functionDef,
+  TemplateFunction(Identifier name, Vec<ast::GenericAbstractType*> templates, ast::FunctionDefinition* functionDef,
                    QatModule* parent, const utils::VisibilityInfo& _visibInfo);
 
   ~TemplateFunction() = default;

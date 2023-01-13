@@ -7,11 +7,24 @@ namespace qat::ast {
 TupleType::TupleType(Vec<ast::QatType*> _types, bool _isPacked, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), types(std::move(_types)), isPacked(_isPacked) {}
 
+Maybe<usize> TupleType::getTypeSizeInBits(IR::Context* ctx) const {
+  usize total = 0;
+  for (auto* typ : types) {
+    auto typSiz = typ->getTypeSizeInBits(ctx);
+    if (typSiz.has_value()) {
+      total += typSiz.value();
+    } else {
+      return None;
+    }
+  }
+  return total;
+}
+
 IR::QatType* TupleType::emit(IR::Context* ctx) {
   Vec<IR::QatType*> irTypes;
   for (auto* type : types) {
     if (type->typeKind() == ast::TypeKind::Void) {
-      ctx->Error("Tuple member type cannot be `void`", fileRange);
+      ctx->Error("Tuple cannot contain a member of type " + ctx->highlightError("void"), fileRange);
     }
     irTypes.push_back(type->emit(ctx));
   }

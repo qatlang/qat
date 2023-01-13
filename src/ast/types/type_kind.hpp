@@ -13,7 +13,7 @@ enum class TypeKind {
   Void,  // Void type
   array, // Array of elements of QatType type
   named, // Struct type
-  templateNamed,
+  genericNamed,
   Float,           // Floating point number
   integer,         // Signed integer
   unsignedInteger, // Unsigned integer

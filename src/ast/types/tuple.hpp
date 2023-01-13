@@ -8,20 +8,15 @@
 
 namespace qat::ast {
 
-/**
- *  Tuples are product types. It is a defined fixed-length sequence of
- * other types
- *
- */
 class TupleType : public QatType {
 private:
   Vec<QatType*> types;
-
-  // Whether this tuple should be packed
-  bool isPacked;
+  bool          isPacked;
 
 public:
-  TupleType(const Vec<QatType*> _types, const bool _isPacked, const bool _variable, const FileRange _fileRange);
+  TupleType(Vec<QatType*> _types, bool _isPacked, bool _variable, FileRange _fileRange);
+
+  Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;

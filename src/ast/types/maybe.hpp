@@ -11,6 +11,7 @@ private:
 public:
   MaybeType(bool isVariable, QatType* subty, FileRange range);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final { return TypeKind::maybe; }
   useit Json         toJson() const final;

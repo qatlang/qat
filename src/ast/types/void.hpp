@@ -7,26 +7,16 @@
 
 namespace qat::ast {
 
-/**
- *  Void type in the language
- *
- */
 class VoidType : public QatType {
 public:
-  /**
-   *  Void type in the language
-   *
-   * @param _fileRange
-   */
-  VoidType(const bool _variable, const FileRange _fileRange);
+  VoidType(bool _variable, FileRange _fileRange);
 
-  IR::QatType* emit(IR::Context* ctx);
+  Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 
-  TypeKind typeKind() const;
-
-  Json toJson() const;
-
-  String toString() const;
+  useit IR::QatType* emit(IR::Context* ctx);
+  useit TypeKind     typeKind() const;
+  useit Json         toJson() const;
+  useit String       toString() const;
 };
 
 } // namespace qat::ast

@@ -3,7 +3,12 @@
 
 namespace qat::ast {
 
-VoidType::VoidType(const bool _variable, const FileRange _fileRange) : QatType(_variable, _fileRange) {}
+VoidType::VoidType(bool _variable, FileRange _fileRange) : QatType(_variable, std::move(_fileRange)) {}
+
+Maybe<usize> VoidType::getTypeSizeInBits(IR::Context* ctx) const {
+  return (
+      usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getVoidTy(ctx->llctx)));
+}
 
 IR::QatType* VoidType::emit(IR::Context* ctx) { return IR::VoidType::get(ctx->llctx); }
 

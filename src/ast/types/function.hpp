@@ -19,13 +19,10 @@ public:
 
   ArgumentType(String name, QatType* type);
 
-  bool hasName() const;
-
-  String getName() const;
-
-  QatType* getType();
-
-  Json toJson() const;
+  useit bool     hasName() const;
+  useit String   getName() const;
+  useit QatType* getType();
+  useit Json     toJson() const;
 };
 
 class FunctionType : public QatType {

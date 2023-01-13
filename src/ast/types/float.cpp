@@ -6,6 +6,29 @@ namespace qat::ast {
 FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), kind(_kind) {}
 
+Maybe<usize> FloatType::getTypeSizeInBits(IR::Context* ctx) const {
+  switch (kind) {
+    case IR::FloatTypeKind::_32:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getFloatTy(ctx->llctx));
+    case IR::FloatTypeKind::_64:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+          llvm::Type::getDoubleTy(ctx->llctx));
+    case IR::FloatTypeKind::_80:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+          llvm::Type::getX86_FP80Ty(ctx->llctx));
+    case IR::FloatTypeKind::_128:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getFP128Ty(ctx->llctx));
+    case IR::FloatTypeKind::_128PPC:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+          llvm::Type::getPPC_FP128Ty(ctx->llctx));
+    case IR::FloatTypeKind::_half:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getHalfTy(ctx->llctx));
+    case IR::FloatTypeKind::_brain:
+      return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+          llvm::Type::getBFloatTy(ctx->llctx));
+  }
+}
+
 IR::QatType* FloatType::emit(IR::Context* ctx) { return IR::FloatType::get(kind, ctx->llctx); }
 
 String FloatType::kindToString(IR::FloatTypeKind kind) {

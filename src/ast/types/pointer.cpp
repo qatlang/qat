@@ -1,6 +1,7 @@
 #include "./pointer.hpp"
 #include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
 
@@ -8,6 +9,14 @@ PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe
                          FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy),
       isMultiPtr(_isMultiPtr) {}
+
+Maybe<usize> PointerType::getTypeSizeInBits(IR::Context* ctx) const {
+  return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+      isMultiPtr
+          ? llvm::cast<llvm::Type>(llvm::StructType::create(
+                {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u), llvm::Type::getInt64Ty(ctx->llctx)}))
+          : llvm::cast<llvm::Type>(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u))));
+}
 
 IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatType*> ownerVal) const {
   switch (ownTyp) {

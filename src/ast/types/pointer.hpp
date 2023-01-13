@@ -30,6 +30,8 @@ public:
   PointerType(QatType* _type, bool _variable, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy, bool _isMultiPtr,
               FileRange _fileRange);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;

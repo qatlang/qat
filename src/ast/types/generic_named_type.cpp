@@ -1,16 +1,16 @@
-#include "./template_named_type.hpp"
+#include "./generic_named_type.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
 
 namespace qat::ast {
 
-TemplateNamedType::TemplateNamedType(u32 _relative, Vec<Identifier> _name, Vec<ast::QatType*> _types, bool _isVariable,
-                                     FileRange _fileRange)
+GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<ast::QatType*> _types, bool _isVariable,
+                                   FileRange _fileRange)
     : QatType(_isVariable, std::move(_fileRange)), relative(_relative), names(std::move(_name)),
       templateTypes(std::move(_types)) {}
 
-IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
-  SHOW("Template named type START")
+IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
+  SHOW("Generic named type START")
   auto* mod     = ctx->getMod();
   auto* oldMod  = mod;
   auto  reqInfo = ctx->getReqInfo();
@@ -51,7 +51,7 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
     auto* tempCoreTy = mod->getTemplateCoreType(entityName.value, ctx->getReqInfo());
     if (!tempCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
       auto fullName = Identifier::fullName(names);
-      ctx->Error("Template core type " + ctx->highlightError(fullName.value) + " is not accessible here",
+      ctx->Error("Generic core type " + ctx->highlightError(fullName.value) + " is not accessible here",
                  fullName.range);
     }
     tempCoreTy->addMention(entityName.range);
@@ -62,7 +62,7 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
         types = tempCoreTy->getDefaults(ctx);
       } else {
         ctx->Error(
-            "Not all abstracted types in this generic type have a default type value associated with it, and hence the type parameter list cannot be empty",
+            "Not all abstracted types in this generic type have a default type associated with it, and hence the type parameter list cannot be empty",
             fileRange);
       }
     } else if (tempCoreTy->getTypeCount() != templateTypes.size()) {
@@ -85,14 +85,14 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
     return tyRes;
   } else {
     // FIXME - Support static members of template types
-    ctx->Error("No template core type named " + ctx->highlightError(Identifier::fullName(names).value) +
+    ctx->Error("No generic type named " + ctx->highlightError(Identifier::fullName(names).value) +
                    " found in the current scope",
                fileRange);
   }
   return nullptr;
 }
 
-Json TemplateNamedType::toJson() const {
+Json GenericNamedType::toJson() const {
   Vec<JsonValue> nameJs;
   for (auto const& nam : names) {
     nameJs.push_back(JsonValue(nam));
@@ -101,10 +101,10 @@ Json TemplateNamedType::toJson() const {
   for (auto* typ : templateTypes) {
     typs.push_back(typ->toJson());
   }
-  return Json()._("typeKind", "templateNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
+  return Json()._("typeKind", "genericNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
 }
 
-String TemplateNamedType::toString() const {
+String GenericNamedType::toString() const {
   auto result = (isVariable() ? "var " : "") + Identifier::fullName(names).value + "'<";
   for (usize i = 0; i < templateTypes.size(); i++) {
     result += templateTypes.at(i)->toString();

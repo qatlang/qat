@@ -16,22 +16,24 @@ namespace qat::IR {
  */
 class TupleType : public QatType {
 private:
-  Vec<QatType *> subTypes;
-  bool           isPacked;
+  Vec<QatType*> subTypes;
+  bool          isPacked;
 
-  TupleType(Vec<QatType *> _types, bool _isPacked, llvm::LLVMContext &ctx);
+  TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ctx);
 
 public:
-  useit static TupleType *get(Vec<QatType *> types, bool isPacked,
-                              llvm::LLVMContext &ctx);
+  useit static TupleType* get(Vec<QatType*> types, bool isPacked, llvm::LLVMContext& ctx);
 
-  useit Vec<QatType *> getSubTypes() const;
-  useit QatType       *getSubtypeAt(u64 index);
-  useit u64            getSubTypeCount() const;
-  useit bool           isPackedTuple() const;
-  useit TypeKind       typeKind() const override;
-  useit String         toString() const override;
-  useit Json           toJson() const override;
+  useit bool isDestructible() const final;
+  void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+
+  useit Vec<QatType*> getSubTypes() const;
+  useit QatType*      getSubtypeAt(u64 index);
+  useit u64           getSubTypeCount() const;
+  useit bool          isPackedTuple() const;
+  useit TypeKind      typeKind() const override;
+  useit String        toString() const override;
+  useit Json          toJson() const override;
 };
 
 } // namespace qat::IR

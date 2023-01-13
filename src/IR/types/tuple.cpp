@@ -1,5 +1,7 @@
 #include "./tuple.hpp"
 #include "../../memory_tracker.hpp"
+#include "./pointer.hpp"
+#include "reference.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
@@ -12,6 +14,34 @@ TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ct
     subTypes.push_back(typ->getLLVMType());
   }
   llvmType = llvm::StructType::get(ctx, subTypes, isPacked);
+}
+
+bool TupleType::isDestructible() const {
+  for (auto* sub : subTypes) {
+    if (sub->isDestructible()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void TupleType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+  if (isDestructible() && !vals.empty()) {
+    auto* instIR = vals.front();
+    if (instIR->isReference()) {
+      instIR->loadImplicitPointer(ctx->builder);
+    }
+    for (usize i = 0; i < subTypes.size(); i++) {
+      auto* subTy = subTypes.at(i);
+      if (subTy->isDestructible() && !subTy->isPointer()) {
+        subTy->destroyValue(
+            ctx,
+            {new IR::Value(ctx->builder.CreateStructGEP(llvmType, instIR->getLLVM(), i),
+                           IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
+            fun);
+      }
+    }
+  }
 }
 
 TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMContext& ctx) {

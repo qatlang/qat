@@ -7,6 +7,11 @@ namespace qat::ast {
 IntegerType::IntegerType(u32 _bitWidth, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth) {}
 
+Maybe<usize> IntegerType::getTypeSizeInBits(IR::Context* ctx) const {
+  return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+      llvm::Type::getIntNTy(ctx->llctx, bitWidth)));
+}
+
 IR::QatType* IntegerType::emit(IR::Context* ctx) {
   if (ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
     return IR::IntegerType::get(bitWidth, ctx->llctx);

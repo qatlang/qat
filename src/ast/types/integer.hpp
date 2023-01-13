@@ -13,6 +13,8 @@ private:
 public:
   IntegerType(u32 _bitWidth, bool _variable, FileRange _fileRange);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+
   IR::QatType* emit(IR::Context* ctx);
   TypeKind     typeKind() const;
   bool         isBitWidth(const u32 width) const;

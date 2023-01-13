@@ -12,6 +12,8 @@ private:
 public:
   FutureType(bool isVariable, ast::QatType* subType, FileRange fileRange);
 
+  Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;

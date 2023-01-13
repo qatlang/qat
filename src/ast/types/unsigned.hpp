@@ -14,6 +14,8 @@ private:
 public:
   UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+
   useit IR::QatType* emit(IR::Context* ctx);
   useit TypeKind     typeKind() const final;
   useit bool         isBitWidth(u32 width) const;

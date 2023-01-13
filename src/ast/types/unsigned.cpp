@@ -6,6 +6,11 @@ namespace qat::ast {
 UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth), isBool(_isBool) {}
 
+Maybe<usize> UnsignedType::getTypeSizeInBits(IR::Context* ctx) const {
+  return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+      llvm::Type::getIntNTy(ctx->llctx, bitWidth)));
+}
+
 IR::QatType* UnsignedType::emit(IR::Context* ctx) {
   if (ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
     if (isBool) {

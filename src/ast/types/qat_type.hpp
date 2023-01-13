@@ -9,11 +9,11 @@
 
 namespace qat::ast {
 
-class TemplatedType;
+class GenericAbstractType;
 
 class QatType {
 protected:
-  static Vec<TemplatedType*> templates;
+  static Vec<GenericAbstractType*> templates;
 
 private:
   bool                 variable;
@@ -26,6 +26,7 @@ public:
   virtual ~QatType() = default;
   useit bool                 isConstant() const { return !variable; }
   useit bool                 isVariable() const { return variable; }
+  useit virtual Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const;
   useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
   useit virtual TypeKind     typeKind() const       = 0;
   useit virtual Json         toJson() const         = 0;

@@ -6,7 +6,9 @@ QatType::QatType(bool _variable, FileRange _fileRange) : variable(_variable), fi
   allTypes.push_back(this);
 }
 
-Vec<TemplatedType*> QatType::templates = {};
+Maybe<usize> QatType::getTypeSizeInBits(IR::Context* ctx) const { return None; }
+
+Vec<GenericAbstractType*> QatType::templates = {};
 
 Vec<QatType*> QatType::allTypes = {};
 

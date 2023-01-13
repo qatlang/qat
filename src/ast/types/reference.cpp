@@ -1,10 +1,16 @@
 #include "./reference.hpp"
 #include "../../IR/types/reference.hpp"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
 
 ReferenceType::ReferenceType(QatType* _type, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), type(_type) {}
+
+Maybe<usize> ReferenceType::getTypeSizeInBits(IR::Context* ctx) const {
+  return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
+      llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u)));
+}
 
 IR::QatType* ReferenceType::emit(IR::Context* ctx) {
   auto* typEmit = type->emit(ctx);

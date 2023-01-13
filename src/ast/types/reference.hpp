@@ -6,23 +6,14 @@
 
 namespace qat::ast {
 
-/**
- *  A reference type in the language
- *
- */
 class ReferenceType : public QatType {
 private:
   QatType* type;
 
 public:
-  /**
-   *  Create a reference to the provided datatype
-   *
-   * @param _type Datatype to which the pointer is pointing to
-   * @param _fileRange
-   */
   ReferenceType(QatType* _type, bool _variable, FileRange _fileRange);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;

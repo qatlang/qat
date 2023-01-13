@@ -56,16 +56,25 @@ IR::QatType* TemplateNamedType::emit(IR::Context* ctx) {
     }
     tempCoreTy->addMention(entityName.range);
     ctx->mod = tempCoreTy->getModule();
-    if (tempCoreTy->getTypeCount() != templateTypes.size()) {
-      ctx->Error("Template core type " + ctx->highlightError(tempCoreTy->getName().value) + " has " +
+    Vec<IR::QatType*> types;
+    if (templateTypes.empty()) {
+      if (tempCoreTy->allTypesHaveDefaults()) {
+        types = tempCoreTy->getDefaults(ctx);
+      } else {
+        ctx->Error(
+            "Not all abstracted types in this generic type have a default type value associated with it, and hence the type parameter list cannot be empty",
+            fileRange);
+      }
+    } else if (tempCoreTy->getTypeCount() != templateTypes.size()) {
+      ctx->Error("Generic core type " + ctx->highlightError(tempCoreTy->getName().value) + " has " +
                      ctx->highlightError(std::to_string(tempCoreTy->getTypeCount())) + " type parameters. But " +
                      ((tempCoreTy->getTypeCount() > templateTypes.size()) ? "only " : "") +
                      ctx->highlightError(std::to_string(templateTypes.size())) + " types were provided",
                  fileRange);
-    }
-    Vec<IR::QatType*> types;
-    for (auto* typ : templateTypes) {
-      types.push_back(typ->emit(ctx));
+    } else {
+      for (auto* typ : templateTypes) {
+        types.push_back(typ->emit(ctx));
+      }
     }
     auto* tyRes = tempCoreTy->fillTemplates(types, ctx, fileRange);
     ctx->fn     = fun;

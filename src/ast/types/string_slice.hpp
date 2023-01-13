@@ -10,6 +10,7 @@ class StringSliceType : public QatType {
 public:
   StringSliceType(bool _variable, FileRange _fileRange);
 
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;
   useit Json         toJson() const final;

@@ -12,35 +12,17 @@ namespace qat::ast {
  */
 class ArrayType : public QatType {
 private:
-  /**
-   *  Type of the element of the array
-   *
-   */
-  QatType* element_type;
-
-  /**
-   *  The length of the array (number of items in it)
-   *
-   */
-  uint64_t length;
+  QatType* elementType;
+  u64      length;
 
 public:
-  /**
-   *  ArrayType represents an array of elements of the provided type
-   *
-   * @param _element_type
-   * @param _length
-   * @param _fileRange
-   */
-  ArrayType(QatType* _element_type, const uint64_t _length, const bool _variable, const FileRange _fileRange);
+  ArrayType(QatType* _element_type, uint64_t _length, bool _variable, FileRange _fileRange);
 
-  IR::QatType* emit(IR::Context* ctx);
-
-  TypeKind typeKind() const;
-
-  Json toJson() const;
-
-  String toString() const;
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+  useit IR::QatType* emit(IR::Context* ctx);
+  useit TypeKind     typeKind() const;
+  useit Json         toJson() const;
+  useit String       toString() const;
 };
 
 } // namespace qat::ast

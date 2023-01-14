@@ -17,10 +17,10 @@ namespace qat::ast {
 FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
                                      QatType* _returnType, bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType,
                                      String _callingConv, utils::VisibilityKind _visibility,
-                                     const FileRange& _fileRange, Vec<ast::GenericAbstractType*> _templates)
+                                     const FileRange& _fileRange, Vec<ast::GenericAbstractType*> _generics)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
-      templates(std::move(_templates)), linkageType(_linkageType) {}
+      generics(std::move(_generics)), linkageType(_linkageType) {}
 
 FunctionPrototype::~FunctionPrototype() {
   for (auto* arg : arguments) {
@@ -28,19 +28,19 @@ FunctionPrototype::~FunctionPrototype() {
   }
 }
 
-bool FunctionPrototype::isTemplate() const { return !templates.empty(); }
+bool FunctionPrototype::isGeneric() const { return !generics.empty(); }
 
-Vec<GenericAbstractType*> FunctionPrototype::getTemplates() const { return templates; }
+Vec<GenericAbstractType*> FunctionPrototype::getGenerics() const { return generics; }
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, isTemplate() ? "generic function" : "function",
-                 isTemplate() ? Maybe<String>(templateFn->getID()) : None);
+  ctx->nameCheck(name, isGeneric() ? "generic function" : "function",
+                 isGeneric() ? Maybe<String>(genericFn->getID()) : None);
   Vec<IR::QatType*> generatedTypes;
   bool              isMainFn = false;
   String            fnName   = name.value;
   SHOW("Creating function")
-  if (templateFn) {
+  if (genericFn) {
     fnName = variantName.value();
   }
   if ((fnName == "main") && (mod->getFullNameWithChild("main") == "main")) {
@@ -126,14 +126,14 @@ void FunctionPrototype::setVariantName(const String& value) const { variantName 
 void FunctionPrototype::unsetVariantName() const { variantName = None; }
 
 void FunctionPrototype::define(IR::Context* ctx) {
-  if (!isTemplate()) {
+  if (!isGeneric()) {
     function = createFunction(ctx);
   }
 }
 
 // NOLINTNEXTLINE(misc-unused-parameters)
 IR::Value* FunctionPrototype::emit(IR::Context* ctx) {
-  if (!isTemplate()) {
+  if (!isGeneric()) {
     return function;
   } else {
     function = createFunction(ctx);
@@ -161,19 +161,19 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Senten
     : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void FunctionDefinition::define(IR::Context* ctx) {
-  if (!prototype->isTemplate()) {
+  if (!prototype->isGeneric()) {
     prototype->define(ctx);
   } else {
-    auto* tempFn          = new IR::TemplateFunction(prototype->name, prototype->templates, this, ctx->getMod(),
-                                                     ctx->getVisibInfo(prototype->visibility));
-    prototype->templateFn = tempFn;
+    auto* tempFn         = new IR::GenericFunction(prototype->name, prototype->generics, this, ctx->getMod(),
+                                                   ctx->getVisibInfo(prototype->visibility));
+    prototype->genericFn = tempFn;
   }
 }
 
-bool FunctionDefinition::isTemplate() const { return prototype->isTemplate(); }
+bool FunctionDefinition::isGeneric() const { return prototype->isGeneric(); }
 
 IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
-  if (prototype->isTemplate()) {
+  if (prototype->isGeneric()) {
     (void)prototype->emit(ctx);
   }
   SHOW("Getting IR function from prototype")

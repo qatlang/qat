@@ -21,6 +21,7 @@
 #include "../ast/expressions/dereference.hpp"
 #include "../ast/expressions/entity.hpp"
 #include "../ast/expressions/function_call.hpp"
+#include "../ast/expressions/generic_entity.hpp"
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/loop_index.hpp"
@@ -33,7 +34,6 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
 #include "../ast/expressions/self_member.hpp"
-#include "../ast/expressions/template_entity.hpp"
 #include "../ast/expressions/ternary.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
@@ -414,15 +414,15 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto symRes = parseSymbol(ctx, i);
         auto name   = symRes.first.name;
         i           = symRes.second;
-        if ((name.size() == 1u) && preCtx.hasTemplate(name.front().value)) {
-          SHOW("Has templates for: " << name.front().value)
-          auto foundTemplate = preCtx.getTemplate(name.front().value);
-          cacheTy = new ast::GenericAbstractType(foundTemplate->getTemplateID(), name.front().value, getVariability(),
-                                                 foundTemplate->getDefault(), name.front().range);
+        if ((name.size() == 1u) && preCtx.hasNamedAbstractGeneric(name.front().value)) {
+          SHOW("Has generic abstract for: " << name.front().value)
+          auto foundGeneric = preCtx.getNamedAbstractGeneric(name.front().value);
+          cacheTy = new ast::GenericAbstractType(foundGeneric->getGenericID(), name.front().value, getVariability(),
+                                                 foundGeneric->getDefault(), name.front().range);
           break;
         } else {
-          if (isNext(TokenType::templateTypeStart, i)) {
-            auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+          if (isNext(TokenType::genericTypeStart, i)) {
+            auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
             if (endRes.has_value()) {
               auto end = endRes.value();
               if (endRes.value() == i + 2) {
@@ -436,7 +436,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
               }
               break;
             } else {
-              Error("Expected end for template type specification", RangeAt(i + 1));
+              Error("Expected end for generic type specification", RangeAt(i + 1));
             }
           } else {
             cacheTy = new ast::NamedType(symRes.first.relative, name, getVariability(), symRes.first.fileRange);
@@ -559,7 +559,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
   return {cacheTy.value(), i - 1};
 }
 
-Vec<ast::GenericAbstractType*> Parser::parseTemplateTypes(ParserContext& preCtx, usize from, usize upto) {
+Vec<ast::GenericAbstractType*> Parser::parseGenericAbstractTypes(ParserContext& preCtx, usize from, usize upto) {
   using lexer::TokenType;
 
   Vec<ast::GenericAbstractType*> result;
@@ -577,7 +577,7 @@ Vec<ast::GenericAbstractType*> Parser::parseTemplateTypes(ParserContext& preCtx,
       if (isNext(TokenType::separator, i)) {
         i++;
         continue;
-      } else if (isNext(TokenType::templateTypeEnd, i)) {
+      } else if (isNext(TokenType::genericTypeEnd, i)) {
         break;
       } else {
         Error("Unexpected token after identifier in generic type specification", token.fileRange);
@@ -788,25 +788,25 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
       case TokenType::Type: {
-        // TODO - Consider other possible tokens and template types instead of
+        // TODO - Consider other possible tokens and generic types instead of
         // just identifiers
         if (isNext(TokenType::identifier, i)) {
           auto                           name = IdentifierAt(i + 1);
-          Vec<ast::GenericAbstractType*> templates;
+          Vec<ast::GenericAbstractType*> genericList;
           auto                           ctx = ParserContext();
           i++;
-          if (isNext(TokenType::templateTypeStart, i)) {
-            auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+          if (isNext(TokenType::genericTypeStart, i)) {
+            auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
             if (endRes.has_value()) {
-              auto end  = endRes.value();
-              templates = parseTemplateTypes(preCtx, i + 1, end);
-              for (auto* temp : templates) {
-                SHOW("Template type parsed for core type " << temp->getName());
-                ctx.addTemplate(temp);
+              auto end    = endRes.value();
+              genericList = parseGenericAbstractTypes(preCtx, i + 1, end);
+              for (auto* temp : genericList) {
+                SHOW("Generic type parsed for core type " << temp->getName());
+                ctx.addAbstractGeneric(temp);
               }
               i = end;
             } else {
-              Error("Expected end for template specification", RangeAt(i + 1));
+              Error("Expected end for generic type specification", RangeAt(i + 1));
             }
           }
           if (isNext(TokenType::assignment, i)) {
@@ -823,8 +823,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           } else if (isNext(TokenType::curlybraceOpen, i)) {
             auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
             if (bClose.has_value()) {
-              auto* tRes =
-                  new ast::DefineCoreType(name, getVisibility(), {token.fileRange, RangeAt(bClose.value())}, templates);
+              auto* tRes = new ast::DefineCoreType(name, getVisibility(), {token.fileRange, RangeAt(bClose.value())},
+                                                   genericList);
               parseCoreType(ctx, i + 1, bClose.value(), tRes);
               result.push_back(tRes);
               i = bClose.value();
@@ -900,27 +900,27 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         auto start   = i;
         auto sym_res = parseSymbol(ctx, i);
         i            = sym_res.second;
-        Vec<ast::GenericAbstractType*> templates;
+        Vec<ast::GenericAbstractType*> genericList;
         auto                           ctx = ParserContext();
-        if (isNext(TokenType::templateTypeStart, i)) {
-          auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
           if (endRes.has_value()) {
-            auto end  = endRes.value();
-            templates = parseTemplateTypes(preCtx, i + 1, end);
-            for (auto* temp : templates) {
-              ctx.addTemplate(temp);
+            auto end    = endRes.value();
+            genericList = parseGenericAbstractTypes(preCtx, i + 1, end);
+            for (auto* temp : genericList) {
+              ctx.addAbstractGeneric(temp);
             }
             if (isNext(TokenType::givenTypeSeparator, end) || isNext(TokenType::parenthesisOpen, end)) {
               i = end;
             } else {
-              // FIXME - Template types in global declaration
+              // FIXME - Generic types in global declaration
               if (isNext(TokenType::colon, end)) {
                 if (isNext(TokenType::identifier, end + 1)) {
                 }
               }
             }
           } else {
-            Error("Expected end for template specification", RangeAt(i + 1));
+            Error("Expected end for generic type specification", RangeAt(i + 1));
           }
         }
         if (isNext(TokenType::parenthesisOpen, i) || isNext(TokenType::givenTypeSeparator, i)) {
@@ -959,7 +959,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             auto* prototype = new ast::FunctionPrototype(
                 IdentifierAt(start), argResult.first, argResult.second, retType, IsAsync,
                 llvm::GlobalValue::WeakAnyLinkage, callConv, getVisibility(),
-                RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), templates);
+                RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), genericList);
             SHOW("Prototype created")
             if (isNext(TokenType::bracketOpen, i)) {
               auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
@@ -991,7 +991,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
       case TokenType::givenTypeSeparator: {
-        // TODO - Add support for template types for functions
+        // TODO - Add support for generic types for functions
         if (!hasCachedSymbol()) {
           Error("Function name not provided", token.fileRange);
         }
@@ -2201,8 +2201,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::none: {
         ast::QatType* noneType = nullptr;
         auto          range    = RangeAt(i);
-        if (isNext(TokenType::templateTypeStart, i)) {
-          auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
           if (endRes.has_value()) {
             auto typeRes = parseType(preCtx, i + 1, endRes.value());
             if (typeRes.second + 1 != endRes.value()) {
@@ -2276,14 +2276,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         break;
       }
-      case TokenType::templateTypeStart: {
-        SHOW("Template type start: " << i)
+      case TokenType::genericTypeStart: {
+        SHOW("Generic type start: " << i)
         if (cachedSymbol.has_value()) {
           SHOW("Cached symbol: " << cachedSymbol.value().name.front().value)
-          auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i, false);
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
           if (endRes.has_value()) {
             auto end = endRes.value();
-            SHOW("Template type end: " << end)
+            SHOW("Generic type end: " << end)
             Vec<ast::QatType*> types;
             if (isPrimaryWithin(TokenType::separator, i, end)) {
               auto positions = primaryPositionsWithin(TokenType::separator, i, end);
@@ -2332,18 +2332,16 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 Error("Expected ( to start the constructor call", RangeAt(end + 1));
               }
             } else {
-              cachedExpressions.push_back(new ast::TemplateEntity(cachedSymbol->relative, cachedSymbol->name, types,
-                                                                  {cachedSymbol->fileRange, RangeAt(end)}));
+              cachedExpressions.push_back(new ast::GenericEntity(cachedSymbol->relative, cachedSymbol->name, types,
+                                                                 {cachedSymbol->fileRange, RangeAt(end)}));
               i            = end;
               cachedSymbol = None;
             }
           } else {
-            Error("Expected end for template type specification", RangeAt(i));
+            Error("Expected end for generic type specification", RangeAt(i));
           }
         } else {
-          Error("Expected identifier or symbol before template type "
-                "specification",
-                RangeAt(i));
+          Error("Expected identifier or symbol before generic type specification", RangeAt(i));
         }
         break;
       }
@@ -2365,8 +2363,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         if (isNext(TokenType::child, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
             if (ValueAt(i + 2) == "get") {
-              if (isNext(TokenType::templateTypeStart, i + 2)) {
-                auto tEndRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 3, false);
+              if (isNext(TokenType::genericTypeStart, i + 2)) {
+                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3, false);
                 if (tEndRes.has_value()) {
                   auto  tEnd    = tEndRes.value();
                   auto  typeRes = parseType(preCtx, i + 3, tEnd);
@@ -2392,11 +2390,10 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                     break;
                   }
                 } else {
-                  Error("Expected end for template type specification", RangeAt(i + 3));
+                  Error("Expected end for generic type specification", RangeAt(i + 3));
                 }
               } else {
-                Error("Expected template type specification for the type to "
-                      "allocate the memory for",
+                Error("Expected generic type specification for the type to allocate the memory for",
                       RangeSpan(i, i + 2));
               }
             } else if (ValueAt(i + 2) == "put") {
@@ -2417,8 +2414,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               }
             } else if (ValueAt(i + 2) == "grow") {
               // FIXME - Maybe provided type is not necessary
-              if (isNext(TokenType::templateTypeStart, i + 2)) {
-                auto tEndRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 3, false);
+              if (isNext(TokenType::genericTypeStart, i + 2)) {
+                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3, false);
                 if (tEndRes.has_value()) {
                   auto  tEnd = tEndRes.value();
                   auto* type = parseType(preCtx, i + 3, tEnd).first;
@@ -2444,7 +2441,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                     Error("Expected arguments for heap'grow", RangeSpan(i, tEnd));
                   }
                 } else {
-                  Error("Expected end for the template type specification", RangeAt(i + 3));
+                  Error("Expected end for the generic type specification", RangeAt(i + 3));
                 }
               }
             } else {
@@ -2695,8 +2692,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         cachedSymbol       = symRes.first;
         i                  = symRes.second;
         ast::QatType* type = nullptr;
-        if (isNext(TokenType::templateTypeStart, i)) {
-          auto tEndRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
           if (tEndRes.has_value()) {
             auto               tEnd = tEndRes.value();
             Vec<ast::QatType*> types;
@@ -2707,7 +2704,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                                              cachedSymbol->fileRange);
             i    = tEnd;
           } else {
-            Error("Expected end for the template type specification", RangeAt(i + 1));
+            Error("Expected end for the generic type specification", RangeAt(i + 1));
           }
         } else {
           type = new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange);
@@ -2924,7 +2921,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           auto* exp = cachedExpressions.back();
           cachedExpressions.pop_back();
           if (isNext(TokenType::identifier, i)) {
-            // TODO - Support template member function calls
+            // TODO - Support generic member function calls
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
               auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
               if (pCloseRes.has_value()) {
@@ -3281,8 +3278,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           auto symRes = parseSymbol(ctx, i);
           cacheSymbol = symRes.first;
           i           = symRes.second;
-          if (isNext(TokenType::templateTypeStart, i)) {
-            auto tEndRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i + 1, false);
+          if (isNext(TokenType::genericTypeStart, i)) {
+            auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
             if (tEndRes.has_value()) {
               auto               tEnd = tEndRes.value();
               Vec<ast::QatType*> types;
@@ -3298,7 +3295,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               //   i           = expRes.second;
               break;
             } else {
-              Error("Expected end for template type specification", RangeAt(i + 1));
+              Error("Expected end for generic type specification", RangeAt(i + 1));
             }
           } else {
             if (isNext(TokenType::identifier, i)) {
@@ -3907,8 +3904,8 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate, cons
       } else {
         return None;
       }
-    } else if (tok.type == TokenType::templateTypeStart) {
-      auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i, false);
+    } else if (tok.type == TokenType::genericTypeStart) {
+      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
         i = endRes.value();
       } else {
@@ -3947,8 +3944,8 @@ Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate, usize from
       } else {
         return result;
       }
-    } else if (tok.type == TokenType::templateTypeStart) {
-      auto endRes = getPairEnd(TokenType::templateTypeStart, TokenType::templateTypeEnd, i, false);
+    } else if (tok.type == TokenType::genericTypeStart) {
+      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
       if (endRes.has_value() && (endRes.value() < upto)) {
         i = endRes.value();
       } else {

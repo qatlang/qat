@@ -10,10 +10,10 @@ class GenericNamedType : public QatType {
 private:
   u32             relative;
   Vec<Identifier> names;
-  Vec<QatType*>   templateTypes;
+  Vec<QatType*>   genericTypes;
 
 public:
-  GenericNamedType(u32 _relative, Vec<Identifier> names, Vec<QatType*> _templateTypes, bool isVariable,
+  GenericNamedType(u32 _relative, Vec<Identifier> names, Vec<QatType*> _genericTypes, bool isVariable,
                    FileRange _fileRange);
 
   useit IR::QatType* emit(IR::Context* ctx) final;

@@ -28,8 +28,8 @@ public:
 
   useit bool isSet() const;
 
-  useit String getTemplateID() const;
-  useit String getTemplateName() const;
+  useit String getGenericID() const;
+  useit String getGenericName() const;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit TypeKind     typeKind() const final;

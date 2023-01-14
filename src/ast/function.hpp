@@ -22,8 +22,8 @@ private:
   String                callingConv;
   utils::VisibilityKind visibility;
 
-  Vec<GenericAbstractType*> templates;
-  IR::TemplateFunction*     templateFn = nullptr;
+  Vec<GenericAbstractType*> generics;
+  IR::GenericFunction*      genericFn = nullptr;
   mutable Maybe<String>     variantName;
 
   mutable llvm::GlobalValue::LinkageTypes linkageType;
@@ -33,10 +33,10 @@ public:
   FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
                     llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv,
                     utils::VisibilityKind _visibility, const FileRange& _fileRange,
-                    Vec<GenericAbstractType*> _templates = {});
+                    Vec<GenericAbstractType*> _generics = {});
 
-  useit bool isTemplate() const;
-  useit Vec<GenericAbstractType*> getTemplates() const;
+  useit bool isGeneric() const;
+  useit Vec<GenericAbstractType*> getGenerics() const;
   void                            setVariantName(const String& value) const;
   void                            unsetVariantName() const;
   IR::Function*                   createFunction(IR::Context* ctx) const;
@@ -57,7 +57,7 @@ public:
 
   FunctionPrototype* prototype;
 
-  useit bool isTemplate() const;
+  useit bool isGeneric() const;
   void       define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::functionDefinition; }

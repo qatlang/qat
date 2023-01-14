@@ -39,18 +39,18 @@ Json DefineCoreType::StaticMember::toJson() const {
 }
 
 DefineCoreType::DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
-                               Vec<ast::GenericAbstractType*> _templates, bool _isPacked)
+                               Vec<ast::GenericAbstractType*> _generics, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
-      templates(std::move(_templates)) {
+      generics(std::move(_generics)) {
   SHOW("Created define core type " + name.value)
 }
 
-bool DefineCoreType::isTemplate() const { return !(templates.empty()); }
+bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, isTemplate() ? "generic core type" : "core type",
-                 isTemplate() ? Maybe<String>(templateCoreType->getID()) : None);
+  ctx->nameCheck(name, isGeneric() ? "generic core type" : "core type",
+                 isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
   SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
   bool                       needsDestructor = false;
   Vec<IR::CoreType::Member*> mems;
@@ -66,7 +66,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   }
   SHOW("Emitted IR for all members")
   auto cTyName = name;
-  if (isTemplate()) {
+  if (isGeneric()) {
     cTyName = Identifier(variantName.value(), name.range);
   }
   coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
@@ -144,12 +144,12 @@ IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   SHOW("Defining type")
-  if (!isTemplate()) {
+  if (!isGeneric()) {
     createType(ctx);
   } else {
-    SHOW("Creating template core type: " << name.value)
-    templateCoreType = new IR::TemplateCoreType(name, templates, this, ctx->getMod(), ctx->getVisibInfo(visibility));
-    SHOW("Created templated core type")
+    SHOW("Creating generic core type: " << name.value)
+    genericCoreType = new IR::GenericCoreType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibility));
+    SHOW("Created generic core type")
   }
 }
 
@@ -158,7 +158,7 @@ void DefineCoreType::setVariantName(const String& name) const { variantName = na
 void DefineCoreType::unsetVariantName() const { variantName = None; }
 
 void DefineCoreType::define(IR::Context* ctx) {
-  if (isTemplate()) {
+  if (isGeneric()) {
     createType(ctx);
   }
   if (defaultConstructor) {

@@ -90,7 +90,7 @@ public:
   useit Maybe<usize> getPairEnd(lexer::TokenType startType, lexer::TokenType endType, usize current, bool respectScope);
   useit Maybe<usize> firstPrimaryPosition(lexer::TokenType candidate, usize from);
   useit Vec<usize> primaryPositionsWithin(lexer::TokenType candidate, usize from, usize upto);
-  useit Vec<ast::GenericAbstractType*> parseTemplateTypes(ParserContext& preCtx, usize from, usize upto);
+  useit Vec<ast::GenericAbstractType*> parseGenericAbstractTypes(ParserContext& preCtx, usize from, usize upto);
   useit Vec<ast::QatType*> parseSeparatedTypes(ParserContext& prev_ctx, usize from, usize upto);
   useit ast::PlainInitialiser* parsePlainInitialiser(ParserContext& ctx, ast::QatType* type, usize from, usize upto);
 };

@@ -64,16 +64,16 @@ private:
   mutable DestructorDefinition*  destructorDefinition = nullptr;
   utils::VisibilityKind          visibility;
 
-  Vec<ast::GenericAbstractType*> templates;
+  Vec<ast::GenericAbstractType*> generics;
   mutable Maybe<String>          variantName;
-  mutable IR::CoreType*          coreType         = nullptr;
-  mutable IR::TemplateCoreType*  templateCoreType = nullptr;
+  mutable IR::CoreType*          coreType        = nullptr;
+  mutable IR::GenericCoreType*   genericCoreType = nullptr;
 
 public:
   DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
-                 Vec<ast::GenericAbstractType*> _templates, bool _isPacked = false);
+                 Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
 
-  useit bool isTemplate() const;
+  useit bool isGeneric() const;
 
   void       addMember(Member* mem);
   void       addStaticMember(StaticMember* stm);

@@ -79,8 +79,8 @@ class QatModule final : public Uniq, public EntityOverview {
   friend class ast::Box;
   friend class ast::ModInfo;
   friend class ast::BringPaths;
-  friend class TemplateFunction;
-  friend class TemplateCoreType;
+  friend class GenericFunction;
+  friend class GenericCoreType;
 
 public:
   QatModule(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
@@ -94,38 +94,38 @@ public:
   useit static QatModule* getFolderModule(const fs::path& fPath);
 
 private:
-  Identifier                     name;
-  ModuleType                     moduleType;
-  bool                           rootLib = false;
-  ModuleInfo                     moduleInfo;
-  bool                           isModuleInfoProvided = false;
-  fs::path                       filePath;
-  fs::path                       basePath;
-  utils::VisibilityInfo          visibility;
-  QatModule*                     parent = nullptr;
-  QatModule*                     active = nullptr;
-  Vec<QatModule*>                submodules;
-  Vec<Brought<QatModule>>        broughtModules;
-  Vec<CoreType*>                 coreTypes;
-  Vec<Brought<CoreType>>         broughtCoreTypes;
-  Vec<ChoiceType*>               choiceTypes;
-  Vec<Brought<ChoiceType>>       broughtChoiceTypes;
-  Vec<MixType*>                  mixTypes;
-  Vec<Brought<MixType>>          broughtMixTypes;
-  Vec<DefinitionType*>           typeDefs;
-  Vec<Brought<DefinitionType>>   broughtTypeDefs;
-  Vec<Function*>                 functions;
-  Vec<Brought<Function>>         broughtFunctions;
-  Vec<TemplateFunction*>         templateFunctions;
-  Vec<Brought<TemplateFunction>> broughtTemplateFunctions;
-  Vec<TemplateCoreType*>         templateCoreTypes;
-  Vec<Brought<TemplateCoreType>> broughtTemplateCoreTypes;
-  Vec<GlobalEntity*>             globalEntities;
-  Vec<Brought<GlobalEntity>>     broughtGlobalEntities;
-  Vec<Region*>                   regions;
-  Vec<Brought<Region>>           broughtRegions;
-  Function*                      moduleInitialiser  = nullptr;
-  u64                            nonConstantGlobals = 0;
+  Identifier                    name;
+  ModuleType                    moduleType;
+  bool                          rootLib = false;
+  ModuleInfo                    moduleInfo;
+  bool                          isModuleInfoProvided = false;
+  fs::path                      filePath;
+  fs::path                      basePath;
+  utils::VisibilityInfo         visibility;
+  QatModule*                    parent = nullptr;
+  QatModule*                    active = nullptr;
+  Vec<QatModule*>               submodules;
+  Vec<Brought<QatModule>>       broughtModules;
+  Vec<CoreType*>                coreTypes;
+  Vec<Brought<CoreType>>        broughtCoreTypes;
+  Vec<ChoiceType*>              choiceTypes;
+  Vec<Brought<ChoiceType>>      broughtChoiceTypes;
+  Vec<MixType*>                 mixTypes;
+  Vec<Brought<MixType>>         broughtMixTypes;
+  Vec<DefinitionType*>          typeDefs;
+  Vec<Brought<DefinitionType>>  broughtTypeDefs;
+  Vec<Function*>                functions;
+  Vec<Brought<Function>>        broughtFunctions;
+  Vec<GenericFunction*>         genericFunctions;
+  Vec<Brought<GenericFunction>> broughtGenericFunctions;
+  Vec<GenericCoreType*>         genericCoreTypes;
+  Vec<Brought<GenericCoreType>> broughtGenericCoreTypes;
+  Vec<GlobalEntity*>            globalEntities;
+  Vec<Brought<GlobalEntity>>    broughtGlobalEntities;
+  Vec<Region*>                  regions;
+  Vec<Brought<Region>>          broughtRegions;
+  Function*                     moduleInitialiser  = nullptr;
+  u64                           nonConstantGlobals = 0;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -245,13 +245,13 @@ public:
   useit Pair<bool, String> hasAccessibleFunctionInImports(const String&               name,
                                                           const utils::RequesterInfo& reqInfo) const;
 
-  // TEMPLATE FUNCTIONS
+  // GENERIC FUNCTIONS
 
-  useit bool              hasTemplateFunction(const String& name) const;
-  useit bool              hasBroughtTemplateFunction(const String& name) const;
-  useit TemplateFunction* getTemplateFunction(const String& name, const utils::RequesterInfo& reqInfo);
-  useit Pair<bool, String> hasAccessibleTemplateFunctionInImports(const String&               name,
-                                                                  const utils::RequesterInfo& reqInfo) const;
+  useit bool             hasGenericFunction(const String& name) const;
+  useit bool             hasBroughtGenericFunction(const String& name) const;
+  useit GenericFunction* getGenericFunction(const String& name, const utils::RequesterInfo& reqInfo);
+  useit Pair<bool, String> hasAccessibleGenericFunctionInImports(const String&               name,
+                                                                 const utils::RequesterInfo& reqInfo) const;
 
   // REGION
 
@@ -283,13 +283,13 @@ public:
                                                             const utils::RequesterInfo& reqInfo) const;
   useit ChoiceType*        getChoiceType(const String& name, const utils::RequesterInfo& reqInfo) const;
 
-  // TEMPLATE FUNCTIONS
+  // GENERIC CORE TYPES
 
-  useit bool hasTemplateCoreType(const String& name) const;
-  useit bool hasBroughtTemplateCoreType(const String& name) const;
-  useit Pair<bool, String> hasAccessibleTemplateCoreTypeInImports(const String&               name,
-                                                                  const utils::RequesterInfo& reqInfo) const;
-  useit TemplateCoreType*  getTemplateCoreType(const String& name, const utils::RequesterInfo& reqInfo);
+  useit bool hasGenericCoreType(const String& name) const;
+  useit bool hasBroughtGenericCoreType(const String& name) const;
+  useit Pair<bool, String> hasAccessibleGenericCoreTypeInImports(const String&               name,
+                                                                 const utils::RequesterInfo& reqInfo) const;
+  useit GenericCoreType*   getGenericCoreType(const String& name, const utils::RequesterInfo& reqInfo);
 
   // TYPEDEF
   useit bool hasTypeDef(const String& name) const;

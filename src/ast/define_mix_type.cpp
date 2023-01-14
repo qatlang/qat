@@ -9,7 +9,7 @@ DefineMixType::DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatTyp
     : Node(std::move(_fileRange)), name(std::move(_name)), subtypes(std::move(_subTypes)), isPacked(_isPacked),
       visibility(_visibility), fRanges(std::move(_ranges)), defaultVal(_defaultVal) {}
 
-bool DefineMixType::isTemplate() const { return !templates.empty(); }
+bool DefineMixType::isGeneric() const { return !generics.empty(); }
 
 void DefineMixType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
@@ -50,12 +50,12 @@ void DefineMixType::createType(IR::Context* ctx) {
 
 void DefineMixType::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  if (!isTemplate()) {
+  if (!isGeneric()) {
     createType(ctx);
   } else {
-    //   SHOW("Creating template mix type: " << name)
-    //   templateUnionType = new IR::TemplateUnionType(
-    //       name, templates, this, ctx->getMod(),
+    //   SHOW("Creating generic mix type: " << name)
+    //   genericUnionType = new IR::GenericMixType(
+    //       name, generics, this, ctx->getMod(),
     //       ctx->getVisibInfo(visibility));
   }
 }

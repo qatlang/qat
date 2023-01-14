@@ -89,10 +89,10 @@ QatModule::~QatModule() {
   for (auto* sub : submodules) {
     delete sub;
   }
-  for (auto* tFn : templateFunctions) {
+  for (auto* tFn : genericFunctions) {
     delete tFn;
   }
-  for (auto* tCty : templateCoreTypes) {
+  for (auto* tCty : genericCoreTypes) {
     delete tCty;
   }
 };
@@ -298,13 +298,13 @@ void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& f
     for (auto* fun : functions) {
       functionsJson.push_back(fun->overviewToJson());
     }
-    for (auto* fun : templateFunctions) {
+    for (auto* fun : genericFunctions) {
       genericFunctionsJson.push_back(fun->overviewToJson());
     }
     for (auto* cTy : coreTypes) {
       coreTypesJson.push_back(cTy->overviewToJson());
     }
-    for (auto* cTy : templateCoreTypes) {
+    for (auto* cTy : genericCoreTypes) {
       genericCoreTypesJson.push_back(cTy->overviewToJson());
     }
     for (auto* mTy : mixTypes) {
@@ -738,14 +738,14 @@ Function* QatModule::getFunction(const String& name, const utils::RequesterInfo&
   return nullptr;
 }
 
-// TEMPLATE FUNCTION
+// GENERIC FUNCTION
 
-bool QatModule::hasTemplateFunction(const String& name) const {
-  SHOW("Template Function to be checked: " << name)
-  SHOW("Template Function count: " << functions.size())
-  for (auto* function : templateFunctions) {
+bool QatModule::hasGenericFunction(const String& name) const {
+  SHOW("Generic Function to be checked: " << name)
+  SHOW("Generic Function count: " << functions.size())
+  for (auto* function : genericFunctions) {
     if (function->getName().value == name) {
-      SHOW("Found template function")
+      SHOW("Found generic function")
       return true;
     }
   }
@@ -753,8 +753,8 @@ bool QatModule::hasTemplateFunction(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtTemplateFunction(const String& name) const {
-  for (const auto& brought : broughtTemplateFunctions) {
+bool QatModule::hasBroughtGenericFunction(const String& name) const {
+  for (const auto& brought : broughtGenericFunctions) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
       if (bFn->getName().value == name) {
@@ -767,15 +767,15 @@ bool QatModule::hasBroughtTemplateFunction(const String& name) const {
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleTemplateFunctionInImports(const String&               name,
-                                                                     const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleGenericFunctionInImports(const String&               name,
+                                                                    const utils::RequesterInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
-        if (bMod->hasTemplateFunction(name) || bMod->hasBroughtTemplateFunction(name) ||
-            bMod->hasAccessibleTemplateFunctionInImports(name, reqInfo).first) {
-          if (bMod->getTemplateFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+        if (bMod->hasGenericFunction(name) || bMod->hasBroughtGenericFunction(name) ||
+            bMod->hasAccessibleGenericFunctionInImports(name, reqInfo).first) {
+          if (bMod->getGenericFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
             return {true, bMod->filePath.string()};
           }
         }
@@ -785,13 +785,13 @@ Pair<bool, String> QatModule::hasAccessibleTemplateFunctionInImports(const Strin
   return {false, ""};
 }
 
-TemplateFunction* QatModule::getTemplateFunction(const String& name, const utils::RequesterInfo& reqInfo) {
-  for (auto* function : templateFunctions) {
+GenericFunction* QatModule::getGenericFunction(const String& name, const utils::RequesterInfo& reqInfo) {
+  for (auto* function : genericFunctions) {
     if (function->getName().value == name) {
       return function;
     }
   }
-  for (const auto& brought : broughtTemplateFunctions) {
+  for (const auto& brought : broughtGenericFunctions) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
       if (bFn->getName().value == name) {
@@ -805,10 +805,10 @@ TemplateFunction* QatModule::getTemplateFunction(const String& name, const utils
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
-        if (bMod->hasTemplateFunction(name) || bMod->hasBroughtTemplateFunction(name) ||
-            bMod->hasAccessibleTemplateFunctionInImports(name, reqInfo).first) {
-          if (bMod->getTemplateFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
-            return bMod->getTemplateFunction(name, reqInfo);
+        if (bMod->hasGenericFunction(name) || bMod->hasBroughtGenericFunction(name) ||
+            bMod->hasAccessibleGenericFunctionInImports(name, reqInfo).first) {
+          if (bMod->getGenericFunction(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getGenericFunction(name, reqInfo);
           }
         }
       }
@@ -1112,22 +1112,22 @@ ChoiceType* QatModule::getChoiceType(const String& name, const utils::RequesterI
   return nullptr;
 }
 
-// TEMPLATE CORE TYPE
+// GENERIC CORE TYPE
 
-bool QatModule::hasTemplateCoreType(const String& name) const {
-  for (auto* tempCTy : templateCoreTypes) {
-    SHOW("Template core type: " << tempCTy->getName().value)
+bool QatModule::hasGenericCoreType(const String& name) const {
+  for (auto* tempCTy : genericCoreTypes) {
+    SHOW("Generic core type: " << tempCTy->getName().value)
     if (tempCTy->getName().value == name) {
-      SHOW("Found template core type")
+      SHOW("Found generic core type")
       return true;
     }
   }
-  SHOW("No template core types named " + name + " found")
+  SHOW("No generic core types named " + name + " found")
   return false;
 }
 
-bool QatModule::hasBroughtTemplateCoreType(const String& name) const {
-  for (const auto& brought : broughtTemplateCoreTypes) {
+bool QatModule::hasBroughtGenericCoreType(const String& name) const {
+  for (const auto& brought : broughtGenericCoreTypes) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
       if (bFn->getName().value == name) {
@@ -1140,15 +1140,15 @@ bool QatModule::hasBroughtTemplateCoreType(const String& name) const {
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleTemplateCoreTypeInImports(const String&               name,
-                                                                     const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleGenericCoreTypeInImports(const String&               name,
+                                                                    const utils::RequesterInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
-        if (bMod->hasTemplateCoreType(name) || bMod->hasBroughtTemplateCoreType(name) ||
-            bMod->hasAccessibleTemplateCoreTypeInImports(name, reqInfo).first) {
-          if (bMod->getTemplateCoreType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+        if (bMod->hasGenericCoreType(name) || bMod->hasBroughtGenericCoreType(name) ||
+            bMod->hasAccessibleGenericCoreTypeInImports(name, reqInfo).first) {
+          if (bMod->getGenericCoreType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
             return {true, bMod->filePath.string()};
           }
         }
@@ -1158,13 +1158,13 @@ Pair<bool, String> QatModule::hasAccessibleTemplateCoreTypeInImports(const Strin
   return {false, ""};
 }
 
-TemplateCoreType* QatModule::getTemplateCoreType(const String& name, const utils::RequesterInfo& reqInfo) {
-  for (auto* tempCore : templateCoreTypes) {
+GenericCoreType* QatModule::getGenericCoreType(const String& name, const utils::RequesterInfo& reqInfo) {
+  for (auto* tempCore : genericCoreTypes) {
     if (tempCore->getName().value == name) {
       return tempCore;
     }
   }
-  for (const auto& brought : broughtTemplateCoreTypes) {
+  for (const auto& brought : broughtGenericCoreTypes) {
     if (!brought.isNamed()) {
       auto* bCTy = brought.get();
       if (bCTy->getName().value == name) {
@@ -1178,10 +1178,10 @@ TemplateCoreType* QatModule::getTemplateCoreType(const String& name, const utils
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
       if (!bMod->shouldPrefixName()) {
-        if (bMod->hasTemplateCoreType(name) || bMod->hasBroughtTemplateCoreType(name) ||
-            bMod->hasAccessibleTemplateCoreTypeInImports(name, reqInfo).first) {
-          if (bMod->getTemplateCoreType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
-            return bMod->getTemplateCoreType(name, reqInfo);
+        if (bMod->hasGenericCoreType(name) || bMod->hasBroughtGenericCoreType(name) ||
+            bMod->hasAccessibleGenericCoreTypeInImports(name, reqInfo).first) {
+          if (bMod->getGenericCoreType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getGenericCoreType(name, reqInfo);
           }
         }
       }
@@ -1430,7 +1430,7 @@ void QatModule::defineTypes(IR::Context* ctx) {
     ctx->mod     = this;
     for (auto& node : nodes) {
       node->defineType(ctx);
-      if ((node->nodeType() == ast::NodeType::defineCoreType) && (((ast::DefineCoreType*)node)->isTemplate())) {
+      if ((node->nodeType() == ast::NodeType::defineCoreType) && (((ast::DefineCoreType*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       }
     }
@@ -1449,10 +1449,10 @@ void QatModule::defineNodes(IR::Context* ctx) {
     ctx->mod     = this;
     for (auto& node : nodes) {
       node->define(ctx);
-      if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isTemplate())) {
+      if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       } else if ((node->nodeType() == ast::NodeType::functionPrototype) &&
-                 (((ast::FunctionPrototype*)node)->isTemplate())) {
+                 (((ast::FunctionPrototype*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       }
     }

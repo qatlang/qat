@@ -77,21 +77,21 @@ public:
   void           updateOverview() final;
 };
 
-class TemplateCoreType : public Uniq, public EntityOverview {
+class GenericCoreType : public Uniq, public EntityOverview {
 private:
   Identifier                     name;
-  Vec<ast::GenericAbstractType*> templates;
+  Vec<ast::GenericAbstractType*> generics;
   ast::DefineCoreType*           defineCoreType;
   QatModule*                     parent;
   utils::VisibilityInfo          visibility;
 
-  mutable Vec<TemplateVariant<CoreType>> variants;
+  mutable Vec<GenericVariant<CoreType>> variants;
 
 public:
-  TemplateCoreType(Identifier name, Vec<ast::GenericAbstractType*> templates, ast::DefineCoreType* defineCoreType,
-                   QatModule* parent, const utils::VisibilityInfo& visibInfo);
+  GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::DefineCoreType* defineCoreType,
+                  QatModule* parent, const utils::VisibilityInfo& visibInfo);
 
-  ~TemplateCoreType() = default;
+  ~GenericCoreType() = default;
 
   useit Identifier getName() const;
   useit utils::VisibilityInfo getVisibility() const;
@@ -100,7 +100,7 @@ public:
   useit Vec<IR::QatType*> getDefaults(IR::Context* ctx) const;
   useit usize             getVariantCount() const;
   useit QatModule*        getModule() const;
-  useit CoreType*         fillTemplates(Vec<QatType*>& templates, IR::Context* ctx, FileRange range);
+  useit CoreType*         fillGenerics(Vec<QatType*>& types, IR::Context* ctx, FileRange range);
 };
 
 } // namespace qat::IR

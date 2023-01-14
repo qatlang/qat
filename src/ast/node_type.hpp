@@ -39,7 +39,7 @@ enum class NodeType {
   closeBox,
   reassignment,
   entity,
-  templateEntity,
+  genericEntity,
   plainInitialiser,
   self,
   selfMember,

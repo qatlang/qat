@@ -7,7 +7,7 @@ namespace qat::ast {
 GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<ast::QatType*> _types, bool _isVariable,
                                    FileRange _fileRange)
     : QatType(_isVariable, std::move(_fileRange)), relative(_relative), names(std::move(_name)),
-      templateTypes(std::move(_types)) {}
+      genericTypes(std::move(_types)) {}
 
 IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Generic named type START")
@@ -46,9 +46,9 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   auto* fun  = ctx->fn;
   auto* curr = fun ? fun->getBlock() : nullptr;
   SHOW("Got current function and block")
-  if (mod->hasTemplateCoreType(entityName.value) || mod->hasBroughtTemplateCoreType(entityName.value) ||
-      mod->hasAccessibleTemplateCoreTypeInImports(entityName.value, ctx->getReqInfo()).first) {
-    auto* tempCoreTy = mod->getTemplateCoreType(entityName.value, ctx->getReqInfo());
+  if (mod->hasGenericCoreType(entityName.value) || mod->hasBroughtGenericCoreType(entityName.value) ||
+      mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getReqInfo()).first) {
+    auto* tempCoreTy = mod->getGenericCoreType(entityName.value, ctx->getReqInfo());
     if (!tempCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic core type " + ctx->highlightError(fullName.value) + " is not accessible here",
@@ -57,7 +57,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     tempCoreTy->addMention(entityName.range);
     ctx->mod = tempCoreTy->getModule();
     Vec<IR::QatType*> types;
-    if (templateTypes.empty()) {
+    if (genericTypes.empty()) {
       if (tempCoreTy->allTypesHaveDefaults()) {
         types = tempCoreTy->getDefaults(ctx);
       } else {
@@ -65,18 +65,18 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
             "Not all abstracted types in this generic type have a default type associated with it, and hence the type parameter list cannot be empty",
             fileRange);
       }
-    } else if (tempCoreTy->getTypeCount() != templateTypes.size()) {
+    } else if (tempCoreTy->getTypeCount() != genericTypes.size()) {
       ctx->Error("Generic core type " + ctx->highlightError(tempCoreTy->getName().value) + " has " +
                      ctx->highlightError(std::to_string(tempCoreTy->getTypeCount())) + " type parameters. But " +
-                     ((tempCoreTy->getTypeCount() > templateTypes.size()) ? "only " : "") +
-                     ctx->highlightError(std::to_string(templateTypes.size())) + " types were provided",
+                     ((tempCoreTy->getTypeCount() > genericTypes.size()) ? "only " : "") +
+                     ctx->highlightError(std::to_string(genericTypes.size())) + " types were provided",
                  fileRange);
     } else {
-      for (auto* typ : templateTypes) {
+      for (auto* typ : genericTypes) {
         types.push_back(typ->emit(ctx));
       }
     }
-    auto* tyRes = tempCoreTy->fillTemplates(types, ctx, fileRange);
+    auto* tyRes = tempCoreTy->fillGenerics(types, ctx, fileRange);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);
@@ -84,7 +84,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     ctx->mod = oldMod;
     return tyRes;
   } else {
-    // FIXME - Support static members of template types
+    // FIXME - Support static members of generic types
     ctx->Error("No generic type named " + ctx->highlightError(Identifier::fullName(names).value) +
                    " found in the current scope",
                fileRange);
@@ -98,7 +98,7 @@ Json GenericNamedType::toJson() const {
     nameJs.push_back(JsonValue(nam));
   }
   Vec<JsonValue> typs;
-  for (auto* typ : templateTypes) {
+  for (auto* typ : genericTypes) {
     typs.push_back(typ->toJson());
   }
   return Json()._("typeKind", "genericNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
@@ -106,9 +106,9 @@ Json GenericNamedType::toJson() const {
 
 String GenericNamedType::toString() const {
   auto result = (isVariable() ? "var " : "") + Identifier::fullName(names).value + "'<";
-  for (usize i = 0; i < templateTypes.size(); i++) {
-    result += templateTypes.at(i)->toString();
-    if (i != (templateTypes.size() - 1)) {
+  for (usize i = 0; i < genericTypes.size(); i++) {
+    result += genericTypes.at(i)->toString();
+    if (i != (genericTypes.size() - 1)) {
       result += ", ";
     }
   }

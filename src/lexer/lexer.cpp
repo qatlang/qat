@@ -319,7 +319,7 @@ Token Lexer::tokeniser() {
       if ((current == '>') && (genericStartCount > 0)) {
         read();
         genericStartCount--;
-        return Token::normal(TokenType::templateTypeEnd, this->getPosition(1));
+        return Token::normal(TokenType::genericTypeEnd, this->getPosition(1));
       }
       String operatorValue;
       operatorValue += current;
@@ -372,7 +372,7 @@ Token Lexer::tokeniser() {
       if (current == '<') {
         read();
         genericStartCount++;
-        return Token::normal(TokenType::templateTypeStart, this->getPosition(2));
+        return Token::normal(TokenType::genericTypeStart, this->getPosition(2));
       } else if (current == '\'') {
         read();
         return Token::normal(TokenType::self, this->getPosition(2));

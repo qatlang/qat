@@ -8,7 +8,7 @@
 #include "./argument.hpp"
 #include "./value.hpp"
 #include "entity_overview.hpp"
-#include "template_variant.hpp"
+#include "generic_variant.hpp"
 #include "types/qat_type.hpp"
 #include "uniq.hpp"
 #include "llvm/IR/BasicBlock.h"
@@ -168,28 +168,28 @@ public:
   ~Function() override;
 };
 
-class TemplateFunction : public Uniq, public EntityOverview {
+class GenericFunction : public Uniq, public EntityOverview {
 private:
   Identifier                     name;
-  Vec<ast::GenericAbstractType*> templates;
+  Vec<ast::GenericAbstractType*> generics;
   ast::FunctionDefinition*       functionDefinition;
   QatModule*                     parent;
   utils::VisibilityInfo          visibInfo;
 
-  mutable Vec<TemplateVariant<Function>> variants;
+  mutable Vec<GenericVariant<Function>> variants;
 
 public:
-  TemplateFunction(Identifier name, Vec<ast::GenericAbstractType*> templates, ast::FunctionDefinition* functionDef,
-                   QatModule* parent, const utils::VisibilityInfo& _visibInfo);
+  GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, ast::FunctionDefinition* functionDef,
+                  QatModule* parent, const utils::VisibilityInfo& _visibInfo);
 
-  ~TemplateFunction() = default;
+  ~GenericFunction() = default;
 
   useit Identifier getName() const;
   useit usize      getTypeCount() const;
   useit usize      getVariantCount() const;
   useit QatModule* getModule() const;
   useit utils::VisibilityInfo getVisibility() const;
-  useit Function*             fillTemplates(Vec<IR::QatType*> _types, IR::Context* ctx, const FileRange& fileRange);
+  useit Function*             fillGenerics(Vec<IR::QatType*> _types, IR::Context* ctx, const FileRange& fileRange);
 };
 
 void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const FileRange& fileRange);

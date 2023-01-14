@@ -6,7 +6,7 @@ namespace qat::ast {
 GenericAbstractType::GenericAbstractType(String _id, String _name, bool isVariable, Maybe<ast::QatType*> _defaultTy,
                                          FileRange _fileRange)
     : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)), name(std::move(_name)), defaultTy(_defaultTy) {
-  templates.push_back(this);
+  generics.push_back(this);
 }
 
 String GenericAbstractType::getID() const { return id; }
@@ -18,7 +18,7 @@ bool GenericAbstractType::hasDefault() const { return defaultTy.has_value(); }
 Maybe<ast::QatType*> GenericAbstractType::getDefault() const { return defaultTy; }
 
 void GenericAbstractType::setType(IR::QatType* typ) const {
-  for (auto* temp : templates) {
+  for (auto* temp : generics) {
     if (temp->id == id) {
       temp->typeValue = typ;
     }
@@ -28,18 +28,18 @@ void GenericAbstractType::setType(IR::QatType* typ) const {
 bool GenericAbstractType::isSet() const { return (typeValue != nullptr) || (defaultTy.has_value()); }
 
 void GenericAbstractType::unsetType() const {
-  for (auto* temp : templates) {
+  for (auto* temp : generics) {
     if (temp->id == id) {
       temp->typeValue = nullptr;
     }
   }
 }
 
-String GenericAbstractType::getTemplateID() const { return id; }
+String GenericAbstractType::getGenericID() const { return id; }
 
-String GenericAbstractType::getTemplateName() const { return name; }
+String GenericAbstractType::getGenericName() const { return name; }
 
-TypeKind GenericAbstractType::typeKind() const { return TypeKind::templated; }
+TypeKind GenericAbstractType::typeKind() const { return TypeKind::genericAbstract; }
 
 IR::QatType* GenericAbstractType::emit(IR::Context* ctx) {
   if (typeValue) {
@@ -48,7 +48,7 @@ IR::QatType* GenericAbstractType::emit(IR::Context* ctx) {
     if (hasDefault()) {
       return defaultTy.value()->emit(ctx);
     } else {
-      ctx->Error("No type provided for the template type", fileRange);
+      ctx->Error("No type provided for the generic type", fileRange);
     }
   }
   return nullptr;
@@ -56,7 +56,7 @@ IR::QatType* GenericAbstractType::emit(IR::Context* ctx) {
 
 Json GenericAbstractType::toJson() const {
   return Json()
-      ._("typeKind", "templated")
+      ._("typeKind", "generic")
       ._("id", id)
       ._("name", name)
       ._("isVariable", isVariable())

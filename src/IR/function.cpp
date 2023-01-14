@@ -437,56 +437,56 @@ usize& Function::getCopiedCounter() { return copiedCounter; }
 
 usize& Function::getMovedCounter() { return movedCounter; }
 
-TemplateFunction::TemplateFunction(Identifier _name, Vec<ast::GenericAbstractType*> _templates,
-                                   ast::FunctionDefinition* _functionDef, QatModule* _parent,
-                                   const utils::VisibilityInfo& _visibInfo)
+GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
+                                 ast::FunctionDefinition* _functionDef, QatModule* _parent,
+                                 const utils::VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
                          ._("fullName", _parent->getFullNameWithChild(_name.value))
                          ._("moduleID", _parent->getID())
                          ._("visibility", _visibInfo),
                      _name.range),
-      name(std::move(_name)), templates(std::move(_templates)), functionDefinition(_functionDef), parent(_parent),
+      name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), parent(_parent),
       visibInfo(_visibInfo) {
-  parent->templateFunctions.push_back(this);
+  parent->genericFunctions.push_back(this);
 }
 
-Identifier TemplateFunction::getName() const { return name; }
+Identifier GenericFunction::getName() const { return name; }
 
-utils::VisibilityInfo TemplateFunction::getVisibility() const { return visibInfo; }
+utils::VisibilityInfo GenericFunction::getVisibility() const { return visibInfo; }
 
-usize TemplateFunction::getTypeCount() const { return templates.size(); }
+usize GenericFunction::getTypeCount() const { return generics.size(); }
 
-usize TemplateFunction::getVariantCount() const { return variants.size(); }
+usize GenericFunction::getVariantCount() const { return variants.size(); }
 
-QatModule* TemplateFunction::getModule() const { return parent; }
+QatModule* GenericFunction::getModule() const { return parent; }
 
-Function* TemplateFunction::fillTemplates(Vec<IR::QatType*> types, IR::Context* ctx, const FileRange& fileRange) {
+Function* GenericFunction::fillGenerics(Vec<IR::QatType*> types, IR::Context* ctx, const FileRange& fileRange) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
     }
   }
-  for (usize i = 0; i < templates.size(); i++) {
-    templates.at(i)->setType(types.at(i));
+  for (usize i = 0; i < generics.size(); i++) {
+    generics.at(i)->setType(types.at(i));
   }
-  auto variantName = IR::Logic::getTemplateVariantName(name.value, types);
+  auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
-  auto prevTemp       = ctx->activeTemplate;
-  ctx->activeTemplate = IR::TemplateEntityMarker{variantName, IR::TemplateEntityType::function, fileRange};
-  auto* fun           = (IR::Function*)functionDefinition->emit(ctx);
-  variants.push_back(TemplateVariant<Function>(fun, types));
-  for (auto* temp : templates) {
+  auto prevTemp      = ctx->activeGeneric;
+  ctx->activeGeneric = IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange};
+  auto* fun          = (IR::Function*)functionDefinition->emit(ctx);
+  variants.push_back(GenericVariant<Function>(fun, types));
+  for (auto* temp : generics) {
     temp->unsetType();
   }
-  if (ctx->activeTemplate->warningCount > 0) {
-    auto count          = ctx->activeTemplate->warningCount;
-    ctx->activeTemplate = None;
+  if (ctx->activeGeneric->warningCount > 0) {
+    auto count         = ctx->activeGeneric->warningCount;
+    ctx->activeGeneric = None;
     ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
-                     " generated while creating template function: " + ctx->highlightWarning(variantName),
+                     " generated while creating generic function: " + ctx->highlightWarning(variantName),
                  fileRange);
   }
-  ctx->activeTemplate = prevTemp;
+  ctx->activeGeneric = prevTemp;
   functionDefinition->prototype->unsetVariantName();
   return fun;
 }

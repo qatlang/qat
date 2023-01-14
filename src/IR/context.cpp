@@ -42,7 +42,7 @@ Context::~Context() {
   }
 }
 
-void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<String> templateID) {
+void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<String> genericID) {
   auto reqInfo = getReqInfo();
   if (mod->hasCoreType(name.value)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
@@ -59,25 +59,25 @@ void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasTemplateCoreType(name.value)) {
-    if (templateID.has_value() && mod->getTemplateCoreType(name.value, getReqInfo())->getID() == templateID.value()) {
+  } else if (mod->hasGenericCoreType(name.value)) {
+    if (genericID.has_value() && mod->getGenericCoreType(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtTemplateCoreType(name.value)) {
-    if (templateID.has_value() && mod->getTemplateCoreType(name.value, getReqInfo())->getID() == templateID.value()) {
+  } else if (mod->hasBroughtGenericCoreType(name.value)) {
+    if (genericID.has_value() && mod->getGenericCoreType(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleTemplateCoreTypeInImports(name.value, reqInfo).first) {
+  } else if (mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).first) {
     Error("A generic core type named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleTemplateCoreTypeInImports(name.value, reqInfo).second) +
+              highlightError(mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
@@ -142,28 +142,28 @@ void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasTemplateFunction(name.value)) {
-    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+  } else if (mod->hasGenericFunction(name.value)) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtTemplateFunction(name.value)) {
-    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+  } else if (mod->hasBroughtGenericFunction(name.value)) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).first) {
-    if (templateID.has_value() && mod->getTemplateFunction(name.value, getReqInfo())->getID() == templateID.value()) {
+  } else if (mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleTemplateFunctionInImports(name.value, reqInfo).second) +
+              highlightError(mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
@@ -376,30 +376,30 @@ bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
 
 void Context::addError(String message, FileRange fileRange) {
   auto* cfg = cli::Config::get();
-  if (activeTemplate) {
-    codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeTemplate->name,
-                                       activeTemplate->fileRange));
+  if (activeGeneric) {
+    codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeGeneric->name,
+                                       activeGeneric->fileRange));
     std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
               << Colored(colors::reset) << " " << Colored(colors::bold::red)
-              << "Errors generated while creating generic variant: " << highlightError(activeTemplate->name)
+              << "Errors generated while creating generic variant: " << highlightError(activeGeneric->name)
               << Colored(colors::reset) << " | " << Colored(colors::underline::green)
-              << activeTemplate->fileRange.file.string() << ":" << activeTemplate->fileRange.start.line << ":"
-              << activeTemplate->fileRange.start.character << Colored(colors::reset) << " >> "
-              << Colored(colors::underline::green) << activeTemplate->fileRange.file.string() << ":"
-              << activeTemplate->fileRange.end.line << ":" << activeTemplate->fileRange.end.character
+              << activeGeneric->fileRange.file.string() << ":" << activeGeneric->fileRange.start.line << ":"
+              << activeGeneric->fileRange.start.character << Colored(colors::reset) << " >> "
+              << Colored(colors::underline::green) << activeGeneric->fileRange.file.string() << ":"
+              << activeGeneric->fileRange.end.line << ":" << activeGeneric->fileRange.end.character
               << Colored(colors::reset) << "\n";
   }
   codeProblems.push_back(
-      CodeProblem(true, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
+      CodeProblem(true, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
   std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
             << Colored(colors::reset) << " " << Colored(colors::bold::red)
-            << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
-            << Colored(colors::reset) << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":"
-            << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
-            << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
-            << fileRange.end.character << Colored(colors::reset) << "\n";
+            << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
+            << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.start.line
+            << ":" << fileRange.start.character << Colored(colors::reset) << " >> " << Colored(colors::underline::green)
+            << fileRange.file.string() << ":" << fileRange.end.line << ":" << fileRange.end.character
+            << Colored(colors::reset) << "\n";
   if (!moduleAlreadyHasErrors(mod)) {
-    activeTemplate = None;
+    activeGeneric = None;
     modulesWithErrors.push_back(mod);
     for (const auto& modNRange : mod->getBroughtMentions()) {
       mod = modNRange.first;
@@ -418,19 +418,19 @@ void Context::Error(const String& message, const FileRange& fileRange) {
 }
 
 void Context::Warning(const String& message, const FileRange& fileRange) const {
-  if (activeTemplate) {
-    activeTemplate->warningCount++;
+  if (activeGeneric) {
+    activeGeneric->warningCount++;
   }
   codeProblems.push_back(
-      CodeProblem(false, (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") + message, fileRange));
+      CodeProblem(false, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
   auto* cfg = cli::Config::get();
   std::cout << Colored(colors::highIntensityBackground::purple) << " warning " << Colored(colors::blue) << "▌"
             << Colored(colors::reset) << " " << Colored(colors::bold::purple)
-            << (activeTemplate ? ("Creating " + activeTemplate->name + " => ") : "") << message
-            << Colored(colors::reset) << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":"
-            << fileRange.start.line << ":" << fileRange.start.character << Colored(colors::reset) << " >> "
-            << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
-            << fileRange.end.character << Colored(colors::reset) << "\n";
+            << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
+            << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.start.line
+            << ":" << fileRange.start.character << Colored(colors::reset) << " >> " << Colored(colors::underline::green)
+            << fileRange.file.string() << ":" << fileRange.end.line << ":" << fileRange.end.character
+            << Colored(colors::reset) << "\n";
 }
 
 } // namespace qat::IR

@@ -12,7 +12,7 @@ private:
   Identifier                             name;
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
   bool                                   isPacked;
-  Vec<QatType*>                          templates;
+  Vec<QatType*>                          generics;
   utils::VisibilityKind                  visibility;
   Vec<FileRange>                         fRanges;
   Maybe<usize>                           defaultVal;
@@ -24,7 +24,7 @@ public:
   void       createType(IR::Context* ctx);
   void       defineType(IR::Context* ctx) final;
   void       define(IR::Context* ctx) final {}
-  useit bool isTemplate() const;
+  useit bool isGeneric() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::defineMixType; }

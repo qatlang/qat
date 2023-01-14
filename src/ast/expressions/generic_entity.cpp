@@ -1,13 +1,13 @@
-#include "./template_entity.hpp"
+#include "./generic_entity.hpp"
 #include "../../utils/split_string.hpp"
 
 namespace qat::ast {
 
-TemplateEntity::TemplateEntity(u32 _relative, Vec<Identifier> _names, Vec<ast::QatType*> _types, FileRange _fileRange)
+GenericEntity::GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<ast::QatType*> _types, FileRange _fileRange)
     : Expression(std::move(_fileRange)), relative(_relative), names(std::move(_names)),
-      templateTypes(std::move(_types)) {}
+      genericTypes(std::move(_types)) {}
 
-IR::Value* TemplateEntity::emit(IR::Context* ctx) {
+IR::Value* GenericEntity::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
   auto* oldMod  = mod;
   auto  reqInfo = ctx->getReqInfo();
@@ -43,27 +43,26 @@ IR::Value* TemplateEntity::emit(IR::Context* ctx) {
   }
   auto* fun  = ctx->fn;
   auto* curr = fun ? ctx->fn->getBlock() : nullptr;
-  if (mod->hasTemplateFunction(entityName.value) || mod->hasBroughtTemplateFunction(entityName.value) ||
-      mod->hasAccessibleTemplateFunctionInImports(entityName.value, ctx->getReqInfo()).first) {
-    auto* tempFn = mod->getTemplateFunction(entityName.value, ctx->getReqInfo());
+  if (mod->hasGenericFunction(entityName.value) || mod->hasBroughtGenericFunction(entityName.value) ||
+      mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getReqInfo()).first) {
+    auto* tempFn = mod->getGenericFunction(entityName.value, ctx->getReqInfo());
     if (!tempFn->getVisibility().isAccessible(ctx->getReqInfo())) {
       auto fullName = Identifier::fullName(names);
-      ctx->Error("Template function " + ctx->highlightError(fullName.value) + " is not accessible here",
-                 fullName.range);
+      ctx->Error("Generic function " + ctx->highlightError(fullName.value) + " is not accessible here", fullName.range);
     }
     ctx->mod = tempFn->getModule();
-    if (tempFn->getTypeCount() != templateTypes.size()) {
-      ctx->Error("Template function " + ctx->highlightError(tempFn->getName().value) + " has " +
+    if (tempFn->getTypeCount() != genericTypes.size()) {
+      ctx->Error("Generic function " + ctx->highlightError(tempFn->getName().value) + " has " +
                      ctx->highlightError(std::to_string(tempFn->getTypeCount())) + " type parameters. But " +
-                     ((tempFn->getTypeCount() > templateTypes.size()) ? "only " : "") +
-                     ctx->highlightError(std::to_string(templateTypes.size())) + " types were provided",
+                     ((tempFn->getTypeCount() > genericTypes.size()) ? "only " : "") +
+                     ctx->highlightError(std::to_string(genericTypes.size())) + " types were provided",
                  fileRange);
     }
     Vec<IR::QatType*> types;
-    for (auto* typ : templateTypes) {
+    for (auto* typ : genericTypes) {
       types.push_back(typ->emit(ctx));
     }
-    auto* fnRes = tempFn->fillTemplates(types, ctx, fileRange);
+    auto* fnRes = tempFn->fillGenerics(types, ctx, fileRange);
     ctx->fn     = fun;
     if (curr) {
       curr->setActive(ctx->builder);
@@ -71,24 +70,24 @@ IR::Value* TemplateEntity::emit(IR::Context* ctx) {
     ctx->mod = oldMod;
     return fnRes;
   } else {
-    // FIXME - Support static members of template types
+    // FIXME - Support static members of generic types
     auto fullName = Identifier::fullName(names);
-    ctx->Error("No template function named " + ctx->highlightError(fullName.value) + " found in the current scope",
+    ctx->Error("No generic function named " + ctx->highlightError(fullName.value) + " found in the current scope",
                fullName.range);
   }
   return nullptr;
 }
 
-Json TemplateEntity::toJson() const {
+Json GenericEntity::toJson() const {
   Vec<JsonValue> namesJs;
   for (auto const& nam : names) {
     namesJs.push_back(JsonValue(nam));
   }
   Vec<JsonValue> typs;
-  for (auto* typ : templateTypes) {
+  for (auto* typ : genericTypes) {
     typs.push_back(typ->toJson());
   }
-  return Json()._("nodeType", "templateEntity")._("names", namesJs)._("types", typs)._("fileRange", fileRange);
+  return Json()._("nodeType", "genericEntity")._("names", namesJs)._("types", typs)._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

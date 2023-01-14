@@ -8,7 +8,7 @@ QatType::QatType(bool _variable, FileRange _fileRange) : variable(_variable), fi
 
 Maybe<usize> QatType::getTypeSizeInBits(IR::Context* ctx) const { return None; }
 
-Vec<GenericAbstractType*> QatType::templates = {};
+Vec<GenericAbstractType*> QatType::generics = {};
 
 Vec<QatType*> QatType::allTypes = {};
 

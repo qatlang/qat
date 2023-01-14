@@ -139,9 +139,9 @@ String CoreType::toString() const { return getFullName(); }
 
 Json CoreType::toJson() const { return Json()._("id", getID())._("name", name); }
 
-TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _templates,
-                                   ast::DefineCoreType* _defineCoreType, QatModule* _parent,
-                                   const utils::VisibilityInfo& _visibInfo)
+GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
+                                 ast::DefineCoreType* _defineCoreType, QatModule* _parent,
+                                 const utils::VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
                          ._("name", _name.value)
@@ -149,26 +149,26 @@ TemplateCoreType::TemplateCoreType(Identifier _name, Vec<ast::GenericAbstractTyp
                          ._("visibility", _visibInfo)
                          ._("moduleID", _parent->getID()),
                      _name.range),
-      name(std::move(_name)), templates(std::move(_templates)), defineCoreType(_defineCoreType), parent(_parent),
+      name(std::move(_name)), generics(std::move(_generics)), defineCoreType(_defineCoreType), parent(_parent),
       visibility(_visibInfo) {
-  SHOW("Adding template core type to parent module")
-  parent->templateCoreTypes.push_back(this);
+  SHOW("Adding generic core type to parent module")
+  parent->genericCoreTypes.push_back(this);
 }
 
-Identifier TemplateCoreType::getName() const { return name; }
+Identifier GenericCoreType::getName() const { return name; }
 
-utils::VisibilityInfo TemplateCoreType::getVisibility() const { return visibility; }
+utils::VisibilityInfo GenericCoreType::getVisibility() const { return visibility; }
 
-Vec<IR::QatType*> TemplateCoreType::getDefaults(IR::Context* ctx) const {
+Vec<IR::QatType*> GenericCoreType::getDefaults(IR::Context* ctx) const {
   Vec<IR::QatType*> result;
-  for (auto* typ : templates) {
+  for (auto* typ : generics) {
     result.push_back(typ->emit(ctx));
   }
   return result;
 }
 
-bool TemplateCoreType::allTypesHaveDefaults() const {
-  for (auto typ : templates) {
+bool GenericCoreType::allTypesHaveDefaults() const {
+  for (auto typ : generics) {
     if (!typ->hasDefault()) {
       return false;
     }
@@ -176,42 +176,42 @@ bool TemplateCoreType::allTypesHaveDefaults() const {
   return true;
 }
 
-usize TemplateCoreType::getTypeCount() const { return templates.size(); }
+usize GenericCoreType::getTypeCount() const { return generics.size(); }
 
-usize TemplateCoreType::getVariantCount() const { return variants.size(); }
+usize GenericCoreType::getVariantCount() const { return variants.size(); }
 
-QatModule* TemplateCoreType::getModule() const { return parent; }
+QatModule* GenericCoreType::getModule() const { return parent; }
 
-CoreType* TemplateCoreType::fillTemplates(Vec<QatType*>& types, IR::Context* ctx, FileRange range) {
+CoreType* GenericCoreType::fillGenerics(Vec<QatType*>& types, IR::Context* ctx, FileRange range) {
   for (auto var : variants) {
     if (var.check(types)) {
       return var.get();
     }
   }
-  for (usize i = 0; i < templates.size(); i++) {
-    templates.at(i)->setType(types.at(i));
+  for (usize i = 0; i < generics.size(); i++) {
+    generics.at(i)->setType(types.at(i));
   }
-  auto variantName = IR::Logic::getTemplateVariantName(name.value, types);
+  auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   defineCoreType->setVariantName(variantName);
-  auto prevTemp       = ctx->activeTemplate;
-  ctx->activeTemplate = IR::TemplateEntityMarker{variantName, IR::TemplateEntityType::coreType, range};
+  auto prevTemp      = ctx->activeGeneric;
+  ctx->activeGeneric = IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range};
   (void)defineCoreType->define(ctx);
   (void)defineCoreType->emit(ctx);
   auto* cTy = (IR::CoreType*)defineCoreType->getCoreType();
-  variants.push_back(TemplateVariant<CoreType>(cTy, types));
-  for (auto* temp : templates) {
+  variants.push_back(GenericVariant<CoreType>(cTy, types));
+  for (auto* temp : generics) {
     temp->unsetType();
   }
   defineCoreType->unsetVariantName();
-  if (ctx->activeTemplate->warningCount > 0) {
-    auto count          = ctx->activeTemplate->warningCount;
-    ctx->activeTemplate = None;
+  if (ctx->activeGeneric->warningCount > 0) {
+    auto count         = ctx->activeGeneric->warningCount;
+    ctx->activeGeneric = None;
     ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
-                     " generated while creating template variant " + ctx->highlightWarning(variantName),
+                     " generated while creating generic variant " + ctx->highlightWarning(variantName),
                  range);
   }
-  ctx->activeTemplate = prevTemp;
-  SHOW("Created variant for template core type: " << cTy->getFullName())
+  ctx->activeGeneric = prevTemp;
+  SHOW("Created variant for generic core type: " << cTy->getFullName())
   return cTy;
 }
 

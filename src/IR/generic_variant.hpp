@@ -1,5 +1,5 @@
-#ifndef QAT_IR_TEMPLATE_VARIANT_HPP
-#define QAT_IR_TEMPLATE_VARIANT_HPP
+#ifndef QAT_IR_GENERIC_VARIANT_HPP
+#define QAT_IR_GENERIC_VARIANT_HPP
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
@@ -7,16 +7,15 @@
 
 namespace qat::IR {
 
-template <typename T> class TemplateVariant {
+template <typename T> class GenericVariant {
 private:
-  T                 *entity;
-  Vec<IR::QatType *> types;
+  T*                entity;
+  Vec<IR::QatType*> types;
 
 public:
-  TemplateVariant(T *_entity, Vec<IR::QatType *> _types)
-      : entity(_entity), types(std::move(_types)) {}
+  GenericVariant(T* _entity, Vec<IR::QatType*> _types) : entity(_entity), types(std::move(_types)) {}
 
-  useit bool check(Vec<IR::QatType *> _types) const {
+  useit bool check(Vec<IR::QatType*> _types) const {
     if (types.size() != _types.size()) {
       return false;
     } else {
@@ -30,7 +29,7 @@ public:
       return result;
     }
   }
-  useit T *get() { return entity; }
+  useit T* get() { return entity; }
 };
 
 } // namespace qat::IR

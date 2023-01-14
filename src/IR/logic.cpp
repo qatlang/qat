@@ -8,7 +8,7 @@
 
 namespace qat::IR {
 
-String Logic::getTemplateVariantName(String mainName, Vec<IR::QatType*>& types) {
+String Logic::getGenericVariantName(String mainName, Vec<IR::QatType*>& types) {
   String result(std::move(mainName));
   result += "'<";
   for (usize i = 0; i < types.size(); i++) {

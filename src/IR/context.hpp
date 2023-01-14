@@ -27,7 +27,7 @@ enum class LoopType {
   infinite,
 };
 
-enum class TemplateEntityType {
+enum class GenericEntityType {
   function,
   memberFunction,
   coreType,
@@ -35,11 +35,11 @@ enum class TemplateEntityType {
   typeDefinition,
 };
 
-struct TemplateEntityMarker {
-  String             name;
-  TemplateEntityType type;
-  FileRange          fileRange;
-  u64                warningCount = 0;
+struct GenericEntityMarker {
+  String            name;
+  GenericEntityType type;
+  FileRange         fileRange;
+  u64               warningCount = 0;
 };
 
 class LoopInfo {
@@ -113,14 +113,14 @@ public:
   mutable u64                                          stringCount;
   Vec<fs::path>                                        llvmOutputPaths;
   Vec<String>                                          nativeLibsToLink;
-  mutable Maybe<TemplateEntityMarker>                  activeTemplate;
+  mutable Maybe<GenericEntityMarker>                   activeGeneric;
   mutable Vec<CodeProblem>                             codeProblems;
   mutable Maybe<std::chrono::steady_clock::time_point> qatStartTime;
   mutable Maybe<std::chrono::steady_clock::time_point> qatEndTime;
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkStartTime;
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkEndTime;
 
-  void             nameCheck(const Identifier& name, const String& entityType, Maybe<String> templateID);
+  void             nameCheck(const Identifier& name, const String& entityType, Maybe<String> genericID);
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;

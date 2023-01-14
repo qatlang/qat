@@ -13,7 +13,7 @@ class GenericAbstractType;
 
 class QatType {
 protected:
-  static Vec<GenericAbstractType*> templates;
+  static Vec<GenericAbstractType*> generics;
 
 private:
   bool                 variable;

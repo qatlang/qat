@@ -24,7 +24,7 @@ enum class TypeKind {
   reference,       // Reference to another QatType type
   function,
   future,
-  templated, // Templated type
+  genericAbstract, // Generic abstract type
   maybe,
 };
 

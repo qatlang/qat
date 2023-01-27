@@ -4,7 +4,10 @@
 namespace qat::utils {
 
 String numberToPosition(u64 number) {
-  // NOLINTNEXTLINE(readability-magic-numbers)
+  // NOLINTBEGIN(readability-magic-numbers)
+  if (((number % 100) >= 11) && ((number % 100) <= 20)) {
+    return std::to_string(number) + "th";
+  }
   switch (number % 10u) {
     case 1:
       return std::to_string(number).append("st");
@@ -15,6 +18,7 @@ String numberToPosition(u64 number) {
     default:
       return std::to_string(number).append("th");
   }
+  // NOLINTEND(readability-magic-numbers)
 }
 
 } // namespace qat::utils

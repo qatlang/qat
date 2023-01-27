@@ -4,6 +4,7 @@ add_library(QAT_UTILS
 	get_parent_names.cpp
 	identifier.cpp
 	is_integer.cpp
+	number_to_position.cpp
 	parse_boxes_identifier.cpp
 	random_number.cpp
 	split_string.cpp

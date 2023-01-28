@@ -13,6 +13,8 @@ IR::ConstantValue* SizeOfType::emit(IR::Context* ctx) {
                                IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
 }
 
+String SizeOfType::toString() const { return "type'size(" + type->toString() + ")"; }
+
 Json SizeOfType::toJson() const {
   return Json()._("nodeType", "sizeOfType")._("type", type->toJson())._("fileRange", fileRange);
 }

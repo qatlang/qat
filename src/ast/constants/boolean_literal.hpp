@@ -15,6 +15,7 @@ public:
 
   useit IR::ConstantValue* emit(IR::Context* ctx) final;
   useit Json               toJson() const final;
+  useit String             toString() const final;
   useit NodeType           nodeType() const final { return NodeType::booleanLiteral; }
 };
 

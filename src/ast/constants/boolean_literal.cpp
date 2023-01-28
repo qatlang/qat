@@ -9,6 +9,8 @@ IR::ConstantValue* BooleanLiteral::emit(IR::Context* ctx) {
   return new IR::ConstantValue(llvm::ConstantInt::getBool(ctx->llctx, value), IR::UnsignedType::getBool(ctx->llctx));
 }
 
+String BooleanLiteral::toString() const { return value ? "true" : "false"; }
+
 Json BooleanLiteral::toJson() const {
   return Json()._("nodeType", "booleanLiteral")._("value", value)._("fileRange", fileRange);
 }

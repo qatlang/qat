@@ -24,6 +24,8 @@ IR::ConstantValue* StringLiteral::emit(IR::Context* ctx) {
       IR::StringSliceType::get(ctx->llctx));
 }
 
+String StringLiteral::toString() const { return '"' + value + '"'; }
+
 Json StringLiteral::toJson() const {
   return Json()._("nodeType", "stringLiteral")._("value", value)._("fileRange", fileRange);
 }

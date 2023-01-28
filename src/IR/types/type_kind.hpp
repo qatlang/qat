@@ -16,18 +16,20 @@ enum class TypeKind {
   Float,           // Floating point number
   integer,         // Signed integer
   unsignedInteger, // Unsigned integer
-  stringSlice,     // String slice
-  cstring,         // C string
+  stringSlice,     // String Slice
+  cstring,         // C style string
   mixType,         // Mix Type (Discriminated Union / Sum Type)
   tuple,           // Tuple is a product type of multiple types
   pointer,         // Pointer to another QatType type
   reference,       // Reference to another QatType type
-  function,
-  definition, // A type definition
-  choice,
-  future,
-  maybe,
-  region,
+  function,        // Function type
+  definition,      // A type definition
+  choice,          // Choice (C++ style enums)
+  future,          // Future type
+  maybe,           // Optional type
+  region,          // Memory safe arena allocator
+  opaque,          // Opaque type for temporary representation
+  typed,           // Type Wrapping to hold another type
 };
 
 } // namespace qat::IR

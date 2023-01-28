@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class UnsignedLiteral : public Expression {
+class UnsignedLiteral : public ConstantExpression {
 private:
   String               value;
   mutable IR::QatType* expected = nullptr;
@@ -17,6 +17,7 @@ public:
   void  setType(IR::QatType* typ) const;
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
+  useit String             toString() const final;
   useit NodeType           nodeType() const override { return NodeType::unsignedLiteral; }
 };
 

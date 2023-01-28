@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 UnsignedLiteral::UnsignedLiteral(String _value, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), value(std::move(_value)) {}
+    : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::ConstantValue* UnsignedLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
@@ -28,5 +28,7 @@ void UnsignedLiteral::setType(IR::QatType* typ) const { expected = typ; }
 Json UnsignedLiteral::toJson() const {
   return Json()._("nodeType", "unsignedLiteral")._("value", value)._("fileRange", fileRange);
 }
+
+String UnsignedLiteral::toString() const { return value; }
 
 } // namespace qat::ast

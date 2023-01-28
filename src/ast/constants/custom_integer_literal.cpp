@@ -1,5 +1,6 @@
 #include "./custom_integer_literal.hpp"
 #include "../../utils/json.hpp"
+#include <string>
 
 namespace qat::ast {
 
@@ -26,5 +27,7 @@ Json CustomIntegerLiteral::toJson() const {
       ._("value", value)
       ._("fileRange", fileRange);
 }
+
+String CustomIntegerLiteral::toString() const { return value + "_" + std::to_string(bitWidth); }
 
 } // namespace qat::ast

@@ -7,24 +7,16 @@ namespace qat::ast {
 
 class FloatLiteral : public ConstantExpression {
 private:
-  /**
-   *  String representation of the floating point number
-   *
-   */
   String value;
 
 public:
-  /**
-   *  A Float Literal
-   *
-   * @param _value String representation of the floating point number
-   * @param _fileRange
-   */
   FloatLiteral(String _value, FileRange _fileRange);
 
   IR::ConstantValue* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
+
+  useit String toString() const override;
 
   useit NodeType nodeType() const override { return NodeType::floatLiteral; }
 };

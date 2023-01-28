@@ -16,6 +16,8 @@ IR::ConstantValue* FloatLiteral::emit(IR::Context* ctx) {
                                IR::FloatType::get(IR::FloatTypeKind::_32, ctx->llctx));
 }
 
+String FloatLiteral::toString() const { return value; }
+
 Json FloatLiteral::toJson() const {
   return Json()._("nodeType", "floatLiteral")._("value", value)._("fileRange", fileRange);
 }

@@ -30,6 +30,8 @@ IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
   }
 }
 
+String NullPointer::toString() const { return "null"; }
+
 Json NullPointer::toJson() const { return Json()._("nodeType", "nullPointer"); }
 
 } // namespace qat::ast

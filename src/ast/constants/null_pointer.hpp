@@ -21,6 +21,7 @@ public:
 
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
+  useit String             toString() const final;
   useit NodeType           nodeType() const override { return NodeType::nullPointer; }
 };
 

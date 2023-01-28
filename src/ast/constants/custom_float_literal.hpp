@@ -19,6 +19,7 @@ public:
 
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
+  useit String             toString() const override;
   useit NodeType           nodeType() const override { return NodeType::customFloatLiteral; }
 };
 

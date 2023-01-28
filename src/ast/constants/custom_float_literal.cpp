@@ -36,6 +36,8 @@ IR::ConstantValue* CustomFloatLiteral::emit(IR::Context* ctx) {
   }
 }
 
+String CustomFloatLiteral::toString() const { return value + "_" + kind; }
+
 Json CustomFloatLiteral::toJson() const {
   return Json()._("nodeType", "customFloatLiteral")._("nature", kind)._("value", value)._("fileRange", fileRange);
 }

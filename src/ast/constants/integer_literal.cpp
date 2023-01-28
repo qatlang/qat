@@ -24,6 +24,8 @@ IR::ConstantValue* IntegerLiteral::emit(IR::Context* ctx) {
 
 void IntegerLiteral::setType(IR::QatType* typ) const { expected = typ; }
 
+String IntegerLiteral::toString() const { return value; }
+
 Json IntegerLiteral::toJson() const {
   return Json()._("nodeType", "integerLiteral")._("value", value)._("fileRange", fileRange);
 }

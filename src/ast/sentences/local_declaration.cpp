@@ -29,6 +29,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Ide
                    " already exists in this scope. Please change name of this "
                    "declaration or check the logic",
                fileRange);
+  } else {
+    ctx->genericNameCheck(name.value, name.range);
   }
   IR::QatType* declType = nullptr;
   if (type) {

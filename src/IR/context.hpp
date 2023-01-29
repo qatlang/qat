@@ -93,7 +93,7 @@ private:
 
   Vec<IR::QatModule*> modulesWithErrors;
   bool                moduleAlreadyHasErrors(IR::QatModule* mod);
-  void                addError(String message, FileRange fileRange);
+  void                addError(const String& message, const FileRange& fileRange);
   QatSitter*          sitter = nullptr;
 
 public:
@@ -120,7 +120,8 @@ public:
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkStartTime;
   mutable Maybe<std::chrono::steady_clock::time_point> clangLinkEndTime;
 
-  void             nameCheck(const Identifier& name, const String& entityType, Maybe<String> genericID);
+  void             nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
+  void             genericNameCheck(const String& name, const FileRange& range);
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
   useit utils::RequesterInfo getReqInfo() const;

@@ -42,7 +42,24 @@ Context::~Context() {
   }
 }
 
-void Context::nameCheck(const Identifier& name, const String& entityType, Maybe<String> genericID) {
+void Context::genericNameCheck(const String& name, const FileRange& range) {
+  if (fn) {
+    if (fn->hasGenericParameter(name)) {
+      Error("A generic parameter named " + highlightError(name) +
+                " is present in this function. This will lead to ambiguity.",
+            range);
+    } else if (fn->isMemberFunction()) {
+      auto* memFn = ((IR::MemberFunction*)fn);
+      if (memFn->getParentType()->hasGeneric(name)) {
+        Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
+                  highlightError(memFn->getParentType()->getFullName()) + " so this will lead to ambiguity",
+              range);
+      }
+    }
+  }
+}
+
+void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID) {
   auto reqInfo = getReqInfo();
   if (mod->hasCoreType(name.value)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
@@ -374,7 +391,7 @@ bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
   return false;
 }
 
-void Context::addError(String message, FileRange fileRange) {
+void Context::addError(const String& message, const FileRange& fileRange) {
   auto* cfg = cli::Config::get();
   if (activeGeneric) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeGeneric->name,

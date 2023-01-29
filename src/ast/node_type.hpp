@@ -87,6 +87,8 @@ enum class NodeType {
   none,
   modInfo,
   defineRegion,
+  constantEntity,
+  constantDefault,
 };
 
 } // namespace qat::ast

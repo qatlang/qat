@@ -8,7 +8,7 @@ Box::Box(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibilit
 
 void Box::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "box", None);
+  ctx->nameCheckInModule(name, "box", None);
   SHOW("Opening box")
   mod->openBox(name, ctx->getVisibInfo(visibility));
   mod->getActive()->nodes = members;

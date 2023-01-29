@@ -12,6 +12,8 @@ namespace qat::ast {
 class GenericAbstractType;
 
 class QatType {
+  friend GenericAbstractType;
+
 protected:
   static Vec<GenericAbstractType*> generics;
 

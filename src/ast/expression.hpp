@@ -40,7 +40,8 @@ public:
   useit IR::ConstantValue* emit(IR::Context* ctx) override = 0;
   useit NodeType           nodeType() const override       = 0;
   useit Json               toJson() const override         = 0;
-  ~ConstantExpression() override                           = default;
+  useit virtual String     toString() const;
+  ~ConstantExpression() override = default;
 };
 
 } // namespace qat::ast

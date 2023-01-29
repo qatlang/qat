@@ -10,7 +10,7 @@ DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<
 
 void DefineChoiceType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "choice type", None);
+  ctx->nameCheckInModule(name, "choice type", None);
   Vec<Identifier> fieldNames;
   Maybe<Vec<i64>> fieldValues;
   Maybe<i64>      lastVal;

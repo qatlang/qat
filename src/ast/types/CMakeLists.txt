@@ -1,6 +1,7 @@
 add_library(QAT_AST_TYPES
 	array.cpp
 	cstring.cpp
+	const_generic.cpp
 	float.cpp
 	future.cpp
 	integer.cpp
@@ -13,6 +14,7 @@ add_library(QAT_AST_TYPES
 	generic_named_type.cpp
 	generic_abstract.cpp
 	tuple.cpp
+	typed_generic.cpp
 	unsigned.cpp
 	void.cpp)
 

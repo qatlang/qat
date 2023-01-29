@@ -13,6 +13,27 @@ IR::Value* Entity::emit(IR::Context* ctx) {
     auto* mod = ctx->getMod();
     if ((names.size() == 1) && (relative == 0)) {
       auto singleName = names.front();
+      if (fun->hasGenericParameter(singleName.value)) {
+        auto* genVal = fun->getGenericParameter(singleName.value);
+        if (genVal->isTyped()) {
+          return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
+        } else if (genVal->isConst()) {
+          return genVal->asConst()->getExpression();
+        } else {
+          ctx->Error("Invalid generic kind", genVal->getRange());
+        }
+      } else if (fun->isMemberFunction()) {
+        if (((IR::MemberFunction*)(ctx->fn))->getParentType()->hasGeneric(singleName.value)) {
+          auto* genVal = ((IR::MemberFunction*)(ctx->fn))->getParentType()->getGeneric(singleName.value);
+          if (genVal->isTyped()) {
+            return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
+          } else if (genVal->isConst()) {
+            return genVal->asConst()->getExpression();
+          } else {
+            ctx->Error("Invalid generic kind", genVal->getRange());
+          }
+        }
+      }
       SHOW("Checking block " << fun->getBlock()->getName())
       if (fun->getBlock()->hasValue(singleName.value)) {
         SHOW("Found local value: " << singleName.value)

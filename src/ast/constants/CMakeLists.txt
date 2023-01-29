@@ -1,11 +1,13 @@
 add_library(QAT_AST_CONSTANTS
-    boolean_literal.cpp
-    custom_float_literal.cpp
-    custom_integer_literal.cpp
-    float_literal.cpp
-    integer_literal.cpp
-    null_pointer.cpp
-    string_literal.cpp
-    size_of_type.cpp
-    type_checker.cpp
-    unsigned_literal.cpp)
+	boolean_literal.cpp
+	custom_float_literal.cpp
+	custom_integer_literal.cpp
+	default.cpp
+	entity.cpp
+	float_literal.cpp
+	integer_literal.cpp
+	null_pointer.cpp
+	string_literal.cpp
+	size_of_type.cpp
+	type_checker.cpp
+	unsigned_literal.cpp)

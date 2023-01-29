@@ -48,6 +48,8 @@ IR::ConstantValue* ConstantDefault::emit(IR::Context* ctx) {
                        " doesn't have a default constant expression associated with it",
                    fileRange);
       }
+    } else {
+      ctx->Error("Invalid generic kind", genVal->getRange());
     }
   } else {
     ctx->Error("No type inferred from the context for constant " + ctx->highlightError("default") + " expression",

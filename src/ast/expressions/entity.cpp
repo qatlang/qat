@@ -22,9 +22,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         } else {
           ctx->Error("Invalid generic kind", genVal->getRange());
         }
-      } else if (fun->isMemberFunction()) {
-        if (((IR::MemberFunction*)(ctx->fn))->getParentType()->hasGeneric(singleName.value)) {
-          auto* genVal = ((IR::MemberFunction*)(ctx->fn))->getParentType()->getGeneric(singleName.value);
+      } else if (ctx->activeType) {
+        if (ctx->activeType->hasGenericParameter(singleName.value)) {
+          auto* genVal = ((IR::MemberFunction*)(ctx->fn))->getParentType()->getGenericParameter(singleName.value);
           if (genVal->isTyped()) {
             return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
           } else if (genVal->isConst()) {

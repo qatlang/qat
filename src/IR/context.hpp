@@ -103,7 +103,7 @@ public:
   IRBuilderTy       builder;
   QatModule*        mod        = nullptr;
   IR::Function*     fn         = nullptr; // Active function
-  IR::CoreType*     activeType = nullptr; // Active core type
+  IR::ExpandedType* activeType = nullptr; // Active core type
   Vec<LoopInfo*>    loopsInfo;
   Vec<Breakable*>   breakables;
   Vec<fs::path>     executablePaths;

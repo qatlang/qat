@@ -19,9 +19,9 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
-    } else if (ctx->fn && ctx->fn->isMemberFunction()) {
-      if (((IR::MemberFunction*)(ctx->fn))->getParentType()->hasGeneric(identifiers.front().value)) {
-        auto* genVal = ctx->activeType->getGeneric(identifiers.front().value);
+    } else if (ctx->activeType) {
+      if (ctx->activeType->hasGenericParameter(identifiers.front().value)) {
+        auto* genVal = ctx->activeType->getGenericParameter(identifiers.front().value);
         if (genVal->isTyped()) {
           return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
         } else if (genVal->isConst()) {

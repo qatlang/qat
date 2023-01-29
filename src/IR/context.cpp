@@ -43,19 +43,14 @@ Context::~Context() {
 }
 
 void Context::genericNameCheck(const String& name, const FileRange& range) {
-  if (fn) {
-    if (fn->hasGenericParameter(name)) {
-      Error("A generic parameter named " + highlightError(name) +
-                " is present in this function. This will lead to ambiguity.",
-            range);
-    } else if (fn->isMemberFunction()) {
-      auto* memFn = ((IR::MemberFunction*)fn);
-      if (memFn->getParentType()->hasGeneric(name)) {
-        Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
-                  highlightError(memFn->getParentType()->getFullName()) + " so this will lead to ambiguity",
-              range);
-      }
-    }
+  if (fn && fn->hasGenericParameter(name)) {
+    Error("A generic parameter named " + highlightError(name) +
+              " is present in this function. This will lead to ambiguity.",
+          range);
+  } else if (activeType && activeType->hasGenericParameter(name)) {
+    Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
+              highlightError(activeType->getFullName()) + " so this will lead to ambiguity",
+          range);
   }
 }
 

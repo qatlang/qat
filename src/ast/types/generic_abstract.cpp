@@ -1,68 +1,35 @@
 #include "./generic_abstract.hpp"
+#include "./const_generic.hpp"
+#include "./typed_generic.hpp"
 #include "qat_type.hpp"
 
 namespace qat::ast {
 
-GenericAbstractType::GenericAbstractType(String _id, String _name, bool isVariable, Maybe<ast::QatType*> _defaultTy,
-                                         FileRange _fileRange)
-    : QatType(isVariable, std::move(_fileRange)), id(std::move(_id)), name(std::move(_name)), defaultTy(_defaultTy) {
-  generics.push_back(this);
+GenericAbstractType::GenericAbstractType(u64 _index, Identifier _name, GenericKind _kind, FileRange _range)
+    : index(_index), name(std::move(_name)), kind(_kind), range(std::move(_range)) {
+  ast::QatType::generics.push_back(this);
 }
 
-String GenericAbstractType::getID() const { return id; }
+usize GenericAbstractType::getIndex() const { return index; }
 
-String GenericAbstractType::getName() const { return name; }
+Identifier GenericAbstractType::getName() const { return name; }
 
-bool GenericAbstractType::hasDefault() const { return defaultTy.has_value(); }
+FileRange GenericAbstractType::getRange() const { return range; }
 
-Maybe<ast::QatType*> GenericAbstractType::getDefault() const { return defaultTy; }
+bool GenericAbstractType::isConst() const { return kind == GenericKind::constGeneric; }
 
-void GenericAbstractType::setType(IR::QatType* typ) const {
-  for (auto* temp : generics) {
-    if (temp->id == id) {
-      temp->typeValue = typ;
-    }
-  }
-}
+TypedGeneric* GenericAbstractType::asTyped() const { return (TypedGeneric*)this; }
 
-bool GenericAbstractType::isSet() const { return (typeValue != nullptr) || (defaultTy.has_value()); }
+bool GenericAbstractType::isTyped() const { return kind == GenericKind::typedGeneric; }
 
-void GenericAbstractType::unsetType() const {
-  for (auto* temp : generics) {
-    if (temp->id == id) {
-      temp->typeValue = nullptr;
-    }
-  }
-}
+ConstGeneric* GenericAbstractType::asConst() const { return (ConstGeneric*)this; }
 
-String GenericAbstractType::getGenericID() const { return id; }
-
-String GenericAbstractType::getGenericName() const { return name; }
-
-TypeKind GenericAbstractType::typeKind() const { return TypeKind::genericAbstract; }
-
-IR::QatType* GenericAbstractType::emit(IR::Context* ctx) {
-  if (typeValue) {
-    return typeValue;
+IR::GenericType* GenericAbstractType::toIRGenericType() const {
+  if (isTyped()) {
+    return asTyped()->toIR();
   } else {
-    if (hasDefault()) {
-      return defaultTy.value()->emit(ctx);
-    } else {
-      ctx->Error("No type provided for the generic type", fileRange);
-    }
+    return asConst()->toIR();
   }
-  return nullptr;
 }
-
-Json GenericAbstractType::toJson() const {
-  return Json()
-      ._("typeKind", "generic")
-      ._("id", id)
-      ._("name", name)
-      ._("isVariable", isVariable())
-      ._("fileRange", fileRange);
-}
-
-String GenericAbstractType::toString() const { return "var " + name; }
 
 } // namespace qat::ast

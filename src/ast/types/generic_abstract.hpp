@@ -2,39 +2,45 @@
 #define QAT_AST_TYPES_GENERIC_ABSTRACT_HPP
 
 #include "../../IR/context.hpp"
-#include "./qat_type.hpp"
+#include "../../utils/identifier.hpp"
 
 namespace qat::ast {
 
-class GenericAbstractType : public QatType {
-  String               id;
-  String               name;
-  Maybe<ast::QatType*> defaultTy;
+enum class GenericKind {
+  typedGeneric,
+  constGeneric,
+};
 
-  mutable IR::QatType* typeValue = nullptr;
+class TypedGeneric;
+class ConstGeneric;
+
+class GenericAbstractType {
+protected:
+  usize       index;
+  Identifier  name;
+  GenericKind kind;
+  FileRange   range;
+
+  GenericAbstractType(usize index, Identifier name, GenericKind kind, FileRange range);
 
 public:
-  // NOLINTNEXTLINE(readability-identifier-length)
-  GenericAbstractType(String id, String name, bool _variable, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange);
+  useit usize      getIndex() const;
+  useit Identifier getName() const;
+  useit FileRange  getRange() const;
 
-  useit String getID() const;
-  useit String getName() const;
+  useit bool          isTyped() const;
+  useit TypedGeneric* asTyped() const;
+  useit bool          isConst() const;
+  useit ConstGeneric* asConst() const;
 
-  useit bool hasDefault() const;
-  useit Maybe<ast::QatType*> getDefault() const;
+  virtual void       emit(IR::Context* ctx) const = 0;
+  useit virtual bool hasDefault() const           = 0;
+  useit virtual bool isSet() const                = 0;
+  virtual void       unset() const                = 0;
 
-  void setType(IR::QatType* typ) const;
-  void unsetType() const;
+  useit IR::GenericType* toIRGenericType() const;
 
-  useit bool isSet() const;
-
-  useit String getGenericID() const;
-  useit String getGenericName() const;
-
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final;
-  useit Json         toJson() const final;
-  useit String       toString() const final;
+  virtual ~GenericAbstractType() = default;
 };
 
 } // namespace qat::ast

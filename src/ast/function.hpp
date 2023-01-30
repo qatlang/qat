@@ -11,7 +11,7 @@
 
 namespace qat::ast {
 
-class FunctionPrototype : public Node {
+class FunctionPrototype final : public Node {
 private:
   friend class FunctionDefinition;
   Identifier            name;
@@ -45,7 +45,7 @@ public:
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::functionPrototype; }
-  ~FunctionPrototype();
+  ~FunctionPrototype() final;
 };
 
 class FunctionDefinition : public Node {

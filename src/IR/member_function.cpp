@@ -18,9 +18,9 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, Expanded
                                bool is_variable_arguments, bool _is_static, const FileRange& _fileRange,
                                const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx)
     : Function(_parent->getParent(),
-               Identifier(_parent->getFullName() + (_is_static ? ":" : "'") + _name.value, _name.range), returnType,
-               _isReturnTypeVariable, _is_async, std::move(_args), is_variable_arguments, _fileRange, _visibility_info,
-               ctx, true),
+               Identifier(_parent->getFullName() + (_is_static ? ":" : "'") + _name.value, _name.range),
+               {/* Generics */}, returnType, _isReturnTypeVariable, _is_async, std::move(_args), is_variable_arguments,
+               _fileRange, _visibility_info, ctx, true),
       parent(_parent), isStatic(_is_static), isVariation(_isVariation), fnType(_fnType), selfName(_name) {
   SHOW("Member function name :: " << name.value << " ; " << this)
   switch (fnType) {
@@ -194,7 +194,7 @@ MemberFunction* MemberFunction::CreateConstructor(ExpandedType* parent, FileRang
     argsInfo.push_back(arg);
   }
   return new MemberFunction(MemberFnType::constructor, true, parent,
-                            Identifier("from'" + std::to_string(parent->constructors.size()), nameRange),
+                            Identifier("from'" + std::to_string(parent->constructors.size()), std::move(nameRange)),
                             VoidType::get(ctx), false, false, argsInfo, hasVariadicArgs, false, fileRange, visibInfo,
                             ctx);
 }

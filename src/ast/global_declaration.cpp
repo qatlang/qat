@@ -1,5 +1,6 @@
 #include "./global_declaration.hpp"
 #include "../memory_tracker.hpp"
+#include "llvm/IR/Constant.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Value.h"
 
@@ -12,7 +13,7 @@ GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expressio
 
 void GlobalDeclaration::define(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "global value", None);
+  ctx->nameCheckInModule(name, "global value", None);
   auto* init = mod->getGlobalInitialiser(ctx);
   ctx->fn    = init;
   init->getBlock()->setActive(ctx->builder);
@@ -22,14 +23,16 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   if (!value) {
     ctx->Error("Expected a value to be assigned for global declaration", fileRange);
   }
-  auto*                 typ  = type->emit(ctx);
-  auto*                 val  = value->emit(ctx);
-  llvm::GlobalVariable* gvar = nullptr;
+  auto*                  typ  = type->emit(ctx);
+  auto*                  val  = value->emit(ctx);
+  llvm::GlobalVariable*  gvar = nullptr;
+  Maybe<llvm::Constant*> initialValue;
   SHOW("Global is a variable: " << (isVariable ? "true" : "false"))
   if (val->isConstVal()) {
     gvar = new llvm::GlobalVariable(
         *mod->getLLVMModule(), typ->getLLVMType(), !isVariable, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
         llvm::dyn_cast<llvm::Constant>(val->getLLVM()), mod->getFullNameWithChild(name.value));
+    initialValue = llvm::cast<llvm::Constant>(val->getLLVM());
   } else {
     mod->incrementNonConstGlobalCounter();
     gvar = new llvm::GlobalVariable(
@@ -37,8 +40,9 @@ void GlobalDeclaration::define(IR::Context* ctx) {
         llvm::Constant::getNullValue(typ->getLLVMType()), mod->getFullNameWithChild(name.value));
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
-  globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, gvar, ctx->getVisibInfo(visibility));
-  ctx->fn      = nullptr;
+  globalEntity =
+      new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, initialValue, gvar, ctx->getVisibInfo(visibility));
+  ctx->fn = nullptr;
 }
 
 IR::Value* GlobalDeclaration::emit(IR::Context* ctx) { return globalEntity; }

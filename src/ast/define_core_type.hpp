@@ -16,7 +16,7 @@
 
 namespace qat::ast {
 
-class DefineCoreType : public Node {
+class DefineCoreType final : public Node {
 public:
   class Member {
   public:
@@ -102,6 +102,7 @@ public:
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::defineCoreType; }
+  ~DefineCoreType() final;
 };
 
 } // namespace qat::ast

@@ -12,7 +12,7 @@
 
 namespace qat::ast {
 
-class OperatorPrototype : public Node {
+class OperatorPrototype final : public Node {
   friend class OperatorDefinition;
 
 private:

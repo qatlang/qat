@@ -1,6 +1,8 @@
 #include "./function.hpp"
 #include "../ast/function.hpp"
+#include "../ast/types/const_generic.hpp"
 #include "../ast/types/generic_abstract.hpp"
+#include "../ast/types/typed_generic.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
 #include "./logic.hpp"
@@ -10,6 +12,7 @@
 #include "./types/region.hpp"
 #include "control_flow.hpp"
 #include "member_function.hpp"
+#include "types/generics.hpp"
 #include "types/qat_type.hpp"
 #include "types/reference.hpp"
 #include "types/unsigned.hpp"
@@ -269,16 +272,16 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
   }
 }
 
-Function::Function(QatModule* _mod, Identifier _name, QatType* returnType, bool _isRetTypeVariable, bool _is_async,
-                   Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
-                   const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn,
-                   llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
+Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType,
+                   bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args, bool _isVariadicArguments,
+                   FileRange _fileRange, const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx,
+                   bool isMemberFn, llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
-      name(std::move(_name)), isReturnValueVariable(_isRetTypeVariable), mod(_mod), arguments(std::move(_args)),
-      visibility_info(_visibility_info), fileRange(std::move(_fileRange)), is_async(_is_async),
-      hasVariadicArguments(_isVariadicArguments) //
+      name(std::move(_name)), generics(std::move(_generics)), isReturnValueVariable(_isRetTypeVariable), mod(_mod),
+      arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
+      is_async(_is_async), hasVariadicArguments(_isVariadicArguments) //
 {
-  SHOW("Function name :: " << name.value << " ; " << this)
+  SHOW("Function name :: " << name.value)
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
     argTypes.push_back(
@@ -363,12 +366,13 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   }
 }
 
-Function* Function::Create(QatModule* mod, Identifier name, QatType* returnTy, const bool isReturnTypeVariable,
-                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
-                           const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
-                           llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
-  return new Function(mod, std::move(name), returnTy, isReturnTypeVariable, isAsync, std::move(args), hasVariadicArgs,
-                      std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
+Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* returnTy,
+                           const bool isReturnTypeVariable, const bool isAsync, Vec<Argument> args,
+                           const bool hasVariadicArgs, FileRange fileRange, const utils::VisibilityInfo& visibilityInfo,
+                           llvm::LLVMContext& ctx, llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
+  return new Function(mod, std::move(name), std::move(_generics), returnTy, isReturnTypeVariable, isAsync,
+                      std::move(args), hasVariadicArgs, std::move(fileRange), visibilityInfo, ctx, false, linkage,
+                      ignoreParentName);
 }
 
 void Function::updateOverview() {
@@ -392,6 +396,24 @@ bool Function::isAsyncFunction() const { return is_async; }
 Identifier Function::argumentNameAt(u32 index) const { return arguments.at(index).getName(); }
 
 Identifier Function::getName() const { return name; }
+
+bool Function::hasGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->getName().value == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+GenericType* Function::getGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->getName().value == name) {
+      return gen;
+    }
+  }
+  return nullptr;
+}
 
 String Function::getFullName() const { return mod->getFullNameWithChild(name.value); }
 
@@ -461,15 +483,24 @@ usize GenericFunction::getVariantCount() const { return variants.size(); }
 
 QatModule* GenericFunction::getModule() const { return parent; }
 
-Function* GenericFunction::fillGenerics(Vec<IR::QatType*> types, IR::Context* ctx, const FileRange& fileRange) {
+ast::GenericAbstractType* GenericFunction::getGenericAt(usize index) const { return generics.at(index); }
+
+useit bool GenericFunction::allTypesHaveDefaults() const {
+  for (auto* gen : generics) {
+    if (!gen->hasDefault()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Context* ctx, const FileRange& fileRange) {
   for (auto var : variants) {
-    if (var.check(types)) {
+    if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }
-  for (usize i = 0; i < generics.size(); i++) {
-    generics.at(i)->setType(types.at(i));
-  }
+  IR::fillGenerics(ctx, generics, types, fileRange);
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
   auto prevTemp      = ctx->activeGeneric;
@@ -477,7 +508,7 @@ Function* GenericFunction::fillGenerics(Vec<IR::QatType*> types, IR::Context* ct
   auto* fun          = (IR::Function*)functionDefinition->emit(ctx);
   variants.push_back(GenericVariant<Function>(fun, types));
   for (auto* temp : generics) {
-    temp->unsetType();
+    temp->unset();
   }
   if (ctx->activeGeneric->warningCount > 0) {
     auto count         = ctx->activeGeneric->warningCount;

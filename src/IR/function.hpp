@@ -9,6 +9,7 @@
 #include "./value.hpp"
 #include "entity_overview.hpp"
 #include "generic_variant.hpp"
+#include "types/generics.hpp"
 #include "types/qat_type.hpp"
 #include "uniq.hpp"
 #include "llvm/IR/BasicBlock.h"
@@ -109,6 +110,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 protected:
   Identifier            name;
+  Vec<GenericType*>     generics;
   bool                  isReturnValueVariable;
   QatModule*            mod;
   Vec<Argument>         arguments;
@@ -128,16 +130,17 @@ protected:
   Maybe<llvm::Function*>   asyncFn;
   Maybe<llvm::StructType*> asyncArgTy;
 
-  Function(QatModule* mod, Identifier _name, QatType* returnType, bool _isReturnValueVariable, bool _is_async,
-           Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
-           const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn = false,
+  Function(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType,
+           bool _isReturnValueVariable, bool _is_async, Vec<Argument> _args, bool has_variadic_arguments,
+           FileRange fileRange, const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx,
+           bool                            isMemberFn       = false,
            llvm::GlobalValue::LinkageTypes _linkage         = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
            bool                            ignoreParentName = false);
 
 public:
-  static Function*   Create(QatModule* mod, Identifier name, QatType* return_type, bool isReturnValueVariable,
-                            bool is_async, Vec<Argument> args, bool has_variadic_args, FileRange fileRange,
-                            const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+  static Function*   Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* return_type,
+                            bool isReturnValueVariable, bool is_async, Vec<Argument> args, bool has_variadic_args,
+                            FileRange fileRange, const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
                             llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                             bool                            ignoreParentName = false);
   useit Value*       call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
@@ -162,6 +165,8 @@ public:
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
   useit IR::LocalValue* getFunctionCommonIndex();
+  useit bool            hasGenericParameter(const String& name) const;
+  useit GenericType*    getGenericParameter(const String& name) const;
 
   void updateOverview() override;
 
@@ -188,8 +193,10 @@ public:
   useit usize      getTypeCount() const;
   useit usize      getVariantCount() const;
   useit QatModule* getModule() const;
+  useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit utils::VisibilityInfo getVisibility() const;
-  useit Function*             fillGenerics(Vec<IR::QatType*> _types, IR::Context* ctx, const FileRange& fileRange);
+  useit Function* fillGenerics(Vec<IR::GenericToFill*> _types, IR::Context* ctx, const FileRange& fileRange);
+  useit bool      allTypesHaveDefaults() const;
 };
 
 void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const FileRange& fileRange);

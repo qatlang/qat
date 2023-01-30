@@ -187,8 +187,8 @@ Function* QatModule::createFunction(const Identifier& name, QatType* returnType,
                                     const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
                                     llvm::LLVMContext& ctx) {
   SHOW("Creating IR function")
-  auto* fun = Function::Create(this, name, returnType, isReturnTypeVariable, isAsync, std::move(args), isVariadic,
-                               fileRange, visibility, ctx);
+  auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isReturnTypeVariable, isAsync, std::move(args),
+                               isVariadic, fileRange, visibility, ctx);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -391,10 +391,10 @@ bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box
 
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!moduleInitialiser) {
-    moduleInitialiser = IR::Function::Create(
-        this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), IR::VoidType::get(ctx->llctx), false,
-        false, {}, false, FileRange("", FilePos{0u, 0u}, FilePos{0u, 0u}), utils::VisibilityInfo::pub(), ctx->llctx);
-    auto* entry = new IR::Block(moduleInitialiser, nullptr);
+    moduleInitialiser = IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
+                                             {/* Generics */}, IR::VoidType::get(ctx->llctx), false, false, {}, false,
+                                             name.range, utils::VisibilityInfo::pub(), ctx->llctx);
+    auto* entry       = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
   }
   return moduleInitialiser;

@@ -4,15 +4,16 @@ add_library(QAT_AST_TYPES
 	const_generic.cpp
 	float.cpp
 	future.cpp
+	generic_named_type.cpp
+	generic_abstract.cpp
 	integer.cpp
+	linked_generic.cpp
 	maybe.cpp
 	named.cpp
 	reference.cpp
 	pointer.cpp
 	qat_type.cpp
 	string_slice.cpp
-	generic_named_type.cpp
-	generic_abstract.cpp
 	tuple.cpp
 	typed_generic.cpp
 	unsigned.cpp

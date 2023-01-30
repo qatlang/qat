@@ -15,19 +15,23 @@ class QatModule;
 
 class GlobalEntity : public Value, public EntityOverview {
 private:
-  Identifier            name;
-  utils::VisibilityInfo visibility;
-  QatModule*            parent;
-  u64                   loads;
-  u64                   stores;
-  u64                   refers;
+  Identifier             name;
+  utils::VisibilityInfo  visibility;
+  QatModule*             parent;
+  Maybe<llvm::Constant*> initialValue;
+
+  u64 loads;
+  u64 stores;
+  u64 refers;
 
 public:
-  GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable, llvm::Value* _value,
-               const utils::VisibilityInfo& _visibility);
+  GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable,
+               Maybe<llvm::Constant*> initialValue, llvm::Value* _value, const utils::VisibilityInfo& _visibility);
 
   useit Identifier getName() const;
   useit String     getFullName() const;
+  useit bool       hasInitialValue() const;
+  useit llvm::Constant* getInitialValue() const;
   useit const utils::VisibilityInfo& getVisibility() const;
   useit u64                          getLoadCount() const;
   useit u64                          getStoreCount() const;

@@ -1,8 +1,8 @@
 #ifndef QAT_IR_LOGIC_HPP
 #define QAT_IR_LOGIC_HPP
 
-#include "function.hpp"
-#include "types/generics.hpp"
+#include "./function.hpp"
+#include "./generics.hpp"
 
 namespace qat::IR {
 

@@ -4,16 +4,21 @@
 
 namespace qat::IR {
 
-GlobalEntity::GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable, llvm::Value* _value,
+GlobalEntity::GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable,
+                           Maybe<llvm::Constant*> _initialValue, llvm::Value* _value,
                            const utils::VisibilityInfo& _visibility)
-    : Value(_value, _type, _is_variable, Nature::assignable), name(std::move(_name)),
-      EntityOverview("global", Json(), _name.range), visibility(_visibility), parent(_parent) {
+    : Value(_value, _type, _is_variable, Nature::assignable), EntityOverview("global", Json(), _name.range),
+      name(std::move(_name)), visibility(_visibility), parent(_parent), initialValue(_initialValue) {
   parent->globalEntities.push_back(this);
 }
 
 Identifier GlobalEntity::getName() const { return name; }
 
 String GlobalEntity::getFullName() const { return parent->getFullNameWithChild(name.value); }
+
+bool GlobalEntity::hasInitialValue() const { return initialValue.has_value(); }
+
+llvm::Constant* GlobalEntity::getInitialValue() const { return initialValue.value(); }
 
 const utils::VisibilityInfo& GlobalEntity::getVisibility() const { return visibility; }
 

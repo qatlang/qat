@@ -12,6 +12,7 @@ add_library(QAT_AST
 	destructor.cpp
 	expression.cpp
 	function.cpp
+	generics.cpp
 	global_declaration.cpp
 	lib.cpp
 	member_function.cpp

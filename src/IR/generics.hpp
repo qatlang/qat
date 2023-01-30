@@ -1,8 +1,8 @@
 #ifndef QAT_IR_GENERICS_HPP
 #define QAT_IR_GENERICS_HPP
 
-#include "../../utils/identifier.hpp"
-#include "./qat_type.hpp"
+#include "../utils/identifier.hpp"
+#include "./types/qat_type.hpp"
 
 namespace qat::ast {
 class GenericAbstractType;

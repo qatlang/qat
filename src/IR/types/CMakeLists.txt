@@ -10,12 +10,14 @@ add_library(QAT_IR_TYPES
 	future.cpp
 	integer.cpp
 	maybe.cpp
-	reference.cpp
+	opaque.cpp
 	pointer.cpp
 	qat_type.cpp
+	reference.cpp
 	region.cpp
 	string_slice.cpp
 	tuple.cpp
+	typed.cpp
 	mix.cpp
 	unsigned.cpp
 	void.cpp)

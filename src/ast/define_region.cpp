@@ -10,7 +10,7 @@ DefineRegion::DefineRegion(Identifier _name, utils::VisibilityKind _visibKind, F
 
 void DefineRegion::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "region", None);
+  ctx->nameCheckInModule(name, "region", None);
   IR::Region::get(name, mod, ctx->getVisibInfo(visibKind), ctx, fileRange);
 }
 

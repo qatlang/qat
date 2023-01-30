@@ -1,10 +1,10 @@
 #include "./generics.hpp"
-#include "../../ast/types/const_generic.hpp"
-#include "../../ast/types/generic_abstract.hpp"
-#include "../../ast/types/typed_generic.hpp"
-#include "../../utils/number_to_position.hpp"
-#include "../value.hpp"
-#include "typed.hpp"
+#include "../ast/types/const_generic.hpp"
+#include "../ast/types/generic_abstract.hpp"
+#include "../ast/types/typed_generic.hpp"
+#include "../utils/number_to_position.hpp"
+#include "./types/typed.hpp"
+#include "./value.hpp"
 
 namespace qat::IR {
 

@@ -1,6 +1,7 @@
 #include "./logic.hpp"
 #include "../show.hpp"
 #include "function.hpp"
+#include "types/generics.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
@@ -8,16 +9,18 @@
 
 namespace qat::IR {
 
-String Logic::getGenericVariantName(String mainName, Vec<IR::QatType*>& types) {
+String Logic::getGenericVariantName(String mainName, Vec<IR::GenericToFill*>& fills) {
   String result(std::move(mainName));
-  result += "'<";
-  for (usize i = 0; i < types.size(); i++) {
-    result += types.at(i)->toString();
-    if (i != (types.size() - 1)) {
-      result += ", ";
+  result.append("'<");
+  SHOW("Initial part of name")
+  for (usize i = 0; i < fills.size(); i++) {
+    result += fills.at(i)->toString();
+    if (i != (fills.size() - 1)) {
+      result.append(", ");
     }
   }
-  result += ">";
+  SHOW("Middle part done")
+  result.append(">");
   return result;
 }
 

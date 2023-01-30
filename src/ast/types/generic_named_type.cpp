@@ -1,10 +1,14 @@
 #include "./generic_named_type.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
+#include "../constants/default.hpp"
+#include "../constants/integer_literal.hpp"
+#include "../constants/unsigned_literal.hpp"
+#include "../types/const_generic.hpp"
 
 namespace qat::ast {
 
-GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<ast::QatType*> _types, bool _isVariable,
+GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<FillGeneric*> _types, bool _isVariable,
                                    FileRange _fileRange)
     : QatType(_isVariable, std::move(_fileRange)), relative(_relative), names(std::move(_name)),
       genericTypes(std::move(_types)) {}
@@ -48,36 +52,55 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Got current function and block")
   if (mod->hasGenericCoreType(entityName.value) || mod->hasBroughtGenericCoreType(entityName.value) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getReqInfo()).first) {
-    auto* tempCoreTy = mod->getGenericCoreType(entityName.value, ctx->getReqInfo());
-    if (!tempCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
+    auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getReqInfo());
+    if (!genericCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic core type " + ctx->highlightError(fullName.value) + " is not accessible here",
                  fullName.range);
     }
-    tempCoreTy->addMention(entityName.range);
-    ctx->mod = tempCoreTy->getModule();
-    Vec<IR::QatType*> types;
+    genericCoreTy->addMention(entityName.range);
+    ctx->mod = genericCoreTy->getModule();
+    Vec<IR::GenericToFill*> types;
     if (genericTypes.empty()) {
-      if (tempCoreTy->allTypesHaveDefaults()) {
-        types = tempCoreTy->getDefaults(ctx);
-      } else {
+      SHOW("Checking if all generic abstracts have defaults")
+      if (!genericCoreTy->allTypesHaveDefaults()) {
         ctx->Error(
-            "Not all abstracted types in this generic type have a default type associated with it, and hence the type parameter list cannot be empty",
+            "Not all generic parameters in this type have a default value associated with it, and hence the type parameter list cannot be empty. Use " +
+                ctx->highlightError("default") + " to use the default type or value of the generic parameter.",
             fileRange);
       }
-    } else if (tempCoreTy->getTypeCount() != genericTypes.size()) {
-      ctx->Error("Generic core type " + ctx->highlightError(tempCoreTy->getName().value) + " has " +
-                     ctx->highlightError(std::to_string(tempCoreTy->getTypeCount())) + " type parameters. But " +
-                     ((tempCoreTy->getTypeCount() > genericTypes.size()) ? "only " : "") +
-                     ctx->highlightError(std::to_string(genericTypes.size())) + " types were provided",
-                 fileRange);
+      SHOW("Check complete")
+    } else if (genericCoreTy->getTypeCount() != genericTypes.size()) {
+      ctx->Error(
+          "Generic core type " + ctx->highlightError(genericCoreTy->getName().value) + " has " +
+              ctx->highlightError(std::to_string(genericCoreTy->getTypeCount())) + " generic parameters. But " +
+              ((genericCoreTy->getTypeCount() > genericTypes.size()) ? "only " : "") +
+              ctx->highlightError(std::to_string(genericTypes.size())) +
+              " values were provided. Not all generic parameters have default values, and hence the number of values provided must match. Use " +
+              ctx->highlightError("default") + " to use the default type or value of the generic parameter.",
+          fileRange);
     } else {
-      for (auto* typ : genericTypes) {
-        types.push_back(typ->emit(ctx));
+      for (usize i = 0; i < genericTypes.size(); i++) {
+        if (genericTypes.at(i)->isConst()) {
+          auto* gen = genericTypes.at(i);
+          if (gen->isConst() && (gen->asConst()->nodeType() == NodeType::constantDefault)) {
+            ((ast::ConstantDefault*)(gen->asConst()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
+          } else if (genericCoreTy->getGenericAt(i)->isConst() &&
+                     (genericCoreTy->getGenericAt(i)->asConst()->getType() != nullptr)) {
+            if (gen->asConst()->nodeType() == NodeType::integerLiteral) {
+              ((ast::IntegerLiteral*)(gen->asConst()))->setType(genericCoreTy->getGenericAt(i)->asConst()->getType());
+            } else if (gen->asConst()->nodeType() == NodeType::unsignedLiteral) {
+              ((ast::UnsignedLiteral*)(gen->asConst()))->setType(genericCoreTy->getGenericAt(i)->asConst()->getType());
+            }
+          }
+        }
+        types.push_back(genericTypes.at(i)->toFill(ctx));
       }
     }
-    auto* tyRes = tempCoreTy->fillGenerics(types, ctx, fileRange);
-    ctx->fn     = fun;
+    SHOW("Filling generics")
+    auto* tyRes = genericCoreTy->fillGenerics(types, ctx, fileRange);
+    SHOW("Generic filled")
+    ctx->fn = fun;
     if (curr) {
       curr->setActive(ctx->builder);
     }

@@ -104,8 +104,32 @@ void Value::clearAll() {
 ConstantValue::ConstantValue(llvm::Constant* _llConst, IR::QatType* _type)
     : Value(_llConst, _type, false, IR::Nature::pure) {}
 
+ConstantValue::ConstantValue(IR::TypedType* _typed) : Value(nullptr, _typed, false, IR::Nature::pure) {}
+
 llvm::Constant* ConstantValue::getLLVM() const { return (llvm::Constant*)ll; }
 
 bool ConstantValue::isConstVal() const { return true; }
+
+bool ConstantValue::isEqualTo(ConstantValue* other) {
+  if (getType()->isTyped()) {
+    if (other->getType()->isTyped()) {
+      return getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());
+    } else {
+      return false;
+    }
+  } else {
+    if (asConst()->getType()->isTyped()) {
+      if (other->getType()->isTyped()) {
+        return asConst()->getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());
+      } else {
+        return false;
+      }
+    } else if (other->getType()->isTyped()) {
+      return false;
+    } else {
+      return getType()->equalityOf(this, other).value_or(false);
+    }
+  }
+}
 
 } // namespace qat::IR

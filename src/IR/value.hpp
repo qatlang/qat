@@ -1,6 +1,7 @@
 #ifndef QAT_IR_VALUE_HPP
 #define QAT_IR_VALUE_HPP
 
+#include "../IR/types/typed.hpp"
 #include "../utils/json.hpp"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
@@ -58,10 +59,15 @@ public:
 class ConstantValue : public Value {
 public:
   ConstantValue(llvm::Constant* _llconst, IR::QatType* _type);
-  virtual ~ConstantValue() override = default;
+  explicit ConstantValue(IR::TypedType* typed);
+
+  ~ConstantValue() override = default;
 
   useit llvm::Constant* getLLVM() const final;
-  useit bool            isConstVal() const final;
+
+  bool isEqualTo(ConstantValue* other);
+
+  useit bool isConstVal() const final;
 };
 
 } // namespace qat::IR

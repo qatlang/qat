@@ -26,6 +26,7 @@ enum class TypeKind {
   future,
   genericAbstract, // Generic abstract type
   maybe,
+  linkedGeneric,
 };
 
 } // namespace qat::ast

@@ -26,7 +26,7 @@ Json BroughtGroup::toJson() const {
 
 BringEntities::BringEntities(Vec<BroughtGroup*> _entities, const utils::VisibilityInfo& _visibility,
                              FileRange _fileRange)
-    : entities(std::move(_entities)), visibility(_visibility), Node(std::move(_fileRange)) {}
+    : Node(std::move(_fileRange)), entities(std::move(_entities)), visibility(_visibility) {}
 
 IR::Value* BringEntities::emit(IR::Context* ctx) {
   // FIXME - Implement this

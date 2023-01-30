@@ -18,6 +18,31 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
   }
   auto entityName = names.back();
+  if (names.size() == 1) {
+    if ((ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) ||
+        (ctx->activeType && ctx->activeType->hasGenericParameter(entityName.value))) {
+      IR::GenericType* genParam;
+      if (ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) {
+        genParam = ctx->fn->getGenericParameter(entityName.value);
+      } else {
+        genParam = ctx->activeType->getGenericParameter(entityName.value);
+      }
+      if (genParam->isTyped()) {
+        return genParam->asTyped()->getType();
+      } else if (genParam->isConst()) {
+        auto* exp = genParam->asConst()->getExpression();
+        if (exp->getType()->isTyped()) {
+          return exp->getType()->asTyped()->getSubType();
+        } else {
+          ctx->Error("Generic parameter " + ctx->highlightError(entityName.value) +
+                         " is a normal const expression and hence cannot be used as a type",
+                     fileRange);
+        }
+      } else {
+        ctx->Error("Invalid generic kind", fileRange);
+      }
+    }
+  }
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);

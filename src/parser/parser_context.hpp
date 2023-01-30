@@ -2,6 +2,7 @@
 #define QAT_PARSER_PARSER_CONTEXT_HPP
 
 #include "../ast/types/qat_type.hpp"
+#include "../ast/types/typed_generic.hpp"
 #include "../utils/helpers.hpp"
 #include <deque>
 #include <map>
@@ -18,11 +19,12 @@ class ParserContext {
 public:
   ParserContext();
 
-  useit bool hasNamedAbstractGeneric(const String& name) const;
+  useit bool hasTypedGeneric(const String& name) const;
+  useit bool hasConstGeneric(const String& name) const;
   void       addAbstractGeneric(ast::GenericAbstractType* type);
   void       removeNamedGenericAbstract(const String& name);
-  useit ast::GenericAbstractType* getNamedAbstractGeneric(const String& name);
-  useit ast::GenericAbstractType* duplicateTemplate(const String& name, bool isVariable, FileRange fileRange);
+  useit ast::TypedGeneric* getTypedGeneric(const String& name);
+  useit ast::ConstGeneric* getConstGeneric(const String& name);
 
 private:
   // All generic abstracts available in the current scope

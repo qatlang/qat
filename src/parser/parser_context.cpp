@@ -5,9 +5,18 @@ namespace qat::parser {
 
 ParserContext::ParserContext() = default;
 
-bool ParserContext::hasNamedAbstractGeneric(const String& name) const {
+bool ParserContext::hasTypedGeneric(const String& name) const {
   for (auto* tname : generics) {
-    if (tname->getName() == name) {
+    if (tname->isTyped() && tname->getName().value == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ParserContext::hasConstGeneric(const String& name) const {
+  for (auto* tname : generics) {
+    if (tname->isConst() && tname->getName().value == name) {
       return true;
     }
   }
@@ -18,27 +27,26 @@ void ParserContext::addAbstractGeneric(ast::GenericAbstractType* genericType) { 
 
 void ParserContext::removeNamedGenericAbstract(const String& name) {
   for (auto temp = generics.begin(); temp != generics.end(); temp++) {
-    if ((*temp)->getName() == name) {
+    if ((*temp)->getName().value == name) {
       generics.erase(temp);
       break;
     }
   }
 }
 
-ast::GenericAbstractType* ParserContext::getNamedAbstractGeneric(const String& name) {
+ast::TypedGeneric* ParserContext::getTypedGeneric(const String& name) {
   for (auto* temp : generics) {
-    if (temp->getName() == name) {
-      return temp;
+    if (temp->isTyped() && temp->getName().value == name) {
+      return temp->asTyped();
     }
   }
   return nullptr;
 }
 
-// FIXME - Change to generic linked
-ast::GenericAbstractType* ParserContext::duplicateTemplate(const String& name, bool isVariable, FileRange fileRange) {
+ast::ConstGeneric* ParserContext::getConstGeneric(const String& name) {
   for (auto* temp : generics) {
-    if (temp->getName() == name) {
-      return new ast::GenericAbstractType(temp->getID(), name, isVariable, temp->getDefault(), std::move(fileRange));
+    if (temp->isConst() && temp->getName().value == name) {
+      return temp->asConst();
     }
   }
   return nullptr;

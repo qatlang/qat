@@ -33,6 +33,9 @@ class ExpandedType;
 class Context;
 class Function;
 class Value;
+class OpaqueType;
+class TypedType;
+class ConstantValue;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -47,6 +50,10 @@ public:
 
   useit virtual bool hasNoValueSemantics() const;
 
+  useit virtual bool          canBeConstGeneric() const;
+  useit virtual Maybe<String> toConstGenericString(IR::ConstantValue* val) const;
+  useit virtual Maybe<bool>   equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const;
+
   useit static bool         checkTypeExists(const String& name);
   useit static Vec<Region*> allRegions();
   useit bool                isSame(QatType* other);
@@ -57,6 +64,8 @@ public:
   useit virtual bool  isDestructible() const;
   virtual void        destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
 
+  useit bool             isOpaque() const;
+  useit OpaqueType*      asOpaque() const;
   useit bool             isDefinition() const;
   useit DefinitionType*  asDefinition() const;
   useit bool             isInteger() const;
@@ -94,9 +103,13 @@ public:
   useit bool             isRegion() const;
   useit Region*          asRegion() const;
   useit bool             isVoid() const;
+  useit bool             isTyped() const;
+  useit TypedType*       asTyped() const;
+
   useit virtual TypeKind typeKind() const = 0;
   useit virtual String   toString() const = 0;
   useit virtual Json     toJson() const   = 0;
+
   useit llvm::Type* getLLVMType() const { return llvmType; }
 };
 

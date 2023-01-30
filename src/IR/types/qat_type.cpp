@@ -18,6 +18,7 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
+#include "opaque.hpp"
 
 namespace qat::IR {
 
@@ -42,6 +43,12 @@ void QatType::clearAll() {
 }
 
 bool QatType::hasNoValueSemantics() const { return false; }
+
+bool QatType::canBeConstGeneric() const { return false; }
+
+Maybe<String> QatType::toConstGenericString(IR::ConstantValue* val) const { return None; }
+
+Maybe<bool> QatType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const { return false; }
 
 bool QatType::checkTypeExists(const String& name) {
   for (const auto& typ : types) {
@@ -77,18 +84,40 @@ bool QatType::isCompatible(QatType* other) {
   }
 }
 
+// FIXME - Update for TypedType
 bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
   if (typeKind() != other->typeKind()) {
     if (typeKind() == TypeKind::definition) {
       return ((DefinitionType*)this)->getSubType()->isSame(other);
     } else if (other->typeKind() == TypeKind::definition) {
       return ((DefinitionType*)other)->getSubType()->isSame(this);
+    } else if (typeKind() == TypeKind::opaque) {
+      if (((OpaqueType*)this)->hasSubType()) {
+        return ((OpaqueType*)this)->getSubType()->isSame(other);
+      } else {
+        return false;
+      }
+    } else if (other->typeKind() == TypeKind::opaque) {
+      if (((OpaqueType*)other)->hasSubType()) {
+        return (((OpaqueType*)other)->getSubType()->isSame(this));
+      } else {
+        return false;
+      }
     }
     return false;
   } else {
     switch (typeKind()) {
       case TypeKind ::definition: {
         return ((DefinitionType*)this)->getSubType()->isSame(((DefinitionType*)other)->getSubType());
+      }
+      case TypeKind::opaque: {
+        auto* thisVal  = (OpaqueType*)this;
+        auto* otherVal = (OpaqueType*)other;
+        if (thisVal->hasSubType() && otherVal->hasSubType()) {
+          return thisVal->getSubType()->isSame(otherVal->getSubType());
+        } else {
+          return thisVal->getID() == otherVal->getID();
+        }
       }
       case TypeKind::pointer: {
         return (((PointerType*)this)->isSubtypeVariable() == ((PointerType*)other)->isSubtypeVariable()) &&
@@ -146,22 +175,22 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
       case TypeKind::core: {
         auto* thisVal  = (CoreType*)this;
         auto* otherVal = (CoreType*)other;
-        return (thisVal->getFullName() == otherVal->getFullName());
+        return (thisVal->getID() == otherVal->getID());
       }
       case TypeKind::region: {
         auto* thisVal  = (Region*)this;
         auto* otherVal = (Region*)this;
-        return (thisVal->getFullName() == otherVal->getFullName());
+        return (thisVal->getID() == otherVal->getID());
       }
       case TypeKind::choice: {
         auto* thisVal  = (ChoiceType*)this;
         auto* otherVal = (ChoiceType*)other;
-        return (thisVal->getFullName() == otherVal->getFullName());
+        return (thisVal->getID() == otherVal->getID());
       }
       case TypeKind::mixType: {
         auto* thisVal  = (MixType*)this;
         auto* otherVal = (MixType*)other;
-        return (thisVal->getFullName() == otherVal->getFullName());
+        return (thisVal->getID() == otherVal->getID());
       }
       case TypeKind::function: {
         auto* thisVal  = (FunctionType*)this;
@@ -195,6 +224,24 @@ bool QatType::isExpanded() const { return false; }
 
 ExpandedType* QatType::asExpanded() const {
   return (typeKind() == TypeKind::definition) ? asDefinition()->getSubType()->asExpanded() : (ExpandedType*)this;
+}
+
+bool QatType::isTyped() const {
+  return (typeKind() == TypeKind::typed) ||
+         (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isOpaque());
+}
+
+TypedType* QatType::asTyped() const {
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asTyped() : (TypedType*)this;
+}
+
+bool QatType::isOpaque() const {
+  return (typeKind() == TypeKind::opaque) ||
+         (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isOpaque());
+}
+
+OpaqueType* QatType::asOpaque() const {
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asOpaque() : (OpaqueType*)this;
 }
 
 bool QatType::isDestructible() const { return false; }

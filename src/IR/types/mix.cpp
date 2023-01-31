@@ -2,9 +2,10 @@
 #include "../../show.hpp"
 #include "../context.hpp"
 #include "../control_flow.hpp"
+#include "../generics.hpp"
 #include "../qat_module.hpp"
-#include "reference.hpp"
-#include "type_kind.hpp"
+#include "./reference.hpp"
+#include "./type_kind.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
@@ -17,17 +18,17 @@ namespace qat::IR {
 #define TWO_POWER_16 65536ULL
 #define TWO_POWER_32 4294967296ULL
 
-MixType::MixType(Identifier _name, QatModule* _parent, Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes,
-                 Maybe<usize> _defaultVal, IR::Context* ctx, bool _isPacked, const utils::VisibilityInfo& _visibility,
-                 FileRange _fileRange)
-    : EntityOverview("mixType",
+MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent,
+                 Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes, Maybe<usize> _defaultVal, IR::Context* ctx,
+                 bool _isPacked, const utils::VisibilityInfo& _visibility, FileRange _fileRange)
+    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
+      EntityOverview("mixType",
                      Json()
                          ._("moduleID", _parent->getID())
                          ._("hasDefaultValue", _defaultVal.has_value())
                          ._("visibility", _visibility),
                      _name.range),
-      ExpandedType(std::move(_name), _parent, _visibility), subtypes(std::move(_subtypes)), isPack(_isPacked),
-      defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
+      subtypes(std::move(_subtypes)), isPack(_isPacked), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();

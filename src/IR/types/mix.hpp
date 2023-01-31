@@ -5,8 +5,9 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
+#include "../generics.hpp"
+#include "./expanded_type.hpp"
 #include "./qat_type.hpp"
-#include "expanded_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
@@ -26,8 +27,9 @@ private:
   void findTagBitWidth(usize typeCount);
 
 public:
-  MixType(Identifier name, QatModule* parent, Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal,
-          IR::Context* ctx, bool isPacked, const utils::VisibilityInfo& visibility, FileRange fileRange);
+  MixType(Identifier name, Vec<GenericType*> _generics, QatModule* parent,
+          Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal, IR::Context* ctx, bool isPacked,
+          const utils::VisibilityInfo& visibility, FileRange fileRange);
 
   useit usize getIndexOfName(const String& name) const;
   useit Pair<bool, bool> hasSubTypeWithName(const String& sname) const;

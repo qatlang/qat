@@ -17,12 +17,16 @@ private:
 public:
   useit static UnsignedType* get(u64 bits, llvm::LLVMContext& ctx);
   useit static UnsignedType* getBool(llvm::LLVMContext& ctx);
-  useit TypeKind             typeKind() const override;
   useit u64                  getBitwidth() const;
   useit bool                 isBitWidth(u64 width) const;
   useit bool                 isBoolean() const;
-  useit String               toString() const override;
-  useit Json                 toJson() const override;
+  useit TypeKind             typeKind() const final;
+  useit String               toString() const final;
+  useit Json                 toJson() const final;
+
+  useit bool canBeConstGeneric() const final;
+  useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
+  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
 };
 
 } // namespace qat::IR

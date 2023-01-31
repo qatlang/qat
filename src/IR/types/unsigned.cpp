@@ -1,5 +1,7 @@
 #include "./unsigned.hpp"
 #include "../../memory_tracker.hpp"
+#include "../value.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
@@ -42,5 +44,26 @@ TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
 Json UnsignedType::toJson() const { return Json()._("type", "unsigned")._("bitWidth", std::to_string(bitWidth)); }
+
+bool UnsignedType::canBeConstGeneric() const { return bitWidth <= 64u; }
+
+Maybe<String> UnsignedType::toConstGenericString(IR::ConstantValue* val) const {
+  if (!canBeConstGeneric()) {
+    return None;
+  }
+  return std::to_string((*llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData()));
+}
+
+Maybe<bool> UnsignedType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+  if (!canBeConstGeneric()) {
+    return None;
+  }
+  if (first->getType()->isSame(second->getType())) {
+    return (*llvm::cast<llvm::ConstantInt>(first->getLLVMConstant())->getValue().getRawData()) ==
+           (*llvm::cast<llvm::ConstantInt>(second->getLLVMConstant())->getValue().getRawData());
+  } else {
+    return false;
+  }
+}
 
 } // namespace qat::IR

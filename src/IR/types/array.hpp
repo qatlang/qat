@@ -14,7 +14,7 @@ namespace qat::IR {
  */
 class ArrayType : public QatType {
 private:
-  QatType* element_type;
+  QatType* elementType;
   u64      length;
 
   ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& ctx);
@@ -24,9 +24,13 @@ public:
 
   useit QatType* getElementType();
   useit u64      getLength() const;
-  useit TypeKind typeKind() const override;
-  useit String   toString() const override;
-  useit Json     toJson() const override;
+  useit TypeKind typeKind() const final;
+  useit String   toString() const final;
+  useit Json     toJson() const final;
+
+  useit bool canBeConstGeneric() const final;
+  useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
+  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
 
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;

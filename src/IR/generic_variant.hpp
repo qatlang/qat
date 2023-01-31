@@ -3,30 +3,65 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
+#include "./generics.hpp"
+#include "./value.hpp"
 #include "types/qat_type.hpp"
 
 namespace qat::IR {
 
 template <typename T> class GenericVariant {
 private:
-  T*                entity;
-  Vec<IR::QatType*> types;
+  T*                      entity;
+  Vec<IR::GenericToFill*> genericTypes;
 
 public:
-  GenericVariant(T* _entity, Vec<IR::QatType*> _types) : entity(_entity), types(std::move(_types)) {}
+  GenericVariant(T* _entity, Vec<IR::GenericToFill*> _types) : entity(_entity), genericTypes(std::move(_types)) {}
 
-  useit bool check(Vec<IR::QatType*> _types) const {
-    if (types.size() != _types.size()) {
+  useit bool check(std::function<void(const String&, const FileRange&)> errorFn, Vec<GenericToFill*> dest) const {
+    if (genericTypes.size() != dest.size()) {
       return false;
     } else {
-      bool result = true;
-      for (usize i = 0; i < types.size(); i++) {
-        if (!types.at(i)->isSame(_types.at(i))) {
-          result = false;
-          break;
+      for (usize i = 0; i < genericTypes.size(); i++) {
+        auto* genTy = genericTypes.at(i);
+        if (genTy->isType()) {
+          if (dest.at(i)->isType()) {
+            if (!genTy->asType()->isSame(dest.at(i)->asType())) {
+              return false;
+            }
+          } else {
+            auto* constVal = dest.at(i)->asConst();
+            if (constVal->getType()->isTyped()) {
+              if (!genTy->asType()->isSame(dest.at(i)->asConst()->getType()->asTyped()->getSubType())) {
+                return false;
+              }
+            } else {
+              return false;
+            }
+          }
+        } else if (genTy->isConst()) {
+          if (dest.at(i)->isConst()) {
+            auto* genExp  = genTy->asConst();
+            auto* destExp = dest.at(i)->asConst();
+            if (genExp->getType()->isSame(destExp->getType())) {
+              auto eqRes = genExp->getType()->equalityOf(genExp, destExp);
+              if (eqRes.has_value()) {
+                if (!eqRes.value()) {
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            } else {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        } else {
+          errorFn("Invalid generic kind", genTy->getRange());
         }
       }
-      return result;
+      return true;
     }
   }
   useit T* get() { return entity; }

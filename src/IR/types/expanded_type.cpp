@@ -2,14 +2,36 @@
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
 #include "../context.hpp"
+#include "../generics.hpp"
 #include "../qat_module.hpp"
 #include "./function.hpp"
 #include "./reference.hpp"
 
 namespace qat::IR {
 
-ExpandedType::ExpandedType(Identifier _name, IR::QatModule* _parent, const utils::VisibilityInfo& _visib)
-    : name(std::move(_name)), parent(_parent), visibility(_visib) {}
+ExpandedType::ExpandedType(Identifier _name, Vec<GenericType*> _generics, IR::QatModule* _parent,
+                           const utils::VisibilityInfo& _visib)
+    : name(std::move(_name)), generics(_generics), parent(_parent), visibility(_visib) {}
+
+bool ExpandedType::isGeneric() const { return !generics.empty(); }
+
+bool ExpandedType::hasGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->isSame(name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+GenericType* ExpandedType::getGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->isSame(name)) {
+      return gen;
+    }
+  }
+  return nullptr;
+}
 
 String ExpandedType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 

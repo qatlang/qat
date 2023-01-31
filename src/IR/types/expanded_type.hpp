@@ -1,7 +1,9 @@
 #ifndef QAT_IR_TYPES_EXPANDED_TYPE_HPP
 #define QAT_IR_TYPES_EXPANDED_TYPE_HPP
 
+#include "../generics.hpp"
 #include "../member_function.hpp"
+#include "opaque.hpp"
 #include "qat_type.hpp"
 
 namespace qat::ast {
@@ -18,6 +20,7 @@ class ExpandedType : public QatType {
 
 protected:
   Identifier             name;
+  Vec<GenericType*>      generics;
   QatModule*             parent             = nullptr;
   MemberFunction*        defaultConstructor = nullptr;
   Vec<MemberFunction*>   memberFunctions; // Normal
@@ -39,11 +42,17 @@ protected:
   bool explicitCopy = false;
   bool explicitMove = false;
 
+  OpaqueType* opaqueEquivalent = nullptr;
+
   utils::VisibilityInfo visibility;
 
-  ExpandedType(Identifier _name, QatModule* _parent, const utils::VisibilityInfo& _visib);
+  ExpandedType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent, const utils::VisibilityInfo& _visib);
 
 public:
+  useit bool         isGeneric() const;
+  useit bool         hasGenericParameter(const String& name) const;
+  useit GenericType* getGenericParameter(const String& name) const;
+
   useit String          getFullName() const;
   useit Identifier      getName() const;
   useit bool            hasMemberFunction(const String& fnName) const;

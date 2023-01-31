@@ -1,8 +1,11 @@
 #include "./integer.hpp"
 #include "../../memory_tracker.hpp"
 #include "../../utils/json.hpp"
+#include "../value.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
+
+#define MAXIMUM_CONST_EXPR_BITWIDTH 64u
 
 namespace qat::IR {
 
@@ -30,5 +33,23 @@ u64 IntegerType::getBitwidth() const { return bitWidth; }
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
 
 Json IntegerType::toJson() const { return Json()._("type", "integer")._("bitWidth", std::to_string(bitWidth)); }
+
+bool IntegerType::canBeConstGeneric() const { return bitWidth <= MAXIMUM_CONST_EXPR_BITWIDTH; }
+
+Maybe<String> IntegerType::toConstGenericString(IR::ConstantValue* val) const {
+  if (!canBeConstGeneric()) {
+    return None;
+  }
+  return std::to_string((i64)(*llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData()));
+}
+
+Maybe<bool> IntegerType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+  if (first->getType()->isSame(second->getType())) {
+    return (*llvm::cast<llvm::ConstantInt>(first->getLLVMConstant())->getValue().getRawData()) ==
+           (*llvm::cast<llvm::ConstantInt>(second->getLLVMConstant())->getValue().getRawData());
+  } else {
+    return false;
+  }
+}
 
 } // namespace qat::IR

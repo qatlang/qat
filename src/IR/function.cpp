@@ -320,6 +320,9 @@ Function::~Function() {
   for (auto* blk : blocks) {
     delete blk;
   }
+  for (auto* gen : generics) {
+    delete gen;
+  }
 }
 
 llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }

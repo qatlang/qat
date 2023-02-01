@@ -36,6 +36,9 @@ CoreType::~CoreType() {
   for (auto* mem : members) {
     delete mem;
   }
+  for (auto* gen : generics) {
+    delete gen;
+  }
 }
 
 void CoreType::updateOverview() {

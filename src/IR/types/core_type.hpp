@@ -3,6 +3,7 @@
 
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
+#include "../generics.hpp"
 #include "../member_function.hpp"
 #include "../static_member.hpp"
 #include "./qat_type.hpp"
@@ -24,6 +25,7 @@ namespace qat::IR {
  */
 class CoreType final : public ExpandedType, public EntityOverview {
   friend class MemberFunction;
+  friend class GenericType;
 
 public:
   class Member final : public EntityOverview {
@@ -54,8 +56,8 @@ private:
   // TODO - Add support for extension functions
 
 public:
-  CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
-           llvm::LLVMContext& ctx);
+  CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
+           const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
 
   ~CoreType() final;
 
@@ -94,13 +96,14 @@ public:
   ~GenericCoreType() = default;
 
   useit Identifier getName() const;
+  useit usize      getTypeCount() const;
+  useit bool       allTypesHaveDefaults() const;
+  useit usize      getVariantCount() const;
+  useit QatModule* getModule() const;
+  useit CoreType*  fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
+
+  useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit utils::VisibilityInfo getVisibility() const;
-  useit usize                 getTypeCount() const;
-  useit bool                  allTypesHaveDefaults() const;
-  useit Vec<IR::QatType*> getDefaults(IR::Context* ctx) const;
-  useit usize             getVariantCount() const;
-  useit QatModule*        getModule() const;
-  useit CoreType*         fillGenerics(Vec<QatType*>& types, IR::Context* ctx, FileRange range);
 };
 
 } // namespace qat::IR

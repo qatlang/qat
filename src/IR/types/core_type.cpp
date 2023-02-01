@@ -1,21 +1,24 @@
 #include "core_type.hpp"
 #include "../../ast/define_core_type.hpp"
+#include "../../ast/types/const_generic.hpp"
 #include "../../ast/types/generic_abstract.hpp"
+#include "../../ast/types/typed_generic.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"
+#include "../generics.hpp"
 #include "../logic.hpp"
 #include "../qat_module.hpp"
-#include "expanded_type.hpp"
-#include "qat_type.hpp"
+#include "./expanded_type.hpp"
+#include "./qat_type.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include <utility>
 
 namespace qat::IR {
 
-CoreType::CoreType(QatModule* mod, Identifier _name, Vec<Member*> _members, const utils::VisibilityInfo& _visibility,
-                   llvm::LLVMContext& ctx)
-    : ExpandedType(std::move(_name), mod, _visibility), EntityOverview("coreType", Json(), _name.range),
+CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
+                   const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
+    : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       members(std::move(_members)) {
   SHOW("Generating LLVM Type for core type members")
   Vec<llvm::Type*> subtypes;
@@ -159,17 +162,9 @@ Identifier GenericCoreType::getName() const { return name; }
 
 utils::VisibilityInfo GenericCoreType::getVisibility() const { return visibility; }
 
-Vec<IR::QatType*> GenericCoreType::getDefaults(IR::Context* ctx) const {
-  Vec<IR::QatType*> result;
-  for (auto* typ : generics) {
-    result.push_back(typ->emit(ctx));
-  }
-  return result;
-}
-
 bool GenericCoreType::allTypesHaveDefaults() const {
-  for (auto typ : generics) {
-    if (!typ->hasDefault()) {
+  for (auto* gen : generics) {
+    if (!gen->hasDefault()) {
       return false;
     }
   }
@@ -182,17 +177,19 @@ usize GenericCoreType::getVariantCount() const { return variants.size(); }
 
 QatModule* GenericCoreType::getModule() const { return parent; }
 
-CoreType* GenericCoreType::fillGenerics(Vec<QatType*>& types, IR::Context* ctx, FileRange range) {
+ast::GenericAbstractType* GenericCoreType::getGenericAt(usize index) const { return generics.at(index); }
+
+CoreType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* ctx, FileRange range) {
   for (auto var : variants) {
-    if (var.check(types)) {
+    if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }
-  for (usize i = 0; i < generics.size(); i++) {
-    generics.at(i)->setType(types.at(i));
-  }
+  IR::fillGenerics(ctx, generics, types, range);
+  SHOW("Getting variant name")
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   defineCoreType->setVariantName(variantName);
+  SHOW("Variant name set")
   auto prevTemp      = ctx->activeGeneric;
   ctx->activeGeneric = IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range};
   (void)defineCoreType->define(ctx);
@@ -200,7 +197,7 @@ CoreType* GenericCoreType::fillGenerics(Vec<QatType*>& types, IR::Context* ctx, 
   auto* cTy = (IR::CoreType*)defineCoreType->getCoreType();
   variants.push_back(GenericVariant<CoreType>(cTy, types));
   for (auto* temp : generics) {
-    temp->unsetType();
+    temp->unset();
   }
   defineCoreType->unsetVariantName();
   if (ctx->activeGeneric->warningCount > 0) {

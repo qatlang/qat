@@ -414,13 +414,6 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto symRes = parseSymbol(ctx, i);
         auto name   = symRes.first.name;
         i           = symRes.second;
-        if ((name.size() == 1u) && preCtx.hasNamedAbstractGeneric(name.front().value)) {
-          SHOW("Has generic abstract for: " << name.front().value)
-          auto foundGeneric = preCtx.getNamedAbstractGeneric(name.front().value);
-          cacheTy = new ast::GenericAbstractType(foundGeneric->getGenericID(), name.front().value, getVariability(),
-                                                 foundGeneric->getDefault(), name.front().range);
-          break;
-        } else {
           if (isNext(TokenType::genericTypeStart, i)) {
             auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
             if (endRes.has_value()) {
@@ -801,7 +794,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               auto end    = endRes.value();
               genericList = parseGenericAbstractTypes(preCtx, i + 1, end);
               for (auto* temp : genericList) {
-                SHOW("Generic type parsed for core type " << temp->getName());
                 ctx.addAbstractGeneric(temp);
               }
               i = end;
@@ -2284,20 +2276,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (endRes.has_value()) {
             auto end = endRes.value();
             SHOW("Generic type end: " << end)
-            Vec<ast::QatType*> types;
-            if (isPrimaryWithin(TokenType::separator, i, end)) {
-              auto positions = primaryPositionsWithin(TokenType::separator, i, end);
-              types.push_back(parseType(preCtx, i, positions.front()).first);
-              for (usize j = 0; j < (positions.size() - 1); j++) {
-                types.push_back(parseType(preCtx, positions.at(j), positions.at(j + 1)).first);
-              }
-              types.push_back(parseType(preCtx, positions.back(), end).first);
-            } else {
-              SHOW("No separators")
-              if (endRes.value() != i + 1) {
-                types.push_back(parseType(preCtx, i, end).first);
-              }
-            }
+            auto types = parseGenericFill(preCtx, i, end);
             if (isNext(TokenType::curlybraceOpen, end)) {
               auto cEnd = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, end + 1, false);
               if (cEnd.has_value()) {
@@ -2525,7 +2504,6 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (cachedExpressions.empty()) {
                 SHOW("Expressions cache is empty")
                 if (cachedSymbol.has_value()) {
-                  SHOW("Normal function call")
                   auto* ent = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
                   cachedExpressions.push_back(new ast::FunctionCall(
                       ent, args, cachedSymbol.value().extend_fileRange(RangeAt(p_close.value()))));
@@ -2852,7 +2830,6 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::variationMarker: {
         if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
           if (cachedExpressions.empty() && cachedSymbol.has_value()) {
-            SHOW("Expression empty, using symbol")
             cachedExpressions.push_back(
                 new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
             cachedSymbol = None;
@@ -2909,7 +2886,6 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         SHOW("Expression parsing : Member access")
         if ((!cachedExpressions.empty()) || cachedSymbol.has_value()) {
           if (cachedExpressions.empty() && cachedSymbol.has_value()) {
-            SHOW("Expression empty, using symbol")
             cachedExpressions.push_back(
                 new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
             cachedSymbol = None;
@@ -3150,158 +3126,19 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
   Vec<ast::QatType*>    cacheTy;
   Vec<ast::Expression*> cachedExpressions;
 
-  auto var = false;
-
   for (usize i = from + 1; i < upto; i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::parenthesisOpen: {
-        auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
-        if (pCloseRes.has_value()) {
-          auto pClose = pCloseRes.value();
-          if (isNext(TokenType::altArrow, pClose)) {
-            /* Closure definition */
-            if (isNext(TokenType::bracketOpen, pClose + 1)) {
-              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 2, false);
-              if (bCloseRes.has_value()) {
-                auto endRes = firstPrimaryPosition(TokenType::stop, bCloseRes.value());
-                if (endRes.has_value()) {
-                  auto* exp   = parseExpression(ctx, cacheSymbol, i - 1, endRes.value()).first;
-                  cacheSymbol = None;
-                  i           = endRes.value();
-                  result.push_back(
-                      new ast::ExpressionSentence(exp, FileRange(token.fileRange, RangeAt(endRes.value()))));
-                  break;
-                } else {
-                  Error("End for the sentence not found", FileRange(token.fileRange, RangeAt(bCloseRes.value())));
-                }
-              } else {
-                Error("Invalid end for definition of closure", RangeAt(pClose + 2));
-              }
-            } else {
-              Error("Definition for closure not found", RangeAt(pClose + 1));
-            }
-          } else if (isNext(TokenType::identifier, pClose)) {
-            /* Tuple value declaration */
-            auto typeRes = parseType(ctx, i - 1, pClose + 1);
-            i            = typeRes.second;
-            cacheTy.push_back(typeRes.first);
-            break;
-          } else {
-            /* Expression */
-            auto endRes = firstPrimaryPosition(TokenType::stop, pClose);
-            if (endRes.has_value()) {
-              auto* exp   = parseExpression(ctx, cacheSymbol, i - 1, endRes.value()).first;
-              i           = endRes.value();
-              cacheSymbol = None;
-              result.push_back(new ast::ExpressionSentence(exp, {token.fileRange, RangeAt(endRes.value())}));
-              break;
-            } else {
-              Error("End of sentence not found", token.fileRange);
-            }
-          }
-        } else {
-          Error("Invalid end of parenthesis", token.fileRange);
-        }
-        break;
-      }
-      case TokenType::child: {
-        if (cacheSymbol.has_value() || !cachedExpressions.empty()) {
-          auto expRes = parseExpression(ctx, cacheSymbol, i, None, isMemberFn, cachedExpressions);
-          cachedExpressions.clear();
-          cachedExpressions.push_back(expRes.first);
-          cacheSymbol = None;
-          i           = expRes.second;
-        } else {
-          Error("No expression or entity found to access the child of", token.fileRange);
-        }
-        break;
-      }
       case TokenType::super:
       case TokenType::identifier: {
         SHOW("Identifier encountered")
-        if (cacheSymbol.has_value() || !cacheTy.empty()) {
-          if (token.type == TokenType::super) {
-            Error("Invalid token found in declaration", RangeAt(i));
-          }
-          SHOW("Symbol or type found")
-          if (cacheSymbol) {
-            SHOW("Symbol: " << Identifier::fullName(cacheSymbol->name).value)
-          } else if (!cacheTy.empty()) {
-            SHOW("Type: " << cacheTy.back()->toString())
-          }
-          if (token.type == TokenType::super) {
-            Error("Invalid token after symbol", RangeAt(i));
-          }
-          // Declaration
-          // A normal declaration where the type of the entity is provided by
-          // the user
-          if (isNext(TokenType::assignment, i)) {
-            SHOW("Declaration encountered")
-            auto endRes = firstPrimaryPosition(TokenType::stop, i);
-            if (endRes.has_value() && (endRes.value() < upto)) {
-              auto* exp = parseExpression(ctx, None, i + 1, endRes.value()).first;
-              result.push_back(new ast::LocalDeclaration(
-                  (cacheTy.empty() ? (new ast::NamedType(cacheSymbol.value().relative, cacheSymbol.value().name, false,
-                                                         cacheSymbol.value().fileRange))
-                                   : cacheTy.back()),
-                  false, false, {token.value, token.fileRange}, exp, var, token.fileRange));
-              var = false;
-              cacheTy.clear();
-              cacheSymbol = None;
-              i           = endRes.value();
-              break;
-            } else {
-              Error("Invalid end for declaration syntax", RangeAt(i + 1));
-            }
-          } else if (isNext(TokenType::from, i)) {
-            // FIXME - Handle constructor call
-          } else if (isNext(TokenType::stop, i)) {
-            Error("No value for initialisation in local declaration",
-                  {(cacheSymbol.has_value() ? cacheSymbol.value().fileRange : cacheTy.back()->fileRange),
-                   RangeAt(i + 1)});
-            // FIXME - Support uninitialised declarations?
-            // result.push_back(new ast::LocalDeclaration(
-            //     (cacheTy.empty()
-            //          ? (new ast::NamedType(cacheSymbol.value().relative,
-            //                                cacheSymbol.value().name, false,
-            //                                cacheSymbol.value().fileRange))
-            //          : cacheTy.back()),
-            //     false, token.value, nullptr, var, token.fileRange));
-            // var = false;
-            // cacheTy.clear();
-            // cacheSymbol = None;
-            // i++;
-          }
-          // FIXME - Handle this case
+        if (cacheSymbol.has_value()) {
+          Error("Another symbol found when there already is a symbol", RangeAt(i));
         } else {
           auto symRes = parseSymbol(ctx, i);
           cacheSymbol = symRes.first;
           i           = symRes.second;
           if (isNext(TokenType::genericTypeStart, i)) {
-            auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
-            if (tEndRes.has_value()) {
-              auto               tEnd = tEndRes.value();
-              Vec<ast::QatType*> types;
-              if (tEnd != i + 2) {
-                types = parseSeparatedTypes(preCtx, i + 1, tEnd);
-              }
-              cacheTy.push_back(new ast::GenericNamedType(cacheSymbol->relative, cacheSymbol->name, types, false,
-                                                          {cacheSymbol->fileRange, RangeAt(tEnd)}));
-              i = tEnd;
-              //   auto expRes = parseExpression(preCtx, cacheSymbol, i, None);
-              //   cachedExpressions.push_back(expRes.first);
-              //   cacheSymbol = None;
-              //   i           = expRes.second;
-              break;
-            } else {
-              Error("Expected end for generic type specification", RangeAt(i + 1));
-            }
-          } else {
-            if (isNext(TokenType::identifier, i)) {
-              cacheTy.push_back(
-                  new ast::NamedType(cacheSymbol->relative, cacheSymbol->name, false, cacheSymbol->fileRange));
-            } else {
               auto expRes = parseExpression(preCtx, cacheSymbol, i, None);
               cachedExpressions.push_back(expRes.first);
               cacheSymbol = None;
@@ -3323,7 +3160,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           auto* exp = parseExpression(ctx, None, i, end).first;
           auto* lhs = new ast::Entity(cacheSymbol->relative, cacheSymbol->name, cacheSymbol->fileRange);
           result.push_back(new ast::Assignment(lhs, exp, FileRange(cacheSymbol.value().fileRange, RangeAt(end))));
-          var = false;
           cacheTy.clear();
           cacheSymbol = None;
           i           = end;
@@ -3676,13 +3512,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           cacheSymbol = None;
           result.push_back(new ast::GiveSentence(exp, FileRange(token.fileRange, RangeAt(end.value()))));
         }
-        break;
-      }
-      case TokenType::bracketOpen: {
-        auto expRes = parseExpression(preCtx, cacheSymbol, i - 1, None);
-        cachedExpressions.push_back(expRes.first);
-        cacheSymbol = None;
-        i           = expRes.second;
         break;
       }
       case TokenType::Break: {

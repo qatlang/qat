@@ -5,6 +5,7 @@
 #include "constructor.hpp"
 #include "destructor.hpp"
 #include "types/generic_abstract.hpp"
+#include <algorithm>
 
 namespace qat::ast {
 
@@ -49,8 +50,8 @@ bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
 
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, isGeneric() ? "generic core type" : "core type",
-                 isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
+  ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
+                         isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
   SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
   bool                       needsDestructor = false;
   Vec<IR::CoreType::Member*> mems;
@@ -69,7 +70,24 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   if (isGeneric()) {
     cTyName = Identifier(variantName.value(), name.range);
   }
-  coreType = new IR::CoreType(mod, cTyName, mems, ctx->getVisibInfo(visibility), ctx->llctx);
+  Vec<IR::GenericType*> genericsIR;
+  for (auto* gen : generics) {
+    if (!gen->isSet()) {
+      if (gen->isTyped()) {
+        ctx->Error("No type is set for the generic type " + ctx->highlightError(gen->getName().value) +
+                       " and there is no default type provided",
+                   gen->getRange());
+      } else if (gen->isConst()) {
+        ctx->Error("No value is set for the generic const expression " + ctx->highlightError(gen->getName().value) +
+                       " and there is no default expression provided",
+                   gen->getRange());
+      } else {
+        ctx->Error("Invalid generic kind", gen->getRange());
+      }
+    }
+    genericsIR.push_back(gen->toIRGenericType());
+  }
+  coreType = new IR::CoreType(mod, cTyName, genericsIR, mems, ctx->getVisibInfo(visibility), ctx->llctx);
   if (destructorDefinition) {
     coreType->hasDefinedDestructor = true;
   }
@@ -143,6 +161,9 @@ void DefineCoreType::createType(IR::Context* ctx) const {
 IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
+  for (auto* gen : generics) {
+    gen->emit(ctx);
+  }
   SHOW("Defining type")
   if (!isGeneric()) {
     createType(ctx);
@@ -287,6 +308,12 @@ Json DefineCoreType::toJson() const {
       ._("isPacked", isPacked)
       ._("visibility", utils::kindToJsonValue(visibility))
       ._("fileRange", fileRange);
+}
+
+DefineCoreType::~DefineCoreType() {
+  for (auto* gen : generics) {
+    delete gen;
+  }
 }
 
 } // namespace qat::ast

@@ -41,14 +41,18 @@ public:
   useit i64        getValueFor(const String& name) const;
   useit i64        getDefault() const;
   useit u64        getBitwidth() const;
+  useit TypeKind   typeKind() const final { return TypeKind::choice; }
+  useit Json       toJson() const final { return {}; }
+  useit String     toString() const final;
   useit const utils::VisibilityInfo& getVisibility() const;
-  useit TypeKind                     typeKind() const final { return TypeKind::choice; }
-  useit Json                         toJson() const final { return {}; }
-  useit String                       toString() const final { return getFullName(); }
   void                               findBitwidthNormal() const;
   void                               findBitwidthForValues() const;
   void                               getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
   void                               updateOverview() final;
+
+  useit bool canBeConstGeneric() const final;
+  useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
+  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
 };
 
 } // namespace qat::IR

@@ -3,6 +3,8 @@
 
 namespace qat::IR {
 
+#define MAX_CONST_GENERIC_BITWIDTH 64u
+
 ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
                        Maybe<usize> _defaultVal, const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
                        FileRange _fileRange)
@@ -139,5 +141,32 @@ void ChoiceType::updateOverview() {
     ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
   }
 }
+
+bool ChoiceType::canBeConstGeneric() const { return bitwidth <= MAX_CONST_GENERIC_BITWIDTH; }
+
+Maybe<String> ChoiceType::toConstGenericString(IR::ConstantValue* val) const {
+  if (canBeConstGeneric()) {
+    for (auto const& field : fields) {
+      if (((u64)getValueFor(field.value)) ==
+          *(llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData())) {
+        return getFullName() + "'" + field.value;
+      }
+    }
+    return None;
+  } else {
+    return None;
+  }
+}
+
+Maybe<bool> ChoiceType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+  if (first->getType()->isSame(second->getType())) {
+    return (*llvm::cast<llvm::ConstantInt>(first->getLLVMConstant())->getValue().getRawData()) ==
+           (*llvm::cast<llvm::ConstantInt>(second->getLLVMConstant())->getValue().getRawData());
+  } else {
+    return false;
+  }
+}
+
+String ChoiceType::toString() const { return getFullName(); }
 
 } // namespace qat::IR

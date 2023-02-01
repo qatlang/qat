@@ -26,6 +26,9 @@ FunctionPrototype::~FunctionPrototype() {
   for (auto* arg : arguments) {
     delete arg;
   }
+  for (auto* gen : generics) {
+    delete gen;
+  }
 }
 
 bool FunctionPrototype::isGeneric() const { return !generics.empty(); }
@@ -34,8 +37,9 @@ Vec<GenericAbstractType*> FunctionPrototype::getGenerics() const { return generi
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, isGeneric() ? "generic function" : "function",
-                 isGeneric() ? Maybe<String>(genericFn->getID()) : None);
+  SHOW("Creating function " << name.value << " with generic count: " << generics.size())
+  ctx->nameCheckInModule(name, isGeneric() ? "generic function" : "function",
+                         isGeneric() ? Maybe<String>(genericFn->getID()) : None);
   Vec<IR::QatType*> generatedTypes;
   bool              isMainFn = false;
   String            fnName   = name.value;
@@ -111,14 +115,27 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* retTy = returnType->emit(ctx);
   if (isAsync) {
     if (!retTy->isFuture()) {
-      ctx->Error("An async function should always return a future", fileRange);
+      ctx->Error("An async function should always return a " + ctx->highlightError("future"), fileRange);
     }
   }
-  SHOW("About to create function")
-  auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, returnType->isVariable(), isAsync, args,
-                                  isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
-  SHOW("Created IR function")
-  return fun;
+  if (isGeneric()) {
+    Vec<IR::GenericType*> genericTypes;
+    for (auto* gen : generics) {
+      genericTypes.push_back(gen->toIRGenericType());
+    }
+    SHOW("About to create generic function")
+    auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy,
+                                     returnType->isVariable(), isAsync, args, isVariadic, fileRange,
+                                     ctx->getVisibInfo(visibility), ctx->llctx);
+    SHOW("Created IR function")
+    return fun;
+  } else {
+    SHOW("About to create function")
+    auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, returnType->isVariable(), isAsync, args,
+                                    isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+    SHOW("Created IR function")
+    return fun;
+  }
 }
 
 void FunctionPrototype::setVariantName(const String& value) const { variantName = value; }
@@ -164,8 +181,11 @@ void FunctionDefinition::define(IR::Context* ctx) {
   if (!prototype->isGeneric()) {
     prototype->define(ctx);
   } else {
-    auto* tempFn         = new IR::GenericFunction(prototype->name, prototype->generics, this, ctx->getMod(),
-                                                   ctx->getVisibInfo(prototype->visibility));
+    auto* tempFn = new IR::GenericFunction(prototype->name, prototype->generics, this, ctx->getMod(),
+                                           ctx->getVisibInfo(prototype->visibility));
+    for (auto* gen : prototype->generics) {
+      gen->emit(ctx);
+    }
     prototype->genericFn = tempFn;
   }
 }
@@ -174,6 +194,7 @@ bool FunctionDefinition::isGeneric() const { return prototype->isGeneric(); }
 
 IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
   if (prototype->isGeneric()) {
+    SHOW("Function is generic")
     (void)prototype->emit(ctx);
   }
   SHOW("Getting IR function from prototype")

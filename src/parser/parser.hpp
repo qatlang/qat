@@ -10,6 +10,7 @@
 #include "../ast/define_core_type.hpp"
 #include "../ast/expression.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
+#include "../ast/generics.hpp"
 #include "../ast/sentence.hpp"
 #include "../ast/sentences/match.hpp"
 #include "../lexer/token.hpp"
@@ -73,10 +74,13 @@ public:
   void                 clearMemberPaths();
   useit ast::ModInfo* parseModuleInfo(usize from, usize upto, const FileRange& startRange);
   useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
+  useit Vec<ast::FillGeneric*> parseGenericFill(ParserContext& prev_ctx, usize from, usize upto);
   useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
   useit Pair<CacheSymbol, usize> parseSymbol(ParserContext& prev_ctx, usize start);
   useit Pair<Vec<ast::Argument*>, bool> parseFunctionParameters(ParserContext& prev_ctx, usize from, usize upto);
+  useit Pair<ast::ConstantExpression*, usize> parseConstantExpression(ParserContext& preCtx, usize from,
+                                                                      Maybe<usize> upto);
   useit Pair<ast::Expression*, usize> parseExpression(ParserContext& prev_ctx, const Maybe<CacheSymbol>& symbol,
                                                       usize from, Maybe<usize> upto, bool isMemberFn = false,
                                                       Vec<ast::Expression*> cachedExpressions = {});

@@ -2,6 +2,8 @@
 #include "../ast/constants/boolean_literal.hpp"
 #include "../ast/constants/custom_float_literal.hpp"
 #include "../ast/constants/custom_integer_literal.hpp"
+#include "../ast/constants/default.hpp"
+#include "../ast/constants/entity.hpp"
 #include "../ast/constants/float_literal.hpp"
 #include "../ast/constants/integer_literal.hpp"
 #include "../ast/constants/null_pointer.hpp"
@@ -56,17 +58,20 @@
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
+#include "../ast/types/const_generic.hpp"
 #include "../ast/types/cstring.hpp"
 #include "../ast/types/float.hpp"
 #include "../ast/types/future.hpp"
 #include "../ast/types/generic_named_type.hpp"
 #include "../ast/types/integer.hpp"
+#include "../ast/types/linked_generic.hpp"
 #include "../ast/types/maybe.hpp"
 #include "../ast/types/named.hpp"
 #include "../ast/types/pointer.hpp"
 #include "../ast/types/reference.hpp"
 #include "../ast/types/string_slice.hpp"
 #include "../ast/types/tuple.hpp"
+#include "../ast/types/typed_generic.hpp"
 #include "../ast/types/unsigned.hpp"
 #include "../show.hpp"
 #include "cache_symbol.hpp"
@@ -267,6 +272,163 @@ ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto
   return new ast::BringPaths(isMember, std::move(paths), std::move(names), kind, {startRange, RangeAt(upto)});
 }
 
+Pair<ast::ConstantExpression*, usize> Parser::parseConstantExpression(ParserContext& preCtx, usize from,
+                                                                      Maybe<usize> upto) {
+  using lexer::TokenType;
+
+  Maybe<ast::ConstantExpression*> cacheExp;
+
+  auto i = 0;
+  for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
+    auto& token = tokens->at(i);
+    switch (token.type) {
+      case TokenType::integerLiteral: {
+        cacheExp = new ast::IntegerLiteral(token.value, token.fileRange);
+        break;
+      }
+      case TokenType::unsignedLiteral: {
+        cacheExp = new ast::UnsignedLiteral(token.value, token.fileRange);
+        break;
+      }
+      case TokenType::StringLiteral: {
+        auto start = i;
+        auto value = token.value;
+        auto range = token.fileRange;
+        if (isNext(TokenType::StringLiteral, i)) {
+          while (isNext(TokenType::StringLiteral, i)) {
+            value += tokens->at(i + 1).value;
+            range = FileRange{range, tokens->at(i + 1).fileRange};
+            i++;
+          }
+        }
+        cacheExp = new ast::StringLiteral(value, range);
+        break;
+      }
+      case TokenType::Default: {
+        auto start = i;
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto gEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
+          if (gEndRes.has_value()) {
+            auto typeres = parseType(preCtx, i, gEndRes);
+            if (typeres.second > gEndRes.value()) {
+              Error("Type parsing exceeded the recognised end of type specification of the default constant expression",
+                    RangeSpan(start, typeres.second));
+            }
+            cacheExp = new ast::ConstantDefault(typeres.first, RangeSpan(start, gEndRes.value()));
+            i        = gEndRes.value();
+            break;
+          } else {
+            Error("Expected > to end the type specification for the default constant expression", RangeAt(i));
+          }
+        }
+        cacheExp = new ast::ConstantDefault(None, RangeAt(i));
+        break;
+      }
+      default: {
+        if (cacheExp.has_value()) {
+          return {cacheExp.value(), i - 1};
+        } else {
+          Error("No expression parsed and invalid token found here", RangeAt(from));
+        }
+      }
+    }
+  }
+  if (cacheExp.has_value()) {
+    return {cacheExp.value(), i - 1};
+  } else {
+    Error("No expression found", RangeAt(from));
+  }
+}
+
+Vec<ast::FillGeneric*> Parser::parseGenericFill(ParserContext& preCtx, usize from, usize upto) {
+  using lexer::TokenType;
+  Vec<ast::FillGeneric*> result;
+  for (usize i = from + 1; i < upto; i++) {
+    auto& token = tokens->at(i);
+    switch (token.type) {
+      case TokenType::maybe:
+      case TokenType::voidType:
+      case TokenType::cstringType:
+      case TokenType::stringSliceType:
+      case TokenType::unsignedIntegerType:
+      case TokenType::integerType:
+      case TokenType::floatType:
+      case TokenType::future: {
+        auto subRes = parseType(preCtx, i - 1, upto);
+        result.push_back(new ast::FillGeneric(subRes.first));
+        i = subRes.second;
+        break;
+      }
+      case TokenType::super:
+      case TokenType::identifier: {
+        auto start  = i;
+        auto symRes = parseSymbol(preCtx, i);
+        auto name   = symRes.first.name;
+        i           = symRes.second;
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto subRes = parseType(preCtx, start, None);
+          result.push_back(new ast::FillGeneric(subRes.first));
+          i = subRes.second;
+        } else {
+          result.push_back(
+              new ast::FillGeneric(new ast::ConstantEntity(symRes.first.relative, name, RangeSpan(start, i))));
+        }
+        break;
+      }
+      case TokenType::parenthesisOpen: {
+        auto start        = i;
+        auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+        if (!pCloseResult.has_value()) {
+          Error("Expected )", token.fileRange);
+        }
+        if (pCloseResult.value() > upto) {
+          Error("Invalid position for )", RangeAt(pCloseResult.value()));
+        }
+        if (isPrimaryWithin(TokenType::semiColon, i, pCloseResult.value())) {
+          auto               pClose = pCloseResult.value();
+          Vec<ast::QatType*> subTypes;
+          for (usize j = i; j < pClose; j++) {
+            if (isPrimaryWithin(TokenType::semiColon, j, pClose)) {
+              auto semiPosResult = firstPrimaryPosition(TokenType::semiColon, j);
+              if (!semiPosResult.has_value()) {
+                Error("Invalid position of ; separator", token.fileRange);
+              }
+              auto semiPos = semiPosResult.value();
+              subTypes.push_back(parseType(preCtx, j, semiPos).first);
+              j = semiPos - 1;
+            } else if (j != (pClose - 1)) {
+              subTypes.push_back(parseType(preCtx, j, pClose).first);
+              j = pClose;
+            }
+          }
+          i = pClose;
+          result.push_back(new ast::FillGeneric(new ast::TupleType(subTypes, false, false, token.fileRange)));
+        } else {
+          auto constRes = parseConstantExpression(preCtx, i, pCloseResult.value());
+          result.push_back(new ast::FillGeneric(constRes.first));
+          if (constRes.second >= pCloseResult.value()) {
+            Error("Parsing the constant expression wrapped inside ( and ) exceeded the position of )",
+                  RangeSpan(start, constRes.second));
+          }
+          i = pCloseResult.value();
+        }
+        break;
+      }
+      default: {
+        auto constRes = parseConstantExpression(preCtx, i - 1, None);
+        result.push_back(new ast::FillGeneric(constRes.first));
+        i = constRes.second;
+      }
+    }
+    if (isNext(TokenType::separator, i)) {
+      i++;
+    } else if (!(i == (upto - 1))) {
+      Error("Unexpected token found here", RangeAt(i + 1));
+    }
+  }
+  return result;
+}
+
 Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, Maybe<usize> upto) {
   using lexer::Token;
   using lexer::TokenType;
@@ -414,30 +576,39 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto symRes = parseSymbol(ctx, i);
         auto name   = symRes.first.name;
         i           = symRes.second;
-          if (isNext(TokenType::genericTypeStart, i)) {
-            auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
-            if (endRes.has_value()) {
-              auto end = endRes.value();
-              if (endRes.value() == i + 2) {
-                cacheTy = new ast::GenericNamedType(symRes.first.relative, symRes.first.name, {}, getVariability(),
-                                                    RangeSpan(start, end));
-              } else {
-                Vec<ast::QatType*> types = parseSeparatedTypes(preCtx, i + 1, end);
-                cacheTy = new ast::GenericNamedType(symRes.first.relative, symRes.first.name, types, getVariability(),
-                                                    RangeSpan(start, end));
-                i       = end;
-              }
-              break;
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+          if (endRes.has_value()) {
+            auto end = endRes.value();
+            if (endRes.value() == i + 2) {
+              cacheTy = new ast::GenericNamedType(symRes.first.relative, symRes.first.name, {}, getVariability(),
+                                                  RangeSpan(start, end));
             } else {
-              Error("Expected end for generic type specification", RangeAt(i + 1));
+              auto types = parseGenericFill(preCtx, i + 1, end);
+              cacheTy    = new ast::GenericNamedType(symRes.first.relative, symRes.first.name, types, getVariability(),
+                                                     RangeSpan(start, end));
+              i          = end;
             }
-          } else {
-            cacheTy = new ast::NamedType(symRes.first.relative, name, getVariability(), symRes.first.fileRange);
-            i       = symRes.second;
             break;
+          } else {
+            Error("Expected end for generic type specification", RangeAt(i + 1));
           }
+        } else if ((name.size() == 1) &&
+                   (preCtx.hasTypedGeneric(name.front().value) || preCtx.hasConstGeneric(name.front().value))) {
+          ast::GenericAbstractType* genericParameter;
+          if (preCtx.hasTypedGeneric(name.front().value)) {
+            genericParameter = preCtx.getTypedGeneric(name.front().value);
+          } else {
+            genericParameter = preCtx.getConstGeneric(name.front().value);
+          }
+          cacheTy = new ast::LinkedGeneric(getVariability(), genericParameter, name.front().range);
+          i       = symRes.second;
+          break;
+        } else {
+          cacheTy = new ast::NamedType(symRes.first.relative, name, getVariability(), symRes.first.fileRange);
+          i       = symRes.second;
+          break;
         }
-
         break;
       }
       case TokenType::referenceType: {
@@ -562,10 +733,10 @@ Vec<ast::GenericAbstractType*> Parser::parseGenericAbstractTypes(ParserContext& 
       if (isNext(TokenType::assignment, i)) {
         auto typRes = parseType(preCtx, i + 1, None);
         result.push_back(
-            new ast::GenericAbstractType(utils::unique_id(), token.value, false, typRes.first, token.fileRange));
+            ast::TypedGeneric::get(result.size(), IdentifierAt(i), typRes.first, RangeSpan(i, typRes.second)));
         i = typRes.second;
       } else {
-        result.push_back(new ast::GenericAbstractType(utils::unique_id(), token.value, false, None, token.fileRange));
+        result.push_back(ast::TypedGeneric::get(result.size(), IdentifierAt(i), None, token.fileRange));
       }
       if (isNext(TokenType::separator, i)) {
         i++;
@@ -573,8 +744,54 @@ Vec<ast::GenericAbstractType*> Parser::parseGenericAbstractTypes(ParserContext& 
       } else if (isNext(TokenType::genericTypeEnd, i)) {
         break;
       } else {
-        Error("Unexpected token after identifier in generic type specification", token.fileRange);
+        Error("Unexpected token after identifier in generic parameter specification", token.fileRange);
       }
+    } else if (token.type == TokenType::constant) {
+      auto start = i;
+      if (isNext(TokenType::identifier, i)) {
+        auto constGenName = IdentifierAt(i + 1);
+        if (isNext(TokenType::typeSeparator, i + 1)) {
+          if (isNext(TokenType::separator, i + 2) || isNext(TokenType::genericTypeEnd, i + 2)) {
+            Error("Expected type for the constant generic parameter", RangeSpan(i, i + 3));
+          }
+          auto typeRes = parseType(preCtx, i + 2, None);
+          if (typeRes.second >= upto) {
+            Error(
+                "Parsing type for the const generic parameter surpassed the end of the recognised generic type specification",
+                RangeSpan(i, typeRes.second));
+          }
+          i = typeRes.second;
+          Maybe<ast::ConstantExpression*> defaultValue;
+          if (isNext(TokenType::assignment, i)) {
+            if (isNext(TokenType::separator, i + 1) || isNext(TokenType::genericTypeEnd, i + 1)) {
+              Error(
+                  "Expected a constant expression for the default value of the const generic parameter. Found nothing.",
+                  RangeSpan(start, i + 2));
+            }
+            auto constRes = parseConstantExpression(preCtx, i + 1, None);
+            if (constRes.second >= upto) {
+              Error(
+                  "Parsing constant expression for the default value for the const generic parameter surpassed the end of the recognised generic type specification",
+                  RangeSpan(start, constRes.second));
+            }
+            defaultValue = constRes.first;
+            i            = constRes.second;
+          }
+          result.push_back(
+              ast::ConstGeneric::get(result.size(), constGenName, typeRes.first, defaultValue, RangeSpan(start, i)));
+          if (isNext(TokenType::separator, i)) {
+            i++;
+          } else if (isNext(TokenType::genericTypeEnd, i)) {
+            break;
+          }
+        } else {
+          Error("Expected :: after the name of the const generic parameter", RangeSpan(i, i + 1));
+        }
+      } else {
+        Error("Expected an identifier found after `const` in generic parameter specification", RangeAt(i));
+      }
+    } else {
+      Error("Unexpected token found in the generic parameter specification", token.fileRange);
     }
   }
   return result;
@@ -2673,10 +2890,10 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         if (isNext(TokenType::genericTypeStart, i)) {
           auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
           if (tEndRes.has_value()) {
-            auto               tEnd = tEndRes.value();
-            Vec<ast::QatType*> types;
+            auto                   tEnd = tEndRes.value();
+            Vec<ast::FillGeneric*> types;
             if (tEnd != i + 2) {
-              types = parseSeparatedTypes(preCtx, i + 1, tEnd);
+              types = parseGenericFill(preCtx, i + 1, tEnd);
             }
             type = new ast::GenericNamedType(cachedSymbol->relative, cachedSymbol->name, types, false,
                                              cachedSymbol->fileRange);
@@ -3139,10 +3356,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           cacheSymbol = symRes.first;
           i           = symRes.second;
           if (isNext(TokenType::genericTypeStart, i)) {
-              auto expRes = parseExpression(preCtx, cacheSymbol, i, None);
-              cachedExpressions.push_back(expRes.first);
-              cacheSymbol = None;
-              i           = expRes.second;
+            auto expRes = parseExpression(preCtx, cacheSymbol, i, None);
+            if (isNext(TokenType::stop, expRes.second)) {
             }
           }
         }
@@ -3489,7 +3704,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             }
           }
         } else if (isNext(TokenType::over, i)) {
-          // TODO - Implement
+          // FIXME - Implement
         } else {
           Error("Unexpected token after loop", token.fileRange);
         }

@@ -40,9 +40,27 @@ void DefinitionType::updateOverview() {
       ._("moduleID", parent->getID());
 }
 
+bool DefinitionType::canBeConstGeneric() const { return subType->canBeConstGeneric(); }
+
+Maybe<String> DefinitionType::toConstGenericString(IR::ConstantValue* constant) const {
+  if (subType->canBeConstGeneric()) {
+    return subType->toConstGenericString(constant);
+  } else {
+    return None;
+  }
+}
+
+Maybe<bool> DefinitionType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+  if (subType->canBeConstGeneric()) {
+    return subType->equalityOf(first, second);
+  } else {
+    return None;
+  }
+}
+
 TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 
-String DefinitionType::toString() const { return name.value; }
+String DefinitionType::toString() const { return getFullName(); }
 
 Json DefinitionType::toJson() const { return Json()._("type", "definition")._("subtype", subType->getID()); }
 

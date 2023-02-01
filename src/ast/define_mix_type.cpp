@@ -13,7 +13,7 @@ bool DefineMixType::isGeneric() const { return !generics.empty(); }
 
 void DefineMixType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
-  ctx->nameCheck(name, "mix type", None);
+  ctx->nameCheckInModule(name, "mix type", None);
   Vec<Pair<Identifier, Maybe<IR::QatType*>>> subTypesIR;
   bool                                       hasAssociatedType = false;
   for (usize i = 0; i < subtypes.size(); i++) {
@@ -45,7 +45,7 @@ void DefineMixType::createType(IR::Context* ctx) {
                "Please change this type to a choice type",
                fileRange);
   }
-  new IR::MixType(name, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibility), fileRange);
+  new IR::MixType(name, {}, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibility), fileRange);
 }
 
 void DefineMixType::defineType(IR::Context* ctx) {
@@ -54,7 +54,7 @@ void DefineMixType::defineType(IR::Context* ctx) {
     createType(ctx);
   } else {
     //   SHOW("Creating generic mix type: " << name)
-    //   genericUnionType = new IR::GenericMixType(
+    //   genericMixType = new IR::GenericMixType(
     //       name, generics, this, ctx->getMod(),
     //       ctx->getVisibInfo(visibility));
   }

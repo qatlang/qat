@@ -2305,18 +2305,58 @@ ast::PlainInitialiser* Parser::parsePlainInitialiser(ParserContext& preCtx, ast:
 
 Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            preCtx, // NOLINT(misc-no-recursion)
                                                       const Maybe<CacheSymbol>& symbol, usize from, Maybe<usize> upto,
-                                                      bool isMemberFn, Vec<ast::Expression*> cachedExps) {
+                                                      Maybe<ast::Expression*> cachedExps) {
   using ast::Expression;
   using lexer::Token;
   using lexer::TokenType;
 
   SHOW("Upto has value: " << upto.has_value())
 
-  Maybe<CacheSymbol>              cachedSymbol = symbol;
-  Vec<Expression*>                cachedExpressions(std::move(cachedExps));
+  usize i = from + 1; // NOLINT(readability-identifier-length)
+
+  Maybe<CacheSymbol> _cachedSymbol_(symbol);
+  auto               hasCachedSymbol     = [&]() { return _cachedSymbol_.has_value(); };
+  auto               consumeCachedSymbol = [&]() {
+    if (_cachedSymbol_.has_value()) {
+      auto res       = _cachedSymbol_.value();
+      _cachedSymbol_ = None;
+      return res;
+    } else {
+      Error("Internal error : No cached symbol found, but it is requested here", RangeAt(i));
+    }
+  };
+  auto setSymbol = [&](const CacheSymbol& other) {
+    if (_cachedSymbol_.has_value()) {
+      Error("Internal error : A cached symbol is already present, but an attempt to set another symbol was made",
+            RangeAt(i));
+    } else {
+      _cachedSymbol_ = other;
+    }
+  };
+
+  Maybe<Expression*> _cachedExpressions_(cachedExps);
+  auto               hasCachedExpr     = [&]() { return _cachedExpressions_.has_value(); };
+  auto               consumeCachedExpr = [&]() {
+    if (_cachedExpressions_.has_value()) {
+      auto* res           = _cachedExpressions_.value();
+      _cachedExpressions_ = None;
+      return res;
+    } else {
+      Error("Internal error : No cached expression found, but it is requested here", RangeAt(i));
+    }
+  };
+  auto setCachedExpr = [&](ast::Expression* other) {
+    if (_cachedExpressions_.has_value()) {
+      Error(
+          "Internal error : A cached expression is already present, but there was an attempt to set another expression",
+          RangeAt(i));
+    } else {
+      _cachedExpressions_ = other;
+    }
+  };
+
   Maybe<Pair<Expression*, Token>> binaryOps;
 
-  usize i = from + 1; // NOLINT(readability-identifier-length)
   for (; upto.has_value() ? (i < upto.value()) : (i < tokens->size()); i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
@@ -2328,7 +2368,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (pCloseRes) {
                 auto pClose = pCloseRes.value();
                 auto types  = parseSeparatedTypes(preCtx, i + 3, pClose);
-                cachedExpressions.push_back(new ast::TypeChecker(ValueAt(i + 2), types, RangeSpan(i, pClose)));
+                setCachedExpr(new ast::TypeChecker(ValueAt(i + 2), types, RangeSpan(i, pClose)));
                 i = pClose;
               } else {
                 Error("Expected end for (", RangeAt(i + 3));
@@ -2356,9 +2396,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               bits = std::stoul(token.value.substr(split + 2));
             }
           }
-          cachedExpressions.push_back(new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
+          setCachedExpr(new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
         } else {
-          cachedExpressions.push_back(new ast::UnsignedLiteral(
+          setCachedExpr(new ast::UnsignedLiteral(
               (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
               token.fileRange));
         }
@@ -2372,9 +2412,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if ((split + 2) < token.value.length()) {
             bits = std::stoul(token.value.substr(split + 2));
           }
-          cachedExpressions.push_back(new ast::CustomIntegerLiteral(number, false, bits, token.fileRange));
+          setCachedExpr(new ast::CustomIntegerLiteral(number, false, bits, token.fileRange));
         } else {
-          cachedExpressions.push_back(new ast::IntegerLiteral(
+          setCachedExpr(new ast::IntegerLiteral(
               (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
               token.fileRange));
         }
@@ -2384,11 +2424,11 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         auto number = token.value;
         if (number.find('_') != String::npos) {
           SHOW("Found custom float literal: " << number.substr(number.find('_') + 1))
-          cachedExpressions.push_back(new ast::CustomFloatLiteral(
-              number.substr(0, number.find('_')), number.substr(number.find('_') + 1), token.fileRange));
+          setCachedExpr(new ast::CustomFloatLiteral(number.substr(0, number.find('_')),
+                                                    number.substr(number.find('_') + 1), token.fileRange));
         } else {
           SHOW("Found float literal")
-          cachedExpressions.push_back(new ast::FloatLiteral(token.value, token.fileRange));
+          setCachedExpr(new ast::FloatLiteral(token.value, token.fileRange));
         }
         break;
       }
@@ -2404,7 +2444,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
           i = pos;
         }
-        cachedExpressions.push_back(new ast::StringLiteral(val, fRange));
+        setCachedExpr(new ast::StringLiteral(val, fRange));
         break;
       }
       case TokenType::none: {
@@ -2425,7 +2465,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             Error("Expected end for generic type specification", RangeAt(i + 1));
           }
         }
-        cachedExpressions.push_back(new ast::NoneExpression(noneType, range));
+        setCachedExpr(new ast::NoneExpression(noneType, range));
         break;
       }
       case TokenType::sizeOf: {
@@ -2433,7 +2473,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
           if (pCloseRes.has_value()) {
             auto* type = parseType(preCtx, i + 1, pCloseRes.value()).first;
-            cachedExpressions.push_back(new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value())));
+            setCachedExpr(new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value())));
             i = pCloseRes.value();
           } else {
             Error("Expected end for (", RangeAt(i + 1));
@@ -2447,37 +2487,37 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::null: {
-        cachedExpressions.push_back(new ast::NullPointer(token.fileRange));
+        setCachedExpr(new ast::NullPointer(token.fileRange));
         break;
       }
       case TokenType::FALSE:
       case TokenType::TRUE: {
-        cachedExpressions.push_back(new ast::BooleanLiteral(token.type == TokenType::TRUE, RangeAt(i)));
+        setCachedExpr(new ast::BooleanLiteral(token.type == TokenType::TRUE, RangeAt(i)));
         break;
       }
       case TokenType::super:
       case TokenType::identifier: {
         auto symbolRes = parseSymbol(preCtx, i);
-        cachedSymbol   = symbolRes.first;
-        i              = symbolRes.second;
+        setSymbol(symbolRes.first);
+        i = symbolRes.second;
         break;
       }
       case TokenType::Default: {
-        cachedExpressions.push_back(new ast::Default(RangeAt(i)));
+        setCachedExpr(new ast::Default(RangeAt(i)));
         break;
       }
       case TokenType::from: {
-        if (cachedSymbol.has_value()) {
+        if (hasCachedSymbol()) {
           if (isNext(TokenType::parenthesisOpen, i)) {
             auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
             if (pCloseRes.has_value()) {
               auto pClose = pCloseRes.value();
               auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
-              cachedExpressions.push_back(new ast::ConstructorCall(
-                  new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange), exps,
-                  None, None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
-              cachedSymbol = None;
-              i            = pClose;
+              auto symbol = consumeCachedSymbol();
+              setCachedExpr(
+                  new ast::ConstructorCall(new ast::NamedType(symbol.relative, symbol.name, false, symbol.fileRange),
+                                           exps, None, None, None, {symbol.fileRange, RangeAt(pClose)}));
+              i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 1));
             }
@@ -2487,8 +2527,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::genericTypeStart: {
         SHOW("Generic type start: " << i)
-        if (cachedSymbol.has_value()) {
-          SHOW("Cached symbol: " << cachedSymbol.value().name.front().value)
+        if (hasCachedSymbol()) {
           auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
           if (endRes.has_value()) {
             auto end = endRes.value();
@@ -2497,13 +2536,11 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             if (isNext(TokenType::curlybraceOpen, end)) {
               auto cEnd = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, end + 1, false);
               if (cEnd.has_value()) {
-                cachedExpressions.push_back(
-                    parsePlainInitialiser(preCtx,
-                                          new ast::GenericNamedType(cachedSymbol->relative, cachedSymbol->name, types,
-                                                                    false, cachedSymbol->fileRange),
-                                          end + 1, cEnd.value()));
-                cachedSymbol = None;
-                i            = cEnd.value();
+                auto symbol = consumeCachedSymbol();
+                setCachedExpr(parsePlainInitialiser(
+                    preCtx, new ast::GenericNamedType(symbol.relative, symbol.name, types, false, symbol.fileRange),
+                    end + 1, cEnd.value()));
+                i = cEnd.value();
               } else {
                 Error("Expected end for { in plain initialisation", RangeAt(end + 1));
               }
@@ -2515,12 +2552,11 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 if (pCloseRes.has_value()) {
                   auto pClose = pCloseRes.value();
                   auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
-                  cachedExpressions.push_back(
-                      new ast::ConstructorCall(new ast::GenericNamedType(cachedSymbol->relative, cachedSymbol->name,
-                                                                         types, false, cachedSymbol->fileRange),
-                                               exps, None, None, None, {cachedSymbol->fileRange, RangeAt(pClose)}));
-                  cachedSymbol = None;
-                  i            = pClose;
+                  auto symbol = consumeCachedSymbol();
+                  setCachedExpr(new ast::ConstructorCall(
+                      new ast::GenericNamedType(symbol.relative, symbol.name, types, false, symbol.fileRange), exps,
+                      None, None, None, {symbol.fileRange, RangeAt(pClose)}));
+                  i = pClose;
                 } else {
                   Error("Expected end for (", RangeAt(i + 1));
                 }
@@ -2528,10 +2564,10 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 Error("Expected ( to start the constructor call", RangeAt(end + 1));
               }
             } else {
-              cachedExpressions.push_back(new ast::GenericEntity(cachedSymbol->relative, cachedSymbol->name, types,
-                                                                 {cachedSymbol->fileRange, RangeAt(end)}));
-              i            = end;
-              cachedSymbol = None;
+              auto symbol = consumeCachedSymbol();
+              setCachedExpr(
+                  new ast::GenericEntity(symbol.relative, symbol.name, types, {symbol.fileRange, RangeAt(end)}));
+              i = end;
             }
           } else {
             Error("Expected end for generic type specification", RangeAt(i));
@@ -2546,12 +2582,12 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
             // FIXME - Self member function call
           } else {
-            cachedExpressions.push_back(new ast::SelfMember(IdentifierAt(i + 1), RangeSpan(i, i + 1)));
+            setCachedExpr(new ast::SelfMember(IdentifierAt(i + 1), RangeSpan(i, i + 1)));
             i++;
           }
         } else {
           SHOW("Creating self in AST")
-          cachedExpressions.push_back(new ast::Self(RangeAt(i)));
+          setCachedExpr(new ast::Self(RangeAt(i)));
         }
         break;
       }
@@ -2574,14 +2610,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                     if (pCloseRes.has_value()) {
                       auto  pClose = pCloseRes.value();
                       auto* exp    = parseExpression(preCtx, None, tEnd + 1, pClose).first;
-                      cachedExpressions.push_back(new ast::HeapGet(type, exp, RangeAt(i)));
+                      setCachedExpr(new ast::HeapGet(type, exp, RangeAt(i)));
                       i = pClose;
                       break;
                     } else {
                       Error("Expected end for (", RangeAt(tEnd + 1));
                     }
                   } else {
-                    cachedExpressions.push_back(new ast::HeapGet(type, nullptr, RangeAt(i)));
+                    setCachedExpr(new ast::HeapGet(type, nullptr, RangeAt(i)));
                     i = tEnd;
                     break;
                   }
@@ -2597,7 +2633,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3, false);
                 if (pCloseRes.has_value()) {
                   auto* exp = parseExpression(preCtx, None, i + 3, pCloseRes.value()).first;
-                  cachedExpressions.push_back(new ast::HeapPut(exp, RangeSpan(i, pCloseRes.value())));
+                  setCachedExpr(new ast::HeapPut(exp, RangeSpan(i, pCloseRes.value())));
                   i = pCloseRes.value();
                   break;
                 } else {
@@ -2624,7 +2660,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                         auto  split = firstPrimaryPosition(TokenType::separator, tEnd + 1).value();
                         auto* exp   = parseExpression(preCtx, None, tEnd + 1, split).first;
                         auto* count = parseExpression(preCtx, None, split, pClose).first;
-                        cachedExpressions.push_back(new ast::HeapGrow(type, exp, count, RangeAt(i)));
+                        setCachedExpr(new ast::HeapGrow(type, exp, count, RangeAt(i)));
                         i = pClose;
                       } else {
                         Error("Expected 2 argument values for heap'grow", RangeSpan(tEnd + 1, pClose));
@@ -2651,14 +2687,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::curlybraceOpen: {
-        if (cachedSymbol.has_value()) {
+        if (hasCachedSymbol()) {
           auto cCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i, false);
           if (cCloseRes.has_value()) {
-            cachedExpressions.push_back(parsePlainInitialiser(
-                preCtx, new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange),
-                i, cCloseRes.value()));
-            cachedSymbol = None;
-            i            = cCloseRes.value();
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(
+                parsePlainInitialiser(preCtx, new ast::NamedType(symbol.relative, symbol.name, false, symbol.fileRange),
+                                      i, cCloseRes.value()));
+            i = cCloseRes.value();
           } else {
             Error("Expected end for {", RangeAt(i + 1));
           }
@@ -2672,28 +2708,26 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         SHOW("Found [")
         auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
         if (bCloseRes) {
-          if (cachedSymbol.has_value()) {
-            cachedExpressions.push_back(
-                new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
-            cachedSymbol = None;
+          if (hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
           }
-          if (binaryOps || cachedExpressions.empty()) {
+          if (binaryOps || (!hasCachedExpr())) {
             auto bClose = bCloseRes.value();
             if (bClose == i + 1) {
               // Empty array literal
-              cachedExpressions.push_back(new ast::ArrayLiteral({}, RangeSpan(i, bClose)));
+              setCachedExpr(new ast::ArrayLiteral({}, RangeSpan(i, bClose)));
               i = bClose;
             } else {
               auto vals = parseSeparatedExpressions(preCtx, i, bClose);
-              cachedExpressions.push_back(new ast::ArrayLiteral(vals, RangeSpan(i, bClose)));
+              setCachedExpr(new ast::ArrayLiteral(vals, RangeSpan(i, bClose)));
               i = bClose;
             }
             break;
-          } else if (!cachedExpressions.empty()) {
-            auto* exp = parseExpression(preCtx, cachedSymbol, i, bCloseRes.value()).first;
-            auto* ent = cachedExpressions.back();
-            cachedExpressions.pop_back();
-            cachedExpressions.push_back(new ast::IndexAccess(ent, exp, {ent->fileRange, exp->fileRange}));
+          } else if (hasCachedExpr()) {
+            auto* exp = parseExpression(preCtx, None, i, bCloseRes.value()).first;
+            auto* ent = consumeCachedExpr();
+            setCachedExpr(new ast::IndexAccess(ent, exp, {ent->fileRange, exp->fileRange}));
             i = bCloseRes.value();
           }
         } else {
@@ -2703,7 +2737,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::parenthesisOpen: {
         SHOW("Found paranthesis")
-        if (!binaryOps && (!cachedExpressions.empty() || cachedSymbol.has_value())) {
+        if (!binaryOps && (hasCachedExpr() || hasCachedSymbol())) {
           // This parenthesis is supposed to indicate a function call
           auto p_close = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
           if (p_close.has_value()) {
@@ -2718,13 +2752,12 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               } else if (i < (p_close.value() - 1)) {
                 args.push_back(parseExpression(preCtx, None, i, p_close.value()).first);
               }
-              if (cachedExpressions.empty()) {
+              if (!hasCachedExpr()) {
                 SHOW("Expressions cache is empty")
-                if (cachedSymbol.has_value()) {
-                  auto* ent = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
-                  cachedExpressions.push_back(new ast::FunctionCall(
-                      ent, args, cachedSymbol.value().extend_fileRange(RangeAt(p_close.value()))));
-                  cachedSymbol = None;
+                if (hasCachedSymbol()) {
+                  auto  symbol = consumeCachedSymbol();
+                  auto* ent    = new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
+                  setCachedExpr(new ast::FunctionCall(ent, args, symbol.extend_fileRange(RangeAt(p_close.value()))));
                 } else {
                   Error("No expression found to be passed to the function call. "
                         "And no function name found for "
@@ -2732,12 +2765,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                         {token.fileRange, RangeAt(p_close.value())});
                 }
               } else {
-                auto* funCall =
-                    new ast::FunctionCall(cachedExpressions.back(), args,
-                                          FileRange(cachedExpressions.back()->fileRange, RangeAt(p_close.value())));
-                cachedExpressions.pop_back();
-                cachedExpressions.push_back(funCall);
-                cachedSymbol = None;
+                auto* expression = consumeCachedExpr();
+                setCachedExpr(new ast::FunctionCall(expression, args,
+                                                    FileRange(expression->fileRange, RangeAt(p_close.value()))));
               }
               i = p_close.value();
             }
@@ -2758,7 +2788,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isPrimaryWithin(TokenType::semiColon, i, p_close)) {
             Vec<ast::Expression*> values;
             auto                  separations = primaryPositionsWithin(TokenType::semiColon, i, p_close);
-            values.push_back(parseExpression(preCtx, cachedSymbol, i, separations.front()).first);
+            values.push_back(parseExpression(preCtx, None, i, separations.front()).first);
             bool shouldContinue = true;
             if (separations.size() == 1) {
               SHOW("Only 1 separation")
@@ -2767,15 +2797,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             }
             if (shouldContinue) {
               for (usize j = 0; j < (separations.size() - 1); j += 1) {
-                values.push_back(parseExpression(preCtx, cachedSymbol, separations.at(j), separations.at(j + 1)).first);
+                values.push_back(parseExpression(preCtx, None, separations.at(j), separations.at(j + 1)).first);
               }
-              values.push_back(parseExpression(preCtx, cachedSymbol, separations.back(), p_close).first);
+              values.push_back(parseExpression(preCtx, None, separations.back(), p_close).first);
             }
-            cachedExpressions.push_back(new ast::TupleValue(values, FileRange(token.fileRange, RangeAt(p_close))));
+            setCachedExpr(new ast::TupleValue(values, FileRange(token.fileRange, RangeAt(p_close))));
             i = p_close;
           } else {
-            auto* exp = parseExpression(preCtx, None, i, p_close).first;
-            cachedExpressions.push_back(exp);
+            setCachedExpr(parseExpression(preCtx, None, i, p_close).first);
             i = p_close;
           }
         }
@@ -2784,8 +2813,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::loop: {
         if (isNext(TokenType::child, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
-            cachedExpressions.push_back(
-                new ast::LoopIndex((ValueAt(i + 2) == "index") ? "" : ValueAt(i + 2), RangeSpan(i, i + 2)));
+            setCachedExpr(new ast::LoopIndex((ValueAt(i + 2) == "index") ? "" : ValueAt(i + 2), RangeSpan(i, i + 2)));
             i = i + 2;
           } else {
             Error("Unexpected token after loop'", {token.fileRange, RangeAt(i + 1)});
@@ -2801,7 +2829,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (pCloseRes) {
             auto  pClose = pCloseRes.value();
             auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
-            cachedExpressions.push_back(new ast::Move(exp, RangeSpan(i, pClose)));
+            setCachedExpr(new ast::Move(exp, RangeSpan(i, pClose)));
             i = pClose;
           } else {
             Error("Expected end for (", RangeAt(i + 1));
@@ -2817,7 +2845,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (pCloseRes) {
             auto  pClose = pCloseRes.value();
             auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
-            cachedExpressions.push_back(new ast::Copy(exp, RangeSpan(i, pClose)));
+            setCachedExpr(new ast::Copy(exp, RangeSpan(i, pClose)));
             i = pClose;
           } else {
             Error("Expected end for (", RangeAt(i + 1));
@@ -2831,7 +2859,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         if (ValueAt(i) == "!" || ValueAt(i) == "-") {
           auto exps = parseExpression(preCtx, None, i, None);
           if (ValueAt(i) == "!") {
-            cachedExpressions.push_back(new ast::Not(exps.first, RangeSpan(i, exps.second)));
+            setCachedExpr(new ast::Not(exps.first, RangeSpan(i, exps.second)));
           } else {
             // FIXME - Handle minus operator
           }
@@ -2883,8 +2911,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
         }
         // FIXME - Add heaped plain initialisation
-        auto symRes        = parseSymbol(preCtx, i + 1);
-        cachedSymbol       = symRes.first;
+        auto symRes = parseSymbol(preCtx, i + 1);
+        setSymbol(symRes.first);
         i                  = symRes.second;
         ast::QatType* type = nullptr;
         if (isNext(TokenType::genericTypeStart, i)) {
@@ -2895,14 +2923,15 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             if (tEnd != i + 2) {
               types = parseGenericFill(preCtx, i + 1, tEnd);
             }
-            type = new ast::GenericNamedType(cachedSymbol->relative, cachedSymbol->name, types, false,
-                                             cachedSymbol->fileRange);
-            i    = tEnd;
+            auto symbol = consumeCachedSymbol();
+            type        = new ast::GenericNamedType(symbol.relative, symbol.name, types, false, symbol.fileRange);
+            i           = tEnd;
           } else {
             Error("Expected end for the generic type specification", RangeAt(i + 1));
           }
         } else {
-          type = new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange);
+          auto symbol = consumeCachedSymbol();
+          type        = new ast::NamedType(symbol.relative, symbol.name, false, symbol.fileRange);
         }
         if (isNext(TokenType::from, i)) {
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
@@ -2910,27 +2939,27 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             if (pCloseRes) {
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-              cachedExpressions.push_back(
-                  new ast::ConstructorCall(type, args, ownTy, ownerType, ownCount, RangeSpan(start, pClose)));
+              setCachedExpr(new ast::ConstructorCall(type, args, ownTy, ownerType, ownCount, RangeSpan(start, pClose)));
               i = pClose;
             } else {
               Error("Expected end for (", RangeAt(i + 2));
             }
           }
         }
-        cachedSymbol = None;
         break;
       }
       case TokenType::pointerType: {
-        if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
-          if (cachedSymbol) {
-            cachedExpressions.push_back(
-                new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
-            cachedSymbol = None;
+        if (hasCachedExpr() || hasCachedSymbol()) {
+          if (hasCachedSymbol()) {
+            if (hasCachedExpr()) {
+              Error("Compiler internal error : Both a cached expression and a cached symbol found", RangeAt(i));
+            } else {
+              auto symbol = consumeCachedSymbol();
+              new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
+            }
           }
-          auto* exp = cachedExpressions.back();
-          cachedExpressions.pop_back();
-          cachedExpressions.push_back(new ast::Dereference(exp, {exp->fileRange, RangeAt(i)}));
+          auto* exp = consumeCachedExpr();
+          setCachedExpr(new ast::Dereference(exp, {exp->fileRange, RangeAt(i)}));
         } else {
           Error("No expression found before pointer dereference operator", RangeAt(i));
         }
@@ -2938,7 +2967,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::Await: {
         auto expRes = parseExpression(preCtx, None, i, None);
-        cachedExpressions.push_back(new ast::Await(expRes.first, RangeSpan(i, expRes.second)));
+        setCachedExpr(new ast::Await(expRes.first, RangeSpan(i, expRes.second)));
         i = expRes.second;
         break;
       }
@@ -2948,15 +2977,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 {binaryOps->first->fileRange, RangeAt(i)});
         }
         SHOW("Binary operator found: " << token.value)
-        if (cachedExpressions.empty() && !cachedSymbol.has_value()) {
+        if (!hasCachedExpr() && !hasCachedSymbol()) {
           Error("No expression found on the left side of the binary operator " + token.value, token.fileRange);
-        } else if (cachedSymbol.has_value()) {
-          binaryOps = Pair<ast::Expression*, Token>(
-              new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), token);
-          cachedSymbol = None;
+        } else if (hasCachedSymbol()) {
+          auto symbol = consumeCachedSymbol();
+          binaryOps =
+              Pair<ast::Expression*, Token>(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange), token);
         } else {
-          binaryOps = Pair<ast::Expression*, Token>(cachedExpressions.back(), token);
-          cachedExpressions.pop_back();
+          binaryOps = Pair<ast::Expression*, Token>(consumeCachedExpr(), token);
         }
         break;
       }
@@ -2966,7 +2994,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (pCloseRes.has_value()) {
             auto pClose = pCloseRes.value();
             auto args   = parseSeparatedExpressions(preCtx, i + 1, pClose);
-            cachedExpressions.push_back(
+            setCachedExpr(
                 new ast::PlainInitialiser(new ast::StringSliceType(false, RangeAt(i)), {}, args, RangeSpan(i, pClose)));
             i = pClose;
           } else {
@@ -2980,18 +3008,17 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::to: {
         SHOW("Found to expression")
         ast::Expression* source = nullptr;
-        if (cachedExpressions.empty()) {
-          if (cachedSymbol.has_value()) {
-            source       = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
-            cachedSymbol = None;
+        if (!hasCachedExpr()) {
+          if (hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
           }
         } else {
-          source = cachedExpressions.back();
-          cachedExpressions.pop_back();
+          source = consumeCachedExpr();
         }
         if (source) {
           auto destTyRes = parseType(preCtx, i, upto);
-          cachedExpressions.push_back(
+          setCachedExpr(
               new ast::ToConversion(source, destTyRes.first, FileRange(source->fileRange, RangeAt(destTyRes.second))));
           i = destTyRes.second;
         } else {
@@ -3001,16 +3028,15 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::ternary: {
         ast::Expression* cond = nullptr;
-        if (cachedExpressions.empty()) {
-          if (cachedSymbol.has_value()) {
-            cond         = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
-            cachedSymbol = None;
+        if (!hasCachedExpr()) {
+          if (hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
           } else {
             Error("No expression found before ternary operator", RangeAt(i));
           }
         } else {
-          cond = cachedExpressions.back();
-          cachedExpressions.pop_back();
+          cond = consumeCachedExpr();
         }
         if (isNext(TokenType::parenthesisOpen, i)) {
           auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
@@ -3022,7 +3048,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                 auto  split     = splitRes.value();
                 auto* trueExpr  = parseExpression(preCtx, None, i + 1, split).first;
                 auto* falseExpr = parseExpression(preCtx, None, split, pClose).first;
-                cachedExpressions.push_back(
+                setCachedExpr(
                     new ast::TernaryExpression(cond, trueExpr, falseExpr, {cond->fileRange, RangeAt(pClose)}));
                 i = pClose;
               } else {
@@ -3045,21 +3071,19 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::variationMarker: {
-        if (!cachedExpressions.empty() || cachedSymbol.has_value()) {
-          if (cachedExpressions.empty() && cachedSymbol.has_value()) {
-            cachedExpressions.push_back(
-                new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
-            cachedSymbol = None;
+        if (hasCachedExpr() || hasCachedSymbol()) {
+          if ((!hasCachedExpr()) && hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
           }
-          auto* exp = cachedExpressions.back();
-          cachedExpressions.pop_back();
+          auto* exp = consumeCachedExpr();
           if (isNext(TokenType::identifier, i)) {
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
               auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-                cachedExpressions.push_back(
+                setCachedExpr(
                     new ast::MemberFunctionCall(exp, ValueAt(i + 1), args, true, {exp->fileRange, RangeAt(pClose)}));
                 i = pClose;
                 break;
@@ -3074,8 +3098,9 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::typeSeparator: {
-        if (cachedSymbol.has_value()) {
-          auto* typ = new ast::NamedType(cachedSymbol->relative, cachedSymbol->name, false, cachedSymbol->fileRange);
+        if (hasCachedSymbol()) {
+          auto  symbol = consumeCachedSymbol();
+          auto* typ    = new ast::NamedType(symbol.relative, symbol.name, false, symbol.fileRange);
           if (isNext(TokenType::identifier, i)) {
             auto& subName = ValueAt(i + 1);
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
@@ -3083,14 +3108,13 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (pCloseRes) {
                 auto  pClose = pCloseRes.value();
                 auto* exp    = parseExpression(preCtx, None, i + 2, pClose).first;
-                cachedExpressions.push_back(new ast::MixTypeInitialiser(typ, subName, exp, RangeSpan(i, pClose)));
+                setCachedExpr(new ast::MixTypeInitialiser(typ, subName, exp, RangeSpan(i, pClose)));
                 i = pClose;
               } else {
                 Error("Expected end for (", RangeAt(i + 2));
               }
             } else {
-              cachedExpressions.push_back(
-                  new ast::MixTypeInitialiser(typ, subName, None, {cachedSymbol->fileRange, RangeAt(i + 1)}));
+              setCachedExpr(new ast::MixTypeInitialiser(typ, subName, None, {symbol.fileRange, RangeAt(i + 1)}));
               i++;
             }
           }
@@ -3101,18 +3125,14 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::child: {
         SHOW("Expression parsing : Member access")
-        if ((!cachedExpressions.empty()) || cachedSymbol.has_value()) {
-          if (cachedExpressions.empty() && cachedSymbol.has_value()) {
-            cachedExpressions.push_back(
-                new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange));
-            cachedSymbol = None;
-          } else if ((!cachedExpressions.empty()) && cachedSymbol.has_value()) {
-            Error("Cached expressions are not empty and found symbol at the same "
-                  "time",
-                  cachedExpressions.back()->fileRange);
+        if (hasCachedExpr() || hasCachedSymbol()) {
+          if ((!hasCachedExpr()) && hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
+          } else if (hasCachedExpr() && hasCachedSymbol()) {
+            Error("Cached expressions are not empty and also found symbol", consumeCachedExpr()->fileRange);
           }
-          auto* exp = cachedExpressions.back();
-          cachedExpressions.pop_back();
+          auto* exp = consumeCachedExpr();
           if (isNext(TokenType::identifier, i)) {
             // TODO - Support generic member function calls
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
@@ -3120,24 +3140,23 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
-                cachedExpressions.push_back(new ast::MemberFunctionCall(exp, ValueAt(i + 1), args, false,
-                                                                        {exp->fileRange, RangeSpan(i, pClose)}));
+                setCachedExpr(new ast::MemberFunctionCall(exp, ValueAt(i + 1), args, false,
+                                                          {exp->fileRange, RangeSpan(i, pClose)}));
                 i = pClose;
                 break;
               } else {
                 Error("Expected end for (", RangeAt(i + 2));
               }
             } else {
-              cachedExpressions.push_back(
-                  new ast::MemberAccess(exp, ValueAt(i + 1), {exp->fileRange, RangeSpan(i, i + 1)}));
+              setCachedExpr(new ast::MemberAccess(exp, ValueAt(i + 1), {exp->fileRange, RangeSpan(i, i + 1)}));
               i++;
             }
           } else if (isNext(TokenType::end, i)) {
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
               auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
               if (pCloseRes) {
-                cachedExpressions.push_back(new ast::MemberFunctionCall(
-                    exp, "end", {}, false, {exp->fileRange, RangeSpan(i, pCloseRes.value())}));
+                setCachedExpr(new ast::MemberFunctionCall(exp, "end", {}, false,
+                                                          {exp->fileRange, RangeSpan(i, pCloseRes.value())}));
                 i = pCloseRes.value();
                 break;
               } else {
@@ -3157,18 +3176,20 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       default: {
         if (upto.has_value()) {
           SHOW("Value of i is: " << i << " and value of upto is: " << upto.value())
-          if ((!cachedExpressions.empty()) && (upto.value() == i)) {
-            return {cachedExpressions.back(), i - 1};
-          } else if (cachedSymbol.has_value() && (upto.value() == i)) {
-            return {new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), i - 1};
+          if ((hasCachedExpr()) && (upto.value() == i)) {
+            return {consumeCachedExpr(), i - 1};
+          } else if (hasCachedSymbol() && (upto.value() == i)) {
+            auto symbol = consumeCachedSymbol();
+            return {new ast::Entity(symbol.relative, symbol.name, symbol.fileRange), i - 1};
           } else {
             Error("Encountered an invalid token in the expression", RangeAt(i));
           }
         } else {
-          if (!cachedExpressions.empty()) {
-            return {cachedExpressions.back(), i - 1};
-          } else if (cachedSymbol.has_value()) {
-            return {new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), i - 1};
+          if (hasCachedExpr()) {
+            return {consumeCachedExpr(), i - 1};
+          } else if (hasCachedSymbol()) {
+            auto symbol = consumeCachedSymbol();
+            return {new ast::Entity(symbol.relative, symbol.name, symbol.fileRange), i - 1};
           } else {
             Error("No expression found and encountered invalid token", RangeAt(i));
           }
@@ -3177,57 +3198,51 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
     }
     if (binaryOps) {
       SHOW("Binary ops are not empty")
-      if (!cachedExpressions.empty()) {
+      if (hasCachedExpr()) {
         SHOW("Found lhs and rhs of binary exp")
-        auto* rhs = cachedExpressions.back();
-        cachedExpressions.pop_back();
-        cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+        auto* rhs = consumeCachedExpr();
+        setCachedExpr(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                FileRange(binaryOps->first->fileRange, rhs->fileRange)));
         binaryOps = None;
-      } else if (cachedSymbol.has_value()) {
-        auto* rhs    = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
-        cachedSymbol = None;
-        cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+      } else if (hasCachedSymbol()) {
+        auto  symbol = consumeCachedSymbol();
+        auto* rhs    = new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
+        setCachedExpr(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                                FileRange(binaryOps->first->fileRange, rhs->fileRange)));
         binaryOps = None;
       }
     }
   }
   if (binaryOps) {
     SHOW("Binary ops are not empty")
-    if (!cachedExpressions.empty()) {
+    if (hasCachedExpr()) {
       SHOW("Found lhs and rhs of binary exp")
-      auto* rhs = cachedExpressions.back();
-      cachedExpressions.pop_back();
-      cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                                            FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+      auto* rhs = consumeCachedExpr();
+      setCachedExpr(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
       binaryOps = None;
-    } else if (cachedSymbol.has_value()) {
-      auto* rhs    = new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange);
-      cachedSymbol = None;
-      cachedExpressions.push_back(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                                            FileRange(binaryOps->first->fileRange, rhs->fileRange)));
+    } else if (hasCachedSymbol()) {
+      auto  symbol = consumeCachedSymbol();
+      auto* rhs    = new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
+      setCachedExpr(new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                              FileRange(binaryOps->first->fileRange, rhs->fileRange)));
       binaryOps = None;
     }
   }
-  if (cachedExpressions.empty()) {
-    if (cachedSymbol.has_value()) {
-      return {new ast::Entity(cachedSymbol->relative, cachedSymbol->name, cachedSymbol->fileRange), i};
+  if (!hasCachedExpr()) {
+    if (hasCachedSymbol()) {
+      auto symbol = consumeCachedSymbol();
+      return {new ast::Entity(symbol.relative, symbol.name, symbol.fileRange), i};
     } else {
       Error("No expression found", RangeAt(from));
     }
   } else if (binaryOps) {
-    if (cachedExpressions.size() == 1) {
-      auto* rhs = cachedExpressions.back();
-      cachedExpressions.pop_back();
-      return {new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
-                                        {binaryOps->first->fileRange, rhs->fileRange}),
-              i};
-    } else {
-      Error("RHS for the binary expression not found", {binaryOps->first->fileRange, binaryOps->second.fileRange});
-    }
+    auto* rhs = consumeCachedExpr();
+    return {new ast::BinaryExpression(binaryOps->first, binaryOps->second.value, rhs,
+                                      {binaryOps->first->fileRange, rhs->fileRange}),
+            i};
   } else {
-    return {cachedExpressions.back(), i};
+    return {consumeCachedExpr(), i};
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -3327,8 +3342,7 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext& preCtx, const usize 
   }
 } // NOLINT(clang-diagnostic-return-type)
 
-Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, usize upto, bool onlyOne,
-                                           bool isMemberFn) {
+Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, usize upto, bool onlyOne) {
   using ast::FloatType;
   using ast::IntegerType;
   using IR::FloatTypeKind;
@@ -3338,27 +3352,81 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
   auto                ctx = preCtx;
   Vec<ast::Sentence*> result;
 
-  Maybe<CacheSymbol> cacheSymbol = None;
-  // NOTE - Potentially remove this variable
-  Vec<ast::QatType*>    cacheTy;
-  Vec<ast::Expression*> cachedExpressions;
+  usize i = from + 1; // NOLINT(readability-identifier-length)
 
-  for (usize i = from + 1; i < upto; i++) {
+  Maybe<CacheSymbol> _cacheSymbol_;
+  auto               hasCachedSymbol = [&]() { return _cacheSymbol_.has_value(); };
+  auto               setCachedSymbol = [&](const CacheSymbol& symbol) {
+    if (_cacheSymbol_.has_value()) {
+      Error("Internal error : A cached symbol is already present, and there was an attempt to cache another symbol",
+                          RangeAt(i));
+    } else {
+      _cacheSymbol_ = symbol;
+    }
+  };
+  auto consumeCachedSymbol = [&]() {
+    if (_cacheSymbol_.has_value()) {
+      auto sym      = _cacheSymbol_.value();
+      _cacheSymbol_ = None;
+      return sym;
+    } else {
+      Error("Internal error : No cached symbol found, but was requested here", RangeAt(i));
+    }
+  };
+  auto retrieveCachedSymbol = [&]() {
+    if (_cacheSymbol_.has_value()) {
+      auto sym      = _cacheSymbol_;
+      _cacheSymbol_ = None;
+      return sym;
+    } else {
+      return _cacheSymbol_;
+    }
+  };
+
+  Maybe<ast::Expression*> _cachedExpression_;
+  auto                    hasCachedExpr = [&]() { return _cachedExpression_.has_value(); };
+  auto                    setCachedExpr = [&](ast::Expression* value) {
+    if (_cachedExpression_.has_value()) {
+      Error(
+          "Internal error : A cached expression is already present, and there was an attempt to cache another expression",
+          RangeAt(i));
+    } else {
+      _cachedExpression_ = value;
+    }
+  };
+  auto consumeCachedExpr = [&]() {
+    if (_cachedExpression_.has_value()) {
+      return _cachedExpression_.value();
+    } else {
+      Error("Internal error : No cached expression is found, but was requested here", RangeAt(i));
+    }
+  };
+  auto retrieveCachedExpr = [&]() {
+    if (_cachedExpression_.has_value()) {
+      auto expr          = _cachedExpression_;
+      _cachedExpression_ = None;
+      return expr;
+    } else {
+      return _cachedExpression_;
+    }
+  };
+
+  for (; i < upto; i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
       case TokenType::super:
       case TokenType::identifier: {
         SHOW("Identifier encountered")
-        if (cacheSymbol.has_value()) {
+        if (hasCachedSymbol()) {
           Error("Another symbol found when there already is a symbol", RangeAt(i));
         } else {
           auto symRes = parseSymbol(ctx, i);
-          cacheSymbol = symRes.first;
-          i           = symRes.second;
+          setCachedSymbol(symRes.first);
+          i = symRes.second;
           if (isNext(TokenType::genericTypeStart, i)) {
-            auto expRes = parseExpression(preCtx, cacheSymbol, i, None);
-            if (isNext(TokenType::stop, expRes.second)) {
-            }
+            auto expRes = parseExpression(preCtx, retrieveCachedSymbol(), i, None);
+            setCachedExpr(expRes.first);
+            i = expRes.second;
           }
         }
         break;
@@ -3366,30 +3434,27 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::assignment: {
         SHOW("Assignment found")
         /* Assignment */
-        if (cacheSymbol.has_value()) {
+        if (hasCachedSymbol()) {
           auto end_res = firstPrimaryPosition(TokenType::stop, i);
           if (!end_res.has_value() || (end_res.value() >= upto)) {
             Error("Invalid end for the sentence", token.fileRange);
           }
-          auto  end = end_res.value();
-          auto* exp = parseExpression(ctx, None, i, end).first;
-          auto* lhs = new ast::Entity(cacheSymbol->relative, cacheSymbol->name, cacheSymbol->fileRange);
-          result.push_back(new ast::Assignment(lhs, exp, FileRange(cacheSymbol.value().fileRange, RangeAt(end))));
-          cacheTy.clear();
-          cacheSymbol = None;
-          i           = end;
-        } else if (!cachedExpressions.empty()) {
+          auto  end    = end_res.value();
+          auto* exp    = parseExpression(ctx, None, i, end).first;
+          auto  symbol = consumeCachedSymbol();
+          auto* lhs    = new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
+          result.push_back(new ast::Assignment(lhs, exp, FileRange(symbol.fileRange, RangeAt(end))));
+          i = end;
+        } else if (hasCachedExpr()) {
           auto endRes = firstPrimaryPosition(TokenType::stop, i);
           if (endRes.has_value()) {
             auto  end = endRes.value();
+            auto* lhs = consumeCachedExpr();
             auto* exp = parseExpression(preCtx, None, i, end).first;
-            result.push_back(new ast::Assignment(cachedExpressions.back(), exp,
-                                                 {cachedExpressions.back()->fileRange, RangeAt(end)}));
-            cacheSymbol = None;
-            cachedExpressions.clear();
+            result.push_back(new ast::Assignment(lhs, exp, {lhs->fileRange, RangeAt(end)}));
             i = end;
           } else {
-            Error("Invalid end of sentence", {cachedExpressions.back()->fileRange, token.fileRange});
+            Error("Invalid end of sentence", {consumeCachedExpr()->fileRange, token.fileRange});
           }
         } else {
           Error("Expected an expression to assign the expression to", token.fileRange);
@@ -3424,10 +3489,13 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       }
       case TokenType::stop: {
         SHOW("Parsed expression sentence")
-        if (!cachedExpressions.empty()) {
-          result.push_back(new ast::ExpressionSentence(cachedExpressions.back(),
-                                                       {cachedExpressions.back()->fileRange, token.fileRange}));
-          cachedExpressions.pop_back();
+        if (hasCachedExpr()) {
+          auto* expr = consumeCachedExpr();
+          result.push_back(new ast::ExpressionSentence(expr, {expr->fileRange, token.fileRange}));
+        } else if (hasCachedSymbol()) {
+          auto symbol = consumeCachedSymbol();
+          result.push_back(new ast::ExpressionSentence(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange),
+                                                       symbol.fileRange));
         }
         break;
       }
@@ -3498,9 +3566,6 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               auto* exp = parseExpression(preCtx, None, i + 2, end).first;
               result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, IdentifierAt(i + 1), exp, isVarDecl,
                                                          RangeSpan(start, end)));
-              cacheSymbol = None;
-              cacheTy.clear();
-              cachedExpressions.clear();
               i = end;
             } else {
               Error("Invalid end for sentence", RangeSpan(start, i + 2));
@@ -3598,7 +3663,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
       case TokenType::loop: {
         if (isNext(TokenType::child, i)) {
           auto expRes = parseExpression(preCtx, None, i > 0 ? i - 1 : 0, None);
-          cachedExpressions.push_back(expRes.first);
+          setCachedExpr(expRes.first);
           i = expRes.second;
           break;
         } else if (isNext(TokenType::colon, i) || isNext(TokenType::bracketOpen, i)) {
@@ -3722,9 +3787,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   "appropriate to mark the end of the statement",
                   token.fileRange);
           }
-          auto* exp   = parseExpression(ctx, cacheSymbol, i, end.value()).first;
-          i           = end.value();
-          cacheSymbol = None;
+          auto* exp = parseExpression(ctx, None, i, end.value()).first;
+          i         = end.value();
           result.push_back(new ast::GiveSentence(exp, FileRange(token.fileRange, RangeAt(end.value()))));
         }
         break;
@@ -3762,11 +3826,9 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         break;
       }
       default: {
-        auto expRes = parseExpression(preCtx, cacheSymbol, i - 1, None, isMemberFn, cachedExpressions);
-        cachedExpressions.clear();
-        cachedExpressions.push_back(expRes.first);
-        cacheSymbol = None;
-        i           = expRes.second;
+        auto expRes = parseExpression(preCtx, retrieveCachedSymbol(), i - 1, None, retrieveCachedExpr());
+        setCachedExpr(expRes.first);
+        i = expRes.second;
       }
     }
     if (onlyOne) {

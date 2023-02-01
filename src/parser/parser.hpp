@@ -82,11 +82,10 @@ public:
   useit Pair<ast::ConstantExpression*, usize> parseConstantExpression(ParserContext& preCtx, usize from,
                                                                       Maybe<usize> upto);
   useit Pair<ast::Expression*, usize> parseExpression(ParserContext& prev_ctx, const Maybe<CacheSymbol>& symbol,
-                                                      usize from, Maybe<usize> upto, bool isMemberFn = false,
-                                                      Vec<ast::Expression*> cachedExpressions = {});
+                                                      usize from, Maybe<usize> upto,
+                                                      Maybe<ast::Expression*> cachedExpressions = {});
   useit Vec<ast::Expression*> parseSeparatedExpressions(ParserContext& prev_ctx, usize from, usize upto);
-  useit Vec<ast::Sentence*> parseSentences(ParserContext& prev_ctx, usize from, usize upto, bool onlyOne = false,
-                                           bool isMemberFn = false);
+  useit Vec<ast::Sentence*> parseSentences(ParserContext& prev_ctx, usize from, usize upto, bool onlyOne = false);
   useit bool                isPrev(lexer::TokenType type, usize current);
   useit bool                isNext(lexer::TokenType type, usize current);
   useit bool                areOnlyPresentWithin(const Vec<lexer::TokenType>& kinds, usize from, usize upto);

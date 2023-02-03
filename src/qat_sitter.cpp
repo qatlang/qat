@@ -127,7 +127,7 @@ void QatSitter::init() {
             if (hasMultiExecutables) {
               std::cout << "\nExecuting built executable at: " << exePath.string() << "\n";
             }
-            if (std::system(exePath.c_str())) {
+            if (std::system(exePath.string().c_str())) {
               ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) +
                              " exited with an error!",
                          {exePath.string(), {0u, 0u}, {0u, 0u}});

@@ -14,7 +14,6 @@
 #include "entity_overview.hpp"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
-#include <bits/types/FILE.h>
 #include <vector>
 
 namespace qat::ast {

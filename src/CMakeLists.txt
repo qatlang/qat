@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-	VERSION "0.6.1"
+	VERSION "0.7.0"
 	DESCRIPTION "Qat Programming Language"
 	HOMEPAGE_URL "https://qat.dev")
 
@@ -52,7 +52,7 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Compile time definitions
 #
 #
-add_compile_definitions(QAT_IS_PRERELEASE=true)
+add_compile_definitions(QAT_IS_PRERELEASE=false)
 add_compile_definitions(QAT_PRERELEASE=alpha)
 add_compile_definitions(QAT_BUILD_BRANCH=${BUILD_BRANCH})
 add_compile_definitions(QAT_BUILD_ID=${LAST_COMMIT})

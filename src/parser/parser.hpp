@@ -83,7 +83,7 @@ public:
                                                                       Maybe<usize> upto);
   useit Pair<ast::Expression*, usize> parseExpression(ParserContext& prev_ctx, const Maybe<CacheSymbol>& symbol,
                                                       usize from, Maybe<usize> upto,
-                                                      Maybe<ast::Expression*> cachedExpressions = {});
+                                                      Maybe<ast::Expression*> cachedExpressions = None);
   useit Vec<ast::Expression*> parseSeparatedExpressions(ParserContext& prev_ctx, usize from, usize upto);
   useit Vec<ast::Sentence*> parseSentences(ParserContext& prev_ctx, usize from, usize upto, bool onlyOne = false);
   useit bool                isPrev(lexer::TokenType type, usize current);

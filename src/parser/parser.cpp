@@ -2304,17 +2304,28 @@ ast::PlainInitialiser* Parser::parsePlainInitialiser(ParserContext& preCtx, ast:
 }
 
 Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            preCtx, // NOLINT(misc-no-recursion)
-                                                      const Maybe<CacheSymbol>& symbol, usize from, Maybe<usize> upto,
-                                                      Maybe<ast::Expression*> cachedExps) {
+                                                      const Maybe<CacheSymbol>& _symbol, usize from, Maybe<usize> upto,
+                                                      Maybe<ast::Expression*> _cachedExps) {
   using ast::Expression;
   using lexer::Token;
   using lexer::TokenType;
 
-  SHOW("Upto has value: " << upto.has_value())
+  SHOW("\n	CachedSymbol : " << (_symbol.has_value() ? "true" : "false"))
+  if (_symbol.has_value()) {
+    SHOW("			" << Identifier::fullName(_symbol.value().name).value)
+  }
+  SHOW("	CachedExpression : " << (_cachedExps.has_value() ? "true" : "false"))
+  if (_cachedExps.has_value()) {
+    SHOW("			" << ((_cachedExps.value())->toJson()["nodeType"].asString()))
+  }
+  SHOW("	FROM : " << from << " range: " << RangeAt(from).start.line << ":" << RangeAt(from).start.character << " - "
+                   << RangeAt(from).end.line << ":" << RangeAt(from).end.character)
+  SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
+                   << (upto.has_value() ? "\n		" + std::to_string(upto.value()) : ""))
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
 
-  Maybe<CacheSymbol> _cachedSymbol_(symbol);
+  Maybe<CacheSymbol> _cachedSymbol_(_symbol);
   auto               hasCachedSymbol     = [&]() { return _cachedSymbol_.has_value(); };
   auto               consumeCachedSymbol = [&]() {
     if (_cachedSymbol_.has_value()) {
@@ -2334,7 +2345,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
     }
   };
 
-  Maybe<Expression*> _cachedExpressions_(cachedExps);
+  Maybe<Expression*> _cachedExpressions_(_cachedExps);
   auto               hasCachedExpr     = [&]() { return _cachedExpressions_.has_value(); };
   auto               consumeCachedExpr = [&]() {
     if (_cachedExpressions_.has_value()) {
@@ -3396,7 +3407,9 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
   };
   auto consumeCachedExpr = [&]() {
     if (_cachedExpression_.has_value()) {
-      return _cachedExpression_.value();
+      auto* exp          = _cachedExpression_.value();
+      _cachedExpression_ = None;
+      return exp;
     } else {
       Error("Internal error : No cached expression is found, but was requested here", RangeAt(i));
     }
@@ -3446,8 +3459,9 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           result.push_back(new ast::Assignment(lhs, exp, FileRange(symbol.fileRange, RangeAt(end))));
           i = end;
         } else if (hasCachedExpr()) {
+          SHOW("Assignment has cached expression")
           auto endRes = firstPrimaryPosition(TokenType::stop, i);
-          if (endRes.has_value()) {
+          if (endRes.has_value() && (endRes.value() < upto)) {
             auto  end = endRes.value();
             auto* lhs = consumeCachedExpr();
             auto* exp = parseExpression(preCtx, None, i, end).first;

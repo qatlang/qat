@@ -71,12 +71,18 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
       if (generatedTypes.size() == 1) {
         if (generatedTypes.at(0)->isPointer() && generatedTypes.at(0)->asPointer()->isMulti() &&
             generatedTypes.at(0)->asPointer()->getOwner().isAnonymous()) {
+          if (generatedTypes.at(0)->asPointer()->isSubtypeVariable()) {
+            ctx->Error("Type of the first argument of the " + ctx->highlightError("main") +
+                           " function, cannot be a pointer with variability. It should be of " +
+                           ctx->highlightError("#[+ cstring ?]") + " type",
+                       arguments.at(0)->getType()->fileRange);
+          }
           mod->setHasMainFn();
           ctx->hasMain = true;
         } else {
-          ctx->Error("The first argument of the " + ctx->highlightError("main") + " function should be " +
+          ctx->Error("Type of the first argument of the " + ctx->highlightError("main") + " function should be " +
                          ctx->highlightError("#[+ cstring ?]"),
-                     arguments.at(0)->getName().range);
+                     arguments.at(0)->getType()->fileRange);
         }
       } else if (generatedTypes.empty()) {
         mod->setHasMainFn();

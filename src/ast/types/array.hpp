@@ -5,6 +5,8 @@
 
 namespace qat::ast {
 
+class ConstantExpression;
+
 /**
  *  A continuous sequence of elements of a particular type. The sequence
  * is fixed length
@@ -12,11 +14,13 @@ namespace qat::ast {
  */
 class ArrayType : public QatType {
 private:
-  QatType* elementType;
-  u64      length;
+  QatType*                    elementType;
+  mutable ConstantExpression* lengthExp;
+
+  void typeInferenceForLength(llvm::LLVMContext& llCtx) const;
 
 public:
-  ArrayType(QatType* _element_type, uint64_t _length, bool _variable, FileRange _fileRange);
+  ArrayType(QatType* _element_type, ConstantExpression* lengthExp, bool _variable, FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx);

@@ -691,21 +691,17 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (!cacheTy.has_value()) {
           Error("Element type of array not specified", token.fileRange);
         }
-        if (isNext(TokenType::unsignedLiteral, i) || isNext(TokenType::integerLiteral, i)) {
-          if (isNext(TokenType::bracketClose, i + 1)) {
-            auto* subType      = cacheTy.value();
-            auto& numberString = ValueAt(i + 1);
-            if (numberString.find('_') != String::npos) {
-              numberString = numberString.substr(0, numberString.find('_'));
-            }
-            cacheTy = new ast::ArrayType(subType, std::stoul(numberString), getVariability(), token.fileRange);
-            i       = i + 2;
-            break;
-          } else {
-            Error("Expected ] after the array size", RangeAt(i + 1));
+        auto bClose = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
+        if (bClose.has_value()) {
+          auto lengthExp = parseConstantExpression(preCtx, i, bClose);
+          cacheTy        = new ast::ArrayType(cacheTy.value(), lengthExp.first, getVariability(), token.fileRange);
+          if (lengthExp.second > bClose.value()) {
+            Error("Invalid end for the constant expression specifying the length of the array",
+                  RangeSpan(i, lengthExp.second));
           }
+          i = bClose.value();
         } else {
-          Error("Expected non negative number of elements for the array", token.fileRange);
+          Error("Expected end for [", RangeAt(i));
         }
         break;
       }

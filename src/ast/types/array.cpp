@@ -1,6 +1,7 @@
 #include "./array.hpp"
 #include "../../IR/types/array.hpp"
 #include "../constants/integer_literal.hpp"
+#include "../constants/unsigned_literal.hpp"
 #include "../expression.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
@@ -14,6 +15,8 @@ ArrayType::ArrayType(QatType* _element_type, ConstantExpression* _length, bool _
 void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {
   if (lengthExp->nodeType() == NodeType::integerLiteral) {
     ((IntegerLiteral*)lengthExp)->setType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
+  } else if (lengthExp->nodeType() == NodeType::unsignedLiteral) {
+    ((UnsignedLiteral*)lengthExp)->setType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
   }
 }
 
@@ -21,7 +24,8 @@ Maybe<usize> ArrayType::getTypeSizeInBits(IR::Context* ctx) const {
   auto elemSize = elementType->getTypeSizeInBits(ctx);
   typeInferenceForLength(ctx->llctx);
   auto* lengthIR = lengthExp->emit(ctx);
-  if (lengthIR->getType()->isUnsignedInteger()) {
+  if (lengthIR->getType()->isUnsignedInteger() &&
+      (lengthIR->getType()->asUnsignedInteger()->getBitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
     auto length = *llvm::cast<llvm::ConstantInt>(lengthIR->getLLVMConstant())->getValue().getRawData();
     if (elemSize.has_value() && (length > 0u)) {
       return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
@@ -38,6 +42,13 @@ IR::QatType* ArrayType::emit(IR::Context* ctx) {
   typeInferenceForLength(ctx->llctx);
   auto* lengthIR = lengthExp->emit(ctx);
   if (lengthIR->getType()->isUnsignedInteger()) {
+    if (lengthIR->getType()->asUnsignedInteger()->getBitwidth() > ARRAY_LENGTH_BITWIDTH) {
+      ctx->Error(
+          "Length of an array is an unsigned integer with bitwidth of " +
+              ctx->highlightError(std::to_string(lengthIR->getType()->asUnsignedInteger()->getBitwidth())) +
+              " which is not allowed. Bitwidth of the length of the array should be less than or equal to 64, as there can be loss of data during compilation otherwise",
+          lengthExp->fileRange);
+    }
     return IR::ArrayType::get(elementType->emit(ctx),
                               *llvm::cast<llvm::ConstantInt>(lengthIR->getLLVMConstant())->getValue().getRawData(),
                               ctx->llctx);

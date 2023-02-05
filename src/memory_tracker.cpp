@@ -37,7 +37,11 @@ void MemoryTracker::report() {
 
 } // namespace qat
 
-void* operator new(qat::usize size) _GLIBCXX_THROW(std::bad_alloc) {
+void* operator new(qat::usize size)
+#if !PLATFORM_IS_MAC
+_GLIBCXX_THROW(std::bad_alloc) 
+#endif
+{
   qat::MemoryTracker::addHeapCounter();
   qat::MemoryTracker::incrementSize(size);
   return malloc(size);

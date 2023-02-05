@@ -18,20 +18,29 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 if(PLATFORM STREQUAL Windows)
-	SET(IS_UNIX OFF)
-	add_compile_definitions(PLATFORM_IS_UNIX=0)
+	SET(IS_WINDOWS ON)
+	add_compile_definitions(PLATFORM_IS_LINUX=0)
 	add_compile_definitions(PLATFORM_IS_WINDOWS=1)
 	add_compile_definitions(PLATFORM_IS_ARMv7=0)
+	add_compile_definitions(PLATFORM_IS_MAC=0)
 elseif(PLATFORM STREQUAL Arm64)
-	SET(IS_UNIX ON)
-	add_compile_definitions(PLATFORM_IS_UNIX=0)
+	SET(IS_LINUX ON)
+	add_compile_definitions(PLATFORM_IS_LINUX=0)
 	add_compile_definitions(PLATFORM_IS_WINDOWS=0)
 	add_compile_definitions(PLATFORM_IS_ARMv7=1)
+	add_compile_definitions(PLATFORM_IS_MAC=0)
+elseif(PLATFORM STREQUAL Mac)
+	SET(IS_MAC ON)
+	add_compile_definitions(PLATFORM_IS_LINUX=0)
+	add_compile_definitions(PLATFORM_IS_WINDOWS=0)
+	add_compile_definitions(PLATFORM_IS_ARMv7=0)
+	add_compile_definitions(PLATFORM_IS_MAC=1)
 else()
-	SET(IS_UNIX ON)
-	add_compile_definitions(PLATFORM_IS_UNIX=1)
+	SET(IS_LINUX ON)
+	add_compile_definitions(PLATFORM_IS_LINUX=1)
 	add_compile_definitions(PLATFORM_IS_ARMv7=0)
 	add_compile_definitions(PLATFORM_IS_WINDOWS=0)
+	add_compile_definitions(PLATFORM_IS_MAC=0)
 endif()
 
 # Setup git related build information
@@ -74,23 +83,30 @@ endif()
 # Set Compiler Path
 #
 #
-if(IS_UNIX)
+if(IS_LINUX)
 	SET(CMAKE_CXX_COMPILER /usr/lib/llvm-14/bin/clang)
-else()
+elseif(IS_WINDOWS)
 	SET(CMAKE_CXX_COMPILER C:\\msys64\\mingw64\\bin\\clang++)
+elseif(IS_MAC)
+	SET(FFI_LIBRARIES /opt/homebrew/opt/libffi/libffi.a)
+	SET(ZLIB_LIBRARY /opt/homebrew/opt/zlib/lib/libz.a)
+	SET(Terminfo_LIBRARIES /opt/homebrew/opt/ncurses/libcurses.a)
+	SET(CMAKE_CXX_COMPILER /usr/bin/clang)
 endif()
 
 # Find LLVM package
 #
 #
-if(IS_UNIX)
+if(IS_LINUX)
 	if(IS_RELEASE)
 		find_package(LLVM REQUIRED CONFIG PATHS /mnt/Main/LIBS/llvm-release NO_DEFAULT_PATH)
 	else()
 		find_package(LLVM REQUIRED CONFIG PATHS /mnt/Main/LIBS/llvm-debug NO_DEFAULT_PATH)
 	endif()
-else()
+elseif(IS_WINDOWS)
 	find_package(LLVM REQUIRED CONFIG PATHS C:\\msys64\\mingw64\\lib\\cmake\\llvm NO_DEFAULT_PATH)
+elseif(IS_MAC)
+	find_package(LLVM REQUIRED CONFIG PATHS /opt/homebrew/opt/llvm/lib/cmake/llvm NO_DEFAULT_PATH)
 endif()
 
 message(STATUS "Found LLVM version ${LLVM_VERSION}")
@@ -99,7 +115,7 @@ message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 # Compiler Flags for different build types
 # -IC:\\msys64\\mingw64\\include\\c++\\12.1.0\\x86_64-w64-mingw32
 #
-if(IS_UNIX)
+if(IS_LINUX)
 	if(PLATFORM STREQUAL Arm64)
 		if(IS_RELEASE)
 			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/ -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
@@ -115,7 +131,7 @@ if(IS_UNIX)
 			# SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 		endif()
 	endif()
-else()
+elseif(IS_WINDOWS)
 	if(IS_RELEASE)
 		SET(CMAKE_CXX_FLAGS "-static -Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\mingw64\\include")
 	else()
@@ -123,12 +139,18 @@ else()
 
 		# SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\mingw64\\include\\c++\\v1 -IC:\\msys64\\mingw64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
 	endif()
+elseif(IS_MAC)
+	if(IS_RELEASE)
+		SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/opt/homebrew/opt/llvm/include/")
+	else()
+		SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/opt/homebrew/opt/llvm/include/")
+	endif()
 endif()
 
 # LLVM Configuration to programmatically link required libs
 #
 #
-if(IS_UNIX)
+if(IS_LINUX)
 	if(IS_RELEASE)
 		execute_process(COMMAND /mnt/Main/LIBS/llvm-release/bin/llvm-config --link-static --libs core
 			OUTPUT_VARIABLE LLVM_LIBRARIES)
@@ -166,13 +188,18 @@ target_link_directories(${PROJECT_NAME}
 	PRIVATE IR/
 	PRIVATE /usr/local/lib/)
 
-if(IS_UNIX)
+if(IS_LINUX)
 	if(IS_RELEASE)
 		target_link_directories(${PROJECT_NAME} PRIVATE /mnt/Main/LIBS/llvm-release/lib)
 	else()
 		target_link_directories(${PROJECT_NAME} PRIVATE /mnt/Main/LIBS/llvm-debug/lib)
 	endif()
-else()
+elseif(IS_MAC)
+	target_link_directories(${PROJECT_NAME} PRIVATE
+		/opt/homebrew/opt/llvm/lib
+		/opt/homebrew/opt/zlib/lib
+		/opt/homebrew/opt/zstd/lib)
+elseif(IS_WINDOWS)
 	target_link_directories(${PROJECT_NAME} PRIVATE C:\\msys64\\mingw64\\lib)
 
 	# SET(FFI_LIBRARIES /c/msys64/mingw64/lib/libffi.a)
@@ -180,7 +207,7 @@ else()
 	# SET(LIBXML2_LIBRARY /c/msys64/mingw64/lib/libxml2.a)
 endif()
 
-if(IS_UNIX)
+if(IS_LINUX)
 	target_link_libraries(${PROJECT_NAME}
 		${LLVM_LIBRARIES}
 		LLVMBitWriter
@@ -200,7 +227,26 @@ if(IS_UNIX)
 		QAT_IR
 		QAT_UTILS
 		QAT_CLI)
-else()
+elseif(IS_MAC)
+	target_link_libraries(${PROJECT_NAME}
+		${LLVM_LIBRARIES}
+		LLVMBitWriter
+		LLVMLinker
+		stdc++
+		dl
+		pthread
+		m
+		xml2
+		z
+		zstd
+		curses
+		QAT_AST
+		QAT_LEXER
+		QAT_PARSER
+		QAT_IR
+		QAT_UTILS
+		QAT_CLI)
+elseif(IS_WINDOWS)
 	target_link_libraries(${PROJECT_NAME}
 		${LLVM_LIBRARIES}
 		LLVMBitWriter
@@ -217,6 +263,6 @@ else()
 		QAT_CLI)
 endif()
 
-if(IS_UNIX)
+if(IS_LINUX OR IS_MAC)
 	execute_process(COMMAND "export PATH=${CMAKE_BINARY_DIR}:$PATH")
 endif()

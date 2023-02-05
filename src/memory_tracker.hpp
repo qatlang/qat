@@ -24,7 +24,11 @@ public:
 
 } // namespace qat
 
-void* operator new(qat::usize size) _GLIBCXX_THROW(std::bad_alloc); // NOLINT(readability-redundant-declaration)
+void* operator new(qat::usize size)
+#if !PLATFORM_IS_MAC
+_GLIBCXX_THROW(std::bad_alloc)
+#endif
+; // NOLINT(readability-redundant-declaration)
 
 void operator delete(void* ptr) noexcept; // NOLINT(readability-redundant-declaration)
 

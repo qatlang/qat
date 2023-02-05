@@ -51,7 +51,7 @@ public:
 
   static u64                            timeInMicroSeconds;
   u64                                   parseRecurseCount = 0;
-  std::chrono::system_clock::time_point latestStartTime   = std::chrono::high_resolution_clock::now();
+  std::chrono::high_resolution_clock::time_point latestStartTime   = std::chrono::high_resolution_clock::now();
 
   void clearBroughtPaths();
   void setTokens(Deque<lexer::Token>* tokens);

@@ -84,7 +84,7 @@ endif()
 #
 #
 if(IS_LINUX)
-	SET(CMAKE_CXX_COMPILER /usr/lib/llvm-14/bin/clang)
+	SET(CMAKE_CXX_COMPILER /usr/lib/llvm-15/bin/clang)
 elseif(IS_WINDOWS)
 	SET(CMAKE_CXX_COMPILER C:\\msys64\\mingw64\\bin\\clang++)
 elseif(IS_MAC)
@@ -112,23 +112,21 @@ endif()
 message(STATUS "Found LLVM version ${LLVM_VERSION}")
 message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 
-# Compiler Flags for different build types
-# -IC:\\msys64\\mingw64\\include\\c++\\12.1.0\\x86_64-w64-mingw32
+# Compiler arguments
+#
 #
 if(IS_LINUX)
 	if(PLATFORM STREQUAL Arm64)
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/ -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/ -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		else()
-			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		endif()
 	else()
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-release/include/")
+			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -fexceptions -frtti -I/usr/include/c++/12 -I/mnt/Main/LIBS/llvm-release/include/")
 		else()
-			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/")
-
-			# SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -I/mnt/Main/LIBS/llvm-debug/include/ -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -fexceptions -frtti -I/usr/include/c++/12 -I/mnt/Main/LIBS/llvm-debug/include/")
 		endif()
 	endif()
 elseif(IS_WINDOWS)
@@ -136,8 +134,6 @@ elseif(IS_WINDOWS)
 		SET(CMAKE_CXX_FLAGS "-static -Oz -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\mingw64\\include")
 	else()
 		SET(CMAKE_CXX_FLAGS "-static -g -Oz -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\mingw64\\include")
-
-		# SET(CMAKE_CXX_FLAGS "-g -Oz -std=c++20 -fuse-ld=lld --analyze -flto -Wall -Wdelete-incomplete -fexceptions -frtti -IC:\\msys64\\mingw64\\include\\c++\\v1 -IC:\\msys64\\mingw64\\include -D_HAS_STATIC_RTTI=0 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D_GLIBCXX_USE_CXX11_ABI=0")
 	endif()
 elseif(IS_MAC)
 	if(IS_RELEASE)
@@ -169,10 +165,7 @@ message(STATUS "Linking libraries ${LLVM_LIBRARIES}")
 # Setup project build
 #
 #
-add_executable(${PROJECT_NAME}
-	qat.cpp
-	qat_sitter.cpp
-	memory_tracker.cpp)
+add_executable(${PROJECT_NAME} qat.cpp qat_sitter.cpp memory_tracker.cpp)
 add_subdirectory(ast/)
 add_subdirectory(lexer/)
 add_subdirectory(parser/)
@@ -186,7 +179,8 @@ target_link_directories(${PROJECT_NAME}
 	PRIVATE utils/
 	PRIVATE cli/
 	PRIVATE IR/
-	PRIVATE /usr/local/lib/)
+	PRIVATE /usr/local/lib/
+)
 
 if(IS_LINUX)
 	if(IS_RELEASE)
@@ -195,10 +189,12 @@ if(IS_LINUX)
 		target_link_directories(${PROJECT_NAME} PRIVATE /mnt/Main/LIBS/llvm-debug/lib)
 	endif()
 elseif(IS_MAC)
-	target_link_directories(${PROJECT_NAME} PRIVATE
+	target_link_directories(
+		${PROJECT_NAME} PRIVATE
 		/opt/homebrew/opt/llvm/lib
 		/opt/homebrew/opt/zlib/lib
-		/opt/homebrew/opt/zstd/lib)
+		/opt/homebrew/opt/zstd/lib
+	)
 elseif(IS_WINDOWS)
 	target_link_directories(${PROJECT_NAME} PRIVATE C:\\msys64\\mingw64\\lib)
 
@@ -208,59 +204,23 @@ elseif(IS_WINDOWS)
 endif()
 
 if(IS_LINUX)
-	target_link_libraries(${PROJECT_NAME}
-		${LLVM_LIBRARIES}
-		LLVMBitWriter
-		LLVMLinker
-		stdc++
-		stdc++fs
-		rt
-		dl
-		pthread
-		m
-		z
-		tinfo
-		xml2
-		QAT_AST
-		QAT_LEXER
-		QAT_PARSER
-		QAT_IR
-		QAT_UTILS
-		QAT_CLI)
+	target_link_libraries(
+		${PROJECT_NAME} ${LLVM_LIBRARIES}
+		LLVMBitWriter LLVMLinker stdc++ stdc++fs rt dl pthread m z tinfo xml2
+		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
+	)
 elseif(IS_MAC)
-	target_link_libraries(${PROJECT_NAME}
-		${LLVM_LIBRARIES}
-		LLVMBitWriter
-		LLVMLinker
-		stdc++
-		dl
-		pthread
-		m
-		xml2
-		z
-		zstd
-		curses
-		QAT_AST
-		QAT_LEXER
-		QAT_PARSER
-		QAT_IR
-		QAT_UTILS
-		QAT_CLI)
+	target_link_libraries(
+		${PROJECT_NAME} ${LLVM_LIBRARIES}
+		LLVMBitWriter LLVMLinker stdc++ dl pthread m xml2 z zstd curses
+		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
+	)
 elseif(IS_WINDOWS)
-	target_link_libraries(${PROJECT_NAME}
-		${LLVM_LIBRARIES}
-		LLVMBitWriter
-		stdc++
-		pthread
-		m
-		z
-		xml2
-		QAT_AST
-		QAT_LEXER
-		QAT_PARSER
-		QAT_IR
-		QAT_UTILS
-		QAT_CLI)
+	target_link_libraries(
+		${PROJECT_NAME} ${LLVM_LIBRARIES}
+		LLVMBitWriter stdc++ pthread m z xml2
+		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
+	)
 endif()
 
 if(IS_LINUX OR IS_MAC)

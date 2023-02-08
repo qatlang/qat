@@ -1,4 +1,11 @@
 #include "./array_literal.hpp"
+#include "../../IR/types/maybe.hpp"
+#include "../../IR/types/void.hpp"
+#include "../constants/integer_literal.hpp"
+#include "../constants/unsigned_literal.hpp"
+#include "./default.hpp"
+#include "./none.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
@@ -8,14 +15,50 @@ ArrayLiteral::ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
 bool ArrayLiteral::hasLocal() const { return (local != nullptr); }
 
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
-  if (hasLocal() && (local->getType()->asArray()->getLength() != values.size())) {
-    ctx->Error("The expected length of the array is " +
-                   ctx->highlightError(std::to_string(local->getType()->asArray()->getLength())) +
+  IR::ArrayType* arrTyOfLocal = nullptr;
+  if (hasLocal()) {
+    if (local->getType()->isMaybe()) {
+      arrTyOfLocal = local->getType()->asMaybe()->getSubType()->asArray();
+    } else {
+      arrTyOfLocal = local->getType()->asArray();
+    }
+  }
+  if (hasLocal() && (arrTyOfLocal->getLength() != values.size())) {
+    ctx->Error("The expected length of the array is " + ctx->highlightError(std::to_string(arrTyOfLocal->getLength())) +
                    ", but this array literal has " + ctx->highlightError(std::to_string(values.size())) + " elements",
+               fileRange);
+  } else if (inferredType && inferredType->getLength() != values.size()) {
+    auto infLen = inferredType->getLength();
+    ctx->Error("The length of the array type inferred is " + ctx->highlightError(std::to_string(infLen)) + ", but " +
+                   ((values.size() < infLen) ? "only " : "") + ctx->highlightError(std::to_string(values.size())) +
+                   " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
                fileRange);
   }
   Vec<IR::Value*> valsIR;
   for (auto* val : values) {
+    if (arrTyOfLocal || inferredType) {
+      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType->getElementType();
+      switch (val->nodeType()) {
+        case NodeType::integerLiteral: {
+          ((IntegerLiteral*)val)->setType(elemTy);
+          break;
+        }
+        case NodeType::unsignedLiteral: {
+          ((UnsignedLiteral*)val)->setType(elemTy);
+          break;
+        }
+        case NodeType::Default: {
+          ((Default*)val)->setType(elemTy);
+          break;
+        }
+        case NodeType::none: {
+          ((NoneExpression*)val)->setType(elemTy);
+          break;
+        }
+        default:
+          break;
+      }
+    }
     valsIR.push_back(val->emit(ctx));
   }
   IR::QatType* elemTy = nullptr;
@@ -49,9 +92,14 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
       }
     }
     // TODO - Implement constant array literals
-    llvm::AllocaInst* alloca;
+    llvm::Value* alloca;
     if (hasLocal()) {
-      alloca = local->getAlloca();
+      if (local->getType()->isMaybe()) {
+        auto* locll = local->getLLVM();
+        alloca      = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), locll, 1u);
+      } else {
+        alloca = local->getLLVM();
+      }
     } else if (name) {
       auto* loc = ctx->fn->getBlock()->newValue(name->value, IR::ArrayType::get(elemTy, values.size(), ctx->llctx),
                                                 isVar, name->range);
@@ -72,6 +120,22 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
     }
     return new IR::Value(alloca, IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx),
                          local ? local->isVariable() : isVar, local ? local->getNature() : IR::Nature::pure);
+  } else {
+    if (hasLocal()) {
+      if (local->getType()->isArray()) {
+        ctx->builder.CreateStore(llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(arrTyOfLocal->getLLVMType()), {}),
+                                 local->getLLVM());
+      }
+    } else {
+      if (inferredType->getElementType()) {
+        return new IR::ConstantValue(
+            llvm::ConstantArray::get(llvm::ArrayType::get(inferredType->getElementType()->getLLVMType(), 0u), {}),
+            IR::ArrayType::get(inferredType->getElementType(), 0u, ctx->llctx));
+      } else {
+        ctx->Error("Element type for the empty array is not provided and could not be inferred", fileRange);
+      }
+    }
+    return nullptr;
   }
 }
 

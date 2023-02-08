@@ -8,13 +8,16 @@ namespace qat::ast {
 
 class ArrayLiteral : public Expression {
   friend class LocalDeclaration;
+  friend class Assignment;
 
 private:
   Vec<Expression*> values;
 
   //
 
-  IR::LocalValue*   local;
+  IR::ArrayType* inferredType = nullptr;
+
+  IR::LocalValue*   local = nullptr;
   Maybe<Identifier> name;
   bool              isVar;
 

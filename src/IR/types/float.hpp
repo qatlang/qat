@@ -6,16 +6,16 @@
 
 namespace qat::IR {
 
-enum class FloatTypeKind { _brain, _half, _32, _64, _80, _128PPC, _128 };
+enum class FloatTypeKind { _brain, _16, _32, _64, _80, _128PPC, _128 };
 
 class FloatType : public QatType {
 private:
   FloatTypeKind kind;
 
-  FloatType(FloatTypeKind _kind, llvm::LLVMContext &ctx);
+  FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
 public:
-  useit static FloatType *get(FloatTypeKind _kind, llvm::LLVMContext &ctx);
+  useit static FloatType* get(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;

@@ -10,9 +10,9 @@ IR::ConstantValue* CustomFloatLiteral::emit(IR::Context* ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     ctx->Error("Float literals are not assignable", fileRange);
   }
-  if (kind == "fhalf") {
+  if (kind == "f16") {
     return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getHalfTy(ctx->llctx), std::stof(value)),
-                                 IR::FloatType::get(IR::FloatTypeKind::_half, ctx->llctx));
+                                 IR::FloatType::get(IR::FloatTypeKind::_16, ctx->llctx));
   } else if (kind == "fbrain") {
     return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getBFloatTy(ctx->llctx), std::stof(value)),
                                  IR::FloatType::get(IR::FloatTypeKind::_brain, ctx->llctx));
@@ -32,7 +32,7 @@ IR::ConstantValue* CustomFloatLiteral::emit(IR::Context* ctx) {
     return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getPPC_FP128Ty(ctx->llctx), std::stod(value)),
                                  IR::FloatType::get(IR::FloatTypeKind::_128PPC, ctx->llctx));
   } else {
-    ctx->Error("Invalid specification for custom float literal", fileRange);
+    ctx->Error("Invalid type provided for custom float literal", fileRange);
   }
 }
 

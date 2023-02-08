@@ -9,7 +9,7 @@ FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx) : kind(_kind) 
     case FloatTypeKind::_brain: {
       llvmType = llvm::Type::getBFloatTy(ctx);
     }
-    case FloatTypeKind::_half: {
+    case FloatTypeKind::_16: {
       llvmType = llvm::Type::getHalfTy(ctx);
     }
     case FloatTypeKind::_32: {
@@ -47,11 +47,11 @@ FloatTypeKind FloatType::getKind() const { return kind; }
 
 String FloatType::toString() const {
   switch (kind) {
-    case FloatTypeKind::_half: {
-      return "fhalf";
-    }
     case FloatTypeKind::_brain: {
       return "fbrain";
+    }
+    case FloatTypeKind::_16: {
+      return "f16";
     }
     case FloatTypeKind::_32: {
       return "f32";

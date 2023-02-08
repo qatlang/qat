@@ -550,8 +550,8 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         }
         if (token.value == "brain") {
           cacheTy = new ast::FloatType(IR::FloatTypeKind::_brain, getVariability(), token.fileRange);
-        } else if (token.value == "half") {
-          cacheTy = new ast::FloatType(IR::FloatTypeKind::_half, getVariability(), token.fileRange);
+        } else if (token.value == "16") {
+          cacheTy = new ast::FloatType(IR::FloatTypeKind::_16, getVariability(), token.fileRange);
         } else if (token.value == "32") {
           cacheTy = new ast::FloatType(IR::FloatTypeKind::_32, getVariability(), token.fileRange);
         } else if (token.value == "64") {

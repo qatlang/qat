@@ -21,7 +21,7 @@ Maybe<usize> FloatType::getTypeSizeInBits(IR::Context* ctx) const {
     case IR::FloatTypeKind::_128PPC:
       return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
           llvm::Type::getPPC_FP128Ty(ctx->llctx));
-    case IR::FloatTypeKind::_half:
+    case IR::FloatTypeKind::_16:
       return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getHalfTy(ctx->llctx));
     case IR::FloatTypeKind::_brain:
       return ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
@@ -33,8 +33,8 @@ IR::QatType* FloatType::emit(IR::Context* ctx) { return IR::FloatType::get(kind,
 
 String FloatType::kindToString(IR::FloatTypeKind kind) {
   switch (kind) {
-    case IR::FloatTypeKind::_half: {
-      return "fhalf";
+    case IR::FloatTypeKind::_16: {
+      return "f16";
     }
     case IR::FloatTypeKind::_brain: {
       return "fbrain";

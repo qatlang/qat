@@ -325,12 +325,17 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
 
 bool QatSitter::checkExecutableExists(const String& name) {
 #if PLATFORM_IS_WINDOWS
-  LPSTR lpFilePart;
-  char  fileName[2000];
-  if (!SearchPath(NULL, (name + " > nul").c_str(), ".exe", 2000, fileName, &lpFilePart)) {
-    return false;
+  if (name.ends_with(".exe")) {
+    if (system(("where " + name + " > nul").c_str())) {
+      return false;
+    }
+    return true;
+  } else {
+    if (system(("where " + name + " > nul").c_str()) && system(("where " + name + ".exe > nul").c_str())) {
+      return false;
+    }
+    return true;
   }
-  return true;
 #else
   if (std::system(("which " + name + " > /dev/null").c_str())) {
     return false;

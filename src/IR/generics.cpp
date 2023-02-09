@@ -91,8 +91,11 @@ FileRange GenericToFill::getRange() const { return range; }
 String GenericToFill::toString() const {
   if (isType()) {
     SHOW("GenericToFill is type")
+    SHOW("TypeKind is: " << (int)asType()->typeKind())
     return asType()->toString();
   } else {
+    SHOW("GenericToFill is const")
+    SHOW("Const generic has type: " << asConst()->getType()->toString());
     return asConst()->getType()->toConstGenericString(asConst()).value();
   }
 }

@@ -29,9 +29,7 @@ StringSliceType* StringSliceType::get(llvm::LLVMContext& ctx) {
 bool StringSliceType::canBeConstGeneric() const { return true; }
 
 Maybe<String> StringSliceType::toConstGenericString(IR::ConstantValue* val) const {
-  auto* initial = llvm::cast<llvm::ConstantDataArray>(
-      llvm::cast<llvm::GlobalVariable>(val->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u))
-          ->getInitializer());
+  auto* initial = llvm::cast<llvm::ConstantDataArray>(val->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u));
   if (initial->getNumElements() == 1u) {
     return "\"\"";
   } else {

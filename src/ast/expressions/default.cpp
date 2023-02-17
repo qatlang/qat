@@ -69,20 +69,24 @@ IR::Value* Default::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else if (candidateType->isMaybe()) {
-      auto* mTy   = candidateType->asMaybe();
-      auto* block = ctx->fn->getBlock();
-      auto* loc   = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
-                                  irName.has_value() ? irName->range : fileRange);
-      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
-                               ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getAlloca(), 0u));
-      ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),
-                               ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getAlloca(), 1u));
-      auto* res = new IR::Value(loc->getAlloca(), mTy, false, IR::Nature::temporary);
-      res->setLocalID(loc->getLocalID());
+      auto* mTy = candidateType->asMaybe();
       ctx->Warning("The inferred type for " + ctx->highlightWarning("default") + " is " +
                        ctx->highlightWarning(mTy->toString()) + " and it's better to use " +
                        ctx->highlightWarning("none") + " for clarity",
                    fileRange);
+      auto* block = ctx->fn->getBlock();
+      auto* loc   = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
+                                  irName.has_value() ? irName->range : fileRange);
+      if (mTy->hasSizedSubType()) {
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
+                                 ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getLLVM(), 0u));
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),
+                                 ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getLLVM(), 1u));
+      } else {
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u), loc->getLLVM());
+      }
+      auto* res = new IR::Value(loc->getAlloca(), mTy, false, IR::Nature::temporary);
+      res->setLocalID(loc->getLocalID());
       return res;
     } else {
       ctx->Error("The type " + ctx->highlightError(candidateType->toString()) + " cannot have default value",

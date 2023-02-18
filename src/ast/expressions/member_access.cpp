@@ -122,33 +122,60 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
     if (name == "hasValue") {
       if (inst->isLLVMConstant()) {
-        return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
-                                     IR::UnsignedType::getBool(ctx->llctx));
+        if (instType->asMaybe()->hasSizedSubType()) {
+          return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
+                                       IR::UnsignedType::getBool(ctx->llctx));
+        } else {
+          return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()),
+                                       IR::UnsignedType::getBool(ctx->llctx));
+        }
       } else {
-        return new IR::Value(
-            ctx->builder.CreateICmpEQ(
-                ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
-                                        ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
-                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        if (instType->asMaybe()->hasSizedSubType()) {
+          return new IR::Value(
+              ctx->builder.CreateICmpEQ(
+                  ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
+                                          ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                  llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
+              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        } else {
+          return new IR::Value(
+              ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), inst->getLLVM()),
+                                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
+              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        }
       }
     } else if (name == "hasNoValue") {
       if (inst->isLLVMConstant()) {
-        return new IR::ConstantValue(
-            llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
-                                   llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u))
-                                           ->getValue()
-                                           .getBoolValue()
-                                       ? 0u
-                                       : 1u),
-            IR::UnsignedType::getBool(ctx->llctx));
+        if (instType->asMaybe()->hasSizedSubType()) {
+          return new IR::ConstantValue(
+              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
+                                     llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u))
+                                             ->getValue()
+                                             .getBoolValue()
+                                         ? 0u
+                                         : 1u),
+              IR::UnsignedType::getBool(ctx->llctx));
+        } else {
+          return new IR::ConstantValue(
+              llvm::ConstantInt::get(
+                  llvm::Type::getInt1Ty(ctx->llctx),
+                  llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant())->getValue().getBoolValue() ? 0u : 1u),
+              IR::UnsignedType::getBool(ctx->llctx));
+        }
       } else {
-        return new IR::Value(
-            ctx->builder.CreateICmpEQ(
-                ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
-                                        ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
-                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        if (instType->asMaybe()->hasSizedSubType()) {
+          return new IR::Value(
+              ctx->builder.CreateICmpEQ(
+                  ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
+                                          ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                  llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
+              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        } else {
+          return new IR::Value(
+              ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), inst->getLLVM()),
+                                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
+              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+        }
       }
     } else {
       ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),

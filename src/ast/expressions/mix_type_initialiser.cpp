@@ -81,11 +81,6 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
                                                   uTy->getSubTypeWithName(subName)->getLLVMType()->getPointerTo()));
         }
         if (local) {
-          if (local->getType()->isMaybe()) {
-            ctx->builder.CreateStore(
-                llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
-          }
           auto* res = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
           res->setLocalID(local->getLocalID());
           return res;

@@ -6,6 +6,8 @@ namespace qat::ast {
 
 NoneExpression::NoneExpression(QatType* _type, FileRange _fileRange) : Expression(std::move(_fileRange)), type(_type) {}
 
+bool NoneExpression::hasTypeSet() const { return type != nullptr; }
+
 void NoneExpression::setType(IR::QatType* _irType) { irType = _irType; }
 
 IR::Value* NoneExpression::emit(IR::Context* ctx) {

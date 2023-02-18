@@ -15,6 +15,7 @@ class NoneExpression : public Expression {
 public:
   NoneExpression(QatType* _type, FileRange _fileRange);
 
+  bool hasTypeSet() const;
   void setType(IR::QatType* _irType);
 
   useit IR::Value* emit(IR::Context* ctx) final;

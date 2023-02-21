@@ -109,16 +109,16 @@ public:
   Vec<fs::path>     executablePaths;
 
   // META
-  bool                                                 hasMain;
-  mutable u64                                          stringCount;
-  Vec<fs::path>                                        llvmOutputPaths;
-  Vec<String>                                          nativeLibsToLink;
-  mutable Maybe<GenericEntityMarker>                   activeGeneric;
-  mutable Vec<CodeProblem>                             codeProblems;
-  mutable Maybe<std::chrono::steady_clock::time_point> qatStartTime;
-  mutable Maybe<std::chrono::steady_clock::time_point> qatEndTime;
-  mutable Maybe<std::chrono::steady_clock::time_point> clangLinkStartTime;
-  mutable Maybe<std::chrono::steady_clock::time_point> clangLinkEndTime;
+  bool                                                          hasMain;
+  mutable u64                                                   stringCount;
+  Vec<fs::path>                                                 llvmOutputPaths;
+  Vec<String>                                                   nativeLibsToLink;
+  mutable Maybe<GenericEntityMarker>                            activeGeneric;
+  mutable Vec<CodeProblem>                                      codeProblems;
+  mutable Maybe<std::chrono::high_resolution_clock::time_point> qatStartTime;
+  mutable Maybe<std::chrono::high_resolution_clock::time_point> qatEndTime;
+  mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkStartTime;
+  mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkEndTime;
 
   void             nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
   void             genericNameCheck(const String& name, const FileRange& range);

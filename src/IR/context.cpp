@@ -31,7 +31,7 @@ CodeProblem::CodeProblem(bool _isError, String _message, FileRange _range)
 
 CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
 
-Context::Context() : builder(llctx), hasMain(false) { llctx.setOpaquePointers(false); }
+Context::Context() : builder(llctx), hasMain(false) { llctx.setOpaquePointers(true); }
 
 Context::~Context() {
   for (auto* lInfo : loopsInfo) {
@@ -354,12 +354,12 @@ void Context::writeJsonResult(bool status) const {
   unsigned long long clangTime = 0;
   if (qatStartTime) {
     qatTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                  qatEndTime.value_or(std::chrono::steady_clock::now()) - qatStartTime.value())
+                  qatEndTime.value_or(std::chrono::high_resolution_clock::now()) - qatStartTime.value())
                   .count();
   }
   if (clangLinkStartTime) {
     clangTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                    clangLinkEndTime.value_or(std::chrono::steady_clock::now()) - clangLinkStartTime.value())
+                    clangLinkEndTime.value_or(std::chrono::high_resolution_clock::now()) - clangLinkStartTime.value())
                     .count();
   }
   result._("status", status)

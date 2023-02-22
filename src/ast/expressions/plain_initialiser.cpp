@@ -1,5 +1,6 @@
 #include "./plain_initialiser.hpp"
 #include "../../IR/logic.hpp"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
@@ -19,18 +20,22 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         if (cTy->hasDefaultConstructor()) {
           auto* dFn = cTy->getDefaultConstructor();
           if (dFn->isAccessible(ctx->getReqInfo())) {
-            llvm::AllocaInst* alloca = nullptr;
+            llvm::Value* alloca = nullptr;
             if (local) {
-              alloca = local->getAlloca();
+              if (local->getType()->isMaybe()) {
+                alloca = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u);
+              } else {
+                alloca = local->getLLVM();
+              }
             } else if (irName) {
               local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-              alloca = local->getAlloca();
+              alloca = local->getLLVM();
             } else {
               alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
             }
             (void)dFn->call(ctx, {alloca}, ctx->getMod());
             if (local) {
-              auto* val = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
+              auto* val = new IR::Value(local->getLLVM(), local->getType(), local->isVariable(), local->getNature());
               val->setLocalID(local->getLocalID());
               return val;
             } else {
@@ -125,12 +130,16 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                      fieldValues.at(i)->fileRange);
         }
       }
-      llvm::AllocaInst* alloca;
+      llvm::Value* alloca = nullptr;
       if (local) {
-        alloca = local->getAlloca();
+        if (local->getType()->isMaybe()) {
+          alloca = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u);
+        } else {
+          alloca = local->getLLVM();
+        }
       } else if (irName) {
         local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-        alloca = local->getAlloca();
+        alloca = local->getLLVM();
       } else {
         alloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), 0u);
       }
@@ -139,7 +148,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         ctx->builder.CreateStore(irVals.at(i)->getLLVM(), memPtr);
       }
       if (local) {
-        return new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
+        return new IR::Value(local->getLLVM(), local->getType(), local->isVariable(), local->getNature());
       } else {
         return new IR::Value(alloca, cTy, true, IR::Nature::pure);
       }
@@ -156,10 +165,30 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           lenType = lenType->asReference()->getSubType();
         }
         if (dataType->isPointer() && dataType->asPointer()->getSubType()->isUnsignedInteger() &&
-            dataType->asPointer()->getSubType()->asUnsignedInteger()->getBitwidth() == 8u) {
-          if (strData->isImplicitPointer() || strData->getType()->isReference()) {
-            strData = new IR::Value(ctx->builder.CreateLoad(dataType->getLLVMType(), strData->getLLVM()), dataType,
-                                    false, IR::Nature::temporary);
+            dataType->asPointer()->getSubType()->asUnsignedInteger()->isBitWidth(8u)) {
+          if (dataType->asPointer()->isMulti()) {
+            // FIXME - Change when `check` is added
+            // FIXME - Add length confirmation if pointer is multi, compare with the provided length of the string
+            if (!strData->isImplicitPointer() && !strData->isReference()) {
+              strData->makeImplicitPointer(ctx, None);
+            }
+            if (strData->isReference()) {
+              strData->loadImplicitPointer(ctx->builder);
+            }
+            strData = new IR::Value(
+                ctx->builder.CreateLoad(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u),
+                                        ctx->builder.CreateStructGEP(dataType->getLLVMType(), strData->getLLVM(), 0u)),
+                IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), IR::PointerOwner::OfAnonymous(),
+                                     false, ctx->llctx),
+                false, IR::Nature::temporary);
+          } else {
+            if (strData->isImplicitPointer() || strData->getType()->isReference()) {
+              if (strData->isReference() && strData->isImplicitPointer()) {
+                strData->loadImplicitPointer(ctx->builder);
+              }
+              strData = new IR::Value(ctx->builder.CreateLoad(dataType->getLLVMType(), strData->getLLVM()), dataType,
+                                      false, IR::Nature::temporary);
+            }
           }
           if (lenType->isUnsignedInteger() && lenType->asUnsignedInteger()->getBitwidth() == 64u) {
             if (strLen->isImplicitPointer() || strLen->isReference()) {
@@ -167,7 +196,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                                      IR::Nature::temporary);
             }
             auto* strSliceTy = IR::StringSliceType::get(ctx->llctx);
-            auto* strAlloca  = ctx->builder.CreateAlloca(strSliceTy->getLLVMType());
+            auto* strAlloca  = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), strSliceTy->getLLVMType());
             ctx->builder.CreateStore(strData->getLLVM(),
                                      ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 0));
             ctx->builder.CreateStore(strLen->getLLVM(),
@@ -178,15 +207,52 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                        fieldValues.at(1)->fileRange);
           }
         } else {
-          ctx->Error("The first argument for creating a string slice is not a "
-                     "pointer to an unsigned 8-bit integer",
+          ctx->Error("You are creating an " + ctx->highlightError("str") +
+                         " value from 2 arguments and the first argument should be of " +
+                         ctx->highlightError("#[u8?]") + " or " + ctx->highlightError("#[+ u8 ?]") + " type",
+                     fieldValues.at(0)->fileRange);
+        }
+      } else if (fieldValues.size() == 1) {
+        auto* strData   = fieldValues.at(0)->emit(ctx);
+        auto* strDataTy = strData->getType();
+        if (strDataTy->isReference()) {
+          strDataTy = strDataTy->asReference()->getSubType();
+        }
+        if (strDataTy->isPointer() && strDataTy->asPointer()->isMulti() &&
+            (strDataTy->asPointer()->getSubType()->isUnsignedInteger() &&
+             strDataTy->asPointer()->getSubType()->asUnsignedInteger()->isBitWidth(8u))) {
+          auto* strTy = IR::StringSliceType::get(ctx->llctx);
+          if (strData->isImplicitPointer() || strData->isReference()) {
+            if (strData->isReference()) {
+              strData->loadImplicitPointer(ctx->builder);
+            }
+            return new IR::Value(
+                ctx->builder.CreatePointerCast(strData->getLLVM(), llvm::PointerType::get(strTy->getLLVMType(), 0u)),
+                IR::ReferenceType::get(strData->isImplicitPointer()
+                                           ? strData->isVariable()
+                                           : strData->getType()->asReference()->isSubtypeVariable(),
+                                       strTy, ctx->llctx),
+                false, IR::Nature::temporary);
+          } else {
+            return new IR::Value(ctx->builder.CreateBitCast(strData->getLLVM(), strDataTy->getLLVMType()), strDataTy,
+                                 false, IR::Nature::temporary);
+          }
+        } else {
+          ctx->Error("While creating a " + ctx->highlightError("str") +
+                         " value with one argument, the argument is expected to be of type " +
+                         ctx->highlightError("#[+ u8 ?]"),
                      fieldValues.at(0)->fileRange);
         }
       } else {
-        ctx->Error("Creating a string slice using constructor requires 2 arguments. The "
-                   "first argument should be the pointer to the start of the data and "
-                   "the second argument should be the length of the data (including the "
-                   "terminating null character).",
+        ctx->Error("There are two ways to create a " + ctx->highlightError("str") +
+                       " value using a plain initialiser. The first way requires one argument of type " +
+                       ctx->highlightError("#[+ u8 ?]") +
+                       ". The second way requires 2 arguments. In two possible ways:\n1) " +
+                       ctx->highlightError("#[u8 ?]") + " and " + ctx->highlightError("u64") + "\n2) " +
+                       ctx->highlightError("#[+ u8 ?]") + " and " + ctx->highlightError("u64") +
+                       "\nIn case you are providing two arguments, the first argument is supposed to be a pointer" +
+                       " to a start of the data and the second argument is supposed to be the number of characters," +
+                       " EXCLUDING the null character (if there is any)",
                    fileRange);
       }
     } else {

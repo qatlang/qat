@@ -61,13 +61,8 @@ bool Logic::compareConstantStrings(llvm::Constant* lhsBuff, llvm::Constant* lhsC
     if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) == 0u) {
       return true;
     }
-    return llvm::cast<llvm::ConstantDataArray>(
-               llvm::cast<llvm::GlobalVariable>(lhsBuff->getOperand(0u))->getInitializer())
-               ->getRawDataValues()
-               .str() == llvm::cast<llvm::ConstantDataArray>(
-                             llvm::cast<llvm::GlobalVariable>(rhsBuff->getOperand(0u))->getInitializer())
-                             ->getRawDataValues()
-                             .str();
+    return llvm::cast<llvm::ConstantDataArray>(lhsBuff->getOperand(0u))->getAsString() ==
+           llvm::cast<llvm::ConstantDataArray>(rhsBuff->getOperand(0u))->getAsString();
   } else {
     SHOW("Constant string comparison result: false")
     return false;

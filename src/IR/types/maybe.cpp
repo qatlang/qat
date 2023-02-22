@@ -3,14 +3,19 @@
 #include "../context.hpp"
 #include "../control_flow.hpp"
 #include "../value.hpp"
+#include "./array.hpp"
 #include "reference.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::IR {
 
 MaybeType::MaybeType(QatType* _subType, llvm::LLVMContext& ctx) : subTy(_subType) {
-  llvmType = llvm::StructType::create(ctx, {llvm::Type::getInt1Ty(ctx), subTy->getLLVMType()},
-                                      "maybe " + subTy->toString(), false);
+  if (hasSizedSubType()) {
+    llvmType = llvm::StructType::create(ctx, {llvm::Type::getInt1Ty(ctx), subTy->getLLVMType()},
+                                        "maybe " + subTy->toString(), false);
+  } else {
+    llvmType = llvm::Type::getInt1Ty(ctx);
+  }
 }
 
 MaybeType* MaybeType::get(QatType* subTy, llvm::LLVMContext& ctx) {
@@ -22,6 +27,11 @@ MaybeType* MaybeType::get(QatType* subTy, llvm::LLVMContext& ctx) {
     }
   }
   return new MaybeType(subTy, ctx);
+}
+
+bool MaybeType::hasSizedSubType() const {
+  // FIXME - Change this once size querying is added for all types
+  return (subTy->isVoid() || (subTy->isArray() && subTy->asArray()->getLength() == 0u));
 }
 
 QatType* MaybeType::getSubType() const { return subTy; }

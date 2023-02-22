@@ -15,6 +15,7 @@ private:
 public:
   useit static MaybeType* get(QatType* subTy, llvm::LLVMContext& ctx);
 
+  useit bool     hasSizedSubType() const;
   useit QatType* getSubType() const;
   useit String   toString() const final;
   useit TypeKind typeKind() const final { return TypeKind::maybe; }

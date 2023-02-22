@@ -628,8 +628,8 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     return Token::valued(TokenType::integerType, value.substr(1, value.length() - 1), getPos(value.length()));
   } else if (value == "fbrain") {
     return Token::valued(TokenType::floatType, "brain", getPos(6));
-  } else if (value == "fhalf") {
-    return Token::valued(TokenType::floatType, "half", getPos(5));
+  } else if (value == "f16") {
+    return Token::valued(TokenType::floatType, "16", getPos(3));
   } else if (value == "f32") {
     return Token::valued(TokenType::floatType, "32", getPos(3));
   } else if (value == "f64") {

@@ -10,16 +10,16 @@ namespace qat::ast {
 
 class LocalDeclaration : public Sentence {
 private:
-  QatType*    type = nullptr;
-  Identifier  name;
-  Expression* value = nullptr;
-  bool        variability;
-  bool        isRef;
-  bool        isPtr;
+  QatType*           type = nullptr;
+  Identifier         name;
+  Maybe<Expression*> value;
+  bool               variability;
+  bool               isRef;
+  bool               isPtr;
 
 public:
-  LocalDeclaration(QatType* _type, bool isRef, bool isPtr, Identifier _name, Expression* _value, bool _variability,
-                   FileRange _fileRange);
+  LocalDeclaration(QatType* _type, bool isRef, bool isPtr, Identifier _name, Maybe<Expression*> _value,
+                   bool _variability, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

@@ -694,7 +694,8 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto bClose = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
         if (bClose.has_value()) {
           auto lengthExp = parseConstantExpression(preCtx, i, bClose);
-          cacheTy        = new ast::ArrayType(cacheTy.value(), lengthExp.first, getVariability(), token.fileRange);
+          cacheTy        = new ast::ArrayType(cacheTy.value(), lengthExp.first, getVariability(),
+                                              {cacheTy.value()->fileRange, RangeAt(bClose.value())});
           if (lengthExp.second > bClose.value()) {
             Error("Invalid end for the constant expression specifying the length of the array",
                   RangeSpan(i, lengthExp.second));
@@ -3592,8 +3593,8 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               } else {
                 // No value for the assignment
                 auto* typeRes = parseType(preCtx, i + 2, endRes.value()).first;
-                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), nullptr,
-                                                           isVarDecl, RangeSpan(start, endRes.value())));
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), None, isVarDecl,
+                                                           RangeSpan(start, endRes.value())));
               }
               i = endRes.value();
               break;

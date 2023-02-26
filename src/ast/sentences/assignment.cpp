@@ -6,6 +6,7 @@
 #include "../constants/integer_literal.hpp"
 #include "../constants/null_pointer.hpp"
 #include "../constants/unsigned_literal.hpp"
+#include "../expressions/array_literal.hpp"
 #include "../expressions/copy.hpp"
 #include "../expressions/default.hpp"
 #include "../expressions/move.hpp"
@@ -110,9 +111,40 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         ctx->Error("The left hand side is a reference without variability and hence cannot be assigned to", fileRange);
       }
     }
-    llvm::Value* maybeTagLhsRef   = ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 0u);
+    if (!mTy->hasSizedSubType()) {
+      if (value->nodeType() == NodeType::arrayLiteral) {
+        if (mTy->getSubType()->isArray()) {
+          ((ArrayLiteral*)value)->inferredType = mTy->getSubType()->asArray();
+        }
+      } else if (value->nodeType() == NodeType::none) {
+        if (((NoneExpression*)value)->hasTypeSet()) {
+          auto noneTy = ((NoneExpression*)value)->type->emit(ctx);
+          if (!mTy->getSubType()->isSame(noneTy)) {
+            ctx->Error("The left side of the assignment is of type " + ctx->highlightError(mTy->toString()) +
+                           " but the type provided for " + ctx->highlightError("none") + " expression is " +
+                           ctx->highlightError(noneTy->toString()),
+                       value->fileRange);
+          }
+        }
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u), lhsVal->getLLVM());
+        return nullptr;
+      }
+      auto* irVal = value->emit(ctx);
+      if (!mTy->getSubType()->isSame(irVal->getType())) {
+        ctx->Error("The value to be assigned has type " + ctx->highlightError(irVal->getType()->toString()) +
+                       " which is not compatible with the left hand side which is of type " +
+                       ctx->highlightError(lhsVal->getType()->toString()),
+                   value->fileRange);
+      }
+      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u), lhsVal->getLLVM());
+      return nullptr;
+    }
+    SHOW("Getting maybe tag")
+    llvm::Value* maybeTagLhsRef = ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 0u);
+    SHOW("Getting maybe value")
     llvm::Value* maybeValueLhsRef = ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u);
-    auto*        subTy            = mTy->getSubType();
+    SHOW("Got maybe components")
+    auto* subTy = mTy->getSubType();
     if (value->nodeType() == NodeType::none || value->nodeType() == NodeType::Default) {
       if (value->nodeType() == NodeType::none) {
         auto* noneAST = ((ast::NoneExpression*)value);
@@ -145,11 +177,19 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(llvm::Constant::getNullValue(subTy->getLLVMType()), maybeValueLhsRef);
       return nullptr;
     } else {
+      if (value->nodeType() == NodeType::arrayLiteral) {
+        if (mTy->getSubType()->isArray()) {
+          ((ArrayLiteral*)value)->inferredType = mTy->getSubType()->asArray();
+        }
+      }
+      SHOW("Emitting expression")
       auto* exp = value->emit(ctx);
+      SHOW("Emitted expression")
       if ((exp->getType()->isMaybe() && mTy->getSubType()->isSame(exp->getType()->asMaybe()->getSubType()) &&
            exp->isImplicitPointer()) ||
           (exp->getType()->isReference() && exp->getType()->asReference()->getSubType()->isMaybe() &&
            mTy->getSubType()->isSame(exp->getType()->asReference()->getSubType()->asMaybe()->getSubType()))) {
+        SHOW("Both are references")
         // NOTE - Both are references
         if (subTy->isCoreType()) {
           auto* exTy        = subTy->asExpanded();
@@ -216,6 +256,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->setActive(ctx->builder);
         } else {
           if (exp->isReference()) {
+            SHOW("Both are references, and sub type is not core type")
             exp->loadImplicitPointer(ctx->builder);
             exp = new IR::Value(
                 ctx->builder.CreateLoad(exp->getType()->asReference()->getSubType()->getLLVMType(), exp->getLLVM()),
@@ -229,7 +270,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         return nullptr;
       } else if (exp->getType()->isMaybe() && exp->getType()->asMaybe()->getSubType()->isSame(mTy->getSubType())) {
         // NOTE - Assigning absolute value to the reference
-        if (subTy->isExpanded() && subTy->asExpanded()->hasDestructor()) {
+        if (subTy->isDestructible()) {
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
@@ -238,8 +279,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), restBlock->getBB());
           trueBlock->setActive(ctx->builder);
-          (void)subTy->asExpanded()->getDestructor()->call(
-              ctx, {ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u)}, ctx->getMod());
+          subTy->destroyValue(ctx,
+                              {new IR::Value(ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u),
+                                             IR::ReferenceType::get(true, mTy->getSubType(), ctx->llctx), false,
+                                             IR::Nature::temporary)},
+                              ctx->fn);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           restBlock->setActive(ctx->builder);
         }
@@ -253,8 +297,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         }
         if (subTy->isExpanded() &&
             ((exp->getType()->isSame(mTy->getSubType()) && exp->isImplicitPointer()) || exp->isReference()) &&
-            (subTy->asExpanded()->hasCopy() || subTy->asExpanded()->hasMove() ||
-             subTy->asExpanded()->hasDestructor())) {
+            (subTy->asExpanded()->hasCopy() || subTy->asExpanded()->hasMove() || subTy->isDestructible())) {
           auto* exTy = subTy->asExpanded();
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
@@ -269,9 +312,12 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
             auto* candFn = exTy->hasCopyAssignment() ? exTy->getCopyAssignment() : exTy->getMoveAssignment();
             (void)candFn->call(ctx, {maybeValueLhsRef, exp->getLLVM()}, ctx->getMod());
           } else {
-            if (exTy->hasDestructor()) {
-              auto* dstrFn = exTy->getDestructor();
-              (void)dstrFn->call(ctx, {maybeValueLhsRef}, ctx->getMod());
+            if (exTy->isDestructible()) {
+              exTy->destroyValue(
+                  ctx,
+                  {new IR::Value(maybeValueLhsRef, IR::ReferenceType::get(true, mTy->getSubType(), ctx->llctx), false,
+                                 IR::Nature::temporary)},
+                  ctx->fn);
             }
             ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
           }
@@ -299,8 +345,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u), maybeTagLhsRef);
         }
       } else {
-        ctx->Error("Type of the right hand side of the assignment is not compatible with the left hand side",
-                   fileRange);
+        ctx->Error(
+            "Type of the expressions on both sides of the assignment are not compatible. The left expression is of type " +
+                ctx->highlightError(mTy->toString()) + " and the right expression is of type " +
+                ctx->highlightError(exp->getType()->toString()),
+            fileRange);
       }
     }
   } else if (lhsVal->isVariable() ||

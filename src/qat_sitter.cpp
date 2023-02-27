@@ -33,7 +33,7 @@ void QatSitter::init() {
     handlePath(path, ctx);
   }
   if (config->isCompile() || config->isAnalyse()) {
-    ctx->qatStartTime = std::chrono::steady_clock::now();
+    ctx->qatStartTime = std::chrono::high_resolution_clock::now();
     for (auto* entity : fileEntities) {
       entity->createModules(ctx);
     }
@@ -56,10 +56,11 @@ void QatSitter::init() {
       entity->emitNodes(ctx);
     }
     SHOW("Emitted nodes")
-    ctx->qatEndTime = std::chrono::steady_clock::now();
+    ctx->qatEndTime = std::chrono::high_resolution_clock::now();
     //
     //
     if (cfg->exportCodeMetadata()) {
+      SHOW("About to export code metadata")
       // NOLINTNEXTLINE(readability-isolate-declaration)
       Vec<JsonValue> modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
           mixTypesJson, regionJson, choiceJson, defsJson;
@@ -74,35 +75,42 @@ void QatSitter::init() {
         std::fstream mStream;
         mStream.open(codeStructFilePath, std::ios_base::out);
         if (mStream.is_open()) {
-          mStream << Json()
-                         ._("modules", modulesJson)
-                         ._("functions", functionsJson)
-                         ._("genericFunctions", genericFunctionsJson)
-                         ._("coreTypes", coreTypesJson)
-                         ._("genericCoreTypes", genericCoreTypesJson)
-                         ._("mixTypes", mixTypesJson)
-                         ._("regions", regionJson)
-                         ._("choiceTypes", choiceJson)
-                         ._("typeDefinitions", defsJson);
-          mStream.close();
+          try {
+            mStream << Json()
+                           ._("modules", modulesJson)
+                           ._("functions", functionsJson)
+                           ._("genericFunctions", genericFunctionsJson)
+                           ._("coreTypes", coreTypesJson)
+                           ._("genericCoreTypes", genericCoreTypesJson)
+                           ._("mixTypes", mixTypesJson)
+                           ._("regions", regionJson)
+                           ._("choiceTypes", choiceJson)
+                           ._("typeDefinitions", defsJson);
+            mStream.close();
+          } catch (std::exception& ex) {
+            SHOW("Exception while converting to JSON")
+            SHOW("Exception is: " << ex.what())
+          }
         } else {
-          ctx->Error("Could not open the symbol mention JSON file for output", codeStructFilePath);
+          ctx->Error("Could not open the code info file for output", codeStructFilePath);
         }
       } else {
-        ctx->Error("Could not create parent directory of the symbol mention JSON file", {codeStructFilePath});
+        ctx->Error("Could not create parent directory of the code info file", {codeStructFilePath});
       }
     }
     //
     //
+    SHOW(cfg->shouldExportAST())
     if (cfg->shouldExportAST()) {
       for (auto* entity : fileEntities) {
         entity->exportJsonFromAST(ctx);
       }
     }
-    ctx->clangLinkStartTime = std::chrono::steady_clock::now();
+    SHOW("Getting link start time")
+    ctx->clangLinkStartTime = std::chrono::high_resolution_clock::now();
     if (cfg->isCompile()) {
       SHOW("Checking whether clang exists or not")
-      if (checkExecutableExists("clang")) {
+      if (checkExecutableExists("clang") || checkExecutableExists("clang++")) {
         for (auto* entity : fileEntities) {
           entity->compileToObject(ctx);
         }
@@ -110,7 +118,7 @@ void QatSitter::init() {
         for (auto* entity : fileEntities) {
           entity->bundleLibs(ctx);
         }
-        ctx->clangLinkEndTime = std::chrono::steady_clock::now();
+        ctx->clangLinkEndTime = std::chrono::high_resolution_clock::now();
         ctx->writeJsonResult(true);
         if (!cfg->keepLLVM()) {
           for (const auto& llPath : ctx->llvmOutputPaths) {
@@ -123,7 +131,7 @@ void QatSitter::init() {
         if (cfg->isRun()) {
           bool hasMultiExecutables = ctx->executablePaths.size() > 1;
           for (const auto& exePath : ctx->executablePaths) {
-            SHOW("Running built executable at: " << exePath.c_str())
+            SHOW("Running built executable at: " << exePath.string())
             if (hasMultiExecutables) {
               std::cout << "\nExecuting built executable at: " << exePath.string() << "\n";
             }

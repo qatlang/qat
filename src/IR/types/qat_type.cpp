@@ -244,8 +244,19 @@ OpaqueType* QatType::asOpaque() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asOpaque() : (OpaqueType*)this;
 }
 
-bool QatType::isDestructible() const { return false; }
+bool QatType::isCopyConstructible() const { return false; }
+void QatType::copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
 
+bool QatType::isCopyAssignable() const { return false; }
+void QatType::copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+
+bool QatType::isMoveConstructible() const { return false; }
+void QatType::moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+
+bool QatType::isMoveAssignable() const { return false; }
+void QatType::moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+
+bool QatType::isDestructible() const { return false; }
 void QatType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
 
 bool QatType::isDefinition() const { return typeKind() == TypeKind::definition; }

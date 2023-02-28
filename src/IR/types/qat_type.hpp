@@ -61,8 +61,18 @@ public:
 
   useit virtual bool  isExpanded() const;
   useit ExpandedType* asExpanded() const;
-  useit virtual bool  isDestructible() const;
-  virtual void        destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+
+  useit virtual bool isCopyConstructible() const;
+  useit virtual bool isCopyAssignable() const;
+  useit virtual bool isMoveConstructible() const;
+  useit virtual bool isMoveAssignable() const;
+  useit virtual bool isDestructible() const;
+
+  virtual void copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+  virtual void copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+  virtual void moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+  virtual void moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+  virtual void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
 
   useit bool             isOpaque() const;
   useit OpaqueType*      asOpaque() const;

@@ -33,15 +33,15 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
             ctx->nameCheckInModule(name, "named folder module", None);
             auto* folderModule = IR::QatModule::getFolderModule(path);
             folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
-            mod->bringNamedModule(name, folderModule, ctx->getVisibInfo(visibility));
+            mod->bringModule(folderModule, ctx->getVisibInfo(visibility), name);
           } else {
             if (isMember) {
               auto* folderModule = IR::QatModule::getFolderModule(path);
-              folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
+              folderModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->addMember(folderModule);
             } else {
               auto* folderModule = IR::QatModule::getFolderModule(path);
-              folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
+              folderModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->bringModule(folderModule, ctx->getVisibInfo(visibility));
             }
           }
@@ -53,21 +53,22 @@ void BringPaths::handleBrings(IR::Context* ctx) const {
           if (names.at(i).has_value()) {
             if (isMember) {
               // FIXME - Maybe change this
-              ctx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
+              ctx->Error("This is a " + ctx->highlightError("bring'member") + " sentence and names are not allowed",
+                         names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
             ctx->nameCheckInModule(name, "named file module", None);
             auto* fileModule = IR::QatModule::getFileModule(path);
-            fileModule->addBroughtMention(mod, paths.at(i)->fileRange);
-            mod->bringNamedModule(name, fileModule, ctx->getVisibInfo(visibility));
+            fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
+            mod->bringModule(fileModule, ctx->getVisibInfo(visibility), name);
           } else {
             if (isMember) {
               auto* fileModule = IR::QatModule::getFileModule(path);
-              fileModule->addBroughtMention(mod, paths.at(i)->fileRange);
+              fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->addMember(fileModule);
             } else {
               auto* fileModule = IR::QatModule::getFileModule(path);
-              fileModule->addBroughtMention(mod, paths.at(i)->fileRange);
+              fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->bringModule(fileModule, ctx->getVisibInfo(visibility));
             }
           }

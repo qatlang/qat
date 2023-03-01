@@ -6,6 +6,8 @@
 
 namespace qat::IR {
 
+class QatModule;
+
 class EntityOverview {
 protected:
   String         ovKind;
@@ -14,16 +16,20 @@ protected:
   Vec<FileRange> ovMentions;
   bool           isOverviewUpdated = false;
 
+  Vec<Pair<QatModule*, FileRange>> ovBroughtMentions;
+
 public:
   EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
 
   virtual ~EntityOverview() = default;
 
   void addMention(FileRange _range);
+  void addBroughtMention(QatModule* module, const FileRange& range);
+
+  Vec<Pair<QatModule*, FileRange>> const& getBroughtMentions() const;
 
   virtual void updateOverview() {}
-
-  Json overviewToJson();
+  Json         overviewToJson();
 };
 
 } // namespace qat::IR

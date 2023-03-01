@@ -209,13 +209,14 @@ public:
   useit bool hasMainFn() const;
   void       setHasMainFn();
 
-  void                                    addBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange);
-  Vec<Pair<QatModule*, FileRange>> const& getBroughtMentions() const;
-  void                                    updateOverview() final;
-  void                                    outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-                                                            Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
-                                                            Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson,
-                                                            Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson);
+  void addFilesystemBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange);
+  Vec<Pair<QatModule*, FileRange>> const& getFilesystemBroughtMentions() const;
+
+  void updateOverview() final;
+  void outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
+                         Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
+                         Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson,
+                         Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson);
 
   // LIB
 
@@ -313,10 +314,17 @@ public:
 
   // BRING ENTITIES
 
-  void bringModule(QatModule* other, const utils::VisibilityInfo& _visibility);
-  void bringNamedModule(const Identifier& _name, QatModule* other, const utils::VisibilityInfo& _visibility);
-  // void  bring_entity(const String& name, const utils::VisibilityInfo& _visibility);
-  // void  bring_named_entity(const String& name, const String& entity, const utils::VisibilityInfo& _visibility);
+  void bringModule(QatModule* other, const utils::VisibilityInfo& _visib, Maybe<Identifier> bName = None);
+  void bringCoreType(CoreType* cTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringGenericCoreType(GenericCoreType* gCTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringMixType(MixType* mTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringChoiceType(ChoiceType* chTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringTypeDefinition(DefinitionType* dTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringFunction(Function* fn, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringGenericFunction(GenericFunction* gFn, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringRegion(Region* reg, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringGlobalEntity(GlobalEntity* gEnt, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
+
   useit llvm::GlobalVariable* get_global_variable(String name, utils::RequesterInfo& req_info);
 
   useit fs::path getResolvedOutputPath(const String& extension, IR::Context* ctx);

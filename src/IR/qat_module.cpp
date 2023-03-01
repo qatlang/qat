@@ -236,11 +236,11 @@ QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::pa
   return sub;
 }
 
-void QatModule::addBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange) {
+void QatModule::addFilesystemBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange) {
   fsBroughtMentions.push_back(Pair<IR::QatModule*, FileRange>(otherMod, fileRange));
 }
 
-Vec<Pair<QatModule*, FileRange>> const& QatModule::getBroughtMentions() const { return fsBroughtMentions; }
+Vec<Pair<QatModule*, FileRange>> const& QatModule::getFilesystemBroughtMentions() const { return fsBroughtMentions; }
 
 void QatModule::updateOverview() {
   String moduleTyStr;
@@ -649,12 +649,86 @@ QatModule* QatModule::getBroughtModule(const String& name, const utils::Requeste
   return nullptr;
 }
 
-void QatModule::bringModule(QatModule* other, const utils::VisibilityInfo& _visibility) {
-  broughtModules.push_back(Brought<QatModule>(other, _visibility));
+void QatModule::bringModule(QatModule* other, const utils::VisibilityInfo& _visibility, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtModules.push_back(Brought<QatModule>(bName.value(), other, _visibility));
+  } else {
+    broughtModules.push_back(Brought<QatModule>(other, _visibility));
+  }
 }
 
-void QatModule::bringNamedModule(const Identifier& _name, QatModule* other, const utils::VisibilityInfo& _visibility) {
-  broughtModules.push_back(Brought<QatModule>(_name, other, _visibility));
+void QatModule::bringCoreType(CoreType* cTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtCoreTypes.push_back(Brought<CoreType>(bName.value(), cTy, visib));
+  } else {
+    broughtCoreTypes.push_back(Brought<CoreType>(cTy, visib));
+  }
+}
+
+void QatModule::bringGenericCoreType(GenericCoreType* gCTy, const utils::VisibilityInfo& visib,
+                                     Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtGenericCoreTypes.push_back(Brought<GenericCoreType>(bName.value(), gCTy, visib));
+  } else {
+    broughtGenericCoreTypes.push_back(Brought<GenericCoreType>(gCTy, visib));
+  }
+}
+
+void QatModule::bringMixType(MixType* mTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtMixTypes.push_back(Brought<MixType>(bName.value(), mTy, visib));
+  } else {
+    broughtMixTypes.push_back(Brought<MixType>(mTy, visib));
+  }
+}
+
+void QatModule::bringChoiceType(ChoiceType* chTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtChoiceTypes.push_back(Brought<ChoiceType>(bName.value(), chTy, visib));
+  } else {
+    broughtChoiceTypes.push_back(Brought<ChoiceType>(chTy, visib));
+  }
+}
+
+void QatModule::bringTypeDefinition(DefinitionType* dTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtTypeDefs.push_back(Brought<DefinitionType>(bName.value(), dTy, visib));
+  } else {
+    broughtTypeDefs.push_back(Brought<DefinitionType>(dTy, visib));
+  }
+}
+
+void QatModule::bringFunction(Function* fn, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtFunctions.push_back(Brought<Function>(bName.value(), fn, visib));
+  } else {
+    broughtFunctions.push_back(Brought<Function>(fn, visib));
+  }
+}
+
+void QatModule::bringGenericFunction(GenericFunction* gFn, const utils::VisibilityInfo& visib,
+                                     Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtGenericFunctions.push_back(Brought<GenericFunction>(bName.value(), gFn, visib));
+  } else {
+    broughtGenericFunctions.push_back(Brought<GenericFunction>(gFn, visib));
+  }
+}
+
+void QatModule::bringRegion(Region* reg, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtRegions.push_back(Brought<Region>(bName.value(), reg, visib));
+  } else {
+    broughtRegions.push_back(Brought<Region>(reg, visib));
+  }
+}
+
+void QatModule::bringGlobalEntity(GlobalEntity* gEnt, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtGlobalEntities.push_back(Brought<GlobalEntity>(bName.value(), gEnt, visib));
+  } else {
+    broughtGlobalEntities.push_back(Brought<GlobalEntity>(gEnt, visib));
+  }
 }
 
 bool QatModule::hasFunction(const String& name) const {

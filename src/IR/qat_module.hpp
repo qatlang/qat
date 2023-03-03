@@ -186,6 +186,7 @@ public:
   void             setFileRange(FileRange fileRange);
   FileRange        getFileRange() const;
 
+  useit bool       isParentModuleOf(QatModule* other) const;
   useit bool       hasClosestParentLib() const;
   useit QatModule* getClosestParentLib();
   useit bool       hasClosestParentBox() const;

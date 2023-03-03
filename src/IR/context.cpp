@@ -335,7 +335,7 @@ utils::RequesterInfo Context::getReqInfo() const {
 }
 
 Maybe<utils::RequesterInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
-  if (getMod()->getID() == otherMod->getID()) {
+  if ((getMod()->getID() == otherMod->getID()) || getMod()->isParentModuleOf(otherMod)) {
     return None;
   } else {
     return getReqInfo();

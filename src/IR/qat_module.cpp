@@ -1410,6 +1410,22 @@ GlobalEntity* QatModule::getGlobalEntity(const String&               name, // NO
   return nullptr;
 }
 
+bool QatModule::isParentModuleOf(QatModule* other) const {
+  auto* othMod = other->parent;
+  if (othMod) {
+    while (othMod) {
+      if (getID() == othMod->getID()) {
+        return true;
+      } else {
+        othMod = othMod->parent;
+      }
+    }
+    return false;
+  } else {
+    return false;
+  }
+}
+
 bool QatModule::hasClosestParentBox() const {
   if (moduleType == ModuleType::box) {
     return true;

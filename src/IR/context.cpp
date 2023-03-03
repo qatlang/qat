@@ -60,7 +60,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtCoreType(name.value)) {
+  } else if (mod->hasBroughtCoreType(name.value, None)) {
     Error("A core type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -79,7 +79,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGenericCoreType(name.value)) {
+  } else if (mod->hasBroughtGenericCoreType(name.value, None)) {
     if (genericID.has_value() && mod->getGenericCoreType(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
@@ -97,7 +97,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A mix type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtMixType(name.value)) {
+  } else if (mod->hasBroughtMixType(name.value, None)) {
     Error("A mix type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -112,7 +112,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A choice type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtChoiceType(name.value)) {
+  } else if (mod->hasBroughtChoiceType(name.value, None)) {
     Error("A choice type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -128,7 +128,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtTypeDef(name.value)) {
+  } else if (mod->hasBroughtTypeDef(name.value, None)) {
     Error("A type definition named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -143,7 +143,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A function named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtFunction(name.value)) {
+  } else if (mod->hasBroughtFunction(name.value, None)) {
     Error("A function named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -162,7 +162,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGenericFunction(name.value)) {
+  } else if (mod->hasBroughtGenericFunction(name.value, None)) {
     if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
       return;
     }
@@ -184,7 +184,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGlobalEntity(name.value)) {
+  } else if (mod->hasBroughtGlobalEntity(name.value, None)) {
     Error("A global entity named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -199,7 +199,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A region named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtRegion(name.value)) {
+  } else if (mod->hasBroughtRegion(name.value, None)) {
     Error("A region named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -213,7 +213,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A box named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtBox(name.value)) {
+  } else if (mod->hasBroughtBox(name.value, None)) {
     Error("A box named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -227,7 +227,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
     Error("A lib named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtLib(name.value)) {
+  } else if (mod->hasBroughtLib(name.value, None)) {
     Error("A lib named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -332,6 +332,14 @@ utils::RequesterInfo Context::getReqInfo() const {
     }
   }
   return {lib, box, file, type};
+}
+
+Maybe<utils::RequesterInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
+  if (getMod()->getID() == otherMod->getID()) {
+    return None;
+  } else {
+    return getReqInfo();
+  }
 }
 
 String Context::highlightError(const String& message, const char* color) {

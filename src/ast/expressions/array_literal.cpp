@@ -14,6 +14,8 @@ ArrayLiteral::ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
 
 bool ArrayLiteral::hasLocal() const { return (local != nullptr); }
 
+void ArrayLiteral::setType(IR::ArrayType* typ) { inferredType = typ; }
+
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
   IR::ArrayType* arrTyOfLocal = nullptr;
   if (hasLocal()) {

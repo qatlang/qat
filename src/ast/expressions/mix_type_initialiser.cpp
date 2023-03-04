@@ -1,6 +1,11 @@
 #include "./mix_type_initialiser.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../utils/split_string.hpp"
+#include "../constants/integer_literal.hpp"
+#include "../constants/unsigned_literal.hpp"
+#include "array_literal.hpp"
+#include "default.hpp"
+#include "none.hpp"
 
 namespace qat::ast {
 
@@ -13,26 +18,41 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
   auto  reqInfo  = ctx->getReqInfo();
   auto* typeEmit = type->emit(ctx);
   if (typeEmit->isMix()) {
-    auto* uTy = typeEmit->asMix();
-    if (uTy->isAccessible(ctx->getReqInfo())) {
-      auto subRes = uTy->hasSubTypeWithName(subName);
+    auto* mixTy = typeEmit->asMix();
+    if (mixTy->isAccessible(ctx->getReqInfo())) {
+      auto subRes = mixTy->hasSubTypeWithName(subName);
       if (subRes.first) {
         if (subRes.second) {
           if (!expression.has_value()) {
             ctx->Error("Field " + ctx->highlightError(subName) + " of mix type " +
-                           ctx->highlightError(uTy->getFullName()) + " expects a value to be associated with it",
+                           ctx->highlightError(mixTy->getFullName()) + " expects a value to be associated with it",
                        fileRange);
           }
         } else {
           if (expression.has_value()) {
             ctx->Error("Field " + ctx->highlightError(subName) + " of mix type " +
-                           ctx->highlightError(uTy->getFullName()) + " cannot have any value associated with it",
+                           ctx->highlightError(mixTy->getFullName()) + " cannot have any value associated with it",
                        fileRange);
           }
         }
         llvm::Value* exp = nullptr;
         if (subRes.second) {
-          auto* typ     = uTy->getSubTypeWithName(subName);
+          auto* typ = mixTy->getSubTypeWithName(subName);
+          if (expression.value()->nodeType() == NodeType::integerLiteral) {
+            ((IntegerLiteral*)(expression.value()))->setType(typ);
+          } else if (expression.value()->nodeType() == NodeType::unsignedLiteral) {
+            ((UnsignedLiteral*)(expression.value()))->setType(typ);
+          } else if (expression.value()->nodeType() == NodeType::none) {
+            if (typ->isMaybe()) {
+              ((NoneExpression*)(expression.value()))->setType(typ->asMaybe()->getSubType());
+            }
+          } else if (expression.value()->nodeType() == NodeType::Default) {
+            ((Default*)(expression.value()))->setType(typ);
+          } else if (expression.value()->nodeType() == NodeType::arrayLiteral) {
+            if (typ->isArray()) {
+              ((ArrayLiteral*)(expression.value()))->setType(typ->asArray());
+            }
+          }
           auto* expEmit = expression.value()->emit(ctx);
           if (typ->isSame(expEmit->getType())) {
             expEmit->loadImplicitPointer(ctx->builder);
@@ -54,46 +74,46 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
                        expression.value()->fileRange);
           }
         } else {
-          exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, uTy->getDataBitwidth()), 0u, true);
+          exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getDataBitwidth()), 0u, true);
         }
-        auto*        index = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, uTy->getTagBitwidth()),
-                                                    uTy->getIndexOfName(subName));
+        auto*        index = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getTagBitwidth()),
+                                                    mixTy->getIndexOfName(subName));
         llvm::Value* newValue;
         if (local) {
-          if (local->getType()->isMaybe() && local->getType()->asMaybe()->getSubType()->isSame(uTy)) {
+          if (local->getType()->isMaybe() && local->getType()->asMaybe()->getSubType()->isSame(mixTy)) {
             newValue = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u);
-          } else if (local->getType()->isSame(uTy)) {
+          } else if (local->getType()->isSame(mixTy)) {
             newValue = local->getAlloca();
           } else {
             ctx->Error("The type of the local declaration is not compatible here", fileRange);
           }
         } else if (irName) {
-          local    = ctx->fn->getBlock()->newValue(irName->value, uTy, isVar, irName->range);
+          local    = ctx->fn->getBlock()->newValue(irName->value, mixTy, isVar, irName->range);
           newValue = local->getAlloca();
         } else {
-          newValue = ctx->builder.CreateAlloca(uTy->getLLVMType(), 0u);
+          newValue = ctx->builder.CreateAlloca(mixTy->getLLVMType(), 0u);
         }
         SHOW("Creating mix store")
-        ctx->builder.CreateStore(index, ctx->builder.CreateStructGEP(uTy->getLLVMType(), newValue, 0));
+        ctx->builder.CreateStore(index, ctx->builder.CreateStructGEP(mixTy->getLLVMType(), newValue, 0));
         if (subRes.second) {
           ctx->builder.CreateStore(
-              exp, ctx->builder.CreatePointerCast(ctx->builder.CreateStructGEP(uTy->getLLVMType(), newValue, 1),
-                                                  uTy->getSubTypeWithName(subName)->getLLVMType()->getPointerTo()));
+              exp, ctx->builder.CreatePointerCast(ctx->builder.CreateStructGEP(mixTy->getLLVMType(), newValue, 1),
+                                                  mixTy->getSubTypeWithName(subName)->getLLVMType()->getPointerTo()));
         }
         if (local) {
           auto* res = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
           res->setLocalID(local->getLocalID());
           return res;
         } else {
-          return new IR::Value(newValue, uTy, true, IR::Nature::pure);
+          return new IR::Value(newValue, mixTy, true, IR::Nature::pure);
         }
       } else {
         ctx->Error("No field named " + ctx->highlightError(subName) + " is present inside mix type " +
-                       ctx->highlightError(uTy->getFullName()),
+                       ctx->highlightError(mixTy->getFullName()),
                    fileRange);
       }
     } else {
-      ctx->Error("Mix type " + ctx->highlightError(uTy->getFullName()) + " is not accessible here", fileRange);
+      ctx->Error("Mix type " + ctx->highlightError(mixTy->getFullName()) + " is not accessible here", fileRange);
     }
   } else {
     ctx->Error(ctx->highlightError(typeEmit->toString()) + " is not a mix type", fileRange);

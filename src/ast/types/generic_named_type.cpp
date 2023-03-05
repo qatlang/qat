@@ -50,7 +50,8 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   auto* fun  = ctx->fn;
   auto* curr = fun ? fun->getBlock() : nullptr;
   SHOW("Got current function and block")
-  if (mod->hasGenericCoreType(entityName.value) || mod->hasBroughtGenericCoreType(entityName.value) ||
+  if (mod->hasGenericCoreType(entityName.value) ||
+      mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getReqInfo()).first) {
     auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getReqInfo());
     if (!genericCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {

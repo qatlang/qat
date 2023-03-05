@@ -65,7 +65,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       }
     }
   }
-  if (mod->hasCoreType(entityName.value) || mod->hasBroughtCoreType(entityName.value) ||
+  if (mod->hasCoreType(entityName.value) ||
+      mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
     auto* cTy = mod->getCoreType(entityName.value, reqInfo);
     if (!cTy->getVisibility().isAccessible(reqInfo)) {
@@ -75,7 +76,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     cTy->addMention(entityName.range);
     return cTy;
-  } else if (mod->hasTypeDef(entityName.value) || mod->hasBroughtTypeDef(entityName.value) ||
+  } else if (mod->hasTypeDef(entityName.value) ||
+             mod->hasBroughtTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
     auto* dTy = mod->getTypeDef(entityName.value, reqInfo);
     if (!dTy->getVisibility().isAccessible(reqInfo)) {
@@ -85,7 +87,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     dTy->addMention(entityName.range);
     return dTy;
-  } else if (mod->hasMixType(entityName.value) || mod->hasBroughtMixType(entityName.value) ||
+  } else if (mod->hasMixType(entityName.value) ||
+             mod->hasBroughtMixType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
     auto* mTy = mod->getMixType(entityName.value, reqInfo);
     if (!mTy->getVisibility().isAccessible(reqInfo)) {
@@ -95,7 +98,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     mTy->addMention(entityName.range);
     return mTy;
-  } else if (mod->hasChoiceType(entityName.value) || mod->hasBroughtChoiceType(entityName.value) ||
+  } else if (mod->hasChoiceType(entityName.value) ||
+             mod->hasBroughtChoiceType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
     auto* chTy = mod->getChoiceType(entityName.value, reqInfo);
     if (!chTy->getVisibility().isAccessible(reqInfo)) {
@@ -105,7 +109,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     chTy->addMention(entityName.range);
     return chTy;
-  } else if (mod->hasRegion(entityName.value) || mod->hasBroughtRegion(entityName.value) ||
+  } else if (mod->hasRegion(entityName.value) ||
+             mod->hasBroughtRegion(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleRegionInImports(entityName.value, reqInfo).first) {
     auto* reg = mod->getRegion(entityName.value, reqInfo);
     if (!reg->getVisibility().isAccessible(reqInfo)) {

@@ -47,7 +47,8 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
   }
   auto* fun  = ctx->fn;
   auto* curr = fun ? ctx->fn->getBlock() : nullptr;
-  if (mod->hasGenericFunction(entityName.value) || mod->hasBroughtGenericFunction(entityName.value) ||
+  if (mod->hasGenericFunction(entityName.value) ||
+      mod->hasBroughtGenericFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getReqInfo()).first) {
     auto* genericFn = mod->getGenericFunction(entityName.value, ctx->getReqInfo());
     if (!genericFn->getVisibility().isAccessible(ctx->getReqInfo())) {

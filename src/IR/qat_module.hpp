@@ -222,7 +222,7 @@ public:
   // LIB
 
   useit bool hasLib(const String& name) const;
-  useit bool hasBroughtLib(const String& name) const;
+  useit bool hasBroughtLib(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleLibInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit QatModule*         getLib(const String& name, const utils::RequesterInfo& reqInfo);
   void openLib(const Identifier& name, const String& filename, const utils::VisibilityInfo& visib_info,
@@ -232,7 +232,7 @@ public:
   // BOX
 
   useit bool       hasBox(const String& name) const;
-  useit bool       hasBroughtBox(const String& name) const;
+  useit bool       hasBroughtBox(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit QatModule* getBox(const String& name, const utils::RequesterInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleBoxInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   void                     openBox(const Identifier& name, Maybe<utils::VisibilityInfo> visib_info);
@@ -241,7 +241,7 @@ public:
   // FUNCTION
 
   useit bool      hasFunction(const String& name) const;
-  useit bool      hasBroughtFunction(const String& name) const;
+  useit bool      hasBroughtFunction(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Function* getFunction(const String& name, const utils::RequesterInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleFunctionInImports(const String&               name,
                                                           const utils::RequesterInfo& reqInfo) const;
@@ -249,7 +249,7 @@ public:
   // GENERIC FUNCTIONS
 
   useit bool             hasGenericFunction(const String& name) const;
-  useit bool             hasBroughtGenericFunction(const String& name) const;
+  useit bool             hasBroughtGenericFunction(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit GenericFunction* getGenericFunction(const String& name, const utils::RequesterInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleGenericFunctionInImports(const String&               name,
                                                                  const utils::RequesterInfo& reqInfo) const;
@@ -257,14 +257,14 @@ public:
   // REGION
 
   useit bool hasRegion(const String& name) const;
-  useit bool hasBroughtRegion(const String& name) const;
+  useit bool hasBroughtRegion(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleRegionInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit Region*            getRegion(const String& name, const utils::RequesterInfo& reqInfo) const;
 
   // CORE TYPE
 
   useit bool hasCoreType(const String& name) const;
-  useit bool hasBroughtCoreType(const String& name) const;
+  useit bool hasBroughtCoreType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleCoreTypeInImports(const String&               name,
                                                           const utils::RequesterInfo& reqInfo) const;
   useit CoreType*          getCoreType(const String& name, const utils::RequesterInfo& reqInfo) const;
@@ -272,14 +272,14 @@ public:
   // MIX TYPE
 
   useit bool hasMixType(const String& name) const;
-  useit bool hasBroughtMixType(const String& name) const;
+  useit bool hasBroughtMixType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleMixTypeInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit MixType*           getMixType(const String& name, const utils::RequesterInfo& reqInfo) const;
 
   // CHOICE TYPE
 
   useit bool hasChoiceType(const String& name) const;
-  useit bool hasBroughtChoiceType(const String& name) const;
+  useit bool hasBroughtChoiceType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleChoiceTypeInImports(const String&               name,
                                                             const utils::RequesterInfo& reqInfo) const;
   useit ChoiceType*        getChoiceType(const String& name, const utils::RequesterInfo& reqInfo) const;
@@ -287,28 +287,28 @@ public:
   // GENERIC CORE TYPES
 
   useit bool hasGenericCoreType(const String& name) const;
-  useit bool hasBroughtGenericCoreType(const String& name) const;
+  useit bool hasBroughtGenericCoreType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleGenericCoreTypeInImports(const String&               name,
                                                                  const utils::RequesterInfo& reqInfo) const;
   useit GenericCoreType*   getGenericCoreType(const String& name, const utils::RequesterInfo& reqInfo);
 
   // TYPEDEF
   useit bool hasTypeDef(const String& name) const;
-  useit bool hasBroughtTypeDef(const String& name) const;
+  useit bool hasBroughtTypeDef(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleTypeDefInImports(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit DefinitionType*    getTypeDef(const String& name, const utils::RequesterInfo& reqInfo) const;
 
   // GLOBAL ENTITY
 
   useit bool hasGlobalEntity(const String& name) const;
-  useit bool hasBroughtGlobalEntity(const String& name) const;
+  useit bool hasBroughtGlobalEntity(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleGlobalEntityInImports(const String&               name,
                                                               const utils::RequesterInfo& reqInfo) const;
   useit GlobalEntity*      getGlobalEntity(const String& name, const utils::RequesterInfo& reqInfo) const;
 
   // IMPORT
 
-  useit bool       hasBroughtModule(const String& name) const;
+  useit bool       hasBroughtModule(const String& name, Maybe<utils::RequesterInfo> reqInfo) const;
   useit QatModule* getBroughtModule(const String& name, const utils::RequesterInfo& reqInfo) const;
   useit Pair<bool, String> hasAccessibleBroughtModuleInImports(const String&               name,
                                                                const utils::RequesterInfo& reqInfo) const;
@@ -325,8 +325,6 @@ public:
   void bringGenericFunction(GenericFunction* gFn, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringRegion(Region* reg, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringGlobalEntity(GlobalEntity* gEnt, const utils::VisibilityInfo& visib, Maybe<Identifier> bName = None);
-
-  useit llvm::GlobalVariable* get_global_variable(String name, utils::RequesterInfo& req_info);
 
   useit fs::path getResolvedOutputPath(const String& extension, IR::Context* ctx);
   useit llvm::Module* getLLVMModule() const;

@@ -42,10 +42,11 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
     }
     for (usize i = 0; i < (identifiers.size() - 1); i++) {
       auto section = identifiers.at(i);
-      if (mod->hasLib(section.value) || mod->hasBroughtLib(section.value) ||
+      if (mod->hasLib(section.value) || mod->hasBroughtLib(section.value, ctx->getReqInfoIfDifferentModule(mod)) ||
           mod->hasAccessibleLibInImports(section.value, reqInfo).first) {
         mod = mod->getLib(section.value, reqInfo);
-      } else if (mod->hasBox(section.value) || mod->hasBroughtBox(section.value) ||
+      } else if (mod->hasBox(section.value) ||
+                 mod->hasBroughtBox(section.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleBoxInImports(section.value, reqInfo).first) {
         mod = mod->getBox(section.value, reqInfo);
       } else {
@@ -56,22 +57,25 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
     }
   }
   auto reqInfo = ctx->getReqInfo();
-  if (mod->hasTypeDef(name.value) || mod->hasBroughtTypeDef(name.value) ||
+  if (mod->hasTypeDef(name.value) || mod->hasBroughtTypeDef(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getTypeDef(name.value, reqInfo)));
-  } else if (mod->hasCoreType(name.value) || mod->hasBroughtCoreType(name.value) ||
+  } else if (mod->hasCoreType(name.value) ||
+             mod->hasBroughtCoreType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getCoreType(name.value, reqInfo)));
-  } else if (mod->hasMixType(name.value) || mod->hasBroughtMixType(name.value) ||
+  } else if (mod->hasMixType(name.value) || mod->hasBroughtMixType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleMixTypeInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getMixType(name.value, reqInfo)));
-  } else if (mod->hasChoiceType(name.value) || mod->hasBroughtChoiceType(name.value) ||
+  } else if (mod->hasChoiceType(name.value) ||
+             mod->hasBroughtChoiceType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getChoiceType(name.value, reqInfo)));
-  } else if (mod->hasRegion(name.value) || mod->hasBroughtRegion(name.value) ||
+  } else if (mod->hasRegion(name.value) || mod->hasBroughtRegion(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleRegionInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getRegion(name.value, reqInfo)));
-  } else if (mod->hasGlobalEntity(name.value) || mod->hasBroughtGlobalEntity(name.value) ||
+  } else if (mod->hasGlobalEntity(name.value) ||
+             mod->hasBroughtGlobalEntity(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).first) {
     auto* gEnt = mod->getGlobalEntity(name.value, reqInfo);
     if ((!gEnt->isVariable()) && gEnt->hasInitialValue()) {
@@ -88,12 +92,14 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
       }
     }
     ctx->Error(ctx->highlightError(name.value) + " is a global entity.", name.range);
-  } else if (mod->hasGenericCoreType(name.value) || mod->hasBroughtGenericCoreType(name.value) ||
+  } else if (mod->hasGenericCoreType(name.value) ||
+             mod->hasBroughtGenericCoreType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).first) {
     ctx->Error(ctx->highlightError(name.value) +
                    " is a generic core type and cannot be used as a value or type in constant expressions",
                fileRange);
-  } else if (mod->hasGenericFunction(name.value) || mod->hasBroughtGenericFunction(name.value) ||
+  } else if (mod->hasGenericFunction(name.value) ||
+             mod->hasBroughtGenericFunction(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
     ctx->Error(ctx->highlightError(name.value) +
                    " is a generic function and cannot be used as a value in constant expressions",

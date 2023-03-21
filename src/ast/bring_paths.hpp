@@ -20,7 +20,7 @@ public:
              Maybe<utils::VisibilityKind> _visibility, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
-  void             handleBrings(IR::Context* ctx) const override;
+  void             handleFilesystemBrings(IR::Context* ctx) const override;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::bringPaths; }
 };

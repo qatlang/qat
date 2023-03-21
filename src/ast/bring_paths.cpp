@@ -8,7 +8,7 @@ BringPaths::BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<Str
     : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibility(_visibility),
       names(std::move(_names)) {}
 
-void BringPaths::handleBrings(IR::Context* ctx) const {
+void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   if (visibility.has_value()) {
     if (isMember) {

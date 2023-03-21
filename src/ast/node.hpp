@@ -44,6 +44,7 @@ public:
   virtual ~Node() = default;
   useit virtual bool       isConstantNode() const { return false; }
   virtual void             createModule(IR::Context* ctx) const {}
+  virtual void             handleFilesystemBrings(IR::Context* ctx) const {}
   virtual void             handleBrings(IR::Context* ctx) const {}
   virtual void             defineType(IR::Context* ctx) {}
   virtual void             define(IR::Context* ctx) {}

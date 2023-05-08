@@ -22,36 +22,30 @@ Besides that, you can contribute to the project via the following links:
 <a href="https://paypal.me/aldrinsartfactory" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white"/></a>
 </center></div>
 
-## Code Sample
-
-#### Hello, World!
-```qat
-main -> void
-() [
-  say "Hello, World!".
-]
-```
-#### Square
-```qat
-square -> i64
-(i32 a, i32 b) [
-  return (a to i64) * (b to i64).
-]
-```
-#### Fibonacci Sequence
-```qat
-/**
- *  Changing default values of a and b can generate a custom sequence
- */
-fibonacci -> vec<i32>
-( i32 count, i32 a, i32 b)  [
-  vec<i32> result from [a, b].
-  loop count times [
-    result'push(result'last() + result'at(result'length() - 2)).
-  ]
-  give result.
-]
-```
 
 ## Warning!!
 The project is under heavy development and is not suitable for production use (that is if you can even compile the whole language). Updates will be provided appropriately via the social channels and via Github.
+
+# Building the compiler
+
+## On Windows
+
+```bat
+RMDIR /S /Q "./build"
+MKDIR build
+cmake -DCMAKE_BUILD_TYPE=Release -DPLATFORM=Windows -DLLVM_DIR="/path/to/llvm/build/install/dir" -G"Visual Studio 17 2022" -S ./src/ -B ./build/
+CD ./build/
+MSBuild qat.sln /m /p:Configuration=Release
+CD ..
+```
+
+## On Linux
+
+```bash
+rm -rf build
+mkdir build
+cmake -DCMAKE_BUILD_TYPE=Release -DPLATFORM=${1:-Linux} -DLLVM_DIR="/path/to/llvm/build/install/dir" -DCMAKE_CXX_COMPILER="path/to/clang/compiler" -DBUILD_SHARED_LIBS=false -GNinja -S src/ -B build/
+cd build
+ninja
+cd ..
+```

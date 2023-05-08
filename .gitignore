@@ -1,12 +1,20 @@
-build/
+# IDE
 .vscode/*
 !.vscode/extensions.json
 src/cmake-build-debug/
-rebuild
-release
-refresh
-run
-test/
+.vs/*
 .cache/
 .idea/
+
+# Scripts
+rebuild.sh
+rebuild.bat
+release.sh
+release.bat
+refresh.sh
+run.sh
+
+# Other
+build/
+test/
 todo.md

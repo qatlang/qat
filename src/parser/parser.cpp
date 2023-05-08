@@ -110,53 +110,77 @@ void Parser::setTokens(Deque<lexer::Token>* allTokens) {
 
 void Parser::filterComments() {}
 
-ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, usize from, usize upto) {
+ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, utils::VisibilityKind visibKind, usize fromMain,
+                                                 usize uptoMain) {
   using lexer::TokenType;
-  Vec<Vec<Identifier>> result;
-  Maybe<CacheSymbol>   csym = None;
+  Vec<ast::BroughtGroup*> rootGroups;
 
-  for (usize i = from + 1; i < upto; i++) {
-    auto token = tokens->at(i);
-    switch (token.type) { // NOLINT(clang-diagnostic-switch)
-      case TokenType::identifier: {
-        auto sym_res = parseSymbol(ctx, i);
-        csym         = sym_res.first;
-        i            = sym_res.second;
-        if (isNext(TokenType::curlybraceOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i, false);
-          if (bCloseRes.has_value()) {
-            auto        bClose = bCloseRes.value();
-            Vec<String> entities;
-            if (isPrimaryWithin(TokenType::separator, i, bClose)) {
-              // TODO - Implement
-            } else {
-              Warning("Expected multiple entities to be brought. Remove the "
-                      "curly braces since only one entity is being brought.",
-                      FileRange(RangeAt(i + 1), RangeAt(bClose)));
-              if (isNext(TokenType::identifier, i + 1)) {
-                entities.push_back(ValueAt(i + 2));
-              } else {
-                Error("Expected the name of an entity in the bring sentence", RangeAt(i + 2));
-              }
-            }
-
-          } else {
-            Error("Expected } to close this curly brace", RangeAt(i + 1));
+  std::function<void(Maybe<ast::BroughtGroup*>, usize, usize)> handler = [&](Maybe<ast::BroughtGroup*> parent,
+                                                                             usize from, usize upto) {
+    for (usize i = from + 1; i < upto; i++) {
+      auto token = tokens->at(i);
+      switch (token.type) { // NOLINT(clang-diagnostic-switch)
+        case TokenType::super: {
+          if (parent.has_value()) {
+            Error(".. is not allowed for children of brought entities", RangeAt(i));
           }
-        } else if (isNext(TokenType::identifier, i)) {
         }
-        break;
-      }
-      case TokenType::separator: {
-        if (csym.has_value()) {
-          result.push_back(csym.value().name);
-        } else {
+        case TokenType::identifier: {
+          auto sym_res  = parseSymbol(ctx, i);
+          i             = sym_res.second;
+          auto newGroup = new ast::BroughtGroup(sym_res.first.relative, sym_res.first.name, sym_res.first.fileRange);
+          if (isNext(TokenType::curlybraceOpen, i)) {
+            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
+            if (bCloseRes.has_value()) {
+              auto        bClose = bCloseRes.value();
+              Vec<String> entities;
+              if (isPrimaryWithin(TokenType::separator, i + 1, bClose)) {
+                auto sepPos = primaryPositionsWithin(TokenType::separator, i + 1, bClose);
+                handler(newGroup, i + 1, sepPos.front());
+                for (usize k = 0; k < (sepPos.size() - 1); k++) {
+                  handler(newGroup, sepPos.at(i), sepPos.at(i + 1));
+                }
+                handler(newGroup, sepPos.back(), bClose);
+              } else {
+                Warning("Expected multiple entities to be brought. Consider removing the curly braces "
+                        "since only one child entity is being brought.",
+                        FileRange(RangeAt(i + 1), RangeAt(bClose)));
+                if (isNext(TokenType::identifier, i + 1)) {
+                  handler(newGroup, i + 1, bCloseRes.value());
+                } else if (isNext(TokenType::super, i + 1)) {
+                  Error(".. is not allowed for children of brought entities", RangeAt(i + 2));
+                } else {
+                  Error("Expected the name of an entity in the bring sentence", RangeAt(i + 2));
+                }
+              }
+            } else {
+              Error("Expected } to close this curly brace", RangeAt(i + 1));
+            }
+          }
+          // FIXME - Support alias for brought entities
+          if (parent.has_value()) {
+            parent.value()->addMember(newGroup);
+          } else {
+            rootGroups.push_back(newGroup);
+          }
+          break;
         }
-        break;
+        case TokenType::separator: {
+          if (isNext(TokenType::identifier, i) || isNext(TokenType::super, i)) {
+            break;
+          } else if (isNext(TokenType::separator, i)) {
+            Error("Two adjacent commas found, please remove duplicate commas", RangeAt(i + 1));
+          } else if (isNext(TokenType::stop, i)) {
+            break;
+          } else {
+            Error("Invalid token found after the comma separator", RangeAt(i + 1));
+          }
+        }
       }
     }
-  }
-  // FIXME - Return valid value
+  };
+  handler(None, fromMain, uptoMain);
+  return new ast::BringEntities(rootGroups, visibKind, RangeSpan(fromMain, uptoMain));
 }
 
 Vec<fs::path>& Parser::getBroughtPaths() { return broughtPaths; }
@@ -927,7 +951,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         } else if (isNext(TokenType::identifier, i)) {
           auto endRes = firstPrimaryPosition(TokenType::stop, i);
           if (endRes.has_value()) {
-            result.push_back(parseBroughtEntities(ctx, i, endRes.value()));
+            result.push_back(parseBroughtEntities(ctx, getVisibility(), i, endRes.value()));
             i = endRes.value();
           }
         }

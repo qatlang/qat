@@ -49,8 +49,8 @@ public:
   Parser();
   ~Parser();
 
-  static u64                            timeInMicroSeconds;
-  u64                                   parseRecurseCount = 0;
+  static u64                                     timeInMicroSeconds;
+  u64                                            parseRecurseCount = 0;
   std::chrono::high_resolution_clock::time_point latestStartTime   = std::chrono::high_resolution_clock::now();
 
   void clearBroughtPaths();
@@ -66,7 +66,8 @@ public:
   exitFn void Error(const String& message, const FileRange& fileRange);
   static void Warning(const String& message, const FileRange& fileRange);
 
-  useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, usize from, usize upto);
+  useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, utils::VisibilityKind visibKind, usize from,
+                                                 usize upto);
   useit ast::BringPaths* parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
                                            const FileRange& start);
   useit Vec<fs::path>& getBroughtPaths();

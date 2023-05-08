@@ -10,32 +10,46 @@
 namespace qat::ast {
 
 class BroughtGroup {
+  friend class BringEntities;
+
 private:
-  String      parent;
-  Vec<String> members;
-  FileRange   fileRange;
+  u32                relative;
+  Vec<Identifier>    entity;
+  Vec<BroughtGroup*> members;
+  FileRange          fileRange;
+
+  ///
+
+  mutable bool isAlreadyBrought = false;
 
 public:
-  BroughtGroup(String _parent, Vec<String> _members, FileRange _fileRange);
-  BroughtGroup(String _parent, FileRange _range);
+  BroughtGroup(u32 _relative, Vec<Identifier> _parent, Vec<BroughtGroup*> _members, FileRange _fileRange);
+  BroughtGroup(u32 _relative, Vec<Identifier> _parent, FileRange _range);
 
-  useit String getParent() const;
-  useit Vec<String> getMembers() const;
-  useit bool        isAllBrought() const;
-  useit Json        toJson() const;
+  void addMember(BroughtGroup* mem);
+  void extendFileRange(FileRange end);
+  void bring() const;
+
+  useit bool hasMembers() const;
+  useit bool isAllBrought() const;
+  useit Json toJson() const;
 };
 
-class BringEntities : public Node {
+class BringEntities final : public Node {
 private:
   Vec<BroughtGroup*>    entities;
-  utils::VisibilityInfo visibility;
+  utils::VisibilityKind visibility;
+
+  mutable bool initialRunComplete = false;
 
 public:
-  BringEntities(Vec<BroughtGroup*> _entities, const utils::VisibilityInfo& _visibility, FileRange _fileRange);
+  BringEntities(Vec<BroughtGroup*> _entities, utils::VisibilityKind _visibility, FileRange _fileRange);
 
+  void  handleBrings(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::bringEntities; }
+  ~BringEntities() final;
 };
 
 } // namespace qat::ast

@@ -1,8 +1,9 @@
 #include "./qat_sitter.hpp"
 #include "memory_tracker.hpp"
-
-#if PLATFORM_IS_WINDOWS
+#include "cli/config.hpp"
 #include <iostream>
+
+#if PlatformIsWindows
 #ifdef _WIN32
 #include <windows.h>
 #endif

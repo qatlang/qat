@@ -55,7 +55,7 @@ JsonValue& JsonValue::operator=(unsigned long long val) {
   return *this;
 }
 
-#if PLATFORM_IS_UNIX
+#if PlatformIsLinux
 JsonValue::JsonValue(uint64_t val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
 
 JsonValue& JsonValue::operator=(uint64_t val) {
@@ -367,7 +367,7 @@ bool JsonValue::operator!=(unsigned long long val) const {
   return true;
 }
 
-#if PLATFORM_IS_UNIX
+#if PlatformIsLinux
 bool JsonValue::operator==(uint64_t val) const {
   if (isInt()) {
     return ((*((int64_t*)data)) == ((int64_t)val));

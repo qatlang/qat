@@ -7,6 +7,7 @@ MultithreadGive::MultithreadGive(Expression* _expression, FileRange _fileRange)
 
 IR::Value* MultithreadGive::emit(IR::Context* ctx) {
   // FIXME - Implement this
+return nullptr;
 }
 
 Json MultithreadGive::toJson() const {

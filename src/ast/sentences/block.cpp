@@ -6,6 +6,7 @@ Block::Block(Vec<Sentence*> _sentences, FileRange _fileRange) : Sentence(_fileRa
 
 IR::Value* Block::emit(IR::Context* ctx) {
   // TODO - Implement this
+return nullptr;
 }
 
 Json Block::toJson() const {

@@ -89,6 +89,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         } else if (mod->hasChoiceType(singleName.value) ||
                    mod->hasBroughtChoiceType(singleName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                    mod->hasAccessibleChoiceTypeInImports(singleName.value, reqInfo).first) {
+          // FIXME - Maybe change this syntax?
           if (canBeChoice) {
             return new IR::Value(nullptr, mod->getChoiceType(singleName.value, reqInfo), false, IR::Nature::pure);
           } else {

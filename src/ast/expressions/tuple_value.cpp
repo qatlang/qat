@@ -6,6 +6,7 @@ TupleValue::TupleValue(Vec<Expression*> _members, FileRange _fileRange) : member
 
 IR::Value* TupleValue::emit(IR::Context* ctx) {
   // TODO - Implement this
+	return nullptr;
 }
 
 Json TupleValue::toJson() const {

@@ -3,6 +3,7 @@
 
 #include "../expression.hpp"
 #include "../sentence.hpp"
+#include "../../utils/file_range.hpp"
 
 namespace qat::ast {
 

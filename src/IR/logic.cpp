@@ -27,12 +27,12 @@ String Logic::getGenericVariantName(String mainName, Vec<IR::GenericToFill*>& fi
 llvm::AllocaInst* Logic::newAlloca(IR::Function* fun, const String& name, llvm::Type* type) {
   llvm::AllocaInst* result = nullptr;
   llvm::Function*   func   = fun->isAsyncFunction() ? fun->getAsyncSubFunction() : fun->getLLVMFunction();
-  if (func->getEntryBlock().getInstList().empty()) {
+  if (func->getEntryBlock().empty()) {
     result = new llvm::AllocaInst(type, 0U, name, &func->getEntryBlock());
   } else {
     llvm::Instruction* inst = nullptr;
     // NOLINTNEXTLINE(modernize-loop-convert)
-    for (auto instr = func->getEntryBlock().getInstList().begin(); instr != func->getEntryBlock().getInstList().end();
+    for (auto instr = func->getEntryBlock().begin(); instr != func->getEntryBlock().end();
          instr++) {
       if (llvm::isa<llvm::AllocaInst>(&*instr)) {
         continue;

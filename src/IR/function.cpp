@@ -724,7 +724,7 @@ void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const FileRange&
   // FIXME - Support destructors for types besides core types
   auto* block = fun->getBlock();
   auto* retTy = fun->getType()->asFunction()->getReturnType();
-  if (block->getBB()->getInstList().empty()) {
+  if (block->getBB()->empty()) {
     SHOW("Empty instruction list in block")
     if (retTy->isVoid()) {
       SHOW("Calling destructor caller")

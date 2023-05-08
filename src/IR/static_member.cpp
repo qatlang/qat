@@ -31,6 +31,7 @@ u64 StaticMember::getReferCount() const { return refers; }
 
 Json StaticMember::toJson() const {
   // TODO - Implement
+	return Json();
 }
 
 void StaticMember::updateOverview() {

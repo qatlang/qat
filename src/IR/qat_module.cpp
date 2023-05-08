@@ -207,7 +207,7 @@ QatModule* QatModule::CreateSubmodule(QatModule* parent, fs::path filepath, fs::
   return sub;
 }
 
-QatModule* QatModule::CreateFile(QatModule* parent, fs::path filepath, fs::path basePath, Identifier fname,
+QatModule* QatModule::CreateFileMod(QatModule* parent, fs::path filepath, fs::path basePath, Identifier fname,
                                  Vec<String> content, Vec<ast::Node*> nodes, utils::VisibilityInfo visibilityInfo,
                                  llvm::LLVMContext& ctx) {
   auto* sub =
@@ -1503,6 +1503,21 @@ void QatModule::createModules(IR::Context* ctx) {
   }
 }
 
+void QatModule::handleFilesystemBrings(IR::Context* ctx) {
+  if (!hasHandledFilesystemBrings) {
+    hasHandledFilesystemBrings = true;
+    auto* oldMod               = ctx->mod;
+    ctx->mod                   = this;
+    for (auto* node : nodes) {
+      node->handleFilesystemBrings(ctx);
+    }
+    for (auto* sub : submodules) {
+      sub->handleFilesystemBrings(ctx);
+    }
+    ctx->mod = oldMod;
+  }
+}
+
 void QatModule::handleBrings(IR::Context* ctx) {
   if (!hasHandledBrings) {
     hasHandledBrings = true;
@@ -1728,12 +1743,12 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         SHOW("Archiving library " << String("ar r ")
                                          .append(outPath)
                                          .append(cmdTwo)
-                                         .append(PLATFORM_IS_WINDOWS ? " > nul" : " > /dev/null")
+                                         .append(PlatformIsWindows ? " > nul" : " > /dev/null")
                                          .c_str())
         if (std::system(String("ar r ")
                             .append(outPath)
                             .append(cmdTwo)
-                            .append(PLATFORM_IS_WINDOWS ? " > nul" : " > /dev/null")
+                            .append(PlatformIsWindows ? " > nul" : " > /dev/null")
                             .c_str())) {
           ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed",
                      {filePath, {0u, 0u}, {0u, 0u}});

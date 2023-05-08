@@ -18,6 +18,7 @@ Multithread::Multithread(Expression* _count, String _name, QatType* _type, Block
 
 IR::Value* Multithread::emit(IR::Context* ctx) {
   // TODO - Implement this
+return nullptr;
 }
 
 Json Multithread::toJson() const {

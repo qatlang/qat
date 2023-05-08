@@ -2,7 +2,7 @@
 
 namespace qat::utils {
 
-llvm::CallingConv::ID qat::utils::stringToCallingConv(const String &name) {
+llvm::CallingConv::ID qat::utils::stringToCallingConv(const String& name) {
   namespace CallingConv = llvm::CallingConv;
 
   if (name == "C") {
@@ -65,11 +65,15 @@ llvm::CallingConv::ID qat::utils::stringToCallingConv(const String &name) {
     return CallingConv::Win64;
   } else if (name == "X86_VectorCall") {
     return CallingConv::X86_VectorCall;
-  } else if (name == "HHVM") {
+  }
+#if !PlatformIsWindows
+  else if (name == "HHVM") {
     return CallingConv::HHVM;
   } else if (name == "HHVM_C") {
     return CallingConv::HHVM_C;
-  } else if (name == "X86_INTR") {
+  }
+#endif
+  else if (name == "X86_INTR") {
     return CallingConv::X86_INTR;
   } else if (name == "AVR_INTR") {
     return CallingConv::AVR_INTR;

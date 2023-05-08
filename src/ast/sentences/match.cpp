@@ -568,7 +568,7 @@ Json Match::toJson() const {
       ._("matchChain", chainJson)
       ._("hasElse", elseCase.has_value())
       ._("elseSentences", elseJson)
-      ._("elseRange", elseCase.has_value() ? (JsonValue)(elseCase->second) : Json());
+      ._("elseRange", elseCase.has_value() ? (Json)(elseCase->second) : Json());
 }
 
 } // namespace qat::ast

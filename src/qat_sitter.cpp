@@ -15,8 +15,8 @@
 #include <filesystem>
 #include <system_error>
 
-#if PLATFORM_IS_WINDOWS
-#include "processenv.h"
+#if PlatformIsWindows
+#include "windows.h"
 #endif
 
 #define OUTPUT_OBJECT_NAME "output"
@@ -38,6 +38,9 @@ void QatSitter::init() {
       entity->createModules(ctx);
     }
     for (auto* entity : fileEntities) {
+      entity->handleFilesystemBrings(ctx);
+    }
+    for (auto* entity : fileEntities) {
       entity->handleBrings(ctx);
     }
     for (auto* entity : fileEntities) {
@@ -45,6 +48,9 @@ void QatSitter::init() {
     }
     for (auto* entity : fileEntities) {
       entity->defineNodes(ctx);
+    }
+    for (auto* entity : fileEntities) {
+      entity->handleBrings(ctx);
     }
     auto* cfg = cli::Config::get();
     if (cfg->hasOutputPath()) {
@@ -252,7 +258,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
               parentMod, fs::absolute(item), path, Identifier(libCheckRes->first, libCheckRes->second),
               Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
         } else {
-          fileEntities.push_back(IR::QatModule::CreateFile(
+          fileEntities.push_back(IR::QatModule::CreateFileMod(
               parentMod, fs::absolute(item), path, Identifier(item.path().filename().string(), item.path()),
               Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
         }
@@ -282,7 +288,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
       }
       Parser->clearBroughtPaths();
       Parser->clearMemberPaths();
-      fileEntities.push_back(IR::QatModule::CreateFile(
+      fileEntities.push_back(IR::QatModule::CreateFileMod(
           nullptr, libCheckRes->second, mainPath, Identifier(libCheckRes->first, libCheckRes->second),
           Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
     } else {
@@ -316,7 +322,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
           nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(libCheckRes->first, libCheckRes->second),
           Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
     } else {
-      fileEntities.push_back(IR::QatModule::CreateFile(
+      fileEntities.push_back(IR::QatModule::CreateFileMod(
           nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(mainPath.filename().string(), mainPath),
           Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
     }
@@ -332,7 +338,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
 }
 
 bool QatSitter::checkExecutableExists(const String& name) {
-#if PLATFORM_IS_WINDOWS
+#if PlatformIsWindows
   if (name.ends_with(".exe")) {
     if (system(("where " + name + " > nul").c_str())) {
       return false;

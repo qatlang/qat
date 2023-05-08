@@ -138,14 +138,15 @@ private:
   bool                  hasMain = false;
   fs::path              llPath;
   Maybe<fs::path>       objectFilePath;
-  mutable bool          hasCreatedModules   = false;
-  mutable bool          hasHandledBrings    = false;
-  mutable bool          hasDefinedTypes     = false;
-  mutable bool          hasDefinedNodes     = false;
-  mutable bool          isEmitted           = false;
-  mutable bool          isOverviewOutputted = false;
-  bool                  isCompiledToObject  = false;
-  bool                  isBundled           = false;
+  mutable bool          hasCreatedModules          = false;
+  mutable bool          hasHandledFilesystemBrings = false;
+  mutable bool          hasHandledBrings           = false;
+  mutable bool          hasDefinedTypes            = false;
+  mutable bool          hasDefinedNodes            = false;
+  mutable bool          isEmitted                  = false;
+  mutable bool          isOverviewOutputted        = false;
+  bool                  isCompiledToObject         = false;
+  bool                  isBundled                  = false;
 
   void addMember(QatModule* mod);
 
@@ -162,7 +163,7 @@ public:
   useit static QatModule* CreateSubmodule(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
                                           ModuleType type, const utils::VisibilityInfo& visibilityInfo,
                                           llvm::LLVMContext& ctx);
-  useit static QatModule* CreateFile(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
+  useit static QatModule* CreateFileMod(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
                                      Vec<String> content, Vec<ast::Node*>, utils::VisibilityInfo visibilityInfo,
                                      llvm::LLVMContext& ctx);
   useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, Identifier name,
@@ -331,6 +332,7 @@ public:
 
   bool areNodesEmitted() const;
   void createModules(IR::Context* ctx);
+  void handleFilesystemBrings(IR::Context* ctx);
   void handleBrings(IR::Context* ctx);
   void defineTypes(IR::Context* ctx);
   void defineNodes(IR::Context* ctx);

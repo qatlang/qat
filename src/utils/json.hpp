@@ -43,7 +43,7 @@ public:
   JsonValue(unsigned long long val);
   JsonValue& operator=(unsigned long long val);
 
-#if PLATFORM_IS_UNIX
+#if PlatformIsLinux
   // uint64_t
   JsonValue(uint64_t val);
   JsonValue& operator=(uint64_t val);
@@ -58,8 +58,8 @@ public:
   JsonValue& operator=(double val);
 
   // std::string
-  JsonValue(std::string val);
-  JsonValue& operator=(const std::string& val);
+  JsonValue(String val);
+  JsonValue& operator=(const String& val);
 
   // C string
   JsonValue(const char* val);
@@ -97,7 +97,7 @@ public:
   bool operator==(unsigned long long val) const;
   bool operator!=(unsigned long long val) const;
 
-#if PLATFORM_IS_UNIX
+#if PlatformIsLinux
   bool operator==(uint64_t val) const;
   bool operator!=(uint64_t val) const;
 #endif

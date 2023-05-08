@@ -38,7 +38,7 @@ void MemoryTracker::report() {
 } // namespace qat
 
 void* operator new(qat::usize size)
-#if !PLATFORM_IS_MAC
+#if PlatformIsLinux
 _GLIBCXX_THROW(std::bad_alloc) 
 #endif
 {

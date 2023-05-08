@@ -19,4 +19,8 @@ add_library(QAT_AST_TYPES
 	unsigned.cpp
 	void.cpp)
 
+target_include_directories(QAT_AST_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
+
+target_link_directories(QAT_AST_TYPES PUBLIC ../../utils)
+
 target_link_libraries(QAT_AST_TYPES QAT_UTILS)

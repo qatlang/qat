@@ -14,3 +14,5 @@ add_library(QAT_UTILS
 	visibility.cpp
 	json_parser.cpp
 	json.cpp)
+
+target_include_directories(QAT_UTILS PUBLIC "${LLVM_ROOT_DIR}/include")

@@ -22,4 +22,8 @@ add_library(QAT_IR_TYPES
 	unsigned.cpp
 	void.cpp)
 
+target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
+
+target_link_directories(QAT_IR_TYPES PUBLIC ../../utils)
+
 target_link_libraries(QAT_IR_TYPES QAT_UTILS)

@@ -15,4 +15,8 @@ add_library(QAT_AST_SENTENCES
 	multithread.cpp
 	say_sentence.cpp)
 
+target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")
+
+target_link_directories(QAT_AST_SENTENCES PUBLIC ../../utils)
+
 target_link_libraries(QAT_AST_SENTENCES QAT_UTILS)

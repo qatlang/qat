@@ -8,6 +8,7 @@ on:
 
 env:
   BUILD_TYPE: Release
+  LLVM_DIR: /usr/lib/llvm-15
   
 
 jobs:
@@ -21,24 +22,35 @@ jobs:
     - name: Install Clang 15
       run: sudo apt --yes install clang-15
     - name: Install LLVM 15
-      run: sudo apt --yes install llvm-15 llvm-15-dev
+      run: |
+        sudo apt --yes install llvm-15 llvm-15-dev
+        ${{ env.LLVM_DIR }}/bin >> $GITHUB_PATH
 
     - name: Display Setup
       run: |
-       echo "ninja-build is installed at: $(which ninja)"
-       echo "CMake is installed at: $(which cmake)"
-       echo "Clang is installed at: $(which clang-15)"
-       echo "LLVM is installed at: $(llvm-config --prefix)"
+        echo "ninja-build is installed at: $(which ninja)"
+        echo "CMake is installed at: $(which cmake)"
+        echo "Clang is installed at: $(which clang-15)"
+        echo "LLVM is installed at: $(llvm-config --prefix)"
        
     - name: Setting vars
       id: setting_vars
       run: echo "CLANG15_PATH=$(echo $(which clang-15))" >> $GITHUB_OUTPUT
+    
+    - name: Configure CMake
+      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Linux -DLLVM_DIR=${{ env.LLVM_DIR }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -GNinja
+    
+    - name: Build Compiler
+      run: ninja -C ${{ github.workspace }}/build
+
+    - name: List Build Results
+      run: ls ${{ github.workspace }}/build
     # - name: Configure CMake
-    #   run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -GNinja
+    #   run: 
 
     # - name: Build
     #   # Build your program with the given configuration
-    #   run: cmake -S ${{github.workspace}}/src -B ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    #   run: cmake -B ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     # - name: List Build Results
     #   run: ls ${{github.workspace}}/build

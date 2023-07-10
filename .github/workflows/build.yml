@@ -17,18 +17,22 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Install ninja-build
-      run: sudo apt install ninja-build
+      run: sudo apt --yes install ninja-build
+    - name: Install Clang 15
+      run: sudo apt --yes install clang-15
+    - name: Install LLVM 15
+      run: sudo apt --yes install llvm-15 llvm-15-dev
 
     - name: Display Setup
       run: |
-       echo "ninja-build is installed at: "
-       which ninja
-       echo "CMake is installed at: "
-       which cmake
-       echo "Clang is installed at: "
-       which clang
-       clang --version
-
+       echo "ninja-build is installed at: $(which ninja)"
+       echo "CMake is installed at: $(which cmake)"
+       echo "Clang is installed at: $(which clang-15)"
+       echo "LLVM is installed at: $(llvm-config --prefix)"
+       
+    - name: Setting vars
+      id: setting_vars
+      run: echo "CLANG15_PATH=$(echo $(which clang-15))" >> $GITHUB_OUTPUT
     # - name: Configure CMake
     #   run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -GNinja
 

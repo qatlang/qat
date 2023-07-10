@@ -24,7 +24,7 @@ jobs:
     - name: Install LLVM 15
       run: |
         sudo apt --yes install llvm-15 llvm-15-dev
-        ${{ env.LLVM_DIR }}/bin >> $GITHUB_PATH
+        echo ${{ env.LLVM_DIR }}/bin >> $GITHUB_PATH
 
     - name: Display Setup
       run: |

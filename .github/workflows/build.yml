@@ -12,7 +12,8 @@ env:
   
 
 jobs:
-  build:
+  linux_build:
+    name: Building on Linux
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -44,14 +45,33 @@ jobs:
     - name: Build Compiler
       run: ninja -C ${{ github.workspace }}/build
 
-    - name: List Build Results
-      run: ls ${{ github.workspace }}/build
-    # - name: Configure CMake
-    #   run: 
+    - name: Check compiler version
+      run: |
+        chmod +x ${{ github.workspace }}/build/qat
+        echo "Qat version is: $(${{ github.workspace }}/build/qat version)"
+  
+  windows_build:
+    name: Building on Windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
 
-    # - name: Build
-    #   # Build your program with the given configuration
-    #   run: cmake -B ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    - name: Install Chocolatey
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        where choco
+      shell: pwsh
+    
+    - name: Install CMake
+      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+      shell: pwsh
 
-    # - name: List Build Results
-    #   run: ls ${{github.workspace}}/build
+    - name: Install Visual Studio Build Tools
+      run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended"
+      shell: pwsh
+
+    - name: Display Setup
+      run: |
+        echo "CMake is installed at $(where cmake)"
+        echo "MSBuild is installed at $(where MSBuild)"
+      shell: pwsh

@@ -8,7 +8,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  LLVM_DIR: /usr/lib/llvm-15
+  LINUX_LLVM_DIR: /usr/lib/llvm-15
   
 
 jobs:
@@ -20,12 +20,14 @@ jobs:
     
     - name: Install ninja-build
       run: sudo apt --yes install ninja-build
+
     - name: Install Clang 15
       run: sudo apt --yes install clang-15
+
     - name: Install LLD 15
       run: |
         sudo apt --yes install lld-15
-        echo ${{ env.LLVM_DIR }}/bin >> $GITHUB_PATH
+        echo ${{ env.LINUX_LLVM_DIR }}/bin >> $GITHUB_PATH
 
     - name: Display Setup
       run: |
@@ -40,7 +42,7 @@ jobs:
       run: echo "CLANG15_PATH=$(echo $(which clang-15))" >> $GITHUB_OUTPUT
     
     - name: Configure CMake
-      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Linux -DLLVM_DIR=${{ env.LLVM_DIR }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -GNinja
+      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Linux -DLLVM_DIR=${{ env.LINUX_LLVM_DIR }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -GNinja
     
     - name: Build Compiler
       run: ninja -C ${{ github.workspace }}/build
@@ -50,28 +52,26 @@ jobs:
         chmod +x ${{ github.workspace }}/build/qat
         echo "Qat version is: $(${{ github.workspace }}/build/qat version)"
   
+
   windows_build:
     name: Building on Windows
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-
-    - name: Install Chocolatey
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        where choco
-      shell: pwsh
     
     - name: Install CMake
       run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
       shell: pwsh
-
+      
+    - name: Install LLVM 16
+      run: choco install llvm --version=16.0.6
+    
     - name: Install Visual Studio Build Tools
       run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended"
       shell: pwsh
 
     - name: Display Setup
       run: |
-        echo "CMake is installed at $(where cmake)"
-        echo "MSBuild is installed at $(where MSBuild)"
+        echo "CMake is installed at $(where.exe cmake.exe)"
+        echo "MSBuild is installed at $(where.exe MSBuild.exe)"
       shell: pwsh

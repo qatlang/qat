@@ -65,7 +65,9 @@ jobs:
       shell: pwsh
       
     - name: Install LLVM 16
-      run: choco install llvm --version=16.0.6
+      run: |
+        choco install llvm --version=16.0.6
+        echo "Contents of the LLVM install directory is $(Get-ChildItem ${{ env.WINDOWS_LLVM_DIR }}) -recurse"
     
     - name: Install Visual Studio Build Tools
       run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended --installWhileDownloading"

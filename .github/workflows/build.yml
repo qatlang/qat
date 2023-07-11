@@ -9,6 +9,7 @@ on:
 env:
   BUILD_TYPE: Release
   LINUX_LLVM_DIR: /usr/lib/llvm-15
+  WINDOWS_LLVM_DIR: C:\ProgramData\chocolatey\lib\llvm
   
 
 jobs:
@@ -78,3 +79,18 @@ jobs:
         echo "CMake is installed at $(where.exe cmake.exe)"
         echo "MSBuild is installed at $(where.exe MSBuild)"
       shell: pwsh
+    
+    - name: Configure CMake
+      run: |
+        MKDIR build
+        cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Windows -DLLVM_DIR=${{ env.WINDOWS_LLVM_DIR }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -G"Visual Studio 17 2022"
+    
+    - name: Build Compiler
+      run: |
+        CD ./build/
+        MSBuild qat.sln /m /p:Configuration=Release
+        CD ..
+    
+    - name: Check compiler version
+      run: |
+        echo "Qat version is: $(${{ github.workspace }}/build/qat.exe version)"

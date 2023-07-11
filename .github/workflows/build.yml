@@ -9,7 +9,7 @@ on:
 env:
   BUILD_TYPE: Release
   LINUX_LLVM_DIR: /usr/lib/llvm-15
-  WINDOWS_LLVM_DIR: C:\ProgramData\chocolatey\lib\llvm
+  WINDOWS_LLVM_DIR: C:\Program Files\LLVM
   
 
 jobs:
@@ -65,9 +65,7 @@ jobs:
       shell: pwsh
       
     - name: Install LLVM 16
-      run: |
-        choco install llvm --version=16.0.6
-        echo "Contents of the LLVM install directory is $(Get-ChildItem ${{ env.WINDOWS_LLVM_DIR }}) -recurse"
+      run: choco install llvm --version=16.0.6
     
     - name: Install Visual Studio Build Tools
       run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended --installWhileDownloading"
@@ -85,7 +83,7 @@ jobs:
     - name: Configure CMake
       run: |
         MKDIR build
-        cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Windows -DLLVM_DIR=${{ env.WINDOWS_LLVM_DIR }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -G"Visual Studio 17 2022"
+        cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Windows -DLLVM_DIR="${{ env.WINDOWS_LLVM_DIR }}" -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -G"Visual Studio 17 2022"
     
     - name: Build Compiler
       run: |

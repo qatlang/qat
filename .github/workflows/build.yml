@@ -18,6 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Update apt cache
+      run: sudo apt update
+
     - name: Install ninja-build
       run: sudo apt --yes install ninja-build
 
@@ -87,4 +90,4 @@ jobs:
     
     - name: Check compiler version
       run: |
-        echo "Qat version is: $(${{ github.workspace }}/build/qat.exe version)"
+        echo "Qat version is: $(${{ github.workspace }}\build\Release\qat.exe version)"

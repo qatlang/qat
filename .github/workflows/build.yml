@@ -70,8 +70,14 @@ jobs:
       run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended"
       shell: pwsh
 
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        vs-version: '[16.4,17.5]'
+        msbuild-architecture: x64
+
     - name: Display Setup
       run: |
         echo "CMake is installed at $(where.exe cmake.exe)"
-        echo "MSBuild is installed at $(where.exe MSBuild.exe)"
+        echo "MSBuild is installed at $(where.exe MSBuild)"
       shell: pwsh

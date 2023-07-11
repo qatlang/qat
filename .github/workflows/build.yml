@@ -67,15 +67,12 @@ jobs:
       run: choco install llvm --version=16.0.6
     
     - name: Install Visual Studio Build Tools
-      run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended"
+      run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended --installWhileDownloading"
       shell: pwsh
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
-      with:
-        vs-version: '[16.4,17.5]'
-        msbuild-architecture: x64
-
+      
     - name: Display Setup
       run: |
         echo "CMake is installed at $(where.exe cmake.exe)"

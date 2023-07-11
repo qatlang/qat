@@ -54,6 +54,12 @@ jobs:
       run: |
         chmod +x ${{ github.workspace }}/build/qat
         echo "Qat version is: $(${{ github.workspace }}/build/qat version)"
+    
+    - name: Uploading compiler executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: QatLinux
+        path: ${{ github.workspace }}/build/qat
   
 
   windows_build:
@@ -91,3 +97,9 @@ jobs:
     - name: Check compiler version
       run: |
         echo "Qat version is: $(${{ github.workspace }}\build\Release\qat.exe version)"
+    
+    - name: Uploading compiler executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: QatWindows
+        path: ${{ github.workspace }}\build\Release\qat.exe

@@ -38,6 +38,10 @@ elseif(PLATFORM STREQUAL Mac)
 	add_compile_definitions(PlatformIsWindows=0)
 	add_compile_definitions(PlatformIsMac=1)
 	add_compile_definitions(PlatformIsLinuxArm=0)
+	execute_process(COMMAND brew --prefix llvm@15 OUTPUT_VARIABLE LLVM_ROOT_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND brew --prefix zstd OUTPUT_VARIABLE ZSTD_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND brew --prefix zlib OUTPUT_VARIABLE ZLIB_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND brew --prefix ncurses OUTPUT_VARIABLE NCURSES_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	SET(IS_MAC ON)
 else()
 	add_compile_definitions(PlatformIsLinux=0)
@@ -175,16 +179,13 @@ endif()
 if(IS_MAC)
 	target_link_directories(
 		${PROJECT_NAME} PRIVATE
-		/opt/homebrew/opt/llvm/lib
-		/opt/homebrew/opt/zlib/lib
-		/opt/homebrew/opt/zstd/lib
+		"${LLVM_ROOT_DIR}/lib"
+		"${ZLIB_DIR}/lib"
+		"${ZSTD_DIR}/lib"
+		"${NCURSES_DIR}/lib"
 	)
 else()
 	target_link_directories(${PROJECT_NAME} PRIVATE ${LLVM_ROOT_DIR}/lib)
-
-	# SET(FFI_LIBRARIES /c/msys64/mingw64/lib/libffi.a)
-	# SET(ZLIB_LIBRARY /c/msys64/mingw64/lib/libz.a)
-	# SET(LIBXML2_LIBRARY /c/msys64/mingw64/lib/libxml2.a)
 endif()
 
 if(IS_LINUX)

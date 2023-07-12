@@ -116,6 +116,7 @@ jobs:
         brew install zlib
         brew install ncurses
         brew install libxml2
+        brew install libffi
 
     - name: Install LLVM 15
       run: brew install llvm@15

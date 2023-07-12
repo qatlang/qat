@@ -42,6 +42,7 @@ elseif(PLATFORM STREQUAL Mac)
 	execute_process(COMMAND brew --prefix zstd OUTPUT_VARIABLE ZSTD_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND brew --prefix zlib OUTPUT_VARIABLE ZLIB_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND brew --prefix ncurses OUTPUT_VARIABLE NCURSES_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND brew --prefix libffi OUTPUT_VARIABLE LIBFFI_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	SET(IS_MAC ON)
 else()
 	add_compile_definitions(PlatformIsLinux=0)
@@ -92,17 +93,16 @@ SET(CMAKE_CXX_STANDARD 20)
 #
 #
 if(IS_MAC)
-	SET(FFI_LIBRARIES /opt/homebrew/opt/libffi/libffi.a)
-	SET(ZLIB_LIBRARY /opt/homebrew/opt/zlib/lib/libz.a)
-	SET(Terminfo_LIBRARIES /opt/homebrew/opt/ncurses/libcurses.a)
-	SET(CMAKE_CXX_COMPILER /usr/bin/clang)
+	SET(FFI_LIBRARIES ${LIBFFI_DIR}/libffi.a)
+	SET(ZLIB_LIBRARY ${ZLIB_DIR}/lib/libz.a)
+	SET(Terminfo_LIBRARIES ${NCURSES_DIR}/libcurses.a)
 endif()
 
 # Find LLVM package
 #
 #
 if(IS_MAC)
-	find_package(LLVM REQUIRED CONFIG PATHS /opt/homebrew/opt/llvm/lib/cmake/llvm NO_DEFAULT_PATH)
+	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR}/lib/cmake/llvm NO_DEFAULT_PATH)
 else()
 	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_DIR} NO_DEFAULT_PATH)
 endif()
@@ -135,9 +135,9 @@ elseif(IS_WINDOWS)
 	endif()
 elseif(IS_MAC)
 	if(IS_RELEASE)
-		SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I/opt/homebrew/opt/llvm/include/")
+		SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I${LLVM_ROOT_DIR}/include/")
 	else()
-		SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I/opt/homebrew/opt/llvm/include/")
+		SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I${LLVM_ROOT_DIR}/include/")
 	endif()
 endif()
 
@@ -182,7 +182,8 @@ if(IS_MAC)
 		"${LLVM_ROOT_DIR}/lib"
 		"${ZLIB_DIR}/lib"
 		"${ZSTD_DIR}/lib"
-		"${NCURSES_DIR}/lib"
+		"${NCURSES_DIR}"
+		"${LIBFFI_DIR}"
 	)
 else()
 	target_link_directories(${PROJECT_NAME} PRIVATE ${LLVM_ROOT_DIR}/lib)

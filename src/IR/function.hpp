@@ -111,7 +111,6 @@ class Function : public Value, public Uniq, public EntityOverview {
 protected:
   Identifier            name;
   Vec<GenericType*>     generics;
-  bool                  isReturnValueVariable;
   QatModule*            mod;
   Vec<Argument>         arguments;
   utils::VisibilityInfo visibility_info;
@@ -130,17 +129,16 @@ protected:
   Maybe<llvm::Function*>   asyncFn;
   Maybe<llvm::StructType*> asyncArgTy;
 
-  Function(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType,
-           bool _isReturnValueVariable, bool _is_async, Vec<Argument> _args, bool has_variadic_arguments,
-           FileRange fileRange, const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx,
-           bool                            isMemberFn       = false,
+  Function(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
+           Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
+           const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn = false,
            llvm::GlobalValue::LinkageTypes _linkage         = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
            bool                            ignoreParentName = false);
 
 public:
   static Function*   Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* return_type,
-                            bool isReturnValueVariable, bool is_async, Vec<Argument> args, bool has_variadic_args,
-                            FileRange fileRange, const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+                            bool is_async, Vec<Argument> args, bool has_variadic_args, FileRange fileRange,
+                            const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
                             llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                             bool                            ignoreParentName = false);
   useit Value*       call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;

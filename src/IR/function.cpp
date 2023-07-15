@@ -272,14 +272,14 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
   }
 }
 
-Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType,
-                   bool _isRetTypeVariable, bool _is_async, Vec<Argument> _args, bool _isVariadicArguments,
-                   FileRange _fileRange, const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx,
-                   bool isMemberFn, llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
+Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
+                   Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
+                   const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn,
+                   llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), isReturnValueVariable(_isRetTypeVariable), mod(_mod),
-      arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
-      is_async(_is_async), hasVariadicArguments(_isVariadicArguments) //
+      name(std::move(_name)), generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)),
+      visibility_info(_visibility_info), fileRange(std::move(_fileRange)), is_async(_is_async),
+      hasVariadicArguments(_isVariadicArguments) //
 {
   SHOW("Function name :: " << name.value)
   Vec<ArgumentType*> argTypes;
@@ -291,9 +291,9 @@ Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generic
     SHOW("Argument type for future return is: " << returnType->toString())
     argTypes.push_back(
         new ArgumentType("qat'returnValue", IR::ReferenceType::get(true, returnType, ctx), false, false, true));
-    type = new FunctionType(IR::VoidType::get(ctx), false, argTypes, ctx);
+    type = new FunctionType(IR::VoidType::get(ctx), argTypes, ctx);
   } else {
-    type = new FunctionType(returnType, _isRetTypeVariable, argTypes, ctx);
+    type = new FunctionType(returnType, argTypes, ctx);
   }
   if (isMemberFn) {
     ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name.value,
@@ -370,12 +370,11 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
 }
 
 Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* returnTy,
-                           const bool isReturnTypeVariable, const bool isAsync, Vec<Argument> args,
-                           const bool hasVariadicArgs, FileRange fileRange, const utils::VisibilityInfo& visibilityInfo,
-                           llvm::LLVMContext& ctx, llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
-  return new Function(mod, std::move(name), std::move(_generics), returnTy, isReturnTypeVariable, isAsync,
-                      std::move(args), hasVariadicArgs, std::move(fileRange), visibilityInfo, ctx, false, linkage,
-                      ignoreParentName);
+                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
+                           const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+                           llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
+  return new Function(mod, std::move(name), std::move(_generics), returnTy, isAsync, std::move(args), hasVariadicArgs,
+                      std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
 }
 
 void Function::updateOverview() {

@@ -29,9 +29,8 @@ bool ArgumentType::isVariable() const { return variability; }
 
 String ArgumentType::toString() const { return type->toString() + (name.has_value() ? (" " + name.value()) : ""); }
 
-FunctionType::FunctionType(QatType* _retType, bool _isRetTypeVariable, Vec<ArgumentType*> _argTypes,
-                           llvm::LLVMContext& ctx)
-    : returnType(_retType), isReturnVariable(_isRetTypeVariable), argTypes(std::move(_argTypes)) {
+FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx)
+    : returnType(_retType), argTypes(std::move(_argTypes)) {
   SHOW("Creating function type")
   Vec<llvm::Type*> argTys;
   for (auto* arg : argTypes) {
@@ -46,8 +45,6 @@ FunctionType::FunctionType(QatType* _retType, bool _isRetTypeVariable, Vec<Argum
 }
 
 QatType* FunctionType::getReturnType() { return returnType; }
-
-bool FunctionType::isReturnTypeVariable() const { return isReturnVariable; }
 
 ArgumentType* FunctionType::getArgumentTypeAt(u32 index) { return argTypes.at(index); }
 

@@ -38,14 +38,12 @@ public:
 
 class FunctionType : public QatType {
   QatType*           returnType;
-  bool               isReturnVariable;
   Vec<ArgumentType*> argTypes;
 
 public:
-  FunctionType(QatType* _retType, bool _isReturnValueVariable, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
+  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
 
   useit QatType*      getReturnType();
-  useit bool          isReturnTypeVariable() const;
   useit ArgumentType* getArgumentTypeAt(u32 index);
   useit Vec<ArgumentType*> getArgumentTypes() const;
   useit u64                getArgumentCount() const;

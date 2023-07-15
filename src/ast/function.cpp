@@ -130,15 +130,14 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
       genericTypes.push_back(gen->toIRGenericType());
     }
     SHOW("About to create generic function")
-    auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy,
-                                     returnType->isVariable(), isAsync, args, isVariadic, fileRange,
-                                     ctx->getVisibInfo(visibility), ctx->llctx);
+    auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy, isAsync, args,
+                                     isVariadic, fileRange, ctx->getVisibInfo(visibility), ctx->llctx);
     SHOW("Created IR function")
     return fun;
   } else {
     SHOW("About to create function")
-    auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, returnType->isVariable(), isAsync, args,
-                                    isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+    auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, isAsync, args, isVariadic, fileRange,
+                                    ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
     SHOW("Created IR function")
     return fun;
   }

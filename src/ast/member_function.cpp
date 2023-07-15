@@ -108,11 +108,11 @@ void MemberPrototype::define(IR::Context* ctx) {
   SHOW("Variability setting complete")
   SHOW("About to create function")
   if (isStatic) {
-    memberFn = IR::MemberFunction::CreateStatic(coreType, name, retTy, returnType->isVariable(), isAsync, args,
-                                                isVariadic, fileRange, ctx->getVisibInfo(kind), ctx->llctx);
+    memberFn = IR::MemberFunction::CreateStatic(coreType, name, retTy, isAsync, args, isVariadic, fileRange,
+                                                ctx->getVisibInfo(kind), ctx->llctx);
   } else {
-    memberFn = IR::MemberFunction::Create(coreType, isVariationFn, name, retTy, returnType->isVariable(), isAsync, args,
-                                          isVariadic, fileRange, ctx->getVisibInfo(kind), ctx->llctx);
+    memberFn = IR::MemberFunction::Create(coreType, isVariationFn, name, retTy, isAsync, args, isVariadic, fileRange,
+                                          ctx->getVisibInfo(kind), ctx->llctx);
   }
 }
 

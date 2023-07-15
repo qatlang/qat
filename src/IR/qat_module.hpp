@@ -196,10 +196,9 @@ public:
   useit bool                   hasNthParent(u32 n) const;
   useit QatModule*             getNthParent(u32 n);
   useit const utils::VisibilityInfo& getVisibility() const;
-  useit Function* createFunction(const Identifier& name, QatType* returnType, bool isReturnTypeVariable, bool isAsync,
-                                 Vec<Argument> args, bool isVariadic, const FileRange& fileRange,
-                                 const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
-                                 llvm::LLVMContext& ctx);
+  useit Function* createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
+                                 bool isVariadic, const FileRange& fileRange, const utils::VisibilityInfo& visibility,
+                                 llvm::GlobalValue::LinkageTypes linkage, llvm::LLVMContext& ctx);
   useit bool      isSubmodule() const;
 
   useit bool hasIntegerBitwidth(u64 bits) const;

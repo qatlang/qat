@@ -182,13 +182,13 @@ void QatModule::addMember(QatModule* mod) {
   submodules.push_back(mod);
 }
 
-Function* QatModule::createFunction(const Identifier& name, QatType* returnType, bool isReturnTypeVariable,
-                                    bool isAsync, Vec<Argument> args, bool isVariadic, const FileRange& fileRange,
+Function* QatModule::createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
+                                    bool isVariadic, const FileRange& fileRange,
                                     const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
                                     llvm::LLVMContext& ctx) {
   SHOW("Creating IR function")
-  auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isReturnTypeVariable, isAsync, std::move(args),
-                               isVariadic, fileRange, visibility, ctx);
+  auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
+                               fileRange, visibility, ctx);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -208,8 +208,8 @@ QatModule* QatModule::CreateSubmodule(QatModule* parent, fs::path filepath, fs::
 }
 
 QatModule* QatModule::CreateFileMod(QatModule* parent, fs::path filepath, fs::path basePath, Identifier fname,
-                                 Vec<String> content, Vec<ast::Node*> nodes, utils::VisibilityInfo visibilityInfo,
-                                 llvm::LLVMContext& ctx) {
+                                    Vec<String> content, Vec<ast::Node*> nodes, utils::VisibilityInfo visibilityInfo,
+                                    llvm::LLVMContext& ctx) {
   auto* sub =
       new QatModule(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
   sub->content = std::move(content);

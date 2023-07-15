@@ -46,15 +46,14 @@ private:
   Identifier    selfName;
 
   MemberFunction(MemberFnType fnType, bool _isVariation, ExpandedType* _parent, const Identifier& _name,
-                 QatType* returnType, bool isReturnTypeVariable, bool _is_async, Vec<Argument> _args,
-                 bool has_variadic_arguments, bool _is_static, const FileRange& _fileRange,
-                 const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx);
+                 QatType* returnType, bool _is_async, Vec<Argument> _args, bool has_variadic_arguments, bool _is_static,
+                 const FileRange& _fileRange, const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx);
 
 public:
   static MemberFunction* Create(ExpandedType* parent, bool is_variation, const Identifier& name, QatType* return_type,
-                                bool isReturnTypeVariable, bool is_async, const Vec<Argument>& args,
-                                bool has_variadic_args, const FileRange& fileRange,
-                                const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
+                                bool is_async, const Vec<Argument>& args, bool has_variadic_args,
+                                const FileRange& fileRange, const utils::VisibilityInfo& visib_info,
+                                llvm::LLVMContext& ctx);
 
   static MemberFunction* DefaultConstructor(ExpandedType* parent, FileRange nameRange,
                                             const utils::VisibilityInfo& visibInfo, FileRange fileRange,
@@ -92,9 +91,8 @@ public:
                                         const FileRange& fileRange, const utils::VisibilityInfo& visibInfo,
                                         llvm::LLVMContext& ctx);
 
-  static MemberFunction* CreateStatic(ExpandedType* parent, const Identifier& name, QatType* return_type,
-                                      bool is_return_type_variable, bool is_async, const Vec<Argument>& args,
-                                      bool has_variadic_args, const FileRange& fileRange,
+  static MemberFunction* CreateStatic(ExpandedType* parent, const Identifier& name, QatType* return_type, bool is_async,
+                                      const Vec<Argument>& args, bool has_variadic_args, const FileRange& fileRange,
                                       const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx);
 
   ~MemberFunction() override;

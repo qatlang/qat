@@ -44,7 +44,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
   if (!coreType) {
     ctx->Error("No core type found for this constructor", fileRange);
   }
-  IR::MemberFunction* function;
+  IR::MemberFunction* function = nullptr;
   if (type == ConstructorType::normal) {
     Vec<IR::QatType*>          generatedTypes;
     Vec<IR::CoreType::Member*> presentRefMembers;
@@ -167,6 +167,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     return function;
   }
   // FIXME - Support copy & move constructors
+  return function;
 }
 
 void ConstructorPrototype::setCoreType(IR::CoreType* _coreType) { coreType = _coreType; }

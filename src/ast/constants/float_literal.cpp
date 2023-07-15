@@ -12,8 +12,8 @@ IR::ConstantValue* FloatLiteral::emit(IR::Context* ctx) {
     ctx->Error("Float literals are not assignable", fileRange);
   }
   SHOW("Generating float literal")
-  return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getFloatTy(ctx->llctx), std::stof(value)),
-                               IR::FloatType::get(IR::FloatTypeKind::_32, ctx->llctx));
+  return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx->llctx), std::stof(value)),
+                               IR::FloatType::get(IR::FloatTypeKind::_64, ctx->llctx));
 }
 
 String FloatLiteral::toString() const { return value; }

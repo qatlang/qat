@@ -169,11 +169,18 @@ Token Lexer::tokeniser() {
     }
     case '[': {
       read();
+      bracketOccurences.push_back(TokenType::bracketOpen);
       return Token::normal(TokenType::bracketOpen, this->getPosition(1));
     }
     case ']': {
       read();
-      return Token::normal(TokenType::bracketClose, this->getPosition(1));
+      if ((!bracketOccurences.empty()) && (bracketOccurences.back() == TokenType::genericTypeStart)) {
+        bracketOccurences.pop_back();
+        return Token::normal(TokenType::genericTypeEnd, this->getPosition(1));
+      } else {
+        bracketOccurences.pop_back();
+        return Token::normal(TokenType::bracketClose, this->getPosition(1));
+      }
     }
     case '{': {
       read();
@@ -316,11 +323,6 @@ Token Lexer::tokeniser() {
     case '*':
     case '<':
     case '>': {
-      if ((current == '>') && (genericStartCount > 0)) {
-        read();
-        genericStartCount--;
-        return Token::normal(TokenType::genericTypeEnd, this->getPosition(1));
-      }
       String operatorValue;
       operatorValue += current;
       read();
@@ -336,7 +338,6 @@ Token Lexer::tokeniser() {
       } else if (current == '=' && (operatorValue == "<" || operatorValue == ">")) {
         operatorValue += current;
         read();
-        std::cout << "Binary operator found " << operatorValue << "\n";
         return Token::valued(TokenType::binaryOperator, operatorValue, this->getPosition(2));
       } else if ((current == '<' && operatorValue == "<") || (current == '>' && operatorValue == ">")) {
         operatorValue += current;
@@ -369,9 +370,9 @@ Token Lexer::tokeniser() {
     }
     case '\'': {
       read();
-      if (current == '<') {
+      if (current == '[') {
         read();
-        genericStartCount++;
+        bracketOccurences.push_back(TokenType::genericTypeStart);
         return Token::normal(TokenType::genericTypeStart, this->getPosition(2));
       } else if (current == '\'') {
         read();

@@ -21,8 +21,10 @@ private:
   char          current;
   Deque<Token>* tokens;
   Deque<Token>  buffer;
-  u32           genericStartCount   = 0;
-  u64           totalCharacterCount = 0;
+
+  Vec<TokenType> bracketOccurences;
+
+  u64 totalCharacterCount = 0;
 
 public:
   Lexer() = default;

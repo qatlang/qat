@@ -91,7 +91,7 @@ public:
   useit bool                isNext(lexer::TokenType type, usize current);
   useit bool                areOnlyPresentWithin(const Vec<lexer::TokenType>& kinds, usize from, usize upto);
   useit bool                isPrimaryWithin(lexer::TokenType candidate, usize from, usize upto);
-  useit Maybe<usize> getPairEnd(lexer::TokenType startType, lexer::TokenType endType, usize current, bool respectScope);
+  useit Maybe<usize> getPairEnd(lexer::TokenType startType, lexer::TokenType endType, usize current);
   useit Maybe<usize> firstPrimaryPosition(lexer::TokenType candidate, usize from);
   useit Vec<usize> primaryPositionsWithin(lexer::TokenType candidate, usize from, usize upto);
   useit Vec<ast::GenericAbstractType*> parseGenericAbstractTypes(ParserContext& preCtx, usize from, usize upto);

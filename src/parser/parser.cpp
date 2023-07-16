@@ -130,7 +130,7 @@ ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, utils::Visi
           i             = sym_res.second;
           auto newGroup = new ast::BroughtGroup(sym_res.first.relative, sym_res.first.name, sym_res.first.fileRange);
           if (isNext(TokenType::curlybraceOpen, i)) {
-            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
+            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
             if (bCloseRes.has_value()) {
               auto        bClose = bCloseRes.value();
               Vec<String> entities;
@@ -331,7 +331,7 @@ Pair<ast::ConstantExpression*, usize> Parser::parseConstantExpression(ParserCont
       case TokenType::Default: {
         auto start = i;
         if (isNext(TokenType::genericTypeStart, i)) {
-          auto gEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
+          auto gEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i);
           if (gEndRes.has_value()) {
             auto typeres = parseType(preCtx, i, gEndRes);
             if (typeres.second > gEndRes.value()) {
@@ -401,7 +401,7 @@ Vec<ast::FillGeneric*> Parser::parseGenericFill(ParserContext& preCtx, usize fro
       }
       case TokenType::parenthesisOpen: {
         auto start        = i;
-        auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+        auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
         if (!pCloseResult.has_value()) {
           Error("Expected )", token.fileRange);
         }
@@ -489,7 +489,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
       }
       case TokenType::parenthesisOpen: {
         if (cacheTy.has_value()) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
           if (pCloseRes.has_value()) {
             auto hasPrimary = isPrimaryWithin(TokenType::semiColon, i, pCloseRes.value());
             if (hasPrimary) {
@@ -501,7 +501,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
             Error("Expected )", token.fileRange);
           }
         }
-        auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+        auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
         if (!pCloseResult.has_value()) {
           Error("Expected )", token.fileRange);
         }
@@ -601,7 +601,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         auto name   = symRes.first.name;
         i           = symRes.second;
         if (isNext(TokenType::genericTypeStart, i)) {
-          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (endRes.has_value()) {
             auto end = endRes.value();
             if (endRes.value() == i + 2) {
@@ -649,7 +649,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
           return {cacheTy.value(), i - 1};
         }
         if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
             auto bClose     = bCloseRes.value();
             bool isMultiPtr = false;
@@ -676,8 +676,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                                                isMultiPtr, {token.fileRange, RangeAt(bClose)});
               } else if (isNext(TokenType::Type, childPos)) {
                 if (isNext(TokenType::parenthesisOpen, childPos + 1)) {
-                  auto pCloseRes =
-                      getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, childPos + 2, false);
+                  auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, childPos + 2);
                   if (pCloseRes.has_value()) {
                     // FIXME - Less assumptions about end of the type
                     cacheTy = new ast::PointerType(subTypeRes.first, getVariability(), ast::PtrOwnType::type,
@@ -715,7 +714,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (!cacheTy.has_value()) {
           Error("Element type of array not specified", token.fileRange);
         }
-        auto bClose = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
+        auto bClose = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i);
         if (bClose.has_value()) {
           auto lengthExp = parseConstantExpression(preCtx, i, bClose);
           cacheTy        = new ast::ArrayType(cacheTy.value(), lengthExp.first, getVariability(),
@@ -882,7 +881,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           if (isNext(TokenType::identifier, i + 1)) {
             if (ValueAt(i + 2) == "moduleInfo") {
               if (isNext(TokenType::curlybraceOpen, i + 2)) {
-                auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 3, false);
+                auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 3);
                 if (bCloseRes.has_value()) {
                   result.push_back(parseModuleInfo(i + 3, bCloseRes.value(), RangeAt(i)));
                   i = bCloseRes.value();
@@ -960,7 +959,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::mix: {
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
+            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
             if (bCloseRes.has_value()) {
               auto                                        bClose = bCloseRes.value();
               Vec<Pair<Identifier, Maybe<ast::QatType*>>> subTypes;
@@ -985,7 +984,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::choice: {
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
+            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
             if (bCloseRes.has_value()) {
               auto                                                       bClose = bCloseRes.value();
               Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>> fields;
@@ -1027,7 +1026,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           auto                           ctx = ParserContext();
           i++;
           if (isNext(TokenType::genericTypeStart, i)) {
-            auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+            auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
             if (endRes.has_value()) {
               auto end    = endRes.value();
               genericList = parseGenericAbstractTypes(preCtx, i + 1, end);
@@ -1051,7 +1050,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               Error("Invalid end of type definition", RangeSpan(i, i + 2));
             }
           } else if (isNext(TokenType::curlybraceOpen, i)) {
-            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
+            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
             if (bClose.has_value()) {
               auto* tRes = new ast::DefineCoreType(name, getVisibility(), {token.fileRange, RangeAt(bClose.value())},
                                                    genericList);
@@ -1072,7 +1071,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::lib: {
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
-            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
+            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
             if (bClose.has_value()) {
               auto contents = parse(ctx, i + 2, bClose.value());
               result.push_back(new ast::Lib(IdentifierAt(i + 1), contents, getVisibility(),
@@ -1092,7 +1091,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::box: {
         if (isNext(TokenType::identifier, i)) {
           if (isNext(TokenType::curlybraceOpen, i + 1)) {
-            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2, false);
+            auto bClose = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
             if (bClose.has_value()) {
               auto contents = parse(ctx, i + 2, bClose.value());
               result.push_back(new ast::Box(IdentifierAt(i + 1), contents, getVisibility(),
@@ -1133,7 +1132,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         Vec<ast::GenericAbstractType*> genericList;
         auto                           ctx = ParserContext();
         if (isNext(TokenType::genericTypeStart, i)) {
-          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (endRes.has_value()) {
             auto end    = endRes.value();
             genericList = parseGenericAbstractTypes(preCtx, i + 1, end);
@@ -1166,7 +1165,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             Error("Expected ( for arguments in function declaration", RangeSpan(start, i));
           }
           SHOW("Function with void return type")
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto pClose    = pCloseRes.value();
             auto argResult = parseFunctionParameters(ctx, i + 1, pClose);
@@ -1192,7 +1191,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
                 RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), genericList);
             SHOW("Prototype created")
             if (isNext(TokenType::bracketOpen, i)) {
-              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
               if (bCloseRes.has_value()) {
                 auto bClose    = bCloseRes.value();
                 auto sentences = parseSentences(ctx, i + 1, bClose);
@@ -1232,7 +1231,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         i             = retTypeRes.second;
         if (isNext(TokenType::parenthesisOpen, i)) {
           SHOW("Found (")
-          auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseResult = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (!pCloseResult.has_value()) {
             Error("Expected )", RangeAt(i + 1));
           }
@@ -1279,7 +1278,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           SHOW("Prototype created")
           if (!isExternal) {
             if (isNext(TokenType::bracketOpen, pClose)) {
-              auto bCloseResult = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1, false);
+              auto bCloseResult = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
               if (!bCloseResult.has_value() || (bCloseResult.value() >= tokens->size())) {
                 Error("Expected ] at the end of the Function Definition", RangeAt(pClose + 1));
               }
@@ -1380,11 +1379,15 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  Maybe<utils::VisibilityKind> broadVisib;
+  // Maybe<utils::VisibilityKind> broadVisib;
   Maybe<utils::VisibilityKind> visibility;
   auto                         setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
   auto                         getVisibility = [&]() {
-    auto res   = visibility.value_or(broadVisib.value_or(utils::VisibilityKind::type));
+    auto res = visibility.value_or(
+        // broadVisib.value_or(
+        utils::VisibilityKind::type
+        // )
+    );
     visibility = None;
     return res;
   };
@@ -1396,13 +1399,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     switch (token.type) {
       case TokenType::Public: {
         auto kindRes = parseVisibilityKind(i);
-        if (isNext(TokenType::colon, kindRes.second)) {
-          broadVisib = kindRes.first;
-          i          = kindRes.second + 1;
-        } else {
-          setVisibility(kindRes.first);
-          i = kindRes.second;
-        }
+        setVisibility(kindRes.first);
+        i = kindRes.second;
         break;
       }
       case TokenType::constant: {
@@ -1459,12 +1457,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
             i            = typeRes.second;
           }
           if (isNext(TokenType::parenthesisOpen, i)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
             if (pCloseRes.has_value()) {
               auto pClose  = pCloseRes.value();
               auto argsRes = parseFunctionParameters(preCtx, i + 1, pClose);
               if (isNext(TokenType::bracketOpen, pClose)) {
-                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1, false);
+                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
                 if (bCloseRes.has_value()) {
                   auto bClose = bCloseRes.value();
                   auto snts   = parseSentences(preCtx, pClose + 1, bClose);
@@ -1513,7 +1511,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           Error("A default destructor is already defined for the core type", RangeAt(i));
         }
         if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             auto bClose = bCloseRes.value();
             auto snts   = parseSentences(preCtx, i + 1, bClose);
@@ -1537,7 +1535,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         if (isNext(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
@@ -1566,7 +1564,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         if (isNext(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
@@ -1590,12 +1588,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
       case TokenType::from: {
         auto start = i;
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto pClose  = pCloseRes.value();
             auto argsRes = parseFunctionParameters(preCtx, i + 1, pClose);
             if (isNext(TokenType::bracketOpen, pClose)) {
-              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1, false);
+              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
               if (bCloseRes.has_value()) {
                 auto bClose = bCloseRes.value();
                 auto snts   = parseSentences(preCtx, pClose + 1, bClose);
@@ -1637,7 +1635,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           if (isNext(TokenType::assignment, i + 1)) {
             if (isNext(TokenType::identifier, i + 2)) {
               if (isNext(TokenType::bracketOpen, i + 3)) {
-                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4, false);
+                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
                 if (bCloseRes) {
                   auto bClose = bCloseRes.value();
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
@@ -1673,7 +1671,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           if (isNext(TokenType::assignment, i + 1)) {
             if (isNext(TokenType::identifier, i + 2)) {
               if (isNext(TokenType::bracketOpen, i + 3)) {
-                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4, false);
+                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
                 if (bCloseRes) {
                   auto bClose = bCloseRes.value();
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
@@ -1748,7 +1746,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           i           = typRes.second;
         }
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto pClose    = pCloseRes.value();
             auto fnArgsRes = parseFunctionParameters(preCtx, i + 1, pClose);
@@ -1765,7 +1763,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
             getVariation(), isUnary ? (opr == "-" ? ast::Op::minus : ast::OpFromString(opr)) : ast::OpFromString(opr),
             RangeAt(start), args, returnTy, getVisibility(), RangeSpan(start, i), None);
         if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             auto bClose = bCloseRes.value();
             auto snts   = parseSentences(preCtx, i + 1, bClose);
@@ -1785,7 +1783,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         i           = typRes.second;
         if (isNext(TokenType::altArrow, i)) {
           if (isNext(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
@@ -1811,7 +1809,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           Error("A destructor is already defined for the core type", RangeAt(i));
         }
         if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes) {
             auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
             coreTy->setDestructorDefinition(
@@ -1978,7 +1976,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
           bool              isVar = false;
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
             isValueRequested = true;
-            auto pCloseRes   = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+            auto pCloseRes   = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
             if (pCloseRes) {
               if (isNext(TokenType::var, i + 2)) {
                 isVar = true;
@@ -2039,7 +2037,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
                   RangeAt(i + 1));
             }
             i++;
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes) {
               chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
                   matchVals, parseSentences(preCtx, i + 1, bCloseRes.value())));
@@ -2138,7 +2136,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
                     RangeAt(i + 1));
             }
             i++;
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes) {
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 1, bClose);
@@ -2164,7 +2162,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
                 RangeAt(i));
         }
         if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             auto snts = parseSentences(preCtx, i + 1, bCloseRes.value());
             elseCase =
@@ -2255,7 +2253,7 @@ void Parser::parseMatchContents(ParserContext& preCtx, usize from, usize upto,
           }
           i = matchValEnd;
           if (isNext(TokenType::bracketOpen, i)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
                   matchVals, parseSentences(preCtx, i + 1, bCloseRes.value())));
@@ -2396,7 +2394,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         if (isNext(TokenType::child, i)) {
           if (isNext(TokenType::identifier, i + 1)) {
             if (isNext(TokenType::parenthesisOpen, i + 2)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
               if (pCloseRes) {
                 auto pClose = pCloseRes.value();
                 auto types  = parseSeparatedTypes(preCtx, i + 3, pClose);
@@ -2483,7 +2481,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         ast::QatType* noneType = nullptr;
         auto          range    = RangeAt(i);
         if (isNext(TokenType::genericTypeStart, i)) {
-          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (endRes.has_value()) {
             auto typeRes = parseType(preCtx, i + 1, endRes.value());
             if (typeRes.second + 1 != endRes.value()) {
@@ -2502,7 +2500,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::sizeOf: {
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto* type = parseType(preCtx, i + 1, pCloseRes.value()).first;
             setCachedExpr(new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value())));
@@ -2541,7 +2539,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::from: {
         if (hasCachedSymbol()) {
           if (isNext(TokenType::parenthesisOpen, i)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
             if (pCloseRes.has_value()) {
               auto pClose = pCloseRes.value();
               auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
@@ -2560,13 +2558,13 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       case TokenType::genericTypeStart: {
         SHOW("Generic type start: " << i)
         if (hasCachedSymbol()) {
-          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
+          auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i);
           if (endRes.has_value()) {
             auto end = endRes.value();
             SHOW("Generic type end: " << end)
             auto types = parseGenericFill(preCtx, i, end);
             if (isNext(TokenType::curlybraceOpen, end)) {
-              auto cEnd = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, end + 1, false);
+              auto cEnd = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, end + 1);
               if (cEnd.has_value()) {
                 auto symbol = consumeCachedSymbol();
                 setCachedExpr(parsePlainInitialiser(
@@ -2580,7 +2578,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               SHOW("Found from")
               i = end + 1;
               if (isNext(TokenType::parenthesisOpen, i)) {
-                auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+                auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
                 if (pCloseRes.has_value()) {
                   auto pClose = pCloseRes.value();
                   auto exps   = parseSeparatedExpressions(preCtx, i + 1, pClose);
@@ -2628,7 +2626,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isNext(TokenType::identifier, i + 1)) {
             if (ValueAt(i + 2) == "get") {
               if (isNext(TokenType::genericTypeStart, i + 2)) {
-                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3, false);
+                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
                 if (tEndRes.has_value()) {
                   auto  tEnd    = tEndRes.value();
                   auto  typeRes = parseType(preCtx, i + 3, tEnd);
@@ -2637,8 +2635,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                     Error("Invalid type for heap'get", RangeSpan(i, typeRes.second));
                   }
                   if (isNext(TokenType::parenthesisOpen, tEnd)) {
-                    auto pCloseRes =
-                        getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1, false);
+                    auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1);
                     if (pCloseRes.has_value()) {
                       auto  pClose = pCloseRes.value();
                       auto* exp    = parseExpression(preCtx, None, tEnd + 1, pClose).first;
@@ -2662,7 +2659,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               }
             } else if (ValueAt(i + 2) == "put") {
               if (isNext(TokenType::parenthesisOpen, i + 2)) {
-                auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3, false);
+                auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
                 if (pCloseRes.has_value()) {
                   auto* exp = parseExpression(preCtx, None, i + 3, pCloseRes.value()).first;
                   setCachedExpr(new ast::HeapPut(exp, RangeSpan(i, pCloseRes.value())));
@@ -2679,13 +2676,12 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             } else if (ValueAt(i + 2) == "grow") {
               // FIXME - Maybe provided type is not necessary
               if (isNext(TokenType::genericTypeStart, i + 2)) {
-                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3, false);
+                auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
                 if (tEndRes.has_value()) {
                   auto  tEnd = tEndRes.value();
                   auto* type = parseType(preCtx, i + 3, tEnd).first;
                   if (isNext(TokenType::parenthesisOpen, tEnd)) {
-                    auto pCloseRes =
-                        getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1, false);
+                    auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1);
                     if (pCloseRes.has_value()) {
                       auto pClose = pCloseRes.value();
                       if (isPrimaryWithin(TokenType::separator, tEnd + 1, pClose)) {
@@ -2712,6 +2708,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
               Error("Invalid identifier found after heap'", RangeAt(i + 2));
             }
           } else {
+            Error("Expected an identifier after heap' to represent the heap operation to perform", RangeSpan(i, i + 1));
           }
         } else {
           Error("Invalid expression", RangeAt(i));
@@ -2720,7 +2717,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::curlybraceOpen: {
         if (hasCachedSymbol()) {
-          auto cCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i, false);
+          auto cCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i);
           if (cCloseRes.has_value()) {
             auto symbol = consumeCachedSymbol();
             setCachedExpr(
@@ -2738,7 +2735,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::bracketOpen: {
         SHOW("Found [")
-        auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
+        auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i);
         if (bCloseRes) {
           if (hasCachedSymbol()) {
             auto symbol = consumeCachedSymbol();
@@ -2771,7 +2768,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         SHOW("Found paranthesis")
         if (!binaryOps && (hasCachedExpr() || hasCachedSymbol())) {
           // This parenthesis is supposed to indicate a function call
-          auto p_close = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+          auto p_close = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
           if (p_close.has_value()) {
             SHOW("Found end of paranthesis")
             if (upto.has_value() && (p_close.value() >= upto)) {
@@ -2809,7 +2806,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
                   token.fileRange);
           }
         } else {
-          auto p_close_res = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+          auto p_close_res = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
           if (!p_close_res.has_value()) {
             Error("Expected )", token.fileRange);
           }
@@ -2857,7 +2854,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::move: {
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes) {
             auto  pClose = pCloseRes.value();
             auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
@@ -2873,7 +2870,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::copy: {
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes) {
             auto  pClose = pCloseRes.value();
             auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
@@ -2917,7 +2914,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           } else if (isNext(TokenType::region, i + 1)) {
             ownTy = ast::ConstructorCall::OwnType::region;
             if (isNext(TokenType::parenthesisOpen, i + 2)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
               if (pCloseRes.has_value()) {
                 ownerType = parseType(preCtx, i + 3, pCloseRes.value()).first;
                 i         = pCloseRes.value();
@@ -2933,7 +2930,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         if (isNext(TokenType::bracketOpen, i)) {
           SHOW("Multiple owns")
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             SHOW("Own count ends at: " << bCloseRes.value())
             ownCount = parseExpression(preCtx, None, i + 1, bCloseRes.value()).first;
@@ -2948,7 +2945,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         i                  = symRes.second;
         ast::QatType* type = nullptr;
         if (isNext(TokenType::genericTypeStart, i)) {
-          auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1, false);
+          auto tEndRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (tEndRes.has_value()) {
             auto                   tEnd = tEndRes.value();
             Vec<ast::FillGeneric*> types;
@@ -2967,7 +2964,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         if (isNext(TokenType::from, i)) {
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
             if (pCloseRes) {
               auto pClose = pCloseRes.value();
               auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
@@ -3022,7 +3019,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::stringSliceType: {
         if (isNext(TokenType::curlybraceOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
           if (pCloseRes.has_value()) {
             auto pClose = pCloseRes.value();
             auto args   = parseSeparatedExpressions(preCtx, i + 1, pClose);
@@ -3071,7 +3068,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           cond = consumeCachedExpr();
         }
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto pClose = pCloseRes.value();
             if (isPrimaryWithin(TokenType::separator, i + 1, pClose)) {
@@ -3111,7 +3108,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           auto* exp = consumeCachedExpr();
           if (isNext(TokenType::identifier, i)) {
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
@@ -3136,7 +3133,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isNext(TokenType::identifier, i)) {
             auto& subName = ValueAt(i + 1);
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
               if (pCloseRes) {
                 auto  pClose = pCloseRes.value();
                 auto* exp    = parseExpression(preCtx, None, i + 2, pClose).first;
@@ -3168,7 +3165,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           if (isNext(TokenType::identifier, i)) {
             // TODO - Support generic member function calls
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = parseSeparatedExpressions(preCtx, i + 2, pClose);
@@ -3185,7 +3182,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             }
           } else if (isNext(TokenType::end, i)) {
             if (isNext(TokenType::parenthesisOpen, i + 1)) {
-              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+              auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
               if (pCloseRes) {
                 setCachedExpr(new ast::MemberFunctionCall(exp, "end", {}, false,
                                                           {exp->fileRange, RangeSpan(i, pCloseRes.value())}));
@@ -3542,12 +3539,12 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           i++;
         }
         if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes) {
             auto* cand = parseExpression(preCtx, None, i + 1, pCloseRes.value()).first;
             i          = pCloseRes.value();
             if (isNext(TokenType::bracketOpen, i)) {
-              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1, false);
+              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
               if (bCloseRes) {
                 Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>> chain;
                 Maybe<Pair<Vec<ast::Sentence*>, FileRange>>           elseCase;
@@ -3605,7 +3602,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             } else {
               Error("Invalid end for sentence", RangeSpan(start, i + 2));
             }
-          } else if (isNext(TokenType::colon, i + 1)) {
+          } else if (isNext(TokenType::typeSeparator, i + 1)) {
             auto endRes = firstPrimaryPosition(TokenType::stop, i + 2);
             if (endRes.has_value()) {
               if (isPrimaryWithin(TokenType::assignment, i + 2, endRes.value())) {
@@ -3650,12 +3647,11 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         FileRange                                        fileRange = token.fileRange;
         while (true) {
           if (isNext(TokenType::parenthesisOpen, i)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
             if (pCloseRes) {
               auto* exp = parseExpression(preCtx, None, i + 1, pCloseRes.value()).first;
               if (isNext(TokenType::bracketOpen, pCloseRes.value())) {
-                auto bCloseRes =
-                    getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pCloseRes.value() + 1, false);
+                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pCloseRes.value() + 1);
                 if (bCloseRes.has_value()) {
                   fileRange = FileRange(fileRange, RangeAt(bCloseRes.value()));
                   auto snts = parseSentences(preCtx, pCloseRes.value() + 1, bCloseRes.value());
@@ -3668,7 +3664,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                     } else if (isNext(TokenType::bracketOpen, bCloseRes.value() + 1)) {
                       SHOW("Else case begin")
                       auto bOp    = bCloseRes.value() + 2;
-                      auto bClRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, bOp, false);
+                      auto bClRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, bOp);
                       if (bClRes) {
                         fileRange = FileRange(fileRange, RangeAt(bClRes.value()));
                         elseCase  = parseSentences(preCtx, bOp, bClRes.value());
@@ -3714,7 +3710,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             }
           }
           if (isNext(TokenType::bracketOpen, pos)) {
-            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pos + 1, false);
+            auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pos + 1);
             if (bCloseRes.has_value()) {
               auto bClose    = bCloseRes.value();
               auto sentences = parseSentences(preCtx, pos + 1, bClose);
@@ -3725,7 +3721,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             }
           }
         } else if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1, false);
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes.has_value()) {
             auto              pClose  = pCloseRes.value();
             Maybe<Identifier> loopTag = None;
@@ -3749,7 +3745,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               }
             }
             if (isNext(TokenType::bracketOpen, pos)) {
-              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pos + 1, false);
+              auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pos + 1);
               if (bCloseRes.has_value()) {
                 auto snts = parseSentences(preCtx, pos + 1, bCloseRes.value());
                 result.push_back(new ast::LoopNTimes(count, parseSentences(preCtx, pos + 1, bCloseRes.value()), loopTag,
@@ -3764,12 +3760,12 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
           }
         } else if (isNext(TokenType::While, i)) {
           if (isNext(TokenType::parenthesisOpen, i + 1)) {
-            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2, false);
+            auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
             if (pCloseRes.has_value()) {
               auto  pClose = pCloseRes.value();
               auto* cond   = parseExpression(preCtx, None, i + 2, pClose).first;
               if (isNext(TokenType::bracketOpen, pCloseRes.value())) {
-                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1, false);
+                auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
                 if (bCloseRes.has_value()) {
                   auto snts = parseSentences(preCtx, pClose + 1, bCloseRes.value());
                   result.push_back(new ast::LoopWhile(cond, snts, None, RangeSpan(i, bCloseRes.value())));
@@ -3781,7 +3777,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
               } else if (isNext(TokenType::colon, pClose)) {
                 if (isNext(TokenType::identifier, pClose + 1)) {
                   if (isNext(TokenType::bracketOpen, pClose + 2)) {
-                    auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 3, false);
+                    auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, pClose + 3);
                     if (bCloseRes) {
                       auto snts = parseSentences(preCtx, pClose + 3, bCloseRes.value());
                       result.push_back(
@@ -3910,15 +3906,30 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
   for (usize i = from + 1; ((i < upto) && (i < tokens->size())); i++) {
     auto& token = tokens->at(i);
     switch (token.type) { // NOLINT(clang-diagnostic-switch)
-      case TokenType::voidType: {
-        Error("Arguments cannot have void type", token.fileRange);
+      case TokenType::identifier: {
+        if (isNext(TokenType::typeSeparator, i)) {
+          auto typRes = parseType(preCtx, i + 1, upto);
+          if (typRes.second > upto) {
+            Error("Invalid end of argument type", typRes.first->fileRange);
+          }
+          if (typRes.first->typeKind() == ast::TypeKind::Void) {
+            Error("Arguments can't be of type void", typRes.first->fileRange);
+          }
+          args.push_back(ast::Argument::Normal(IdentifierAt(i), typRes.first));
+          i = typRes.second;
+          if (isNext(TokenType::separator, i)) {
+            i++;
+          }
+        } else {
+          Error("Expected : after the argument name", RangeAt(i));
+        }
         break;
       }
       case TokenType::variadic: {
         if (isNext(TokenType::identifier, i)) {
           args.push_back(ast::Argument::Normal({ValueAt(i + 1), FileRange RangeSpan(i, i + 1)}, nullptr));
           if (isNext(TokenType::parenthesisClose, i + 1) ||
-              (isNext(TokenType::separator, i + 1) && isNext(TokenType::parenthesisClose, i + 2))) {
+              (isNext(TokenType::separator, i + 1) && ((i + 3) == upto))) {
             return {args, true};
           } else {
             Error("Variadic argument should be the last argument of the function", token.fileRange);
@@ -3943,20 +3954,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
         break;
       }
       default: {
-        auto typeRes = parseType(preCtx, i - 1, None);
-        typ          = typeRes.first;
-        i            = typeRes.second;
-        if (isNext(TokenType::identifier, i)) {
-          args.push_back(ast::Argument::Normal({ValueAt(i + 1), typ.value()->fileRange}, typ.value()));
-          if (isNext(TokenType::separator, i + 1) || isNext(TokenType::parenthesisClose, i + 1)) {
-            i += 2;
-          } else {
-            Error("Unexpected token found after argument name", RangeAt(i + 1));
-          }
-        } else {
-          Error("Expected a name for the argument, after the type", typ.value()->fileRange);
-        }
-        break;
+        Error("Expected name for the argument", RangeAt(i));
       }
     }
   }
@@ -3964,17 +3962,10 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
   return {args, false};
 }
 
-Maybe<usize> Parser::getPairEnd(const lexer::TokenType startType, const lexer::TokenType endType, const usize current,
-                                const bool respectScope) {
+Maybe<usize> Parser::getPairEnd(const lexer::TokenType startType, const lexer::TokenType endType, const usize current) {
   usize collisions = 0;
   for (usize i = current + 1; i < tokens->size(); i++) {
-    if (respectScope) {
-      for (auto scopeTk : TokenFamily::scopeLimiters) {
-        if (tokens->at(i).type == scopeTk) {
-          return None;
-        }
-      }
-    }
+    SHOW("GetPairEnd :: Index = " << i << ", Token Type = " << (int)tokens->at(i).type)
     if (tokens->at(i).type == startType) {
       collisions++;
     } else if (tokens->at(i).type == endType) {
@@ -4025,29 +4016,31 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate, cons
   for (usize i = from + 1; i < tokens->size(); i++) {
     auto tok = tokens->at(i);
     if (tok.type == TokenType::parenthesisOpen) {
-      auto endRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+      auto endRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
         i = endRes.value();
       } else {
         return None;
       }
     } else if (tok.type == TokenType::bracketOpen) {
-      auto endRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
+      auto endRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
         i = endRes.value();
       } else {
         return None;
       }
     } else if (tok.type == TokenType::curlybraceOpen) {
-      auto endRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i, false);
+      auto endRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
         i = endRes.value();
       } else {
         return None;
       }
     } else if (tok.type == TokenType::genericTypeStart) {
-      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
+      SHOW("FirstPrimaryPosition :: Generic type start: " << tok.fileRange << ", Index: " << i)
+      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
+        SHOW("FirstPrimaryPosition :: Generic type end: " << RangeAt(endRes.value()))
         i = endRes.value();
       } else {
         return None;
@@ -4065,28 +4058,28 @@ Vec<usize> Parser::primaryPositionsWithin(lexer::TokenType candidate, usize from
   for (usize i = from + 1; (i < upto && i < tokens->size()); i++) {
     auto tok = tokens->at(i);
     if (tok.type == TokenType::parenthesisOpen) {
-      auto endRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i, false);
+      auto endRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
       if (endRes.has_value() && (endRes.value() < upto)) {
         i = endRes.value();
       } else {
         return result;
       }
     } else if (tok.type == TokenType::bracketOpen) {
-      auto endRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i, false);
+      auto endRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i);
       if (endRes.has_value() && (endRes.value() < upto)) {
         i = endRes.value();
       } else {
         return result;
       }
     } else if (tok.type == TokenType::curlybraceOpen) {
-      auto endRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i, false);
+      auto endRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i);
       if (endRes.has_value() && (endRes.value() < upto)) {
         i = endRes.value();
       } else {
         return result;
       }
     } else if (tok.type == TokenType::genericTypeStart) {
-      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i, false);
+      auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i);
       if (endRes.has_value() && (endRes.value() < upto)) {
         i = endRes.value();
       } else {

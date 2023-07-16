@@ -14,6 +14,8 @@ FilePos::operator Json() const {
   return Json()._("line", (unsigned long long)line)._("char", (unsigned long long)character);
 }
 
+std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << pos.character; }
+
 FileRange::FileRange(fs::path _filePath) : file(std::move(_filePath)), start({0u, 0u}), end({0u, 0u}) {}
 
 FileRange::FileRange(fs::path _file, FilePos _start, FilePos _end) : file(std::move(_file)), start(_start), end(_end) {}
@@ -38,5 +40,9 @@ FileRange::operator Json() const {
 }
 
 FileRange::operator JsonValue() const { return (Json)(*this); }
+
+std::ostream& operator<<(std::ostream& os, FileRange const& range) {
+  return os << "FileRange { " << range.file.string() << ":" << range.start << "-" << range.end << " }";
+}
 
 } // namespace qat

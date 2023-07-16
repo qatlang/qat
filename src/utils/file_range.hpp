@@ -23,6 +23,8 @@ struct FilePos {
   operator Json() const;
 };
 
+std::ostream& operator<<(std::ostream& os, FilePos const& pos);
+
 /** FileRange represents a particular range in a file */
 class FileRange {
 public:
@@ -68,6 +70,8 @@ public:
 
   operator JsonValue() const;
 };
+
+std::ostream& operator<<(std::ostream& os, FileRange const& range);
 
 } // namespace qat
 

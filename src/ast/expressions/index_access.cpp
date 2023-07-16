@@ -154,26 +154,45 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       opFn    = cTy->getBinaryOperator("[]", indType);
       operand = ind;
     } else if (indType->isReference() && cTy->hasBinaryOperator("[]", indType->asReference()->getSubType())) {
-      opFn    = cTy->getBinaryOperator("[]", indType->asReference()->getSubType());
+      opFn = cTy->getBinaryOperator("[]", indType->asReference()->getSubType());
+      ind->loadImplicitPointer(ctx->builder);
       operand = new IR::Value(ind->getLLVM(), indType->asReference()->getSubType(), false, IR::Nature::temporary);
-    } else if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx->llctx))) {
-      if (ind->isImplicitPointer()) {
-        if (!ind->isVariable()) {
-          ctx->Error("The [] operator of core type " + ctx->highlightError(cTy->getFullName()) +
-                         " expects a variable reference, but the provided "
-                         "expression is not a variable",
-                     index->fileRange);
+    } else if (!indType->isReference()) {
+      if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx->llctx))) {
+        if (ind->isImplicitPointer()) {
+          if (!ind->isVariable()) {
+            ctx->Error("The [] operator of core type " + ctx->highlightError(cTy->getFullName()) +
+                           " expects a variable reference, but the provided "
+                           "expression is not a variable",
+                       index->fileRange);
+          }
+        } else {
+          ind->makeImplicitPointer(ctx, None);
         }
-        // FIXME
+        opFn    = cTy->getBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx->llctx));
+        operand = new IR::Value(ind->getLLVM(), IR::ReferenceType::get(true, indType, ctx->llctx), false,
+                                IR::Nature::temporary);
+      } else if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx->llctx))) {
+        if (!ind->isImplicitPointer()) {
+          ind->makeImplicitPointer(ctx, None);
+        }
+        opFn    = cTy->getBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx->llctx));
+        operand = new IR::Value(ind->getLLVM(), IR::ReferenceType::get(false, indType, ctx->llctx), false,
+                                IR::Nature::temporary);
       } else {
+        ctx->Error("No [] operator found in type " + cTy->toString() + " for " +
+                       ctx->highlightError(indType->toString()),
+                   index->fileRange);
       }
+    } else {
+      ctx->Error("No [] operator found in type " + cTy->toString() + " for " + ctx->highlightError(indType->toString()),
+                 index->fileRange);
     }
-    if (!inst->isImplicitPointer() && !inst->isReference()) {
-      inst->makeImplicitPointer(ctx, None);
-    }
-
+    inst->loadImplicitPointer(ctx->builder);
+    return opFn->call(ctx, {inst->getLLVM(), operand->getLLVM()}, ctx->getMod());
   } else {
-    ctx->Error("The expression cannot be used for index access", instance->fileRange);
+    ctx->Error("The expression of type " + instType->toString() + " cannot be used for index access",
+               instance->fileRange);
   }
 }
 

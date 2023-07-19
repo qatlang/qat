@@ -916,7 +916,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           if (!endRes.has_value()) {
             Error("Expected end for the global declaration", RangeSpan(start, i + 1));
           }
-          if (isNext(TokenType::colon, i + 1)) {
+          if (isNext(TokenType::typeSeparator, i + 1)) {
             if (isPrimaryWithin(TokenType::assignment, i + 2, endRes.value())) {
               auto assignPos = firstPrimaryPosition(TokenType::assignment, i + 2).value();
               typ            = parseType(preCtx, i + 2, assignPos).first;
@@ -924,6 +924,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             } else {
               typ = parseType(preCtx, i + 2, endRes.value()).first;
             }
+          } else {
+            Error("Expected :: and the type of the global declaration here", RangeSpan(start, i + 1));
           }
           result.push_back(new ast::GlobalDeclaration(IdentifierAt(i + 1), typ, exp, isVar, getVisibility(),
                                                       RangeSpan(start, endRes.value())));

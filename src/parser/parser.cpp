@@ -644,7 +644,9 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         cacheTy     = new ast::ReferenceType(subRes.first, getVariability(), FileRange(token.fileRange, RangeAt(i)));
         break;
       }
+      case TokenType::multiPointerType:
       case TokenType::pointerType: {
+        const bool isMultiPtr = token.type == TokenType::multiPointerType;
         if (cacheTy.has_value()) {
           return {cacheTy.value(), i - 1};
         }
@@ -652,11 +654,6 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
           auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
             auto bClose     = bCloseRes.value();
-            bool isMultiPtr = false;
-            if (isNext(TokenType::binaryOperator, i + 1) && (ValueAt(i + 2) == "+")) {
-              isMultiPtr = true;
-              i++;
-            }
             if (isPrimaryWithin(TokenType::ternary, i + 1, bClose)) {
               auto questionPos = firstPrimaryPosition(TokenType::ternary, i + 1).value();
               auto subTypeRes  = parseType(ctx, i + 1, questionPos);
@@ -1110,16 +1107,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
-      case TokenType::var: {
-        auto typeRes = parseType(preCtx, i, None);
-        i            = typeRes.second;
-        if (isNext(TokenType::identifier, i)) {
-
-        } else {
-          Error("Expected identifier for the name of the global variable after the type", typeRes.first->fileRange);
-        }
-        break;
-      }
       case TokenType::Async: {
         if (!isNext(TokenType::identifier, i)) {
           Error("Expected an identifier for the name of the function, after async", RangeAt(i));
@@ -1144,11 +1131,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             if (isNext(TokenType::givenTypeSeparator, end) || isNext(TokenType::parenthesisOpen, end)) {
               i = end;
             } else {
-              // FIXME - Generic types in global declaration
-              if (isNext(TokenType::colon, end)) {
-                if (isNext(TokenType::identifier, end + 1)) {
-                }
-              }
+              Error("This is assumed to be part of a function. Expected the return type or the argument list of the function", RangeSpan(start, end));
             }
           } else {
             Error("Expected end for generic type specification", RangeAt(i + 1));
@@ -1394,8 +1377,6 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  Maybe<ast::QatType*> cacheTy;
-
   for (usize i = from + 1; i < upto; i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
@@ -1431,20 +1412,6 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           Error("Expected identifier after async. Unexpected token found", RangeAt(i));
         }
         setAsync();
-        break;
-      }
-      case TokenType::voidType:
-      case TokenType::pointerType:
-      case TokenType::referenceType:
-      case TokenType::unsignedIntegerType:
-      case TokenType::integerType:
-      case TokenType::floatType:
-      case TokenType::stringSliceType:
-      case TokenType::parenthesisOpen:
-      case TokenType::cstringType: {
-        auto typeRes = parseType(preCtx, i - 1, None);
-        cacheTy      = typeRes.first;
-        i            = typeRes.second;
         break;
       }
       case TokenType::identifier: {
@@ -1493,17 +1460,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
             coreTy->addMember(new ast::DefineCoreType::Member(typeRes.first, Identifier(token.value, token.fileRange),
                                                               !getConst(), getVisibility(),
                                                               FileRange(typeRes.first->fileRange, token.fileRange)));
-            cacheTy = None;
             i       = stop.value();
           } else {
             Error("Expected . after member declaration", token.fileRange);
           }
         } else {
-          auto typeRes = parseType(preCtx, i - 1, None);
-          cacheTy      = typeRes.first;
-          SHOW("Type parsed inside core type is " << typeRes.first->toString())
-          SHOW("Type parsed inside core type kind is " << (int)typeRes.first->typeKind())
-          i = typeRes.second;
+          Error("Unexpected identifier found inside core type", RangeAt(i));
         }
         break;
       }
@@ -2339,8 +2301,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
   if (_cachedExps.has_value()) {
     SHOW("			" << ((_cachedExps.value())->toJson()["nodeType"].asString()))
   }
-  SHOW("	FROM : " << from << " range: " << RangeAt(from).start.line << ":" << RangeAt(from).start.character << " - "
-                   << RangeAt(from).end.line << ":" << RangeAt(from).end.character)
+  SHOW("	FROM : " << from << " range: " << RangeAt(from))
   SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
                    << (upto.has_value() ? "\n		" + std::to_string(upto.value()) : ""))
 
@@ -3449,7 +3410,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
     switch (token.type) {
       case TokenType::super:
       case TokenType::identifier: {
-        SHOW("Identifier encountered")
+        SHOW("Identifier encountered: " << token.value)
         if (hasCachedSymbol()) {
           Error("Another symbol found when there already is a symbol", RangeAt(i));
         } else {
@@ -3572,24 +3533,17 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         const auto start = i;
         SHOW("Found new")
         bool isRef     = false;
-        bool isPtr     = false;
         bool isVarDecl = false;
         if (isNext(TokenType::var, i)) {
           isVarDecl = true;
           if (isNext(TokenType::referenceType, i + 1)) {
             isRef = true;
             i += 2;
-          } else if (isNext(TokenType::pointerType, i + 1)) {
-            isPtr = true;
-            i += 2;
           } else {
             i++;
           }
         } else if (isNext(TokenType::referenceType, i)) {
           isRef = true;
-          i++;
-        } else if (isNext(TokenType::pointerType, i)) {
-          isPtr = true;
           i++;
         }
         if (isNext(TokenType::identifier, i)) {
@@ -3598,7 +3552,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
             if (endRes.has_value()) {
               auto  end = endRes.value();
               auto* exp = parseExpression(preCtx, None, i + 2, end).first;
-              result.push_back(new ast::LocalDeclaration(nullptr, isRef, isPtr, IdentifierAt(i + 1), exp, isVarDecl,
+              result.push_back(new ast::LocalDeclaration(nullptr, isRef, IdentifierAt(i + 1), exp, isVarDecl,
                                                          RangeSpan(start, end)));
               i = end;
             } else {
@@ -3611,12 +3565,12 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                 auto  asgnPos = firstPrimaryPosition(TokenType::assignment, i + 2).value();
                 auto* typeRes = parseType(preCtx, i + 2, asgnPos).first;
                 auto* exp     = parseExpression(preCtx, None, asgnPos, endRes.value()).first;
-                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), exp, isVarDecl,
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, IdentifierAt(i + 1), exp, isVarDecl,
                                                            RangeSpan(start, endRes.value())));
               } else {
                 // No value for the assignment
                 auto* typeRes = parseType(preCtx, i + 2, endRes.value()).first;
-                result.push_back(new ast::LocalDeclaration(typeRes, isRef, isPtr, IdentifierAt(i + 1), None, isVarDecl,
+                result.push_back(new ast::LocalDeclaration(typeRes, isRef, IdentifierAt(i + 1), None, isVarDecl,
                                                            RangeSpan(start, endRes.value())));
               }
               i = endRes.value();

@@ -16,10 +16,10 @@
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Identifier _name,
+LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name,
                                    Maybe<Expression*> _value, bool _variability, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
-      isRef(_isRef), isPtr(_isPtr){SHOW("Name for local declaration is " << name.value)}
+      isRef(_isRef) {SHOW("Name for local declaration is " << name.value)}
 
                          IR::Value
                          * LocalDeclaration::emit(IR::Context * ctx) {
@@ -337,11 +337,6 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, bool _isPtr, Ide
           declType = expVal->getType()->asReference()->getSubType();
         }
       } else if (declType->isFunction()) {
-        if (!isPtr) {
-          ctx->Error(
-              "The value to be assigned is a pointer to a function, so please add a pointer hint to this declaration",
-              fileRange);
-        }
         declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx->llctx);
         auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
         auto* newValue = block->newValue(name.value, declType, variability, name.range);

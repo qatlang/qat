@@ -15,10 +15,9 @@ private:
   Maybe<Expression*> value;
   bool               variability;
   bool               isRef;
-  bool               isPtr;
 
 public:
-  LocalDeclaration(QatType* _type, bool isRef, bool isPtr, Identifier _name, Maybe<Expression*> _value,
+  LocalDeclaration(QatType* _type, bool isRef, Identifier _name, Maybe<Expression*> _value,
                    bool _variability, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;

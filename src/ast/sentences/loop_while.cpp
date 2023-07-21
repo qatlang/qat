@@ -30,7 +30,7 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
     auto* fun       = ctx->fn;
     auto* trueBlock = new IR::Block(fun, fun->getBlock());
     auto* condBlock = new IR::Block(fun, fun->getBlock());
-    auto* restBlock = new IR::Block(fun, nullptr);
+    auto* restBlock = new IR::Block(fun, fun->getBlock());
     auto* llCond    = cond->getLLVM();
     if (cond->getType()->isReference()) {
       cond->loadImplicitPointer(ctx->builder);

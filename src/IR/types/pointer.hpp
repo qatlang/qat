@@ -64,7 +64,6 @@ public:
   useit bool         isMulti() const;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;
-  useit Json         toJson() const override;
 };
 
 } // namespace qat::IR

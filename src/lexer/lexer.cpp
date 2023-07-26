@@ -10,6 +10,14 @@
 #define NanosecondsInMilliseconds 1000000
 #define NanosecondsInSeconds      1000000000
 
+#define Check_Normal_Keyword(ident, tokenName)                                                                         \
+  if (value == ident)                                                                                                  \
+  return Token::normal(TokenType::tokenName, getPos(std::string::traits_type::length(ident)))
+
+#define Check_VALUED_Keyword(ident, tokenName)                                                                         \
+  if (value == ident)                                                                                                  \
+  return Token::valued(TokenType::tokenName, ident, getPos(std::string::traits_type::length(ident)))
+
 namespace qat::lexer {
 
 Lexer::~Lexer() {
@@ -213,10 +221,6 @@ Token Lexer::tokeniser() {
       } else {
         return Token::normal(TokenType::colon, this->getPosition(1));
       }
-    }
-    case '#': {
-      read();
-      return Token::normal(TokenType::pointerType, this->getPosition(1));
     }
     case '/': {
       String value = "/";
@@ -552,137 +556,92 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
     }
   };
 
-  // NOLINTBEGIN(readability-magic-numbers)
-  if (value == "null") {
-    return Token::normal(TokenType::null, getPos(4));
-  } else if (value == "bring") {
-    return Token::normal(TokenType::bring, getPos(5));
-  } else if (value == "pub") {
-    return Token::normal(TokenType::Public, getPos(3));
-  } else if (value == "new") {
-    return Token::normal(TokenType::New, getPos(3));
-  } else if (value == "self") {
-    return Token::normal(TokenType::self, getPos(3));
-  } else if (value == "void") {
-    return Token::normal(TokenType::voidType, getPos(4));
-  } else if (value == "type") {
-    return Token::normal(TokenType::Type, getPos(4));
-  } else if (value == "model") {
-    return Token::normal(TokenType::model, getPos(5));
-  } else if (value == "const") {
-    return Token::normal(TokenType::constant, getPos(5));
-  } else if (value == "box") {
-    return Token::normal(TokenType::box, getPos(5));
-  } else if (value == "from") {
-    return Token::normal(TokenType::from, getPos(4));
-  } else if (value == "to") {
-    return Token::normal(TokenType::to, getPos(2));
-  } else if (value == "true") {
-    return Token::normal(TokenType::TRUE, getPos(4));
-  } else if (value == "false") {
-    return Token::normal(TokenType::FALSE, getPos(5));
-  } else if (value == "say") {
-    return Token::normal(TokenType::say, getPos(3));
-  } else if (value == "as") {
-    return Token::normal(TokenType::as, getPos(2));
-  } else if (value == "lib") {
-    return Token::normal(TokenType::lib, getPos(3));
-  } else if (value == "cstring") {
-    return Token::normal(TokenType::cstringType, getPos(7));
-  } else if (value == "await") {
-    return Token::normal(TokenType::Await, getPos(5));
-  } else if (value == "default") {
-    return Token::normal(TokenType::Default, getPos(7));
-  } else if (value == "static") {
-    return Token::normal(TokenType::Static, getPos(6));
-  } else if (value == "async") {
-    return Token::normal(TokenType::Async, getPos(5));
-  } else if (value == "sizeOf") {
-    return Token::normal(TokenType::sizeOf, getPos(6));
-  } else if (value == "variadic") {
-    return Token::normal(TokenType::variadic, getPos(8));
-  } else if (value == "loop") {
-    return Token::normal(TokenType::loop, getPos(4));
-  } else if (value == "while") {
-    return Token::normal(TokenType::While, getPos(5));
-  } else if (value == "over") {
-    return Token::normal(TokenType::over, getPos(4));
-  } else if (value == "heap") {
-    return Token::normal(TokenType::heap, getPos(4));
-  } else if (value == "operator") {
-    return Token::normal(TokenType::Operator, getPos(8));
-  } else if (value == "mix") {
-    return Token::normal(TokenType::mix, getPos(5));
-  } else if (value == "match") {
-    return Token::normal(TokenType::match, getPos(5));
-  } else if (value == "copy") {
-    return Token::normal(TokenType::copy, getPos(4));
-  } else if (value == "move") {
-    return Token::normal(TokenType::move, getPos(4));
-  } else if (value == "usize") {
-    return Token::valued(TokenType::unsignedIntegerType, "usize", getPos(5));
-  } else if (value.substr(0, 1) == "u" &&
-             ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
+  Check_Normal_Keyword("null", null);
+  else Check_Normal_Keyword("bring", bring);
+  else Check_Normal_Keyword("pub", Public);
+  else Check_Normal_Keyword("new", New);
+  else Check_Normal_Keyword("self", self);
+  else Check_Normal_Keyword("void", voidType);
+  else Check_Normal_Keyword("type", Type);
+  else Check_Normal_Keyword("const", constant);
+  else Check_Normal_Keyword("box", box);
+  else Check_Normal_Keyword("from", from);
+  else Check_Normal_Keyword("to", to);
+  else Check_Normal_Keyword("true", TRUE);
+  else Check_Normal_Keyword("false", FALSE);
+  else Check_Normal_Keyword("say", say);
+  else Check_Normal_Keyword("as", as);
+  else Check_Normal_Keyword("lib", lib);
+  else Check_Normal_Keyword("cstring", cstringType);
+  else Check_Normal_Keyword("await", Await);
+  else Check_Normal_Keyword("default", Default);
+  else Check_Normal_Keyword("static", Static);
+  else Check_Normal_Keyword("async", Async);
+  else Check_Normal_Keyword("sizeOf", sizeOf);
+  else Check_Normal_Keyword("variadic", variadic);
+  else Check_Normal_Keyword("loop", loop);
+  else Check_Normal_Keyword("while", While);
+  else Check_Normal_Keyword("over", over);
+  else Check_Normal_Keyword("heap", heap);
+  else Check_Normal_Keyword("operator", Operator);
+  else Check_Normal_Keyword("mix", mix);
+  else Check_Normal_Keyword("match", match);
+  else Check_Normal_Keyword("copy", copy);
+  else Check_Normal_Keyword("move", move);
+  else Check_VALUED_Keyword("usize", unsignedIntegerType);
+  else Check_Normal_Keyword("str", stringSliceType);
+  else Check_Normal_Keyword("for", For);
+  else Check_Normal_Keyword("give", give);
+  else Check_Normal_Keyword("var", var);
+  else Check_Normal_Keyword("if", If);
+  else Check_Normal_Keyword("else", Else);
+  else Check_Normal_Keyword("break", Break);
+  else Check_Normal_Keyword("continue", Continue);
+  else Check_Normal_Keyword("own", own);
+  else Check_Normal_Keyword("disown", disown);
+  else Check_Normal_Keyword("end", end);
+  else Check_Normal_Keyword("choice", choice);
+  else Check_Normal_Keyword("future", future);
+  else Check_Normal_Keyword("maybe", maybe);
+  else Check_Normal_Keyword("none", none);
+  else Check_Normal_Keyword("meta", meta);
+  else Check_Normal_Keyword("region", region);
+  else Check_VALUED_Keyword("bool", unsignedIntegerType);
+  else Check_Normal_Keyword("ptr", pointerType);
+  else Check_Normal_Keyword("multiptr", multiPointerType);
+  else Check_Normal_Keyword("range", range);
+  else if (value.substr(0, 1) == "u" &&
+           ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
     return Token::valued(TokenType::unsignedIntegerType, value.substr(1, value.length() - 1), getPos(value.length()));
-  } else if (value.substr(0, 1) == "i" &&
-             ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
+  }
+  else if (value.substr(0, 1) == "i" &&
+           ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
     return Token::valued(TokenType::integerType, value.substr(1, value.length() - 1), getPos(value.length()));
-  } else if (value == "fbrain") {
+  }
+  else if (value == "fbrain") {
     return Token::valued(TokenType::floatType, "brain", getPos(6));
-  } else if (value == "f16") {
+  }
+  else if (value == "f16") {
     return Token::valued(TokenType::floatType, "16", getPos(3));
-  } else if (value == "f32") {
+  }
+  else if (value == "f32") {
     return Token::valued(TokenType::floatType, "32", getPos(3));
-  } else if (value == "f64") {
+  }
+  else if (value == "f64") {
     return Token::valued(TokenType::floatType, "64", getPos(3));
-  } else if (value == "f80") {
+  }
+  else if (value == "f80") {
     return Token::valued(TokenType::floatType, "80", getPos(3));
-  } else if (value == "f128ppc") {
+  }
+  else if (value == "f128ppc") {
     return Token::valued(TokenType::floatType, "128ppc", getPos(7));
-  } else if (value == "f128") {
+  }
+  else if (value == "f128") {
     return Token::valued(TokenType::floatType, "128", getPos(4));
-  } else if (value == "str") {
-    return Token::normal(TokenType::stringSliceType, getPos(3));
-  } else if (value == "for") {
-    return Token::normal(TokenType::For, getPos(3));
-  } else if (value == "give") {
-    return Token::normal(TokenType::give, getPos(4));
-  } else if (value == "expose") {
-    return Token::normal(TokenType::expose, getPos(6));
-  } else if (value == "var") {
-    return Token::normal(TokenType::var, getPos(3));
-  } else if (value == "if") {
-    return Token::normal(TokenType::If, getPos(2));
-  } else if (value == "else") {
-    return Token::normal(TokenType::Else, getPos(4));
-  } else if (value == "break") {
-    return Token::normal(TokenType::Break, getPos(5));
-  } else if (value == "continue") {
-    return Token::normal(TokenType::Continue, getPos(8));
-  } else if (value == "own") {
-    return Token::normal(TokenType::own, getPos(3));
-  } else if (value == "disown") {
-    return Token::normal(TokenType::disown, getPos(6));
-  } else if (value == "end") {
-    return Token::normal(TokenType::end, getPos(3));
-  } else if (value == "choice") {
-    return Token::normal(TokenType::choice, getPos(6));
-  } else if (value == "future") {
-    return Token::normal(TokenType::future, getPos(6));
-  } else if (value == "maybe") {
-    return Token::normal(TokenType::maybe, getPos(5));
-  } else if (value == "none") {
-    return Token::normal(TokenType::none, getPos(4));
-  } else if (value == "meta") {
-    return Token::normal(TokenType::meta, getPos(4));
-  } else if (value == "region") {
-    return Token::normal(TokenType::region, getPos(6));
-  } else if (value == "bool") {
-    return Token::valued(TokenType::unsignedIntegerType, "bool", getPos(4));
-  } else {
+  }
+  else {
     return Token::valued(TokenType::identifier, value, getPos(value.length()));
   }
-  // NOLINTEND(readability-magic-numbers)
 }
 
 void Lexer::throwError(const String& message) {

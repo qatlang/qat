@@ -101,7 +101,7 @@ endif()
 # Find LLVM package
 #
 #
-if(IS_MAC)
+if(IS_MAC OR IS_LINUX)
 	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR}/lib/cmake/llvm NO_DEFAULT_PATH)
 else()
 	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_DIR} NO_DEFAULT_PATH)

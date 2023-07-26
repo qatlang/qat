@@ -54,7 +54,7 @@ BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: false
-CommentPragmas: '^ IWYU pragma:'
+CommentPragmas: "^ IWYU pragma:"
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
@@ -77,11 +77,11 @@ IncludeCategories:
   - Regex: '^(<|"(gtest|gmock|isl|json)/)'
     Priority: 3
     SortPriority: 0
-  - Regex: '.*'
+  - Regex: ".*"
     Priority: 1
     SortPriority: 0
-IncludeIsMainRegex: '(Test)?$'
-IncludeIsMainSourceRegex: ''
+IncludeIsMainRegex: "(Test)?$"
+IncludeIsMainSourceRegex: ""
 IndentCaseLabels: true
 IndentGotoLabels: true
 IndentPPDirectives: None
@@ -89,8 +89,8 @@ IndentWrappedFunctionNames: false
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
-MacroBlockBegin: ''
-MacroBlockEnd: ''
+MacroBlockBegin: ""
+MacroBlockEnd: ""
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCBinPackProtocolList: Auto
@@ -133,5 +133,6 @@ StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
 UseCRLF: false
-...
+---
+
 

@@ -31,9 +31,8 @@ public:
   useit QatType*      getSubtypeAt(u64 index);
   useit u64           getSubTypeCount() const;
   useit bool          isPackedTuple() const;
-  useit TypeKind      typeKind() const override;
-  useit String        toString() const override;
-  useit Json          toJson() const override;
+  useit TypeKind      typeKind() const final;
+  useit String        toString() const final;
 };
 
 } // namespace qat::IR

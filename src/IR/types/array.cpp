@@ -36,10 +36,6 @@ TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
 String ArrayType::toString() const { return elementType->toString() + "[" + std::to_string(length) + "]"; }
 
-Json ArrayType::toJson() const {
-  return Json()._("type", "array")._("subtype", elementType->getID())._("length", std::to_string(length));
-}
-
 bool ArrayType::canBeConstGeneric() const { return elementType->canBeConstGeneric(); }
 
 Maybe<String> ArrayType::toConstGenericString(IR::ConstantValue* val) const {

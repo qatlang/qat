@@ -19,8 +19,7 @@ public:
 
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;
-  useit String        toString() const override;
-  useit Json          toJson() const override;
+  useit String        toString() const final;
 };
 
 } // namespace qat::IR

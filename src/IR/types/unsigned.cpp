@@ -43,8 +43,6 @@ TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
 String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
-Json UnsignedType::toJson() const { return Json()._("type", "unsigned")._("bitWidth", std::to_string(bitWidth)); }
-
 bool UnsignedType::canBeConstGeneric() const { return bitWidth <= 64u; }
 
 Maybe<String> UnsignedType::toConstGenericString(IR::ConstantValue* val) const {

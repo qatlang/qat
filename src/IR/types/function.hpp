@@ -47,9 +47,8 @@ public:
   useit ArgumentType* getArgumentTypeAt(u32 index);
   useit Vec<ArgumentType*> getArgumentTypes() const;
   useit u64                getArgumentCount() const;
-  useit TypeKind           typeKind() const override { return TypeKind::function; }
-  useit String             toString() const override;
-  useit Json               toJson() const override;
+  useit TypeKind           typeKind() const final { return TypeKind::function; }
+  useit String             toString() const final;
   useit bool               hasReturnArgument() const;
   useit IR::QatType* getReturnArgType() const;
 };

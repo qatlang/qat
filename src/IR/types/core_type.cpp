@@ -143,8 +143,6 @@ TypeKind CoreType::typeKind() const { return TypeKind::core; }
 
 String CoreType::toString() const { return getFullName(); }
 
-Json CoreType::toJson() const { return Json()._("id", getID())._("name", name); }
-
 GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  ast::DefineCoreType* _defineCoreType, QatModule* _parent,
                                  const utils::VisibilityInfo& _visibInfo)

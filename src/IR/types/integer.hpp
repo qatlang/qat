@@ -17,7 +17,6 @@ public:
   useit u64                 getBitwidth() const;
   useit TypeKind            typeKind() const final;
   useit String              toString() const final;
-  useit Json                toJson() const final;
 
   useit bool canBeConstGeneric() const final;
   useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;

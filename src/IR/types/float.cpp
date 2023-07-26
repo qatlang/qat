@@ -71,8 +71,4 @@ String FloatType::toString() const {
   }
 }
 
-Json FloatType::toJson() const {
-  return Json()._("id", getID())._("typeKind", "float")._("floatKind", toString().substr(1));
-}
-
 } // namespace qat::IR

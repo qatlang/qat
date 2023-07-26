@@ -13,7 +13,6 @@ public:
   useit static StringSliceType* get(llvm::LLVMContext& ctx);
   useit TypeKind                typeKind() const override;
   useit String                  toString() const override;
-  useit Json                    toJson() const override;
 
   useit bool canBeConstGeneric() const final;
   useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;

@@ -31,8 +31,4 @@ TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
 
 String ReferenceType::toString() const { return "@" + String(isSubVariable ? " var " : "") + subType->toString(); }
 
-Json ReferenceType::toJson() const {
-  return Json()._("type", "reference")._("subType", subType->getID())._("isSubtypeVariable", isSubVariable);
-}
-
 } // namespace qat::IR

@@ -40,7 +40,6 @@ public:
 
   useit TypeKind typeKind() const final { return TypeKind::region; }
   useit String   toString() const final;
-  useit Json     toJson() const final { return {}; }
 };
 
 } // namespace qat::IR

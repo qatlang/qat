@@ -71,7 +71,6 @@ public:
   useit Vec<Member*>& getMembers();
   useit bool          hasStatic(const String& name) const;
 
-  useit Json     toJson() const override;
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   void           addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,

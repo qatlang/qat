@@ -21,6 +21,4 @@ TypeKind CStringType::typeKind() const { return TypeKind::cstring; }
 
 String CStringType::toString() const { return "cstring"; }
 
-Json CStringType::toJson() const { return Json()._("type", "cstring"); }
-
 } // namespace qat::IR

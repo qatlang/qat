@@ -69,12 +69,4 @@ String FunctionType::toString() const {
   return result;
 }
 
-Json FunctionType::toJson() const {
-  Vec<JsonValue> vals;
-  for (auto* arg : argTypes) {
-    vals.push_back(arg->getType()->toJson());
-  }
-  return Json()._("typeKind", "function")._("returnType", returnType->getID())._("argumentTypes", vals);
-}
-
 } // namespace qat::IR

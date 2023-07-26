@@ -91,12 +91,4 @@ String TupleType::toString() const {
   return result;
 }
 
-Json TupleType::toJson() const {
-  Vec<JsonValue> jsonValues;
-  for (auto* typ : types) {
-    jsonValues.push_back(typ->getID());
-  }
-  return Json()._("type", "tuple")._("subTypes", jsonValues);
-}
-
 } // namespace qat::IR

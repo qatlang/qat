@@ -22,7 +22,6 @@ public:
 
   useit TypeKind typeKind() const final;
   useit String   toString() const final;
-  useit Json     toJson() const final { return {}; }
 };
 
 } // namespace qat::IR

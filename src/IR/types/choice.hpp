@@ -42,7 +42,6 @@ public:
   useit i64        getDefault() const;
   useit u64        getBitwidth() const;
   useit TypeKind   typeKind() const final { return TypeKind::choice; }
-  useit Json       toJson() const final { return {}; }
   useit String     toString() const final;
   useit const utils::VisibilityInfo& getVisibility() const;
   void                               findBitwidthNormal() const;

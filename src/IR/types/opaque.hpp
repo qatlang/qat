@@ -45,7 +45,6 @@ public:
   void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
   useit TypeKind typeKind() const final;
   useit String   toString() const final;
-  useit Json     toJson() const final { return {}; }
 };
 
 } // namespace qat::IR

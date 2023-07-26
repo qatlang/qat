@@ -43,10 +43,8 @@ public:
   useit FileRange        getFileRange() const;
   useit String           toString() const final;
   useit TypeKind         typeKind() const final;
-  // FIXME - Maybe remove this
-  useit Json toJson() const final { return Json()._("name", name); }
-  void       updateOverview() final;
-  void       getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void                   updateOverview() final;
+  void                   getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 };
 
 } // namespace qat::IR

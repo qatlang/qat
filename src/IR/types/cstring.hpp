@@ -7,13 +7,12 @@ namespace qat::IR {
 
 class CStringType : public QatType {
 private:
-  CStringType(llvm::LLVMContext &ctx);
+  CStringType(llvm::LLVMContext& ctx);
 
 public:
-  useit static CStringType *get(llvm::LLVMContext &ctx);
-  useit TypeKind            typeKind() const override;
-  useit String              toString() const override;
-  useit Json                toJson() const override;
+  useit static CStringType* get(llvm::LLVMContext& ctx);
+  useit TypeKind            typeKind() const final;
+  useit String              toString() const final;
 };
 
 } // namespace qat::IR

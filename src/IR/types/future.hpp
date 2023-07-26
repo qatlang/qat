@@ -19,7 +19,6 @@ public:
   useit QatType* getSubType() const;
   useit String   toString() const final;
   useit TypeKind typeKind() const final;
-  useit Json     toJson() const final { return {}; }
   useit bool     isDestructible() const final;
   void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };

@@ -19,6 +19,4 @@ TypeKind VoidType::typeKind() const { return TypeKind::Void; }
 
 String VoidType::toString() const { return "void"; }
 
-Json VoidType::toJson() const { return Json()._("typeKind", "void"); }
-
 } // namespace qat::IR

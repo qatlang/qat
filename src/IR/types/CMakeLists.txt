@@ -1,8 +1,8 @@
 add_library(QAT_IR_TYPES
 	array.cpp
+	c_type.cpp
 	choice.cpp
 	core_type.cpp
-	cstring.cpp
 	definition.cpp
 	expanded_type.cpp
 	float.cpp

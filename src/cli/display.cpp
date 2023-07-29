@@ -1,23 +1,34 @@
 #include "./display.hpp"
 #include "./version.hpp"
+#include "llvm/Config/llvm-config.h"
 
 namespace qat::cli::display {
 
-void version() { std::cout << VERSION_STRING << std::endl; }
+void detailedVersion(String const& buildCommit) {
+  std::cout << "qat " << VERSION_STRING << "\n"
+            << "Target: " << LLVM_DEFAULT_TARGET_TRIPLE << "\n"
+            << ((String(LLVM_HOST_TRIPLE) != LLVM_DEFAULT_TARGET_TRIPLE) ? "Host: " LLVM_HOST_TRIPLE "\n" : "")
+            << "Build Type: " << BUILD_TYPE << "\n"
+            << "Build Branch: " << BUILD_BRANCH << "\n"
+            << "Build Commit: " << buildCommit << std::endl;
+}
 
-void about(const String& buildCommit) {
-  std::cout << "Version: " << VERSION_STRING << "\nCreator: "
-            << "Aldrin Mathew"
-            << " (https://github.com/aldrinmathew)"
-            << "\nBuild Commit: " << buildCommit << "\nBuild Branch: " << BUILD_BRANCH << "\nBuild Type: " << BUILD_TYPE
-            << "\nWebsite: https://qat.dev" << std::endl;
+void shortVersion() { std::cout << VERSION_STRING << std::endl; }
+
+void about() {
+  std::cout << "The QAT Programming Language\n"
+            << "   Closer to your machine's heart...\n"
+            << "Created with ♥  by Aldrin Mathew (https://github.com/aldrinmathew)\n"
+            << "Visit https://qat.dev for more details" << std::endl;
 }
 
 void build_info(const String& buildCommit) {
   std::cout << "Build Info\n"
                "  Version: "
-            << VERSION_STRING << "+" << buildCommit << "\n  Commit: " << buildCommit << "\n  Branch: " << BUILD_BRANCH
-            << std::endl;
+            << VERSION_STRING << "+" << buildCommit << "\n"
+            << "  Type: " << BUILD_TYPE << "\n"
+            << "  Commit: " << buildCommit << "\n"
+            << "  Branch: " << BUILD_BRANCH << std::endl;
 }
 
 void help() {}

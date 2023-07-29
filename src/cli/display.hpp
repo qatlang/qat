@@ -7,11 +7,14 @@
 
 namespace qat::cli::display {
 
-// Displays version of the compiler (Short form)
-void version();
+// Displays version of the compiler, in detail
+void detailedVersion(String const& buildCommit);
 
-// Displays details about the compiler, like version build info, website...
-void about(const String& buildCommit);
+// Short version
+void shortVersion();
+
+// Displays details about the qat project like website...
+void about();
 
 // Displays the build info
 void build_info(const String& buildCommit);

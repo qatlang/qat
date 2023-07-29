@@ -84,16 +84,17 @@ Config::Config(u64 count, const char** args)
       display::help();
       exitAfter = true;
     } else if (command == "about") {
-      display::about(buildCommit);
+      display::about();
       exitAfter = true;
     } else if (command == "version") {
-      display::version();
+      display::detailedVersion(buildCommit);
+      exitAfter = true;
+    } else if (command == "--version") {
+      display::shortVersion();
       exitAfter = true;
     } else if (command == "show") {
       if (count == 2) {
-        cli::Error("Nothing to show here. Please provide name of the information "
-                   "to display",
-                   None);
+        cli::Error("Nothing to show here. Please provide name of the information to display", None);
       } else {
         String candidate = args[2];
         if (candidate == "build-info") {

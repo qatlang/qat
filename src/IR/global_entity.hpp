@@ -36,7 +36,6 @@ public:
   useit u64                          getLoadCount() const;
   useit u64                          getStoreCount() const;
   useit u64                          getReferCount() const;
-  useit Json                         toJson() const;
 };
 
 } // namespace qat::IR

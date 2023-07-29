@@ -62,6 +62,4 @@ TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 
 String DefinitionType::toString() const { return getFullName(); }
 
-Json DefinitionType::toJson() const { return Json()._("type", "definition")._("subtype", subType->getID()); }
-
 } // namespace qat::IR

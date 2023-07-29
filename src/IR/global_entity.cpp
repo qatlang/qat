@@ -28,8 +28,4 @@ u64 GlobalEntity::getStoreCount() const { return stores; }
 
 u64 GlobalEntity::getReferCount() const { return refers; }
 
-Json GlobalEntity::toJson() const {
-  return Json()._("name", name)._("type", type->toJson())._("isVariable", variable)._("visibility", visibility);
-}
-
 } // namespace qat::IR

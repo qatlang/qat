@@ -8,6 +8,9 @@
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
+#include "clang/Basic/DiagnosticDriver.h"
+#include "clang/Basic/DiagnosticIDs.h"
+#include "clang/Basic/DiagnosticOptions.h"
 #include <chrono>
 #include <iostream>
 
@@ -31,7 +34,15 @@ CodeProblem::CodeProblem(bool _isError, String _message, FileRange _range)
 
 CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
 
-Context::Context() : builder(llctx), hasMain(false) { llctx.setOpaquePointers(true); }
+Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
+  auto diagnosticEngine =
+      clang::DiagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
+                               llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions()));
+  auto targetOpts    = std::make_shared<clang::TargetOptions>();
+  targetOpts->Triple = cli::Config::get()->getTargetTriple();
+  clangTargetInfo    = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
+  llctx.setOpaquePointers(true);
+}
 
 Context::~Context() {
   for (auto* lInfo : loopsInfo) {

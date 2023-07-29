@@ -5,6 +5,7 @@
 #include "../utils/file_range.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
+#include "clang/Basic/TargetInfo.h"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -99,14 +100,15 @@ private:
 public:
   Context();
 
-  llvm::LLVMContext llctx;
-  IRBuilderTy       builder;
-  QatModule*        mod        = nullptr;
-  IR::Function*     fn         = nullptr; // Active function
-  IR::ExpandedType* activeType = nullptr; // Active core type
-  Vec<LoopInfo*>    loopsInfo;
-  Vec<Breakable*>   breakables;
-  Vec<fs::path>     executablePaths;
+  clang::TargetInfo* clangTargetInfo;
+  llvm::LLVMContext  llctx;
+  IRBuilderTy        builder;
+  QatModule*         mod        = nullptr;
+  IR::Function*      fn         = nullptr; // Active function
+  IR::ExpandedType*  activeType = nullptr; // Active core type
+  Vec<LoopInfo*>     loopsInfo;
+  Vec<Breakable*>    breakables;
+  Vec<fs::path>      executablePaths;
 
   // META
   bool                                                          hasMain;

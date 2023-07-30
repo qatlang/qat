@@ -315,15 +315,19 @@ Pair<ast::ConstantExpression*, usize> Parser::parseConstantExpression(ParserCont
         break;
       }
       case TokenType::StringLiteral: {
-        auto start = i;
         auto value = token.value;
         auto range = token.fileRange;
-        if (isNext(TokenType::StringLiteral, i)) {
-          while (isNext(TokenType::StringLiteral, i)) {
+        if (isNext(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "+") &&
+            isNext(TokenType::StringLiteral, i + 1)) {
+          while (isNext(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "+") &&
+                 isNext(TokenType::StringLiteral, i + 1)) {
             value += tokens->at(i + 1).value;
             range = FileRange{range, tokens->at(i + 1).fileRange};
-            i++;
+            i += 2;
           }
+        } else if (isNext(TokenType::StringLiteral, i)) {
+          Error("To append adjacent string literals, please use the + operator like \"Hello\" + \"World\"",
+                RangeAt(i + 1));
         }
         cacheExp = new ast::StringLiteral(value, range);
         break;

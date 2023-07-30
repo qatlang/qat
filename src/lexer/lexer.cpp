@@ -11,11 +11,11 @@
 #define NanosecondsInSeconds      1000000000
 
 #define Check_Normal_Keyword(ident, tokenName)                                                                         \
-  if (value == ident)                                                                                                  \
+  if (wordValue == ident)                                                                                              \
   return Token::normal(TokenType::tokenName, getPos(std::string::traits_type::length(ident)))
 
 #define Check_VALUED_Keyword(ident, tokenName)                                                                         \
-  if (value == ident)                                                                                                  \
+  if (wordValue == ident)                                                                                              \
   return Token::valued(TokenType::tokenName, ident, getPos(std::string::traits_type::length(ident)))
 
 namespace qat::lexer {
@@ -547,7 +547,10 @@ Token Lexer::tokeniser() {
   }
 }
 
-Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
+Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
+  std::cout << "WordToToken\n";
+  std::cout << wordValue;
+  SHOW("WordToToken : string value is = " << wordValue)
   auto getPos = [&](usize len) {
     if (lexInst) {
       return lexInst->getPosition(len);
@@ -572,7 +575,6 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
   else Check_Normal_Keyword("say", say);
   else Check_Normal_Keyword("as", as);
   else Check_Normal_Keyword("lib", lib);
-  else Check_Normal_Keyword("cstring", cstringType);
   else Check_Normal_Keyword("await", Await);
   else Check_Normal_Keyword("default", Default);
   else Check_Normal_Keyword("static", Static);
@@ -588,7 +590,6 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
   else Check_Normal_Keyword("match", match);
   else Check_Normal_Keyword("copy", copy);
   else Check_Normal_Keyword("move", move);
-  else Check_VALUED_Keyword("usize", unsignedIntegerType);
   else Check_Normal_Keyword("str", stringSliceType);
   else Check_Normal_Keyword("for", For);
   else Check_Normal_Keyword("give", give);
@@ -610,37 +611,68 @@ Token Lexer::wordToToken(const String& value, Lexer* lexInst) {
   else Check_Normal_Keyword("ptr", pointerType);
   else Check_Normal_Keyword("multiptr", multiPointerType);
   else Check_Normal_Keyword("range", range);
-  else if (value.substr(0, 1) == "u" &&
-           ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
-    return Token::valued(TokenType::unsignedIntegerType, value.substr(1, value.length() - 1), getPos(value.length()));
+  else Check_VALUED_Keyword("int", cType);
+  else Check_VALUED_Keyword("uint", cType);
+  else Check_VALUED_Keyword("char", cType);
+  else Check_VALUED_Keyword("uchar", cType);
+  else Check_VALUED_Keyword("widechar", cType);
+  else Check_VALUED_Keyword("uwidechar", cType);
+  else Check_VALUED_Keyword("longint", cType);
+  else Check_VALUED_Keyword("ulongint", cType);
+  else Check_VALUED_Keyword("longlong", cType);
+  else Check_VALUED_Keyword("ulonglong", cType);
+  else Check_VALUED_Keyword("usize", cType);
+  else Check_VALUED_Keyword("isize", cType);
+  else Check_VALUED_Keyword("float", cType);
+  else Check_VALUED_Keyword("double", cType);
+  else Check_VALUED_Keyword("longdouble", cType);
+  else Check_VALUED_Keyword("intmax", cType);
+  else Check_VALUED_Keyword("uintmax", cType);
+  else Check_VALUED_Keyword("intptr", cType);
+  else Check_VALUED_Keyword("uintptr", cType);
+  else Check_VALUED_Keyword("ptrdiff", cType);
+  else Check_VALUED_Keyword("uptrdiff", cType);
+  else Check_VALUED_Keyword("cSigAtomic", cType);
+  else Check_VALUED_Keyword("cProcessID", cType);
+  else Check_VALUED_Keyword("cFloatHalf", cType);
+  else Check_VALUED_Keyword("cFloatBrain", cType);
+  else Check_VALUED_Keyword("cFloat128", cType);
+  else Check_VALUED_Keyword("cStr", cType);
+  else Check_VALUED_Keyword("cBool", cType);
+  else Check_VALUED_Keyword("cPtr", cType);
+  else if (wordValue.substr(0, 1) == "u" &&
+           ((wordValue.length() > 1) ? utils::isInteger(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+    return Token::valued(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
+                         getPos(wordValue.length()));
   }
-  else if (value.substr(0, 1) == "i" &&
-           ((value.length() > 1) ? utils::isInteger(value.substr(1, value.length() - 1)) : false)) {
-    return Token::valued(TokenType::integerType, value.substr(1, value.length() - 1), getPos(value.length()));
+  else if (wordValue.substr(0, 1) == "i" &&
+           ((wordValue.length() > 1) ? utils::isInteger(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+    return Token::valued(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1),
+                         getPos(wordValue.length()));
   }
-  else if (value == "fbrain") {
+  else if (wordValue == "fbrain") {
     return Token::valued(TokenType::floatType, "brain", getPos(6));
   }
-  else if (value == "f16") {
+  else if (wordValue == "f16") {
     return Token::valued(TokenType::floatType, "16", getPos(3));
   }
-  else if (value == "f32") {
+  else if (wordValue == "f32") {
     return Token::valued(TokenType::floatType, "32", getPos(3));
   }
-  else if (value == "f64") {
+  else if (wordValue == "f64") {
     return Token::valued(TokenType::floatType, "64", getPos(3));
   }
-  else if (value == "f80") {
+  else if (wordValue == "f80") {
     return Token::valued(TokenType::floatType, "80", getPos(3));
   }
-  else if (value == "f128ppc") {
+  else if (wordValue == "f128ppc") {
     return Token::valued(TokenType::floatType, "128ppc", getPos(7));
   }
-  else if (value == "f128") {
+  else if (wordValue == "f128") {
     return Token::valued(TokenType::floatType, "128", getPos(4));
   }
   else {
-    return Token::valued(TokenType::identifier, value, getPos(value.length()));
+    return Token::valued(TokenType::identifier, wordValue, getPos(wordValue.length()));
   }
 }
 

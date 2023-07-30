@@ -3,14 +3,9 @@
 
 namespace qat::lexer {
 
-/**
- *  Type of the token recognised by the Lexer.
- * This does not necessarily have to mean anything as
- * far as language semantics goes.
- */
 enum class TokenType {
-  null  = -1, // null represents an empty value
-  FALSE = 0,  // false
+  null  = -1,
+  FALSE = 0,
   TRUE  = 1,
   startOfFile,
   give,
@@ -18,19 +13,18 @@ enum class TokenType {
   stop,
   voidType,
   pointerType,
+  multiPointerType,
   referenceType,
   unsignedIntegerType,
   integerType,
   floatType,
   stringSliceType,
-  cstringType,
   bring,
   from,
   to,
   child,
   external,
   Type,
-  model,
   identifier,
   parenthesisOpen,
   parenthesisClose,
@@ -58,7 +52,6 @@ enum class TokenType {
   lib,
   box,
   endOfFile,
-  expose,
   packed,
   var,
   obtainPointer,
@@ -74,7 +67,6 @@ enum class TokenType {
   over,
   sizeOf,
   unaryOperator,
-  lambda,
   comment,
   altArrow,
   bitwiseOr,
@@ -108,6 +100,8 @@ enum class TokenType {
   none,
   meta,
   region,
+  range,
+  cType,
 };
 
 } // namespace qat::lexer

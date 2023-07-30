@@ -3,7 +3,6 @@
 #include "./array.hpp"
 #include "./choice.hpp"
 #include "./core_type.hpp"
-#include "./cstring.hpp"
 #include "./definition.hpp"
 #include "./float.hpp"
 #include "./function.hpp"
@@ -18,6 +17,7 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
+#include "c_type.hpp"
 #include "opaque.hpp"
 
 namespace qat::IR {
@@ -84,7 +84,6 @@ bool QatType::isCompatible(QatType* other) {
   }
 }
 
-// FIXME - Update for TypedType
 bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
   if (typeKind() != other->typeKind()) {
     if (typeKind() == TypeKind::definition) {
@@ -144,10 +143,18 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
       case TypeKind::Float: {
         return (((FloatType*)this)->getKind() == ((FloatType*)other)->getKind());
       }
+      case TypeKind::cType: {
+        auto* thisVal  = (CType*)this;
+        auto* otherVal = (CType*)other;
+        return thisVal->get_c_type_kind() == otherVal->get_c_type_kind() &&
+               (thisVal->isCPointer() ? (thisVal->getSubType()->isSame(otherVal->getSubType())) : true);
+      }
       case TypeKind::stringSlice:
-      case TypeKind::cstring:
       case TypeKind::Void: {
         return true;
+      }
+      case TypeKind::typed: {
+        return ((TypedType*)this)->getSubType()->isSame(((TypedType*)other)->getSubType());
       }
       case TypeKind::array: {
         auto* thisVal  = (ArrayType*)this;
@@ -384,13 +391,13 @@ StringSliceType* QatType::asStringSlice() const {
                                               : (StringSliceType*)this;
 }
 
-bool QatType::isCString() const {
-  return (typeKind() == TypeKind::cstring) ||
-         (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isCString());
+bool QatType::isCType() const {
+  return ((typeKind() == TypeKind::cType) ||
+          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isCType()));
 }
 
-CStringType* QatType::asCString() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCString() : (CStringType*)this;
+CType* QatType::asCType() const {
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCType() : (CType*)this;
 }
 
 bool QatType::isFuture() const {

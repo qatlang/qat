@@ -21,7 +21,6 @@ class ArrayType;
 class TupleType;
 class FunctionType;
 class StringSliceType;
-class CStringType;
 class CoreType;
 class DefinitionType;
 class MixType;
@@ -36,6 +35,7 @@ class Value;
 class OpaqueType;
 class TypedType;
 class ConstantValue;
+class CType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -104,8 +104,6 @@ public:
   useit ChoiceType*      asChoice() const;
   useit bool             isStringSlice() const;
   useit StringSliceType* asStringSlice() const;
-  useit bool             isCString() const;
-  useit CStringType*     asCString() const;
   useit bool             isFuture() const;
   useit FutureType*      asFuture() const;
   useit bool             isMaybe() const;
@@ -115,6 +113,8 @@ public:
   useit bool             isVoid() const;
   useit bool             isTyped() const;
   useit TypedType*       asTyped() const;
+  useit bool             isCType() const;
+  useit CType*           asCType() const;
 
   useit virtual TypeKind typeKind() const = 0;
   useit virtual String   toString() const = 0;

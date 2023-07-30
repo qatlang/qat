@@ -10,6 +10,8 @@
 #include "utils/identifier.hpp"
 #include "utils/visibility.hpp"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Option/OptTable.h"
+#include "llvm/Support/HashBuilder.h"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -237,7 +239,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
         }
       } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
         auto libCheckRes = detectLibFile(item);
-        if (!isNameValid(libCheckRes->first)) {
+        if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
           ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
                      {item, {0u, 0u}, {0u, 0u}});
         }
@@ -272,7 +274,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     SHOW("Is directory")
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value()) {
-      if (!isNameValid(libCheckRes->first)) {
+      if (!isNameValid(libCheckRes.value().first)) {
         ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
                    {libCheckRes->second, {0u, 0u}, {0u, 0u}});
       }
@@ -300,7 +302,7 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     }
   } else if (fs::is_regular_file(mainPath) && !IR::QatModule::hasFileModule(mainPath)) {
     auto libCheckRes = detectLibFile(mainPath);
-    if (!isNameValid(libCheckRes->first)) {
+    if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
       ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
                  {mainPath});
     }

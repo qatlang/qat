@@ -135,7 +135,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     } else {
       ctx->Error("Invalid value for string slice and hence string cannot be indexed", fileRange);
     }
-  } else if (instType->isCString()) {
+  } else if (instType->isCType() && instType->asCType()->isCString()) {
     ind->loadImplicitPointer(ctx->builder);
     inst->loadImplicitPointer(ctx->builder);
     auto* instVal = inst->getLLVM();

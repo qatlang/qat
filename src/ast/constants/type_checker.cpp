@@ -155,7 +155,7 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
           res = false;
         }
         break;
-      } else if (typ->isInteger() || typ->isUnsignedInteger() || typ->isCString() || typ->isStringSlice() ||
+      } else if (typ->isInteger() || typ->isUnsignedInteger() || typ->isCType() || typ->isStringSlice() ||
                  typ->isFloat()) {
         res = true;
       } else {

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -29,6 +30,8 @@ template <typename T> using Deque            = std::deque<T>;
 template <typename F, typename S> using Pair = std::pair<F, S>;
 namespace fs                                 = std::filesystem;
 const std::nullopt_t None                    = std::nullopt;
+template <typename T> using Shared           = std::shared_ptr<T>;
+template <typename T> using Uniq             = std::unique_ptr<T>;
 
 } // namespace qat
 

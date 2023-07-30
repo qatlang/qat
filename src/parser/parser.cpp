@@ -58,8 +58,8 @@
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
+#include "../ast/types/c_type.hpp"
 #include "../ast/types/const_generic.hpp"
-#include "../ast/types/cstring.hpp"
 #include "../ast/types/float.hpp"
 #include "../ast/types/future.hpp"
 #include "../ast/types/generic_named_type.hpp"
@@ -374,9 +374,9 @@ Vec<ast::FillGeneric*> Parser::parseGenericFill(ParserContext& preCtx, usize fro
   for (usize i = from + 1; i < upto; i++) {
     auto& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::maybe:
       case TokenType::voidType:
-      case TokenType::cstringType:
+      case TokenType::cType:
+      case TokenType::maybe:
       case TokenType::stringSliceType:
       case TokenType::unsignedIntegerType:
       case TokenType::integerType:
@@ -479,6 +479,30 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         variable = true;
         break;
       }
+      case TokenType::cType: {
+        if (ValueAt(i) == "cptr") {
+          if (isNext(TokenType::genericTypeStart, i)) {
+            auto gEnd = firstPrimaryPosition(TokenType::genericTypeEnd, i);
+            if (gEnd.has_value()) {
+              auto* subTy = parseType(preCtx, i + 1, gEnd).first;
+              cacheTy     = new ast::CType(subTy, subTy->isVariable(), RangeSpan(i, gEnd.value()));
+              i           = gEnd.value();
+            } else {
+              Error("Expected ] to end the generic type specification", RangeAt(i + 1));
+            }
+          } else {
+            Error("Expected '[] after cptr", RangeAt(i));
+          }
+        } else {
+          auto cTypeKind = IR::cTypeKindFromString(ValueAt(i));
+          if (cTypeKind.has_value()) {
+            cacheTy = new ast::CType(cTypeKind.value(), RangeAt(i));
+          } else {
+            Error("Invalid cType", RangeAt(i));
+          }
+        }
+        break;
+      }
       case TokenType::future: {
         auto subRes = parseType(preCtx, i, upto);
         cacheTy     = new ast::FutureType(false, subRes.first, RangeSpan(i, subRes.second));
@@ -544,13 +568,6 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
           return {cacheTy.value(), i - 1};
         }
         cacheTy = new ast::StringSliceType(getVariability(), token.fileRange);
-        break;
-      }
-      case TokenType::cstringType: {
-        if (cacheTy.has_value()) {
-          return {cacheTy.value(), i - 1};
-        }
-        cacheTy = new ast::CStringType(getVariability(), token.fileRange);
         break;
       }
       case TokenType::unsignedIntegerType: {
@@ -654,10 +671,10 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (cacheTy.has_value()) {
           return {cacheTy.value(), i - 1};
         }
-        if (isNext(TokenType::bracketOpen, i)) {
-          auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto bCloseRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
-            auto bClose     = bCloseRes.value();
+            auto bClose = bCloseRes.value();
             if (isPrimaryWithin(TokenType::ternary, i + 1, bClose)) {
               auto questionPos = firstPrimaryPosition(TokenType::ternary, i + 1).value();
               auto subTypeRes  = parseType(ctx, i + 1, questionPos);
@@ -1135,7 +1152,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             if (isNext(TokenType::givenTypeSeparator, end) || isNext(TokenType::parenthesisOpen, end)) {
               i = end;
             } else {
-              Error("This is assumed to be part of a function. Expected the return type or the argument list of the function", RangeSpan(start, end));
+              Error(
+                  "This is assumed to be part of a function. Expected the return type or the argument list of the function",
+                  RangeSpan(start, end));
             }
           } else {
             Error("Expected end for generic type specification", RangeAt(i + 1));
@@ -1464,7 +1483,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
             coreTy->addMember(new ast::DefineCoreType::Member(typeRes.first, Identifier(token.value, token.fileRange),
                                                               !getConst(), getVisibility(),
                                                               FileRange(typeRes.first->fileRange, token.fileRange)));
-            i       = stop.value();
+            i = stop.value();
           } else {
             Error("Expected . after member declaration", token.fileRange);
           }
@@ -3002,12 +3021,12 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::to: {
-        SHOW("Found to expression")
+        SHOW("Found to expression. hasCachedSymbol: " << hasCachedSymbol() << " hasCachedExpr: " << hasCachedExpr())
         ast::Expression* source = nullptr;
         if (!hasCachedExpr()) {
           if (hasCachedSymbol()) {
             auto symbol = consumeCachedSymbol();
-            setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange));
+            source      = new ast::Entity(symbol.relative, symbol.name, symbol.fileRange);
           }
         } else {
           source = consumeCachedExpr();
@@ -3816,7 +3835,24 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
         }
         break;
       }
+      case TokenType::assignedBinaryOperator: {
+        if (!hasCachedSymbol() && !hasCachedExpr()) {
+          Error("No expression found before the " + token.value + " operator", RangeAt(i));
+        }
+        if (isPrimaryWithin(TokenType::stop, i, upto)) {
+          auto end_res = firstPrimaryPosition(TokenType::stop, i).value();
+          auto lhs     = parseExpression(preCtx, retrieveCachedSymbol(), i, i, retrieveCachedExpr()).first;
+          auto rhs     = parseExpression(preCtx, None, i, end_res, None).first;
+          auto bin_exp = new ast::BinaryExpression(lhs, token.value, rhs, FileRange{lhs->fileRange, rhs->fileRange});
+          result.push_back(new ast::ExpressionSentence(bin_exp, FileRange{bin_exp->fileRange, RangeAt(end_res)}));
+        } else {
+          Error("Detected " + token.value + " operator and expected . within this scope to end the sentence",
+                RangeAt(i));
+        }
+        break;
+      }
       default: {
+        SHOW("parseSentences - default case")
         auto expRes = parseExpression(preCtx, retrieveCachedSymbol(), i - 1, None, retrieveCachedExpr());
         setCachedExpr(expRes.first);
         i = expRes.second;

@@ -1,6 +1,6 @@
 add_library(QAT_AST_TYPES
 	array.cpp
-	cstring.cpp
+	c_type.cpp
 	const_generic.cpp
 	float.cpp
 	future.cpp

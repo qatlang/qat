@@ -1,5 +1,5 @@
 #include "./to_conversion.hpp"
-#include "../../IR/types/cstring.hpp"
+#include "../../IR/types/c_type.hpp"
 #include "../../IR/types/string_slice.hpp"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Casting.h"
@@ -60,25 +60,23 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
       }
     } else if (typ->isStringSlice() || (typ->isReference() && typ->asReference()->getSubType()->isStringSlice())) {
       loadRef();
-      if (destTy->isCString()) {
-        SHOW("Conversion from StringSlice to CString")
+      if (destTy->isCType() && destTy->asCType()->isCString()) {
+        SHOW("Conversion from StringSlice to cStr")
         if (val->isLLVMConstant()) {
           SHOW("String slice is a constant struct")
           return new IR::ConstantValue(
-              llvm::dyn_cast<llvm::ConstantStruct>(val->getLLVMConstant())->getAggregateElement(0u),
-              IR::CStringType::get(ctx->llctx));
+              llvm::dyn_cast<llvm::ConstantStruct>(val->getLLVMConstant())->getAggregateElement(0u), destTy->asCType());
         }
         if (llvm::isa<llvm::AllocaInst>(val->getLLVM())) {
           return new IR::Value(
               ctx->builder.CreateLoad(
-                  IR::CStringType::get(ctx->llctx)->getLLVMType(),
+                  destTy->asCType()->getLLVMType(),
                   ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), val->getLLVM(), 0)),
-              IR::CStringType::get(ctx->llctx), false, IR::Nature::temporary);
+              destTy->asCType(), false, IR::Nature::temporary);
         } else {
           ctx->Error("Invalid value for String slice", fileRange);
         }
       }
-      // TODO - Implement
     } else if (typ->isInteger() || (typ->isReference() && typ->asReference()->getSubType()->isInteger())) {
       val->loadImplicitPointer(ctx->builder);
       if (destTy->isInteger()) {

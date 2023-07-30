@@ -3,9 +3,9 @@
 
 #include "../IR/context.hpp"
 #include "../IR/types/array.hpp"
+#include "../IR/types/c_type.hpp"
 #include "../IR/types/choice.hpp"
 #include "../IR/types/core_type.hpp"
-#include "../IR/types/cstring.hpp"
 #include "../IR/types/float.hpp"
 #include "../IR/types/function.hpp"
 #include "../IR/types/integer.hpp"
@@ -34,12 +34,6 @@ private:
 public:
   FileRange fileRange;
 
-  // Node is the base class for all AST members of the language, and it
-  // requires a FileRange instance that indicates its position in the
-  // corresponding file
-  //
-  // `_fileRange` FileRange instance that represents the range
-  // spanned by the tokens that made up this AST member
   explicit Node(FileRange _fileRange);
   virtual ~Node() = default;
   useit virtual bool       isConstantNode() const { return false; }

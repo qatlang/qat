@@ -58,7 +58,7 @@ IR::Value* SayLike::emit(IR::Context* ctx) {
               llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
               ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), tempAlloc, 0)));
         }
-      } else if (typ->isCString()) {
+      } else if (typ->isCType() && typ->asCType()->isCString()) {
         formatStr += "%s";
         val->loadImplicitPointer(ctx->builder);
         llvmValues.push_back(val->getLLVM());

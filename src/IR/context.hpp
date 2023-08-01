@@ -77,12 +77,12 @@ public:
 };
 
 class CodeProblem {
-  bool      isError;
-  String    message;
-  FileRange range;
+  bool             isError;
+  String           message;
+  Maybe<FileRange> range;
 
 public:
-  CodeProblem(bool isError, String message, FileRange range);
+  CodeProblem(bool isError, String message, Maybe<FileRange> range);
   operator Json() const;
 };
 
@@ -100,15 +100,16 @@ private:
 public:
   Context();
 
-  clang::TargetInfo* clangTargetInfo;
-  llvm::LLVMContext  llctx;
-  IRBuilderTy        builder;
-  QatModule*         mod        = nullptr;
-  IR::Function*      fn         = nullptr; // Active function
-  IR::ExpandedType*  activeType = nullptr; // Active core type
-  Vec<LoopInfo*>     loopsInfo;
-  Vec<Breakable*>    breakables;
-  Vec<fs::path>      executablePaths;
+  clang::TargetInfo*      clangTargetInfo;
+  Maybe<llvm::DataLayout> dataLayout;
+  llvm::LLVMContext       llctx;
+  IRBuilderTy             builder;
+  QatModule*              mod        = nullptr;
+  IR::Function*           fn         = nullptr; // Active function
+  IR::ExpandedType*       activeType = nullptr; // Active core type
+  Vec<LoopInfo*>          loopsInfo;
+  Vec<Breakable*>         breakables;
+  Vec<fs::path>           executablePaths;
 
   // META
   bool                                                          hasMain;
@@ -122,6 +123,7 @@ public:
   mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkStartTime;
   mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkEndTime;
 
+  clang::LangAS    getProgramAddressSpaceAsLangAS() const;
   void             nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
   void             genericNameCheck(const String& name, const FileRange& range);
   useit QatModule* getMod() const; // Get the active IR module

@@ -5,6 +5,7 @@
 
 namespace qat::IR {
 
+// TODO - Support C arrays
 enum class CTypeKind {
   String,
   Bool,

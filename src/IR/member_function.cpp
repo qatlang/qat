@@ -137,6 +137,7 @@ MemberFunction* MemberFunction::DefaultConstructor(ExpandedType* parent, FileRan
   argsInfo.push_back(
       Argument::Create(Identifier("''", parent->getName().range), ReferenceType::get(true, parent, ctx), 0));
   return new MemberFunction(MemberFnType::defaultConstructor, true, parent, Identifier("default", nameRange),
+                            // FIXME - Make file range optional instead of creating it using empty values
                             IR::VoidType::get(ctx), false, std::move(argsInfo), false, false, {"", {0u, 0u}, {0u, 0u}},
                             visibInfo, ctx);
 }

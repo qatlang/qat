@@ -8,10 +8,16 @@
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
+#include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/DiagnosticDriver.h"
 #include "clang/Basic/DiagnosticIDs.h"
 #include "clang/Basic/DiagnosticOptions.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/CodeGen.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 
 namespace qat::IR {
@@ -29,10 +35,16 @@ bool LoopInfo::isTimes() const { return type == LoopType::nTimes; }
 Breakable::Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock)
     : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock) {}
 
-CodeProblem::CodeProblem(bool _isError, String _message, FileRange _range)
+CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRange> _range)
     : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
 
-CodeProblem::operator Json() const { return Json()._("isError", isError)._("message", message)._("range", range); }
+CodeProblem::operator Json() const {
+  return Json()
+      ._("isError", isError)
+      ._("message", message)
+      ._("hasRange", range.has_value())
+      ._("range", range.has_value() ? (Json)range.value() : Json());
+}
 
 Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
   auto diagnosticEngine =
@@ -41,7 +53,7 @@ Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
   auto targetOpts    = std::make_shared<clang::TargetOptions>();
   targetOpts->Triple = cli::Config::get()->getTargetTriple();
   clangTargetInfo    = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
-  llctx.setOpaquePointers(true);
+  dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
 }
 
 Context::~Context() {
@@ -405,7 +417,14 @@ bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
   return false;
 }
 
-void Context::addError(const String& message, const FileRange& fileRange) {
+clang::LangAS Context::getProgramAddressSpaceAsLangAS() const {
+  if (dataLayout) {
+    return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
+  } else {
+    return clang::LangAS::Default;
+  }
+}
+
   auto* cfg = cli::Config::get();
   if (activeGeneric) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeGeneric->name,

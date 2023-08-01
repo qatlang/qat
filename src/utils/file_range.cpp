@@ -42,7 +42,7 @@ FileRange::operator Json() const {
 FileRange::operator JsonValue() const { return (Json)(*this); }
 
 std::ostream& operator<<(std::ostream& os, FileRange const& range) {
-  return os << "FileRange { " << range.file.string() << ":" << range.start << "-" << range.end << " }";
+  return os << range.file.string() << ":" << range.start << " - " << range.end;
 }
 
 } // namespace qat

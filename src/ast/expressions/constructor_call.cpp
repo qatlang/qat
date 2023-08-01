@@ -208,7 +208,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
-        llAlloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), 0u);
+        llAlloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
       }
     }
     if (hasOwnCount) {
@@ -245,7 +245,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       restBlock->setActive(ctx->builder);
-      auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx->llctx);
+      auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx);
       auto* resVal =
           local ? (local->getType()->isMaybe()
                        ? new IR::Value(
@@ -275,11 +275,11 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       res->setLocalID(local->getLocalID());
       return res;
     } else {
-      auto* res = new IR::Value(
-          llAlloca,
-          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ownerValue, hasOwnCount, ctx->llctx)
-                            : (IR::QatType*)cTy,
-          ownTy.has_value() ? false : isVar, IR::Nature::temporary);
+      auto* res =
+          new IR::Value(llAlloca,
+                        ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ownerValue, hasOwnCount, ctx)
+                                          : (IR::QatType*)cTy,
+                        ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (local) {
         res->setLocalID(local->getLocalID());
       }

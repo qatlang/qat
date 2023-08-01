@@ -29,19 +29,23 @@ Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo
   auto* Ty64Int   = llvm::Type::getInt64Ty(llCtx);
   auto* zero64Bit = llvm::ConstantInt::get(Ty64Int, 0u);
   auto* mod       = ctx->getMod();
-  blocks =
-      new llvm::GlobalVariable(*mod->getLLVMModule(), llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u), false,
-                               llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-                               llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u)),
-                               "qat'region(" + parent->getFullNameWithChild(name.value) + ")'blocks");
+  blocks          = new llvm::GlobalVariable(
+      *mod->getLLVMModule(),
+      llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace()), false,
+      llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
+      llvm::ConstantPointerNull::get(
+          llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace())),
+      "qat'region(" + parent->getFullNameWithChild(name.value) + ")'blocks");
   blockCount = new llvm::GlobalVariable(*mod->getLLVMModule(), Ty64Int, false,
                                         llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage, zero64Bit,
                                         "qat'region(" + parent->getFullNameWithChild(name.value) + ")'count");
   ownFn      = llvm::Function::Create(
-      llvm::FunctionType::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u),
-                                   {/* Count */ Ty64Int, /* Size of type */ Ty64Int,
-                               /* Destructor Pointer */ llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u)},
-                                   false),
+      llvm::FunctionType::get(
+          llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace()),
+          {/* Count */ Ty64Int, /* Size of type */ Ty64Int,
+           /* Destructor Pointer */
+           llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace())},
+          false),
       llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
       "qat'region(" + parent->getFullNameWithChild(name.value) + ")'own", mod->getLLVMModule());
   destructor =
@@ -103,7 +107,8 @@ Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo
     auto* firstBlock = ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn, {zeroCheckSizePhi});
     ctx->builder.CreateStore(firstBlock, blocks, true);
     ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 1u), blockCount);
-    auto* zeroCheckBlockSizePtr = ctx->builder.CreatePointerCast(firstBlock, llvm::PointerType::get(Ty64Int, 0u));
+    auto* zeroCheckBlockSizePtr = ctx->builder.CreatePointerCast(
+        firstBlock, llvm::PointerType::get(Ty64Int, ctx->dataLayout->getProgramAddressSpace()));
     ctx->builder.CreateStore(zeroCheckSizePhi, zeroCheckBlockSizePtr);
     auto* zeroCheckBlockOccupiedPtr =
         ctx->builder.CreateInBoundsGEP(Ty64Int, zeroCheckBlockSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)});
@@ -113,7 +118,8 @@ Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo
     auto* zeroCheckBlockNextBlockPtrPtr = ctx->builder.CreatePointerCast(
         ctx->builder.CreateInBoundsGEP(Ty64Int, zeroCheckBlockOccupiedPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
         ptrToVoidPtrTy);
-    ctx->builder.CreateStore(llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), 0u)),
+    ctx->builder.CreateStore(llvm::ConstantPointerNull::get(llvm::PointerType::get(
+                                 llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace())),
                              zeroCheckBlockNextBlockPtrPtr);
     auto* zeroCheckDataCountPtr = ctx->builder.CreatePointerCast(
         ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), zeroCheckBlockNextBlockPtrPtr,
@@ -427,7 +433,7 @@ IR::Value* Region::ownData(IR::QatType* otype, Maybe<llvm::Value*> _count, IR::C
                           llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())
                     : llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()))}),
           otype->getLLVMType()->getPointerTo()),
-      IR::PointerType::get(true, otype, PointerOwner::OfRegion(this), _count.has_value(), ctx->llctx), false,
+      IR::PointerType::get(true, otype, PointerOwner::OfRegion(this), _count.has_value(), ctx), false,
       IR::Nature::temporary);
 }
 

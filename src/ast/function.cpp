@@ -107,8 +107,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
               IR::UnsignedType::get(32u, ctx->llctx), 0u));
       args.push_back(IR::Argument::Create(
           Identifier(arguments.at(0)->getName().value + "'data", arguments.at(0)->getName().range),
-          IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
-          1u));
+          IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), false, ctx), 1u));
     }
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
@@ -318,8 +317,8 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
       if (fnEmit->getType()->asFunction()->getArgumentCount() == 2u) {
         auto* cmdArgsVal = block->newValue(
             fnEmit->argumentNameAt(0).value.substr(0, fnEmit->argumentNameAt(0).value.find('\'')),
-            IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), true, ctx->llctx),
-            false, fnEmit->argumentNameAt(0).range);
+            IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), true, ctx), false,
+            fnEmit->argumentNameAt(0).range);
         SHOW("Storing argument pointer")
         ctx->builder.CreateStore(
             fnEmit->getLLVMFunction()->getArg(1u),

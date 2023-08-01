@@ -88,8 +88,9 @@ MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _pare
         trueBlock->setActive(ctx->builder);
         subTy->destroyValue(
             ctx,
-            {new IR::Value(ctx->builder.CreatePointerCast(ctx->builder.CreateStructGEP(llvmType, inst, 1u),
-                                                          llvm::PointerType::get(subTy->getLLVMType(), 0u)),
+            {new IR::Value(ctx->builder.CreatePointerCast(
+                               ctx->builder.CreateStructGEP(llvmType, inst, 1u),
+                               llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace())),
                            IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
             destructor);
         (void)IR::addBranch(ctx->builder, remainingBlock->getBB());

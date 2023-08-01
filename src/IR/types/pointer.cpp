@@ -75,27 +75,27 @@ String PointerOwner::toString() const {
   }
 }
 
-PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
-                         llvm::LLVMContext& ctx)
+PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti, IR::Context* ctx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti) {
   if (_hasMulti) {
-    if (llvm::StructType::getTypeByName(ctx, "multiptr[" + subType->toString() + "]")) {
-      llvmType = llvm::StructType::getTypeByName(ctx, "multiptr[" + subType->toString() + "]");
+    if (llvm::StructType::getTypeByName(ctx->llctx, "multiptr[" + subType->toString() + "]")) {
+      llvmType = llvm::StructType::getTypeByName(ctx->llctx, "multiptr[" + subType->toString() + "]");
     } else {
       llvmType = llvm::StructType::create(
-          {llvm::PointerType::get(
-               subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0u),
-           llvm::Type::getInt64Ty(ctx)},
+          {llvm::PointerType::get(subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx->llctx)
+                                                                     : subType->getLLVMType(),
+                                  ctx->dataLayout->getProgramAddressSpace()),
+           llvm::Type::getInt64Ty(ctx->llctx)},
           "multiptr[" + subType->toString() + "]");
     }
   } else {
     llvmType = llvm::PointerType::get(
-        subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx) : subType->getLLVMType(), 0U);
+        subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx->llctx) : subType->getLLVMType(), 0U);
   }
 }
 
 PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
-                              llvm::LLVMContext& ctx) {
+                              IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->isPointer()) {
       if (typ->asPointer()->getSubType()->isSame(_type) &&

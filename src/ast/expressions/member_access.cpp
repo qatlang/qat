@@ -69,13 +69,13 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       if (inst->isLLVMConstant()) {
         return new IR::ConstantValue(inst->getLLVMConstant()->getAggregateElement(0u),
                                      IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx),
-                                                          IR::PointerOwner::OfAnonymous(), false, ctx->llctx));
+                                                          IR::PointerOwner::OfAnonymous(), false, ctx));
       } else {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
             IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), // NOLINT(readability-magic-numbers)
-                                 IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
+                                 IR::PointerOwner::OfAnonymous(), false, ctx),
             false, IR::Nature::temporary);
       }
     } else {
@@ -113,7 +113,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
         ctx->Error("Invalid value for future and hence cannot get data", fileRange);
       }
     } else {
-      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),
+      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " +
+                     ctx->highlightError(instType->toString()),
                  fileRange);
     }
   } else if (instType->isMaybe()) {
@@ -178,7 +179,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
         }
       }
     } else {
-      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " + instType->toString(),
+      ctx->Error("Invalid name " + ctx->highlightError(name) + " for member access of type " +
+                     ctx->highlightError(instType->toString()),
                  fileRange);
     }
   } else if (instType->isCoreType()) {

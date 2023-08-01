@@ -76,8 +76,9 @@ void FutureType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functi
     if (subTy->isDestructible()) {
       subTy->destroyValue(
           ctx,
-          {new IR::Value(ctx->builder.CreateLoad(llvm::PointerType::get(subTy->getLLVMType(), 0u),
-                                                 ctx->builder.CreateStructGEP(llvmType, selfVal, 3u)),
+          {new IR::Value(ctx->builder.CreateLoad(
+                             llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace()),
+                             ctx->builder.CreateStructGEP(llvmType, selfVal, 3u)),
                          IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
           fun);
     }

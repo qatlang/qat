@@ -16,13 +16,13 @@
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name,
-                                   Maybe<Expression*> _value, bool _variability, FileRange _fileRange)
+LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
+                                   bool _variability, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
-      isRef(_isRef) {SHOW("Name for local declaration is " << name.value)}
+      isRef(_isRef){SHOW("Name for local declaration is " << name.value)}
 
-                         IR::Value
-                         * LocalDeclaration::emit(IR::Context * ctx) {
+          IR::Value
+          * LocalDeclaration::emit(IR::Context * ctx) {
   auto* block = ctx->fn->getBlock();
   if (block->hasValue(name.value)) {
     ctx->Error("A local value named " + ctx->highlightError(name.value) +
@@ -337,7 +337,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
           declType = expVal->getType()->asReference()->getSubType();
         }
       } else if (declType->isFunction()) {
-        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx->llctx);
+        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx);
         auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
         auto* newValue = block->newValue(name.value, declType, variability, name.range);
         ctx->builder.CreateStore(fnCast, newValue->getLLVM());

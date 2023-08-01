@@ -263,7 +263,8 @@ IR::ConstantValue* TypeChecker::emit(IR::Context* ctx) {
         llvm::ConstantStruct::get(
             llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
             // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function
-            {ctx->builder.CreateGlobalStringPtr(typs.at(0)->toString(), ctx->getGlobalStringName(), 0u,
+            {ctx->builder.CreateGlobalStringPtr(typs.at(0)->toString(), ctx->getGlobalStringName(),
+                                                ctx->dataLayout->getDefaultGlobalsAddressSpace(),
                                                 ctx->getMod()->getLLVMModule()),
              llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), (typs.at(0)->toString().size() + 1))}),
         IR::StringSliceType::get(ctx->llctx));

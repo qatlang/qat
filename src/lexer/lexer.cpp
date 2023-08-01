@@ -548,8 +548,6 @@ Token Lexer::tokeniser() {
 }
 
 Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
-  std::cout << "WordToToken\n";
-  std::cout << wordValue;
   SHOW("WordToToken : string value is = " << wordValue)
   auto getPos = [&](usize len) {
     if (lexInst) {

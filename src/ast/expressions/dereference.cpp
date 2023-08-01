@@ -29,7 +29,8 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
     }
     return new IR::Value(
         expTy->asPointer()->isMulti()
-            ? ctx->builder.CreateLoad(llvm::PointerType::get(expTy->asPointer()->getSubType()->getLLVMType(), 0u),
+            ? ctx->builder.CreateLoad(llvm::PointerType::get(expTy->asPointer()->getSubType()->getLLVMType(),
+                                                             ctx->dataLayout->getProgramAddressSpace()),
                                       ctx->builder.CreateStructGEP(expTy->getLLVMType(), expEmit->getLLVM(), 0u))
             : expEmit->getLLVM(),
         IR::ReferenceType::get(expTy->asPointer()->isSubtypeVariable(), expTy->asPointer()->getSubType(), ctx->llctx),

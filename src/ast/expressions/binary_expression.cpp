@@ -159,10 +159,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             isLHSConstant ? llvm::dyn_cast<llvm::Value>(
                                 llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u))
                           : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
-                                llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
+                                                                          ctx->dataLayout->getProgramAddressSpace()),
                                 ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u))),
-            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
-            false, IR::Nature::temporary);
+            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx), false,
+            IR::Nature::temporary);
         lhsVal = lhsEmit->getLLVM();
         SHOW("Set LhsEmit")
       }
@@ -185,10 +186,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             (isRHSConstant ? llvm::dyn_cast<llvm::Value>(
                                  llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u))
                                               : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
-                                 llvm::PointerType::get(ptrType->getSubType()->getLLVMType(), 0u),
+                                 llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
+                                                                           ctx->dataLayout->getProgramAddressSpace()),
                                  ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)))),
-            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx->llctx),
-            false, IR::Nature::temporary);
+            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx), false,
+            IR::Nature::temporary);
         rhsVal = rhsEmit->getLLVM();
         SHOW("Set RhsEmit")
       }

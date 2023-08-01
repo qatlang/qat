@@ -51,17 +51,17 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
           }
           Vec<llvm::Value*> idxs;
           idxs.push_back(ind->getLLVM());
-          return new IR::Value(ctx->builder.CreateInBoundsGEP(
-                                   instType->asPointer()->getSubType()->getLLVMType(),
-                                   ctx->builder.CreateLoad(
-                                       llvm::PointerType::get(instType->asPointer()->getSubType()->getLLVMType(), 0u),
-                                       ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
-                                   idxs),
-                               IR::ReferenceType::get(instType->asPointer()->isSubtypeVariable(),
-                                                      instType->asPointer()->getSubType(), ctx->llctx),
-                               instType->asPointer()->isSubtypeVariable(),
-                               instType->asPointer()->isSubtypeVariable() ? IR::Nature::assignable
-                                                                          : IR::Nature::temporary);
+          return new IR::Value(
+              ctx->builder.CreateInBoundsGEP(
+                  instType->asPointer()->getSubType()->getLLVMType(),
+                  ctx->builder.CreateLoad(llvm::PointerType::get(instType->asPointer()->getSubType()->getLLVMType(),
+                                                                 ctx->dataLayout->getProgramAddressSpace()),
+                                          ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
+                  idxs),
+              IR::ReferenceType::get(instType->asPointer()->isSubtypeVariable(), instType->asPointer()->getSubType(),
+                                     ctx->llctx),
+              instType->asPointer()->isSubtypeVariable(),
+              instType->asPointer()->isSubtypeVariable() ? IR::Nature::assignable : IR::Nature::temporary);
         } else {
           SHOW("Getting first element")
           auto* firstElem =

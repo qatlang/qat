@@ -91,7 +91,7 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
           local    = ctx->fn->getBlock()->newValue(irName->value, mixTy, isVar, irName->range);
           newValue = local->getAlloca();
         } else {
-          newValue = ctx->builder.CreateAlloca(mixTy->getLLVMType(), 0u);
+          newValue = ctx->builder.CreateAlloca(mixTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
         }
         SHOW("Creating mix store")
         ctx->builder.CreateStore(index, ctx->builder.CreateStructGEP(mixTy->getLLVMType(), newValue, 0));

@@ -146,7 +146,7 @@ void QatSitter::init() {
             if (std::system(exePath.string().c_str())) {
               ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) +
                              " exited with an error!",
-                         {exePath.string(), {0u, 0u}, {0u, 0u}});
+                         None);
             }
           }
           SHOW("Ran all compiled executables")
@@ -154,7 +154,7 @@ void QatSitter::init() {
       } else {
         ctx->Error("qat cannot find clang on path. Please make sure that you have clang installed and the "
                    "path to clang is available in the environment",
-                   {"", {0u, 0u}, {0u, 0u}});
+                   None);
       }
     } else {
       ctx->writeJsonResult(true);
@@ -212,8 +212,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value()) {
           if (!isNameValid(libCheckRes->first)) {
-            ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
-                       {libCheckRes->second, {0u, 0u}, {0u, 0u}});
+            ctx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
+                           ctx->highlightError(libCheckRes->first) + " which is illegal",
+                       None);
           }
           Lexer->changeFile(fs::absolute(libCheckRes->second));
           Lexer->analyse();
@@ -240,8 +241,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
       } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
-          ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
-                     {item, {0u, 0u}, {0u, 0u}});
+          ctx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
+                         ctx->highlightError(libCheckRes->first) + " which is illegal",
+                     None);
         }
         Lexer->changeFile(item.path().string());
         Lexer->analyse();
@@ -275,8 +277,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value()) {
       if (!isNameValid(libCheckRes.value().first)) {
-        ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
-                   {libCheckRes->second, {0u, 0u}, {0u, 0u}});
+        ctx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
+                       ctx->highlightError(libCheckRes->first) + " which is illegal",
+                   None);
       }
       Lexer->changeFile(libCheckRes->second);
       Lexer->analyse();
@@ -303,8 +306,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
   } else if (fs::is_regular_file(mainPath) && !IR::QatModule::hasFileModule(mainPath)) {
     auto libCheckRes = detectLibFile(mainPath);
     if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
-      ctx->Error("The name of the library is " + ctx->highlightError(libCheckRes->first) + " which is illegal",
-                 {mainPath});
+      ctx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
+                     ctx->highlightError(libCheckRes->first) + " which is illegal",
+                 None);
     }
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);

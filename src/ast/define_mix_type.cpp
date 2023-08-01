@@ -32,7 +32,7 @@ void DefineMixType::createType(IR::Context* ctx) {
         if (subtypes.at(i).second.has_value()) {
           ctx->Error("A subfield with a value associated with them cannot be "
                      "used as a default value",
-                     {fRanges.at(i), subtypes.at(i).second.value()->fileRange});
+                     FileRange{fRanges.at(i), subtypes.at(i).second.value()->fileRange});
         }
       }
     }
@@ -49,7 +49,7 @@ void DefineMixType::createType(IR::Context* ctx) {
 }
 
 void DefineMixType::defineType(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
+  // auto* mod = ctx->getMod();
   if (!isGeneric()) {
     createType(ctx);
   } else {

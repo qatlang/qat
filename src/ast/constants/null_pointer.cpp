@@ -22,11 +22,11 @@ IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
                                          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
             : llvm::ConstantPointerNull::get(candidateType->getLLVMType()->getPointerTo()),
         IR::PointerType::get(candidateType->isSubtypeVariable(), candidateType->getSubType(), candidateType->getOwner(),
-                             candidateType->isMulti(), ctx->llctx));
+                             candidateType->isMulti(), ctx));
   } else {
     return new IR::ConstantValue(
         llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), IR::PointerOwner::OfAnonymous(), false, ctx->llctx));
+        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), IR::PointerOwner::OfAnonymous(), false, ctx));
   }
 }
 

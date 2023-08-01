@@ -5,6 +5,8 @@
 #include "pointer.hpp"
 #include "type_kind.hpp"
 #include "unsigned.hpp"
+#include "clang/Basic/AddressSpaces.h"
+#include "llvm/IR/DataLayout.h"
 
 namespace qat::IR {
 
@@ -465,7 +467,7 @@ CType* CType::getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Conte
       }
     }
   }
-  return new CType(IR::PointerType::get(isSubTypeVariable, subType, PointerOwner::OfAnonymous(), false, ctx->llctx),
+  return new CType(IR::PointerType::get(isSubTypeVariable, subType, PointerOwner::OfAnonymous(), false, ctx),
                    CTypeKind::Pointer);
 }
 
@@ -507,7 +509,7 @@ CType* CType::getPtrDiff(IR::Context* ctx) {
     }
   }
   return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getPtrDiffType(
-                                            ctx->clangTargetInfo->getProgramAddressSpace())),
+                                            ctx->getProgramAddressSpaceAsLangAS())),
                                         ctx->llctx),
                    CTypeKind::PtrDiff);
 }
@@ -522,8 +524,8 @@ CType* CType::getPtrDiffUnsigned(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getUnsignedPtrDiffType(
-                                ctx->clangTargetInfo->getProgramAddressSpace())),
+      IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(
+                                ctx->clangTargetInfo->getUnsignedPtrDiffType(ctx->getProgramAddressSpaceAsLangAS())),
                             ctx->llctx),
       CTypeKind::UPtrDiff);
 }
@@ -566,7 +568,7 @@ CType* CType::getCString(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::PointerType::get(false, IR::IntegerType::get(8, ctx->llctx), PointerOwner::OfAnonymous(), false, ctx->llctx),
+      IR::PointerType::get(false, IR::IntegerType::get(8, ctx->llctx), PointerOwner::OfAnonymous(), false, ctx),
       CTypeKind::String);
 }
 

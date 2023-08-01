@@ -10,10 +10,9 @@ void Default::setType(IR::QatType* typ) { candidateType = typ; }
 IR::Value* Default::emit(IR::Context* ctx) {
   if (candidateType) {
     if (candidateType->isInteger()) {
-      ctx->Warning("The recognised type for the default expression is a signed "
-                   "integer. The resultant value is 0. But using the literal "
-                   "is recommended over using default for readability and "
-                   "decreased clutter",
+      ctx->Warning("The recognised type for the " + ctx->highlightWarning("default") +
+                       " expression is a signed integer. The resultant value is 0. But using the literal "
+                       "is recommended for readability and decreased clutter",
                    fileRange);
       if (irName.has_value()) {
         auto* block = ctx->fn->getBlock();
@@ -25,10 +24,9 @@ IR::Value* Default::emit(IR::Context* ctx) {
                              false, IR::Nature::pure);
       }
     } else if (candidateType->isUnsignedInteger()) {
-      ctx->Warning("The recognised type for the default expression is an unsigned "
-                   "integer. The resultant value is 0. But using the literal "
-                   "is recommended over using default for readability and "
-                   "decreased clutter",
+      ctx->Warning("The recognised type for the " + ctx->highlightWarning("default") +
+                       " expression is an unsigned integer. The resultant value is 0. But using the literal "
+                       "is recommended for readability and decreased clutter",
                    fileRange);
       if (irName.has_value()) {
         auto* block = ctx->fn->getBlock();

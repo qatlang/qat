@@ -98,7 +98,7 @@ IR::QatType* CType::emit(IR::Context* ctx) {
 Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {
   switch (cTypeKind) {
     case IR::CTypeKind::String:
-      return ctx->clangTargetInfo->getPointerWidth(ctx->clangTargetInfo->getProgramAddressSpace());
+      return ctx->clangTargetInfo->getPointerWidth(ctx->getProgramAddressSpaceAsLangAS());
     case IR::CTypeKind::Bool:
       return ctx->clangTargetInfo->getBoolWidth();
     case IR::CTypeKind::Int:
@@ -133,12 +133,12 @@ Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {
       return ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getUIntPtrType());
     case IR::CTypeKind::PtrDiff:
       return ctx->clangTargetInfo->getTypeWidth(
-          ctx->clangTargetInfo->getPtrDiffType(ctx->clangTargetInfo->getProgramAddressSpace()));
+          ctx->clangTargetInfo->getPtrDiffType(ctx->getProgramAddressSpaceAsLangAS()));
     case IR::CTypeKind::UPtrDiff:
       return ctx->clangTargetInfo->getTypeWidth(
-          ctx->clangTargetInfo->getUnsignedPtrDiffType(ctx->clangTargetInfo->getProgramAddressSpace()));
+          ctx->clangTargetInfo->getUnsignedPtrDiffType(ctx->getProgramAddressSpaceAsLangAS()));
     case IR::CTypeKind::Pointer:
-      return ctx->clangTargetInfo->getPointerWidth(ctx->clangTargetInfo->getProgramAddressSpace());
+      return ctx->clangTargetInfo->getPointerWidth(ctx->getProgramAddressSpaceAsLangAS());
     case IR::CTypeKind::SigAtomic:
       return ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSigAtomicType());
     case IR::CTypeKind::ProcessID:

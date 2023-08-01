@@ -53,7 +53,7 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
                                   mod->getLLVMModule()->getDataLayout().getTypeAllocSize(typRes->getLLVMType()));
   }
   mod->linkNative(IR::NativeUnit::malloc);
-  auto* resTy    = IR::PointerType::get(true, typRes, IR::PointerOwner::OfHeap(), count != nullptr, ctx->llctx);
+  auto* resTy    = IR::PointerType::get(true, typRes, IR::PointerOwner::OfHeap(), count != nullptr, ctx);
   auto* mallocFn = mod->getLLVMModule()->getFunction("malloc");
   if (resTy->isMulti()) {
     SHOW("Creating alloca for multi pointer")
@@ -62,7 +62,7 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
         ctx->builder.CreatePointerCast(
             ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
                                     {count ? ctx->builder.CreateMul(size, countRes->getLLVM()) : size}),
-            llvm::PointerType::get(resTy->getSubType()->getLLVMType(), 0u)),
+            llvm::PointerType::get(resTy->getSubType()->getLLVMType(), ctx->dataLayout->getProgramAddressSpace())),
         ctx->builder.CreateStructGEP(resTy->getLLVMType(), llAlloca, 0u));
     SHOW("Storing the size of the multi pointer")
     ctx->builder.CreateStore(countRes->getLLVM(), ctx->builder.CreateStructGEP(resTy->getLLVMType(), llAlloca, 1u));
@@ -128,7 +128,8 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
                 expPtrTy->getSubType()->getLLVMType(),
                 exp->getType()->asPointer()->isMulti()
                     ? ctx->builder.CreateLoad(
-                          llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(), 0u),
+                          llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(),
+                                                 ctx->dataLayout->getProgramAddressSpace()),
                           ctx->builder.CreateStructGEP(exp->isReference()
                                                            ? exp->getType()->asReference()->getSubType()->getLLVMType()
                                                            : exp->getType()->getLLVMType(),
@@ -139,7 +140,8 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
                                                          : exp->getType()->getLLVMType(),
                                                      exp->getLLVM())
                            : exp->getLLVM()),
-                llvm::ConstantPointerNull::get(llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(), 0u))),
+                llvm::ConstantPointerNull::get(llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(),
+                                                                      ctx->dataLayout->getProgramAddressSpace()))),
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
         trueBlock->getBB(), restBlock->getBB());
     mod->linkNative(IR::NativeUnit::free);
@@ -150,7 +152,8 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
         freeFn->getFunctionType(), freeFn,
         {ctx->builder.CreatePointerCast(
             expPtrTy->isMulti()
-                ? ctx->builder.CreateLoad(llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(), 0u),
+                ? ctx->builder.CreateLoad(llvm::PointerType::get(expPtrTy->getSubType()->getLLVMType(),
+                                                                 ctx->dataLayout->getProgramAddressSpace()),
                                           ctx->builder.CreateStructGEP(expPtrTy->getLLVMType(), exp->getLLVM(), 0u))
                 : exp->getLLVM(),
             llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
@@ -261,12 +264,14 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
         ctx->builder.CreateCall(
             reallocFn->getFunctionType(), reallocFn,
             {ctx->builder.CreatePointerCast(
-                 ctx->builder.CreateLoad(llvm::PointerType::get(typ->getLLVMType(), 0u),
-                                            ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
+                 ctx->builder.CreateLoad(
+                     llvm::PointerType::get(typ->getLLVMType(), ctx->dataLayout->getProgramAddressSpace()),
+                     ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
                  llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
                 ctx->builder.CreateMul(countVal->getLLVM(),
                                        llvm::ConstantExpr::getSizeOf(ptrVal->getType()->getLLVMType()))}),
-        llvm::PointerType::get(ptrType->asPointer()->getSubType()->getLLVMType(), 0u));
+        llvm::PointerType::get(ptrType->asPointer()->getSubType()->getLLVMType(),
+                                  ctx->dataLayout->getProgramAddressSpace()));
     auto* resAlloc = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), ptrType->getLLVMType());
     SHOW("Storing raw pointer into multipointer")
     ctx->builder.CreateStore(ptrRes, ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 0u));

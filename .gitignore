@@ -19,3 +19,4 @@ build/
 test/
 todo.md
 compile_commands.json
+src/CMakeSettings.json

@@ -1,6 +1,6 @@
 #include "./qat_sitter.hpp"
-#include "memory_tracker.hpp"
 #include "cli/config.hpp"
+#include "memory_tracker.hpp"
 #include <iostream>
 
 #if PlatformIsWindows
@@ -8,13 +8,16 @@
 #include <windows.h>
 #endif
 
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#define DISABLE_NEWLINE_AUTO_RETURN        0x0008
+
 void setTerminalColors(qat::cli::Config* cfg) {
-  if (cfg->noColorMode()) {
+  if (!cfg->noColorMode()) {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD  consoleMode;
     GetConsoleMode(handle, &consoleMode);
-    consoleMode |= 0x0004;
-    consoleMode |= 0x0008;
+    consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    consoleMode |= DISABLE_NEWLINE_AUTO_RETURN;
     SetConsoleMode(handle, consoleMode);
   }
 }

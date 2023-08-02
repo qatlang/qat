@@ -5,8 +5,10 @@
 #include "../utils/file_range.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
+#include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/TargetInfo.h"
 #include "llvm/IR/ConstantFolder.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include <chrono>
@@ -94,8 +96,13 @@ private:
 
   Vec<IR::QatModule*> modulesWithErrors;
   bool                moduleAlreadyHasErrors(IR::QatModule* mod);
-  void                addError(const String& message, const FileRange& fileRange);
-  QatSitter*          sitter = nullptr;
+  void                addError(const String& message, Maybe<FileRange> fileRange);
+
+  Vec<std::tuple<String, u64, u64>> getContentForDiagnostics(FileRange const& _range) const;
+
+  void printRelevantFileContent(FileRange const& fileRange, bool isError) const;
+
+  QatSitter* sitter = nullptr;
 
 public:
   Context();
@@ -133,10 +140,10 @@ public:
   useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
   void                        writeJsonResult(bool status) const;
 
-  exitFn void   Error(const String& message, const FileRange& fileRange);
+  exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
   void          Warning(const String& message, const FileRange& fileRange) const;
-  static String highlightError(const String& message, const char* color = colors::yellow);
-  static String highlightWarning(const String& message, const char* color = colors::yellow);
+  static String highlightError(const String& message, const char* color = colors::bold::yellow);
+  static String highlightWarning(const String& message, const char* color = colors::bold::yellow);
   ~Context();
 };
 

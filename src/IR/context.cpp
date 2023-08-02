@@ -10,14 +10,10 @@
 #include "member_function.hpp"
 #include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/DiagnosticDriver.h"
-#include "clang/Basic/DiagnosticIDs.h"
-#include "clang/Basic/DiagnosticOptions.h"
-#include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/CodeGen.h"
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 
 namespace qat::IR {
@@ -367,12 +363,12 @@ Maybe<utils::RequesterInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* 
 
 String Context::highlightError(const String& message, const char* color) {
   auto* cfg = cli::Config::get();
-  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::red, "`");
+  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`");
 }
 
 String Context::highlightWarning(const String& message, const char* color) {
   auto* cfg = cli::Config::get();
-  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::purple, "`");
+  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`");
 }
 
 void Context::writeJsonResult(bool status) const {
@@ -425,29 +421,33 @@ clang::LangAS Context::getProgramAddressSpaceAsLangAS() const {
   }
 }
 
+void Context::addError(const String& message, Maybe<FileRange> fileRange) {
   auto* cfg = cli::Config::get();
   if (activeGeneric) {
     codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeGeneric->name,
                                        activeGeneric->fileRange));
-    std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
-              << Colored(colors::reset) << " " << Colored(colors::bold::red)
-              << "Errors generated while creating generic variant: " << highlightError(activeGeneric->name)
-              << Colored(colors::reset) << " | " << Colored(colors::underline::green)
-              << activeGeneric->fileRange.file.string() << ":" << activeGeneric->fileRange.start.line << ":"
-              << activeGeneric->fileRange.start.character << Colored(colors::reset) << " >> "
-              << Colored(colors::underline::green) << activeGeneric->fileRange.file.string() << ":"
-              << activeGeneric->fileRange.end.line << ":" << activeGeneric->fileRange.end.character
-              << Colored(colors::reset) << "\n";
+    std::cerr << "\n"
+              << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan) << " --> "
+              << Colored(colors::reset) << activeGeneric->fileRange.file.string() << ":"
+              << activeGeneric->fileRange.start.line << ":" << activeGeneric->fileRange.start.character << "\n"
+              << "Errors while creating generic variant: " << highlightError(activeGeneric->name) << "\n"
+              << "\n";
   }
   codeProblems.push_back(
       CodeProblem(true, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
-  std::cout << Colored(colors::highIntensityBackground::red) << "  error  " << Colored(colors::white) << "▌"
-            << Colored(colors::reset) << " " << Colored(colors::bold::red)
+  std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR ";
+  if (fileRange) {
+    std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
+              << fileRange.value().start.line << ":" << fileRange.value().start.character;
+  }
+  std::cerr << Colored(colors::bold::white) << "\n"
             << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
-            << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.start.line
-            << ":" << fileRange.start.character << Colored(colors::reset) << " >> " << Colored(colors::underline::green)
-            << fileRange.file.string() << ":" << fileRange.end.line << ":" << fileRange.end.character
-            << Colored(colors::reset) << "\n";
+            << "\n";
+  if (fileRange) {
+    printRelevantFileContent(fileRange.value(), true);
+  }
+  std::cerr << "\n";
+
   if (!moduleAlreadyHasErrors(mod)) {
     activeGeneric = None;
     modulesWithErrors.push_back(mod);
@@ -458,13 +458,74 @@ clang::LangAS Context::getProgramAddressSpaceAsLangAS() const {
   }
 }
 
-void Context::Error(const String& message, const FileRange& fileRange) {
+void Context::printRelevantFileContent(FileRange const& fileRange, bool isError) const {
+  auto cfg = cli::Config::get();
+  if (!fs::is_regular_file(fileRange.file)) {
+    return;
+  }
+  auto lines = getContentForDiagnostics(fileRange);
+  for (auto& lineInfo : lines) {
+    std::cerr << "▌ " << std::get<0>(lineInfo) << "\n";
+    if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
+      String spacing;
+      if (std::get<1>(lineInfo) > 0) {
+        spacing.reserve(std::get<1>(lineInfo));
+      }
+      for (usize i = 0; i < std::get<1>(lineInfo); i++) {
+        if (std::get<0>(lineInfo).at(i) == '\t') {
+          spacing += "\t";
+        } else {
+          spacing += " ";
+        }
+      }
+      auto indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
+      if (indicatorCount > 0) {
+        indicatorCount--;
+      }
+      String indicator(indicatorCount, '^');
+      std::cerr << "▌ " << spacing << (isError ? Colored(colors::bold::red) : Colored(colors::bold::purple))
+                << indicator << Colored(colors::reset) << "\n";
+    }
+  }
+}
+
+void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   addError(message, fileRange);
   writeJsonResult(false);
   sitter->destroy();
   delete cli::Config::get();
   MemoryTracker::report();
   exit(0);
+}
+
+Vec<std::tuple<String, u64, u64>> Context::getContentForDiagnostics(FileRange const& _range) const {
+  Vec<std::tuple<String, u64, u64>> result;
+  std::ifstream                     file(_range.file);
+  String                            line;
+  u64                               lineCount = 0;
+  while (std::getline(file, line)) {
+    if ((_range.start.line > 0u) && (lineCount == (_range.start.line - 2))) {
+      // Line before the first relevant line in file range
+      result.push_back({line, 0u, 0u});
+    } else if ((lineCount >= _range.start.line - 1) && (lineCount < _range.end.line)) {
+      // Relevant line
+      if (_range.start.line == _range.end.line) {
+        result.push_back({line, _range.start.character - 1, _range.end.character});
+      } else if (lineCount == _range.start.line) {
+        result.push_back({line, _range.start.character, line.size() - 1});
+      } else if (lineCount == _range.end.line) {
+        result.push_back({line, 0u, _range.end.character});
+      } else {
+        result.push_back({line, 0u, line.size() - 1});
+      }
+    } else if ((_range.start.line <= UINT64_MAX) && (lineCount == (_range.end.line))) {
+      // Line after the last relevant line in file range
+      result.push_back({line, 0u, 0u});
+      break;
+    }
+    lineCount++;
+  }
+  return result;
 }
 
 void Context::Warning(const String& message, const FileRange& fileRange) const {
@@ -474,13 +535,13 @@ void Context::Warning(const String& message, const FileRange& fileRange) const {
   codeProblems.push_back(
       CodeProblem(false, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
   auto* cfg = cli::Config::get();
-  std::cout << Colored(colors::highIntensityBackground::purple) << " warning " << Colored(colors::blue) << "▌"
-            << Colored(colors::reset) << " " << Colored(colors::bold::purple)
+  std::cout << "\n"
+            << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan) << " --> "
+            << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line << ":"
+            << fileRange.start.character << Colored(colors::bold::white) << "\n"
             << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
-            << " | " << Colored(colors::underline::green) << fileRange.file.string() << ":" << fileRange.start.line
-            << ":" << fileRange.start.character << Colored(colors::reset) << " >> " << Colored(colors::underline::green)
-            << fileRange.file.string() << ":" << fileRange.end.line << ":" << fileRange.end.character
-            << Colored(colors::reset) << "\n";
+            << "\n";
+  printRelevantFileContent(fileRange, false);
 }
 
 } // namespace qat::IR

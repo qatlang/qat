@@ -2,134 +2,150 @@ name: Build Compiler
 
 on:
   push:
-    branches: [ "main" ]
+    branches: []
   pull_request:
-    branches: [ "main" ]
+    branches: []
 
 env:
   LINUX_LLVM_DIR: /usr/lib/llvm-15
-  
 
 jobs:
   linux_build:
     name: Linux Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Update apt cache
-      run: sudo apt update
+      - uses: actions/checkout@v3
 
-    - name: Install ninja-build
-      run: sudo apt --yes install ninja-build
+      - name: Update apt cache
+        run: sudo apt update
 
-    - name: Install Clang 15
-      run: sudo apt --yes install clang-15
+      - name: Install ninja-build
+        run: sudo apt --yes install ninja-build
 
-    - name: Install LLD 15
-      run: |
-        sudo apt --yes install lld-15
-        echo ${{ env.LINUX_LLVM_DIR }}/bin >> $GITHUB_PATH
+      - name: Install Clang 15
+        run: sudo apt --yes install clang-15
 
-    - name: Display Setup
-      run: |
-        echo "ninja-build is installed at: $(which ninja)"
-        echo "CMake is installed at: $(which cmake)"
-        echo "Clang is installed at: $(which clang-15)"
-        echo "LLVM is installed at: $(llvm-config --prefix)"
-        echo "LLD is installed at: $(which ld.lld)"
-       
-    - name: Setting vars
-      id: setting_vars
-      run: echo "CLANG15_PATH=$(echo $(which clang-15))" >> $GITHUB_OUTPUT
-    
-    - name: Configure CMake
-      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Linux -DLLVM_DIR=${{ env.LINUX_LLVM_DIR }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=Release -GNinja
-    
-    - name: Build Compiler
-      run: ninja -C ${{ github.workspace }}/build
+      - name: Install LLD 15
+        run: |
+          sudo apt --yes install lld-15
+          echo ${{ env.LINUX_LLVM_DIR }}/bin >> $GITHUB_PATH
 
-    - name: Check compiler version
-      run: |
-        chmod +x ${{ github.workspace }}/build/qat
-        echo "Qat version is: $(${{ github.workspace }}/build/qat version)"
-    
-    - name: Uploading compiler executable
-      uses: actions/upload-artifact@v3
-      with:
-        name: QatLinux
-        path: ${{ github.workspace }}/build/qat
-  
+      - name: Install libclang-15-dev
+        run: sudo apt --yes install libclang-15-dev
+
+      - name: Fix potential package name errors
+        run: |
+          sed -i 's/zstd::libzstd_shared/zstd/' $(llvm-config --prefix)/lib/cmake/llvm/LLVMExports.cmake
+          sed -i 's/Terminfo::terminfo/ncurses/' $(llvm-config --prefix)/lib/cmake/llvm/LLVMExports.cmake
+
+      - name: Display Setup
+        run: |
+          echo "ninja-build is installed at: $(which ninja)"
+          echo "CMake is installed at: $(which cmake)"
+          echo "Clang is installed at: $(which clang-15)"
+          echo "LLVM is installed at: $(llvm-config --prefix)"
+          echo "LLD is installed at: $(which ld.lld)"
+
+      - name: Setting vars
+        id: setting_vars
+        run: echo "CLANG15_PATH=$(echo $(which clang-15))" >> $GITHUB_OUTPUT
+
+      - name: Configure CMake
+        run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Linux -DLLVM_DIR=${{ env.LINUX_LLVM_DIR }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=Release -GNinja
+
+      - name: Build Compiler
+        run: ninja -C ${{ github.workspace }}/build
+
+      - name: Check compiler version
+        run: |
+          chmod +x ${{ github.workspace }}/build/qat
+          echo "Qat version is: $(${{ github.workspace }}/build/qat version)"
+
+      - name: Uploading compiler executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: QatLinux
+          path: ${{ github.workspace }}/build/qat
 
   windows_build:
     name: Windows Build
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install CMake
-      run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-      shell: pwsh
-    
-    - name: Install Visual Studio Build Tools
-      run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended --installWhileDownloading"
-      shell: pwsh
+      - uses: actions/checkout@v3
 
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
-      
-    - name: Display Setup
-      run: |
-        echo "CMake is installed at $(where.exe cmake.exe)"
-        echo "MSBuild is installed at $(where.exe MSBuild)"
-      shell: pwsh
-    
-    - name: Configure CMake
-      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Windows -DLLVM_DIR="${{ github.workspace }}/libs/llvm_windows" -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=Release -G"Visual Studio 17 2022"
-    
-    - name: Build Compiler
-      run: |
-        CD ${{ github.workspace }}\build
-        MSBuild qat.sln /m /p:Configuration=Release
-        CD ..
-    
-    - name: Check compiler version
-      run: |
-        echo "Qat version is: $(${{ github.workspace }}\build\Release\qat.exe version)"
-    
-    - name: Uploading compiler executable
-      uses: actions/upload-artifact@v3
-      with:
-        name: QatWindows
-        path: ${{ github.workspace }}\build\Release\qat.exe
+      - name: Install CMake
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        shell: pwsh
 
+      - name: Install Visual Studio Build Tools
+        run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --no-includeRecommended --installWhileDownloading"
+        shell: pwsh
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Display Setup
+        run: |
+          echo "CMake is installed at $(where.exe cmake.exe)"
+          echo "MSBuild is installed at $(where.exe MSBuild)"
+        shell: pwsh
+
+      - name: Configure CMake
+        run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Windows -DLLVM_DIR="${{ github.workspace }}/libs/llvm_windows" -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=Release -G"Visual Studio 17 2022"
+
+      - name: Build Compiler
+        run: |
+          CD ${{ github.workspace }}\build
+          MSBuild qat.sln /m /p:Configuration=Release
+          CD ..
+
+      - name: Check compiler version
+        run: |
+          echo "Qat version is: $(${{ github.workspace }}\build\Release\qat.exe version)"
+
+      - name: Uploading compiler executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: QatWindows
+          path: ${{ github.workspace }}\build\Release\qat.exe
 
   mac_build:
     name: Mac Build
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        brew install zstd
-        brew install zlib
-        brew install ncurses
-        brew install libxml2
-        brew install libffi
+      - name: Install dependencies
+        run: |
+          brew install zstd
+          brew install zlib
+          brew install ncurses
+          brew install libxml2
+          brew install libffi
 
-    - name: Install LLVM 15
-      run: brew install llvm@15
+      - name: Install LLVM 15
+        run: |
+          brew install llvm@15
+          sed -i '' 's/zstd::libzstd_shared/zstd/' $(brew --prefix llvm@15)/lib/cmake/llvm/LLVMExports.cmake
+          sed -i '' 's/Terminfo::terminfo/ncurses/' $(brew --prefix llvm@15)/lib/cmake/llvm/LLVMExports.cmake
 
-    - name: Configure CMake
-      run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Mac -DHOMEBREW_PREFIX_PATH=/opt/homebrew -DCMAKE_EXPORT_COMPILE_COMMANDS=0 -DBUILD_SHARED_LIBS=false -DLLVM_ENABLE_ASSERTIONS=O -DCMAKE_BUILD_TYPE=Release -G"Xcode"
+      - name: Install ninja-build
+        run: brew install ninja
 
-    - name: Build Compiler
-      run:  |
-        cd ${{ github.workspace }}/build 
-        xcodebuild -project qat.xcodeproj -configuration Release
-        cd ..
-    
-    - name: Check build directory
-      run: |
-        echo "Build results are: $(ls -R ${{ github.workspace }}/build)"
+      - name: Setting vars
+        id: setting_vars
+        run: echo "CLANG15_PATH=$(brew --prefix llvm@15)/bin/clang" >> $GITHUB_OUTPUT
+
+      - name: Configure CMake
+        run: cmake -S ${{ github.workspace }}/src -B ${{ github.workspace }}/build -DPLATFORM=Mac -DCMAKE_C_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DCMAKE_CXX_COMPILER=${{ steps.setting_vars.outputs.CLANG15_PATH }} -DBUILD_SHARED_LIBS=true -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF -DCMAKE_BUILD_TYPE=Release -G"Xcode"
+
+      - name: Build Compiler
+        run: |
+          cd ${{ github.workspace }}/build
+          xcodebuild -project qat.xcodeproj -configuration Release
+          cd ..
+
+      - name: Check build directory
+        run: |
+          echo "Build results are: $(ls -R ${{ github.workspace }}/build)"
+

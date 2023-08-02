@@ -3917,7 +3917,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::parseFunctionParameters(ParserContext& p
             i++;
           }
         } else {
-          Error("Expected : after the argument name", RangeAt(i));
+          Error("Expected :: after the argument name", RangeAt(i));
         }
         break;
       }

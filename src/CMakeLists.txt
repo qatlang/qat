@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-	VERSION "0.7.0"
+	VERSION "0.8.0"
 	DESCRIPTION "Qat Programming Language"
 	HOMEPAGE_URL "https://qat.dev")
 
 SET(LLVM_ROOT_DIR ${LLVM_DIR})
+SET(CLANG_LINK_CLANG_DYLIB ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
 	SET(IS_RELEASE ON)
@@ -18,7 +19,6 @@ endif()
 if(NOT PLATFORM STREQUAL Windows)
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 	set(BUILD_SHARED_LIBS OFF)
-	set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
 if(PLATFORM STREQUAL Linux)
@@ -103,8 +103,10 @@ endif()
 #
 if(IS_MAC OR IS_LINUX)
 	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR}/lib/cmake/llvm NO_DEFAULT_PATH)
+	find_package(Clang REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR}/lib/cmake/clang NO_DEFAULT_PATH)
 else()
-	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_DIR} NO_DEFAULT_PATH)
+	find_package(LLVM REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR} NO_DEFAULT_PATH)
+	find_package(Clang REQUIRED CONFIG PATHS ${LLVM_ROOT_DIR} NO_DEFAULT_PATH)
 endif()
 
 message(STATUS "Found LLVM version ${LLVM_VERSION}")
@@ -116,15 +118,15 @@ message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 if(IS_LINUX)
 	if(PLATFORM STREQUAL Arm64)
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -fexceptions -frtti -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		else()
-			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -fexceptions -frtti -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		endif()
 	else()
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -fexceptions -frtti")
+			SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto")
 		else()
-			SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -fexceptions -frtti")
+			SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete")
 		endif()
 	endif()
 elseif(IS_WINDOWS)
@@ -135,9 +137,9 @@ elseif(IS_WINDOWS)
 	endif()
 elseif(IS_MAC)
 	if(IS_RELEASE)
-		SET(CMAKE_CXX_FLAGS "-static -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fexceptions -frtti -I${LLVM_ROOT_DIR}/include/")
+		SET(CMAKE_CXX_FLAGS "-shared -Os -std=c++20 -fuse-ld=lld -flto -w -s -Wdelete-incomplete -fPIC -I${LLVM_ROOT_DIR}/include/")
 	else()
-		SET(CMAKE_CXX_FLAGS "-static -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fexceptions -frtti -I${LLVM_ROOT_DIR}/include/")
+		SET(CMAKE_CXX_FLAGS "-shared -g -Os -std=c++20 -fuse-ld=lld -Wall -flto -Wdelete-incomplete -fPIC -I${LLVM_ROOT_DIR}/include/")
 	endif()
 endif()
 
@@ -145,7 +147,10 @@ endif()
 #
 #
 if(IS_WINDOWS)
-	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --libs core
+	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --link-static --libs core
+		OUTPUT_VARIABLE LLVM_LIBRARIES)
+elseif(IS_MAC)
+	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-shared --libs core
 		OUTPUT_VARIABLE LLVM_LIBRARIES)
 else()
 	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-static --libs core
@@ -192,13 +197,13 @@ endif()
 if(IS_LINUX)
 	target_link_libraries(
 		${PROJECT_NAME} ${LLVM_LIBRARIES}
-		LLVMBitWriter LLVMLinker stdc++ stdc++fs rt dl pthread m z tinfo xml2
+		LLVMBitWriter LLVMLinker clangBasic stdc++ stdc++fs rt dl pthread m z tinfo xml2
 		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
 	)
 elseif(IS_MAC)
 	target_link_libraries(
 		${PROJECT_NAME} ${LLVM_LIBRARIES}
-		LLVMBitWriter LLVMLinker stdc++ dl pthread m xml2 z zstd curses
+		LLVMBitWriter LLVMLinker clangBasic stdc++ dl pthread m xml2 z zstd curses
 		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
 	)
 elseif(IS_WINDOWS)
@@ -207,7 +212,7 @@ elseif(IS_WINDOWS)
 		${PROJECT_NAME}
 		QAT_UTILS QAT_CLI QAT_AST QAT_LEXER QAT_PARSER QAT_IR
 		${LLVM_LIBRARIES}
-		LLVMBitWriter
+		LLVMBitWriter clangBasic
 	)
 endif()
 

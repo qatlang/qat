@@ -16,11 +16,6 @@ else()
 	add_compile_definitions(IS_RELEASE=false)
 endif()
 
-if(NOT PLATFORM STREQUAL Windows)
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-	set(BUILD_SHARED_LIBS OFF)
-endif()
-
 if(PLATFORM STREQUAL Linux)
 	add_compile_definitions(PlatformIsLinux=1)
 	add_compile_definitions(PlatformIsWindows=0)

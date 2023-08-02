@@ -5,7 +5,7 @@
 namespace qat::cli::display {
 
 void detailedVersion(String const& buildCommit) {
-  std::cout << "qat " << VERSION_STRING << "\n"
+  std::cout << "QAT Compiler " << VERSION_STRING << "\n"
             << "Target: " << LLVM_DEFAULT_TARGET_TRIPLE << "\n"
             << ((String(LLVM_HOST_TRIPLE) != LLVM_DEFAULT_TARGET_TRIPLE) ? "Host: " LLVM_HOST_TRIPLE "\n" : "")
             << "Build Type: " << BUILD_TYPE << "\n"
@@ -24,8 +24,7 @@ void about() {
 
 void build_info(const String& buildCommit) {
   std::cout << "Build Info\n"
-               "  Version: "
-            << VERSION_STRING << "+" << buildCommit << "\n"
+            << "  Version: " << VERSION_STRING << "\n"
             << "  Type: " << BUILD_TYPE << "\n"
             << "  Commit: " << buildCommit << "\n"
             << "  Branch: " << BUILD_BRANCH << std::endl;

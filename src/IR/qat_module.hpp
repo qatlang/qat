@@ -13,6 +13,7 @@
 #include "./types/mix.hpp"
 #include "entity_overview.hpp"
 #include "types/definition.hpp"
+#include "unit_name_info.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <vector>
 
@@ -40,6 +41,7 @@ private:
   Deque<String> nativeLibsToLink;
   bool          linkPthread = false;
   Maybe<String> foreignID;
+  Maybe<String> alternativeName;
 
   void addLibToLink(const String& name) {
     for (const auto& lib : nativeLibsToLink) {
@@ -49,10 +51,12 @@ private:
     }
     nativeLibsToLink.push_back(name);
   }
-  useit bool   isForeign() { return foreignID.has_value(); }
-  useit bool   isForeignC() { return foreignID.has_value() && (foreignID.value() == "C"); }
-  useit bool   isForeignCPP() { return foreignID.has_value() && (foreignID.value() == "C++"); }
-  useit String foreignIdentity() { return foreignID.value_or(""); }
+  useit bool   isForeign() const { return foreignID.has_value(); }
+  useit bool   isForeignC() const { return foreignID.has_value() && (foreignID.value() == "C"); }
+  useit bool   isForeignCPP() const { return foreignID.has_value() && (foreignID.value() == "C++"); }
+  useit String foreignIdentity() const { return foreignID.value_or(""); }
+  useit bool   hasAlternativeName() const { return alternativeName.has_value(); }
+  useit String getAlternativeName() const { return alternativeName.value_or(""); }
 
 public:
   ModuleInfo() = default;
@@ -164,8 +168,8 @@ public:
                                           ModuleType type, const utils::VisibilityInfo& visibilityInfo,
                                           llvm::LLVMContext& ctx);
   useit static QatModule* CreateFileMod(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
-                                     Vec<String> content, Vec<ast::Node*>, utils::VisibilityInfo visibilityInfo,
-                                     llvm::LLVMContext& ctx);
+                                        Vec<String> content, Vec<ast::Node*>, utils::VisibilityInfo visibilityInfo,
+                                        llvm::LLVMContext& ctx);
   useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, Identifier name,
                                         Vec<String> content, Vec<ast::Node*> nodes,
                                         const utils::VisibilityInfo& visibInfo, llvm::LLVMContext& ctx);
@@ -187,14 +191,17 @@ public:
   void             setFileRange(FileRange fileRange);
   FileRange        getFileRange() const;
 
+  useit Vec<utils::UnitNameInfo> getLinkNameUnits() const;
+  useit String getLinkingName(Vec<utils::UnitNameInfo> const& names, bool shouldOverrideParents) const;
+
   useit bool       isParentModuleOf(QatModule* other) const;
   useit bool       hasClosestParentLib() const;
   useit QatModule* getClosestParentLib();
   useit bool       hasClosestParentBox() const;
   useit QatModule* getClosestParentBox();
-  useit Pair<unsigned, String> resolveNthParent(const String& name) const;
-  useit bool                   hasNthParent(u32 n) const;
-  useit QatModule*             getNthParent(u32 n);
+  useit bool       isInForeignModuleOfType(String id) const;
+  useit bool       hasNthParent(u32 n) const;
+  useit QatModule* getNthParent(u32 n);
   useit const utils::VisibilityInfo& getVisibility() const;
   useit Function* createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
                                  bool isVariadic, const FileRange& fileRange, const utils::VisibilityInfo& visibility,

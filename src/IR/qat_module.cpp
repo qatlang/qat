@@ -135,25 +135,12 @@ QatModule* QatModule::getParentFile() { // NOLINT(misc-no-recursion)
   return this;
 }
 
-Pair<unsigned, String> QatModule::resolveNthParent(const String& name) const {
-  u64 result = 0;
-  if (name.find("..:") == 0) {
-    u64 i;
-    for (i = 0; i < name.length(); i++) {
-      if (name.find("..:", i) == i) {
-        result++;
-        i += 2;
-      } else {
-        break;
-      }
-    }
-    return {result, name.substr(i)};
-  }
-  return {result, name};
+bool QatModule::isInForeignModuleOfType(String id) const {
+  return (isModuleInfoProvided && moduleInfo.foreignID.has_value() && moduleInfo.foreignID.value() == id) ||
+         (parent && parent->isInForeignModuleOfType(id));
 }
 
-bool QatModule::hasNthParent( // NOLINT(misc-no-recursion)
-    u32 n) const {
+bool QatModule::hasNthParent(u32 n) const {
   if (n == 1) {
     return (parent != nullptr);
   } else if (n > 1) {
@@ -387,12 +374,124 @@ String QatModule::getFullNameWithChild(const String& child) const {
   }
 }
 
+Vec<utils::UnitNameInfo> QatModule::getLinkNameUnits() const {
+  if (parent) {
+    auto parentVal = parent->getLinkNameUnits();
+    if (shouldPrefixName()) {
+      parentVal.push_back(utils::UnitNameInfo(
+          name.value, moduleType == ModuleType::box ? utils::UnitNameType::box : utils::UnitNameType::lib, this,
+          moduleInfo.alternativeName));
+    }
+    return parentVal;
+  } else {
+    if (shouldPrefixName()) {
+      return Vec<utils::UnitNameInfo>({utils::UnitNameInfo(
+          name.value, moduleType == ModuleType::box ? utils::UnitNameType::box : utils::UnitNameType::lib, this,
+          moduleInfo.alternativeName)});
+    } else {
+      return Vec<utils::UnitNameInfo>();
+    }
+  }
+}
+
+String QatModule::getLinkingName(Vec<utils::UnitNameInfo> const& names, bool shouldOverrideParents) const {
+  if (isInForeignModuleOfType("C")) {
+    return names.back().getUsableName();
+  } else if (isInForeignModuleOfType("C++")) {
+    String result("");
+    // FIXME - Implement C++ name mangling
+    return result;
+  } else {
+    String result = "qat'";
+    for (usize i = 0; i < names.size(); i++) {
+      auto& unit = names.at(i);
+      if (unit.namingType != utils::UnitNameType::genericList) {
+        result += ":";
+      }
+      switch (unit.namingType) {
+        case utils::UnitNameType::box: {
+          result += "box_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::lib: {
+          result += "lib_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::type: {
+          result += "type_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::TypeDef: {
+          result += "type_def_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::choice: {
+          result += "type_choice_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::mix: {
+          result += "type_mix_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::staticField: {
+          result += "static_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::region: {
+          result += "region_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::function: {
+          result += "fn_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::staticFunction: {
+          result += "staticfn_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::variationMethod: {
+          result += "variation_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::method: {
+          result += "method_";
+          result += unit.getUsableName();
+          break;
+        }
+        case utils::UnitNameType::genericList: {
+          result += "'[";
+          for (usize j = 0; j < unit.subUnits.size(); j++) {
+            result += unit.subUnits.at(j).getUsableName();
+            if (j != (unit.subUnits.size() - 1)) {
+              result += ",";
+            }
+          }
+          result += "]";
+          break;
+        }
+      }
+    }
+    return result;
+  }
+}
+
 bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box || moduleType == ModuleType::lib); }
 
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!moduleInitialiser) {
     moduleInitialiser = IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
-                                             {/* Generics */}, IR::VoidType::get(ctx->llctx), false, false, {}, false,
+                                             {/* Generics */}, IR::VoidType::get(ctx->llctx), false, {}, false,
                                              name.range, utils::VisibilityInfo::pub(), ctx->llctx);
     auto* entry       = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
@@ -1625,7 +1724,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
     } else {
       ctx->Error("Error while creating parent directory for LLVM output file with path: " +
                      ctx->highlightError(llPath.parent_path().string()) + " with error: " + errorCode.message(),
-                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+                 None);
     }
     ctx->mod = oldMod;
   }
@@ -1666,14 +1765,14 @@ void QatModule::compileToObject(IR::Context* ctx) {
       SHOW("Command is: " << compileCommand)
       if (std::system(compileCommand.c_str())) {
         ctx->writeJsonResult(false);
-        ctx->Error("Could not compile the LLVM file", {filePath, {0u, 0u}, {0u, 0u}});
+        ctx->Error("Could not compile the LLVM file: " + filePath.string(), None);
       }
       isCompiledToObject = true;
     } else {
       ctx->Error("Could not create parent directory for the Object file output: " +
                      ctx->highlightError(objectFilePath.value().parent_path().string()) +
                      " with error: " + errorCode.message(),
-                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+                 None);
     }
   }
 }
@@ -1724,13 +1823,13 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       if (cfg->shouldBuildStatic()) {
         SHOW("Static Build Command :: " << staticCommand)
         if (std::system(staticCommand.c_str())) {
-          ctx->Error("Statically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
+          ctx->Error("Statically linking & compiling executable failed: " + filePath.string(), None);
         }
       }
       if (cfg->shouldBuildShared()) {
         SHOW("Dynamic Build Command :: " << sharedCommand)
         if (std::system(sharedCommand.c_str())) {
-          ctx->Error("Dynamically linking & compiling executable failed", {filePath, {0u, 0u}, {0u, 0u}});
+          ctx->Error("Dynamically linking & compiling executable failed: " + filePath.string(), None);
         }
       }
     } else {
@@ -1750,8 +1849,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             .append(cmdTwo)
                             .append(PlatformIsWindows ? " > nul" : " > /dev/null")
                             .c_str())) {
-          ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed",
-                     {filePath, {0u, 0u}, {0u, 0u}});
+          ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed", None);
         }
       }
       if (cfg->shouldBuildShared()) {
@@ -1767,8 +1865,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             .append(cmdOne)
                             .append(cmdTwo)
                             .c_str())) {
-          ctx->Error("Dynamic build of module " + ctx->highlightError(filePath.string()) + " failed",
-                     {filePath, {0u, 0u}, {0u, 0u}});
+          ctx->Error("Dynamic build of module " + ctx->highlightError(filePath.string()) + " failed", None);
         }
       }
     }
@@ -1793,7 +1890,7 @@ fs::path QatModule::getResolvedOutputPath(const String& extension, IR::Context* 
     } else {
       ctx->Error("Could not create the parent directory of the output files with path: " +
                      ctx->highlightError(out.string()) + " with error: " + errorCode.message(),
-                 {getParentFile()->filePath, {0u, 0u}, {0u, 0u}});
+                 None);
     }
   }
   return out;
@@ -1834,7 +1931,8 @@ void QatModule::exportJsonFromAST(IR::Context* ctx) {
 llvm::Module* QatModule::getLLVMModule() const { return llvmModule; }
 
 void QatModule::linkNative(NativeUnit nval) {
-  // FIXME - Use integer widths according to the specification and not the same on all platforms
+  // FIXME - Use integer widths according to the specification and not the same
+  // on all platforms
   llvm::LLVMContext& ctx = llvmModule->getContext();
   switch (nval) {
     case NativeUnit::printf: {

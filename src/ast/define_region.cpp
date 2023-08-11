@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-DefineRegion::DefineRegion(Identifier _name, utils::VisibilityKind _visibKind, FileRange _fileRange)
+DefineRegion::DefineRegion(Identifier _name, VisibilityKind _visibKind, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), visibKind(_visibKind) {}
 
 void DefineRegion::defineType(IR::Context* ctx) {
@@ -18,7 +18,7 @@ Json DefineRegion::toJson() const {
   return Json()
       ._("nodeType", "defineRegion")
       ._("name", name)
-      ._("visibilityKind", utils::kindToJsonValue(visibKind))
+      ._("visibilityKind", kindToJsonValue(visibKind))
       ._("fileRange", fileRange);
 }
 

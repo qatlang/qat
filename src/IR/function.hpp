@@ -109,16 +109,16 @@ class Function : public Value, public Uniq, public EntityOverview {
   friend class Block;
 
 protected:
-  Identifier            name;
-  Vec<GenericType*>     generics;
-  QatModule*            mod;
-  Vec<Argument>         arguments;
-  utils::VisibilityInfo visibility_info;
-  FileRange             fileRange;
-  bool                  is_async;
-  bool                  hasVariadicArguments;
-  Vec<Block*>           blocks;
-  IR::LocalValue*       strComparisonIndex = nullptr;
+  Identifier        name;
+  Vec<GenericType*> generics;
+  QatModule*        mod;
+  Vec<Argument>     arguments;
+  VisibilityInfo    visibility_info;
+  FileRange         fileRange;
+  bool              is_async;
+  bool              hasVariadicArguments;
+  Vec<Block*>       blocks;
+  IR::LocalValue*   strComparisonIndex = nullptr;
 
   mutable usize activeBlock   = 0;
   mutable usize copiedCounter = 0;
@@ -131,14 +131,14 @@ protected:
 
   Function(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
            Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
-           const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn = false,
+           const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn = false,
            llvm::GlobalValue::LinkageTypes _linkage         = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
            bool                            ignoreParentName = false);
 
 public:
   static Function*   Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* return_type,
                             bool is_async, Vec<Argument> args, bool has_variadic_args, FileRange fileRange,
-                            const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+                            const VisibilityInfo& visibilityInfo, IR::Context* ctx,
                             llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
                             bool                            ignoreParentName = false);
   useit Value*       call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
@@ -153,8 +153,8 @@ public:
   useit bool               hasReturnArgument() const;
   useit bool               isReturnTypeReference() const;
   useit bool               isReturnTypePointer() const;
-  useit bool               isAccessible(const utils::RequesterInfo& req_info) const;
-  useit utils::VisibilityInfo getVisibility() const;
+  useit bool               isAccessible(const AccessInfo& req_info) const;
+  useit VisibilityInfo     getVisibility() const;
   useit llvm::Function* getLLVMFunction();
   void                  setActiveBlock(usize index) const;
   useit Block*          getBlock() const;
@@ -177,13 +177,13 @@ private:
   Vec<ast::GenericAbstractType*> generics;
   ast::FunctionDefinition*       functionDefinition;
   QatModule*                     parent;
-  utils::VisibilityInfo          visibInfo;
+  VisibilityInfo                 visibInfo;
 
   mutable Vec<GenericVariant<Function>> variants;
 
 public:
   GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, ast::FunctionDefinition* functionDef,
-                  QatModule* parent, const utils::VisibilityInfo& _visibInfo);
+                  QatModule* parent, const VisibilityInfo& _visibInfo);
 
   ~GenericFunction() = default;
 
@@ -192,7 +192,7 @@ public:
   useit usize      getVariantCount() const;
   useit QatModule* getModule() const;
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
-  useit utils::VisibilityInfo getVisibility() const;
+  useit VisibilityInfo            getVisibility() const;
   useit Function* fillGenerics(Vec<IR::GenericToFill*> _types, IR::Context* ctx, const FileRange& fileRange);
   useit bool      allTypesHaveDefaults() const;
 };

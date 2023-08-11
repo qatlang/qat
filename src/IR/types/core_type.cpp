@@ -17,7 +17,7 @@
 namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
-                   const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
+                   const VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       members(std::move(_members)) {
   SHOW("Generating LLVM Type for core type members")
@@ -134,8 +134,10 @@ bool CoreType::hasStatic(const String& _name) const {
   return result;
 }
 
+bool CoreType::isTypeSized() const { return !members.empty(); }
+
 void CoreType::addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                               const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx) {
+                               const VisibilityInfo& visibility, llvm::LLVMContext& ctx) {
   staticMembers.push_back(new StaticMember(this, name, type, variability, initial, visibility));
 }
 
@@ -145,7 +147,7 @@ String CoreType::toString() const { return getFullName(); }
 
 GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  ast::DefineCoreType* _defineCoreType, QatModule* _parent,
-                                 const utils::VisibilityInfo& _visibInfo)
+                                 const VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
                          ._("name", _name.value)
@@ -161,7 +163,7 @@ GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*
 
 Identifier GenericCoreType::getName() const { return name; }
 
-utils::VisibilityInfo GenericCoreType::getVisibility() const { return visibility; }
+VisibilityInfo GenericCoreType::getVisibility() const { return visibility; }
 
 bool GenericCoreType::allTypesHaveDefaults() const {
   for (auto* gen : generics) {

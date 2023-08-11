@@ -20,7 +20,7 @@ namespace qat::IR {
 
 MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent,
                  Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes, Maybe<usize> _defaultVal, IR::Context* ctx,
-                 bool _isPacked, const utils::VisibilityInfo& _visibility, FileRange _fileRange)
+                 bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType",
                      Json()
@@ -63,7 +63,7 @@ MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _pare
   SHOW("Mix type needs destructor: " << (needsDestructor ? "true" : "false"))
   // NOTE - Possibly make this modular when mix types can have custom destructors
   if (needsDestructor) {
-    destructor           = IR::MemberFunction::CreateDestructor(this, _name.range, _fileRange, ctx->llctx);
+    destructor           = IR::MemberFunction::CreateDestructor(this, _name.range, _fileRange, ctx);
     auto* entryBlock     = new IR::Block(destructor, nullptr);
     auto* tagIntTy       = llvm::Type::getIntNTy(ctx->llctx, tagBitWidth);
     auto* remainingBlock = new IR::Block(destructor, nullptr);
@@ -91,7 +91,7 @@ MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _pare
             {new IR::Value(ctx->builder.CreatePointerCast(
                                ctx->builder.CreateStructGEP(llvmType, inst, 1u),
                                llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace())),
-                           IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
+                           IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
             destructor);
         (void)IR::addBranch(ctx->builder, remainingBlock->getBB());
         falseBlock->setActive(ctx->builder);
@@ -187,6 +187,8 @@ usize MixType::getTagBitwidth() const { return tagBitWidth; }
 u64 MixType::getDataBitwidth() const { return maxSize; }
 
 FileRange MixType::getFileRange() const { return fileRange; }
+
+bool MixType::isTypeSized() const { return true; }
 
 String MixType::toString() const { return getFullName(); }
 

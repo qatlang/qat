@@ -110,6 +110,8 @@ PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, PointerOw
 
 bool PointerType::isSubtypeVariable() const { return isSubtypeVar; }
 
+bool PointerType::isTypeSized() const { return true; }
+
 bool PointerType::isMulti() const { return hasMulti; }
 
 QatType* PointerType::getSubType() const { return subType; }

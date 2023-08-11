@@ -3,8 +3,7 @@
 
 namespace qat::ast {
 
-TypeDefinition::TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange,
-                               utils::VisibilityKind _visibKind)
+TypeDefinition::TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange, VisibilityKind _visibKind)
     : Node(std::move(_fileRange)), name(std::move(_name)), subType(_subType), visibKind(_visibKind) {}
 
 void TypeDefinition::defineType(IR::Context* ctx) {

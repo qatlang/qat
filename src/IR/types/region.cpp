@@ -15,12 +15,12 @@
 
 namespace qat::IR {
 
-Region* Region::get(Identifier name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
+Region* Region::get(Identifier name, QatModule* parent, const VisibilityInfo& visibInfo, IR::Context* ctx,
                     FileRange fileRange) {
   return new Region(std::move(name), parent, visibInfo, ctx, std::move(fileRange));
 }
 
-Region::Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo& _visibInfo, IR::Context* ctx,
+Region::Region(Identifier _name, QatModule* _module, const VisibilityInfo& _visibInfo, IR::Context* ctx,
                FileRange _fileRange)
     : EntityOverview("region", Json()._("moduleID", _module->getID())._("visibility", _visibInfo), _name.range),
       name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
@@ -412,9 +412,9 @@ Identifier Region::getName() const { return name; }
 
 String Region::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
-bool Region::isAccessible(const utils::RequesterInfo& reqInfo) const { return visibInfo.isAccessible(reqInfo); }
+bool Region::isAccessible(const AccessInfo& reqInfo) const { return visibInfo.isAccessible(reqInfo); }
 
-const utils::VisibilityInfo& Region::getVisibility() const { return visibInfo; }
+const VisibilityInfo& Region::getVisibility() const { return visibInfo; }
 
 IR::Value* Region::ownData(IR::QatType* otype, Maybe<llvm::Value*> _count, IR::Context* ctx) {
   return new IR::Value(

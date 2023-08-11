@@ -41,6 +41,8 @@ bool UnsignedType::isBoolean() const { return isBool; }
 
 TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
+bool UnsignedType::isTypeSized() const { return true; }
+
 String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
 bool UnsignedType::canBeConstGeneric() const { return bitWidth <= 64u; }

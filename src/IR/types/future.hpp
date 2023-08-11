@@ -20,6 +20,7 @@ public:
   useit String   toString() const final;
   useit TypeKind typeKind() const final;
   useit bool     isDestructible() const final;
+  useit bool     isTypeSized() const final;
   void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };
 

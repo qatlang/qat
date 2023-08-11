@@ -10,7 +10,7 @@
 namespace qat::ast {
 
 DefineCoreType::Member::Member( //
-    QatType* _type, Identifier _name, bool _variability, utils::VisibilityKind _kind, FileRange _fileRange)
+    QatType* _type, Identifier _name, bool _variability, VisibilityKind _kind, FileRange _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability), visibilityKind(_kind),
       fileRange(std::move(_fileRange)) {}
 
@@ -20,12 +20,12 @@ Json DefineCoreType::Member::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", utils::kindToJsonValue(visibilityKind))
+      ._("visibility", kindToJsonValue(visibilityKind))
       ._("fileRange", fileRange);
 }
 
 DefineCoreType::StaticMember::StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
-                                           utils::VisibilityKind _kind, FileRange _fileRange)
+                                           VisibilityKind _kind, FileRange _fileRange)
     : type(_type), name(std::move(_name)), variability(_variability), value(_value), visibilityKind(_kind),
       fileRange(std::move(_fileRange)) {}
 
@@ -35,11 +35,11 @@ Json DefineCoreType::StaticMember::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", utils::kindToJsonValue(visibilityKind))
+      ._("visibility", kindToJsonValue(visibilityKind))
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
+DefineCoreType::DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
                                Vec<ast::GenericAbstractType*> _generics, bool _isPacked)
     : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
       generics(std::move(_generics)) {
@@ -61,8 +61,8 @@ void DefineCoreType::createType(IR::Context* ctx) const {
       needsDestructor = true;
     }
     mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
-                                            (mem->visibilityKind == utils::VisibilityKind::type)
-                                                ? utils::VisibilityInfo::type(mod->getFullNameWithChild(name.value))
+                                            (mem->visibilityKind == VisibilityKind::type)
+                                                ? VisibilityInfo::type(mod->getFullNameWithChild(name.value))
                                                 : ctx->getVisibInfo(mem->visibilityKind)));
   }
   SHOW("Emitted IR for all members")
@@ -95,7 +95,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     coreType->needsImplicitDestructor = true;
   }
   if (destructorDefinition || needsDestructor) {
-    coreType->createDestructor(fileRange, ctx->llctx);
+    coreType->createDestructor(fileRange, ctx);
   }
   SHOW("Created core type in IR")
   for (auto* stm : staticMembers) {
@@ -306,7 +306,7 @@ Json DefineCoreType::toJson() const {
       ._("members", membersJsonValue)
       ._("staticMembers", staticMembersJsonValue)
       ._("isPacked", isPacked)
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("visibility", kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

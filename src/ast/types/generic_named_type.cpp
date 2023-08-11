@@ -17,7 +17,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Generic named type START")
   auto* mod     = ctx->getMod();
   auto* oldMod  = mod;
-  auto  reqInfo = ctx->getReqInfo();
+  auto  reqInfo = ctx->getAccessInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
       mod = mod->getNthParent(relative);
@@ -52,9 +52,9 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Got current function and block")
   if (mod->hasGenericCoreType(entityName.value) ||
       mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
-      mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getReqInfo()).first) {
-    auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getReqInfo());
-    if (!genericCoreTy->getVisibility().isAccessible(ctx->getReqInfo())) {
+      mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getAccessInfo()).first) {
+    auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getAccessInfo());
+    if (!genericCoreTy->getVisibility().isAccessible(ctx->getAccessInfo())) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic core type " + ctx->highlightError(fullName.value) + " is not accessible here",
                  fullName.range);

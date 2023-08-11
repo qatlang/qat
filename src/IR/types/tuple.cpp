@@ -34,11 +34,10 @@ void TupleType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functio
     for (usize i = 0; i < subTypes.size(); i++) {
       auto* subTy = subTypes.at(i);
       if (subTy->isDestructible() && !subTy->isPointer()) {
-        subTy->destroyValue(
-            ctx,
-            {new IR::Value(ctx->builder.CreateStructGEP(llvmType, instIR->getLLVM(), i),
-                           IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
-            fun);
+        subTy->destroyValue(ctx,
+                            {new IR::Value(ctx->builder.CreateStructGEP(llvmType, instIR->getLLVM(), i),
+                                           IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
+                            fun);
       }
     }
   }
@@ -76,6 +75,8 @@ QatType* TupleType::getSubtypeAt(u64 index) { return subTypes.at(index); }
 u64 TupleType::getSubTypeCount() const { return subTypes.size(); }
 
 bool TupleType::isPackedTuple() const { return isPacked; }
+
+bool TupleType::isTypeSized() const { return !subTypes.empty(); }
 
 TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 

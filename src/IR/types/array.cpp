@@ -82,6 +82,8 @@ Maybe<bool> ArrayType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* s
   }
 }
 
+bool ArrayType::isTypeSized() const { return length > 0; }
+
 bool ArrayType::isDestructible() const { return elementType->isDestructible(); }
 
 void ArrayType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {

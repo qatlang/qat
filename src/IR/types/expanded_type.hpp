@@ -44,9 +44,9 @@ protected:
 
   OpaqueType* opaqueEquivalent = nullptr;
 
-  utils::VisibilityInfo visibility;
+  VisibilityInfo visibility;
 
-  ExpandedType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent, const utils::VisibilityInfo& _visib);
+  ExpandedType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent, const VisibilityInfo& _visib);
 
 public:
   useit bool         isGeneric() const;
@@ -85,17 +85,17 @@ public:
   useit bool            hasCopy() const;
   useit bool            hasMove() const;
   useit bool            hasDestructor() const;
-  void                  createDestructor(FileRange range, llvm::LLVMContext& ctx);
+  void                  createDestructor(FileRange range, IR::Context* ctx);
   useit MemberFunction* getDestructor() const;
   useit QatModule*      getParent();
 
   useit bool isTriviallyCopyable() const;
 
-  useit bool isAccessible(const utils::RequesterInfo& reqInfo) const;
-  useit utils::VisibilityInfo getVisibility() const;
-  useit bool                  isExpanded() const final;
-  useit bool                  isDestructible() const final;
-  void                        destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  useit bool           isAccessible(const AccessInfo& reqInfo) const;
+  useit VisibilityInfo getVisibility() const;
+  useit bool           isExpanded() const final;
+  useit bool           isDestructible() const final;
+  void                 destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

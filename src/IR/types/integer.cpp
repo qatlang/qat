@@ -30,6 +30,8 @@ TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
 
 u64 IntegerType::getBitwidth() const { return bitWidth; }
 
+bool IntegerType::isTypeSized() const { return true; }
+
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
 
 bool IntegerType::canBeConstGeneric() const { return bitWidth <= MAXIMUM_CONST_EXPR_BITWIDTH; }

@@ -71,7 +71,7 @@ IR::Value* Await::emit(IR::Context* ctx) {
                                   ctx->builder.CreateStructGEP(futureTy->getLLVMType(), expEmit->getLLVM(), 3)),
           IR::ReferenceType::get(expEmit->isReference() ? expEmit->getType()->asReference()->isSubtypeVariable()
                                                         : expEmit->isVariable(),
-                                 futureTy->getSubType(), ctx->llctx),
+                                 futureTy->getSubType(), ctx),
           false, IR::Nature::temporary);
     }
   } else {

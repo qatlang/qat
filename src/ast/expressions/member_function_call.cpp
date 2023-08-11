@@ -61,7 +61,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-    if (!memFn->isAccessible(ctx->getReqInfo())) {
+    if (!memFn->isAccessible(ctx->getAccessInfo())) {
       ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
                      ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);

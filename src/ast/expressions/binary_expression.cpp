@@ -738,7 +738,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
         auto* opFn = cTy->getBinaryOperator(OpStr, rhsType);
-        if (!opFn->isAccessible(ctx->getReqInfo())) {
+        if (!opFn->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " of core type " +
                          ctx->highlightError(cTy->getFullName()) + " with RHS type " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
@@ -752,7 +752,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
         auto* opFn = cTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
-        if (!opFn->isAccessible(ctx->getReqInfo())) {
+        if (!opFn->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of core type " +
                          ctx->highlightError(cTy->getFullName()) +
                          " with RHS type: " + ctx->highlightError(rhsType->toString()) + " is not accessible here",

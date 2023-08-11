@@ -23,10 +23,10 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
       auto* mem   = cTy->getMemberAt(index);
       mem->addMention(name.range);
       auto* selfVal = mFn->getBlock()->getValue("''");
-      auto* res     = new IR::Value(
-          ctx->builder.CreateStructGEP(expandedTy->getLLVMType(), selfVal->getLLVM(), index),
-          IR::ReferenceType::get(selfVal->getType()->asReference()->isSubtypeVariable(), mem->type, ctx->llctx), false,
-          IR::Nature::temporary);
+      auto* res =
+          new IR::Value(ctx->builder.CreateStructGEP(expandedTy->getLLVMType(), selfVal->getLLVM(), index),
+                        IR::ReferenceType::get(selfVal->getType()->asReference()->isSubtypeVariable(), mem->type, ctx),
+                        false, IR::Nature::temporary);
       while (res->getType()->isReference() && res->getType()->asReference()->getSubType()->isReference()) {
         res = new IR::Value(
             ctx->builder.CreateLoad(res->getType()->asReference()->getSubType()->getLLVMType(), res->getLLVM()),

@@ -15,12 +15,12 @@ public:
 private:
   Identifier                          name;
   Vec<Pair<Identifier, Maybe<Value>>> fields;
-  utils::VisibilityKind               visibility;
+  VisibilityKind                      visibility;
   Maybe<usize>                        defaultVal;
 
 public:
   DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<Value>>> fields, Maybe<usize> defaultVal,
-                   utils::VisibilityKind visibility, FileRange fileRange);
+                   VisibilityKind visibility, FileRange fileRange);
 
   void  createType(IR::Context* ctx);
   void  defineType(IR::Context* ctx) final;

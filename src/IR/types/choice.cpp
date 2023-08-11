@@ -6,7 +6,7 @@ namespace qat::IR {
 #define MAX_CONST_GENERIC_BITWIDTH 64u
 
 ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
-                       Maybe<usize> _defaultVal, const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
+                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
                        FileRange _fileRange)
     : EntityOverview("choiceType",
                      Json()
@@ -117,7 +117,7 @@ void ChoiceType::getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing
   }
 }
 
-const utils::VisibilityInfo& ChoiceType::getVisibility() const { return visibility; }
+const VisibilityInfo& ChoiceType::getVisibility() const { return visibility; }
 
 void ChoiceType::updateOverview() {
   Vec<JsonValue> fieldsJson;
@@ -157,6 +157,8 @@ Maybe<String> ChoiceType::toConstGenericString(IR::ConstantValue* val) const {
     return None;
   }
 }
+
+bool ChoiceType::isTypeSized() const { return true; }
 
 Maybe<bool> ChoiceType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
   if (first->getType()->isSame(second->getType())) {

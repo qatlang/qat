@@ -17,6 +17,7 @@ private:
 public:
   useit static FloatType* get(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
+  useit bool          isTypeSized() const final;
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;
   useit String        toString() const final;

@@ -6,7 +6,7 @@
 #include "./macros.hpp"
 #include <map>
 
-namespace qat::utils {
+namespace qat {
 
 /**
  *  Visibility
@@ -37,7 +37,7 @@ enum class VisibilityKind {
 
 JsonValue kindToJsonValue(VisibilityKind kind);
 
-class RequesterInfo;
+class AccessInfo;
 
 /**
  *  VisibilityInfo is used to store details about the visibility nature of
@@ -64,7 +64,7 @@ public:
   static VisibilityInfo folder(String path) { return {VisibilityKind::folder, std::move(path)}; }
   static VisibilityInfo box(String name) { return {VisibilityKind::box, std::move(name)}; }
 
-  useit bool isAccessible(const RequesterInfo& reqInfo) const;
+  useit bool isAccessible(const AccessInfo& reqInfo) const;
 
   useit bool operator==(const VisibilityInfo& other) const;
              operator Json() const;
@@ -72,7 +72,7 @@ public:
 };
 
 // Information about the entity requesting access
-class RequesterInfo {
+class AccessInfo {
 private:
   // Parent library of the entity requesting for access
   Maybe<String> lib;
@@ -84,7 +84,7 @@ private:
   Maybe<String> type;
 
 public:
-  RequesterInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type);
+  AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type);
 
   useit bool   hasLib() const;
   useit bool   hasBox() const;
@@ -102,9 +102,9 @@ public:
 
   useit static String         getValue(VisibilityKind kind);
   useit static VisibilityKind getKind(const String& value);
-  useit static bool           isAccessible(const VisibilityInfo& visibility, const RequesterInfo& reqInfo);
+  useit static bool           isAccessible(const VisibilityInfo& visibility, const AccessInfo& reqInfo);
 };
 
-} // namespace qat::utils
+} // namespace qat
 
 #endif

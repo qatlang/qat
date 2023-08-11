@@ -111,7 +111,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         ctx->Error("The left hand side is a reference without variability and hence cannot be assigned to", fileRange);
       }
     }
-    if (!mTy->hasSizedSubType()) {
+    if (!mTy->hasSizedSubType(ctx)) {
       if (value->nodeType() == NodeType::arrayLiteral) {
         if (mTy->getSubType()->isArray()) {
           ((ArrayLiteral*)value)->inferredType = mTy->getSubType()->asArray();
@@ -279,11 +279,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           restBlock->linkPrevBlock(ctx->fn->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), restBlock->getBB());
           trueBlock->setActive(ctx->builder);
-          subTy->destroyValue(ctx,
-                              {new IR::Value(ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u),
-                                             IR::ReferenceType::get(true, mTy->getSubType(), ctx->llctx), false,
-                                             IR::Nature::temporary)},
-                              ctx->fn);
+          subTy->destroyValue(
+              ctx,
+              {new IR::Value(ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u),
+                             IR::ReferenceType::get(true, mTy->getSubType(), ctx), false, IR::Nature::temporary)},
+              ctx->fn);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           restBlock->setActive(ctx->builder);
         }
@@ -313,11 +313,10 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
             (void)candFn->call(ctx, {maybeValueLhsRef, exp->getLLVM()}, ctx->getMod());
           } else {
             if (exTy->isDestructible()) {
-              exTy->destroyValue(
-                  ctx,
-                  {new IR::Value(maybeValueLhsRef, IR::ReferenceType::get(true, mTy->getSubType(), ctx->llctx), false,
-                                 IR::Nature::temporary)},
-                  ctx->fn);
+              exTy->destroyValue(ctx,
+                                 {new IR::Value(maybeValueLhsRef, IR::ReferenceType::get(true, mTy->getSubType(), ctx),
+                                                false, IR::Nature::temporary)},
+                                 ctx->fn);
             }
             ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
           }

@@ -45,6 +45,8 @@ TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
 FloatTypeKind FloatType::getKind() const { return kind; }
 
+bool FloatType::isTypeSized() const { return true; }
+
 String FloatType::toString() const {
   switch (kind) {
     case FloatTypeKind::_brain: {

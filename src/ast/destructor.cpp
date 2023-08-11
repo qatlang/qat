@@ -12,7 +12,7 @@ void DestructorDefinition::define(IR::Context* ctx) {
   if (!expType) {
     ctx->Error("No parent type found for this member function", fileRange);
   }
-  expType->createDestructor(nameRange, ctx->llctx);
+  expType->createDestructor(nameRange, ctx);
   memberFn = expType->getDestructor();
 }
 

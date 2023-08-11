@@ -66,15 +66,14 @@ public:
   exitFn void Error(const String& message, const FileRange& fileRange);
   static void Warning(const String& message, const FileRange& fileRange);
 
-  useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, utils::VisibilityKind visibKind, usize from,
-                                                 usize upto);
-  useit ast::BringPaths* parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
+  useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, VisibilityKind visibKind, usize from, usize upto);
+  useit ast::BringPaths* parseBroughtPaths(bool isMember, usize from, usize upto, VisibilityKind kind,
                                            const FileRange& start);
   useit Vec<fs::path>& getBroughtPaths();
   useit Vec<fs::path>& getMemberPaths();
   void                 clearMemberPaths();
   useit ast::ModInfo* parseModuleInfo(usize from, usize upto, const FileRange& startRange);
-  useit Pair<utils::VisibilityKind, usize> parseVisibilityKind(usize from);
+  useit Pair<VisibilityKind, usize> parseVisibilityKind(usize from);
   useit Vec<ast::FillGeneric*> parseGenericFill(ParserContext& prev_ctx, usize from, usize upto);
   useit Pair<ast::QatType*, usize> parseType(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);

@@ -8,7 +8,7 @@
 namespace qat::ast {
 
 MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments,
-                                 bool _isVariadic, QatType* _returnType, bool _is_async, utils::VisibilityKind kind,
+                                 bool _isVariadic, QatType* _returnType, bool _is_async, VisibilityKind kind,
                                  FileRange _fileRange)
     : Node(std::move(_fileRange)), isVariationFn(_isVariationFn), name(std::move(_name)), isAsync(_is_async),
       arguments(std::move(_arguments)), isVariadic(_isVariadic), returnType(_returnType), kind(kind),
@@ -21,14 +21,14 @@ MemberPrototype::~MemberPrototype() {
 }
 
 MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
-                                         bool _isVariadic, QatType* _returnType, bool _is_async,
-                                         utils::VisibilityKind kind, const FileRange& _fileRange) {
+                                         bool _isVariadic, QatType* _returnType, bool _is_async, VisibilityKind kind,
+                                         const FileRange& _fileRange) {
   return new MemberPrototype(false, _isVariationFn, _name, _arguments, _isVariadic, _returnType, _is_async, kind,
                              _fileRange);
 }
 
 MemberPrototype* MemberPrototype::Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                         QatType* _returnType, bool _is_async, utils::VisibilityKind kind,
+                                         QatType* _returnType, bool _is_async, VisibilityKind kind,
                                          const FileRange& _fileRange) {
   return new MemberPrototype(true, false, _name, _arguments, _isVariadic, _returnType, _is_async, kind, _fileRange);
 }
@@ -109,10 +109,10 @@ void MemberPrototype::define(IR::Context* ctx) {
   SHOW("About to create function")
   if (isStatic) {
     memberFn = IR::MemberFunction::CreateStatic(coreType, name, retTy, isAsync, args, isVariadic, fileRange,
-                                                ctx->getVisibInfo(kind), ctx->llctx);
+                                                ctx->getVisibInfo(kind), ctx);
   } else {
     memberFn = IR::MemberFunction::Create(coreType, isVariationFn, name, retTy, isAsync, args, isVariadic, fileRange,
-                                          ctx->getVisibInfo(kind), ctx->llctx);
+                                          ctx->getVisibInfo(kind), ctx);
   }
 }
 

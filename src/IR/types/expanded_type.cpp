@@ -10,7 +10,7 @@
 namespace qat::IR {
 
 ExpandedType::ExpandedType(Identifier _name, Vec<GenericType*> _generics, IR::QatModule* _parent,
-                           const utils::VisibilityInfo& _visib)
+                           const VisibilityInfo& _visib)
     : name(std::move(_name)), generics(_generics), parent(_parent), visibility(_visib) {}
 
 bool ExpandedType::isGeneric() const { return !generics.empty(); }
@@ -256,7 +256,7 @@ bool ExpandedType::hasMove() const { return hasMoveConstructor() && hasMoveAssig
 
 bool ExpandedType::hasDestructor() const { return destructor != nullptr; }
 
-void ExpandedType::createDestructor(FileRange fRange, llvm::LLVMContext& ctx) {
+void ExpandedType::createDestructor(FileRange fRange, IR::Context* ctx) {
   if (destructor == nullptr) {
     destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
   }
@@ -264,9 +264,9 @@ void ExpandedType::createDestructor(FileRange fRange, llvm::LLVMContext& ctx) {
 
 IR::MemberFunction* ExpandedType::getDestructor() const { return destructor; }
 
-utils::VisibilityInfo ExpandedType::getVisibility() const { return visibility; }
+VisibilityInfo ExpandedType::getVisibility() const { return visibility; }
 
-bool ExpandedType::isAccessible(const utils::RequesterInfo& reqInfo) const { return visibility.isAccessible(reqInfo); }
+bool ExpandedType::isAccessible(const AccessInfo& reqInfo) const { return visibility.isAccessible(reqInfo); }
 
 QatModule* ExpandedType::getParent() { return parent; }
 

@@ -651,12 +651,14 @@ CType* CType::getLongDouble(IR::Context* ctx) {
   return new CType(IR::FloatType::get(floatKind, ctx->llctx), CTypeKind::LongDouble);
 }
 
+bool CType::isTypeSized() const { return true; }
+
 TypeKind CType::typeKind() const { return TypeKind::cType; }
 
 String CType::toString() const {
   return cTypeKindToString(cTypeKind) +
          ((cTypeKind == CTypeKind::Pointer)
-              ? (String("'[") + (subType->asPointer()->isSubtypeVariable() ? "var " : "") +
+              ? (String(":[") + (subType->asPointer()->isSubtypeVariable() ? "var " : "") +
                  subType->asPointer()->getSubType()->toString() + "]")
               : "");
 }

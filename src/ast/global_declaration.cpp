@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
-                                     utils::VisibilityKind _kind, FileRange _fileRange)
+                                     VisibilityKind _kind, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value), isVariable(_isVariable),
       visibility(_kind) {}
 
@@ -54,7 +54,7 @@ Json GlobalDeclaration::toJson() const {
       ._("type", type ? type->toJson() : Json())
       ._("value", value ? value->toJson() : Json())
       ._("variability", isVariable)
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("visibility", kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

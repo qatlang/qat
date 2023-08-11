@@ -4,7 +4,7 @@
 namespace qat::ast {
 
 DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<Value>>> _fields,
-                                   Maybe<usize> _defaulVal, utils::VisibilityKind _visibility, FileRange _fileRange)
+                                   Maybe<usize> _defaulVal, VisibilityKind _visibility, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)), visibility(_visibility),
       defaultVal(_defaulVal) {}
 
@@ -69,7 +69,7 @@ Json DefineChoiceType::toJson() const {
   return Json()
       ._("name", name)
       ._("fields", fieldsJson)
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("visibility", kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

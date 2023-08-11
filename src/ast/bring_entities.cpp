@@ -37,12 +37,12 @@ Json BroughtGroup::toJson() const {
       ._("fileRange", fileRange);
 }
 
-BringEntities::BringEntities(Vec<BroughtGroup*> _entities, utils::VisibilityKind _visibility, FileRange _fileRange)
+BringEntities::BringEntities(Vec<BroughtGroup*> _entities, VisibilityKind _visibility, FileRange _fileRange)
     : Node(std::move(_fileRange)), entities(std::move(_entities)), visibility(_visibility) {}
 
 void BringEntities::handleBrings(IR::Context* ctx) const {
   auto* currentMod = ctx->getMod();
-  auto  reqInfo    = ctx->getReqInfo();
+  auto  reqInfo    = ctx->getAccessInfo();
 
   std::function<void(BroughtGroup*, IR::QatModule*)> bringHandler = [&](BroughtGroup* ent, IR::QatModule* parentMod) {
     IR::QatModule* mod = parentMod;
@@ -260,7 +260,7 @@ Json BringEntities::toJson() const {
   return Json()
       ._("nodeType", "bringEntities")
       ._("entities", entitiesJson)
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("visibility", kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 

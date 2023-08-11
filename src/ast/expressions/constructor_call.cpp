@@ -108,7 +108,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     if (args.size() == 1) {
       if (cTy->hasFromConvertor(valsType.front())) {
         cons = cTy->getFromConvertor(valsType.front());
-        if (!cons->isAccessible(ctx->getReqInfo())) {
+        if (!cons->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("This convertor of core type " + ctx->highlightError(cTy->getFullName()) +
                          " is not accessible here",
                      fileRange);
@@ -122,7 +122,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     } else {
       if (cTy->hasConstructorWithTypes(valsType)) {
         cons = cTy->getConstructorWithTypes(valsType);
-        if (!cons->isAccessible(ctx->getReqInfo())) {
+        if (!cons->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("This constructor of core type " + ctx->highlightError(cTy->getFullName()) +
                          " is not accessible here",
                      fileRange);
@@ -247,15 +247,15 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       restBlock->setActive(ctx->builder);
       auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx);
       auto* resVal =
-          local ? (local->getType()->isMaybe()
-                       ? new IR::Value(
-                             ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
-                             IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(),
-                                                    ctx->llctx),
-                             false, IR::Nature::temporary)
-                       : local)
-                : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy, isVar,
-                                      irName.has_value() ? irName->range : fileRange);
+          local
+              ? (local->getType()->isMaybe()
+                     ? new IR::Value(
+                           ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
+                           IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(), ctx),
+                           false, IR::Nature::temporary)
+                     : local)
+              : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy, isVar,
+                                    irName.has_value() ? irName->range : fileRange);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
       ctx->builder.CreateStore(oCount->getLLVM(),
                                ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 1u));

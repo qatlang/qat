@@ -62,8 +62,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 1u),
-            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx->llctx), false,
-            IR::Nature::temporary);
+            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx), false, IR::Nature::temporary);
       }
     } else if (name == "buffer") {
       if (inst->isLLVMConstant()) {
@@ -123,7 +122,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
     if (name == "hasValue") {
       if (inst->isLLVMConstant()) {
-        if (instType->asMaybe()->hasSizedSubType()) {
+        if (instType->asMaybe()->hasSizedSubType(ctx)) {
           return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
                                        IR::UnsignedType::getBool(ctx->llctx));
         } else {
@@ -131,7 +130,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                                        IR::UnsignedType::getBool(ctx->llctx));
         }
       } else {
-        if (instType->asMaybe()->hasSizedSubType()) {
+        if (instType->asMaybe()->hasSizedSubType(ctx)) {
           return new IR::Value(
               ctx->builder.CreateICmpEQ(
                   ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
@@ -147,7 +146,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       }
     } else if (name == "hasNoValue") {
       if (inst->isLLVMConstant()) {
-        if (instType->asMaybe()->hasSizedSubType()) {
+        if (instType->asMaybe()->hasSizedSubType(ctx)) {
           return new IR::ConstantValue(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
                                      llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u))
@@ -164,7 +163,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
               IR::UnsignedType::getBool(ctx->llctx));
         }
       } else {
-        if (instType->asMaybe()->hasSizedSubType()) {
+        if (instType->asMaybe()->hasSizedSubType(ctx)) {
           return new IR::Value(
               ctx->builder.CreateICmpEQ(
                   ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
@@ -191,7 +190,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
     auto* cTy = instType->asCore();
     auto* mem = cTy->getMemberAt(instType->asCore()->getIndexOf(name).value());
-    if (!mem->visibility.isAccessible(ctx->getReqInfo())) {
+    if (!mem->visibility.isAccessible(ctx->getAccessInfo())) {
       ctx->Error("Member " + ctx->highlightError(name) + " of core type " + ctx->highlightError(cTy->getFullName()) +
                      " is not accessible here",
                  fileRange);
@@ -206,7 +205,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     } else {
       return new IR::Value(ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
                                                         instType->asCore()->getIndexOf(name).value()),
-                           IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name), ctx->llctx), false,
+                           IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name), ctx), false,
                            IR::Nature::temporary);
     }
   } else if (instType->isPointer()) {

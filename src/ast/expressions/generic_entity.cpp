@@ -14,7 +14,7 @@ GenericEntity::GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<FillGene
 IR::Value* GenericEntity::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
   auto* oldMod  = mod;
-  auto  reqInfo = ctx->getReqInfo();
+  auto  reqInfo = ctx->getAccessInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
       mod = mod->getNthParent(relative);
@@ -49,9 +49,9 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
   auto* curr = fun ? ctx->fn->getBlock() : nullptr;
   if (mod->hasGenericFunction(entityName.value) ||
       mod->hasBroughtGenericFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
-      mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getReqInfo()).first) {
-    auto* genericFn = mod->getGenericFunction(entityName.value, ctx->getReqInfo());
-    if (!genericFn->getVisibility().isAccessible(ctx->getReqInfo())) {
+      mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getAccessInfo()).first) {
+    auto* genericFn = mod->getGenericFunction(entityName.value, ctx->getAccessInfo());
+    if (!genericFn->getVisibility().isAccessible(ctx->getAccessInfo())) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic function " + ctx->highlightError(fullName.value) + " is not accessible here", fullName.range);
     }

@@ -274,7 +274,7 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
 
 Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
                    Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
-                   const utils::VisibilityInfo& _visibility_info, llvm::LLVMContext& ctx, bool isMemberFn,
+                   const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn,
                    llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
       name(std::move(_name)), generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)),
@@ -291,9 +291,9 @@ Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generic
     SHOW("Argument type for future return is: " << returnType->toString())
     argTypes.push_back(
         new ArgumentType("qat'returnValue", IR::ReferenceType::get(true, returnType, ctx), false, false, true));
-    type = new FunctionType(IR::VoidType::get(ctx), argTypes, ctx);
+    type = new FunctionType(IR::VoidType::get(ctx->llctx), argTypes, ctx->llctx);
   } else {
-    type = new FunctionType(returnType, argTypes, ctx);
+    type = new FunctionType(returnType, argTypes, ctx->llctx);
   }
   if (isMemberFn) {
     ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name.value,
@@ -304,10 +304,11 @@ Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generic
                                 mod->getLLVMModule());
   }
   if (is_async) {
-    asyncFn = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(),
-                                                             {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
-                                     llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
-                                     (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
+    asyncFn =
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
+                                                       {llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()}, false),
+                               llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
+                               (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
     Vec<llvm::Type*> argTys;
     for (const auto& fnArg : getType()->asFunction()->getArgumentTypes()) {
       argTys.push_back(fnArg->getType()->getLLVMType());
@@ -371,7 +372,7 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
 
 Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* returnTy,
                            const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
-                           const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx,
+                           const VisibilityInfo& visibilityInfo, IR::Context* ctx,
                            llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
   return new Function(mod, std::move(name), std::move(_generics), returnTy, isAsync, std::move(args), hasVariadicArgs,
                       std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
@@ -419,8 +420,8 @@ GenericType* Function::getGenericParameter(const String& name) const {
 
 String Function::getFullName() const { return mod->getFullNameWithChild(name.value); }
 
-bool Function::isAccessible(const utils::RequesterInfo& req_info) const {
-  return utils::Visibility::isAccessible(visibility_info, req_info);
+bool Function::isAccessible(const AccessInfo& req_info) const {
+  return Visibility::isAccessible(visibility_info, req_info);
 }
 
 IR::LocalValue* Function::getFunctionCommonIndex() {
@@ -433,7 +434,7 @@ IR::LocalValue* Function::getFunctionCommonIndex() {
   return strComparisonIndex;
 }
 
-utils::VisibilityInfo Function::getVisibility() const { return visibility_info; }
+VisibilityInfo Function::getVisibility() const { return visibility_info; }
 
 bool Function::isMemberFunction() const { return false; }
 
@@ -463,7 +464,7 @@ usize& Function::getMovedCounter() { return movedCounter; }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  ast::FunctionDefinition* _functionDef, QatModule* _parent,
-                                 const utils::VisibilityInfo& _visibInfo)
+                                 const VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
                          ._("fullName", _parent->getFullNameWithChild(_name.value))
@@ -477,7 +478,7 @@ GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*
 
 Identifier GenericFunction::getName() const { return name; }
 
-utils::VisibilityInfo GenericFunction::getVisibility() const { return visibInfo; }
+VisibilityInfo GenericFunction::getVisibility() const { return visibInfo; }
 
 usize GenericFunction::getTypeCount() const { return generics.size(); }
 

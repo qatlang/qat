@@ -12,14 +12,14 @@ PlainInitialiser::PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> 
 
 IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
   if (type) {
-    auto  reqInfo  = ctx->getReqInfo();
+    auto  reqInfo  = ctx->getAccessInfo();
     auto* typeEmit = type->emit(ctx);
     if (typeEmit->isCoreType()) {
       auto* cTy = typeEmit->asCore();
       if (fieldValues.empty()) {
         if (cTy->hasDefaultConstructor()) {
           auto* dFn = cTy->getDefaultConstructor();
-          if (dFn->isAccessible(ctx->getReqInfo())) {
+          if (dFn->isAccessible(ctx->getAccessInfo())) {
             llvm::Value* alloca = nullptr;
             if (local) {
               if (local->getType()->isMaybe()) {
@@ -237,7 +237,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                 IR::ReferenceType::get(strData->isImplicitPointer()
                                            ? strData->isVariable()
                                            : strData->getType()->asReference()->isSubtypeVariable(),
-                                       strTy, ctx->llctx),
+                                       strTy, ctx),
                 false, IR::Nature::temporary);
           } else {
             return new IR::Value(ctx->builder.CreateBitCast(strData->getLLVM(), strDataTy->getLLVMType()), strDataTy,

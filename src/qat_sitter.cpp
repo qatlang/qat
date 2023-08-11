@@ -230,11 +230,11 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
           Parser->clearMemberPaths();
           fileEntities.push_back(IR::QatModule::CreateRootLib(
               parentMod, fs::absolute(libCheckRes->second), path, Identifier(libCheckRes->first, libCheckRes->second),
-              Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
         } else {
           auto* subfolder = IR::QatModule::CreateSubmodule(
               parentMod, item.path(), path, Identifier(fs::absolute(item.path().filename()).string(), item.path()),
-              IR::ModuleType::folder, utils::VisibilityInfo::pub(), ctx->llctx);
+              IR::ModuleType::folder, VisibilityInfo::pub(), ctx);
           fileEntities.push_back(subfolder);
           recursiveModuleCreator(subfolder, item);
         }
@@ -260,11 +260,11 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
         if (libCheckRes.has_value()) {
           fileEntities.push_back(IR::QatModule::CreateRootLib(
               parentMod, fs::absolute(item), path, Identifier(libCheckRes->first, libCheckRes->second),
-              Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
         } else {
           fileEntities.push_back(IR::QatModule::CreateFileMod(
               parentMod, fs::absolute(item), path, Identifier(item.path().filename().string(), item.path()),
-              Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
         }
       }
     }
@@ -295,11 +295,11 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
       Parser->clearMemberPaths();
       fileEntities.push_back(IR::QatModule::CreateFileMod(
           nullptr, libCheckRes->second, mainPath, Identifier(libCheckRes->first, libCheckRes->second),
-          Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
     } else {
       auto* subfolder =
           IR::QatModule::Create(Identifier(mainPath.filename().string(), mainPath), mainPath, mainPath.parent_path(),
-                                IR::ModuleType::folder, utils::VisibilityInfo::pub(), ctx->llctx);
+                                IR::ModuleType::folder, VisibilityInfo::pub(), ctx);
       fileEntities.push_back(subfolder);
       recursiveModuleCreator(subfolder, mainPath);
     }
@@ -326,11 +326,11 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     if (libCheckRes.has_value()) {
       fileEntities.push_back(IR::QatModule::CreateRootLib(
           nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(libCheckRes->first, libCheckRes->second),
-          Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
     } else {
       fileEntities.push_back(IR::QatModule::CreateFileMod(
           nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(mainPath.filename().string(), mainPath),
-          Lexer->getContent(), std::move(parseRes), utils::VisibilityInfo::pub(), ctx->llctx));
+          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
     }
   }
   for (const auto& bPath : broughtPaths) {

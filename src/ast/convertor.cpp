@@ -7,20 +7,20 @@
 namespace qat::ast {
 
 ConvertorPrototype::ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName,
-                                       QatType* _candidateType, bool _isMemberArg, utils::VisibilityKind _visibility,
+                                       QatType* _candidateType, bool _isMemberArg, VisibilityKind _visibility,
                                        const FileRange& _fileRange)
     : Node(_fileRange), argName(std::move(_argName)), candidateType(_candidateType), isMemberArgument(_isMemberArg),
       visibility(_visibility), isFrom(_isFrom), nameRange(std::move(_nameRange)) {}
 
 ConvertorPrototype* ConvertorPrototype::From(FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
-                                             bool _isMemberArg, utils::VisibilityKind _visibility,
+                                             bool _isMemberArg, VisibilityKind _visibility,
                                              const FileRange& _fileRange) {
   return new ConvertorPrototype(true, std::move(_nameRange), _argName, _candidateType, _isMemberArg, _visibility,
                                 _fileRange);
 }
 
-ConvertorPrototype* ConvertorPrototype::To(FileRange _nameRange, QatType* _candidateType,
-                                           utils::VisibilityKind _visibility, const FileRange& _fileRange) {
+ConvertorPrototype* ConvertorPrototype::To(FileRange _nameRange, QatType* _candidateType, VisibilityKind _visibility,
+                                           const FileRange& _fileRange) {
   return new ConvertorPrototype(false, std::move(_nameRange), None, _candidateType, false, _visibility, _fileRange);
 }
 
@@ -45,11 +45,11 @@ void ConvertorPrototype::define(IR::Context* ctx) {
   if (isFrom) {
     SHOW("Convertor is FROM")
     memberFn = IR::MemberFunction::CreateFromConvertor(coreType, nameRange, candidate, argName.value(), fileRange,
-                                                       ctx->getVisibInfo(visibility), ctx->llctx);
+                                                       ctx->getVisibInfo(visibility), ctx);
   } else {
     SHOW("Convertor is TO")
     memberFn = IR::MemberFunction::CreateToConvertor(coreType, nameRange, candidate, fileRange,
-                                                     ctx->getVisibInfo(visibility), ctx->llctx);
+                                                     ctx->getVisibInfo(visibility), ctx);
   }
 }
 
@@ -62,7 +62,7 @@ Json ConvertorPrototype::toJson() const {
       ._("hasArgument", argName.has_value())
       ._("argumentName", argName.has_value() ? argName.value().operator JsonValue() : Json())
       ._("candidateType", candidateType->toJson())
-      ._("visibility", utils::kindToJsonValue(visibility));
+      ._("visibility", kindToJsonValue(visibility));
 }
 
 ConvertorDefinition::ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
@@ -80,8 +80,7 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
-  // FIXME - Implement member argument syntax support for from convertors
-  auto* coreRefType = IR::ReferenceType::get(prototype->isFrom, prototype->coreType, ctx->llctx);
+  auto* coreRefType = IR::ReferenceType::get(prototype->isFrom, prototype->coreType, ctx);
   auto* self        = block->newValue("''", coreRefType, false, coreRefType->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);

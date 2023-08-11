@@ -15,6 +15,7 @@ public:
   useit String                  toString() const override;
 
   useit bool canBeConstGeneric() const final;
+  useit bool isTypeSized() const final;
   useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
   useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
 };

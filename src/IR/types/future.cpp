@@ -47,6 +47,8 @@ TypeKind FutureType::typeKind() const { return TypeKind::future; }
 
 bool FutureType::isDestructible() const { return true; }
 
+bool FutureType::isTypeSized() const { return true; }
+
 void FutureType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
   if (!vals.empty()) {
     auto* currBlock = fun->getBlock();
@@ -79,7 +81,7 @@ void FutureType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functi
           {new IR::Value(ctx->builder.CreateLoad(
                              llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace()),
                              ctx->builder.CreateStructGEP(llvmType, selfVal, 3u)),
-                         IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
+                         IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
           fun);
     }
     ctx->builder.CreateCall(

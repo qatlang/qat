@@ -8,8 +8,7 @@
 namespace qat::ast {
 
 ConstructorPrototype::ConstructorPrototype(ConstructorType _type, FileRange _nameRange, Vec<Argument*> _arguments,
-                                           utils::VisibilityKind _visibility, FileRange _fileRange,
-                                           Maybe<Identifier> _argName)
+                                           VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> _argName)
     : Node(std::move(_fileRange)), arguments(std::move(_arguments)), visibility(_visibility), type(_type),
       argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
 
@@ -19,25 +18,25 @@ ConstructorPrototype::~ConstructorPrototype() {
   }
 }
 
-ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args,
-                                                   utils::VisibilityKind visibility, FileRange fileRange) {
+ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args, VisibilityKind visibility,
+                                                   FileRange fileRange) {
   return new ast::ConstructorPrototype(ConstructorType::normal, nameRange, std::move(args), visibility,
                                        std::move(fileRange));
 }
 
-ConstructorPrototype* ConstructorPrototype::Default(utils::VisibilityKind visibility, FileRange nameRange,
+ConstructorPrototype* ConstructorPrototype::Default(VisibilityKind visibility, FileRange nameRange,
                                                     FileRange fileRange) {
   return new ast::ConstructorPrototype(ConstructorType::Default, nameRange, {}, visibility, std::move(fileRange));
 }
 
 ConstructorPrototype* ConstructorPrototype::Copy(FileRange nameRange, FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, utils::VisibilityKind::pub,
-                                       std::move(fileRange), _argName);
+  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, VisibilityKind::pub, std::move(fileRange),
+                                       _argName);
 }
 
 ConstructorPrototype* ConstructorPrototype::Move(FileRange nameRange, FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, utils::VisibilityKind::pub,
-                                       std::move(fileRange), _argName);
+  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, VisibilityKind::pub, std::move(fileRange),
+                                       _argName);
 }
 
 IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
@@ -143,7 +142,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     }
     SHOW("About to create function")
     function = IR::MemberFunction::CreateConstructor(coreType, nameRange, args, false, fileRange,
-                                                     ctx->getVisibInfo(visibility), ctx->llctx);
+                                                     ctx->getVisibInfo(visibility), ctx);
     SHOW("Constructor created in the IR")
     // TODO - Set calling convention
     return function;
@@ -156,14 +155,14 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-    function = IR::MemberFunction::DefaultConstructor(coreType, nameRange, ctx->getVisibInfo(visibility), fileRange,
-                                                      ctx->llctx);
+    function =
+        IR::MemberFunction::DefaultConstructor(coreType, nameRange, ctx->getVisibInfo(visibility), fileRange, ctx);
     return function;
   } else if (type == ConstructorType::copy) {
-    function = IR::MemberFunction::CopyConstructor(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
+    function = IR::MemberFunction::CopyConstructor(coreType, nameRange, argName.value(), fileRange, ctx);
     return function;
   } else if (type == ConstructorType::move) {
-    function = IR::MemberFunction::MoveConstructor(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
+    function = IR::MemberFunction::MoveConstructor(coreType, nameRange, argName.value(), fileRange, ctx);
     return function;
   }
   // FIXME - Support copy & move constructors
@@ -184,7 +183,7 @@ Json ConstructorPrototype::toJson() const {
   return Json()
       ._("nodeType", "constructorPrototype")
       ._("arguments", args)
-      ._("visibility", utils::kindToJsonValue(visibility))
+      ._("visibility", kindToJsonValue(visibility))
       ._("fileRange", fileRange);
 }
 
@@ -210,10 +209,10 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   if ((prototype->type == ConstructorType::copy) || (prototype->type == ConstructorType::move)) {
-    auto* argVal = block->newValue(
-        prototype->argName->value,
-        IR::ReferenceType::get(prototype->type == ConstructorType::move, prototype->coreType, ctx->llctx), false,
-        prototype->argName->range);
+    auto* argVal =
+        block->newValue(prototype->argName->value,
+                        IR::ReferenceType::get(prototype->type == ConstructorType::move, prototype->coreType, ctx),
+                        false, prototype->argName->range);
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1), argVal->getAlloca(), false);
     argVal->loadImplicitPointer(ctx->builder);
   } else {

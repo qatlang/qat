@@ -59,7 +59,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                                           ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
                   idxs),
               IR::ReferenceType::get(instType->asPointer()->isSubtypeVariable(), instType->asPointer()->getSubType(),
-                                     ctx->llctx),
+                                     ctx),
               instType->asPointer()->isSubtypeVariable(),
               instType->asPointer()->isSubtypeVariable() ? IR::Nature::assignable : IR::Nature::temporary);
         } else {
@@ -73,17 +73,15 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
             if (indConst == 0) {
               SHOW("Returning the first element from inbounds")
               return new IR::Value(
-                  firstElem,
-                  IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx->llctx),
+                  firstElem, IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx),
                   inst->isVariable(), inst->isVariable() ? IR::Nature::assignable : IR::Nature::temporary);
             }
           }
           SHOW("Got first element, getting specific element")
-          return new IR::Value(
-              ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType()->getArrayElementType(), firstElem,
-                                             ind->getLLVM()),
-              IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx->llctx),
-              inst->isVariable(), inst->isVariable() ? IR::Nature::assignable : IR::Nature::temporary);
+          return new IR::Value(ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType()->getArrayElementType(),
+                                                              firstElem, ind->getLLVM()),
+                               IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx),
+                               inst->isVariable(), inst->isVariable() ? IR::Nature::assignable : IR::Nature::temporary);
         }
       } else {
         if (llvm::isa<llvm::ConstantInt>(ind->getLLVM())) {
@@ -130,7 +128,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                            IR::ReferenceType::get(inst->isReference()
                                                       ? inst->getType()->asReference()->isSubtypeVariable()
                                                       : inst->isVariable(),
-                                                  IR::UnsignedType::get(8, ctx->llctx), ctx->llctx),
+                                                  IR::UnsignedType::get(8, ctx->llctx), ctx),
                            false, IR::Nature::temporary);
     } else {
       ctx->Error("Invalid value for string slice and hence string cannot be indexed", fileRange);
@@ -144,7 +142,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     }
     bool isVarExp = inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable() : inst->isVariable();
     return new IR::Value(ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->llctx), instVal, {ind->getLLVM()}),
-                         IR::ReferenceType::get(isVarExp, IR::UnsignedType::get(8, ctx->llctx), ctx->llctx), false,
+                         IR::ReferenceType::get(isVarExp, IR::UnsignedType::get(8, ctx->llctx), ctx), false,
                          IR::Nature::temporary);
   } else if (instType->isCoreType()) {
     auto*               cTy     = instType->asCore();
@@ -158,7 +156,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       ind->loadImplicitPointer(ctx->builder);
       operand = new IR::Value(ind->getLLVM(), indType->asReference()->getSubType(), false, IR::Nature::temporary);
     } else if (!indType->isReference()) {
-      if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx->llctx))) {
+      if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx))) {
         if (ind->isImplicitPointer()) {
           if (!ind->isVariable()) {
             ctx->Error("The [] operator of core type " + ctx->highlightError(cTy->getFullName()) +
@@ -169,16 +167,16 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
         } else {
           ind->makeImplicitPointer(ctx, None);
         }
-        opFn    = cTy->getBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx->llctx));
-        operand = new IR::Value(ind->getLLVM(), IR::ReferenceType::get(true, indType, ctx->llctx), false,
-                                IR::Nature::temporary);
-      } else if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx->llctx))) {
+        opFn = cTy->getBinaryOperator("[]", IR::ReferenceType::get(true, indType, ctx));
+        operand =
+            new IR::Value(ind->getLLVM(), IR::ReferenceType::get(true, indType, ctx), false, IR::Nature::temporary);
+      } else if (cTy->hasBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx))) {
         if (!ind->isImplicitPointer()) {
           ind->makeImplicitPointer(ctx, None);
         }
-        opFn    = cTy->getBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx->llctx));
-        operand = new IR::Value(ind->getLLVM(), IR::ReferenceType::get(false, indType, ctx->llctx), false,
-                                IR::Nature::temporary);
+        opFn = cTy->getBinaryOperator("[]", IR::ReferenceType::get(false, indType, ctx));
+        operand =
+            new IR::Value(ind->getLLVM(), IR::ReferenceType::get(false, indType, ctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("No [] operator found in type " + cTy->toString() + " for " +
                        ctx->highlightError(indType->toString()),

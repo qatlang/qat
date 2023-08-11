@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
+
 namespace qat {
 
 class QatSitter;
@@ -114,37 +116,38 @@ public:
   QatModule*              mod        = nullptr;
   IR::Function*           fn         = nullptr; // Active function
   IR::ExpandedType*       activeType = nullptr; // Active core type
-  Vec<LoopInfo*>          loopsInfo;
-  Vec<Breakable*>         breakables;
+  Vec<LoopInfo>           loopsInfo;
+  Vec<Breakable>          breakables;
   Vec<fs::path>           executablePaths;
 
   // META
-  bool                                                          hasMain;
-  mutable u64                                                   stringCount;
-  Vec<fs::path>                                                 llvmOutputPaths;
-  Vec<String>                                                   nativeLibsToLink;
-  mutable Maybe<GenericEntityMarker>                            activeGeneric;
-  mutable Vec<CodeProblem>                                      codeProblems;
-  mutable Maybe<std::chrono::high_resolution_clock::time_point> qatStartTime;
-  mutable Maybe<std::chrono::high_resolution_clock::time_point> qatEndTime;
-  mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkStartTime;
-  mutable Maybe<std::chrono::high_resolution_clock::time_point> clangLinkEndTime;
+  bool                               hasMain;
+  mutable u64                        stringCount;
+  Vec<fs::path>                      llvmOutputPaths;
+  Vec<String>                        nativeLibsToLink;
+  mutable Maybe<GenericEntityMarker> activeGeneric;
+  mutable Vec<CodeProblem>           codeProblems;
+  mutable Vec<usize>                 binarySizes;
+  mutable Maybe<HighResTimePoint>    qatStartTime;
+  mutable Maybe<HighResTimePoint>    qatEndTime;
+  mutable Maybe<HighResTimePoint>    clangLinkStartTime;
+  mutable Maybe<HighResTimePoint>    clangLinkEndTime;
 
   clang::LangAS    getProgramAddressSpaceAsLangAS() const;
   void             nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
   void             genericNameCheck(const String& name, const FileRange& range);
   useit QatModule* getMod() const; // Get the active IR module
   useit String     getGlobalStringName() const;
-  useit utils::RequesterInfo getReqInfo() const;
-  useit Maybe<utils::RequesterInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const;
-  useit utils::VisibilityInfo getVisibInfo(Maybe<utils::VisibilityKind> kind) const;
-  void                        writeJsonResult(bool status) const;
+  useit AccessInfo getAccessInfo() const;
+  useit Maybe<AccessInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const;
+  useit VisibilityInfo    getVisibInfo(Maybe<VisibilityKind> kind) const;
+  void                    writeJsonResult(bool status) const;
 
   exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
   void          Warning(const String& message, const FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::bold::yellow);
   static String highlightWarning(const String& message, const char* color = colors::bold::yellow);
-  ~Context();
+  ~Context() = default;
 };
 
 } // namespace qat::IR

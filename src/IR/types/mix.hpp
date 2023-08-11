@@ -29,7 +29,7 @@ private:
 public:
   MixType(Identifier name, Vec<GenericType*> _generics, QatModule* parent,
           Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal, IR::Context* ctx, bool isPacked,
-          const utils::VisibilityInfo& visibility, FileRange fileRange);
+          const VisibilityInfo& visibility, FileRange fileRange);
 
   useit usize getIndexOfName(const String& name) const;
   useit Pair<bool, bool> hasSubTypeWithName(const String& sname) const;
@@ -43,6 +43,7 @@ public:
   useit FileRange        getFileRange() const;
   useit String           toString() const final;
   useit TypeKind         typeKind() const final;
+  useit bool             isTypeSized() const final;
   void                   updateOverview() final;
   void                   getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 };

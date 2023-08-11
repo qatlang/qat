@@ -30,6 +30,7 @@ public:
   useit bool canBeConstGeneric() const final;
   useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
   useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
+  useit bool        isTypeSized() const final;
 
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;

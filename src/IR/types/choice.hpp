@@ -14,12 +14,12 @@ class QatModule;
 
 class ChoiceType : public QatType, public EntityOverview {
 private:
-  Identifier            name;
-  QatModule*            parent;
-  Vec<Identifier>       fields;
-  Maybe<Vec<i64>>       values;
-  utils::VisibilityInfo visibility;
-  Maybe<usize>          defaultVal;
+  Identifier      name;
+  QatModule*      parent;
+  Vec<Identifier> fields;
+  Maybe<Vec<i64>> values;
+  VisibilityInfo  visibility;
+  Maybe<usize>    defaultVal;
 
   mutable u64  bitwidth = 1;
   mutable bool hasNegative;
@@ -28,26 +28,26 @@ private:
 
 public:
   ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values,
-             Maybe<usize> defaultVal, const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx,
-             FileRange fileRange);
+             Maybe<usize> defaultVal, const VisibilityInfo& visibility, llvm::LLVMContext& ctx, FileRange fileRange);
 
-  useit Identifier getName() const;
-  useit String     getFullName() const;
-  useit QatModule* getParent() const;
-  useit bool       hasCustomValue() const;
-  useit bool       hasNegativeValues() const;
-  useit bool       hasDefault() const;
-  useit bool       hasField(const String& name) const;
-  useit i64        getValueFor(const String& name) const;
-  useit i64        getDefault() const;
-  useit u64        getBitwidth() const;
-  useit TypeKind   typeKind() const final { return TypeKind::choice; }
-  useit String     toString() const final;
-  useit const utils::VisibilityInfo& getVisibility() const;
-  void                               findBitwidthNormal() const;
-  void                               findBitwidthForValues() const;
-  void                               getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
-  void                               updateOverview() final;
+  useit Identifier            getName() const;
+  useit String                getFullName() const;
+  useit QatModule*            getParent() const;
+  useit bool                  hasCustomValue() const;
+  useit bool                  hasNegativeValues() const;
+  useit bool                  hasDefault() const;
+  useit bool                  hasField(const String& name) const;
+  useit i64                   getValueFor(const String& name) const;
+  useit i64                   getDefault() const;
+  useit u64                   getBitwidth() const;
+  useit TypeKind              typeKind() const final { return TypeKind::choice; }
+  useit String                toString() const final;
+  useit const VisibilityInfo& getVisibility() const;
+  void                        findBitwidthNormal() const;
+  void                        findBitwidthForValues() const;
+  void                        getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void                        updateOverview() final;
+  useit bool                  isTypeSized() const final;
 
   useit bool canBeConstGeneric() const final;
   useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;

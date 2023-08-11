@@ -33,8 +33,8 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
                                                              ctx->dataLayout->getProgramAddressSpace()),
                                       ctx->builder.CreateStructGEP(expTy->getLLVMType(), expEmit->getLLVM(), 0u))
             : expEmit->getLLVM(),
-        IR::ReferenceType::get(expTy->asPointer()->isSubtypeVariable(), expTy->asPointer()->getSubType(), ctx->llctx),
-        false, IR::Nature::temporary);
+        IR::ReferenceType::get(expTy->asPointer()->isSubtypeVariable(), expTy->asPointer()->getSubType(), ctx), false,
+        IR::Nature::temporary);
   } else if (expTy->isCoreType()) {
     if (expTy->asCore()->hasUnaryOperator("#")) {
       if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {

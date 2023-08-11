@@ -7,23 +7,23 @@ LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, FileRa
     : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
 IR::Value* LoopInfinite::emit(IR::Context* ctx) {
-  String uniq;
+  String uniqueName;
   if (tag.has_value()) {
-    uniq = tag.value();
+    uniqueName = tag.value();
     for (const auto& info : ctx->loopsInfo) {
-      if (info->name == uniq) {
+      if (info.name == uniqueName) {
         ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek->tag.has_value() && (brek->tag.value() == tag.value())) {
+      if (brek.tag.has_value() && (brek.tag.value() == tag.value())) {
         ctx->Error("The tag provided for the loop is already used by another "
                    "loop or switch",
                    fileRange);
       }
     }
   } else {
-    uniq = utils::unique_id();
+    uniqueName = utils::unique_id();
   }
   auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
   SHOW("Infinite loop true block " << trueBlock->getName())
@@ -32,8 +32,8 @@ IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   SHOW("Infinite loop rest block " << restBlock->getName())
   (void)IR::addBranch(ctx->builder, trueBlock->getBB());
   trueBlock->setActive(ctx->builder);
-  ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, nullptr, restBlock, nullptr, IR::LoopType::infinite));
-  ctx->breakables.push_back(new IR::Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
+  ctx->loopsInfo.push_back(IR::LoopInfo(uniqueName, trueBlock, nullptr, restBlock, nullptr, IR::LoopType::infinite));
+  ctx->breakables.push_back(IR::Breakable(tag.has_value() ? Maybe<String>(uniqueName) : None, restBlock, trueBlock));
   emitSentences(sentences, ctx);
   trueBlock->destroyLocals(ctx);
   ctx->loopsInfo.pop_back();

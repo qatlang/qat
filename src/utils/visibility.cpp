@@ -1,6 +1,6 @@
 #include "./visibility.hpp"
 
-namespace qat::utils {
+namespace qat {
 
 #define VISIB_KIND  "visibility_kind"
 #define VISIB_VALUE "visibility_value"
@@ -24,24 +24,24 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
   }
 }
 
-RequesterInfo::RequesterInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type)
+AccessInfo::AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type)
     : lib(std::move(_lib)), box(std::move(_box)), file(std::move(_file)), type(std::move(_type)) {}
 
-bool RequesterInfo::hasLib() const { return lib.has_value(); }
+bool AccessInfo::hasLib() const { return lib.has_value(); }
 
-bool RequesterInfo::hasBox() const { return box.has_value(); }
+bool AccessInfo::hasBox() const { return box.has_value(); }
 
-bool RequesterInfo::hasType() const { return type.has_value(); }
+bool AccessInfo::hasType() const { return type.has_value(); }
 
-String RequesterInfo::getLib() const { return lib.value_or(""); }
+String AccessInfo::getLib() const { return lib.value_or(""); }
 
-String RequesterInfo::getBox() const { return box.value_or(""); }
+String AccessInfo::getBox() const { return box.value_or(""); }
 
-String RequesterInfo::getType() const { return type.value_or(""); }
+String AccessInfo::getType() const { return type.value_or(""); }
 
-String RequesterInfo::getFile() const { return file; }
+String AccessInfo::getFile() const { return file; }
 
-bool Visibility::isAccessible(const VisibilityInfo& visibility, const RequesterInfo& req_info) {
+bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo& req_info) {
   switch (visibility.kind) {
     case VisibilityKind::box: {
       if (req_info.hasBox()) {
@@ -75,9 +75,7 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, const RequesterI
   }
 }
 
-bool VisibilityInfo::isAccessible(const RequesterInfo& reqInfo) const {
-  return Visibility::isAccessible(*this, reqInfo);
-}
+bool VisibilityInfo::isAccessible(const AccessInfo& reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
 
 bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
   return (kind == other.kind) && (value == other.value);
@@ -103,4 +101,4 @@ String Visibility::getValue(VisibilityKind kind) { return kind_value_map.find(ki
 
 VisibilityKind Visibility::getKind(const String& value) { return value_kind_map.find(value)->second; }
 
-} // namespace qat::utils
+} // namespace qat

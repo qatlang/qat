@@ -10,7 +10,7 @@ private:
   IR::FloatTypeKind kind;
 
 public:
-  FloatType(const IR::FloatTypeKind _kind, const bool _variable, const FileRange _fileRange);
+  FloatType(IR::FloatTypeKind _kind, bool _variable, FileRange _fileRange);
 
   useit static String kindToString(IR::FloatTypeKind kind);
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;

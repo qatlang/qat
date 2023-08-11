@@ -52,6 +52,7 @@ public:
 
   useit virtual bool          canBeConstGeneric() const;
   useit virtual Maybe<String> toConstGenericString(IR::ConstantValue* val) const;
+  useit virtual bool          isTypeSized() const;
   useit virtual Maybe<bool>   equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const;
 
   useit static bool         checkTypeExists(const String& name);

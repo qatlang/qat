@@ -15,11 +15,11 @@ MixTypeInitialiser::MixTypeInitialiser(QatType* _type, String _subName, Maybe<Ex
 
 IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
   // FIXME - Support heaped value
-  auto  reqInfo  = ctx->getReqInfo();
+  auto  reqInfo  = ctx->getAccessInfo();
   auto* typeEmit = type->emit(ctx);
   if (typeEmit->isMix()) {
     auto* mixTy = typeEmit->asMix();
-    if (mixTy->isAccessible(ctx->getReqInfo())) {
+    if (mixTy->isAccessible(ctx->getAccessInfo())) {
       auto subRes = mixTy->hasSubTypeWithName(subName);
       if (subRes.first) {
         if (subRes.second) {

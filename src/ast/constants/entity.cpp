@@ -32,7 +32,7 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
       }
     }
   } else {
-    auto reqInfo = ctx->getReqInfo();
+    auto reqInfo = ctx->getAccessInfo();
     if (relative > 0) {
       if (mod->hasNthParent(relative)) {
         mod = mod->getNthParent(relative);
@@ -56,7 +56,7 @@ IR::ConstantValue* ConstantEntity::emit(IR::Context* ctx) {
       }
     }
   }
-  auto reqInfo = ctx->getReqInfo();
+  auto reqInfo = ctx->getAccessInfo();
   if (mod->hasTypeDef(name.value) || mod->hasBroughtTypeDef(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
     return new IR::ConstantValue(IR::TypedType::get(mod->getTypeDef(name.value, reqInfo)));

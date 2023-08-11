@@ -1,17 +1,21 @@
 #include "./reference.hpp"
 #include "../../memory_tracker.hpp"
+#include "../context.hpp"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-ReferenceType::ReferenceType(bool _isSubtypeVariable, QatType* _type,
-                             llvm::LLVMContext& ___) // NOLINT(misc-unused-parameters)
+ReferenceType::ReferenceType(bool _isSubtypeVariable, QatType* _type, IR::Context* ctx)
     : subType(_type), isSubVariable(_isSubtypeVariable) {
-  llvmType = llvm::PointerType::get(subType->getLLVMType(), 0U);
+  if (subType->isTypeSized()) {
+    llvmType = llvm::PointerType::get(subType->getLLVMType(), ctx->dataLayout->getProgramAddressSpace());
+  } else {
+    llvmType = llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), ctx->dataLayout->getProgramAddressSpace());
+  }
 }
 
-ReferenceType* ReferenceType::get(bool _isSubtypeVariable, QatType* _subtype, llvm::LLVMContext& ctx) {
+ReferenceType* ReferenceType::get(bool _isSubtypeVariable, QatType* _subtype, IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->isReference()) {
       if (typ->asReference()->getSubType()->isSame(_subtype) &&
@@ -26,6 +30,8 @@ ReferenceType* ReferenceType::get(bool _isSubtypeVariable, QatType* _subtype, ll
 QatType* ReferenceType::getSubType() const { return subType; }
 
 bool ReferenceType::isSubtypeVariable() const { return isSubVariable; }
+
+bool ReferenceType::isTypeSized() const { return true; }
 
 TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
 

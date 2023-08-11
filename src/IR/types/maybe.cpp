@@ -5,20 +5,22 @@
 #include "../value.hpp"
 #include "./array.hpp"
 #include "reference.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::IR {
 
-MaybeType::MaybeType(QatType* _subType, llvm::LLVMContext& ctx) : subTy(_subType) {
-  if (hasSizedSubType()) {
-    llvmType = llvm::StructType::create(ctx, {llvm::Type::getInt1Ty(ctx), subTy->getLLVMType()},
-                                        "maybe " + subTy->toString(), false);
+MaybeType::MaybeType(QatType* _subType, IR::Context* ctx) : subTy(_subType) {
+  // TODO - Error/warn if subtype is opaque
+  if (hasSizedSubType(ctx)) {
+    llvmType = llvm::StructType::create(ctx->llctx, {llvm::Type::getInt1Ty(ctx->llctx), subTy->getLLVMType()},
+                                        "maybe:[" + subTy->toString() + "]", false);
   } else {
-    llvmType = llvm::Type::getInt1Ty(ctx);
+    llvmType = llvm::Type::getInt1Ty(ctx->llctx);
   }
 }
 
-MaybeType* MaybeType::get(QatType* subTy, llvm::LLVMContext& ctx) {
+MaybeType* MaybeType::get(QatType* subTy, IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->isMaybe()) {
       if (typ->asMaybe()->getSubType()->isSame(subTy)) {
@@ -29,10 +31,9 @@ MaybeType* MaybeType::get(QatType* subTy, llvm::LLVMContext& ctx) {
   return new MaybeType(subTy, ctx);
 }
 
-bool MaybeType::hasSizedSubType() const {
-  // FIXME - Change this once size querying is added for all types
-  return (subTy->isVoid() || (subTy->isArray() && subTy->asArray()->getLength() == 0u));
-}
+bool MaybeType::isTypeSized() const { return true; }
+
+bool MaybeType::hasSizedSubType(IR::Context* ctx) const { return subTy->isTypeSized(); }
 
 QatType* MaybeType::getSubType() const { return subTy; }
 
@@ -57,7 +58,7 @@ void MaybeType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functio
     trueBlock->setActive(ctx->builder);
     subTy->destroyValue(ctx,
                         {new IR::Value(ctx->builder.CreateStructGEP(llvmType, inst, 1u),
-                                       IR::ReferenceType::get(false, subTy, ctx->llctx), false, IR::Nature::temporary)},
+                                       IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
                         fun);
     (void)IR::addBranch(ctx->builder, restBlock->getBB());
     restBlock->setActive(ctx->builder);

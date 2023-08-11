@@ -10,15 +10,16 @@ class MaybeType : public QatType {
 private:
   QatType* subTy;
 
-  MaybeType(QatType* subTy, llvm::LLVMContext& ctx);
+  MaybeType(QatType* subTy, IR::Context* ctx);
 
 public:
-  useit static MaybeType* get(QatType* subTy, llvm::LLVMContext& ctx);
+  useit static MaybeType* get(QatType* subTy, IR::Context* ctx);
 
-  useit bool     hasSizedSubType() const;
+  useit bool     hasSizedSubType(IR::Context* ctx) const;
   useit QatType* getSubType() const;
   useit String   toString() const final;
   useit TypeKind typeKind() const final { return TypeKind::maybe; }
+  useit bool     isTypeSized() const final;
   useit bool     isDestructible() const final;
   void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 };

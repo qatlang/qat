@@ -22,7 +22,7 @@ IR::QatType* MaybeType::emit(IR::Context* ctx) {
   if (subType->isVoid()) {
     ctx->Error(ctx->highlightError("maybe void") + " is not a valid type", fileRange);
   }
-  return IR::MaybeType::get(subType, ctx->llctx);
+  return IR::MaybeType::get(subType, ctx);
 }
 
 Json MaybeType::toJson() const {

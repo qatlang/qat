@@ -16,13 +16,13 @@ template <class T> class Brought {
   T* entity;
 
   // VisibilityInfo of the brought entity
-  utils::VisibilityInfo visibility;
+  VisibilityInfo visibility;
 
 public:
-  Brought(Identifier _name, T* _entity, const utils::VisibilityInfo& _visibility)
+  Brought(Identifier _name, T* _entity, const VisibilityInfo& _visibility)
       : name(_name), entity(_entity), visibility(_visibility) {}
 
-  Brought(T* _entity, const utils::VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
+  Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
   // Get the name if the brought entity is named
   useit Identifier getName() const { return name.value_or(Identifier("", {""})); }
@@ -34,7 +34,7 @@ public:
   useit T* get() const { return entity; }
 
   // Get the visibility of the brought entity
-  useit const utils::VisibilityInfo& getVisibility() const { return visibility; }
+  useit const VisibilityInfo& getVisibility() const { return visibility; }
 };
 
 } // namespace qat::IR

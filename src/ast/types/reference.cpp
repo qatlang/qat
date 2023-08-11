@@ -19,7 +19,7 @@ IR::QatType* ReferenceType::emit(IR::Context* ctx) {
   } else if (typEmit->isVoid()) {
     ctx->Error("Subtype of reference cannot be void", fileRange);
   }
-  return IR::ReferenceType::get(type->isVariable(), typEmit, ctx->llctx);
+  return IR::ReferenceType::get(type->isVariable(), typEmit, ctx);
 }
 
 TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }

@@ -3,14 +3,14 @@
 
 namespace qat::ast {
 
-Box::Box(Identifier _name, Vec<Node*> _members, utils::VisibilityKind _visibility, FileRange _fileRange)
+Box::Box(Identifier _name, Vec<Node*> _members, VisibilityKind _visibility, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), members(std::move(_members)), visibility(_visibility) {}
 
 void Box::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "box", None);
   SHOW("Opening box")
-  mod->openBox(name, ctx->getVisibInfo(visibility));
+  mod->openBox(name, ctx->getVisibInfo(visibility), ctx);
   mod->getActive()->nodes = members;
   for (auto* nod : members) {
     nod->createModule(ctx);

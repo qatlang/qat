@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
-                                     QatType* _returnType, utils::VisibilityKind kind, const FileRange& _fileRange,
+                                     QatType* _returnType, VisibilityKind kind, const FileRange& _fileRange,
                                      Maybe<Identifier> _argName)
     : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op), arguments(std::move(_arguments)),
       returnType(_returnType), kind(kind), argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
@@ -28,7 +28,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
                      ctx->highlightError(coreType->getFullName()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::CopyAssignment(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
+    memberFn = IR::MemberFunction::CopyAssignment(coreType, nameRange, argName.value(), fileRange, ctx);
     return;
   } else if (opr == Op::moveAssignment) {
     if (coreType->hasMoveAssignment()) {
@@ -36,7 +36,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
                      ctx->highlightError(coreType->getFullName()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::MoveAssignment(coreType, nameRange, argName.value(), fileRange, ctx->llctx);
+    memberFn = IR::MemberFunction::MoveAssignment(coreType, nameRange, argName.value(), fileRange, ctx);
     return;
   }
   if (opr == Op::subtract) {
@@ -108,9 +108,8 @@ void OperatorPrototype::define(IR::Context* ctx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create operator function")
-  memberFn =
-      IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
-                                         returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(kind), ctx->llctx);
+  memberFn = IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
+                                                returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(kind), ctx);
 }
 
 IR::Value* OperatorPrototype::emit(IR::Context* ctx) { return memberFn; }
@@ -156,10 +155,10 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
-    auto* argVal = block->newValue(
-        prototype->argName->value,
-        IR::ReferenceType::get(prototype->opr == Op::moveAssignment, coreRefTy->getSubType(), ctx->llctx), false,
-        prototype->argName->range);
+    auto* argVal =
+        block->newValue(prototype->argName->value,
+                        IR::ReferenceType::get(prototype->opr == Op::moveAssignment, coreRefTy->getSubType(), ctx),
+                        false, prototype->argName->range);
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1u), argVal->getLLVM());
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {

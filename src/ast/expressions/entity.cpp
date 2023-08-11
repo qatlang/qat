@@ -8,7 +8,7 @@ Entity::Entity(u32 _relative, Vec<Identifier> _name, FileRange _fileRange)
 
 IR::Value* Entity::emit(IR::Context* ctx) {
   auto* fun     = ctx->fn;
-  auto  reqInfo = ctx->getReqInfo();
+  auto  reqInfo = ctx->getAccessInfo();
   if (fun) {
     auto* mod = ctx->getMod();
     if ((names.size() == 1) && (relative == 0)) {

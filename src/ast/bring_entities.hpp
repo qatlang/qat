@@ -37,13 +37,13 @@ public:
 
 class BringEntities final : public Node {
 private:
-  Vec<BroughtGroup*>    entities;
-  utils::VisibilityKind visibility;
+  Vec<BroughtGroup*> entities;
+  VisibilityKind     visibility;
 
   mutable bool initialRunComplete = false;
 
 public:
-  BringEntities(Vec<BroughtGroup*> _entities, utils::VisibilityKind _visibility, FileRange _fileRange);
+  BringEntities(Vec<BroughtGroup*> _entities, VisibilityKind _visibility, FileRange _fileRange);
 
   void  handleBrings(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final;

@@ -15,13 +15,13 @@ class QatModule;
 
 class DefinitionType : public QatType, public EntityOverview {
 private:
-  Identifier            name;
-  QatType*              subType;
-  QatModule*            parent;
-  utils::VisibilityInfo visibInfo;
+  Identifier     name;
+  QatType*       subType;
+  QatModule*     parent;
+  VisibilityInfo visibInfo;
 
 public:
-  DefinitionType(Identifier _name, QatType* _actualType, QatModule* mod, const utils::VisibilityInfo& _visibInfo);
+  DefinitionType(Identifier _name, QatType* _actualType, QatModule* mod, const VisibilityInfo& _visibInfo);
 
   useit Identifier getName() const;
   useit String     getFullName() const;
@@ -31,6 +31,7 @@ public:
   useit String     toString() const final;
   useit bool       isExpanded() const final;
   useit bool       isDestructible() const final;
+  useit bool       isTypeSized() const final;
 
   void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
   void updateOverview() final;
@@ -39,7 +40,7 @@ public:
   useit Maybe<String> toConstGenericString(IR::ConstantValue* constant) const final;
   useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
 
-  useit utils::VisibilityInfo getVisibility() const;
+  useit VisibilityInfo getVisibility() const;
 };
 
 } // namespace qat::IR

@@ -20,13 +20,13 @@ class DefineCoreType final : public Node {
 public:
   class Member {
   public:
-    Member(QatType* _type, Identifier _name, bool _variability, utils::VisibilityKind _kind, FileRange _fileRange);
+    Member(QatType* _type, Identifier _name, bool _variability, VisibilityKind _kind, FileRange _fileRange);
 
-    QatType*              type;
-    Identifier            name;
-    bool                  variability;
-    utils::VisibilityKind visibilityKind;
-    FileRange             fileRange;
+    QatType*       type;
+    Identifier     name;
+    bool           variability;
+    VisibilityKind visibilityKind;
+    FileRange      fileRange;
 
     useit Json toJson() const;
   };
@@ -34,15 +34,15 @@ public:
   // Static member representation in the AST
   class StaticMember {
   public:
-    StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value, utils::VisibilityKind _kind,
+    StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value, VisibilityKind _kind,
                  FileRange _fileRange);
 
-    QatType*              type;
-    Identifier            name;
-    bool                  variability;
-    Expression*           value;
-    utils::VisibilityKind visibilityKind;
-    FileRange             fileRange;
+    QatType*       type;
+    Identifier     name;
+    bool           variability;
+    Expression*    value;
+    VisibilityKind visibilityKind;
+    FileRange      fileRange;
 
     useit Json toJson() const;
   };
@@ -62,7 +62,7 @@ private:
   mutable OperatorDefinition*    copyAssignment       = nullptr;
   mutable OperatorDefinition*    moveAssignment       = nullptr;
   mutable DestructorDefinition*  destructorDefinition = nullptr;
-  utils::VisibilityKind          visibility;
+  VisibilityKind                 visibility;
 
   Vec<ast::GenericAbstractType*> generics;
   mutable Maybe<String>          variantName;
@@ -70,7 +70,7 @@ private:
   mutable IR::GenericCoreType*   genericCoreType = nullptr;
 
 public:
-  DefineCoreType(Identifier _name, utils::VisibilityKind _visibility, FileRange _fileRange,
+  DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
                  Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
 
   useit bool isGeneric() const;

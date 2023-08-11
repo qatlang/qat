@@ -16,8 +16,8 @@ namespace qat::ast {
 
 FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
                                      QatType* _returnType, bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType,
-                                     String _callingConv, utils::VisibilityKind _visibility,
-                                     const FileRange& _fileRange, Vec<ast::GenericAbstractType*> _generics)
+                                     String _callingConv, VisibilityKind _visibility, const FileRange& _fileRange,
+                                     Vec<ast::GenericAbstractType*> _generics)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
       isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
       generics(std::move(_generics)), linkageType(_linkageType) {}
@@ -41,16 +41,17 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   ctx->nameCheckInModule(name, isGeneric() ? "generic function" : "function",
                          isGeneric() ? Maybe<String>(genericFn->getID()) : None);
   Vec<IR::QatType*> generatedTypes;
-  bool              isMainFn = false;
-  String            fnName   = name.value;
+  String            fnName = name.value;
   SHOW("Creating function")
   if (genericFn) {
     fnName = variantName.value();
   }
-  if ((fnName == "main") && (mod->getFullNameWithChild("main") == "main")) {
+  if ((fnName == "main") && (ctx->getMod()->getFullName() == "")) {
     SHOW("Is main function")
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
     isMainFn    = true;
+  } else if (fnName == "main") {
+    ctx->Error("Main function cannot be inside a named module", name.range);
   }
   SHOW("Generating types")
   for (auto* arg : arguments) {
@@ -131,13 +132,14 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     }
     SHOW("About to create generic function")
     auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy, isAsync, args,
-                                     isVariadic, fileRange, ctx->getVisibInfo(visibility), ctx->llctx);
+                                     isVariadic, fileRange, ctx->getVisibInfo(visibility), ctx);
     SHOW("Created IR function")
     return fun;
   } else {
     SHOW("About to create function")
-    auto* fun = mod->createFunction(Identifier(fnName, name.range), retTy, isAsync, args, isVariadic, fileRange,
-                                    ctx->getVisibInfo(visibility), linkageType, ctx->llctx);
+    auto* fun = mod->createFunction(
+        Identifier((ctx->clangTargetInfo->getTriple().isWasm() && isMainFn) ? "_start" : fnName, name.range), retTy,
+        isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx);
     SHOW("Created IR function")
     return fun;
   }
@@ -306,8 +308,7 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     SHOW("Created entry block")
     block->setActive(ctx->builder);
     SHOW("Set new block as the active block")
-    bool isMainFn = fnEmit->getFullName() == "main";
-    if (isMainFn) {
+    if (prototype->isMainFn) {
       SHOW("Calling module initialisers")
       auto modInits = IR::QatModule::collectModuleInitialisers();
       for (auto* modFn : modInits) {

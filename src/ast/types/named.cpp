@@ -9,7 +9,7 @@ NamedType::NamedType(u32 _relative, Vec<Identifier> _names, const bool _variable
 
 IR::QatType* NamedType::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
-  auto  reqInfo = ctx->getReqInfo();
+  auto  reqInfo = ctx->getAccessInfo();
   if (relative != 0) {
     if (ctx->getMod()->hasNthParent(relative)) {
       mod = ctx->getMod()->getNthParent(relative);

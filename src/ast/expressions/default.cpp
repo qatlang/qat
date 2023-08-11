@@ -75,7 +75,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
       auto* block = ctx->fn->getBlock();
       auto* loc   = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
                                   irName.has_value() ? irName->range : fileRange);
-      if (mTy->hasSizedSubType()) {
+      if (mTy->hasSizedSubType(ctx)) {
         ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
                                  ctx->builder.CreateStructGEP(mTy->getLLVMType(), loc->getLLVM(), 0u));
         ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),

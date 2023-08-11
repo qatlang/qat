@@ -12,7 +12,7 @@ IR::Value* Self::emit(IR::Context* ctx) {
     if (ctx->fn->isMemberFunction()) {
       auto* mFn = (IR::MemberFunction*)ctx->fn;
       return new IR::Value(mFn->getFirstBlock()->getValue("''")->getLLVM(),
-                           IR::ReferenceType::get(mFn->isVariationFunction(), mFn->getParentType(), ctx->llctx), false,
+                           IR::ReferenceType::get(mFn->isVariationFunction(), mFn->getParentType(), ctx), false,
                            IR::Nature::temporary);
     } else {
       // FIXME - Support extension functions that will have non-core type parent

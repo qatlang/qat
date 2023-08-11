@@ -11,21 +11,20 @@ class QatModule;
 
 class Region : public QatType, public EntityOverview {
 private:
-  Identifier            name;
-  QatModule*            parent;
-  utils::VisibilityInfo visibInfo;
-  FileRange             fileRange;
+  Identifier     name;
+  QatModule*     parent;
+  VisibilityInfo visibInfo;
+  FileRange      fileRange;
 
   llvm::GlobalVariable* blocks;
   llvm::GlobalVariable* blockCount;
   llvm::Function*       ownFn;
   llvm::Function*       destructor;
 
-  Region(Identifier _name, QatModule* _module, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
-         FileRange fileRange);
+  Region(Identifier _name, QatModule* _module, const VisibilityInfo& visibInfo, IR::Context* ctx, FileRange fileRange);
 
 public:
-  static Region* get(Identifier name, QatModule* parent, const utils::VisibilityInfo& visibInfo, IR::Context* ctx,
+  static Region* get(Identifier name, QatModule* parent, const VisibilityInfo& visibInfo, IR::Context* ctx,
                      FileRange fileRange);
 
   useit Identifier getName() const;
@@ -33,8 +32,8 @@ public:
   useit IR::Value* ownData(IR::QatType* _type, Maybe<llvm::Value*> count, IR::Context* ctx);
   void             destroyObjects(IR::Context* ctx);
 
-  useit bool  isAccessible(const utils::RequesterInfo& reqInfo) const;
-  useit const utils::VisibilityInfo& getVisibility() const;
+  useit bool                  isAccessible(const AccessInfo& reqInfo) const;
+  useit const VisibilityInfo& getVisibility() const;
 
   void updateOverview() final;
 

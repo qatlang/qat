@@ -4,7 +4,7 @@
 namespace qat::ast {
 
 BringPaths::BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-                       Maybe<utils::VisibilityKind> _visibility, FileRange _fileRange)
+                       Maybe<VisibilityKind> _visibility, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibility(_visibility),
       names(std::move(_names)) {}
 
@@ -12,7 +12,7 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   if (visibility.has_value()) {
     if (isMember) {
-      if (visibility.value() != utils::VisibilityKind::pub) {
+      if (visibility.value() != VisibilityKind::pub) {
         ctx->Error("This is a bring'member sentence and hence cannot have any visibility other than " +
                        ctx->highlightError("pub"),
                    fileRange);
@@ -94,7 +94,7 @@ Json BringPaths::toJson() const {
       ._("nodeType", "bringPaths")
       ._("paths", std::move(pths))
       ._("hasVisibility", visibility.has_value())
-      ._("visibility", visibility.has_value() ? utils::kindToJsonValue(visibility.value()) : Json())
+      ._("visibility", visibility.has_value() ? kindToJsonValue(visibility.value()) : Json())
       ._("fileRange", fileRange);
 }
 

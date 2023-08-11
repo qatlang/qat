@@ -17,6 +17,8 @@ StringSliceType::StringSliceType(llvm::LLVMContext& ctx) {
   }
 }
 
+bool StringSliceType::isTypeSized() const { return true; }
+
 StringSliceType* StringSliceType::get(llvm::LLVMContext& ctx) {
   for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::stringSlice) {

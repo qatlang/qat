@@ -11,11 +11,11 @@ IR::Value* Break::emit(IR::Context* ctx) {
     ctx->Error("Break sentence is not present inside any loop or switch blocks", fileRange);
   } else {
     if (tag.has_value()) {
-      for (auto* brk : ctx->breakables) {
-        if (brk->tag.has_value()) {
-          if (tag.value().value == brk->tag.value()) {
-            IR::destroyLocalsFrom(ctx, brk->trueBlock);
-            return new IR::Value(IR::addBranch(ctx->builder, brk->restBlock->getBB()), IR::VoidType::get(ctx->llctx),
+      for (auto& brk : ctx->breakables) {
+        if (brk.tag.has_value()) {
+          if (tag.value().value == brk.tag.value()) {
+            IR::destroyLocalsFrom(ctx, brk.trueBlock);
+            return new IR::Value(IR::addBranch(ctx->builder, brk.restBlock->getBB()), IR::VoidType::get(ctx->llctx),
                                  false, IR::Nature::pure);
           }
         }
@@ -25,8 +25,8 @@ IR::Value* Break::emit(IR::Context* ctx) {
                  tag->range);
     } else {
       if (ctx->breakables.size() == 1) {
-        IR::destroyLocalsFrom(ctx, ctx->breakables.front()->trueBlock);
-        return new IR::Value(IR::addBranch(ctx->builder, ctx->breakables.front()->restBlock->getBB()),
+        IR::destroyLocalsFrom(ctx, ctx->breakables.front().trueBlock);
+        return new IR::Value(IR::addBranch(ctx->builder, ctx->breakables.front().restBlock->getBB()),
                              IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
       } else {
         ctx->Error("It is compulsory to provide the tagged name of the loop or switch "

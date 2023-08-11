@@ -6,15 +6,14 @@
 
 namespace qat::IR {
 
-DefinitionType::DefinitionType(Identifier _name, QatType* _subType, QatModule* _mod,
-                               const utils::VisibilityInfo& _visibInfo)
+DefinitionType::DefinitionType(Identifier _name, QatType* _subType, QatModule* _mod, const VisibilityInfo& _visibInfo)
     : EntityOverview("typeDefinition", Json(), _name.range), name(std::move(_name)), subType(_subType), parent(_mod),
       visibInfo(_visibInfo) {
   parent->typeDefs.push_back(this);
   llvmType = subType->getLLVMType();
 }
 
-utils::VisibilityInfo DefinitionType::getVisibility() const { return visibInfo; }
+VisibilityInfo DefinitionType::getVisibility() const { return visibInfo; }
 
 bool DefinitionType::isExpanded() const { return subType->isExpanded(); }
 
@@ -31,6 +30,8 @@ String DefinitionType::getFullName() const { return parent ? parent->getFullName
 QatModule* DefinitionType::getParent() { return parent; }
 
 QatType* DefinitionType::getSubType() { return subType; }
+
+bool DefinitionType::isTypeSized() const { return subType->isTypeSized(); }
 
 void DefinitionType::updateOverview() {
   ovInfo._("fullName", getFullName())

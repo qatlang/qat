@@ -30,7 +30,7 @@ class CoreType final : public ExpandedType, public EntityOverview {
 public:
   class Member final : public EntityOverview {
   public:
-    Member(Identifier _name, QatType* _type, bool _variability, const utils::VisibilityInfo& _visibility)
+    Member(Identifier _name, QatType* _type, bool _variability, const VisibilityInfo& _visibility)
         : EntityOverview("coreTypeMember",
                          Json()
                              ._("name", _name.value)
@@ -43,10 +43,10 @@ public:
 
     ~Member() final = default;
 
-    Identifier            name;
-    QatType*              type;
-    utils::VisibilityInfo visibility;
-    bool                  variability;
+    Identifier     name;
+    QatType*       type;
+    VisibilityInfo visibility;
+    bool           variability;
   };
 
 private:
@@ -57,7 +57,7 @@ private:
 
 public:
   CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
-           const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
+           const VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
 
   ~CoreType() final;
 
@@ -70,11 +70,12 @@ public:
   useit QatType*     getTypeOfMember(const String& member) const;
   useit Vec<Member*>& getMembers();
   useit bool          hasStatic(const String& name) const;
+  useit bool          isTypeSized() const final;
 
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   void           addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                                 const utils::VisibilityInfo& visibility, llvm::LLVMContext& ctx);
+                                 const VisibilityInfo& visibility, llvm::LLVMContext& ctx);
   void           updateOverview() final;
 };
 
@@ -84,13 +85,13 @@ private:
   Vec<ast::GenericAbstractType*> generics;
   ast::DefineCoreType*           defineCoreType;
   QatModule*                     parent;
-  utils::VisibilityInfo          visibility;
+  VisibilityInfo                 visibility;
 
   mutable Vec<GenericVariant<CoreType>> variants;
 
 public:
   GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::DefineCoreType* defineCoreType,
-                  QatModule* parent, const utils::VisibilityInfo& visibInfo);
+                  QatModule* parent, const VisibilityInfo& visibInfo);
 
   ~GenericCoreType() = default;
 
@@ -102,7 +103,7 @@ public:
   useit CoreType*  fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
 
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
-  useit utils::VisibilityInfo getVisibility() const;
+  useit VisibilityInfo            getVisibility() const;
 };
 
 } // namespace qat::IR

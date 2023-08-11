@@ -13,12 +13,12 @@ bool LoopNTimes::hasTag() const { return tag.has_value(); }
 IR::Value* LoopNTimes::emit(IR::Context* ctx) {
   if (tag.has_value()) {
     for (const auto& info : ctx->loopsInfo) {
-      if (info->name == tag.value().value) {
+      if (info.name == tag.value().value) {
         ctx->Error("The tag provided for the loop is already used for another loop", fileRange);
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek->tag.has_value() && (brek->tag.value() == tag.value().value)) {
+      if (brek.tag.has_value() && (brek.tag.value() == tag.value().value)) {
         ctx->Error("The tag provided for the loop is already used by another "
                    "loop or switch",
                    fileRange);
@@ -59,8 +59,8 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
                    ctx->builder.CreateICmpSLT(
                        ctx->builder.CreateLoad(loopIndex->getType()->getLLVMType(), loopIndex->getAlloca()), llCount))),
         trueBlock->getBB(), restBlock->getBB());
-    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, condBlock, restBlock, loopIndex, IR::LoopType::nTimes));
-    ctx->breakables.push_back(new IR::Breakable(uniq, restBlock, trueBlock));
+    ctx->loopsInfo.push_back(IR::LoopInfo(uniq, trueBlock, condBlock, restBlock, loopIndex, IR::LoopType::nTimes));
+    ctx->breakables.push_back(IR::Breakable(uniq, restBlock, trueBlock));
     trueBlock->setActive(ctx->builder);
     emitSentences(sentences, ctx);
     trueBlock->destroyLocals(ctx);

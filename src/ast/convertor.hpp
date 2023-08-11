@@ -17,12 +17,12 @@ class ConvertorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  Maybe<Identifier>     argName;
-  QatType*              candidateType;
-  bool                  isMemberArgument;
-  utils::VisibilityKind visibility;
-  bool                  isFrom;
-  FileRange             nameRange;
+  Maybe<Identifier> argName;
+  QatType*          candidateType;
+  bool              isMemberArgument;
+  VisibilityKind    visibility;
+  bool              isFrom;
+  FileRange         nameRange;
 
   mutable IR::CoreType*       coreType;
   mutable IR::MemberFunction* memberFn;
@@ -30,13 +30,13 @@ private:
   void setCoreType(IR::CoreType* _coreType) const;
 
   ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
-                     bool _isMemberArg, utils::VisibilityKind _visibility, const FileRange& _fileRange);
+                     bool _isMemberArg, VisibilityKind _visibility, const FileRange& _fileRange);
 
 public:
   static ConvertorPrototype* From(FileRange nameRange, Maybe<Identifier> argName, QatType* _candidateType,
-                                  bool _isMemberArg, utils::VisibilityKind _visibility, const FileRange& _fileRange);
+                                  bool _isMemberArg, VisibilityKind _visibility, const FileRange& _fileRange);
 
-  static ConvertorPrototype* To(FileRange nameRange, QatType* _candidateType, utils::VisibilityKind visib,
+  static ConvertorPrototype* To(FileRange nameRange, QatType* _candidateType, VisibilityKind visib,
                                 const FileRange& fileRange);
 
   void  define(IR::Context* ctx) final;

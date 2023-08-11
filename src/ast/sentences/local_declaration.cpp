@@ -47,7 +47,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
   auto maybeTagFill = [&](IR::Value* loc) {
     if (declType && declType->isMaybe()) {
       ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                               declType->asMaybe()->hasSizedSubType()
+                               declType->asMaybe()->hasSizedSubType(ctx)
                                    ? ctx->builder.CreateStructGEP(loc->getType()->getLLVMType(), loc->getLLVM(), 0u)
                                    : loc->getLLVM());
     }
@@ -467,7 +467,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     SHOW("llvm::StoreInst created")
   } else {
     if (declType && declType->isMaybe()) {
-      if (declType->asMaybe()->hasSizedSubType()) {
+      if (declType->asMaybe()->hasSizedSubType(ctx)) {
         ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
                                  ctx->builder.CreateStructGEP(declType->getLLVMType(), newValue->getAlloca(), 0u));
         ctx->builder.CreateStore(llvm::Constant::getNullValue(declType->asMaybe()->getSubType()->getLLVMType()),

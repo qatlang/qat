@@ -62,6 +62,7 @@ public:
   useit PointerOwner getOwner() const;
   useit bool         isSubtypeVariable() const;
   useit bool         isMulti() const;
+  useit bool         isTypeSized() const;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;
 };

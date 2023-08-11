@@ -48,6 +48,8 @@ bool QatType::canBeConstGeneric() const { return false; }
 
 Maybe<String> QatType::toConstGenericString(IR::ConstantValue* val) const { return None; }
 
+bool QatType::isTypeSized() const { return false; }
+
 Maybe<bool> QatType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const { return false; }
 
 bool QatType::checkTypeExists(const String& name) {

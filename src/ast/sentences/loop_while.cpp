@@ -11,12 +11,12 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
   if (tag.has_value()) {
     uniq = tag->value;
     for (const auto& info : ctx->loopsInfo) {
-      if (info->name == uniq) {
+      if (info.name == uniq) {
         ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek->tag.has_value() && (brek->tag.value() == tag->value)) {
+      if (brek.tag.has_value() && (brek.tag.value() == tag->value)) {
         ctx->Error("The tag provided for the loop is already used by another loop or switch", tag->range);
       }
     }
@@ -37,8 +37,8 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
       llCond = ctx->builder.CreateLoad(cond->getType()->asReference()->getSubType()->getLLVMType(), llCond);
     }
     ctx->builder.CreateCondBr(llCond, trueBlock->getBB(), restBlock->getBB());
-    ctx->loopsInfo.push_back(new IR::LoopInfo(uniq, trueBlock, condBlock, restBlock, nullptr, IR::LoopType::While));
-    ctx->breakables.push_back(new IR::Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
+    ctx->loopsInfo.push_back(IR::LoopInfo(uniq, trueBlock, condBlock, restBlock, nullptr, IR::LoopType::While));
+    ctx->breakables.push_back(IR::Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
     trueBlock->setActive(ctx->builder);
     emitSentences(sentences, ctx);
     trueBlock->destroyLocals(ctx);

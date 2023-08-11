@@ -24,20 +24,20 @@ class ConstructorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  IR::CoreType*         coreType;
-  Vec<Argument*>        arguments;
-  utils::VisibilityKind visibility;
-  ConstructorType       type;
-  Maybe<Identifier>     argName;
-  FileRange             nameRange;
+  IR::CoreType*     coreType;
+  Vec<Argument*>    arguments;
+  VisibilityKind    visibility;
+  ConstructorType   type;
+  Maybe<Identifier> argName;
+  FileRange         nameRange;
 
   ConstructorPrototype(ConstructorType constrType, FileRange nameRange, Vec<Argument*> _arguments,
-                       utils::VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> argName = None);
+                       VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> argName = None);
 
 public:
-  static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, utils::VisibilityKind visibility,
+  static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, VisibilityKind visibility,
                                       FileRange fileRange);
-  static ConstructorPrototype* Default(utils::VisibilityKind visibility, FileRange nameRange, FileRange fileRange);
+  static ConstructorPrototype* Default(VisibilityKind visibility, FileRange nameRange, FileRange fileRange);
   static ConstructorPrototype* Copy(FileRange nameRange, FileRange fileRange, Identifier argName);
   static ConstructorPrototype* Move(FileRange nameRange, FileRange fileRange, Identifier argName);
 

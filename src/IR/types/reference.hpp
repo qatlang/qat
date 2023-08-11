@@ -11,13 +11,14 @@ class ReferenceType : public QatType {
 private:
   QatType* subType;
   bool     isSubVariable;
-  ReferenceType(bool isSubtypeVariable, QatType* _type, llvm::LLVMContext& ctx);
+  ReferenceType(bool isSubtypeVariable, QatType* _type, IR::Context* ctx);
 
 public:
-  useit static ReferenceType* get(bool _isSubtypeVariable, QatType* _subtype, llvm::LLVMContext& ctx);
+  useit static ReferenceType* get(bool _isSubtypeVariable, QatType* _subtype, IR::Context* ctx);
 
   useit QatType* getSubType() const;
   useit bool     isSubtypeVariable() const;
+  useit bool     isTypeSized() const final;
   useit TypeKind typeKind() const final;
   useit String   toString() const final;
 };

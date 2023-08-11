@@ -4,8 +4,7 @@
 namespace qat::ast {
 
 DefineMixType::DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes, Vec<FileRange> _ranges,
-                             Maybe<usize> _defaultVal, bool _isPacked, utils::VisibilityKind _visibility,
-                             FileRange _fileRange)
+                             Maybe<usize> _defaultVal, bool _isPacked, VisibilityKind _visibility, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), subtypes(std::move(_subTypes)), isPacked(_isPacked),
       visibility(_visibility), fRanges(std::move(_ranges)), defaultVal(_defaultVal) {}
 

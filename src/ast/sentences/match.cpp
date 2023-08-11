@@ -162,11 +162,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
                      uMatch->getValueName().range);
         } else {
           SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
-          auto* loc =
-              trueBlock->newValue(uMatch->getValueName().value,
-                                  IR::ReferenceType::get(uMatch->isVariable(),
-                                                         mTy->getSubTypeWithName(uMatch->getName().value), ctx->llctx),
-                                  false, uMatch->getValueName().range);
+          auto* loc = trueBlock->newValue(
+              uMatch->getValueName().value,
+              IR::ReferenceType::get(uMatch->isVariable(), mTy->getSubTypeWithName(uMatch->getName().value), ctx),
+              false, uMatch->getValueName().range);
           SHOW("Local Entity for match case created")
           ctx->builder.CreateStore(ctx->builder.CreatePointerCast(
                                        ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 1),

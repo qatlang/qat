@@ -8,12 +8,12 @@ namespace qat::ast {
 
 class TypeDefinition : public Node {
 private:
-  Identifier            name;
-  QatType*              subType;
-  utils::VisibilityKind visibKind;
+  Identifier     name;
+  QatType*       subType;
+  VisibilityKind visibKind;
 
 public:
-  TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange, utils::VisibilityKind _visibKind);
+  TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange, VisibilityKind _visibKind);
 
   void  defineType(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* _) final { return nullptr; }

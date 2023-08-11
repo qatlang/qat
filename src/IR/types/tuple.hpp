@@ -27,6 +27,8 @@ public:
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 
+  useit bool isTypeSized() const;
+
   useit Vec<QatType*> getSubTypes() const;
   useit QatType*      getSubtypeAt(u64 index);
   useit u64           getSubTypeCount() const;

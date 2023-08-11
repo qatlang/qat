@@ -39,7 +39,7 @@ CodeProblem::operator Json() const {
       ._("isError", isError)
       ._("message", message)
       ._("hasRange", range.has_value())
-      ._("range", range.has_value() ? (Json)range.value() : Json());
+      ._("fileRange", range.has_value() ? (Json)(range.value()) : JsonValue());
 }
 
 Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
@@ -50,15 +50,6 @@ Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
   targetOpts->Triple = cli::Config::get()->getTargetTriple();
   clangTargetInfo    = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
   dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
-}
-
-Context::~Context() {
-  for (auto* lInfo : loopsInfo) {
-    delete lInfo;
-  }
-  for (auto* brk : breakables) {
-    delete brk;
-  }
 }
 
 void Context::genericNameCheck(const String& name, const FileRange& range) {
@@ -74,7 +65,7 @@ void Context::genericNameCheck(const String& name, const FileRange& range) {
 }
 
 void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID) {
-  auto reqInfo = getReqInfo();
+  auto reqInfo = getAccessInfo();
   if (mod->hasCoreType(name.value)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
@@ -91,7 +82,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasGenericCoreType(name.value)) {
-    if (genericID.has_value() && mod->getGenericCoreType(name.value, getReqInfo())->getID() == genericID.value()) {
+    if (genericID.has_value() && mod->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
@@ -99,7 +90,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasBroughtGenericCoreType(name.value, None)) {
-    if (genericID.has_value() && mod->getGenericCoreType(name.value, getReqInfo())->getID() == genericID.value()) {
+    if (genericID.has_value() && mod->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
@@ -174,7 +165,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasGenericFunction(name.value)) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
@@ -182,7 +173,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasBroughtGenericFunction(name.value, None)) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
@@ -190,7 +181,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " or check the codebase for inconsistencies",
           name.range);
   } else if (mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getReqInfo())->getID() == genericID.value()) {
+    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) + " is present inside the module " +
@@ -267,36 +258,36 @@ String Context::getGlobalStringName() const {
   return res;
 }
 
-utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) const {
-  if (kind.has_value() && (kind.value() != utils::VisibilityKind::parent)) {
+VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
+  if (kind.has_value() && (kind.value() != VisibilityKind::parent)) {
     SHOW("Visibility kind has value")
     switch (kind.value()) {
-      case utils::VisibilityKind::box: {
-        return utils::VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
+      case VisibilityKind::box: {
+        return VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
       }
-      case utils::VisibilityKind::lib: {
-        return utils::VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
+      case VisibilityKind::lib: {
+        return VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
       }
-      case utils::VisibilityKind::file: {
-        return utils::VisibilityInfo::file(getMod()->getFilePath());
+      case VisibilityKind::file: {
+        return VisibilityInfo::file(getMod()->getFilePath());
       }
-      case utils::VisibilityKind::folder: {
-        return utils::VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path().string());
+      case VisibilityKind::folder: {
+        return VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path().string());
       }
-      case utils::VisibilityKind::type: {
+      case VisibilityKind::type: {
         if (activeType) {
-          return utils::VisibilityInfo::type(activeType->getFullName());
+          return VisibilityInfo::type(activeType->getFullName());
         } else {
           if (fn && fn->isMemberFunction()) {
-            return utils::VisibilityInfo::type(((IR::MemberFunction*)fn)->getParentType()->getFullName());
+            return VisibilityInfo::type(((IR::MemberFunction*)fn)->getParentType()->getFullName());
           } else {
-            return utils::VisibilityInfo::type("");
+            return VisibilityInfo::type("");
           }
         }
         // TODO - Handle in case it is null
       }
-      case utils::VisibilityKind::pub: {
-        return utils::VisibilityInfo::pub();
+      case VisibilityKind::pub: {
+        return VisibilityInfo::pub();
       }
       default:
         break;
@@ -305,22 +296,21 @@ utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) c
     SHOW("No visibility kind")
     if (activeType) {
       SHOW("Found active type")
-      return utils::VisibilityInfo::type(activeType->getFullName());
+      return VisibilityInfo::type(activeType->getFullName());
     } else {
       SHOW("No active type")
       switch (getMod()->getModuleType()) {
         case ModuleType::box: {
-          return utils::VisibilityInfo::box(getMod()->getFullName());
+          return VisibilityInfo::box(getMod()->getFullName());
         }
         case ModuleType::file: {
-          return utils::VisibilityInfo::file(getMod()->getFilePath());
+          return VisibilityInfo::file(getMod()->getFilePath());
         }
         case ModuleType::lib: {
-          return utils::VisibilityInfo::lib(getMod()->getFullName());
+          return VisibilityInfo::lib(getMod()->getFullName());
         }
         case ModuleType::folder: {
-          return utils::VisibilityInfo::folder(
-              fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
+          return VisibilityInfo::folder(fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
         }
       }
     }
@@ -328,7 +318,7 @@ utils::VisibilityInfo Context::getVisibInfo(Maybe<utils::VisibilityKind> kind) c
   SHOW("No visibility info found")
 } // NOLINT(clang-diagnostic-return-type)
 
-utils::RequesterInfo Context::getReqInfo() const {
+AccessInfo Context::getAccessInfo() const {
   // TODO - Consider changing string value to pointer of the actual entities
   Maybe<String> lib  = None;
   Maybe<String> box  = None;
@@ -353,11 +343,11 @@ utils::RequesterInfo Context::getReqInfo() const {
   return {lib, box, file, type};
 }
 
-Maybe<utils::RequesterInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
+Maybe<AccessInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
   if ((getMod()->getID() == otherMod->getID()) || getMod()->isParentModuleOf(otherMod)) {
     return None;
   } else {
-    return getReqInfo();
+    return getAccessInfo();
   }
 }
 
@@ -377,24 +367,29 @@ void Context::writeJsonResult(bool status) const {
     problems.push_back((Json)prob);
   }
   Json               result;
-  unsigned long long qatTime   = 0;
-  unsigned long long clangTime = 0;
+  unsigned long long qatCompileTime = 0;
+  unsigned long long clangTime      = 0;
   if (qatStartTime) {
-    qatTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                  qatEndTime.value_or(std::chrono::high_resolution_clock::now()) - qatStartTime.value())
-                  .count();
+    qatCompileTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                         qatEndTime.value_or(std::chrono::high_resolution_clock::now()) - qatStartTime.value())
+                         .count();
   }
   if (clangLinkStartTime) {
     clangTime = std::chrono::duration_cast<std::chrono::microseconds>(
                     clangLinkEndTime.value_or(std::chrono::high_resolution_clock::now()) - clangLinkStartTime.value())
                     .count();
   }
+  Vec<JsonValue> binarySizesJson;
+  for (auto binSiz : binarySizes) {
+    binarySizesJson.push_back(binSiz);
+  }
   result._("status", status)
       ._("problems", problems)
       ._("lexerTime", (unsigned long long)lexer::Lexer::timeInMicroSeconds)
       ._("parserTime", (unsigned long long)parser::Parser::timeInMicroSeconds)
-      ._("qatTime", qatTime)
-      ._("clangTime", clangTime)
+      ._("compilationTime", qatCompileTime)
+      ._("linkingTime", clangTime)
+      ._("binarySizes", binarySizesJson)
       ._("hasMain", hasMain);
   std::fstream output;
   output.open((cli::Config::get()->getOutputPath() / "QatCompilationResult.json").string().c_str(), std::ios_base::out);

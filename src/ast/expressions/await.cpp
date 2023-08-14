@@ -75,7 +75,7 @@ IR::Value* Await::emit(IR::Context* ctx) {
           false, IR::Nature::temporary);
     }
   } else {
-    ctx->Error("The expression should be a future to use await", exp->fileRange);
+    ctx->Error("The expression should be a " + ctx->highlightError("future") + " to use await", exp->fileRange);
   }
   return nullptr;
 }

@@ -8,24 +8,24 @@
 
 namespace qat::IR {
 
-StringSliceType::StringSliceType(llvm::LLVMContext& ctx) {
-  if (llvm::StructType::getTypeByName(ctx, "str")) {
-    llvmType = llvm::StructType::getTypeByName(ctx, "str");
+StringSliceType::StringSliceType(llvm::LLVMContext& llctx) {
+  if (llvm::StructType::getTypeByName(llctx, "str")) {
+    llvmType = llvm::StructType::getTypeByName(llctx, "str");
   } else {
     llvmType = llvm::StructType::create(
-        {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0U), llvm::Type::getInt64Ty(ctx)}, "str");
+        {llvm::PointerType::get(llvm::Type::getInt8Ty(llctx), 0U), llvm::Type::getInt64Ty(llctx)}, "str");
   }
 }
 
 bool StringSliceType::isTypeSized() const { return true; }
 
-StringSliceType* StringSliceType::get(llvm::LLVMContext& ctx) {
+StringSliceType* StringSliceType::get(llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::stringSlice) {
       return (StringSliceType*)typ;
     }
   }
-  return new StringSliceType(ctx);
+  return new StringSliceType(llctx);
 }
 
 bool StringSliceType::canBeConstGeneric() const { return true; }

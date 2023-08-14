@@ -37,7 +37,7 @@ bool MaybeType::hasSizedSubType(IR::Context* ctx) const { return subTy->isTypeSi
 
 QatType* MaybeType::getSubType() const { return subTy; }
 
-String MaybeType::toString() const { return "maybe " + subTy->toString(); }
+String MaybeType::toString() const { return "maybe:[" + subTy->toString() + "]"; }
 
 bool MaybeType::isDestructible() const { return subTy->isDestructible(); }
 

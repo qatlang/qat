@@ -81,23 +81,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     for (usize i = 0; i < arguments.size(); i++) {
       if (fnTy->getArgumentCount() > (u64)i) {
         auto* argTy = fnTy->getArgumentTypeAt(i + 1)->getType();
-        if (arguments.at(i)->nodeType() == NodeType::integerLiteral) {
-          if (argTy->isInteger() || argTy->isUnsignedInteger()) {
-            ((IntegerLiteral*)arguments.at(i))->setType(argTy);
-          }
-        } else if (arguments.at(i)->nodeType() == NodeType::unsignedLiteral) {
-          if (argTy->isInteger() || argTy->isUnsignedInteger()) {
-            ((UnsignedLiteral*)arguments.at(i))->setType(argTy);
-          }
-        } else if (arguments.at(i)->nodeType() == NodeType::nullPointer) {
-          if (argTy->isPointer()) {
-            ((NullPointer*)arguments.at(i))->setType(argTy->asPointer());
-          } else {
-            ctx->Error("The expression provided does not match the type of the argument", arguments.at(i)->fileRange);
-          }
-        } else if (arguments.at(i)->nodeType() == NodeType::Default) {
-          ((Default*)arguments.at(i))->setType(argTy);
-        }
+        arguments.at(i)->setInferenceType(argTy);
       }
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }

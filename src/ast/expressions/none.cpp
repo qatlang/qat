@@ -8,15 +8,13 @@ NoneExpression::NoneExpression(QatType* _type, FileRange _fileRange) : Expressio
 
 bool NoneExpression::hasTypeSet() const { return type != nullptr; }
 
-void NoneExpression::setType(IR::QatType* _irType) { irType = _irType; }
-
 IR::Value* NoneExpression::emit(IR::Context* ctx) {
-  if (type || irType) {
-    auto* typ = type ? type->emit(ctx) : irType;
-    if (irType && type) {
-      if (!typ->isSame(irType)) {
+  if (type || inferredType) {
+    auto* typ = type ? type->emit(ctx) : inferredType.value();
+    if (inferredType && type) {
+      if (!typ->isSame(inferredType.value())) {
         ctx->Error("The type provided for this none expression is " + ctx->highlightError(typ->toString()) +
-                       ", but the expected type is " + ctx->highlightError(irType->toString()),
+                       ", but the expected type is " + ctx->highlightError(inferredType.value()->toString()),
                    fileRange);
       }
     }

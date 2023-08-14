@@ -8,13 +8,11 @@ namespace qat::ast {
 
 class UnsignedLiteral : public ConstantExpression {
 private:
-  String               value;
-  mutable IR::QatType* expected = nullptr;
+  String value;
 
 public:
   UnsignedLiteral(String _value, FileRange _fileRange);
 
-  void  setType(IR::QatType* typ) const;
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;
   useit String             toString() const final;

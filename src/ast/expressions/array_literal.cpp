@@ -14,8 +14,6 @@ ArrayLiteral::ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
 
 bool ArrayLiteral::hasLocal() const { return (local != nullptr); }
 
-void ArrayLiteral::setType(IR::ArrayType* typ) { inferredType = typ; }
-
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
   IR::ArrayType* arrTyOfLocal = nullptr;
   if (hasLocal()) {
@@ -29,37 +27,22 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
     ctx->Error("The expected length of the array is " + ctx->highlightError(std::to_string(arrTyOfLocal->getLength())) +
                    ", but this array literal has " + ctx->highlightError(std::to_string(values.size())) + " elements",
                fileRange);
-  } else if (inferredType && inferredType->getLength() != values.size()) {
-    auto infLen = inferredType->getLength();
+  } else if (inferredType.has_value() && inferredType.value()->isArray() &&
+             inferredType.value()->asArray()->getLength() != values.size()) {
+    auto infLen = inferredType.value()->asArray()->getLength();
     ctx->Error("The length of the array type inferred is " + ctx->highlightError(std::to_string(infLen)) + ", but " +
                    ((values.size() < infLen) ? "only " : "") + ctx->highlightError(std::to_string(values.size())) +
                    " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
+               fileRange);
+  } else if (inferredType && !inferredType.value()->isArray()) {
+    ctx->Error("Inferred type is " + ctx->highlightError(inferredType.value()->toString()) + ", but found an array",
                fileRange);
   }
   Vec<IR::Value*> valsIR;
   for (auto* val : values) {
     if (arrTyOfLocal || inferredType) {
-      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType->getElementType();
-      switch (val->nodeType()) {
-        case NodeType::integerLiteral: {
-          ((IntegerLiteral*)val)->setType(elemTy);
-          break;
-        }
-        case NodeType::unsignedLiteral: {
-          ((UnsignedLiteral*)val)->setType(elemTy);
-          break;
-        }
-        case NodeType::Default: {
-          ((Default*)val)->setType(elemTy);
-          break;
-        }
-        case NodeType::none: {
-          ((NoneExpression*)val)->setType(elemTy);
-          break;
-        }
-        default:
-          break;
-      }
+      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType.value()->asArray()->getElementType();
+      val->setInferenceType(elemTy);
     }
     valsIR.push_back(val->emit(ctx));
   }
@@ -129,10 +112,11 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
                                  local->getLLVM());
       }
     } else {
-      if (inferredType->getElementType()) {
+      if (inferredType.value()->asArray()->getElementType()) {
         return new IR::ConstantValue(
-            llvm::ConstantArray::get(llvm::ArrayType::get(inferredType->getElementType()->getLLVMType(), 0u), {}),
-            IR::ArrayType::get(inferredType->getElementType(), 0u, ctx->llctx));
+            llvm::ConstantArray::get(
+                llvm::ArrayType::get(inferredType.value()->asArray()->getElementType()->getLLVMType(), 0u), {}),
+            IR::ArrayType::get(inferredType.value()->asArray()->getElementType(), 0u, ctx->llctx));
       } else {
         ctx->Error("Element type for the empty array is not provided and could not be inferred", fileRange);
       }

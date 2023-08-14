@@ -6,9 +6,9 @@
 namespace qat::IR {
 
 OpaqueType::OpaqueType(Identifier _name, Maybe<String> _genericVariantName, IR::QatModule* _parent, Maybe<usize> _size,
-                       llvm::LLVMContext& ctx)
+                       llvm::LLVMContext& llctx)
     : name(std::move(_name)), genericVariantName(std::move(_genericVariantName)), parent(_parent), size(_size) {
-  llvmType = llvm::StructType::create(ctx, parent->getFullNameWithChild(name.value));
+  llvmType = llvm::StructType::create(llctx, parent->getFullNameWithChild(name.value));
 }
 
 OpaqueType* OpaqueType::get(Identifier name, Maybe<String> genericVariantName, IR::QatModule* parent, Maybe<usize> size,

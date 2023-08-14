@@ -38,21 +38,7 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
         llvm::Value* exp = nullptr;
         if (subRes.second) {
           auto* typ = mixTy->getSubTypeWithName(subName);
-          if (expression.value()->nodeType() == NodeType::integerLiteral) {
-            ((IntegerLiteral*)(expression.value()))->setType(typ);
-          } else if (expression.value()->nodeType() == NodeType::unsignedLiteral) {
-            ((UnsignedLiteral*)(expression.value()))->setType(typ);
-          } else if (expression.value()->nodeType() == NodeType::none) {
-            if (typ->isMaybe()) {
-              ((NoneExpression*)(expression.value()))->setType(typ->asMaybe()->getSubType());
-            }
-          } else if (expression.value()->nodeType() == NodeType::Default) {
-            ((Default*)(expression.value()))->setType(typ);
-          } else if (expression.value()->nodeType() == NodeType::arrayLiteral) {
-            if (typ->isArray()) {
-              ((ArrayLiteral*)(expression.value()))->setType(typ->asArray());
-            }
-          }
+          expression.value()->setInferenceType(typ);
           auto* expEmit = expression.value()->emit(ctx);
           if (typ->isSame(expEmit->getType())) {
             expEmit->loadImplicitPointer(ctx->builder);

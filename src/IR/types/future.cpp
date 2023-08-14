@@ -18,13 +18,13 @@ FutureType::FutureType(QatType* _subType, IR::Context* ctx) : subTy(_subType) {
                                         {llvm::Type::getInt64Ty(ctx->llctx),
                                          llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),
                                          llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo()},
-                                        "future void", false);
+                                        "future:[void]", false);
   } else {
     llvmType = llvm::StructType::create(
         ctx->llctx,
         {llvm::Type::getInt64Ty(ctx->llctx), llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),
          llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(), subTy->getLLVMType()->getPointerTo()},
-        "future " + subTy->toString(), false);
+        "future:[" + subTy->toString() + "]", false);
   }
 }
 
@@ -41,7 +41,7 @@ FutureType* FutureType::get(QatType* subType, IR::Context* ctx) {
 
 QatType* FutureType::getSubType() const { return subTy; }
 
-String FutureType::toString() const { return "future " + subTy->toString(); }
+String FutureType::toString() const { return "future:[" + subTy->toString() + "]"; }
 
 TypeKind FutureType::typeKind() const { return TypeKind::future; }
 

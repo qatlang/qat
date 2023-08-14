@@ -19,10 +19,10 @@ private:
   Vec<QatType*> subTypes;
   bool          isPacked;
 
-  TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ctx);
+  TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& llctx);
 
 public:
-  useit static TupleType* get(Vec<QatType*> types, bool isPacked, llvm::LLVMContext& ctx);
+  useit static TupleType* get(Vec<QatType*> types, bool isPacked, llvm::LLVMContext& llctx);
 
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;

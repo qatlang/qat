@@ -26,14 +26,7 @@ void ConstGeneric::emit(IR::Context* ctx) const {
   }
   if (hasDefault()) {
     auto* astVal = defaultValueAST.value();
-    if (astVal->nodeType() == NodeType::integerLiteral &&
-        (expressionType->isInteger() || expressionType->isUnsignedInteger())) {
-      ((ast::IntegerLiteral*)astVal)
-          ->setType(expressionType->isInteger() ? (IR::QatType*)expressionType->asInteger()
-                                                : (IR::QatType*)expressionType->asUnsignedInteger());
-    } else if (astVal->nodeType() == NodeType::unsignedLiteral && expressionType->isUnsignedInteger()) {
-      ((ast::UnsignedLiteral*)astVal)->setType(expressionType->asUnsignedInteger());
-    }
+    astVal->setInferenceType(expressionType);
     defaultValue = astVal->emit(ctx);
     if (defaultValue) {
       if (!defaultValue->getType()->isSame(expressionType)) {

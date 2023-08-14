@@ -69,55 +69,7 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                           ? fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()
                           : fun->getType()->asFunction()->getReturnType();
       retType       = fun->isAsyncFunction() ? retType->asFuture()->getSubType() : retType;
-      if (give_expr.value()->nodeType() == NodeType::Default) {
-        ((Default*)give_expr.value())->setType(retType->isFuture() ? retType->asFuture()->getSubType() : retType);
-      }
-      if (retType->isInteger() || retType->isUnsignedInteger() ||
-          (retType->isMaybe() &&
-           (retType->asMaybe()->getSubType()->isUnsignedInteger() || retType->asMaybe()->getSubType()->isInteger())) ||
-          (retType->isFuture() && ((retType->asFuture()->getSubType()->isUnsignedInteger() ||
-                                    retType->asFuture()->getSubType()->isInteger()) ||
-                                   (retType->asFuture()->getSubType()->isMaybe() &&
-                                    (retType->asFuture()->getSubType()->asMaybe()->isUnsignedInteger() ||
-                                     retType->asFuture()->getSubType()->asMaybe()->isInteger()))))) {
-        if (give_expr.value()->nodeType() == NodeType::integerLiteral) {
-          ((IntegerLiteral*)give_expr.value())
-              ->setType(retType->isMaybe()
-                            ? retType->asMaybe()->getSubType()
-                            : (retType->isFuture() ? (retType->asFuture()->getSubType()->isMaybe()
-                                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()
-                                                          : retType->asFuture()->getSubType())
-                                                   : retType));
-        } else if (give_expr.value()->nodeType() == NodeType::unsignedLiteral) {
-          ((UnsignedLiteral*)give_expr.value())
-              ->setType(retType->isMaybe()
-                            ? retType->asMaybe()->getSubType()
-                            : (retType->isFuture() ? (retType->asFuture()->getSubType()->isMaybe()
-                                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()
-                                                          : retType->asFuture()->getSubType())
-                                                   : retType));
-        }
-      } else if (retType->isPointer() || (retType->isMaybe() && retType->asMaybe()->getSubType()->isPointer()) ||
-                 (retType->isFuture() && retType->asFuture()->getSubType()->isPointer()) ||
-                 (retType->isFuture() && retType->asFuture()->getSubType()->isMaybe() &&
-                  retType->asFuture()->getSubType()->asMaybe()->getSubType()->isPointer())) {
-        if (give_expr.value()->nodeType() == NodeType::nullPointer) {
-          ((NullPointer*)give_expr.value())
-              ->setType(retType->isPointer()
-                            ? retType->asPointer()
-                            : (retType->asMaybe()
-                                   ? (retType->asMaybe()->getSubType()->asPointer())
-                                   : ((retType->isFuture() && retType->asFuture()->getSubType()->isMaybe())
-                                          ? retType->asFuture()->getSubType()->asMaybe()->getSubType()->asPointer()
-                                          : retType->asFuture()->getSubType()->asPointer())));
-        }
-      } else if (retType->isMaybe() || (retType->isFuture() && retType->asFuture()->getSubType()->isMaybe())) {
-        if (give_expr.value()->nodeType() == NodeType::none) {
-          ((NoneExpression*)give_expr.value())
-              ->setType(retType->isMaybe() ? retType->asMaybe()->getSubType()
-                                           : retType->asFuture()->getSubType()->asMaybe()->getSubType());
-        }
-      }
+      give_expr.value()->setInferenceType(retType);
       auto* retVal = give_expr.value()->emit(ctx);
       SHOW("ret val emitted")
       SHOW("RetType: " << retType->toString() << "\nRetValType: " << retVal->getType()->toString())

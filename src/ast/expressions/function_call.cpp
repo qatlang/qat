@@ -32,23 +32,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     for (usize i = 0; i < values.size(); i++) {
       if (fnTy->getArgumentCount() > (u64)i) {
         auto* argTy = fnTy->getArgumentTypeAt(i)->getType();
-        if (values.at(i)->nodeType() == NodeType::integerLiteral) {
-          if (argTy->isInteger() || argTy->isUnsignedInteger()) {
-            ((IntegerLiteral*)values.at(i))->setType(argTy);
-          }
-        } else if (values.at(i)->nodeType() == NodeType::unsignedLiteral) {
-          if (argTy->isInteger() || argTy->isUnsignedInteger()) {
-            ((UnsignedLiteral*)values.at(i))->setType(argTy);
-          }
-        } else if (values.at(i)->nodeType() == NodeType::nullPointer) {
-          if (argTy->isPointer()) {
-            ((NullPointer*)values.at(i))->setType(argTy->asPointer());
-          } else {
-            ctx->Error("The expression provided does not match the type of the argument", values.at(i)->fileRange);
-          }
-        } else if (values.at(i)->nodeType() == NodeType::Default) {
-          ((Default*)values.at(i))->setType(argTy);
-        }
+        values.at(i)->setInferenceType(argTy);
       }
       argsEmit.push_back(values.at(i)->emit(ctx));
     }

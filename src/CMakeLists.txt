@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-	VERSION "0.8.0"
+	VERSION "0.7.5"
 	DESCRIPTION "Qat Programming Language"
 	HOMEPAGE_URL "https://qat.dev")
 
@@ -113,15 +113,15 @@ message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 if(IS_LINUX)
 	if(PLATFORM STREQUAL Arm64)
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-O0 -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		else()
-			SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
+			SET(CMAKE_CXX_FLAGS "-g -O0 -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete -march=armv7-a -mcpu=cortex-a9 -mfloat-abi=hard --target=arm-linux-gnueabihf")
 		endif()
 	else()
 		if(IS_RELEASE)
-			SET(CMAKE_CXX_FLAGS "-Os -std=c++20 -fuse-ld=lld -w -s -Wdelete-incomplete -flto")
+			SET(CMAKE_CXX_FLAGS "-O0 -std=c++20 -fuse-ld=lld -w -s")
 		else()
-			SET(CMAKE_CXX_FLAGS "-g -Os -std=c++20 -fuse-ld=lld -Wall -Wdelete-incomplete")
+			SET(CMAKE_CXX_FLAGS "-g -O0 -std=c++20 -fuse-ld=lld -Wunused -Wall")
 		endif()
 	endif()
 elseif(IS_WINDOWS)
@@ -142,13 +142,13 @@ endif()
 #
 #
 if(IS_WINDOWS)
-	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --link-static --libs core
+	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --link-static --libs
 		OUTPUT_VARIABLE LLVM_LIBRARIES)
 elseif(IS_MAC)
 	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-shared --libs core
 		OUTPUT_VARIABLE LLVM_LIBRARIES)
 else()
-	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-static --libs core
+	execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-static --libs
 		OUTPUT_VARIABLE LLVM_LIBRARIES)
 endif()
 
@@ -173,7 +173,7 @@ if(IS_WINDOWS)
 		PUBLIC ast/ lexer/ parser/ utils/ cli/ IR/)
 else()
 	target_link_directories(${PROJECT_NAME}
-		PUBLIC ast/ lexer/ parser/ utils/ cli/ IR/ /usr/local/lib/)
+		PUBLIC ast/ lexer/ parser/ utils/ cli/ IR/)
 endif()
 
 if(IS_MAC)
@@ -189,16 +189,17 @@ else()
 	target_link_directories(${PROJECT_NAME} PRIVATE ${LLVM_ROOT_DIR}/lib)
 endif()
 
+SET(LLD_LIBRARIES lldCOFF lldCommon lldELF lldMachO lldMinGW lldWasm)
+
 if(IS_LINUX)
 	target_link_libraries(
-		${PROJECT_NAME} ${LLVM_LIBRARIES}
-		LLVMBitWriter LLVMLinker clangBasic stdc++ stdc++fs rt dl pthread m z tinfo xml2
+		${PROJECT_NAME} ${LLVM_LIBRARIES} ${LLD_LIBRARIES} clangBasic stdc++ stdc++fs rt pthread m z tinfo xml2
 		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
 	)
 elseif(IS_MAC)
 	target_link_libraries(
-		${PROJECT_NAME} ${LLVM_LIBRARIES}
-		LLVMBitWriter LLVMLinker clangBasic stdc++ dl pthread m xml2 z zstd curses
+		${PROJECT_NAME} ${LLVM_LIBRARIES} ${LLD_LIBRARIES} clangBasic
+		stdc++ dl pthread m xml2 z zstd curses
 		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
 	)
 elseif(IS_WINDOWS)
@@ -206,11 +207,10 @@ elseif(IS_WINDOWS)
 	target_link_libraries(
 		${PROJECT_NAME}
 		QAT_UTILS QAT_CLI QAT_AST QAT_LEXER QAT_PARSER QAT_IR
-		${LLVM_LIBRARIES}
-		LLVMBitWriter clangBasic
+		${LLVM_LIBRARIES} ${LLD_LIBRARIES} clangBasic
 	)
 endif()
 
-if(NOT IS_WINDOWS)
-	execute_process(COMMAND "export PATH=${CMAKE_BINARY_DIR}:$PATH")
-endif()
+message(STATUS "CMake install prefix is: ${CMAKE_INSTALL_PREFIX}")
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})

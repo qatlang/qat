@@ -88,11 +88,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
             ((ast::ConstantDefault*)(gen->asConst()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
           } else if (genericCoreTy->getGenericAt(i)->isConst() &&
                      (genericCoreTy->getGenericAt(i)->asConst()->getType() != nullptr)) {
-            if (gen->asConst()->nodeType() == NodeType::integerLiteral) {
-              ((ast::IntegerLiteral*)(gen->asConst()))->setType(genericCoreTy->getGenericAt(i)->asConst()->getType());
-            } else if (gen->asConst()->nodeType() == NodeType::unsignedLiteral) {
-              ((ast::UnsignedLiteral*)(gen->asConst()))->setType(genericCoreTy->getGenericAt(i)->asConst()->getType());
-            }
+            gen->asConst()->setInferenceType(genericCoreTy->getGenericAt(i)->asConst()->getType());
           }
         }
         types.push_back(genericTypes.at(i)->toFill(ctx));

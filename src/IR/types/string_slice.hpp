@@ -7,10 +7,10 @@ namespace qat::IR {
 
 class StringSliceType : public QatType {
 private:
-  StringSliceType(llvm::LLVMContext& ctx);
+  StringSliceType(llvm::LLVMContext& llctx);
 
 public:
-  useit static StringSliceType* get(llvm::LLVMContext& ctx);
+  useit static StringSliceType* get(llvm::LLVMContext& llctx);
   useit TypeKind                typeKind() const override;
   useit String                  toString() const override;
 

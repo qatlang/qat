@@ -9,11 +9,11 @@
 
 namespace qat::IR {
 
-IntegerType::IntegerType(u64 _bitWidth, llvm::LLVMContext& ctx) : bitWidth(_bitWidth) {
-  llvmType = llvm::IntegerType::get(ctx, bitWidth);
+IntegerType::IntegerType(u64 _bitWidth, llvm::LLVMContext& llctx) : bitWidth(_bitWidth) {
+  llvmType = llvm::IntegerType::get(llctx, bitWidth);
 }
 
-IntegerType* IntegerType::get(u64 bits, llvm::LLVMContext& ctx) {
+IntegerType* IntegerType::get(u64 bits, llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isInteger()) {
       if (typ->asInteger()->isBitWidth(bits)) {
@@ -21,7 +21,7 @@ IntegerType* IntegerType::get(u64 bits, llvm::LLVMContext& ctx) {
       }
     }
   }
-  return new IntegerType(bits, ctx);
+  return new IntegerType(bits, llctx);
 }
 
 bool IntegerType::isBitWidth(u64 width) const { return bitWidth == width; }

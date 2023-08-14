@@ -86,11 +86,7 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
       } else if (genericFn->getGenericAt(i)->isConst() &&
                  (genericFn->getGenericAt(i)->asConst()->getType() != nullptr)) {
         SHOW("Generic abstract is const and has valid type")
-        if (gen->asConst()->nodeType() == NodeType::integerLiteral) {
-          ((ast::IntegerLiteral*)(gen->asConst()))->setType(genericFn->getGenericAt(i)->asConst()->getType());
-        } else if (gen->asConst()->nodeType() == NodeType::unsignedLiteral) {
-          ((ast::UnsignedLiteral*)(gen->asConst()))->setType(genericFn->getGenericAt(i)->asConst()->getType());
-        }
+        gen->asConst()->setInferenceType(genericFn->getGenericAt(i)->asConst()->getType());
       }
       types.push_back(genericTypes.at(i)->toFill(ctx));
     }

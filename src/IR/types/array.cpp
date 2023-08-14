@@ -10,12 +10,12 @@
 
 namespace qat::IR {
 
-ArrayType::ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& ctx)
+ArrayType::ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& llctx)
     : elementType(_element_type), length(_length) {
   llvmType = llvm::ArrayType::get(elementType->getLLVMType(), length);
 }
 
-ArrayType* ArrayType::get(QatType* elementType, u64 _length, llvm::LLVMContext& ctx) {
+ArrayType* ArrayType::get(QatType* elementType, u64 _length, llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isArray()) {
       if (typ->asArray()->getLength() == _length) {
@@ -25,7 +25,7 @@ ArrayType* ArrayType::get(QatType* elementType, u64 _length, llvm::LLVMContext& 
       }
     }
   }
-  return new ArrayType(elementType, _length, ctx);
+  return new ArrayType(elementType, _length, llctx);
 }
 
 QatType* ArrayType::getElementType() { return elementType; }

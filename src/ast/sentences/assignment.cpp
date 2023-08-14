@@ -22,72 +22,8 @@ Assignment::Assignment(Expression* _lhs, Expression* _value, FileRange _fileRang
 
 IR::Value* Assignment::emit(IR::Context* ctx) {
   auto* lhsVal = lhs->emit(ctx);
-  if (value->nodeType() == NodeType::nullPointer) {
-    auto* nullVal = (NullPointer*)value;
-    if (lhsVal->getType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asPointer());
-    } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asReference()->getSubType()->asPointer());
-    } else if (lhsVal->getType()->isMaybe() && lhsVal->getType()->asMaybe()->getSubType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asMaybe()->getSubType()->asPointer());
-    } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe() &&
-               lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isPointer()) {
-      nullVal->setType(lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->asPointer());
-    } else {
-      ctx->Error("Type of the LHS is not compatible with the RHS, which is a "
-                 "null pointer",
-                 value->fileRange);
-    }
-  } else if (value->nodeType() == NodeType::Default) {
-    auto* defVal = (Default*)value;
-    if (lhsVal->getType()->isReference()) {
-      defVal->setType(lhsVal->getType()->asReference()->getSubType());
-    } else {
-      defVal->setType(lhsVal->getType());
-    }
-  } else if (value->nodeType() == NodeType::unsignedLiteral) {
-    auto* uLit = (UnsignedLiteral*)value;
-    if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isInteger()) {
-      uLit->setType(lhsVal->getType()->asReference()->getSubType());
-    } else if (lhsVal->getType()->isReference() &&
-               lhsVal->getType()->asReference()->getSubType()->isUnsignedInteger()) {
-      uLit->setType(lhsVal->getType()->asReference()->getSubType());
-    } else if (lhsVal->getType()->isInteger()) {
-      uLit->setType(lhsVal->getType());
-    } else if (lhsVal->getType()->isUnsignedInteger()) {
-      uLit->setType(lhsVal->getType());
-    } else if (lhsVal->getType()->isMaybe() && (lhsVal->getType()->asMaybe()->getSubType()->isInteger() ||
-                                                lhsVal->getType()->asMaybe()->getSubType()->isUnsignedInteger())) {
-      uLit->setType(lhsVal->getType()->asMaybe()->getSubType());
-    } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe() &&
-               (lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isInteger() ||
-                lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isUnsignedInteger())) {
-      uLit->setType(lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType());
-    } else {
-      ctx->Error("Type of LHS is not compatible with the RHS", fileRange);
-    }
-  } else if (value->nodeType() == NodeType::integerLiteral) {
-    auto* iLit = (IntegerLiteral*)value;
-    if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isInteger()) {
-      iLit->setType(lhsVal->getType()->asReference()->getSubType());
-    } else if (lhsVal->getType()->isReference() &&
-               lhsVal->getType()->asReference()->getSubType()->isUnsignedInteger()) {
-      iLit->setType(lhsVal->getType()->asReference()->getSubType());
-    } else if (lhsVal->getType()->isInteger()) {
-      iLit->setType(lhsVal->getType());
-    } else if (lhsVal->getType()->isUnsignedInteger()) {
-      iLit->setType(lhsVal->getType());
-    } else if (lhsVal->getType()->isMaybe() && (lhsVal->getType()->asMaybe()->getSubType()->isInteger() ||
-                                                lhsVal->getType()->asMaybe()->getSubType()->isUnsignedInteger())) {
-      iLit->setType(lhsVal->getType()->asMaybe()->getSubType());
-    } else if (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe() &&
-               (lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isInteger() ||
-                lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()->isUnsignedInteger())) {
-      iLit->setType(lhsVal->getType()->asReference()->getSubType()->asMaybe()->getSubType());
-    } else {
-      ctx->Error("Type of LHS is not compatible with the RHS", fileRange);
-    }
-  }
+  value->setInferenceType(lhsVal->getType()->isReference() ? lhsVal->getType()->asReference()->getSubType()
+                                                           : lhsVal->getType());
   SHOW("Emitted lhs and rhs of Assignment")
   if (lhsVal->getType()->isMaybe() ||
       (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe())) {
@@ -114,7 +50,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
     if (!mTy->hasSizedSubType(ctx)) {
       if (value->nodeType() == NodeType::arrayLiteral) {
         if (mTy->getSubType()->isArray()) {
-          ((ArrayLiteral*)value)->inferredType = mTy->getSubType()->asArray();
+          value->setInferenceType(mTy->getSubType());
         }
       } else if (value->nodeType() == NodeType::none) {
         if (((NoneExpression*)value)->hasTypeSet()) {

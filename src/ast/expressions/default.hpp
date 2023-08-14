@@ -9,15 +9,11 @@ class Default : public Expression {
   friend class LocalDeclaration;
 
 private:
-  IR::QatType* candidateType = nullptr;
-
   Maybe<Identifier> irName;
   bool              isVar = false;
 
 public:
   explicit Default(FileRange _fileRange);
-
-  void setType(IR::QatType* typ);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Default; }

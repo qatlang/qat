@@ -7,13 +7,13 @@
 
 namespace qat::IR {
 
-TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ctx)
+TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& llctx)
     : subTypes(std::move(_types)), isPacked(_isPacked) {
   Vec<llvm::Type*> subTypes;
   for (auto* typ : types) {
     subTypes.push_back(typ->getLLVMType());
   }
-  llvmType = llvm::StructType::get(ctx, subTypes, isPacked);
+  llvmType = llvm::StructType::get(llctx, subTypes, isPacked);
 }
 
 bool TupleType::isDestructible() const {
@@ -43,7 +43,7 @@ void TupleType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functio
   }
 }
 
-TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMContext& ctx) {
+TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isTuple()) {
       auto subTys = typ->asTuple()->getSubTypes();
@@ -65,7 +65,7 @@ TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMCo
       }
     }
   }
-  return new TupleType(newSubTypes, isPacked, ctx);
+  return new TupleType(newSubTypes, isPacked, llctx);
 }
 
 Vec<QatType*> TupleType::getSubTypes() const { return subTypes; }

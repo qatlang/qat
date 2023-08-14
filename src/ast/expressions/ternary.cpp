@@ -21,7 +21,8 @@ IR::Value* TernaryExpression::emit(IR::Context* ctx) {
       genCond->loadImplicitPointer(ctx->builder);
       genType = genType->asReference()->getSubType();
     }
-    if (genType->isInteger() || genType->isUnsignedInteger()) {
+    // FIXME - Support bool conversions and maybe
+    if (genType->isBool()) {
       auto* fun        = ctx->fn;
       auto* trueBlock  = new IR::Block(fun, fun->getBlock());
       auto* falseBlock = new IR::Block(fun, fun->getBlock());
@@ -31,86 +32,21 @@ IR::Value* TernaryExpression::emit(IR::Context* ctx) {
                                 IR::Nature::temporary);
       }
       ctx->builder.CreateCondBr(genCond->getLLVM(), trueBlock->getBB(), falseBlock->getBB());
-      IR::Value* trueVal     = nullptr;
-      IR::Value* falseVal    = nullptr;
-      auto       trueNodeTy  = trueExpr->nodeType();
-      auto       falseNodeTy = falseExpr->nodeType();
-      if (trueNodeTy == NodeType::integerLiteral) {
-        falseBlock->setActive(ctx->builder);
-        falseVal = falseExpr->emit(ctx);
-        ((IntegerLiteral*)trueExpr)
-            ->setType(falseVal->isReference() ? falseVal->getType()->asReference()->getSubType() : falseVal->getType());
-      } else if (trueNodeTy == NodeType::unsignedLiteral) {
-        falseBlock->setActive(ctx->builder);
-        falseVal = falseExpr->emit(ctx);
-        ((UnsignedLiteral*)trueExpr)
-            ->setType(falseVal->isReference() ? falseVal->getType()->asReference()->getSubType() : falseVal->getType());
-      } else if (trueNodeTy == NodeType::nullPointer) {
-        falseBlock->setActive(ctx->builder);
-        falseVal = falseExpr->emit(ctx);
-        if (falseVal->isPointer() ||
-            (falseVal->isReference() && falseVal->getType()->asReference()->getSubType()->isPointer())) {
-          ((NullPointer*)trueExpr)
-              ->setType(falseVal->isReference() ? falseVal->getType()->asReference()->getSubType()->asPointer()
-                                                : falseVal->getType()->asPointer());
-        }
-      } else if (trueNodeTy == NodeType::none) {
-        falseBlock->setActive(ctx->builder);
-        falseVal = falseExpr->emit(ctx);
-        if (falseVal->getType()->isReference() ? falseVal->getType()->asReference()->getSubType()->isMaybe()
-                                               : falseVal->getType()->isMaybe()) {
-          ((NoneExpression*)trueExpr)
-              ->setType(falseVal->isReference()
-                            ? falseVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()
-                            : falseVal->getType()->asMaybe()->getSubType());
-        }
-      } else if (trueNodeTy == NodeType::Default) {
-        falseBlock->setActive(ctx->builder);
-        falseVal = falseExpr->emit(ctx);
-        ((Default*)trueExpr)
-            ->setType(falseVal->isReference() ? falseVal->getType()->asReference()->getSubType() : falseVal->getType());
-      } else if (falseNodeTy == NodeType::integerLiteral) {
+      IR::Value* trueVal  = nullptr;
+      IR::Value* falseVal = nullptr;
+      if (inferredType) {
+        trueExpr->setInferenceType(inferredType.value());
+        falseExpr->setInferenceType(inferredType.value());
+      } else {
         trueBlock->setActive(ctx->builder);
         trueVal = trueExpr->emit(ctx);
-        ((IntegerLiteral*)falseExpr)
-            ->setType(trueVal->isReference() ? trueVal->getType()->asReference()->getSubType() : trueVal->getType());
-      } else if (falseNodeTy == NodeType::unsignedLiteral) {
-        trueBlock->setActive(ctx->builder);
-        trueVal = trueExpr->emit(ctx);
-        ((UnsignedLiteral*)falseExpr)
-            ->setType(trueVal->isReference() ? trueVal->getType()->asReference()->getSubType() : trueVal->getType());
-      } else if (falseNodeTy == NodeType::nullPointer) {
-        trueBlock->setActive(ctx->builder);
-        trueVal = trueExpr->emit(ctx);
-        if (trueVal->isPointer() ||
-            (trueVal->isReference() && trueVal->getType()->asReference()->getSubType()->isPointer())) {
-          ((NullPointer*)falseExpr)
-              ->setType(trueVal->isReference() ? trueVal->getType()->asReference()->getSubType()->asPointer()
-                                               : trueVal->getType()->asPointer());
-        }
-      } else if (falseNodeTy == NodeType::none) {
-        trueBlock->setActive(ctx->builder);
-        trueVal = trueExpr->emit(ctx);
-        if (trueVal->getType()->isReference() ? trueVal->getType()->asReference()->getSubType()->isMaybe()
-                                              : trueVal->getType()->isMaybe()) {
-          ((NoneExpression*)falseExpr)
-              ->setType(trueVal->isReference()
-                            ? trueVal->getType()->asReference()->getSubType()->asMaybe()->getSubType()
-                            : trueVal->getType()->asMaybe()->getSubType());
-        }
-      } else if (falseNodeTy == NodeType::Default) {
-        trueBlock->setActive(ctx->builder);
-        trueVal = trueExpr->emit(ctx);
-        ((Default*)falseExpr)
-            ->setType(trueVal->isReference() ? trueVal->getType()->asReference()->getSubType() : trueVal->getType());
+        falseExpr->setInferenceType(trueVal->getType());
       }
-
       /* true case */
       if (!trueVal) {
         trueBlock->setActive(ctx->builder);
         trueVal = trueExpr->emit(ctx);
       }
-
       /* false case */
       if (!falseVal) {
         falseBlock->setActive(ctx->builder);
@@ -176,8 +112,7 @@ IR::Value* TernaryExpression::emit(IR::Context* ctx) {
       }
     } else {
       ctx->Error("Condition expression is of the type " + ctx->highlightError(genCond->getType()->toString()) +
-                     ", but ternary expression expects an expression of signed "
-                     "or unsigned integer type",
+                     ", but ternary expression expects an expression of " + ctx->highlightError("bool") + " type",
                  trueExpr->fileRange);
     }
   } else {

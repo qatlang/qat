@@ -17,7 +17,7 @@
 namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
-                   const VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
+                   const VisibilityInfo& _visibility, llvm::LLVMContext& llctx)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       members(std::move(_members)) {
   SHOW("Generating LLVM Type for core type members")
@@ -26,7 +26,7 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics
     subtypes.push_back(mem->type->getLLVMType());
   }
   SHOW("All members' LLVM types obtained")
-  llvmType = llvm::StructType::create(ctx, subtypes, mod->getFullNameWithChild(name.value), false);
+  llvmType = llvm::StructType::create(llctx, subtypes, mod->getFullNameWithChild(name.value), false);
   if (mod) {
     mod->coreTypes.push_back(this);
   }
@@ -137,7 +137,7 @@ bool CoreType::hasStatic(const String& _name) const {
 bool CoreType::isTypeSized() const { return !members.empty(); }
 
 void CoreType::addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                               const VisibilityInfo& visibility, llvm::LLVMContext& ctx) {
+                               const VisibilityInfo& visibility, llvm::LLVMContext& llctx) {
   staticMembers.push_back(new StaticMember(this, name, type, variability, initial, visibility));
 }
 

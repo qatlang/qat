@@ -6,7 +6,7 @@ namespace qat::IR {
 #define MAX_CONST_GENERIC_BITWIDTH 64u
 
 ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
-                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, llvm::LLVMContext& ctx,
+                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
                        FileRange _fileRange)
     : EntityOverview("choiceType",
                      Json()
@@ -19,10 +19,10 @@ ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fi
       visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
   if (!values.has_value()) {
     findBitwidthNormal();
-    llvmType = llvm::Type::getIntNTy(ctx, bitwidth);
+    llvmType = llvm::Type::getIntNTy(llctx, bitwidth);
   } else {
     findBitwidthForValues();
-    llvmType = llvm::Type::getIntNTy(ctx, bitwidth);
+    llvmType = llvm::Type::getIntNTy(llctx, bitwidth);
   }
   if (parent) {
     parent->choiceTypes.push_back(this);

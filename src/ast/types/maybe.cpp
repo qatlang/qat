@@ -19,9 +19,9 @@ Maybe<usize> MaybeType::getTypeSizeInBits(IR::Context* ctx) const {
 
 IR::QatType* MaybeType::emit(IR::Context* ctx) {
   auto* subType = subTyp->emit(ctx);
-  if (subType->isVoid()) {
-    ctx->Error(ctx->highlightError("maybe void") + " is not a valid type", fileRange);
-  }
+  // if (subType->isVoid()) {
+  //   ctx->Error(ctx->highlightError("maybe void") + " is not a valid type", fileRange);
+  // }
   return IR::MaybeType::get(subType, ctx);
 }
 
@@ -29,6 +29,6 @@ Json MaybeType::toJson() const {
   return Json()._("typeKind", "maybe")._("subType", subTyp->toJson())._("fileRange", fileRange);
 }
 
-String MaybeType::toString() const { return String(isVariable() ? "var " : "") + "maybe " + subTyp->toString(); }
+String MaybeType::toString() const { return String(isVariable() ? "var " : "") + "maybe:[" + subTyp->toString() + "]"; }
 
 } // namespace qat::ast

@@ -7,22 +7,24 @@ namespace qat::ast {
 
 NullPointer::NullPointer(FileRange _fileRange) : ConstantExpression(std::move(_fileRange)) {}
 
-void NullPointer::setType(IR::PointerType* typ) { candidateType = typ; }
-
 IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Null pointer is not assignable", fileRange);
   }
-  SHOW("Null pointer has type provided " << (candidateType != nullptr))
-  if (candidateType) {
+  if (inferredType) {
     return new IR::ConstantValue(
-        candidateType->isMulti()
-            ? llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(candidateType->getLLVMType()),
-                                        {llvm::ConstantPointerNull::get(candidateType->getLLVMType()->getPointerTo()),
-                                         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
-            : llvm::ConstantPointerNull::get(candidateType->getLLVMType()->getPointerTo()),
-        IR::PointerType::get(candidateType->isSubtypeVariable(), candidateType->getSubType(), candidateType->getOwner(),
-                             candidateType->isMulti(), ctx));
+        inferredType.value()->asPointer()->isMulti()
+            ? llvm::ConstantStruct::get(
+                  llvm::dyn_cast<llvm::StructType>(inferredType.value()->getLLVMType()),
+                  {llvm::ConstantPointerNull::get(
+                       inferredType.value()->asPointer()->getSubType()->getLLVMType()->getPointerTo(
+                           ctx->dataLayout->getProgramAddressSpace())),
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
+            : llvm::ConstantPointerNull::get(
+                  inferredType.value()->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
+        IR::PointerType::get(
+            inferredType.value()->asPointer()->isSubtypeVariable(), inferredType.value()->asPointer()->getSubType(),
+            inferredType.value()->asPointer()->getOwner(), inferredType.value()->asPointer()->isMulti(), ctx));
   } else {
     return new IR::ConstantValue(
         llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),

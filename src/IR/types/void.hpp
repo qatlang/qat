@@ -8,10 +8,10 @@ namespace qat::IR {
 
 class VoidType : public QatType {
 private:
-  VoidType(llvm::LLVMContext& ctx);
+  VoidType(llvm::LLVMContext& llctx);
 
 public:
-  useit static VoidType* get(llvm::LLVMContext& ctx);
+  useit static VoidType* get(llvm::LLVMContext& llctx);
 
   useit TypeKind typeKind() const override;
   useit String   toString() const override;

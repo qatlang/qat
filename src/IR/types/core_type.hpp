@@ -57,7 +57,7 @@ private:
 
 public:
   CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
-           const VisibilityInfo& _visibility, llvm::LLVMContext& ctx);
+           const VisibilityInfo& _visibility, llvm::LLVMContext& llctx);
 
   ~CoreType() final;
 
@@ -75,7 +75,7 @@ public:
   useit TypeKind typeKind() const override;
   useit String   toString() const override;
   void           addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                                 const VisibilityInfo& visibility, llvm::LLVMContext& ctx);
+                                 const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
   void           updateOverview() final;
 };
 

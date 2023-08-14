@@ -28,7 +28,7 @@ private:
 
 public:
   ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values,
-             Maybe<usize> defaultVal, const VisibilityInfo& visibility, llvm::LLVMContext& ctx, FileRange fileRange);
+             Maybe<usize> defaultVal, const VisibilityInfo& visibility, llvm::LLVMContext& llctx, FileRange fileRange);
 
   useit Identifier            getName() const;
   useit String                getFullName() const;

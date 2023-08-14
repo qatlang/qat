@@ -7,11 +7,12 @@
 
 namespace qat::IR {
 
-UnsignedType::UnsignedType(u64 _bitWidth, llvm::LLVMContext& ctx, bool _isBool) : bitWidth(_bitWidth), isBool(_isBool) {
-  llvmType = llvm::IntegerType::get(ctx, bitWidth);
+UnsignedType::UnsignedType(u64 _bitWidth, llvm::LLVMContext& llctx, bool _isBool)
+    : bitWidth(_bitWidth), isBool(_isBool) {
+  llvmType = llvm::IntegerType::get(llctx, bitWidth);
 }
 
-UnsignedType* UnsignedType::get(u64 bits, llvm::LLVMContext& ctx) {
+UnsignedType* UnsignedType::get(u64 bits, llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isUnsignedInteger()) {
       if (typ->asUnsignedInteger()->isBitWidth(bits) && !typ->asUnsignedInteger()->isBool) {
@@ -19,10 +20,10 @@ UnsignedType* UnsignedType::get(u64 bits, llvm::LLVMContext& ctx) {
       }
     }
   }
-  return new UnsignedType(bits, ctx, false);
+  return new UnsignedType(bits, llctx, false);
 }
 
-UnsignedType* UnsignedType::getBool(llvm::LLVMContext& ctx) {
+UnsignedType* UnsignedType::getBool(llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isUnsignedInteger()) {
       if (typ->asUnsignedInteger()->isBool) {
@@ -30,7 +31,7 @@ UnsignedType* UnsignedType::getBool(llvm::LLVMContext& ctx) {
       }
     }
   }
-  return new UnsignedType(1u, ctx, true);
+  return new UnsignedType(1u, llctx, true);
 }
 
 u64 UnsignedType::getBitwidth() const { return bitWidth; }

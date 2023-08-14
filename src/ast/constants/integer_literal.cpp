@@ -9,20 +9,19 @@ IR::ConstantValue* IntegerLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Integer literals are not assignable", fileRange);
   }
-  if (expected && (!expected->isInteger() && !expected->isUnsignedInteger())) {
-    ctx->Error("The inferred type of this expression is " + expected->toString() +
+  if (inferredType && (!inferredType.value()->isInteger() && !inferredType.value()->isUnsignedInteger())) {
+    ctx->Error("The inferred type of this expression is " + inferredType.value()->toString() +
                    ". The only supported types in type inference for integer literal are signed & unsigned integers",
                fileRange);
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::ConstantValue(llvm::ConstantInt::get(expected ? (llvm::IntegerType*)(expected->getLLVMType())
-                                                               : llvm::Type::getInt32Ty(ctx->llctx),
+  return new IR::ConstantValue(llvm::ConstantInt::get(inferredType
+                                                          ? (llvm::IntegerType*)(inferredType.value()->getLLVMType())
+                                                          : llvm::Type::getInt32Ty(ctx->llctx),
                                                       value, 10u),
-                               expected ? expected : IR::IntegerType::get(32, ctx->llctx));
+                               inferredType ? inferredType.value() : IR::IntegerType::get(32, ctx->llctx));
   // NOLINTEND(readability-magic-numbers)
 }
-
-void IntegerLiteral::setType(IR::QatType* typ) const { expected = typ; }
 
 String IntegerLiteral::toString() const { return value; }
 

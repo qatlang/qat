@@ -94,7 +94,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
             IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
       } else {
-        ctx->Error("Invalid value for future and hence cannot get data", fileRange);
+        ctx->Error("Invalid value for " + ctx->highlightError("future") + " and hence cannot get data", fileRange);
       }
     } else if (name == "isNotDone") {
       if (inst->isImplicitPointer() || inst->isReference()) {

@@ -62,11 +62,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   if (ownCount.has_value()) {
     SHOW("Own count is present")
     // NOLINTBEGIN(readability-magic-numbers)
-    if (ownCount.value()->nodeType() == NodeType::integerLiteral) {
-      ((IntegerLiteral*)ownCount.value())->setType(IR::UnsignedType::get(64u, ctx->llctx));
-    } else if (ownCount.value()->nodeType() == NodeType::unsignedLiteral) {
-      ((UnsignedLiteral*)ownCount.value())->setType(IR::IntegerType::get(64u, ctx->llctx));
-    }
+    ownCount.value()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
     SHOW("Own count type inference complete")
     // NOLINTEND(readability-magic-numbers)
   }

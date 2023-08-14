@@ -13,11 +13,7 @@ ArrayType::ArrayType(QatType* _element_type, ConstantExpression* _length, bool _
     : QatType(_variable, std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
 
 void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {
-  if (lengthExp->nodeType() == NodeType::integerLiteral) {
-    ((IntegerLiteral*)lengthExp)->setType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
-  } else if (lengthExp->nodeType() == NodeType::unsignedLiteral) {
-    ((UnsignedLiteral*)lengthExp)->setType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
-  }
+  lengthExp->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
 }
 
 Maybe<usize> ArrayType::getTypeSizeInBits(IR::Context* ctx) const {

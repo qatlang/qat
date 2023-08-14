@@ -15,8 +15,6 @@ private:
 
   //
 
-  IR::ArrayType* inferredType = nullptr;
-
   IR::LocalValue*   local = nullptr;
   Maybe<Identifier> name;
   bool              isVar;
@@ -24,7 +22,6 @@ private:
 public:
   ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange);
 
-  void       setType(IR::ArrayType* typ);
   useit bool hasLocal() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

@@ -12,11 +12,11 @@ private:
   u64  bitWidth;
   bool isBool;
 
-  UnsignedType(u64 _bitWidth, llvm::LLVMContext& ctx, bool _isBool = false);
+  UnsignedType(u64 _bitWidth, llvm::LLVMContext& llctx, bool _isBool = false);
 
 public:
-  useit static UnsignedType* get(u64 bits, llvm::LLVMContext& ctx);
-  useit static UnsignedType* getBool(llvm::LLVMContext& ctx);
+  useit static UnsignedType* get(u64 bits, llvm::LLVMContext& llctx);
+  useit static UnsignedType* getBool(llvm::LLVMContext& llctx);
   useit u64                  getBitwidth() const;
   useit bool                 isBitWidth(u64 width) const;
   useit bool                 isBoolean() const;

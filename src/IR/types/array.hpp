@@ -17,10 +17,10 @@ private:
   QatType* elementType;
   u64      length;
 
-  ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& ctx);
+  ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& llctx);
 
 public:
-  useit static ArrayType* get(QatType* elementType, u64 length, llvm::LLVMContext& ctx);
+  useit static ArrayType* get(QatType* elementType, u64 length, llvm::LLVMContext& llctx);
 
   useit QatType* getElementType();
   useit u64      getLength() const;

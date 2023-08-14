@@ -21,8 +21,14 @@ class Expression : public Node {
 private:
   ExpressionKind expected;
 
+protected:
+  Maybe<IR::QatType*> inferredType;
+
 public:
   Expression(FileRange _fileRange);
+
+  bool isTypeInferred() const;
+  void setInferenceType(IR::QatType* type);
 
   void                 setExpectedKind(ExpressionKind _kind);
   useit ExpressionKind getExpectedKind();

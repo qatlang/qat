@@ -4,15 +4,15 @@
 
 namespace qat::IR {
 
-VoidType::VoidType(llvm::LLVMContext& ctx) { llvmType = llvm::Type::getVoidTy(ctx); }
+VoidType::VoidType(llvm::LLVMContext& llctx) { llvmType = llvm::Type::getVoidTy(llctx); }
 
-VoidType* VoidType::get(llvm::LLVMContext& ctx) {
+VoidType* VoidType::get(llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::Void) {
       return (VoidType*)typ;
     }
   }
-  return new VoidType(ctx);
+  return new VoidType(llctx);
 }
 
 TypeKind VoidType::typeKind() const { return TypeKind::Void; }

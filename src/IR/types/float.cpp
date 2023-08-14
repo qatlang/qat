@@ -1,36 +1,37 @@
 #include "./float.hpp"
 #include "../../memory_tracker.hpp"
+#include "iostream"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx) : kind(_kind) {
+FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& llctx) : kind(_kind) {
   switch (kind) {
     case FloatTypeKind::_brain: {
-      llvmType = llvm::Type::getBFloatTy(ctx);
+      llvmType = llvm::Type::getBFloatTy(llctx);
     }
     case FloatTypeKind::_16: {
-      llvmType = llvm::Type::getHalfTy(ctx);
+      llvmType = llvm::Type::getHalfTy(llctx);
     }
     case FloatTypeKind::_32: {
-      llvmType = llvm::Type::getFloatTy(ctx);
+      llvmType = llvm::Type::getFloatTy(llctx);
     }
     case FloatTypeKind::_64: {
-      llvmType = llvm::Type::getDoubleTy(ctx);
+      llvmType = llvm::Type::getDoubleTy(llctx);
     }
     case FloatTypeKind::_80: {
-      llvmType = llvm::Type::getX86_FP80Ty(ctx);
+      llvmType = llvm::Type::getX86_FP80Ty(llctx);
     }
     case FloatTypeKind::_128PPC: {
-      llvmType = llvm::Type::getPPC_FP128Ty(ctx);
+      llvmType = llvm::Type::getPPC_FP128Ty(llctx);
     }
     case FloatTypeKind::_128: {
-      llvmType = llvm::Type::getFP128Ty(ctx);
+      llvmType = llvm::Type::getFP128Ty(llctx);
     }
   }
 }
 
-FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& ctx) {
+FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
   for (auto* typ : types) {
     if (typ->isFloat()) {
       if (typ->asFloat()->getKind() == _kind) {
@@ -38,7 +39,7 @@ FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& ctx) {
       }
     }
   }
-  return new FloatType(_kind, ctx);
+  return new FloatType(_kind, llctx);
 }
 
 TypeKind FloatType::typeKind() const { return TypeKind::Float; }

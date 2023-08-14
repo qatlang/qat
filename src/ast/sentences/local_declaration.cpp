@@ -192,20 +192,20 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
       declType = type->emit(ctx);
       maybeTypeCheck();
       auto* defVal = (Default*)(value.value());
-      if (defVal->candidateType) {
-        if (!defVal->candidateType->isSame(declType)) {
+      if (defVal->inferredType) {
+        if (!defVal->inferredType.value()->isSame(declType)) {
           ctx->Error("Type of the declaration is " + ctx->highlightError(declType->toString()) +
                          " does not match the type provided for the " + ctx->highlightError("default") +
-                         " expression, which is " + ctx->highlightError(defVal->candidateType->toString()),
+                         " expression, which is " + ctx->highlightError(defVal->inferredType.value()->toString()),
                      defVal->fileRange);
         }
       }
-      defVal->setType(declType);
+      defVal->setInferenceType(declType);
       defVal->irName = name;
       defVal->isVar  = variability;
       (void)defVal->emit(ctx);
       return nullptr;
-    } else if (((Default*)value.value())->candidateType) {
+    } else if (value.value()->isTypeInferred()) {
       auto* defVal   = ((Default*)value.value());
       defVal->irName = name;
       defVal->isVar  = variability;
@@ -255,12 +255,12 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         declType = type->emit(ctx);
         maybeTypeCheck();
         if (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer()) {
-          ((NullPointer*)(value.value()))->setType(declType->asMaybe()->getSubType()->asPointer());
+          value.value()->setInferenceType(declType->asMaybe()->getSubType()->asPointer());
         } else if (declType->isPointer() ||
                    (declType->isReference() && declType->asReference()->getSubType()->isPointer())) {
           auto* typeToSet =
               declType->isReference() ? declType->asReference()->getSubType()->asPointer() : declType->asPointer();
-          ((NullPointer*)(value.value()))->setType(typeToSet);
+          value.value()->setInferenceType(typeToSet);
         } else {
           ctx->Error("Invalid type recognised for the value to be assigned, "
                      "which is a null pointer. Expected a pointer type in the "
@@ -275,9 +275,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            ((IntegerLiteral*)(value.value()))->setType(declType->asMaybe()->getSubType());
+            value.value()->setInferenceType(declType->asMaybe()->getSubType());
           } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            ((IntegerLiteral*)(value.value()))->setType(declType);
+            value.value()->setInferenceType(declType);
           } else {
             ctx->Error("Invalid type to set for integer literal", fileRange);
           }
@@ -293,9 +293,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            ((UnsignedLiteral*)(value.value()))->setType(declType->asMaybe()->getSubType());
+            value.value()->setInferenceType(declType->asMaybe()->getSubType());
           } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            ((UnsignedLiteral*)(value.value()))->setType(declType);
+            value.value()->setInferenceType(declType);
           } else {
             ctx->Error("Invalid type to set for unsigned integer literal", fileRange);
           }
@@ -305,6 +305,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         }
       }
     }
+    SHOW("Emitting value")
     expVal = value.value()->emit(ctx);
     SHOW("Type of value to be assigned to local value " << name.value << " is " << expVal->getType()->toString())
   }

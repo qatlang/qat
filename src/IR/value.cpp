@@ -78,9 +78,9 @@ Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* m
   }
 }
 
-bool Value::isPointer() const { return (type->typeKind() == IR::TypeKind::pointer); }
+bool Value::isPointer() const { return type->isPointer(); }
 
-bool Value::isReference() const { return (type->typeKind() == IR::TypeKind::reference); }
+bool Value::isReference() const { return type->isReference(); }
 
 bool Value::isVariable() const { return variable; }
 

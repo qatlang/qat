@@ -10,14 +10,8 @@ namespace qat::ast {
  *
  */
 class NullPointer : public ConstantExpression {
-private:
-  // Type of the pointer
-  IR::PointerType* candidateType = nullptr;
-
 public:
   explicit NullPointer(FileRange _fileRange);
-
-  void setType(IR::PointerType* typ);
 
   useit IR::ConstantValue* emit(IR::Context* ctx) override;
   useit Json               toJson() const override;

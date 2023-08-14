@@ -4,6 +4,10 @@ namespace qat::ast {
 
 Expression::Expression(FileRange _fileRange) : Node(std::move(_fileRange)), expected(ExpressionKind::temporary) {}
 
+bool Expression::isTypeInferred() const { return inferredType.has_value(); }
+
+void Expression::setInferenceType(IR::QatType* type) { inferredType = type; }
+
 bool Expression::isExpectedKind(ExpressionKind _kind) { return (this->expected == _kind); }
 
 ExpressionKind Expression::getExpectedKind() { return expected; }

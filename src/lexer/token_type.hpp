@@ -101,6 +101,7 @@ enum class TokenType {
   meta,
   region,
   range,
+  is,
   cType,
 };
 

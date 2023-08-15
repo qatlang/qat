@@ -89,6 +89,7 @@ enum class NodeType {
   defineRegion,
   constantEntity,
   constantDefault,
+  isExpression,
 };
 
 } // namespace qat::ast

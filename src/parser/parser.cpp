@@ -26,6 +26,7 @@
 #include "../ast/expressions/generic_entity.hpp"
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/index_access.hpp"
+#include "../ast/expressions/is.hpp"
 #include "../ast/expressions/loop_index.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
@@ -110,7 +111,7 @@ void Parser::setTokens(Deque<lexer::Token>* allTokens) {
 
 void Parser::filterComments() {}
 
-ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, utils::VisibilityKind visibKind, usize fromMain,
+ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, VisibilityKind visibKind, usize fromMain,
                                                  usize uptoMain) {
   using lexer::TokenType;
   Vec<ast::BroughtGroup*> rootGroups;
@@ -239,7 +240,7 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const FileRange& s
   return new ast::ModInfo(outputName, std::move(foreignID), std::move(nativeLibs), {startRange, RangeAt(upto)});
 }
 
-ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, utils::VisibilityKind kind,
+ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, VisibilityKind kind,
                                            const FileRange& startRange) {
   using lexer::TokenType;
   Vec<ast::StringLiteral*>        paths;
@@ -491,7 +492,7 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
               Error("Expected ] to end the generic type specification", RangeAt(i + 1));
             }
           } else {
-            Error("Expected '[] after cptr", RangeAt(i));
+            Error("Expected subtype for cPtr. Did you forget to provide the subtype like cPtr:[subtype] ?", RangeAt(i));
           }
         } else {
           auto cTypeKind = IR::cTypeKindFromString(ValueAt(i));
@@ -866,10 +867,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
   std::deque<ast::QatType*> cacheTy;
   String                    context = "global";
 
-  Maybe<utils::VisibilityKind> visibility;
-  auto                         setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
-  auto                         getVisibility = [&]() {
-    auto res   = visibility.value_or(utils::VisibilityKind::parent);
+  Maybe<VisibilityKind> visibility;
+  auto                  setVisibility = [&](VisibilityKind kind) { visibility = kind; };
+  auto                  getVisibility = [&]() {
+    auto res   = visibility.value_or(VisibilityKind::parent);
     visibility = None;
     return res;
   };
@@ -1324,21 +1325,21 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
   return result;
 }
 
-Pair<utils::VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
+Pair<VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
   using lexer::TokenType;
   if (isNext(TokenType::child, from)) {
     if (isNext(TokenType::Type, from + 1)) {
-      return {utils::VisibilityKind::type, from + 2};
+      return {VisibilityKind::type, from + 2};
     } else if (isNext(TokenType::lib, from + 1)) {
-      return {utils::VisibilityKind::lib, from + 2};
+      return {VisibilityKind::lib, from + 2};
     } else if (isNext(TokenType::box, from + 1)) {
-      return {utils::VisibilityKind::box, from + 2};
+      return {VisibilityKind::box, from + 2};
     } else if (isNext(TokenType::identifier, from + 1)) {
       auto val = ValueAt(from + 2);
       if (val == "file") {
-        return {utils::VisibilityKind::file, from + 2};
+        return {VisibilityKind::file, from + 2};
       } else if (val == "folder") {
-        return {utils::VisibilityKind::folder, from + 2};
+        return {VisibilityKind::folder, from + 2};
       } else {
         Error("Invalid identifier found after pub' for visibility", RangeAt(from + 2));
       }
@@ -1346,7 +1347,7 @@ Pair<utils::VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
       Error("Invalid token found after pub' for visibility", RangeSpan(from, from + 1));
     }
   } else {
-    return {utils::VisibilityKind::pub, from};
+    return {VisibilityKind::pub, from};
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -1387,13 +1388,13 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  // Maybe<utils::VisibilityKind> broadVisib;
-  Maybe<utils::VisibilityKind> visibility;
-  auto                         setVisibility = [&](utils::VisibilityKind kind) { visibility = kind; };
-  auto                         getVisibility = [&]() {
+  // Maybe<VisibilityKind> broadVisib;
+  Maybe<VisibilityKind> visibility;
+  auto                  setVisibility = [&](VisibilityKind kind) { visibility = kind; };
+  auto                  getVisibility = [&]() {
     auto res = visibility.value_or(
         // broadVisib.value_or(
-        utils::VisibilityKind::type
+        VisibilityKind::type
         // )
     );
     visibility = None;
@@ -1628,7 +1629,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setCopyAssignment(new ast::OperatorDefinition(
                       new ast::OperatorPrototype(true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {},
-                                                 nullptr, utils::VisibilityKind::pub, RangeSpan(i, i + 3),
+                                                 nullptr, VisibilityKind::pub, RangeSpan(i, i + 3),
                                                  IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
@@ -1664,7 +1665,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setMoveAssignment(new ast::OperatorDefinition(
                       new ast::OperatorPrototype(true, ast::Op::moveAssignment, RangeAt(start), {}, nullptr,
-                                                 utils::VisibilityKind::pub, RangeSpan(i, i + 3), IdentifierAt(i + 3)),
+                                                 VisibilityKind::pub, RangeSpan(i, i + 3), IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
                 } else {
@@ -3138,6 +3139,27 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         break;
       }
+      case TokenType::is: {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          if (isNext(TokenType::parenthesisClose, i + 1)) {
+            setCachedExpr(new ast::IsExpression(nullptr, RangeSpan(i, i + 2)));
+          } else {
+            auto pEnd = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+            if (pEnd) {
+              auto subExpRes = parseExpression(preCtx, None, i + 1, pEnd);
+              setCachedExpr(new ast::IsExpression(subExpRes.first, RangeSpan(i, pEnd.value())));
+              i = pEnd.value();
+            } else {
+              Error("Expected end for (", RangeAt(i + 1));
+            }
+          }
+        } else {
+          Error(
+              "Expected an expression after is. Did you forget to provide one? The syntax for `is` expression is `is(myexpr)`",
+              RangeAt(i));
+        }
+        break;
+      }
       case TokenType::child: {
         SHOW("Expression parsing : Member access")
         if (hasCachedExpr() || hasCachedSymbol()) {
@@ -3607,7 +3629,7 @@ Vec<ast::Sentence*> Parser::parseSentences(ParserContext& preCtx, usize from, us
                   "declaration",
                   RangeSpan(start, i + 2));
           } else if (isNext(TokenType::stop, i + 1)) {
-            Error("Only declarations with maybe type can omit the value to be assigned", RangeSpan(start, i + 2));
+            Error("Only declarations with `maybe` type can omit the value to be assigned", RangeSpan(start, i + 2));
           } else {
             Error("Unexpected token found after the beginning of inferred "
                   "declaration",

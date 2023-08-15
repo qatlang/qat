@@ -9,6 +9,7 @@ add_library(QAT_AST_EXPRESSIONS
 	entity.cpp
 	function_call.cpp
 	heap.cpp
+	is.cpp
 	loop_index.cpp
 	member_function_call.cpp
 	index_access.cpp

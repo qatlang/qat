@@ -50,6 +50,7 @@ public:
   useit String getName() const;
   useit llvm::AllocaInst* getAlloca() const;
   useit FileRange         getFileRange() const;
+  useit IR::Value* toNewIRValue() const;
 };
 
 class Block : public Uniq {

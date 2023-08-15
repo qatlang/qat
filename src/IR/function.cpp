@@ -60,6 +60,12 @@ llvm::AllocaInst* LocalValue::getAlloca() const { return (llvm::AllocaInst*)ll; 
 
 FileRange LocalValue::getFileRange() const { return fileRange; }
 
+IR::Value* LocalValue::toNewIRValue() const {
+  auto* result = new IR::Value(this->getAlloca(), this->getType(), isVariable(), getNature());
+  result->setLocalID(getLocalID());
+  return result;
+}
+
 Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0) {
   if (parent) {
     index = parent->children.size();

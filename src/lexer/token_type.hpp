@@ -103,6 +103,7 @@ enum class TokenType {
   range,
   is,
   cType,
+  result,
 };
 
 } // namespace qat::lexer

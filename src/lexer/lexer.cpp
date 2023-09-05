@@ -5,6 +5,7 @@
 #include "../utils/is_integer.hpp"
 #include "token_type.hpp"
 #include <chrono>
+#include <string>
 
 #define NanosecondsInMicroseconds 1000
 #define NanosecondsInMilliseconds 1000000
@@ -212,7 +213,11 @@ Token Lexer::tokeniser() {
     }
     case ':': {
       read();
-      if (current == '=') {
+      if (current == '[') {
+        read();
+        bracketOccurences.push_back(TokenType::genericTypeStart);
+        return Token::normal(TokenType::genericTypeStart, this->getPosition(2));
+      } else if (current == '=') {
         read();
         return Token::normal(TokenType::associatedAssignment, this->getPosition(2));
       } else if (current == ':') {
@@ -374,11 +379,7 @@ Token Lexer::tokeniser() {
     }
     case '\'': {
       read();
-      if (current == '[') {
-        read();
-        bracketOccurences.push_back(TokenType::genericTypeStart);
-        return Token::normal(TokenType::genericTypeStart, this->getPosition(2));
-      } else if (current == '\'') {
+      if (current == '\'') {
         read();
         return Token::normal(TokenType::self, this->getPosition(2));
       } else {
@@ -548,7 +549,7 @@ Token Lexer::tokeniser() {
 }
 
 Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
-  SHOW("WordToToken : string value is = " << wordValue)
+  // SHOW("WordToToken : string value is = " << wordValue)
   auto getPos = [&](usize len) {
     if (lexInst) {
       return lexInst->getPosition(len);
@@ -610,6 +611,7 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("multiptr", multiPointerType);
   else Check_Normal_Keyword("is", is);
   else Check_Normal_Keyword("range", range);
+  else Check_Normal_Keyword("result", result);
   else Check_VALUED_Keyword("int", cType);
   else Check_VALUED_Keyword("uint", cType);
   else Check_VALUED_Keyword("char", cType);

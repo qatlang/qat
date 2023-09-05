@@ -77,14 +77,14 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
             ctx->Error("Type of the first argument of the " + ctx->highlightError("main") +
                            " function, cannot be a pointer with variability. "
                            "It should be of " +
-                           ctx->highlightError("multiptr[cstring ?]") + " type",
+                           ctx->highlightError("multiptr:[cstring ?]") + " type",
                        arguments.at(0)->getType()->fileRange);
           }
           mod->setHasMainFn();
           ctx->hasMain = true;
         } else {
           ctx->Error("Type of the first argument of the " + ctx->highlightError("main") + " function should be " +
-                         ctx->highlightError("multiptr[+ cstring ?]"),
+                         ctx->highlightError("multiptr:[cstring ?]"),
                      arguments.at(0)->getType()->fileRange);
         }
       } else if (generatedTypes.empty()) {

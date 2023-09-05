@@ -649,26 +649,35 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
     return Token::valued(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1),
                          getPos(wordValue.length()));
   }
-  else if (wordValue == "fbrain") {
-    return Token::valued(TokenType::floatType, "brain", getPos(6));
+#define FBRAIN_NAME  "fbrain"
+#define F16_NAME     "f16"
+#define F32_NAME     "f32"
+#define F64_NAME     "f64"
+#define F80_NAME     "f80"
+#define F128PPC_NAME "f128ppc"
+#define F128_NAME    "f128"
+  // Yes, I know the lengths of these literals, however repeating the strings can lead me into a rabbit hole
+  // of confusing behaviour. It has happened before
+  else if (wordValue == FBRAIN_NAME) {
+    return Token::valued(TokenType::floatType, FBRAIN_NAME, getPos(std::string::traits_type::length(FBRAIN_NAME)));
   }
-  else if (wordValue == "f16") {
-    return Token::valued(TokenType::floatType, "16", getPos(3));
+  else if (wordValue == F16_NAME) {
+    return Token::valued(TokenType::floatType, F16_NAME, getPos(std::string::traits_type::length(F16_NAME)));
   }
-  else if (wordValue == "f32") {
-    return Token::valued(TokenType::floatType, "32", getPos(3));
+  else if (wordValue == F32_NAME) {
+    return Token::valued(TokenType::floatType, F32_NAME, getPos(std::string::traits_type::length(F32_NAME)));
   }
-  else if (wordValue == "f64") {
-    return Token::valued(TokenType::floatType, "64", getPos(3));
+  else if (wordValue == F64_NAME) {
+    return Token::valued(TokenType::floatType, F64_NAME, getPos(std::string::traits_type::length(F64_NAME)));
   }
-  else if (wordValue == "f80") {
-    return Token::valued(TokenType::floatType, "80", getPos(3));
+  else if (wordValue == F80_NAME) {
+    return Token::valued(TokenType::floatType, F80_NAME, getPos(std::string::traits_type::length(F80_NAME)));
   }
-  else if (wordValue == "f128ppc") {
-    return Token::valued(TokenType::floatType, "128ppc", getPos(7));
+  else if (wordValue == F128PPC_NAME) {
+    return Token::valued(TokenType::floatType, F128PPC_NAME, getPos(std::string::traits_type::length(F128PPC_NAME)));
   }
-  else if (wordValue == "f128") {
-    return Token::valued(TokenType::floatType, "128", getPos(4));
+  else if (wordValue == F128_NAME) {
+    return Token::valued(TokenType::floatType, F128_NAME, getPos(std::string::traits_type::length(F128_NAME)));
   }
   else {
     return Token::valued(TokenType::identifier, wordValue, getPos(wordValue.length()));

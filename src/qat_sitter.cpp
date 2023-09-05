@@ -25,7 +25,7 @@
 
 namespace qat {
 
-QatSitter::QatSitter() : ctx(new IR::Context()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {
+QatSitter::QatSitter() : ctx(IR::Context::New()), Lexer(new lexer::Lexer()), Parser(new parser::Parser()) {
   ctx->sitter = this;
 }
 

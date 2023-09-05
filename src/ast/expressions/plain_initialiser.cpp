@@ -213,7 +213,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           ctx->Error("You are creating an " + ctx->highlightError("str") +
                          " value from 2 arguments and the first argument "
                          "should be of " +
-                         ctx->highlightError("ptr[u8?]") + " or " + ctx->highlightError("multiptr[u8 ?]") + " type",
+                         ctx->highlightError("ptr:[u8?]") + " or " + ctx->highlightError("multiptr:[u8 ?]") + " type",
                      fieldValues.at(0)->fileRange);
         }
       } else if (fieldValues.size() == 1) {
@@ -247,18 +247,18 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           ctx->Error("While creating a " + ctx->highlightError("str") +
                          " value with one argument, the argument is expected "
                          "to be of type " +
-                         ctx->highlightError("multiptr[u8 ?]"),
+                         ctx->highlightError("multiptr:[u8 ?]"),
                      fieldValues.at(0)->fileRange);
         }
       } else {
         ctx->Error("There are two ways to create a " + ctx->highlightError("str") +
                        " value using a plain initialiser. The first way "
                        "requires one argument of type " +
-                       ctx->highlightError("multiptr[u8 ?]") +
+                       ctx->highlightError("multiptr:[u8 ?]") +
                        ". The second way requires 2 arguments. In two possible "
                        "ways:\n1) " +
-                       ctx->highlightError("ptr[u8 ?]") + " and " + ctx->highlightError("u64") + "\n2) " +
-                       ctx->highlightError("multiptr[u8 ?]") + " and " + ctx->highlightError("u64") +
+                       ctx->highlightError("ptr:[u8 ?]") + " and " + ctx->highlightError("u64") + "\n2) " +
+                       ctx->highlightError("multiptr:[u8 ?]") + " and " + ctx->highlightError("u64") +
                        "\nIn case you are providing two arguments, the first "
                        "argument is supposed to be a pointer" +
                        " to a start of the data and the second argument is "

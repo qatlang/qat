@@ -214,7 +214,13 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
 }
 
 Json IsExpression::toJson() const {
-  return Json()._("nodeType", "isExpression")._("subExpression", subExpr->toJson())._("fileRange", fileRange);
+  return Json()
+      ._("nodeType", "isExpression")
+      ._("hasSubExpression", subExpr != nullptr)
+      ._("subExpression", subExpr ? subExpr->toJson() : JsonValue())
+      ._("isRef", confirmedRef)
+      ._("isRefVar", isRefVar)
+      ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

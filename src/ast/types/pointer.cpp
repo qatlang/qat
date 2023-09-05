@@ -95,7 +95,7 @@ Json PointerType::toJson() const {
 }
 
 String PointerType::toString() const {
-  return (String(isVariable() ? "var " : "") + (isMultiPtr ? "multiptr[" : "ptr[")) + type->toString() + "]";
+  return (String(isVariable() ? "var " : "") + (isMultiPtr ? "multiptr:[" : "ptr:[")) + type->toString() + "]";
 }
 
 } // namespace qat::ast

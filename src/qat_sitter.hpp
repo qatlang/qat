@@ -24,9 +24,9 @@ class QatSitter {
 
 private:
   Deque<IR::QatModule*> fileEntities;
-  IR::Context*          ctx;
-  lexer::Lexer*         Lexer;
-  parser::Parser*       Parser;
+  IR::Context*          ctx    = nullptr;
+  lexer::Lexer*         Lexer  = nullptr;
+  parser::Parser*       Parser = nullptr;
 
   void destroy();
 

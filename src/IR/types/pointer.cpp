@@ -78,15 +78,15 @@ String PointerOwner::toString() const {
 PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti, IR::Context* ctx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti) {
   if (_hasMulti) {
-    if (llvm::StructType::getTypeByName(ctx->llctx, "multiptr[" + subType->toString() + "]")) {
-      llvmType = llvm::StructType::getTypeByName(ctx->llctx, "multiptr[" + subType->toString() + "]");
+    if (llvm::StructType::getTypeByName(ctx->llctx, "multiptr:[" + subType->toString() + "]")) {
+      llvmType = llvm::StructType::getTypeByName(ctx->llctx, "multiptr:[" + subType->toString() + "]");
     } else {
       llvmType = llvm::StructType::create(
           {llvm::PointerType::get(subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx->llctx)
                                                                      : subType->getLLVMType(),
                                   ctx->dataLayout->getProgramAddressSpace()),
            llvm::Type::getInt64Ty(ctx->llctx)},
-          "multiptr[" + subType->toString() + "]");
+          "multiptr:[" + subType->toString() + "]");
     }
   } else {
     llvmType = llvm::PointerType::get(
@@ -121,7 +121,7 @@ PointerOwner PointerType::getOwner() const { return owner; }
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
 String PointerType::toString() const {
-  return String(isMulti() ? "multiptr[" : "ptr[") + String(isSubtypeVariable() ? "var " : "") + subType->toString() +
+  return String(isMulti() ? "multiptr:[" : "ptr:[") + String(isSubtypeVariable() ? "var " : "") + subType->toString() +
          " " + owner.toString() + "]";
 }
 

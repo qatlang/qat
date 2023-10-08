@@ -15,6 +15,7 @@ add_library(QAT_IR_TYPES
 	qat_type.cpp
 	reference.cpp
 	region.cpp
+	result.cpp
 	string_slice.cpp
 	tuple.cpp
 	typed.cpp

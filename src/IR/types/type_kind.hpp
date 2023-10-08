@@ -30,6 +30,7 @@ enum class TypeKind {
   opaque,          // Opaque type for temporary representation
   typed,           // Type Wrapping to hold another type
   cType,           // Type from C language
+  result,          // Result Type that also wraps an error
 };
 
 } // namespace qat::IR

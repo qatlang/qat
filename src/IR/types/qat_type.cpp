@@ -19,6 +19,7 @@
 #include "./unsigned.hpp"
 #include "c_type.hpp"
 #include "opaque.hpp"
+#include "result.hpp"
 
 namespace qat::IR {
 
@@ -200,6 +201,12 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
         auto* thisVal  = (MixType*)this;
         auto* otherVal = (MixType*)other;
         return (thisVal->getID() == otherVal->getID());
+      }
+      case TypeKind::result: {
+        auto* thisVal  = (ResultType*)this;
+        auto* otherVal = (ResultType*)other;
+        return (thisVal->isPacked == otherVal->isPacked) && thisVal->getValidType()->isSame(otherVal->getValidType()) &&
+               thisVal->getErrorType()->isSame(otherVal->getErrorType());
       }
       case TypeKind::function: {
         auto* thisVal  = (FunctionType*)this;
@@ -427,6 +434,15 @@ bool QatType::isRegion() const {
 
 Region* QatType::asRegion() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asRegion() : (Region*)this;
+}
+
+bool QatType::isResult() const {
+  return ((typeKind() == TypeKind::result) ||
+          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isResult()));
+}
+
+ResultType* QatType::asResult() const {
+  return ((typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asResult() : (ResultType*)this);
 }
 
 } // namespace qat::IR

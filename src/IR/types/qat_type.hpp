@@ -36,6 +36,7 @@ class OpaqueType;
 class TypedType;
 class ConstantValue;
 class CType;
+class ResultType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -75,47 +76,70 @@ public:
   virtual void moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
   virtual void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
 
-  useit bool             isOpaque() const;
-  useit OpaqueType*      asOpaque() const;
-  useit bool             isDefinition() const;
-  useit DefinitionType*  asDefinition() const;
-  useit bool             isInteger() const;
-  useit IntegerType*     asInteger() const;
-  useit bool             isUnsignedInteger() const;
-  useit UnsignedType*    asUnsignedInteger() const;
-  useit bool             isBool() const;
-  useit UnsignedType*    asBool() const;
-  useit bool             isFloat() const;
-  useit FloatType*       asFloat() const;
-  useit bool             isReference() const;
-  useit ReferenceType*   asReference() const;
-  useit bool             isPointer() const;
-  useit PointerType*     asPointer() const;
-  useit bool             isArray() const;
-  useit ArrayType*       asArray() const;
-  useit bool             isTuple() const;
-  useit TupleType*       asTuple() const;
-  useit bool             isFunction() const;
-  useit FunctionType*    asFunction() const;
-  useit bool             isCoreType() const;
-  useit CoreType*        asCore() const;
-  useit bool             isMix() const;
-  useit MixType*         asMix() const;
-  useit bool             isChoice() const;
-  useit ChoiceType*      asChoice() const;
+  useit bool        isOpaque() const;
+  useit OpaqueType* asOpaque() const;
+
+  useit bool            isDefinition() const;
+  useit DefinitionType* asDefinition() const;
+
+  useit bool         isInteger() const;
+  useit IntegerType* asInteger() const;
+
+  useit bool          isUnsignedInteger() const;
+  useit UnsignedType* asUnsignedInteger() const;
+
+  useit bool          isBool() const;
+  useit UnsignedType* asBool() const;
+
+  useit bool       isFloat() const;
+  useit FloatType* asFloat() const;
+
+  useit bool           isReference() const;
+  useit ReferenceType* asReference() const;
+
+  useit bool         isPointer() const;
+  useit PointerType* asPointer() const;
+
+  useit bool       isArray() const;
+  useit ArrayType* asArray() const;
+
+  useit bool       isTuple() const;
+  useit TupleType* asTuple() const;
+
+  useit bool          isFunction() const;
+  useit FunctionType* asFunction() const;
+
+  useit bool      isCoreType() const;
+  useit CoreType* asCore() const;
+
+  useit bool     isMix() const;
+  useit MixType* asMix() const;
+
+  useit bool        isChoice() const;
+  useit ChoiceType* asChoice() const;
+
   useit bool             isStringSlice() const;
   useit StringSliceType* asStringSlice() const;
-  useit bool             isFuture() const;
-  useit FutureType*      asFuture() const;
-  useit bool             isMaybe() const;
-  useit MaybeType*       asMaybe() const;
-  useit bool             isRegion() const;
-  useit Region*          asRegion() const;
-  useit bool             isVoid() const;
-  useit bool             isTyped() const;
-  useit TypedType*       asTyped() const;
-  useit bool             isCType() const;
-  useit CType*           asCType() const;
+
+  useit bool        isFuture() const;
+  useit FutureType* asFuture() const;
+
+  useit bool       isMaybe() const;
+  useit MaybeType* asMaybe() const;
+
+  useit bool    isRegion() const;
+  useit Region* asRegion() const;
+
+  useit bool isVoid() const;
+
+  useit bool       isTyped() const;
+  useit TypedType* asTyped() const;
+
+  useit bool   isCType() const;
+  useit CType* asCType() const;
+
+  useit bool        isResult() const;
+  useit ResultType* asResult() const;
 
   useit virtual TypeKind typeKind() const = 0;
   useit virtual String   toString() const = 0;

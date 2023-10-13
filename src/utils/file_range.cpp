@@ -26,18 +26,7 @@ FileRange::FileRange(const FileRange& first, const FileRange& second)
 FileRange::FileRange(Json json)
     : file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
 
-FileRange::operator Json() const {
-  String absPath;
-  try {
-    absPath = fs::absolute(file).lexically_normal().string();
-  } catch (std::exception& e) {
-    SHOW("Exception while making path absolute:")
-    SHOW("Path: " << file)
-    SHOW("Exception is: " << e.what())
-    absPath = file.string();
-  }
-  return Json()._("path", absPath)._("start", start)._("end", end);
-}
+FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
 
 FileRange::operator JsonValue() const { return (Json)(*this); }
 

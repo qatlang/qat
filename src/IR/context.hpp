@@ -21,7 +21,7 @@ namespace qat {
 
 class QatSitter;
 
-}
+} // namespace qat
 
 namespace qat::IR {
 
@@ -41,10 +41,29 @@ enum class GenericEntityType {
 };
 
 struct GenericEntityMarker {
-  String            name;
-  GenericEntityType type;
-  FileRange         fileRange;
-  u64               warningCount = 0;
+  String                     name;
+  GenericEntityType          type;
+  FileRange                  fileRange;
+  u64                        warningCount = 0;
+  Vec<IR::GenericParameter*> generics{};
+
+  bool hasGenericParameter(const String& name) const {
+    for (auto* gen : generics) {
+      if (gen->isSame(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  GenericParameter* getGenericParameter(const String& name) const {
+    for (auto* gen : generics) {
+      if (gen->isSame(name)) {
+        return gen;
+      }
+    }
+    return nullptr;
+  }
 };
 
 class LoopInfo {
@@ -106,12 +125,19 @@ private:
 
   QatSitter* sitter = nullptr;
 
-public:
   Context();
 
+  // NOTE - Single instance for now
+  static Context* instance;
+
+public:
+  static Context* New();
+
+  llvm::LLVMContext& getllCtx();
+
+  llvm::LLVMContext       llctx;
   clang::TargetInfo*      clangTargetInfo;
   Maybe<llvm::DataLayout> dataLayout;
-  llvm::LLVMContext       llctx;
   IRBuilderTy             builder;
   QatModule*              mod        = nullptr;
   IR::Function*           fn         = nullptr; // Active function
@@ -121,24 +147,30 @@ public:
   Vec<fs::path>           executablePaths;
 
   // META
-  bool                               hasMain;
-  mutable u64                        stringCount;
-  Vec<fs::path>                      llvmOutputPaths;
-  Vec<String>                        nativeLibsToLink;
-  mutable Maybe<GenericEntityMarker> activeGeneric;
-  mutable Vec<CodeProblem>           codeProblems;
-  mutable Vec<usize>                 binarySizes;
-  mutable Maybe<HighResTimePoint>    qatStartTime;
-  mutable Maybe<HighResTimePoint>    qatEndTime;
-  mutable Maybe<HighResTimePoint>    clangLinkStartTime;
-  mutable Maybe<HighResTimePoint>    clangLinkEndTime;
+  bool                             hasMain;
+  mutable u64                      stringCount;
+  Vec<fs::path>                    llvmOutputPaths;
+  Vec<String>                      nativeLibsToLink;
+  mutable Vec<GenericEntityMarker> allActiveGenerics;
+  mutable Vec<usize>               lastMainActiveGeneric;
+  mutable Vec<CodeProblem>         codeProblems;
+  mutable Vec<usize>               binarySizes;
+  mutable Maybe<HighResTimePoint>  qatStartTime;
+  mutable Maybe<HighResTimePoint>  qatEndTime;
+  mutable Maybe<HighResTimePoint>  clangLinkStartTime;
+  mutable Maybe<HighResTimePoint>  clangLinkEndTime;
 
-  clang::LangAS    getProgramAddressSpaceAsLangAS() const;
-  void             nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
-  void             genericNameCheck(const String& name, const FileRange& range);
-  useit QatModule* getMod() const; // Get the active IR module
-  useit String     getGlobalStringName() const;
-  useit AccessInfo getAccessInfo() const;
+  useit bool                 hasActiveGeneric() const;
+  useit GenericEntityMarker& getActiveGeneric() const;
+  void                       addActiveGeneric(GenericEntityMarker marker, bool main);
+  void                       removeActiveGeneric();
+  String                     joinActiveGenericNames(bool highlight) const;
+  useit clang::LangAS getProgramAddressSpaceAsLangAS() const;
+  void                nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
+  void                genericNameCheck(const String& name, const FileRange& range);
+  useit QatModule*    getMod() const; // Get the active IR module
+  useit String        getGlobalStringName() const;
+  useit AccessInfo    getAccessInfo() const;
   useit Maybe<AccessInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const;
   useit VisibilityInfo    getVisibInfo(Maybe<VisibilityKind> kind) const;
   void                    writeJsonResult(bool status) const;

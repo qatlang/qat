@@ -5,7 +5,7 @@
 namespace qat::ast {
 
 StringLiteral::StringLiteral(String _value, FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
+    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 String StringLiteral::get_value() const { return value; }
 
@@ -14,8 +14,8 @@ void StringLiteral::addValue(const String& val, const FileRange& fRange) {
   fileRange = FileRange(fileRange, fRange);
 }
 
-IR::ConstantValue* StringLiteral::emit(IR::Context* ctx) {
-  return new IR::ConstantValue(
+IR::PrerunValue* StringLiteral::emit(IR::Context* ctx) {
+  return new IR::PrerunValue(
       llvm::ConstantStruct::get(
           llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
           // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function

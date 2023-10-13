@@ -10,6 +10,7 @@
 #include "member_function.hpp"
 #include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/DiagnosticDriver.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/Target/TargetOptions.h"
 #include <chrono>
 #include <cstdint>
@@ -39,10 +40,28 @@ CodeProblem::operator Json() const {
       ._("isError", isError)
       ._("message", message)
       ._("hasRange", range.has_value())
-      ._("fileRange", range.has_value() ? (Json)(range.value()) : JsonValue());
+      ._("fileRange", range.has_value() ? (Json)(range.value()) : Json());
 }
 
-Context::Context() : clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
+Context* Context::instance = nullptr;
+
+Context* Context::New() {
+  if (instance) {
+    return instance;
+  } else {
+    instance = new Context();
+    return instance;
+  }
+}
+
+llvm::LLVMContext& Context::getllCtx() {
+  std::cout << "llctx(" << &llctx << ")\n";
+  return (this->llctx);
+}
+
+Context::Context() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
+  SHOW("llctx address: " << &llctx)
+  SHOW("Builder llctx address: " << &builder.getContext())
   auto diagnosticEngine =
       clang::DiagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
                                llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions()));
@@ -362,10 +381,13 @@ String Context::highlightWarning(const String& message, const char* color) {
 }
 
 void Context::writeJsonResult(bool status) const {
+  SHOW("Pushing problems")
   Vec<JsonValue> problems;
-  for (const auto& prob : codeProblems) {
+  for (auto& prob : codeProblems) {
+    SHOW("Pushing code problem")
     problems.push_back((Json)prob);
   }
+  SHOW("Pushed all code problems")
   Json               result;
   unsigned long long qatCompileTime = 0;
   unsigned long long clangTime      = 0;
@@ -379,10 +401,12 @@ void Context::writeJsonResult(bool status) const {
                     clangLinkEndTime.value_or(std::chrono::high_resolution_clock::now()) - clangLinkStartTime.value())
                     .count();
   }
+  SHOW("Setting binary sizes in result")
   Vec<JsonValue> binarySizesJson;
   for (auto binSiz : binarySizes) {
     binarySizesJson.push_back(binSiz);
   }
+  SHOW("Creating JSON object for result")
   result._("status", status)
       ._("problems", problems)
       ._("lexerTime", (unsigned long long)lexer::Lexer::timeInMicroSeconds)
@@ -416,35 +440,57 @@ clang::LangAS Context::getProgramAddressSpaceAsLangAS() const {
   }
 }
 
+bool Context::hasActiveGeneric() const { return !allActiveGenerics.empty(); }
+
+GenericEntityMarker& Context::getActiveGeneric() const { return allActiveGenerics.back(); }
+
+void Context::addActiveGeneric(GenericEntityMarker marker, bool main) {
+  SHOW("ADDED ACTIVE GENERIC")
+  if (main) {
+    lastMainActiveGeneric.push_back(allActiveGenerics.size());
+  }
+  allActiveGenerics.push_back(marker);
+}
+
+void Context::removeActiveGeneric() {
+  SHOW("REMOVED ACTIVE GENERICS")
+  if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
+    lastMainActiveGeneric.pop_back();
+  }
+  allActiveGenerics.pop_back();
+}
+
 void Context::addError(const String& message, Maybe<FileRange> fileRange) {
   auto* cfg = cli::Config::get();
-  if (activeGeneric) {
-    codeProblems.push_back(CodeProblem(true, "Errors generated while creating generic variant: " + activeGeneric->name,
-                                       activeGeneric->fileRange));
+  if (hasActiveGeneric()) {
+    codeProblems.push_back(CodeProblem(true,
+                                       "Errors generated while creating generic variant: " + getActiveGeneric().name,
+                                       getActiveGeneric().fileRange));
     std::cerr << "\n"
               << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan) << " --> "
-              << Colored(colors::reset) << activeGeneric->fileRange.file.string() << ":"
-              << activeGeneric->fileRange.start.line << ":" << activeGeneric->fileRange.start.character << "\n"
-              << "Errors while creating generic variant: " << highlightError(activeGeneric->name) << "\n"
+              << Colored(colors::reset) << getActiveGeneric().fileRange.file.string() << ":"
+              << getActiveGeneric().fileRange.start.line << ":" << getActiveGeneric().fileRange.start.character << "\n"
+              << "Errors while creating generic variant: " << highlightError(getActiveGeneric().name) << "\n"
               << "\n";
   }
-  codeProblems.push_back(
-      CodeProblem(true, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
+  codeProblems.push_back(CodeProblem(
+      true, (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") + message, fileRange));
   std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR ";
   if (fileRange) {
     std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
               << fileRange.value().start.line << ":" << fileRange.value().start.character;
   }
   std::cerr << Colored(colors::bold::white) << "\n"
-            << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
-            << "\n";
+            << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
+            << Colored(colors::reset) << "\n";
   if (fileRange) {
     printRelevantFileContent(fileRange.value(), true);
   }
   std::cerr << "\n";
-
-  if (!moduleAlreadyHasErrors(mod)) {
-    activeGeneric = None;
+  if (mod && !moduleAlreadyHasErrors(mod)) {
+    if (hasActiveGeneric()) {
+      removeActiveGeneric();
+    }
     modulesWithErrors.push_back(mod);
     for (const auto& modNRange : mod->getBroughtMentions()) {
       mod = modNRange.first;
@@ -490,6 +536,7 @@ void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   sitter->destroy();
   delete cli::Config::get();
   MemoryTracker::report();
+  ast::Node::clearAll();
   exit(0);
 }
 
@@ -523,19 +570,30 @@ Vec<std::tuple<String, u64, u64>> Context::getContentForDiagnostics(FileRange co
   return result;
 }
 
-void Context::Warning(const String& message, const FileRange& fileRange) const {
-  if (activeGeneric) {
-    activeGeneric->warningCount++;
+String Context::joinActiveGenericNames(bool highlight) const {
+  String result;
+  for (usize i = 0; i < allActiveGenerics.size(); i++) {
+    result.append(highlight ? highlightError(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
+    if (i < allActiveGenerics.size() - 1) {
+      result.append(" and ");
+    }
   }
-  codeProblems.push_back(
-      CodeProblem(false, (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") + message, fileRange));
+  return result;
+}
+
+void Context::Warning(const String& message, const FileRange& fileRange) const {
+  if (hasActiveGeneric()) {
+    getActiveGeneric().warningCount++;
+  }
+  codeProblems.push_back(CodeProblem(
+      false, (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message, fileRange));
   auto* cfg = cli::Config::get();
   std::cout << "\n"
             << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan) << " --> "
             << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line << ":"
             << fileRange.start.character << Colored(colors::bold::white) << "\n"
-            << (activeGeneric ? ("Creating " + activeGeneric->name + " => ") : "") << message << Colored(colors::reset)
-            << "\n";
+            << (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+            << Colored(colors::reset) << "\n";
   printRelevantFileContent(fileRange, false);
 }
 

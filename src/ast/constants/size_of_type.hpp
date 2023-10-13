@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 // SizeOfType is used to find the size of a type specified
-class SizeOfType : public ConstantExpression {
+class SizeOfType : public PrerunExpression {
 private:
   // Type to find the size of
   QatType* type;
@@ -16,10 +16,10 @@ public:
   // SizeOfType is used to find the size of a type specified
   SizeOfType(QatType* _type, FileRange _fileRange);
 
-  useit IR::ConstantValue* emit(IR::Context* ctx) override;
-  useit Json               toJson() const override;
-  useit String             toString() const override;
-  useit NodeType           nodeType() const override { return NodeType::sizeOfType; }
+  useit IR::PrerunValue* emit(IR::Context* ctx) override;
+  useit Json             toJson() const override;
+  useit String           toString() const override;
+  useit NodeType         nodeType() const override { return NodeType::sizeOfType; }
 };
 
 } // namespace qat::ast

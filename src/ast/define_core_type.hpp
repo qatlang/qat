@@ -73,25 +73,25 @@ public:
   DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
                  Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
 
-  useit bool isGeneric() const;
+  void addMember(Member* mem);
+  void addStaticMember(StaticMember* stm);
+  void addMemberDefinition(MemberDefinition* mdef);
+  void addConvertorDefinition(ConvertorDefinition* cdef);
+  void addConstructorDefinition(ConstructorDefinition* cdef);
+  void addOperatorDefinition(OperatorDefinition* odef);
+  void setDestructorDefinition(DestructorDefinition* ddef);
+  void setDefaultConstructor(ConstructorDefinition* cDef);
+  void setCopyConstructor(ConstructorDefinition* cDef);
+  void setMoveConstructor(ConstructorDefinition* cDef);
+  void setCopyAssignment(OperatorDefinition* mDef);
+  void setMoveAssignment(OperatorDefinition* mDef);
+  void createType(IR::Context* ctx) const;
+  void defineType(IR::Context* ctx) final;
+  void define(IR::Context* ctx) final;
+  void setVariantName(const String& name) const;
+  void unsetVariantName() const;
 
-  void       addMember(Member* mem);
-  void       addStaticMember(StaticMember* stm);
-  void       addMemberDefinition(MemberDefinition* mdef);
-  void       addConvertorDefinition(ConvertorDefinition* cdef);
-  void       addConstructorDefinition(ConstructorDefinition* cdef);
-  void       addOperatorDefinition(OperatorDefinition* odef);
-  void       setDestructorDefinition(DestructorDefinition* ddef);
-  void       setDefaultConstructor(ConstructorDefinition* cDef);
-  void       setCopyConstructor(ConstructorDefinition* cDef);
-  void       setMoveConstructor(ConstructorDefinition* cDef);
-  void       setCopyAssignment(OperatorDefinition* mDef);
-  void       setMoveAssignment(OperatorDefinition* mDef);
-  void       createType(IR::Context* ctx) const;
-  void       defineType(IR::Context* ctx) final;
-  void       define(IR::Context* ctx) final;
-  void       setVariantName(const String& name) const;
-  void       unsetVariantName() const;
+  useit bool isGeneric() const;
   useit bool hasDefaultConstructor() const;
   useit bool hasDestructor() const;
   useit bool hasCopyConstructor() const;

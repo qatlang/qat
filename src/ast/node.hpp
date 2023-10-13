@@ -36,7 +36,7 @@ public:
 
   explicit Node(FileRange _fileRange);
   virtual ~Node() = default;
-  useit virtual bool       isConstantNode() const { return false; }
+  useit virtual bool       isPrerunNode() const { return false; }
   virtual void             createModule(IR::Context* ctx) const {}
   virtual void             handleFilesystemBrings(IR::Context* ctx) const {}
   virtual void             handleBrings(IR::Context* ctx) const {}

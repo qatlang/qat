@@ -126,7 +126,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     }
   }
   if (isGeneric()) {
-    Vec<IR::GenericType*> genericTypes;
+    Vec<IR::GenericParameter*> genericTypes;
     for (auto* gen : generics) {
       genericTypes.push_back(gen->toIRGenericType());
     }

@@ -39,15 +39,15 @@ public:
   ~Expression() override                           = default;
 };
 
-class ConstantExpression : public Expression {
+class PrerunExpression : public Expression {
 public:
-  ConstantExpression(FileRange fileRange);
+  PrerunExpression(FileRange fileRange);
 
-  useit IR::ConstantValue* emit(IR::Context* ctx) override = 0;
-  useit NodeType           nodeType() const override       = 0;
-  useit Json               toJson() const override         = 0;
-  useit virtual String     toString() const;
-  ~ConstantExpression() override = default;
+  useit IR::PrerunValue* emit(IR::Context* ctx) override = 0;
+  useit NodeType         nodeType() const override       = 0;
+  useit Json             toJson() const override         = 0;
+  useit virtual String   toString() const;
+  ~PrerunExpression() override = default;
 };
 
 } // namespace qat::ast

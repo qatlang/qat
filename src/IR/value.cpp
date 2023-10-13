@@ -90,7 +90,7 @@ llvm::Constant* Value::getLLVMConstant() const { return llvm::cast<llvm::Constan
 
 bool Value::isConstVal() const { return false; }
 
-ConstantValue* Value::asConst() const { return (ConstantValue*)this; }
+PrerunValue* Value::asConst() const { return (PrerunValue*)this; }
 
 Nature Value::getNature() const { return nature; }
 
@@ -101,16 +101,16 @@ void Value::clearAll() {
   allValues.clear();
 }
 
-ConstantValue::ConstantValue(llvm::Constant* _llConst, IR::QatType* _type)
+PrerunValue::PrerunValue(llvm::Constant* _llConst, IR::QatType* _type)
     : Value(_llConst, _type, false, IR::Nature::pure) {}
 
-ConstantValue::ConstantValue(IR::TypedType* _typed) : Value(nullptr, _typed, false, IR::Nature::pure) {}
+PrerunValue::PrerunValue(IR::TypedType* _typed) : Value(nullptr, _typed, false, IR::Nature::pure) {}
 
-llvm::Constant* ConstantValue::getLLVM() const { return (llvm::Constant*)ll; }
+llvm::Constant* PrerunValue::getLLVM() const { return (llvm::Constant*)ll; }
 
-bool ConstantValue::isConstVal() const { return true; }
+bool PrerunValue::isConstVal() const { return true; }
 
-bool ConstantValue::isEqualTo(ConstantValue* other) {
+bool PrerunValue::isEqualTo(PrerunValue* other) {
   if (getType()->isTyped()) {
     if (other->getType()->isTyped()) {
       return getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());

@@ -52,7 +52,6 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
                          isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
-  SHOW("Creating IR for CoreType members. Count: " << std::to_string(members.size()))
   bool                       needsDestructor = false;
   Vec<IR::CoreType::Member*> mems;
   for (auto* mem : members) {
@@ -65,12 +64,11 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                                                 ? VisibilityInfo::type(mod->getFullNameWithChild(name.value))
                                                 : ctx->getVisibInfo(mem->visibilityKind)));
   }
-  SHOW("Emitted IR for all members")
   auto cTyName = name;
   if (isGeneric()) {
     cTyName = Identifier(variantName.value(), name.range);
   }
-  Vec<IR::GenericType*> genericsIR;
+  Vec<IR::GenericParameter*> genericsIR;
   for (auto* gen : generics) {
     if (!gen->isSet()) {
       if (gen->isTyped()) {
@@ -97,7 +95,6 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   if (destructorDefinition || needsDestructor) {
     coreType->createDestructor(fileRange, ctx);
   }
-  SHOW("Created core type in IR")
   for (auto* stm : staticMembers) {
     coreType->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
                               stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
@@ -164,13 +161,10 @@ void DefineCoreType::defineType(IR::Context* ctx) {
   for (auto* gen : generics) {
     gen->emit(ctx);
   }
-  SHOW("Defining type")
   if (!isGeneric()) {
     createType(ctx);
   } else {
-    SHOW("Creating generic core type: " << name.value)
     genericCoreType = new IR::GenericCoreType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibility));
-    SHOW("Created generic core type")
   }
 }
 
@@ -215,7 +209,8 @@ void DefineCoreType::define(IR::Context* ctx) {
 }
 
 IR::Value* DefineCoreType::emit(IR::Context* ctx) {
-  ctx->activeType = coreType;
+  auto prevActiveType = ctx->activeType;
+  ctx->activeType     = coreType;
   if (defaultConstructor) {
     (void)defaultConstructor->emit(ctx);
   }
@@ -246,19 +241,13 @@ IR::Value* DefineCoreType::emit(IR::Context* ctx) {
   if (destructorDefinition) {
     (void)destructorDefinition->emit(ctx);
   }
-  ctx->activeType = nullptr;
+  ctx->activeType = prevActiveType;
   return nullptr;
 }
 
-void DefineCoreType::addMember(Member* mem) {
-  SHOW("Added core type member: " + mem->name.value)
-  members.push_back(mem);
-}
+void DefineCoreType::addMember(Member* mem) { members.push_back(mem); }
 
-void DefineCoreType::addStaticMember(StaticMember* stm) {
-  SHOW("Added core type static member: " + stm->name.value)
-  staticMembers.push_back(stm);
-}
+void DefineCoreType::addStaticMember(StaticMember* stm) { staticMembers.push_back(stm); }
 
 void DefineCoreType::addMemberDefinition(MemberDefinition* mdef) { memberDefinitions.push_back(mdef); }
 

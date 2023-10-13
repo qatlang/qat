@@ -21,7 +21,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
   if (names.size() == 1) {
     if ((ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) ||
         (ctx->activeType && ctx->activeType->hasGenericParameter(entityName.value))) {
-      IR::GenericType* genParam;
+      IR::GenericParameter* genParam;
       if (ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) {
         genParam = ctx->fn->getGenericParameter(entityName.value);
       } else {
@@ -29,8 +29,8 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       }
       if (genParam->isTyped()) {
         return genParam->asTyped()->getType();
-      } else if (genParam->isConst()) {
-        auto* exp = genParam->asConst()->getExpression();
+      } else if (genParam->isPrerun()) {
+        auto* exp = genParam->asPrerun()->getExpression();
         if (exp->getType()->isTyped()) {
           return exp->getType()->asTyped()->getSubType();
         } else {

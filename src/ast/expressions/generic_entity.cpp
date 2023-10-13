@@ -80,9 +80,9 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     Vec<IR::GenericToFill*> types;
     for (usize i = 0; i < genericTypes.size(); i++) {
       auto* gen = genericTypes.at(i);
-      if (gen->isConst() && (gen->asConst()->nodeType() == NodeType::constantDefault)) {
+      if (gen->isConst() && (gen->asConst()->nodeType() == NodeType::prerunDefault)) {
         SHOW("Generic is const and const generic is default expression")
-        ((ast::ConstantDefault*)(genericTypes.at(i)->asConst()))->setGenericAbstract(genericFn->getGenericAt(i));
+        ((ast::PrerunDefault*)(genericTypes.at(i)->asConst()))->setGenericAbstract(genericFn->getGenericAt(i));
       } else if (genericFn->getGenericAt(i)->isConst() &&
                  (genericFn->getGenericAt(i)->asConst()->getType() != nullptr)) {
         SHOW("Generic abstract is const and has valid type")

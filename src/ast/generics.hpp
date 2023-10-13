@@ -18,13 +18,13 @@ class FillGeneric {
 
 public:
   explicit FillGeneric(QatType* type);
-  explicit FillGeneric(ConstantExpression* expression);
+  explicit FillGeneric(PrerunExpression* expression);
 
   useit bool isType() const;
   useit bool isConst() const;
 
-  useit QatType*            asType() const;
-  useit ConstantExpression* asConst() const;
+  useit QatType*          asType() const;
+  useit PrerunExpression* asConst() const;
 
   useit FileRange const& getRange() const;
 

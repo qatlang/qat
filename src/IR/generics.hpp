@@ -16,8 +16,8 @@ enum class GenericKind {
 };
 
 class TypedGeneric;
-class ConstGeneric;
-class ConstantValue;
+class PrerunGeneric;
+class PrerunValue;
 class GenericToFill;
 
 void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
@@ -31,11 +31,11 @@ class GenericToFill {
   GenericToFill(void* _data, GenericKind _kind, FileRange _range);
 
 public:
-  useit static GenericToFill* get(IR::ConstantValue* constVal, FileRange range);
+  useit static GenericToFill* get(IR::PrerunValue* constVal, FileRange range);
   useit static GenericToFill* get(IR::QatType* type, FileRange range);
 
-  useit bool isConst() const;
-  useit IR::ConstantValue* asConst() const;
+  useit bool isPrerun() const;
+  useit IR::PrerunValue* asPrerun() const;
 
   useit bool isType() const;
   useit IR::QatType* asType() const;
@@ -45,13 +45,13 @@ public:
   useit String toString() const;
 };
 
-class GenericType {
+class GenericParameter {
 protected:
   Identifier  name;
   GenericKind kind;
   FileRange   range;
 
-  GenericType(Identifier name, GenericKind kind, FileRange range);
+  GenericParameter(Identifier name, GenericKind kind, FileRange range);
 
 public:
   useit Identifier getName() const;
@@ -61,13 +61,13 @@ public:
   useit bool          isTyped() const;
   useit TypedGeneric* asTyped() const;
 
-  useit bool          isConst() const;
-  useit ConstGeneric* asConst() const;
+  useit bool           isPrerun() const;
+  useit PrerunGeneric* asPrerun() const;
 
   useit bool isEqualTo(GenericToFill* fill) const;
 };
 
-class TypedGeneric : public GenericType {
+class TypedGeneric : public GenericParameter {
   IR::QatType* type;
 
   TypedGeneric(Identifier name, IR::QatType* type, FileRange range);
@@ -78,15 +78,15 @@ public:
   useit IR::QatType* getType() const;
 };
 
-class ConstGeneric : public GenericType {
-  IR::ConstantValue* constant;
+class PrerunGeneric : public GenericParameter {
+  IR::PrerunValue* constant;
 
-  ConstGeneric(Identifier name, IR::ConstantValue* constant, FileRange range);
+  PrerunGeneric(Identifier name, IR::PrerunValue* constant, FileRange range);
 
 public:
-  useit static ConstGeneric* get(Identifier name, IR::ConstantValue* type, FileRange range);
+  useit static PrerunGeneric* get(Identifier name, IR::PrerunValue* type, FileRange range);
 
-  useit IR::ConstantValue* getExpression() const;
+  useit IR::PrerunValue* getExpression() const;
   useit IR::QatType* getType() const;
 };
 

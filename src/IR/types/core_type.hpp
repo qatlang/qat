@@ -25,7 +25,7 @@ namespace qat::IR {
  */
 class CoreType final : public ExpandedType, public EntityOverview {
   friend class MemberFunction;
-  friend class GenericType;
+  friend class GenericParameter;
 
 public:
   class Member final : public EntityOverview {
@@ -56,7 +56,7 @@ private:
   // TODO - Add support for extension functions
 
 public:
-  CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
+  CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, Vec<Member*> _members,
            const VisibilityInfo& _visibility, llvm::LLVMContext& llctx);
 
   ~CoreType() final;

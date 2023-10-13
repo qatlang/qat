@@ -34,16 +34,16 @@ bool IntegerType::isTypeSized() const { return true; }
 
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
 
-bool IntegerType::canBeConstGeneric() const { return bitWidth <= MAXIMUM_CONST_EXPR_BITWIDTH; }
+bool IntegerType::canBePrerunGeneric() const { return bitWidth <= MAXIMUM_CONST_EXPR_BITWIDTH; }
 
-Maybe<String> IntegerType::toConstGenericString(IR::ConstantValue* val) const {
-  if (!canBeConstGeneric()) {
+Maybe<String> IntegerType::toPrerunGenericString(IR::PrerunValue* val) const {
+  if (!canBePrerunGeneric()) {
     return None;
   }
   return std::to_string((i64)(*llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData()));
 }
 
-Maybe<bool> IntegerType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+Maybe<bool> IntegerType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (first->getType()->isSame(second->getType())) {
     return (*llvm::cast<llvm::ConstantInt>(first->getLLVMConstant())->getValue().getRawData()) ==
            (*llvm::cast<llvm::ConstantInt>(second->getLLVMConstant())->getValue().getRawData());

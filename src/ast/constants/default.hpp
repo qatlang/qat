@@ -6,18 +6,18 @@
 
 namespace qat::ast {
 
-class ConstantDefault : public ConstantExpression {
+class PrerunDefault : public PrerunExpression {
   mutable Maybe<ast::QatType*>             theType;
   mutable Maybe<ast::GenericAbstractType*> genericAbstractType;
 
 public:
-  ConstantDefault(Maybe<ast::QatType*> _type, FileRange range);
+  PrerunDefault(Maybe<ast::QatType*> _type, FileRange range);
 
   void setGenericAbstract(ast::GenericAbstractType* genAbs) const;
 
-  useit IR::ConstantValue* emit(IR::Context* ctx) final;
-  useit NodeType           nodeType() const final { return NodeType::constantDefault; }
-  useit Json               toJson() const final;
+  useit IR::PrerunValue* emit(IR::Context* ctx) final;
+  useit NodeType         nodeType() const final { return NodeType::prerunDefault; }
+  useit Json             toJson() const final;
 };
 
 } // namespace qat::ast

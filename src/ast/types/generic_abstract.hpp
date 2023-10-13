@@ -38,7 +38,7 @@ public:
   useit virtual bool isSet() const                = 0;
   virtual void       unset() const                = 0;
 
-  useit IR::GenericType* toIRGenericType() const;
+  useit IR::GenericParameter* toIRGenericType() const;
 
   virtual ~GenericAbstractType() = default;
 };

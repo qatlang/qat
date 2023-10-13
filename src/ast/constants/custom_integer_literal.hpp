@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class CustomIntegerLiteral : public ConstantExpression {
+class CustomIntegerLiteral : public PrerunExpression {
 private:
   String value;
 
@@ -18,7 +18,7 @@ private:
 public:
   CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, FileRange _fileRange);
 
-  IR::ConstantValue* emit(IR::Context* ctx) override;
+  IR::PrerunValue* emit(IR::Context* ctx) override;
 
   useit Json   toJson() const override;
   useit String toString() const final;

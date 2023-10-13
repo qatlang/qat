@@ -14,8 +14,8 @@ ExpressionKind Expression::getExpectedKind() { return expected; }
 
 void Expression::setExpectedKind(ExpressionKind _kind) { this->expected = _kind; }
 
-ConstantExpression::ConstantExpression(FileRange _range) : Expression(std::move(_range)) {}
+PrerunExpression::PrerunExpression(FileRange _range) : Expression(std::move(_range)) {}
 
-String ConstantExpression::toString() const { return ""; }
+String PrerunExpression::toString() const { return ""; }
 
 } // namespace qat::ast

@@ -5,14 +5,14 @@
 
 namespace qat::ast {
 
-class FloatLiteral : public ConstantExpression {
+class FloatLiteral : public PrerunExpression {
 private:
   String value;
 
 public:
   FloatLiteral(String _value, FileRange _fileRange);
 
-  IR::ConstantValue* emit(IR::Context* ctx) override;
+  IR::PrerunValue* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 

@@ -45,13 +45,13 @@ void QatType::clearAll() {
 
 bool QatType::hasNoValueSemantics() const { return false; }
 
-bool QatType::canBeConstGeneric() const { return false; }
+bool QatType::canBePrerunGeneric() const { return false; }
 
-Maybe<String> QatType::toConstGenericString(IR::ConstantValue* val) const { return None; }
+Maybe<String> QatType::toPrerunGenericString(IR::PrerunValue* val) const { return None; }
 
 bool QatType::isTypeSized() const { return false; }
 
-Maybe<bool> QatType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const { return false; }
+Maybe<bool> QatType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const { return false; }
 
 bool QatType::checkTypeExists(const String& name) {
   for (const auto& typ : types) {

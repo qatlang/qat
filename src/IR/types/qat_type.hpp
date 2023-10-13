@@ -34,7 +34,7 @@ class Function;
 class Value;
 class OpaqueType;
 class TypedType;
-class ConstantValue;
+class PrerunValue;
 class CType;
 class ResultType;
 
@@ -51,10 +51,10 @@ public:
 
   useit virtual bool hasNoValueSemantics() const;
 
-  useit virtual bool          canBeConstGeneric() const;
-  useit virtual Maybe<String> toConstGenericString(IR::ConstantValue* val) const;
+  useit virtual bool          canBePrerunGeneric() const;
+  useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;
   useit virtual bool          isTypeSized() const;
-  useit virtual Maybe<bool>   equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const;
+  useit virtual Maybe<bool>   equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const;
 
   useit static bool         checkTypeExists(const String& name);
   useit static Vec<Region*> allRegions();

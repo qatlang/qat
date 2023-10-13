@@ -9,14 +9,14 @@ namespace qat::ast {
  *  A null pointer
  *
  */
-class NullPointer : public ConstantExpression {
+class NullPointer : public PrerunExpression {
 public:
   explicit NullPointer(FileRange _fileRange);
 
-  useit IR::ConstantValue* emit(IR::Context* ctx) override;
-  useit Json               toJson() const override;
-  useit String             toString() const final;
-  useit NodeType           nodeType() const override { return NodeType::nullPointer; }
+  useit IR::PrerunValue* emit(IR::Context* ctx) override;
+  useit Json             toJson() const override;
+  useit String           toString() const final;
+  useit NodeType         nodeType() const override { return NodeType::nullPointer; }
 };
 
 } // namespace qat::ast

@@ -5,14 +5,14 @@
 
 namespace qat::ast {
 
-NullPointer::NullPointer(FileRange _fileRange) : ConstantExpression(std::move(_fileRange)) {}
+NullPointer::NullPointer(FileRange _fileRange) : PrerunExpression(std::move(_fileRange)) {}
 
-IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
+IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Null pointer is not assignable", fileRange);
   }
   if (inferredType) {
-    return new IR::ConstantValue(
+    return new IR::PrerunValue(
         inferredType.value()->asPointer()->isMulti()
             ? llvm::ConstantStruct::get(
                   llvm::dyn_cast<llvm::StructType>(inferredType.value()->getLLVMType()),
@@ -26,7 +26,7 @@ IR::ConstantValue* NullPointer::emit(IR::Context* ctx) {
             inferredType.value()->asPointer()->isSubtypeVariable(), inferredType.value()->asPointer()->getSubType(),
             inferredType.value()->asPointer()->getOwner(), inferredType.value()->asPointer()->isMulti(), ctx));
   } else {
-    return new IR::ConstantValue(
+    return new IR::PrerunValue(
         llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
         IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), IR::PointerOwner::OfAnonymous(), false, ctx));
   }

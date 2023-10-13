@@ -20,7 +20,7 @@ class ExpandedType : public QatType {
 
 protected:
   Identifier             name;
-  Vec<GenericType*>      generics;
+  Vec<GenericParameter*> generics;
   QatModule*             parent             = nullptr;
   MemberFunction*        defaultConstructor = nullptr;
   Vec<MemberFunction*>   memberFunctions; // Normal
@@ -46,12 +46,12 @@ protected:
 
   VisibilityInfo visibility;
 
-  ExpandedType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent, const VisibilityInfo& _visib);
+  ExpandedType(Identifier _name, Vec<GenericParameter*> _generics, QatModule* _parent, const VisibilityInfo& _visib);
 
 public:
-  useit bool         isGeneric() const;
-  useit bool         hasGenericParameter(const String& name) const;
-  useit GenericType* getGenericParameter(const String& name) const;
+  useit bool              isGeneric() const;
+  useit bool              hasGenericParameter(const String& name) const;
+  useit GenericParameter* getGenericParameter(const String& name) const;
 
   useit String          getFullName() const;
   useit Identifier      getName() const;
@@ -93,9 +93,9 @@ public:
 
   useit bool           isAccessible(const AccessInfo& reqInfo) const;
   useit VisibilityInfo getVisibility() const;
-  useit bool           isExpanded() const final;
-  useit bool           isDestructible() const final;
-  void                 destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  useit bool           isExpanded() const override;
+  useit bool           isDestructible() const override;
+  void                 destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) override;
 };
 
 } // namespace qat::IR

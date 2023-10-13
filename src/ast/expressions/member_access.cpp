@@ -28,11 +28,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
   if (instType->isChoice()) {
     auto* chTy = instType->asChoice();
     if (chTy->hasField(name)) {
-      auto chInd = chTy->getValueFor(name);
-      return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
-                                                          static_cast<u64>(chInd),
-                                                          chTy->hasNegativeValues() && (chInd < 0)),
-                                   chTy);
+      return new IR::PrerunValue(chTy->getValueFor(name), chTy);
     } else {
       ctx->Error("No variant named " + ctx->highlightError(name) + " found in choice type " +
                      ctx->highlightError(chTy->getFullName()),
@@ -40,7 +36,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isArray()) {
     if (name == "length") {
-      return new IR::ConstantValue(
+      return new IR::PrerunValue(
           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), instType->asArray()->getLength()),
           // NOLINTNEXTLINE(readability-magic-numbers)
           IR::IntegerType::get(64u, ctx->llctx));
@@ -56,8 +52,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     if (name == "length") {
       if (inst->isLLVMConstant()) {
         SHOW("String slice is a constant")
-        return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(1u)),
-                                     IR::UnsignedType::get(64u, ctx->llctx));
+        return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(1u)),
+                                   IR::UnsignedType::get(64u, ctx->llctx));
       } else {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
@@ -66,9 +62,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       }
     } else if (name == "buffer") {
       if (inst->isLLVMConstant()) {
-        return new IR::ConstantValue(inst->getLLVMConstant()->getAggregateElement(0u),
-                                     IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx),
-                                                          IR::PointerOwner::OfAnonymous(), false, ctx));
+        return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(0u),
+                                   IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx),
+                                                        IR::PointerOwner::OfAnonymous(), false, ctx));
       } else {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
@@ -123,11 +119,11 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     if (name == "hasValue") {
       if (inst->isLLVMConstant()) {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
-          return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
-                                       IR::UnsignedType::getBool(ctx->llctx));
+          return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
+                                     IR::UnsignedType::getBool(ctx->llctx));
         } else {
-          return new IR::ConstantValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()),
-                                       IR::UnsignedType::getBool(ctx->llctx));
+          return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()),
+                                     IR::UnsignedType::getBool(ctx->llctx));
         }
       } else {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
@@ -147,7 +143,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     } else if (name == "hasNoValue") {
       if (inst->isLLVMConstant()) {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
-          return new IR::ConstantValue(
+          return new IR::PrerunValue(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
                                      llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u))
                                              ->getValue()
@@ -156,7 +152,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                                          : 1u),
               IR::UnsignedType::getBool(ctx->llctx));
         } else {
-          return new IR::ConstantValue(
+          return new IR::PrerunValue(
               llvm::ConstantInt::get(
                   llvm::Type::getInt1Ty(ctx->llctx),
                   llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant())->getValue().getBoolValue() ? 0u : 1u),
@@ -200,7 +196,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       inst->makeImplicitPointer(ctx, None);
     }
     if (inst->isLLVMConstant()) {
-      return new IR::ConstantValue(
+      return new IR::PrerunValue(
           inst->getLLVMConstant()->getAggregateElement(instType->asCore()->getIndexOf(name).value()), mem->type);
     } else {
       return new IR::Value(ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
@@ -215,8 +211,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
           inst->makeImplicitPointer(ctx, None);
         }
         if (inst->isLLVMConstant()) {
-          return new IR::ConstantValue(inst->getLLVMConstant()->getAggregateElement(1u),
-                                       IR::UnsignedType::get(64u, ctx->llctx));
+          return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u),
+                                     IR::UnsignedType::get(64u, ctx->llctx));
         } else {
           return new IR::Value(
               ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),

@@ -36,13 +36,13 @@ TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
 String ArrayType::toString() const { return elementType->toString() + "[" + std::to_string(length) + "]"; }
 
-bool ArrayType::canBeConstGeneric() const { return elementType->canBeConstGeneric(); }
+bool ArrayType::canBePrerunGeneric() const { return elementType->canBePrerunGeneric(); }
 
-Maybe<String> ArrayType::toConstGenericString(IR::ConstantValue* val) const {
-  if (canBeConstGeneric()) {
+Maybe<String> ArrayType::toPrerunGenericString(IR::PrerunValue* val) const {
+  if (canBePrerunGeneric()) {
     String result("[");
     for (usize i = 0; i < length; i++) {
-      auto elemStr = elementType->toConstGenericString(new IR::ConstantValue(
+      auto elemStr = elementType->toPrerunGenericString(new IR::PrerunValue(
           llvm::cast<llvm::ConstantDataArray>(val->getLLVMConstant())->getAggregateElement(i), elementType));
       if (elemStr.has_value()) {
         result += elemStr.value();
@@ -60,15 +60,15 @@ Maybe<String> ArrayType::toConstGenericString(IR::ConstantValue* val) const {
   }
 }
 
-Maybe<bool> ArrayType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
-  if (canBeConstGeneric()) {
+Maybe<bool> ArrayType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (canBePrerunGeneric()) {
     if (first->getType()->isSame(second->getType())) {
       auto* array1 = llvm::cast<llvm::ConstantArray>(first->getLLVMConstant());
       auto* array2 = llvm::cast<llvm::ConstantArray>(second->getLLVMConstant());
       for (usize i = 0; i < length; i++) {
         if (!(elementType
-                  ->equalityOf(new IR::ConstantValue(array1->getAggregateElement(i), elementType),
-                               new IR::ConstantValue(array2->getAggregateElement(i), elementType))
+                  ->equalityOf(new IR::PrerunValue(array1->getAggregateElement(i), elementType),
+                               new IR::PrerunValue(array2->getAggregateElement(i), elementType))
                   .value())) {
           return false;
         }

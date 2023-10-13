@@ -18,7 +18,7 @@ namespace qat::IR {
 #define TWO_POWER_16 65536ULL
 #define TWO_POWER_32 4294967296ULL
 
-MixType::MixType(Identifier _name, Vec<GenericType*> _generics, QatModule* _parent,
+MixType::MixType(Identifier _name, Vec<GenericParameter*> _generics, QatModule* _parent,
                  Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes, Maybe<usize> _defaultVal, IR::Context* ctx,
                  bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),

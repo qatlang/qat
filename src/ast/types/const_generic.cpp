@@ -5,23 +5,23 @@
 
 namespace qat::ast {
 
-ConstGeneric::ConstGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::ConstantExpression*> _defaultVal,
+ConstGeneric::ConstGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
                            FileRange _range)
     : GenericAbstractType(_index, std::move(_name), GenericKind::constGeneric, std::move(_range)), expTy(_expTy),
       defaultValueAST(_defaultVal) {}
 
 ConstGeneric* ConstGeneric::get(usize _index, Identifier _name, QatType* _expTy,
-                                Maybe<ast::ConstantExpression*> _defaultVal, FileRange _range) {
+                                Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
   return new ConstGeneric(_index, std::move(_name), _expTy, _defaultVal, std::move(_range));
 }
 
 bool ConstGeneric::hasDefault() const { return defaultValueAST.has_value(); }
 
-IR::ConstantValue* ConstGeneric::getDefault() const { return defaultValue; }
+IR::PrerunValue* ConstGeneric::getDefault() const { return defaultValue; }
 
 void ConstGeneric::emit(IR::Context* ctx) const {
   expressionType = expTy->emit(ctx);
-  if (!expressionType->canBeConstGeneric()) {
+  if (!expressionType->canBePrerunGeneric()) {
     ctx->Error("The provided type is not qualified to be used for a const generic expression", expTy->fileRange);
   }
   if (hasDefault()) {
@@ -43,15 +43,15 @@ void ConstGeneric::emit(IR::Context* ctx) const {
 
 IR::QatType* ConstGeneric::getType() const { return expressionType; }
 
-IR::ConstantValue* ConstGeneric::getConstant() const { return expressionValue ? expressionValue : defaultValue; }
+IR::PrerunValue* ConstGeneric::getConstant() const { return expressionValue ? expressionValue : defaultValue; }
 
 bool ConstGeneric::isSet() const { return (expressionValue != nullptr) || (defaultValue != nullptr); }
 
-void ConstGeneric::setExpression(IR::ConstantValue* exp) const { expressionValue = exp; }
+void ConstGeneric::setExpression(IR::PrerunValue* exp) const { expressionValue = exp; }
 
 void ConstGeneric::unset() const { expressionValue = nullptr; }
 
-IR::ConstGeneric* ConstGeneric::toIR() const { return IR::ConstGeneric::get(name, getConstant(), range); }
+IR::PrerunGeneric* ConstGeneric::toIR() const { return IR::PrerunGeneric::get(name, getConstant(), range); }
 
 ConstGeneric::~ConstGeneric() {}
 

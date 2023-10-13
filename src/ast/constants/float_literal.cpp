@@ -5,15 +5,15 @@
 namespace qat::ast {
 
 FloatLiteral::FloatLiteral(String _value, FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
+    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
-IR::ConstantValue* FloatLiteral::emit(IR::Context* ctx) {
+IR::PrerunValue* FloatLiteral::emit(IR::Context* ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     ctx->Error("Float literals are not assignable", fileRange);
   }
   SHOW("Generating float literal")
-  return new IR::ConstantValue(llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx->llctx), std::stof(value)),
-                               IR::FloatType::get(IR::FloatTypeKind::_64, ctx->llctx));
+  return new IR::PrerunValue(llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx->llctx), std::stof(value)),
+                             IR::FloatType::get(IR::FloatTypeKind::_64, ctx->llctx));
 }
 
 String FloatLiteral::toString() const { return value; }

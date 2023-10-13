@@ -16,7 +16,7 @@
 
 namespace qat::IR {
 
-CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, Vec<Member*> _members,
+CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, Vec<Member*> _members,
                    const VisibilityInfo& _visibility, llvm::LLVMContext& llctx)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       members(std::move(_members)) {
@@ -27,9 +27,7 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericType*> _generics
   }
   SHOW("All members' LLVM types obtained")
   llvmType = llvm::StructType::create(llctx, subtypes, mod->getFullNameWithChild(name.value), false);
-  if (mod) {
-    mod->coreTypes.push_back(this);
-  }
+  mod->coreTypes.push_back(this);
 }
 
 CoreType::~CoreType() {
@@ -155,9 +153,8 @@ GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*
                          ._("visibility", _visibInfo)
                          ._("moduleID", _parent->getID()),
                      _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), defineCoreType(_defineCoreType), parent(_parent),
+      name(std::move(_name)), generics(_generics), defineCoreType(_defineCoreType), parent(_parent),
       visibility(_visibInfo) {
-  SHOW("Adding generic core type to parent module")
   parent->genericCoreTypes.push_back(this);
 }
 
@@ -189,29 +186,26 @@ CoreType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context*
     }
   }
   IR::fillGenerics(ctx, generics, types, range);
-  SHOW("Getting variant name")
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   defineCoreType->setVariantName(variantName);
-  SHOW("Variant name set")
-  auto prevTemp      = ctx->activeGeneric;
-  ctx->activeGeneric = IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range};
+  ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range}, true);
   (void)defineCoreType->define(ctx);
   (void)defineCoreType->emit(ctx);
-  auto* cTy = (IR::CoreType*)defineCoreType->getCoreType();
+  auto* cTy = defineCoreType->getCoreType();
   variants.push_back(GenericVariant<CoreType>(cTy, types));
   for (auto* temp : generics) {
     temp->unset();
   }
   defineCoreType->unsetVariantName();
-  if (ctx->activeGeneric->warningCount > 0) {
-    auto count         = ctx->activeGeneric->warningCount;
-    ctx->activeGeneric = None;
+  if (ctx->getActiveGeneric().warningCount > 0) {
+    auto count = ctx->getActiveGeneric().warningCount;
+    ctx->removeActiveGeneric();
     ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                      " generated while creating generic variant " + ctx->highlightWarning(variantName),
                  range);
+  } else {
+    ctx->removeActiveGeneric();
   }
-  ctx->activeGeneric = prevTemp;
-  SHOW("Created variant for generic core type: " << cTy->getFullName())
   return cTy;
 }
 

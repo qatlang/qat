@@ -6,19 +6,19 @@
 
 namespace qat::ast {
 
-ConstantDefault::ConstantDefault(Maybe<ast::QatType*> _type, FileRange range)
-    : ConstantExpression(std::move(range)), theType(_type) {}
+PrerunDefault::PrerunDefault(Maybe<ast::QatType*> _type, FileRange range)
+    : PrerunExpression(std::move(range)), theType(_type) {}
 
-void ConstantDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
+void PrerunDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
 
-IR::ConstantValue* ConstantDefault::emit(IR::Context* ctx) {
+IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
   if (theType.has_value()) {
     auto* type = theType.value()->emit(ctx);
     if (type->isInteger()) {
-      return new IR::ConstantValue(llvm::ConstantInt::get(type->asInteger()->getLLVMType(), 0u), type->asInteger());
+      return new IR::PrerunValue(llvm::ConstantInt::get(type->asInteger()->getLLVMType(), 0u), type->asInteger());
     } else if (type->isUnsignedInteger()) {
-      return new IR::ConstantValue(llvm::ConstantInt::get(type->asUnsignedInteger()->getLLVMType(), 0u),
-                                   type->asUnsignedInteger());
+      return new IR::PrerunValue(llvm::ConstantInt::get(type->asUnsignedInteger()->getLLVMType(), 0u),
+                                 type->asUnsignedInteger());
     }
     ctx->Error("Constant " + ctx->highlightError("default") + " expression is currently not supported", fileRange);
   } else if (genericAbstractType.has_value()) {
@@ -28,7 +28,7 @@ IR::ConstantValue* ConstantDefault::emit(IR::Context* ctx) {
         if (!genVal->isSet()) {
           genVal->emit(ctx);
         }
-        return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getDefault()));
+        return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getDefault()));
       } else {
         ctx->Error(utils::numberToPosition(genVal->getIndex()) + " Generic Type Parameter " +
                        ctx->highlightError(genVal->getName().value) + " doesn't have a default type associated with it",
@@ -58,7 +58,7 @@ IR::ConstantValue* ConstantDefault::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-Json ConstantDefault::toJson() const {
+Json PrerunDefault::toJson() const {
   return Json()
       ._("nodeType", "constantDefault")
       ._("hasType", theType.has_value())

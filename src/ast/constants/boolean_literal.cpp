@@ -3,10 +3,10 @@
 namespace qat::ast {
 
 BooleanLiteral::BooleanLiteral(bool _value, FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), value(_value) {}
+    : PrerunExpression(std::move(_fileRange)), value(_value) {}
 
-IR::ConstantValue* BooleanLiteral::emit(IR::Context* ctx) {
-  return new IR::ConstantValue(llvm::ConstantInt::getBool(ctx->llctx, value), IR::UnsignedType::getBool(ctx->llctx));
+IR::PrerunValue* BooleanLiteral::emit(IR::Context* ctx) {
+  return new IR::PrerunValue(llvm::ConstantInt::getBool(ctx->llctx, value), IR::UnsignedType::getBool(ctx->llctx));
 }
 
 String BooleanLiteral::toString() const { return value ? "true" : "false"; }

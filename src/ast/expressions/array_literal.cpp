@@ -113,7 +113,7 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
       }
     } else {
       if (inferredType.value()->asArray()->getElementType()) {
-        return new IR::ConstantValue(
+        return new IR::PrerunValue(
             llvm::ConstantArray::get(
                 llvm::ArrayType::get(inferredType.value()->asArray()->getElementType()->getLLVMType(), 0u), {}),
             IR::ArrayType::get(inferredType.value()->asArray()->getElementType(), 0u, ctx->llctx));

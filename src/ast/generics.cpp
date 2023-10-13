@@ -7,7 +7,7 @@ namespace qat::ast {
 FillGeneric::FillGeneric(QatType* type)
     : data(type), kind(FillGenericKind::typed){SHOW("FillGeneric created for type " << type->toString())}
 
-      FillGeneric::FillGeneric(ConstantExpression * constant)
+      FillGeneric::FillGeneric(PrerunExpression * constant)
     : data(constant), kind(FillGenericKind::constant) {
   SHOW("FillGeneric created for const" << constant->toString())
 }
@@ -18,7 +18,7 @@ bool FillGeneric::isConst() const { return kind == FillGenericKind::constant; }
 
 QatType* FillGeneric::asType() const { return (QatType*)data; }
 
-ConstantExpression* FillGeneric::asConst() const { return (ConstantExpression*)data; }
+PrerunExpression* FillGeneric::asConst() const { return (PrerunExpression*)data; }
 
 FileRange const& FillGeneric::getRange() const { return asType()->fileRange; }
 

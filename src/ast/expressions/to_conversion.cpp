@@ -64,7 +64,7 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
         SHOW("Conversion from StringSlice to cStr")
         if (val->isLLVMConstant()) {
           SHOW("String slice is a constant struct")
-          return new IR::ConstantValue(
+          return new IR::PrerunValue(
               llvm::dyn_cast<llvm::ConstantStruct>(val->getLLVMConstant())->getAggregateElement(0u), destTy->asCType());
         }
         if (llvm::isa<llvm::AllocaInst>(val->getLLVM())) {

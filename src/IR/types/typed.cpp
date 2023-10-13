@@ -20,15 +20,15 @@ TypeKind TypedType::typeKind() const { return TypeKind::typed; }
 
 String TypedType::toString() const { return subTy->toString(); }
 
-Maybe<bool> TypedType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+Maybe<bool> TypedType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
   return first->getType()->asTyped()->getSubType()->isSame(second->getType()->asTyped()->getSubType());
 }
 
-bool TypedType::canBeConstGeneric() const { return true; }
+bool TypedType::canBePrerunGeneric() const { return true; }
 
-Maybe<String> TypedType::toConstGenericString(IR::ConstantValue* constant) const {
+Maybe<String> TypedType::toPrerunGenericString(IR::PrerunValue* val) const {
   // FIXME - The following is stupid, if there is confirmation that the constant's type is already checked
-  return constant->getType()->asTyped()->getSubType()->toString();
+  return val->getType()->asTyped()->getSubType()->toString();
 }
 
 } // namespace qat::IR

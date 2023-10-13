@@ -3,9 +3,9 @@
 namespace qat::ast {
 
 UnsignedLiteral::UnsignedLiteral(String _value, FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), value(std::move(_value)) {}
+    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
-IR::ConstantValue* UnsignedLiteral::emit(IR::Context* ctx) {
+IR::PrerunValue* UnsignedLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Unsigned literals are not assignable", fileRange);
   }
@@ -15,7 +15,7 @@ IR::ConstantValue* UnsignedLiteral::emit(IR::Context* ctx) {
                fileRange);
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::ConstantValue(
+  return new IR::PrerunValue(
       llvm::ConstantInt::get(inferredType ? llvm::dyn_cast<llvm::IntegerType>(inferredType.value()->getLLVMType())
                                           : llvm::Type::getInt32Ty(ctx->llctx),
                              value, 10u),

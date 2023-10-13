@@ -27,9 +27,9 @@ public:
   useit TypeKind typeKind() const final;
   useit String   toString() const final;
 
-  useit bool canBeConstGeneric() const final;
-  useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
+  useit bool canBePrerunGeneric() const final;
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
+  useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
   useit bool        isTypeSized() const final;
 
   useit bool isDestructible() const final;

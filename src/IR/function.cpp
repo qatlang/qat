@@ -278,8 +278,8 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
   }
 }
 
-Function::Function(QatModule* _mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
-                   Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
+Function::Function(QatModule* _mod, Identifier _name, Vec<GenericParameter*> _generics, QatType* returnType,
+                   bool _is_async, Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
                    const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn,
                    llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
@@ -376,7 +376,7 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   }
 }
 
-Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* returnTy,
+Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericParameter*> _generics, QatType* returnTy,
                            const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
                            const VisibilityInfo& visibilityInfo, IR::Context* ctx,
                            llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
@@ -415,7 +415,7 @@ bool Function::hasGenericParameter(const String& name) const {
   return false;
 }
 
-GenericType* Function::getGenericParameter(const String& name) const {
+GenericParameter* Function::getGenericParameter(const String& name) const {
   for (auto* gen : generics) {
     if (gen->getName().value == name) {
       return gen;
@@ -512,22 +512,23 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
   IR::fillGenerics(ctx, generics, types, fileRange);
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
-  auto prevTemp      = ctx->activeGeneric;
-  ctx->activeGeneric = IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange};
-  auto* fun          = (IR::Function*)functionDefinition->emit(ctx);
+  auto prevTemp = ctx->allActiveGenerics;
+  ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange}, true);
+  auto* fun = (IR::Function*)functionDefinition->emit(ctx);
   variants.push_back(GenericVariant<Function>(fun, types));
   for (auto* temp : generics) {
     temp->unset();
   }
-  if (ctx->activeGeneric->warningCount > 0) {
-    auto count         = ctx->activeGeneric->warningCount;
-    ctx->activeGeneric = None;
+  functionDefinition->prototype->unsetVariantName();
+  if (ctx->getActiveGeneric().warningCount > 0) {
+    auto count = ctx->getActiveGeneric().warningCount;
+    ctx->removeActiveGeneric();
     ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                      " generated while creating generic function: " + ctx->highlightWarning(variantName),
                  fileRange);
+  } else {
+    ctx->removeActiveGeneric();
   }
-  ctx->activeGeneric = prevTemp;
-  functionDefinition->prototype->unsetVariantName();
   return fun;
 }
 

@@ -46,17 +46,17 @@ bool UnsignedType::isTypeSized() const { return true; }
 
 String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
-bool UnsignedType::canBeConstGeneric() const { return bitWidth <= 64u; }
+bool UnsignedType::canBePrerunGeneric() const { return bitWidth <= 64u; }
 
-Maybe<String> UnsignedType::toConstGenericString(IR::ConstantValue* val) const {
-  if (!canBeConstGeneric()) {
+Maybe<String> UnsignedType::toPrerunGenericString(IR::PrerunValue* val) const {
+  if (!canBePrerunGeneric()) {
     return None;
   }
   return std::to_string((*llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData()));
 }
 
-Maybe<bool> UnsignedType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
-  if (!canBeConstGeneric()) {
+Maybe<bool> UnsignedType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (!canBePrerunGeneric()) {
     return None;
   }
   if (first->getType()->isSame(second->getType())) {

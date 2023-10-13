@@ -16,9 +16,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
       if (fun->hasGenericParameter(singleName.value)) {
         auto* genVal = fun->getGenericParameter(singleName.value);
         if (genVal->isTyped()) {
-          return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
-        } else if (genVal->isConst()) {
-          return genVal->asConst()->getExpression();
+          return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
+        } else if (genVal->isPrerun()) {
+          return genVal->asPrerun()->getExpression();
         } else {
           ctx->Error("Invalid generic kind", genVal->getRange());
         }
@@ -26,9 +26,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         if (ctx->activeType->hasGenericParameter(singleName.value)) {
           auto* genVal = ((IR::MemberFunction*)(ctx->fn))->getParentType()->getGenericParameter(singleName.value);
           if (genVal->isTyped()) {
-            return new IR::ConstantValue(IR::TypedType::get(genVal->asTyped()->getType()));
-          } else if (genVal->isConst()) {
-            return genVal->asConst()->getExpression();
+            return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
+          } else if (genVal->isPrerun()) {
+            return genVal->asPrerun()->getExpression();
           } else {
             ctx->Error("Invalid generic kind", genVal->getRange());
           }

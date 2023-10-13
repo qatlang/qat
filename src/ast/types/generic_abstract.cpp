@@ -24,7 +24,7 @@ bool GenericAbstractType::isTyped() const { return kind == GenericKind::typedGen
 
 ConstGeneric* GenericAbstractType::asConst() const { return (ConstGeneric*)this; }
 
-IR::GenericType* GenericAbstractType::toIRGenericType() const {
+IR::GenericParameter* GenericAbstractType::toIRGenericType() const {
   if (isTyped()) {
     return asTyped()->toIR();
   } else {

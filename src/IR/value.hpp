@@ -14,7 +14,7 @@ class QatType;
 
 enum class Nature { assignable, temporary, pure, expired };
 
-class ConstantValue;
+class PrerunValue;
 class Context;
 class QatModule;
 class Function;
@@ -41,7 +41,7 @@ public:
   useit bool                 isPointer() const;
   useit bool                 isVariable() const;
   useit virtual bool         isConstVal() const;
-  useit ConstantValue*       asConst() const;
+  useit PrerunValue*         asConst() const;
   useit bool                 isLLVMConstant() const;
   useit llvm::Constant* getLLVMConstant() const;
   useit bool            isLocalToFn() const;
@@ -56,16 +56,16 @@ public:
   static void clearAll();
 };
 
-class ConstantValue : public Value {
+class PrerunValue : public Value {
 public:
-  ConstantValue(llvm::Constant* _llconst, IR::QatType* _type);
-  explicit ConstantValue(IR::TypedType* typed);
+  PrerunValue(llvm::Constant* _llconst, IR::QatType* _type);
+  explicit PrerunValue(IR::TypedType* typed);
 
-  ~ConstantValue() override = default;
+  ~PrerunValue() override = default;
 
   useit llvm::Constant* getLLVM() const final;
 
-  bool isEqualTo(ConstantValue* other);
+  bool isEqualTo(PrerunValue* other);
 
   useit bool isConstVal() const final;
 };

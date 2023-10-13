@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class TypeChecker : public ConstantExpression {
+class TypeChecker : public PrerunExpression {
 private:
   String             name;
   Vec<ast::QatType*> args;
@@ -14,9 +14,9 @@ private:
 public:
   TypeChecker(String name, Vec<ast::QatType*> args, FileRange fileRange);
 
-  useit IR::ConstantValue* emit(IR::Context* ctx) final;
-  useit Json               toJson() const final;
-  useit NodeType           nodeType() const final { return NodeType::typeChecker; }
+  useit IR::PrerunValue* emit(IR::Context* ctx) final;
+  useit Json             toJson() const final;
+  useit NodeType         nodeType() const final { return NodeType::typeChecker; }
 };
 
 } // namespace qat::ast

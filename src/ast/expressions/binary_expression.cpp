@@ -610,7 +610,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         auto strCmpRes = IR::Logic::compareConstantStrings(
             llvm::cast<llvm::Constant>(lhsBuff), llvm::cast<llvm::Constant>(lhsCount),
             llvm::cast<llvm::Constant>(rhsBuff), llvm::cast<llvm::Constant>(rhsCount), ctx->llctx);
-        return new IR::ConstantValue(
+        return new IR::PrerunValue(
             llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), (op == Op::equalTo) ? strCmpRes : !strCmpRes),
             IR::UnsignedType::getBool(ctx->llctx));
       }

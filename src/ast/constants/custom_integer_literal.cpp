@@ -5,17 +5,16 @@
 namespace qat::ast {
 
 CustomIntegerLiteral::CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, FileRange _fileRange)
-    : ConstantExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth),
-      isUnsigned(_isUnsigned) {}
+    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), isUnsigned(_isUnsigned) {}
 
-IR::ConstantValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
+IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     ctx->Error("Integer literals are not assignable", fileRange);
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::ConstantValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, bitWidth), value, 10u),
-                               (isUnsigned ? (IR::QatType*)IR::UnsignedType::get(bitWidth, ctx->llctx)
-                                           : (IR::QatType*)IR::IntegerType::get(bitWidth, ctx->llctx)));
+  return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, bitWidth), value, 10u),
+                             (isUnsigned ? (IR::QatType*)IR::UnsignedType::get(bitWidth, ctx->llctx)
+                                         : (IR::QatType*)IR::IntegerType::get(bitWidth, ctx->llctx)));
   // NOLINTEND(readability-magic-numbers)
 }
 

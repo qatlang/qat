@@ -29,19 +29,19 @@ public:
               return false;
             }
           } else {
-            auto* constVal = dest.at(i)->asConst();
-            if (constVal->getType()->isTyped()) {
-              if (!genTy->asType()->isSame(dest.at(i)->asConst()->getType()->asTyped()->getSubType())) {
+            auto* preVal = dest.at(i)->asPrerun();
+            if (preVal->getType()->isTyped()) {
+              if (!genTy->asType()->isSame(dest.at(i)->asPrerun()->getType()->asTyped()->getSubType())) {
                 return false;
               }
             } else {
               return false;
             }
           }
-        } else if (genTy->isConst()) {
-          if (dest.at(i)->isConst()) {
-            auto* genExp  = genTy->asConst();
-            auto* destExp = dest.at(i)->asConst();
+        } else if (genTy->isPrerun()) {
+          if (dest.at(i)->isPrerun()) {
+            auto* genExp  = genTy->asPrerun();
+            auto* destExp = dest.at(i)->asPrerun();
             if (genExp->getType()->isSame(destExp->getType())) {
               auto eqRes = genExp->getType()->equalityOf(genExp, destExp);
               if (eqRes.has_value()) {

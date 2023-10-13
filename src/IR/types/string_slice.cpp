@@ -28,9 +28,9 @@ StringSliceType* StringSliceType::get(llvm::LLVMContext& llctx) {
   return new StringSliceType(llctx);
 }
 
-bool StringSliceType::canBeConstGeneric() const { return true; }
+bool StringSliceType::canBePrerunGeneric() const { return true; }
 
-Maybe<String> StringSliceType::toConstGenericString(IR::ConstantValue* val) const {
+Maybe<String> StringSliceType::toPrerunGenericString(IR::PrerunValue* val) const {
   auto* initial = llvm::cast<llvm::ConstantDataArray>(val->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u));
   if (initial->getNumElements() == 1u) {
     return "\"\"";
@@ -47,7 +47,7 @@ Maybe<String> StringSliceType::toConstGenericString(IR::ConstantValue* val) cons
   }
 }
 
-Maybe<bool> StringSliceType::equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const {
+Maybe<bool> StringSliceType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
   return IR::Logic::compareConstantStrings(
       first->getLLVMConstant()->getAggregateElement(0u), first->getLLVMConstant()->getAggregateElement(1u),
       second->getLLVMConstant()->getAggregateElement(0u), second->getLLVMConstant()->getAggregateElement(1u),

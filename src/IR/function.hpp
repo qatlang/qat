@@ -110,16 +110,16 @@ class Function : public Value, public Uniq, public EntityOverview {
   friend class Block;
 
 protected:
-  Identifier        name;
-  Vec<GenericType*> generics;
-  QatModule*        mod;
-  Vec<Argument>     arguments;
-  VisibilityInfo    visibility_info;
-  FileRange         fileRange;
-  bool              is_async;
-  bool              hasVariadicArguments;
-  Vec<Block*>       blocks;
-  IR::LocalValue*   strComparisonIndex = nullptr;
+  Identifier             name;
+  Vec<GenericParameter*> generics;
+  QatModule*             mod;
+  Vec<Argument>          arguments;
+  VisibilityInfo         visibility_info;
+  FileRange              fileRange;
+  bool                   is_async;
+  bool                   hasVariadicArguments;
+  Vec<Block*>            blocks;
+  IR::LocalValue*        strComparisonIndex = nullptr;
 
   mutable usize activeBlock   = 0;
   mutable usize copiedCounter = 0;
@@ -130,14 +130,14 @@ protected:
   Maybe<llvm::Function*>   asyncFn;
   Maybe<llvm::StructType*> asyncArgTy;
 
-  Function(QatModule* mod, Identifier _name, Vec<GenericType*> _generics, QatType* returnType, bool _is_async,
+  Function(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, QatType* returnType, bool _is_async,
            Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
            const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn = false,
            llvm::GlobalValue::LinkageTypes _linkage         = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
            bool                            ignoreParentName = false);
 
 public:
-  static Function*   Create(QatModule* mod, Identifier name, Vec<GenericType*> _generics, QatType* return_type,
+  static Function*   Create(QatModule* mod, Identifier name, Vec<GenericParameter*> _generics, QatType* return_type,
                             bool is_async, Vec<Argument> args, bool has_variadic_args, FileRange fileRange,
                             const VisibilityInfo& visibilityInfo, IR::Context* ctx,
                             llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
@@ -163,9 +163,9 @@ public:
   useit usize           getBlockCount() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
-  useit IR::LocalValue* getFunctionCommonIndex();
-  useit bool            hasGenericParameter(const String& name) const;
-  useit GenericType*    getGenericParameter(const String& name) const;
+  useit IR::LocalValue*   getFunctionCommonIndex();
+  useit bool              hasGenericParameter(const String& name) const;
+  useit GenericParameter* getGenericParameter(const String& name) const;
 
   void updateOverview() override;
 

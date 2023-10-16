@@ -1,7 +1,7 @@
 #include "./linked_generic.hpp"
 #include "../../utils/number_to_position.hpp"
-#include "const_generic.hpp"
 #include "generic_abstract.hpp"
+#include "prerun_generic.hpp"
 #include "type_kind.hpp"
 #include "typed_generic.hpp"
 
@@ -11,12 +11,12 @@ LinkedGeneric::LinkedGeneric(bool _isVariable, ast::GenericAbstractType* _genAbs
     : QatType(_isVariable, std::move(range)), genAbs(_genAbs) {}
 
 IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
-  if (genAbs->isTyped() || (genAbs->isConst() && genAbs->asConst()->getType()->isTyped())) {
+  if (genAbs->isTyped() || (genAbs->isPrerun() && genAbs->asPrerun()->getType()->isTyped())) {
     if (genAbs->isSet()) {
       if (genAbs->isTyped()) {
         return genAbs->asTyped()->getType();
-      } else if (genAbs->isConst()) {
-        return genAbs->asConst()->getConstant()->getType()->asTyped()->getSubType();
+      } else if (genAbs->isPrerun()) {
+        return genAbs->asPrerun()->getPrerun()->getType()->asTyped()->getSubType();
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
@@ -25,18 +25,18 @@ IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
         ctx->Error("No type set for the " + utils::numberToPosition(genAbs->getIndex()) + " Generic Parameter " +
                        ctx->highlightError(genAbs->getName().value),
                    fileRange);
-      } else if (genAbs->isConst()) {
-        ctx->Error("No constant expression set for the " + utils::numberToPosition(genAbs->getIndex()) +
+      } else if (genAbs->isPrerun()) {
+        ctx->Error("No prerun expression set for the " + utils::numberToPosition(genAbs->getIndex()) +
                        " Generic Parameter " + ctx->highlightError(genAbs->getName().value),
                    fileRange);
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
     }
-  } else if (genAbs->isConst()) {
+  } else if (genAbs->isPrerun()) {
     ctx->Error(utils::numberToPosition(genAbs->getIndex()) + " Generic Parameter " +
-                   ctx->highlightError(genAbs->getName().value) +
-                   " is a normal constant expression and hence cannot be used as a type",
+                   ctx->highlightError(genAbs->getName().value) + " is a normal prerun expression with type " +
+                   genAbs->asPrerun()->getType()->toString() + " and hence cannot be used as a type",
                fileRange);
   } else {
     ctx->Error("Invalid generic kind", fileRange);

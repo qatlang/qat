@@ -88,7 +88,7 @@ enum class NodeType {
   modInfo,
   defineRegion,
   constantEntity,
-  constantDefault,
+  prerunDefault,
   isExpression,
 };
 

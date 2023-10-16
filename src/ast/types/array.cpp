@@ -9,7 +9,7 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
-ArrayType::ArrayType(QatType* _element_type, ConstantExpression* _length, bool _variable, FileRange _fileRange)
+ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, bool _variable, FileRange _fileRange)
     : QatType(_variable, std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
 
 void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {

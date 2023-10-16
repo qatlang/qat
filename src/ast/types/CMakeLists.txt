@@ -1,7 +1,6 @@
 add_library(QAT_AST_TYPES
 	array.cpp
 	c_type.cpp
-	const_generic.cpp
 	float.cpp
 	future.cpp
 	generic_named_type.cpp
@@ -12,7 +11,9 @@ add_library(QAT_AST_TYPES
 	named.cpp
 	reference.cpp
 	pointer.cpp
+	prerun_generic.cpp
 	qat_type.cpp
+	result.cpp
 	string_slice.cpp
 	tuple.cpp
 	typed_generic.cpp

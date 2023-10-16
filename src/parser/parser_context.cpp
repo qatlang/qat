@@ -16,7 +16,7 @@ bool ParserContext::hasTypedGeneric(const String& name) const {
 
 bool ParserContext::hasConstGeneric(const String& name) const {
   for (auto* tname : generics) {
-    if (tname->isConst() && tname->getName().value == name) {
+    if (tname->isPrerun() && tname->getName().value == name) {
       return true;
     }
   }
@@ -43,10 +43,10 @@ ast::TypedGeneric* ParserContext::getTypedGeneric(const String& name) {
   return nullptr;
 }
 
-ast::ConstGeneric* ParserContext::getConstGeneric(const String& name) {
+ast::PrerunGeneric* ParserContext::getConstGeneric(const String& name) {
   for (auto* temp : generics) {
-    if (temp->isConst() && temp->getName().value == name) {
-      return temp->asConst();
+    if (temp->isPrerun() && temp->getName().value == name) {
+      return temp->asPrerun();
     }
   }
   return nullptr;

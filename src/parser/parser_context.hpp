@@ -24,7 +24,7 @@ public:
   void       addAbstractGeneric(ast::GenericAbstractType* type);
   void       removeNamedGenericAbstract(const String& name);
   useit ast::TypedGeneric* getTypedGeneric(const String& name);
-  useit ast::ConstGeneric* getConstGeneric(const String& name);
+  useit ast::PrerunGeneric* getConstGeneric(const String& name);
 
 private:
   // All generic abstracts available in the current scope

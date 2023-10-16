@@ -12,7 +12,7 @@ namespace qat::IR {
 
 enum class GenericKind {
   typedGeneric,
-  constGeneric,
+  prerunGeneric,
 };
 
 class TypedGeneric;
@@ -31,8 +31,8 @@ class GenericToFill {
   GenericToFill(void* _data, GenericKind _kind, FileRange _range);
 
 public:
-  useit static GenericToFill* get(IR::PrerunValue* constVal, FileRange range);
-  useit static GenericToFill* get(IR::QatType* type, FileRange range);
+  useit static GenericToFill* GetPrerun(IR::PrerunValue* constVal, FileRange range);
+  useit static GenericToFill* GetType(IR::QatType* type, FileRange range);
 
   useit bool isPrerun() const;
   useit IR::PrerunValue* asPrerun() const;

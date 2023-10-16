@@ -1,7 +1,7 @@
 #include "./default.hpp"
 #include "../../utils/number_to_position.hpp"
-#include "../types/const_generic.hpp"
 #include "../types/generic_abstract.hpp"
+#include "../types/prerun_generic.hpp"
 #include "../types/typed_generic.hpp"
 
 namespace qat::ast {
@@ -20,7 +20,7 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
       return new IR::PrerunValue(llvm::ConstantInt::get(type->asUnsignedInteger()->getLLVMType(), 0u),
                                  type->asUnsignedInteger());
     }
-    ctx->Error("Constant " + ctx->highlightError("default") + " expression is currently not supported", fileRange);
+    ctx->Error("Prerun " + ctx->highlightError("default") + " expression is currently not supported", fileRange);
   } else if (genericAbstractType.has_value()) {
     auto* genVal = genericAbstractType.value();
     if (genVal->isTyped()) {
@@ -34,25 +34,25 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
                        ctx->highlightError(genVal->getName().value) + " doesn't have a default type associated with it",
                    fileRange);
       }
-    } else if (genVal->isConst()) {
+    } else if (genVal->isPrerun()) {
       // NOTE - The above is not just else, because there might be additional kinds of generic parameters in the future
       // Although it is foolish to consider this possibility in this file, but not in any other file
-      if (genVal->asConst()->hasDefault()) {
+      if (genVal->asPrerun()->hasDefault()) {
         if (!genVal->isSet()) {
           genVal->emit(ctx);
         }
-        return genVal->asConst()->getDefault();
+        return genVal->asPrerun()->getDefault();
       } else {
-        ctx->Error(utils::numberToPosition(genVal->getIndex()) + " Const Generic Parameter " +
+        ctx->Error(utils::numberToPosition(genVal->getIndex()) + " Prerun Generic Parameter " +
                        ctx->highlightError(genVal->getName().value) +
-                       " doesn't have a default constant expression associated with it",
+                       " doesn't have a default prerun expression associated with it",
                    fileRange);
       }
     } else {
       ctx->Error("Invalid generic kind", genVal->getRange());
     }
   } else {
-    ctx->Error("No type inferred from the context for constant " + ctx->highlightError("default") + " expression",
+    ctx->Error("No type inferred from the scope for prerun " + ctx->highlightError("default") + " expression",
                fileRange);
   }
   return nullptr;
@@ -60,7 +60,7 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
 
 Json PrerunDefault::toJson() const {
   return Json()
-      ._("nodeType", "constantDefault")
+      ._("nodeType", "prerunDefault")
       ._("hasType", theType.has_value())
       ._("type", theType.has_value() ? theType.value()->toJson() : Json())
       ._("fileRange", fileRange);

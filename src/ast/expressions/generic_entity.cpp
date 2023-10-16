@@ -3,7 +3,7 @@
 #include "../constants/default.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
-#include "../types/const_generic.hpp"
+#include "../types/prerun_generic.hpp"
 
 namespace qat::ast {
 
@@ -80,13 +80,13 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     Vec<IR::GenericToFill*> types;
     for (usize i = 0; i < genericTypes.size(); i++) {
       auto* gen = genericTypes.at(i);
-      if (gen->isConst() && (gen->asConst()->nodeType() == NodeType::prerunDefault)) {
+      if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
         SHOW("Generic is const and const generic is default expression")
-        ((ast::PrerunDefault*)(genericTypes.at(i)->asConst()))->setGenericAbstract(genericFn->getGenericAt(i));
-      } else if (genericFn->getGenericAt(i)->isConst() &&
-                 (genericFn->getGenericAt(i)->asConst()->getType() != nullptr)) {
+        ((ast::PrerunDefault*)(genericTypes.at(i)->asPrerun()))->setGenericAbstract(genericFn->getGenericAt(i));
+      } else if (genericFn->getGenericAt(i)->isPrerun() &&
+                 (genericFn->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
         SHOW("Generic abstract is const and has valid type")
-        gen->asConst()->setInferenceType(genericFn->getGenericAt(i)->asConst()->getType());
+        gen->asPrerun()->setInferenceType(genericFn->getGenericAt(i)->asPrerun()->getType());
       }
       types.push_back(genericTypes.at(i)->toFill(ctx));
     }

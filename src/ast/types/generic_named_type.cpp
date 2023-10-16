@@ -4,7 +4,7 @@
 #include "../constants/default.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
-#include "../types/const_generic.hpp"
+#include "../types/prerun_generic.hpp"
 
 namespace qat::ast {
 
@@ -49,7 +49,6 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   }
   auto* fun  = ctx->fn;
   auto* curr = fun ? fun->getBlock() : nullptr;
-  SHOW("Got current function and block")
   if (mod->hasGenericCoreType(entityName.value) ||
       mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getAccessInfo()).first) {
@@ -82,13 +81,13 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
           fileRange);
     } else {
       for (usize i = 0; i < genericTypes.size(); i++) {
-        if (genericTypes.at(i)->isConst()) {
+        if (genericTypes.at(i)->isPrerun()) {
           auto* gen = genericTypes.at(i);
-          if (gen->isConst() && (gen->asConst()->nodeType() == NodeType::constantDefault)) {
-            ((ast::ConstantDefault*)(gen->asConst()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
-          } else if (genericCoreTy->getGenericAt(i)->isConst() &&
-                     (genericCoreTy->getGenericAt(i)->asConst()->getType() != nullptr)) {
-            gen->asConst()->setInferenceType(genericCoreTy->getGenericAt(i)->asConst()->getType());
+          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
+            ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
+          } else if (genericCoreTy->getGenericAt(i)->isPrerun() &&
+                     (genericCoreTy->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
+            gen->asPrerun()->setInferenceType(genericCoreTy->getGenericAt(i)->asPrerun()->getType());
           }
         }
         types.push_back(genericTypes.at(i)->toFill(ctx));
@@ -96,8 +95,59 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     SHOW("Filling generics")
     auto* tyRes = genericCoreTy->fillGenerics(types, ctx, fileRange);
-    SHOW("Generic filled")
+    SHOW("Generic filled: " << tyRes->toString() << "  with llvm type: " << tyRes->getLLVMType()->getStructName().str())
     ctx->fn = fun;
+    if (curr) {
+      curr->setActive(ctx->builder);
+    }
+    ctx->mod = oldMod;
+    return tyRes;
+  } else if (mod->hasGenericTypeDef(entityName.value) ||
+             mod->hasBroughtGenericTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasAccessibleGenericTypeDefInImports(entityName.value, ctx->getAccessInfo()).first) {
+    auto* genericTypeDef = mod->getGenericTypeDef(entityName.value, ctx->getAccessInfo());
+    if (!genericTypeDef->getVisibility().isAccessible(ctx->getAccessInfo())) {
+      auto fullName = Identifier::fullName(names);
+      ctx->Error("Generic type definition " + ctx->highlightError(fullName.value) + " is not accessible here",
+                 fullName.range);
+    }
+    genericTypeDef->addMention(entityName.range);
+    ctx->mod = genericTypeDef->getModule();
+    Vec<IR::GenericToFill*> types;
+    if (genericTypes.empty()) {
+      SHOW("Checking if all generic abstracts have defaults")
+      if (!genericTypeDef->allTypesHaveDefaults()) {
+        ctx->Error(
+            "Not all generic parameters in this type have a default value associated with it, and hence the generic parameter list cannot be empty. Use " +
+                ctx->highlightError("default") + " to use the default type or value of the generic parameter.",
+            fileRange);
+      }
+      SHOW("Check complete")
+    } else if (genericTypeDef->getTypeCount() != genericTypes.size()) {
+      ctx->Error(
+          "Generic type definition " + ctx->highlightError(genericTypeDef->getName().value) + " has " +
+              ctx->highlightError(std::to_string(genericTypeDef->getTypeCount())) + " generic parameters. But " +
+              ((genericTypeDef->getTypeCount() > genericTypes.size()) ? "only " : "") +
+              ctx->highlightError(std::to_string(genericTypes.size())) +
+              " values were provided. Not all generic parameters have default values, and hence the number of values provided must match. Use " +
+              ctx->highlightError("default") + " to use the default type or value of the generic parameter.",
+          fileRange);
+    } else {
+      for (usize i = 0; i < genericTypes.size(); i++) {
+        if (genericTypes.at(i)->isPrerun()) {
+          auto* gen = genericTypes.at(i);
+          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
+            ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericTypeDef->getGenericAt(i));
+          } else if (genericTypeDef->getGenericAt(i)->isPrerun() &&
+                     (genericTypeDef->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
+            gen->asPrerun()->setInferenceType(genericTypeDef->getGenericAt(i)->asPrerun()->getType());
+          }
+        }
+        types.push_back(genericTypes.at(i)->toFill(ctx));
+      }
+    }
+    auto tyRes = genericTypeDef->fillGenerics(types, ctx, fileRange);
+    ctx->fn    = fun;
     if (curr) {
       curr->setActive(ctx->builder);
     }

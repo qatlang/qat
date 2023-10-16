@@ -8,11 +8,11 @@ namespace qat::ast {
 
 enum class GenericKind {
   typedGeneric,
-  constGeneric,
+  prerunGeneric,
 };
 
 class TypedGeneric;
-class ConstGeneric;
+class PrerunGeneric;
 
 class GenericAbstractType {
 protected:
@@ -28,10 +28,10 @@ public:
   useit Identifier getName() const;
   useit FileRange  getRange() const;
 
-  useit bool          isTyped() const;
-  useit TypedGeneric* asTyped() const;
-  useit bool          isConst() const;
-  useit ConstGeneric* asConst() const;
+  useit bool           isTyped() const;
+  useit TypedGeneric*  asTyped() const;
+  useit bool           isPrerun() const;
+  useit PrerunGeneric* asPrerun() const;
 
   virtual void       emit(IR::Context* ctx) const = 0;
   useit virtual bool hasDefault() const           = 0;

@@ -1,5 +1,5 @@
 #include "./generic_abstract.hpp"
-#include "./const_generic.hpp"
+#include "./prerun_generic.hpp"
 #include "./typed_generic.hpp"
 #include "qat_type.hpp"
 
@@ -16,19 +16,19 @@ Identifier GenericAbstractType::getName() const { return name; }
 
 FileRange GenericAbstractType::getRange() const { return range; }
 
-bool GenericAbstractType::isConst() const { return kind == GenericKind::constGeneric; }
+bool GenericAbstractType::isPrerun() const { return kind == GenericKind::prerunGeneric; }
 
 TypedGeneric* GenericAbstractType::asTyped() const { return (TypedGeneric*)this; }
 
 bool GenericAbstractType::isTyped() const { return kind == GenericKind::typedGeneric; }
 
-ConstGeneric* GenericAbstractType::asConst() const { return (ConstGeneric*)this; }
+PrerunGeneric* GenericAbstractType::asPrerun() const { return (PrerunGeneric*)this; }
 
 IR::GenericParameter* GenericAbstractType::toIRGenericType() const {
   if (isTyped()) {
     return asTyped()->toIR();
   } else {
-    return asConst()->toIR();
+    return asPrerun()->toIR();
   }
 }
 

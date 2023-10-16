@@ -1,5 +1,5 @@
-#ifndef QAT_AST_TYPES_CONST_GENERIC_HPP
-#define QAT_AST_TYPES_CONST_GENERIC_HPP
+#ifndef QAT_AST_TYPES_PRERUN_GENERIC_HPP
+#define QAT_AST_TYPES_PRERUN_GENERIC_HPP
 
 #include "../../memory_tracker.hpp"
 #include "../expression.hpp"
@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-class ConstGeneric final : public GenericAbstractType {
+class PrerunGeneric final : public GenericAbstractType {
   QatType*                      expTy;
   Maybe<ast::PrerunExpression*> defaultValueAST;
 
@@ -16,12 +16,12 @@ class ConstGeneric final : public GenericAbstractType {
   mutable IR::PrerunValue* defaultValue    = nullptr;
   mutable IR::PrerunValue* expressionValue = nullptr;
 
-  ConstGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-               FileRange _range);
+  PrerunGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+                FileRange _range);
 
 public:
-  static ConstGeneric* get(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                           FileRange _range);
+  static PrerunGeneric* get(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+                            FileRange _range);
 
   useit bool hasDefault() const final;
   useit IR::PrerunValue* getDefault() const;
@@ -29,14 +29,14 @@ public:
   void emit(IR::Context* ctx) const final;
 
   useit IR::QatType* getType() const;
-  useit IR::PrerunValue* getConstant() const;
+  useit IR::PrerunValue* getPrerun() const;
   useit IR::PrerunGeneric* toIR() const;
 
   useit bool isSet() const final;
   void       setExpression(IR::PrerunValue* exp) const;
   void       unset() const final;
 
-  ~ConstGeneric() final;
+  ~PrerunGeneric() final;
 };
 
 } // namespace qat::ast

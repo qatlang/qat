@@ -1,7 +1,7 @@
 #include "core_type.hpp"
 #include "../../ast/define_core_type.hpp"
-#include "../../ast/types/const_generic.hpp"
 #include "../../ast/types/generic_abstract.hpp"
+#include "../../ast/types/prerun_generic.hpp"
 #include "../../ast/types/typed_generic.hpp"
 #include "../../show.hpp"
 #include "../../utils/split_string.hpp"

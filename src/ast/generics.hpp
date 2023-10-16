@@ -9,7 +9,7 @@ namespace qat::ast {
 
 enum class FillGenericKind {
   typed,
-  constant,
+  prerun,
 };
 
 class FillGeneric {
@@ -21,10 +21,10 @@ public:
   explicit FillGeneric(PrerunExpression* expression);
 
   useit bool isType() const;
-  useit bool isConst() const;
+  useit bool isPrerun() const;
 
   useit QatType*          asType() const;
-  useit PrerunExpression* asConst() const;
+  useit PrerunExpression* asPrerun() const;
 
   useit FileRange const& getRange() const;
 

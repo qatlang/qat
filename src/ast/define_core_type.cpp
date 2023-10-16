@@ -75,8 +75,8 @@ void DefineCoreType::createType(IR::Context* ctx) const {
         ctx->Error("No type is set for the generic type " + ctx->highlightError(gen->getName().value) +
                        " and there is no default type provided",
                    gen->getRange());
-      } else if (gen->isConst()) {
-        ctx->Error("No value is set for the generic const expression " + ctx->highlightError(gen->getName().value) +
+      } else if (gen->isPrerun()) {
+        ctx->Error("No value is set for the generic prerun expression " + ctx->highlightError(gen->getName().value) +
                        " and there is no default expression provided",
                    gen->getRange());
       } else {
@@ -85,6 +85,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
     genericsIR.push_back(gen->toIRGenericType());
   }
+  SHOW("Creating core type: " << cTyName.value)
   coreType = new IR::CoreType(mod, cTyName, genericsIR, mems, ctx->getVisibInfo(visibility), ctx->llctx);
   if (destructorDefinition) {
     coreType->hasDefinedDestructor = true;

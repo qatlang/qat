@@ -2,7 +2,6 @@
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/region.hpp"
-#include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "llvm/IR/Constants.h"
 
@@ -25,7 +24,7 @@ IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
     case OwnType::heap:
       return IR::PointerOwner::OfHeap();
     case OwnType::parent:
-      return IR::PointerOwner::OfFunction(ctx->fn);
+      return IR::PointerOwner::OfParentFunction(ctx->fn);
     case OwnType::region: {
       if (!ownerType) {
         ctx->Error("No region provided and hence the pointer cannot have " + ctx->highlightError("region") + " owner",
@@ -204,7 +203,8 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
-        llAlloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
+        auto loc = ctx->fn->getBlock()->newValue(utils::unique_id(), cTy, isVar, irName->range);
+        llAlloca = loc->getAlloca();
       }
     }
     if (hasOwnCount) {

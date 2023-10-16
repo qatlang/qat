@@ -20,19 +20,36 @@ Maybe<usize> PointerType::getTypeSizeInBits(IR::Context* ctx) const {
                 llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), ctx->dataLayout->getProgramAddressSpace()))));
 }
 
+String PointerType::pointerOwnerToString() const {
+  switch (ownTyp) {
+    case PtrOwnType::type:
+      return "type";
+    case PtrOwnType::typeParent:
+      return "typeParent";
+    case PtrOwnType::parent:
+      return "parent";
+    case PtrOwnType::anonymous:
+      return "anonymous";
+    case PtrOwnType::heap:
+      return "heap";
+    case PtrOwnType::region:
+      return "region";
+  }
+}
+
 IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatType*> ownerVal) const {
   switch (ownTyp) {
     case PtrOwnType::type:
       return IR::PointerOwner::OfType(ownerVal.value());
     case PtrOwnType::typeParent:
-      return IR::PointerOwner::OfType(ctx->activeType);
+      return IR::PointerOwner::OfParentType(ctx->activeType);
     case PtrOwnType::anonymous:
       return IR::PointerOwner::OfAnonymous();
     case PtrOwnType::heap:
       return IR::PointerOwner::OfHeap();
     case PtrOwnType::parent: {
       if (ctx->fn) {
-        return IR::PointerOwner::OfFunction(ctx->fn);
+        return IR::PointerOwner::OfParentFunction(ctx->fn);
       } else {
         return IR::PointerOwner::OfType(ctx->activeType);
       }
@@ -63,7 +80,8 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
     }
     auto* typVal = ownerTyTy.value()->emit(ctx);
     if (typVal->isRegion()) {
-      ctx->Error("The type provided is a region and hence pointer owner has to be " + ctx->highlightError("region"),
+      ctx->Error("The type provided is a region and hence pointer ownership has to be " +
+                     ctx->highlightError("'region"),
                  fileRange);
     }
     ownerVal = typVal;
@@ -90,6 +108,9 @@ Json PointerType::toJson() const {
       ._("typeKind", "pointer")
       ._("isMulti", isMultiPtr)
       ._("subType", type->toJson())
+      ._("ownerKind", pointerOwnerToString())
+      ._("hasOwnerType", ownerTyTy.has_value())
+      ._("ownerType", ownerTyTy.has_value() ? ownerTyTy.value()->toJson() : Json())
       ._("isVariable", isVariable())
       ._("fileRange", fileRange);
 }

@@ -25,6 +25,7 @@ private:
   bool                 isMultiPtr;
 
   useit IR::PointerOwner getPointerOwner(IR::Context* ctx, Maybe<IR::QatType*> ownerVal) const;
+  useit String           pointerOwnerToString() const;
 
 public:
   PointerType(QatType* _type, bool _variable, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy, bool _isMultiPtr,

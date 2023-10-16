@@ -15,7 +15,8 @@ enum class PointerOwnerType {
   heap,
   anonymous,
   type,
-  function,
+  parentFunction,
+  parentType,
 };
 
 class PointerOwner {
@@ -26,19 +27,21 @@ public:
   useit static PointerOwner OfHeap();
   useit static PointerOwner OfAnonymous();
   useit static PointerOwner OfType(QatType* type);
-  useit static PointerOwner OfFunction(Function* fun);
-  // TODO - Add region
+  useit static PointerOwner OfParentFunction(Function* fun);
+  useit static PointerOwner OfParentType(QatType* type);
   useit static PointerOwner OfRegion(Region* region);
 
   useit QatType*  ownerAsType() const;
   useit Region*   ownerAsRegion() const;
-  useit Function* ownerAsFunction() const;
+  useit Function* ownerAsParentFunction() const;
+  useit QatType*  ownerAsParentType() const;
 
   useit bool isType() const;
   useit bool isAnonymous() const;
   useit bool isRegion() const;
   useit bool isHeap() const;
-  useit bool isFunction() const;
+  useit bool isParentFunction() const;
+  useit bool isParentType() const;
 
   useit bool isSame(const PointerOwner& other) const;
 

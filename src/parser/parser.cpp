@@ -2520,7 +2520,18 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::Default: {
-        setCachedExpr(new ast::Default(RangeAt(i)));
+        if (isNext(TokenType::genericTypeStart, i)) {
+          auto gClose = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+          if (gClose.has_value()) {
+            auto typRes = parseType(preCtx, i + 1, gClose);
+            setCachedExpr(new ast::Default(typRes.first, RangeSpan(i, gClose.value())));
+            i = gClose.value();
+          } else {
+            Error("No ] to end the type associated with the default expression, found", RangeSpan(i, i + 1));
+          }
+        } else {
+          setCachedExpr(new ast::Default(None, RangeAt(i)));
+        }
         break;
       }
       case TokenType::from: {

@@ -14,7 +14,7 @@ TypedType::TypedType(IR::QatType* _subTy) : subTy(_subTy) {
 
 TypedType* TypedType::get(QatType* _subTy) { return new TypedType(_subTy); }
 
-IR::QatType* TypedType::getSubType() const { return subTy; }
+IR::QatType* TypedType::getSubType() const { return subTy->isTyped() ? subTy->asTyped()->getSubType() : subTy; }
 
 TypeKind TypedType::typeKind() const { return TypeKind::typed; }
 

@@ -65,6 +65,8 @@ public:
   useit PrerunGeneric* asPrerun() const;
 
   useit bool isEqualTo(GenericToFill* fill) const;
+
+  useit virtual Json toJson() const = 0;
 };
 
 class TypedGeneric : public GenericParameter {
@@ -76,6 +78,8 @@ public:
   useit static TypedGeneric* get(Identifier name, IR::QatType* type, FileRange range);
 
   useit IR::QatType* getType() const;
+
+  useit Json toJson() const final;
 };
 
 class PrerunGeneric : public GenericParameter {
@@ -88,6 +92,8 @@ public:
 
   useit IR::PrerunValue* getExpression() const;
   useit IR::QatType* getType() const;
+
+  useit Json toJson() const final;
 };
 
 } // namespace qat::IR

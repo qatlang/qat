@@ -37,6 +37,7 @@ public:
   useit virtual bool hasDefault() const           = 0;
   useit virtual bool isSet() const                = 0;
   virtual void       unset() const                = 0;
+  useit virtual Json toJson() const               = 0;
 
   useit IR::GenericParameter* toIRGenericType() const;
 

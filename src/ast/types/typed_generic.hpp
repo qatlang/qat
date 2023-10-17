@@ -30,6 +30,8 @@ public:
   void       setType(IR::QatType* typ) const;
   void       unset() const final;
 
+  useit Json toJson() const final;
+
   ~TypedGeneric() final;
 };
 

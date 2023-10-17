@@ -35,6 +35,7 @@ public:
   useit bool isSet() const final;
   void       setExpression(IR::PrerunValue* exp) const;
   void       unset() const final;
+  useit Json toJson() const final;
 
   ~PrerunGeneric() final;
 };

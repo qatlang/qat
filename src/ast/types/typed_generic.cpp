@@ -34,6 +34,16 @@ IR::TypedGeneric* TypedGeneric::toIR() const { return IR::TypedGeneric::get(name
 
 IR::QatType* TypedGeneric::getType() const { return typeValue ? typeValue : defaultType; }
 
+Json TypedGeneric::toJson() const {
+  return Json()
+      ._("genericKind", "typedGeneric")
+      ._("index", index)
+      ._("name", name)
+      ._("hasDefault", defaultTypeAST.has_value())
+      ._("defaultType", defaultTypeAST.has_value() ? defaultTypeAST.value()->toJson() : Json())
+      ._("range", range);
+}
+
 TypedGeneric::~TypedGeneric() {}
 
 } // namespace qat::ast

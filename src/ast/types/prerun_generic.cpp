@@ -1,6 +1,6 @@
+#include "./prerun_generic.hpp"
 #include "../constants/integer_literal.hpp"
 #include "../constants/unsigned_literal.hpp"
-#include "./prerun_generic.hpp"
 #include "generic_abstract.hpp"
 
 namespace qat::ast {
@@ -52,6 +52,16 @@ void PrerunGeneric::setExpression(IR::PrerunValue* exp) const { expressionValue 
 void PrerunGeneric::unset() const { expressionValue = nullptr; }
 
 IR::PrerunGeneric* PrerunGeneric::toIR() const { return IR::PrerunGeneric::get(name, getPrerun(), range); }
+
+Json PrerunGeneric::toJson() const {
+  return Json()
+      ._("genericKind", "prerunGeneric")
+      ._("index", index)
+      ._("name", name)
+      ._("hasDefault", defaultValueAST.has_value())
+      ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->toJson() : Json())
+      ._("range", range);
+}
 
 PrerunGeneric::~PrerunGeneric() {}
 

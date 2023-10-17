@@ -162,6 +162,8 @@ public:
 
   useit bool                 hasActiveGeneric() const;
   useit GenericEntityMarker& getActiveGeneric() const;
+  useit bool                 hasGenericParameterFromLastMain(String const& name) const;
+  useit GenericParameter*    getGenericParameterFromLastMain(String const& name) const;
   void                       addActiveGeneric(GenericEntityMarker marker, bool main);
   void                       removeActiveGeneric();
   String                     joinActiveGenericNames(bool highlight) const;

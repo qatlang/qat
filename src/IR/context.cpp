@@ -444,6 +444,34 @@ bool Context::hasActiveGeneric() const { return !allActiveGenerics.empty(); }
 
 GenericEntityMarker& Context::getActiveGeneric() const { return allActiveGenerics.back(); }
 
+bool Context::hasGenericParameterFromLastMain(String const& name) const {
+  if (lastMainActiveGeneric.empty()) {
+    return allActiveGenerics.back().hasGenericParameter(name);
+  } else {
+    for (auto i = lastMainActiveGeneric.back(); i < allActiveGenerics.size(); i++) {
+      if (allActiveGenerics.at(i).hasGenericParameter(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+GenericParameter* Context::getGenericParameterFromLastMain(String const& name) const {
+  if (lastMainActiveGeneric.empty()) {
+    if (allActiveGenerics.back().hasGenericParameter(name)) {
+      return allActiveGenerics.back().getGenericParameter(name);
+    }
+  } else {
+    for (auto i = lastMainActiveGeneric.back(); i < allActiveGenerics.size(); i++) {
+      if (allActiveGenerics.at(i).hasGenericParameter(name)) {
+        return allActiveGenerics.at(i).getGenericParameter(name);
+      }
+    }
+  }
+  return nullptr;
+}
+
 void Context::addActiveGeneric(GenericEntityMarker marker, bool main) {
   SHOW("ADDED ACTIVE GENERIC")
   if (main) {

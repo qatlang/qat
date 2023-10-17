@@ -15,12 +15,13 @@ public:
 private:
   Identifier                          name;
   Vec<Pair<Identifier, Maybe<Value>>> fields;
+  bool                                areValuesUnsigned;
   VisibilityKind                      visibility;
   Maybe<usize>                        defaultVal;
 
 public:
-  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<Value>>> fields, Maybe<usize> defaultVal,
-                   VisibilityKind visibility, FileRange fileRange);
+  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<Value>>> fields, bool areValuesUnsigned,
+                   Maybe<usize> defaultVal, VisibilityKind visibility, FileRange fileRange);
 
   void  createType(IR::Context* ctx);
   void  defineType(IR::Context* ctx) final;

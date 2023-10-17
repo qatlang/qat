@@ -6,6 +6,7 @@
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
 #include "./qat_type.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
@@ -18,27 +19,27 @@ private:
   QatModule*      parent;
   Vec<Identifier> fields;
   Maybe<Vec<i64>> values;
+  bool            areValuesUnsigned = false;
   VisibilityInfo  visibility;
   Maybe<usize>    defaultVal;
 
-  mutable u64  bitwidth = 1;
-  mutable bool hasNegative;
+  mutable u64 bitwidth = 1;
 
   FileRange fileRange;
 
 public:
-  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values,
+  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values, bool areValuesUnsigned,
              Maybe<usize> defaultVal, const VisibilityInfo& visibility, llvm::LLVMContext& llctx, FileRange fileRange);
 
-  useit Identifier            getName() const;
-  useit String                getFullName() const;
-  useit QatModule*            getParent() const;
-  useit bool                  hasCustomValue() const;
-  useit bool                  hasNegativeValues() const;
-  useit bool                  hasDefault() const;
-  useit bool                  hasField(const String& name) const;
-  useit i64                   getValueFor(const String& name) const;
-  useit i64                   getDefault() const;
+  useit Identifier getName() const;
+  useit String     getFullName() const;
+  useit QatModule* getParent() const;
+  useit bool       hasCustomValue() const;
+  useit bool       hasNegativeValues() const;
+  useit bool       hasDefault() const;
+  useit bool       hasField(const String& name) const;
+  useit llvm::ConstantInt* getValueFor(const String& name) const;
+  useit llvm::ConstantInt*    getDefault() const;
   useit u64                   getBitwidth() const;
   useit TypeKind              typeKind() const final { return TypeKind::choice; }
   useit String                toString() const final;
@@ -48,10 +49,9 @@ public:
   void                        getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
   void                        updateOverview() final;
   useit bool                  isTypeSized() const final;
-
-  useit bool canBeConstGeneric() const final;
-  useit Maybe<String> toConstGenericString(IR::ConstantValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
+  useit bool                  canBePrerunGeneric() const final;
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
+  useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };
 
 } // namespace qat::IR

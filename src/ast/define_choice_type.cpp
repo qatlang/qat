@@ -4,9 +4,10 @@
 namespace qat::ast {
 
 DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<Value>>> _fields,
-                                   Maybe<usize> _defaulVal, VisibilityKind _visibility, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)), visibility(_visibility),
-      defaultVal(_defaulVal) {}
+                                   bool _areValuesUnsigned, Maybe<usize> _defaulVal, VisibilityKind _visibility,
+                                   FileRange _fileRange)
+    : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)),
+      areValuesUnsigned(_areValuesUnsigned), visibility(_visibility), defaultVal(_defaulVal) {}
 
 void DefineChoiceType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
@@ -48,8 +49,8 @@ void DefineChoiceType::createType(IR::Context* ctx) {
       }
     }
   }
-  new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), None, ctx->getVisibInfo(visibility),
-                     ctx->llctx, fileRange);
+  new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), areValuesUnsigned, None,
+                     ctx->getVisibInfo(visibility), ctx->llctx, fileRange);
 }
 
 void DefineChoiceType::defineType(IR::Context* ctx) {

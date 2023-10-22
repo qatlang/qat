@@ -10,17 +10,17 @@
 
 namespace qat::IR {
 
-MaybeType::MaybeType(QatType* _subType, IR::Context* ctx) : subTy(_subType) {
+MaybeType::MaybeType(QatType* _subType, bool _isPacked, IR::Context* ctx) : subTy(_subType), isPacked(_isPacked) {
   // TODO - Error/warn if subtype is opaque
   if (hasSizedSubType(ctx)) {
     llvmType = llvm::StructType::create(ctx->llctx, {llvm::Type::getInt1Ty(ctx->llctx), subTy->getLLVMType()},
-                                        "maybe:[" + subTy->toString() + "]", false);
+                                        "maybe:[" + String(isPacked ? "pack, " : "") + subTy->toString() + "]", false);
   } else {
     llvmType = llvm::Type::getInt1Ty(ctx->llctx);
   }
 }
 
-MaybeType* MaybeType::get(QatType* subTy, IR::Context* ctx) {
+MaybeType* MaybeType::get(QatType* subTy, bool isPacked, IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->isMaybe()) {
       if (typ->asMaybe()->getSubType()->isSame(subTy)) {
@@ -28,16 +28,18 @@ MaybeType* MaybeType::get(QatType* subTy, IR::Context* ctx) {
       }
     }
   }
-  return new MaybeType(subTy, ctx);
+  return new MaybeType(subTy, isPacked, ctx);
 }
 
 bool MaybeType::isTypeSized() const { return true; }
+
+bool MaybeType::isTypePacked() const { return isPacked; }
 
 bool MaybeType::hasSizedSubType(IR::Context* ctx) const { return subTy->isTypeSized(); }
 
 QatType* MaybeType::getSubType() const { return subTy; }
 
-String MaybeType::toString() const { return "maybe:[" + subTy->toString() + "]"; }
+String MaybeType::toString() const { return "maybe:[" + String(isPacked ? "pack, " : "") + subTy->toString() + "]"; }
 
 bool MaybeType::isDestructible() const { return subTy->isDestructible(); }
 

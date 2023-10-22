@@ -50,14 +50,15 @@ public:
   };
 
 private:
+  IR::OpaqueType*    opaquedType = nullptr;
   Vec<Member*>       members;
   Vec<StaticMember*> staticMembers;
 
   // TODO - Add support for extension functions
 
 public:
-  CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, Vec<Member*> _members,
-           const VisibilityInfo& _visibility, llvm::LLVMContext& llctx);
+  CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
+           Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx);
 
   ~CoreType() final;
 

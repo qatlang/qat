@@ -16,18 +16,30 @@
 
 namespace qat::IR {
 
-CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, Vec<Member*> _members,
-                   const VisibilityInfo& _visibility, llvm::LLVMContext& llctx)
+CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
+                   Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
-      members(std::move(_members)) {
+      opaquedType(_opaqued), members(std::move(_members)) {
   SHOW("Generating LLVM Type for core type members")
   Vec<llvm::Type*> subtypes;
   for (auto* mem : members) {
     subtypes.push_back(mem->type->getLLVMType());
   }
   SHOW("All members' LLVM types obtained")
-  llvmType = llvm::StructType::create(llctx, subtypes, mod->getFullNameWithChild(name.value), false);
+  if (opaquedType) {
+    llvmType = opaquedType->getLLVMType();
+    llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, false);
+  } else {
+    llvmType = llvm::StructType::create(llctx, subtypes, mod->getFullNameWithChild(name.value), false);
+  }
   mod->coreTypes.push_back(this);
+  if (opaquedType) {
+    opaquedType->setSubType(this);
+    ovInfo            = opaquedType->ovInfo;
+    ovMentions        = opaquedType->ovMentions;
+    ovBroughtMentions = opaquedType->ovBroughtMentions;
+    ovRange           = opaquedType->ovRange;
+  }
 }
 
 CoreType::~CoreType() {

@@ -24,10 +24,12 @@ private:
   Maybe<usize> defaultVal;
   FileRange    fileRange;
 
+  IR::OpaqueType* opaquedType = nullptr;
+
   void findTagBitWidth(usize typeCount);
 
 public:
-  MixType(Identifier name, Vec<GenericParameter*> _generics, QatModule* parent,
+  MixType(Identifier name, IR::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, QatModule* parent,
           Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal, IR::Context* ctx, bool isPacked,
           const VisibilityInfo& visibility, FileRange fileRange);
 

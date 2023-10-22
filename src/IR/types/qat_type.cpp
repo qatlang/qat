@@ -87,7 +87,7 @@ bool QatType::isCompatible(QatType* other) {
   }
 }
 
-bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
+bool QatType::isSame(QatType* other) {
   if (typeKind() != other->typeKind()) {
     if (typeKind() == TypeKind::definition) {
       return ((DefinitionType*)this)->getSubType()->isSame(other);
@@ -239,7 +239,9 @@ bool QatType::isSame(QatType* other) { // NOLINT(misc-no-recursion)
 bool QatType::isExpanded() const { return false; }
 
 ExpandedType* QatType::asExpanded() const {
-  return (typeKind() == TypeKind::definition) ? asDefinition()->getSubType()->asExpanded() : (ExpandedType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? asDefinition()->getSubType()->asExpanded()
+             : (isOpaque() ? asOpaque()->getSubType()->asExpanded() : (ExpandedType*)this);
 }
 
 bool QatType::isTyped() const {
@@ -275,27 +277,35 @@ void QatType::moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functi
 bool QatType::isDestructible() const { return false; }
 void QatType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
 
-bool QatType::isDefinition() const { return typeKind() == TypeKind::definition; }
+bool QatType::isDefinition() const {
+  return (typeKind() == TypeKind::definition) ||
+         ((typeKind() == TypeKind::opaque) && asOpaque()->hasSubType() && asOpaque()->getSubType()->isDefinition());
+}
 
 DefinitionType* QatType::asDefinition() const { return (DefinitionType*)this; }
 
 bool QatType::isInteger() const {
   return (typeKind() == TypeKind::integer) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isInteger()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isInteger());
 }
 
 IntegerType* QatType::asInteger() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asInteger() : (IntegerType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asInteger()
+             : (isOpaque() ? asOpaque()->getSubType()->asInteger() : (IntegerType*)this);
 }
 
 bool QatType::isUnsignedInteger() const {
   return (typeKind() == TypeKind::unsignedInteger) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isUnsignedInteger()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isUnsignedInteger());
 }
 
 UnsignedType* QatType::asUnsignedInteger() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asUnsignedInteger()
-                                              : (UnsignedType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asUnsignedInteger()
+             : (isOpaque() ? asOpaque()->getSubType()->asUnsignedInteger() : (UnsignedType*)this);
 }
 
 bool QatType::isBool() const { return isUnsignedInteger() && asUnsignedInteger()->isBoolean(); }
@@ -304,145 +314,178 @@ UnsignedType* QatType::asBool() const { return asUnsignedInteger(); }
 
 bool QatType::isFloat() const {
   return (typeKind() == TypeKind::Float) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isFloat()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isFloat());
 }
 
 FloatType* QatType::asFloat() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFloat() : (FloatType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFloat()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asFloat() : (FloatType*)this);
 }
 
 bool QatType::isReference() const {
   return (typeKind() == TypeKind::reference) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isReference()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isReference());
 }
 
 ReferenceType* QatType::asReference() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asReference()
-                                              : (ReferenceType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asReference()
+             : (isOpaque() ? asOpaque()->getSubType()->asReference() : (ReferenceType*)this);
 }
 
 bool QatType::isPointer() const {
   return (typeKind() == TypeKind::pointer) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isPointer()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isPointer());
 }
 
 PointerType* QatType::asPointer() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asPointer() : (PointerType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asPointer()
+             : (isOpaque() ? asOpaque()->getSubType()->asPointer() : (PointerType*)this);
 }
 
 bool QatType::isArray() const {
   return (typeKind() == TypeKind::array) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isArray()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isArray());
 }
 
 ArrayType* QatType::asArray() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asArray() : (ArrayType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asArray()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asArray() : (ArrayType*)this);
 }
 
 bool QatType::isTuple() const {
   return (typeKind() == TypeKind::tuple) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isTuple()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isTuple());
 }
 
 TupleType* QatType::asTuple() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asTuple() : (TupleType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asTuple()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asTuple() : (TupleType*)this);
 }
 
 bool QatType::isFunction() const {
   return (typeKind() == TypeKind::function) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isFunction()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isFunction());
 }
 
 FunctionType* QatType::asFunction() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFunction()
-                                              : (FunctionType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asFunction()
+             : (isOpaque() ? asOpaque()->getSubType()->asFunction() : (FunctionType*)this);
 }
 
 bool QatType::isCoreType() const {
   return (typeKind() == TypeKind::core) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isCoreType()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isCoreType());
 }
 
 CoreType* QatType::asCore() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCore() : (CoreType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCore()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asCore() : (CoreType*)this);
 }
 
 bool QatType::isMix() const {
   return (typeKind() == TypeKind::mixType) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isMix()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isMix());
 }
 
 MixType* QatType::asMix() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMix() : (MixType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMix()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asMix() : (MixType*)this);
 }
 
 bool QatType::isChoice() const {
   return ((typeKind() == TypeKind::choice) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isChoice()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isChoice()));
 }
 
 ChoiceType* QatType::asChoice() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asChoice() : (ChoiceType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asChoice()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asChoice() : (ChoiceType*)this);
 }
 
 bool QatType::isVoid() const {
   return (typeKind() == TypeKind::Void) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isVoid()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isVoid());
 }
 
 bool QatType::isStringSlice() const {
   return (typeKind() == TypeKind::stringSlice) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isStringSlice()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isStringSlice());
 }
 
 StringSliceType* QatType::asStringSlice() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asStringSlice()
-                                              : (StringSliceType*)this;
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->asStringSlice()
+             : (isOpaque() ? asOpaque()->getSubType()->asStringSlice() : (StringSliceType*)this);
 }
 
 bool QatType::isCType() const {
   return ((typeKind() == TypeKind::cType) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isCType()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isCType()));
 }
 
 CType* QatType::asCType() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCType() : (CType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asCType()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asCType() : (CType*)this);
 }
 
 bool QatType::isFuture() const {
   return ((typeKind() == TypeKind::future) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isFuture()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isFuture()));
 }
 
 FutureType* QatType::asFuture() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFuture() : (FutureType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asFuture()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asFuture() : (FutureType*)this);
 }
 
 bool QatType::isMaybe() const {
   return ((typeKind() == TypeKind::maybe) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isMaybe()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isMaybe()));
 }
 
 MaybeType* QatType::asMaybe() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMaybe() : (MaybeType*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asMaybe()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asMaybe() : (MaybeType*)this);
 }
 
 bool QatType::isRegion() const {
   return ((typeKind() == TypeKind::region) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isRegion()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isRegion()));
 }
 
 Region* QatType::asRegion() const {
-  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asRegion() : (Region*)this;
+  return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asRegion()
+                                              : (isOpaque() ? asOpaque()->getSubType()->asRegion() : (Region*)this);
 }
 
 bool QatType::isResult() const {
   return ((typeKind() == TypeKind::result) ||
+          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isResult()) ||
           (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isResult()));
 }
 
 ResultType* QatType::asResult() const {
-  return ((typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asResult() : (ResultType*)this);
+  return ((typeKind() == TypeKind::definition)
+              ? ((DefinitionType*)this)->getSubType()->asResult()
+              : (isOpaque() ? asOpaque()->getSubType()->asResult() : (ResultType*)this));
 }
 
 } // namespace qat::IR

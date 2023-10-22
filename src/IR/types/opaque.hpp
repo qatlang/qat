@@ -3,6 +3,8 @@
 
 #include "../../memory_tracker.hpp"
 #include "../../utils/identifier.hpp"
+#include "../../utils/visibility.hpp"
+#include "../entity_overview.hpp"
 #include "qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -16,33 +18,57 @@ namespace qat::IR {
 class QatModule;
 class MemberFunction;
 
-class OpaqueType : public QatType {
+enum class OpaqueSubtypeKind { core, mix, unknown };
+
+class OpaqueType : public EntityOverview, public QatType {
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
 
-  Identifier          name;
-  Maybe<String>       genericVariantName;
-  IR::QatModule*      parent;
-  IR::ExpandedType*   subTy      = nullptr;
-  IR::MemberFunction* destructor = nullptr;
-  Maybe<usize>        size;
+  Identifier               name;
+  Maybe<OpaqueSubtypeKind> subtypeKind;
+  IR::QatModule*           parent;
+  IR::ExpandedType*        subTy = nullptr;
+  Maybe<usize>             size;
+  VisibilityInfo           visibility;
 
-  OpaqueType(Identifier _name, Maybe<String> genericVariantName, IR::QatModule* _parent, Maybe<usize> _size,
-             llvm::LLVMContext& llctx);
+  OpaqueType(Identifier _name, Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
+             VisibilityInfo _visibility, llvm::LLVMContext& llctx);
 
 public:
-  useit static OpaqueType* get(Identifier name, Maybe<String> genericVariantName, IR::QatModule* parent,
-                               Maybe<usize> size, llvm::LLVMContext& llCtx);
+  useit static OpaqueType* get(Identifier name, Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent,
+                               Maybe<usize> size, VisibilityInfo visibility, llvm::LLVMContext& llCtx);
 
-  useit String     getFullName() const;
-  useit Identifier getName() const;
-  useit bool       hasSubType() const;
-  void             setSubType(IR::ExpandedType* _subTy);
-  useit QatType*   getSubType() const;
-  useit bool       hasSize() const;
+  useit String                getFullName() const;
+  useit Identifier            getName() const;
+  useit VisibilityInfo const& getVisibility() const;
 
-  useit bool     isDestructible() const final;
-  void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  useit bool     isSubtypeCore() const;
+  useit bool     isSubtypeMix() const;
+  useit bool     isSubtypeUnknown() const;
+  useit bool     hasSubType() const;
+  void           setSubType(IR::ExpandedType* _subTy);
+  useit QatType* getSubType() const;
+  useit bool     hasSize() const;
+
+  useit bool isExpanded() const final;
+  useit bool hasNoValueSemantics() const final;
+  useit bool canBePrerunGeneric() const final;
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* preVal) const final;
+  useit bool          isTypeSized() const final;
+  useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
+
+  useit bool isCopyConstructible() const final;
+  useit bool isCopyAssignable() const final;
+  useit bool isMoveConstructible() const final;
+  useit bool isMoveAssignable() const final;
+  useit bool isDestructible() const final;
+
+  void copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+
   useit TypeKind typeKind() const final;
   useit String   toString() const final;
 };

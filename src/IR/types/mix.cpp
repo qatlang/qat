@@ -10,6 +10,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include <algorithm>
+#include <cmath>
 
 namespace qat::IR {
 
@@ -18,17 +19,12 @@ namespace qat::IR {
 #define TWO_POWER_16 65536ULL
 #define TWO_POWER_32 4294967296ULL
 
-MixType::MixType(Identifier _name, Vec<GenericParameter*> _generics, QatModule* _parent,
+MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParameter*> _generics, QatModule* _parent,
                  Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes, Maybe<usize> _defaultVal, IR::Context* ctx,
                  bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
-      EntityOverview("mixType",
-                     Json()
-                         ._("moduleID", _parent->getID())
-                         ._("hasDefaultValue", _defaultVal.has_value())
-                         ._("visibility", _visibility),
-                     _name.range),
-      subtypes(std::move(_subtypes)), isPack(_isPacked), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
+      EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
+      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), opaquedType(_opaquedTy) {
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
@@ -42,11 +38,24 @@ MixType::MixType(Identifier _name, Vec<GenericParameter*> _generics, QatModule* 
   }
   findTagBitWidth(subtypes.size());
   SHOW("Tag bitwidth is " << tagBitWidth)
-  llvmType = llvm::StructType::create(
-      ctx->llctx, {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)},
-      parent->getFullNameWithChild(name.value), _isPacked);
+  if (opaquedType) {
+    llvmType = opaquedType->getLLVMType();
+    llvm::cast<llvm::StructType>(llvmType)->setBody(
+        {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)}, _isPacked);
+  } else {
+    llvmType = llvm::StructType::create(
+        ctx->llctx, {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)},
+        parent->getFullNameWithChild(name.value), _isPacked);
+  }
   if (parent) {
     parent->mixTypes.push_back(this);
+  }
+  if (opaquedType) {
+    opaquedType->setSubType(this);
+    ovInfo            = opaquedType->ovInfo;
+    ovRange           = opaquedType->ovRange;
+    ovMentions        = opaquedType->ovMentions;
+    ovBroughtMentions = opaquedType->ovBroughtMentions;
   }
   auto needsDestructor = false;
   for (auto sub : subtypes) {
@@ -115,18 +124,20 @@ void MixType::updateOverview() {
   }
   ovInfo._("typeID", getID())
       ._("fullName", getFullName())
+      ._("moduleID", parent->getID())
       ._("tagBitWidth", (unsigned long long)tagBitWidth)
       ._("isPacked", isPack)
-      ._("subTypes", subTyJson);
+      ._("hasDefaultValue", defaultVal.has_value())
+      ._("subTypes", subTyJson)
+      ._("visibility", visibility);
   if (hasDefault()) {
     ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
   }
 }
 
 void MixType::findTagBitWidth(usize typeCount) {
-  auto calc = 2;
-  while (calc <= typeCount) {
-    calc <<= 1;
+  tagBitWidth = 1;
+  while (std::pow(2, tagBitWidth) <= typeCount) {
     tagBitWidth++;
   }
 }
@@ -134,7 +145,6 @@ void MixType::findTagBitWidth(usize typeCount) {
 usize MixType::getIndexOfName(const String& name) const {
   for (usize i = 0; i < subtypes.size(); i++) {
     if (subtypes.at(i).first.value == name) {
-      SHOW("Got index")
       return i;
     }
   }

@@ -12,7 +12,7 @@
 
 namespace qat::IR {
 
-FutureType::FutureType(QatType* _subType, IR::Context* ctx) : subTy(_subType) {
+FutureType::FutureType(QatType* _subType, bool _isPacked, IR::Context* ctx) : subTy(_subType), isPacked(_isPacked) {
   if (subTy->isVoid()) {
     llvmType = llvm::StructType::create(ctx->llctx,
                                         {llvm::Type::getInt64Ty(ctx->llctx),
@@ -28,7 +28,7 @@ FutureType::FutureType(QatType* _subType, IR::Context* ctx) : subTy(_subType) {
   }
 }
 
-FutureType* FutureType::get(QatType* subType, IR::Context* ctx) {
+FutureType* FutureType::get(QatType* subType, bool isPacked, IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->isFuture()) {
       if (typ->asFuture()->getSubType()->isSame(subType)) {
@@ -36,7 +36,7 @@ FutureType* FutureType::get(QatType* subType, IR::Context* ctx) {
       }
     }
   }
-  return new FutureType(subType, ctx);
+  return new FutureType(subType, isPacked, ctx);
 }
 
 QatType* FutureType::getSubType() const { return subTy; }
@@ -48,6 +48,8 @@ TypeKind FutureType::typeKind() const { return TypeKind::future; }
 bool FutureType::isDestructible() const { return true; }
 
 bool FutureType::isTypeSized() const { return true; }
+
+bool FutureType::isTypePacked() const { return isPacked; }
 
 void FutureType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
   if (!vals.empty()) {

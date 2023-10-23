@@ -131,10 +131,16 @@ bool QatType::isSame(QatType* other) {
                (((ReferenceType*)this)->getSubType()->isSame(((ReferenceType*)other)->getSubType()));
       }
       case TypeKind::future: {
-        return ((FutureType*)this)->getSubType()->isSame(((FutureType*)other)->getSubType());
+        auto* thisVal  = (FutureType*)this;
+        auto* otherVal = (FutureType*)other;
+        return thisVal->getSubType()->isSame(otherVal->getSubType()) &&
+               (thisVal->isTypePacked() == otherVal->isTypePacked());
       }
       case TypeKind::maybe: {
-        return ((MaybeType*)this)->getSubType()->isSame(((MaybeType*)other)->getSubType());
+        auto* thisVal  = (MaybeType*)this;
+        auto* otherVal = (MaybeType*)this;
+        return thisVal->getSubType()->isSame(otherVal->getSubType()) &&
+               (thisVal->isTypePacked() == otherVal->isTypePacked());
       }
       case TypeKind::unsignedInteger: {
         return (((UnsignedType*)this)->getBitwidth() == ((UnsignedType*)other)->getBitwidth()) &&
@@ -171,7 +177,8 @@ bool QatType::isSame(QatType* other) {
       case TypeKind::tuple: {
         auto* thisVal  = (TupleType*)this;
         auto* otherVal = (TupleType*)other;
-        if (thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
+        if ((thisVal->isPackedTuple() == otherVal->isPackedTuple()) &&
+            thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
           for (usize i = 0; i < thisVal->getSubTypeCount(); i++) {
             if (!(thisVal->getSubtypeAt(i)->isSame(otherVal->getSubtypeAt(i)))) {
               return false;

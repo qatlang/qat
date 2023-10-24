@@ -9,6 +9,7 @@ namespace qat::ast {
 class ReferenceType : public QatType {
 private:
   QatType* type;
+  bool     isSubtypeVar;
 
 public:
   ReferenceType(QatType* _type, bool _variable, FileRange _fileRange);

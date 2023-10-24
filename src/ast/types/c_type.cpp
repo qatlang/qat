@@ -2,11 +2,10 @@
 
 namespace qat::ast {
 
-CType::CType(IR::CTypeKind _cTypeKind, FileRange _fileRange)
-    : QatType(false, std::move(_fileRange)), cTypeKind(_cTypeKind) {}
+CType::CType(IR::CTypeKind _cTypeKind, FileRange _fileRange) : QatType(std::move(_fileRange)), cTypeKind(_cTypeKind) {}
 
 CType::CType(QatType* _pointerSubTy, bool _isSubTyVar, FileRange _fileRange)
-    : QatType(false, std::move(_fileRange)), cTypeKind(IR::CTypeKind::Pointer), subType(_pointerSubTy),
+    : QatType(std::move(_fileRange)), cTypeKind(IR::CTypeKind::Pointer), subType(_pointerSubTy),
       isPointerSubTypeVariable(_isSubTyVar) {}
 
 IR::QatType* CType::emit(IR::Context* ctx) {
@@ -153,7 +152,6 @@ Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {
       if (ctx->clangTargetInfo->hasBFloat16Type()) {
         return ctx->clangTargetInfo->getBFloat16Width();
       }
-
       return None;
     }
     case IR::CTypeKind::Float128: {
@@ -175,6 +173,6 @@ Json CType::toJson() const {
   return Json()._("typeKind", "cType")._("cTypeKind", IR::cTypeKindToString(cTypeKind))._("fileRange", fileRange);
 }
 
-String CType::toString() const { return "type:c" + IR::cTypeKindToString(cTypeKind); }
+String CType::toString() const { return IR::cTypeKindToString(cTypeKind); }
 
 } // namespace qat::ast

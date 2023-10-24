@@ -18,16 +18,13 @@ protected:
   static Vec<GenericAbstractType*> generics;
 
 private:
-  bool                 variable;
   static Vec<QatType*> allTypes;
 
 public:
-  QatType(bool _variable, FileRange _fileRange);
+  explicit QatType(FileRange _fileRange);
   FileRange fileRange;
 
   virtual ~QatType() = default;
-  useit bool                 isConstant() const { return !variable; }
-  useit bool                 isVariable() const { return variable; }
   useit virtual Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const;
   useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
   useit virtual TypeKind     typeKind() const       = 0;

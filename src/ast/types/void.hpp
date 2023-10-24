@@ -9,7 +9,7 @@ namespace qat::ast {
 
 class VoidType : public QatType {
 public:
-  VoidType(bool _variable, FileRange _fileRange);
+  explicit VoidType(FileRange _fileRange);
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

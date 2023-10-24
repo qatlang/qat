@@ -8,10 +8,8 @@
 
 namespace qat::ast {
 
-GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<FillGeneric*> _types, bool _isVariable,
-                                   FileRange _fileRange)
-    : QatType(_isVariable, std::move(_fileRange)), relative(_relative), names(std::move(_name)),
-      genericTypes(std::move(_types)) {}
+GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<FillGeneric*> _types, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), relative(_relative), names(std::move(_name)), genericTypes(std::move(_types)) {}
 
 IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Generic named type START")
@@ -58,6 +56,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
       ctx->Error("Generic core type " + ctx->highlightError(fullName.value) + " is not accessible here",
                  fullName.range);
     }
+    SHOW("Added mention for generic")
     genericCoreTy->addMention(entityName.range);
     ctx->mod = genericCoreTy->getModule();
     Vec<IR::GenericToFill*> types;
@@ -95,7 +94,10 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     SHOW("Filling generics")
     auto* tyRes = genericCoreTy->fillGenerics(types, ctx, fileRange);
-    SHOW("Generic filled: " << tyRes->toString() << "  with llvm type: " << tyRes->getLLVMType()->getStructName().str())
+    SHOW("Filled generics: " << tyRes->isCoreType())
+    SHOW("Generic filled: " << tyRes->toString())
+    SHOW(
+        "  with llvm type: " << (tyRes->getLLVMType()->isStructTy() ? tyRes->getLLVMType()->getStructName().str() : ""))
     ctx->fn = fun;
     if (curr) {
       curr->setActive(ctx->builder);
@@ -175,14 +177,14 @@ Json GenericNamedType::toJson() const {
 }
 
 String GenericNamedType::toString() const {
-  auto result = (isVariable() ? "var " : "") + Identifier::fullName(names).value + "'<";
+  auto result = Identifier::fullName(names).value + ":[";
   for (usize i = 0; i < genericTypes.size(); i++) {
     result += genericTypes.at(i)->toString();
     if (i != (genericTypes.size() - 1)) {
       result += ", ";
     }
   }
-  result += ">";
+  result += "]";
   return result;
 }
 

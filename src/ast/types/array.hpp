@@ -20,7 +20,7 @@ private:
   void typeInferenceForLength(llvm::LLVMContext& llCtx) const;
 
 public:
-  ArrayType(QatType* _element_type, PrerunExpression* lengthExp, bool _variable, FileRange _fileRange);
+  ArrayType(QatType* _element_type, PrerunExpression* lengthExp, FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx);

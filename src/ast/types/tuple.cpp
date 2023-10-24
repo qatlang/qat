@@ -4,8 +4,8 @@
 
 namespace qat::ast {
 
-TupleType::TupleType(Vec<ast::QatType*> _types, bool _isPacked, bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), types(std::move(_types)), isPacked(_isPacked) {}
+TupleType::TupleType(Vec<ast::QatType*> _types, bool _isPacked, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), types(std::move(_types)), isPacked(_isPacked) {}
 
 Maybe<usize> TupleType::getTypeSizeInBits(IR::Context* ctx) const {
   usize total = 0;
@@ -38,21 +38,15 @@ Json TupleType::toJson() const {
   for (auto* mem : types) {
     mems.push_back(mem->toJson());
   }
-  return Json()
-      ._("typeKind", "tuple")
-      ._("members", mems)
-      ._("isVariable", isVariable())
-      ._("isPacked", isPacked)
-      ._("fileRange", fileRange);
+  return Json()._("typeKind", "tuple")._("members", mems)._("isPacked", isPacked)._("fileRange", fileRange);
 }
 
 String TupleType::toString() const {
   String result;
-  if (isVariable()) {
-    result = "var (";
-  } else {
-    result = "(";
+  if (isPacked) {
+    result += "pack ";
   }
+  result = "(";
   for (usize i = 0; i < types.size(); i++) {
     result += types.at(i)->toString();
     if (i != (types.size() - 1)) {

@@ -9,7 +9,7 @@ class LinkedGeneric : public QatType {
   ast::GenericAbstractType* genAbs;
 
 public:
-  LinkedGeneric(bool isVariable, ast::GenericAbstractType* genAbs, FileRange range);
+  LinkedGeneric(ast::GenericAbstractType* genAbs, FileRange range);
   IR::QatType*   emit(IR::Context* ctx) final;
   useit TypeKind typeKind() const final;
   useit Json     toJson() const final;

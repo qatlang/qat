@@ -15,8 +15,7 @@ private:
   Vec<FillGeneric*> genericTypes;
 
 public:
-  GenericNamedType(u32 _relative, Vec<Identifier> names, Vec<FillGeneric*> _genericTypes, bool isVariable,
-                   FileRange _fileRange);
+  GenericNamedType(u32 _relative, Vec<Identifier> names, Vec<FillGeneric*> _genericTypes, FileRange _fileRange);
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit Json         toJson() const final;

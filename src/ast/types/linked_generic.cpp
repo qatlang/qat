@@ -7,8 +7,8 @@
 
 namespace qat::ast {
 
-LinkedGeneric::LinkedGeneric(bool _isVariable, ast::GenericAbstractType* _genAbs, FileRange range)
-    : QatType(_isVariable, std::move(range)), genAbs(_genAbs) {}
+LinkedGeneric::LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange range)
+    : QatType(std::move(range)), genAbs(_genAbs) {}
 
 IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
   if (genAbs->isTyped() || (genAbs->isPrerun() && genAbs->asPrerun()->getType()->isTyped())) {
@@ -45,10 +45,8 @@ IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
 
 TypeKind LinkedGeneric::typeKind() const { return TypeKind::linkedGeneric; }
 
-String LinkedGeneric::toString() const { return (isVariable() ? "var " : "") + genAbs->getName().value; }
+String LinkedGeneric::toString() const { return genAbs->getName().value; }
 
-Json LinkedGeneric::toJson() const {
-  return Json()._("isVariable", isVariable())._("genericParameter", genAbs->getName())._("fileRange", fileRange);
-}
+Json LinkedGeneric::toJson() const { return Json()._("genericParameter", genAbs->getName())._("fileRange", fileRange); }
 
 } // namespace qat::ast

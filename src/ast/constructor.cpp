@@ -135,7 +135,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
         args.push_back(IR::Argument::CreateMember(arguments.at(i)->getName(), generatedTypes.at(i), i));
       } else {
         args.push_back(
-            arguments.at(i)->getType()->isVariable()
+            arguments.at(i)->isVariable()
                 ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
                 : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
       }
@@ -226,7 +226,7 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
       } else {
         SHOW("Argument is variable")
         auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
-                                       prototype->arguments.at(i - 1)->getType()->isVariable(),
+                                       prototype->arguments.at(i - 1)->isVariable(),
                                        prototype->arguments.at(i - 1)->getName().range);
         SHOW("Created local value for the argument")
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);

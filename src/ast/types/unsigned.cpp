@@ -3,8 +3,8 @@
 
 namespace qat::ast {
 
-UnsignedType::UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), bitWidth(_bitWidth), isBool(_isBool) {}
+UnsignedType::UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), bitWidth(_bitWidth), isBool(_isBool) {}
 
 Maybe<usize> UnsignedType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
@@ -30,17 +30,9 @@ bool UnsignedType::isBitWidth(const u32 width) const { return bitWidth == width;
 TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
 
 Json UnsignedType::toJson() const {
-  return Json()
-      ._("typeKind", "unsignedInteger")
-      ._("isBool", isBool)
-      ._("bitWidth", bitWidth)
-      ._("isVariable", isVariable())
-      ._("fileRange", fileRange);
+  return Json()._("typeKind", "unsignedInteger")._("isBool", isBool)._("bitWidth", bitWidth)._("fileRange", fileRange);
 }
 
-String UnsignedType::toString() const {
-  return (isVariable() ? (isBool ? "var bool" : "var u") : (isBool ? "bool" : "u")) +
-         (!isBool ? std::to_string(bitWidth) : "");
-}
+String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
 } // namespace qat::ast

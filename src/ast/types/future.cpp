@@ -4,8 +4,8 @@
 
 namespace qat::ast {
 
-FutureType::FutureType(bool _isVar, ast::QatType* _subType, FileRange _fileRange)
-    : QatType(_isVar, std::move(_fileRange)), subType(_subType) {}
+FutureType::FutureType(bool _isPacked, ast::QatType* _subType, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), subType(_subType), isPacked(_isPacked) {}
 
 Maybe<usize> FutureType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
@@ -13,14 +13,20 @@ Maybe<usize> FutureType::getTypeSizeInBits(IR::Context* ctx) const {
        llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(), llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()})));
 }
 
-IR::QatType* FutureType::emit(IR::Context* ctx) { return IR::FutureType::get(subType->emit(ctx), ctx); }
+IR::QatType* FutureType::emit(IR::Context* ctx) { return IR::FutureType::get(subType->emit(ctx), isPacked, ctx); }
 
 TypeKind FutureType::typeKind() const { return TypeKind::future; }
 
 Json FutureType::toJson() const {
-  return Json()._("typeKind", "future")._("subType", subType->toJson())._("fileRange", fileRange);
+  return Json()
+      ._("typeKind", "future")
+      ._("isPacked", isPacked)
+      ._("subType", subType->toJson())
+      ._("fileRange", fileRange);
 }
 
-String FutureType::toString() const { return (isVariable() ? "var " : "") + subType->toString(); }
+String FutureType::toString() const {
+  return "future:[" + String(isPacked ? "pack, " : "") + subType->toString() + "]";
+}
 
 } // namespace qat::ast

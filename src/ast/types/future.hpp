@@ -8,9 +8,10 @@ namespace qat::ast {
 class FutureType : public QatType {
 private:
   ast::QatType* subType;
+  bool          isPacked;
 
 public:
-  FutureType(bool isVariable, ast::QatType* subType, FileRange fileRange);
+  FutureType(bool isPacked, ast::QatType* subType, FileRange fileRange);
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-VoidType::VoidType(bool _variable, FileRange _fileRange) : QatType(_variable, std::move(_fileRange)) {}
+VoidType::VoidType(FileRange _fileRange) : QatType(std::move(_fileRange)) {}
 
 Maybe<usize> VoidType::getTypeSizeInBits(IR::Context* ctx) const {
   return (
@@ -14,10 +14,8 @@ IR::QatType* VoidType::emit(IR::Context* ctx) { return IR::VoidType::get(ctx->ll
 
 TypeKind VoidType::typeKind() const { return TypeKind::Void; }
 
-Json VoidType::toJson() const {
-  return Json()._("typeKind", "void")._("isVariable", isVariable())._("fileRange", fileRange);
-}
+Json VoidType::toJson() const { return Json()._("typeKind", "void")._("fileRange", fileRange); }
 
-String VoidType::toString() const { return isVariable() ? "var void" : "void"; }
+String VoidType::toString() const { return "void"; }
 
 } // namespace qat::ast

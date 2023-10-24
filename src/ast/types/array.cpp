@@ -9,8 +9,8 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
-ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
+ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
 
 void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {
   lengthExp->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
@@ -62,12 +62,9 @@ Json ArrayType::toJson() const {
       ._("typeKind", "array")
       ._("subType", elementType->toJson())
       ._("length", lengthExp->toJson())
-      ._("isVariable", isVariable())
       ._("fileRange", fileRange);
 }
 
-String ArrayType::toString() const {
-  return (isVariable() ? "var " : "") + elementType->toString() + "[" + lengthExp->toString() + "]";
-}
+String ArrayType::toString() const { return elementType->toString() + "[" + lengthExp->toString() + "]"; }
 
 } // namespace qat::ast

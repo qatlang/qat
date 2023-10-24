@@ -8,7 +8,7 @@ namespace qat::ast {
 
 class StringSliceType : public QatType {
 public:
-  StringSliceType(bool _variable, FileRange _fileRange);
+  explicit StringSliceType(FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;

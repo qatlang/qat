@@ -2,9 +2,7 @@
 
 namespace qat::ast {
 
-QatType::QatType(bool _variable, FileRange _fileRange) : variable(_variable), fileRange(std::move(_fileRange)) {
-  allTypes.push_back(this);
-}
+QatType::QatType(FileRange _fileRange) : fileRange(std::move(_fileRange)) { allTypes.push_back(this); }
 
 Maybe<usize> QatType::getTypeSizeInBits(IR::Context* ctx) const { return None; }
 

@@ -100,7 +100,7 @@ void MemberPrototype::define(IR::Context* ctx) {
     } else {
       SHOW("Argument at " << i << " named " << arguments.at(i)->getName().value << " is not a type member")
       args.push_back(
-          arguments.at(i)->getType()->isVariable()
+          arguments.at(i)->isVariable()
               ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
               : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
     }

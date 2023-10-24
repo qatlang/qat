@@ -11,7 +11,7 @@ private:
   const u32 bitWidth;
 
 public:
-  IntegerType(u32 _bitWidth, bool _variable, FileRange _fileRange);
+  IntegerType(u32 _bitWidth, FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

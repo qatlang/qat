@@ -113,7 +113,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
       args.push_back(
-          arguments.at(i)->getType()->isVariable()
+          arguments.at(i)->isVariable()
               ? IR::Argument::CreateVariable(arguments.at(i)->getName(), arguments.at(i)->getType()->emit(ctx), i)
               : IR::Argument::Create(arguments.at(i)->getName(), generatedTypes.at(i), i));
     }

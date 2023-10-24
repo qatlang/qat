@@ -7,9 +7,10 @@ namespace qat::ast {
 class MaybeType : public QatType {
 private:
   QatType* subTyp;
+  bool     isPacked;
 
 public:
-  MaybeType(bool isVariable, QatType* subty, FileRange range);
+  MaybeType(bool isPacled, QatType* subty, FileRange range);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;

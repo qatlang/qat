@@ -4,12 +4,12 @@
 
 namespace qat::ast {
 
-ReferenceType::ReferenceType(QatType* _type, bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), type(_type) {}
+ReferenceType::ReferenceType(QatType* _type, bool _isSubtypeVar, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), type(_type) {}
 
 Maybe<usize> ReferenceType::getTypeSizeInBits(IR::Context* ctx) const {
-  return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
-      llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u)));
+  return (
+      usize)(ctx->dataLayout->getTypeAllocSizeInBits(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u)));
 }
 
 IR::QatType* ReferenceType::emit(IR::Context* ctx) {
@@ -19,7 +19,7 @@ IR::QatType* ReferenceType::emit(IR::Context* ctx) {
   } else if (typEmit->isVoid()) {
     ctx->Error("Subtype of reference cannot be void", fileRange);
   }
-  return IR::ReferenceType::get(type->isVariable(), typEmit, ctx);
+  return IR::ReferenceType::get(isSubtypeVar, typEmit, ctx);
 }
 
 TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
@@ -28,10 +28,10 @@ Json ReferenceType::toJson() const {
   return Json()
       ._("typeKind", "reference")
       ._("subType", type->toJson())
-      ._("isVariable", isVariable())
+      ._("isSubtypeVariable", isSubtypeVar)
       ._("fileRange", fileRange);
 }
 
-String ReferenceType::toString() const { return (isVariable() ? "var @" : "@") + type->toString(); }
+String ReferenceType::toString() const { return "@" + String(isSubtypeVar ? "var[" : "[") + type->toString() + "]"; }
 
 } // namespace qat::ast

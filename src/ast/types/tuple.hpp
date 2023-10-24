@@ -14,7 +14,7 @@ private:
   bool          isPacked;
 
 public:
-  TupleType(Vec<QatType*> _types, bool _isPacked, bool _variable, FileRange _fileRange);
+  TupleType(Vec<QatType*> _types, bool _isPacked, FileRange _fileRange);
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

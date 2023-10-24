@@ -12,7 +12,7 @@ private:
   bool isBool;
 
 public:
-  UnsignedType(u64 _bitWidth, bool _variable, bool _isBool, FileRange _fileRange);
+  UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

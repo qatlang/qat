@@ -3,8 +3,8 @@
 
 namespace qat::ast {
 
-FloatType::FloatType(const IR::FloatTypeKind _kind, const bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), kind(_kind) {}
+FloatType::FloatType(const IR::FloatTypeKind _kind, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), kind(_kind) {}
 
 Maybe<usize> FloatType::getTypeSizeInBits(IR::Context* ctx) const {
   switch (kind) {
@@ -60,13 +60,9 @@ String FloatType::kindToString(IR::FloatTypeKind kind) {
 TypeKind FloatType::typeKind() const { return TypeKind::Float; }
 
 Json FloatType::toJson() const {
-  return Json()
-      ._("typeKind", "float")
-      ._("floatTypeKind", kindToString(kind))
-      ._("isVariable", isVariable())
-      ._("fileRange", fileRange);
+  return Json()._("typeKind", "float")._("floatTypeKind", kindToString(kind))._("fileRange", fileRange);
 }
 
-String FloatType::toString() const { return (isVariable() ? "var " : "") + kindToString(kind); }
+String FloatType::toString() const { return kindToString(kind); }
 
 } // namespace qat::ast

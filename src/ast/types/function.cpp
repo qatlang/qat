@@ -17,7 +17,7 @@ Json ArgumentType::toJson() const {
 }
 
 FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange)
-    : QatType(false, _fileRange), returnType(_retType), argTypes(_argTypes) {}
+    : QatType(_fileRange), returnType(_retType), argTypes(_argTypes) {}
 
 FunctionType::~FunctionType() {
   for (auto* argTy : argTypes) {

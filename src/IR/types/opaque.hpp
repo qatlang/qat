@@ -5,6 +5,7 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
+#include "../generics.hpp"
 #include "qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -25,22 +26,30 @@ class OpaqueType : public EntityOverview, public QatType {
   friend class ast::DefineMixType;
 
   Identifier               name;
+  Vec<GenericParameter*>   generics;
+  Maybe<String>            genericID;
   Maybe<OpaqueSubtypeKind> subtypeKind;
   IR::QatModule*           parent;
   IR::ExpandedType*        subTy = nullptr;
   Maybe<usize>             size;
   VisibilityInfo           visibility;
 
-  OpaqueType(Identifier _name, Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
+  OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
+             Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
              VisibilityInfo _visibility, llvm::LLVMContext& llctx);
 
 public:
-  useit static OpaqueType* get(Identifier name, Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent,
-                               Maybe<usize> size, VisibilityInfo visibility, llvm::LLVMContext& llCtx);
+  useit static OpaqueType* get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
+                               Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
+                               VisibilityInfo visibility, llvm::LLVMContext& llCtx);
 
   useit String                getFullName() const;
   useit Identifier            getName() const;
   useit VisibilityInfo const& getVisibility() const;
+  useit bool                  isGeneric() const;
+  useit Maybe<String>     getGenericID() const;
+  useit bool              hasGenericParameter(String const& name) const;
+  useit GenericParameter* getGenericParameter(String const& name) const;
 
   useit bool     isSubtypeCore() const;
   useit bool     isSubtypeMix() const;
@@ -48,7 +57,8 @@ public:
   useit bool     hasSubType() const;
   void           setSubType(IR::ExpandedType* _subTy);
   useit QatType* getSubType() const;
-  useit bool     hasSize() const;
+  useit bool     hasDeducedSize() const;
+  useit usize    getDeducedSize() const;
 
   useit bool isExpanded() const final;
   useit bool hasNoValueSemantics() const final;

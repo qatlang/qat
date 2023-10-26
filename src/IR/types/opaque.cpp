@@ -5,28 +5,54 @@
 
 namespace qat::IR {
 
-OpaqueType::OpaqueType(Identifier _name, Maybe<OpaqueSubtypeKind> _subtypeKind, IR::QatModule* _parent,
-                       Maybe<usize> _size, VisibilityInfo _visibility, llvm::LLVMContext& llctx)
+OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
+                       Maybe<OpaqueSubtypeKind> _subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
+                       VisibilityInfo _visibility, llvm::LLVMContext& llctx)
     : EntityOverview(_subtypeKind.has_value()
                          ? (_subtypeKind.value() == OpaqueSubtypeKind::core
                                 ? "coreType"
                                 : (_subtypeKind.value() == OpaqueSubtypeKind::mix ? "mixType" : "opaqueType"))
                          : "opaqueType",
                      Json(), _name.range),
-      name(std::move(_name)), subtypeKind(std::move(_subtypeKind)), parent(_parent), size(_size),
-      visibility(_visibility) {
+      name(std::move(_name)), generics(std::move(_generics)), genericID(_genericID),
+      subtypeKind(std::move(_subtypeKind)), parent(_parent), size(_size), visibility(_visibility) {
   llvmType = llvm::StructType::create(llctx, parent->getFullNameWithChild(name.value));
-  parent->opaqueTypes.push_back(this);
+  if (!isGeneric()) {
+    parent->opaqueTypes.push_back(this);
+  }
 }
 
-OpaqueType* OpaqueType::get(Identifier name, Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent,
-                            Maybe<usize> size, VisibilityInfo visibility, llvm::LLVMContext& llCtx) {
-  return new OpaqueType(std::move(name), subtypeKind, parent, size, visibility, llCtx);
+OpaqueType* OpaqueType::get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
+                            Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
+                            VisibilityInfo visibility, llvm::LLVMContext& llCtx) {
+  return new OpaqueType(std::move(name), std::move(generics), genericID, subtypeKind, parent, size, visibility, llCtx);
 }
 
 String OpaqueType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
 Identifier OpaqueType::getName() const { return name; }
+
+bool OpaqueType::isGeneric() const { return !generics.empty(); }
+
+Maybe<String> OpaqueType::getGenericID() const { return genericID; }
+
+bool OpaqueType::hasGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->isSame(name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+GenericParameter* OpaqueType::getGenericParameter(const String& name) const {
+  for (auto* gen : generics) {
+    if (gen->isSame(name)) {
+      return gen;
+    }
+  }
+  return nullptr;
+}
 
 VisibilityInfo const& OpaqueType::getVisibility() const { return visibility; }
 
@@ -41,17 +67,21 @@ bool OpaqueType::hasSubType() const { return subTy != nullptr; }
 void OpaqueType::setSubType(IR::ExpandedType* _subTy) {
   subTy = _subTy;
   SHOW("Opaque: set subtype")
-  for (auto item = parent->opaqueTypes.begin(); item != parent->opaqueTypes.end(); item++) {
-    if ((*item)->getID() == getID()) {
-      parent->opaqueTypes.erase(item);
-      break;
+  if (!isGeneric()) {
+    for (auto item = parent->opaqueTypes.begin(); item != parent->opaqueTypes.end(); item++) {
+      if ((*item)->getID() == getID()) {
+        parent->opaqueTypes.erase(item);
+        break;
+      }
     }
   }
 }
 
 IR::QatType* OpaqueType::getSubType() const { return subTy; }
 
-bool OpaqueType::hasSize() const { return size.has_value(); }
+bool OpaqueType::hasDeducedSize() const { return size.has_value(); }
+
+usize OpaqueType::getDeducedSize() const { return size.value(); }
 
 bool OpaqueType::isExpanded() const { return subTy && subTy->isExpanded(); }
 
@@ -68,7 +98,7 @@ Maybe<String> OpaqueType::toPrerunGenericString(IR::PrerunValue* preVal) const {
   }
 }
 
-bool OpaqueType::isTypeSized() const { subTy ? subTy->isTypeSized() : size.has_value(); }
+bool OpaqueType::isTypeSized() const { return subTy ? subTy->isTypeSized() : size.has_value(); }
 
 Maybe<bool> OpaqueType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (subTy) {

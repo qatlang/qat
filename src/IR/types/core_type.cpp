@@ -191,19 +191,25 @@ QatModule* GenericCoreType::getModule() const { return parent; }
 
 ast::GenericAbstractType* GenericCoreType::getGenericAt(usize index) const { return generics.at(index); }
 
-CoreType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* ctx, FileRange range) {
+QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* ctx, FileRange range) {
   for (auto var : variants) {
     if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
       return var.get();
+    }
+  }
+  for (auto oVar : opaqueVariants) {
+    if (oVar.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
+      return oVar.get();
     }
   }
   IR::fillGenerics(ctx, generics, types, range);
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   defineCoreType->setVariantName(variantName);
   ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range}, true);
+  defineCoreType->genericsToFill = types;
   (void)defineCoreType->define(ctx);
-  (void)defineCoreType->emit(ctx);
   auto* cTy = defineCoreType->getCoreType();
+  (void)defineCoreType->emit(ctx);
   variants.push_back(GenericVariant<CoreType>(cTy, types));
   for (auto* temp : generics) {
     temp->unset();
@@ -218,6 +224,7 @@ CoreType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context*
   } else {
     ctx->removeActiveGeneric();
   }
+  SHOW("Returning core type")
   return cTy;
 }
 

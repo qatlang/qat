@@ -81,6 +81,8 @@ public:
 };
 
 class GenericCoreType : public Uniq, public EntityOverview {
+  friend ast::DefineCoreType;
+
 private:
   Identifier                     name;
   Vec<ast::GenericAbstractType*> generics;
@@ -88,7 +90,8 @@ private:
   QatModule*                     parent;
   VisibilityInfo                 visibility;
 
-  mutable Vec<GenericVariant<CoreType>> variants;
+  mutable Vec<GenericVariant<CoreType>>     variants;
+  mutable Deque<GenericVariant<OpaqueType>> opaqueVariants;
 
 public:
   GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::DefineCoreType* defineCoreType,
@@ -101,7 +104,7 @@ public:
   useit bool       allTypesHaveDefaults() const;
   useit usize      getVariantCount() const;
   useit QatModule* getModule() const;
-  useit CoreType*  fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
+  useit QatType*   fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
 
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit VisibilityInfo            getVisibility() const;

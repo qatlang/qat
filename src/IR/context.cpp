@@ -27,8 +27,6 @@ LoopInfo::LoopInfo(String _name, IR::Block* _mainB, IR::Block* _condB, IR::Block
                    LoopType _type)
     : name(std::move(_name)), mainBlock(_mainB), condBlock(_condB), restBlock(_restB), index(_index), type(_type) {}
 
-bool LoopInfo::isTimes() const { return type == LoopType::nTimes; }
-
 Breakable::Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock)
     : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock) {}
 
@@ -45,20 +43,6 @@ CodeProblem::operator Json() const {
 
 Context* Context::instance = nullptr;
 
-Context* Context::New() {
-  if (instance) {
-    return instance;
-  } else {
-    instance = new Context();
-    return instance;
-  }
-}
-
-llvm::LLVMContext& Context::getllCtx() {
-  std::cout << "llctx(" << &llctx << ")\n";
-  return (this->llctx);
-}
-
 Context::Context() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
   SHOW("llctx address: " << &llctx)
   SHOW("Builder llctx address: " << &builder.getContext())
@@ -71,210 +55,216 @@ Context::Context() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(
   dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
 }
 
-void Context::genericNameCheck(const String& name, const FileRange& range) {
-  if (fn && fn->hasGenericParameter(name)) {
-    Error("A generic parameter named " + highlightError(name) +
-              " is present in this function. This will lead to ambiguity.",
-          range);
-  } else if (activeType && activeType->hasGenericParameter(name)) {
-    Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
-              highlightError(activeType->getFullName()) + " so this will lead to ambiguity",
-          range);
-  }
-}
-
 void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID) {
   auto reqInfo = getAccessInfo();
-  if (mod->hasCoreType(name.value)) {
+  if (getActiveModule()->hasOpaqueType(name.value)) {
+    auto* opq = getActiveModule()->getOpaqueType(name.value, getAccessInfo());
+    if (opq->isGeneric()) {
+      if (genericID.has_value()) {
+        if (opq->getGenericID().value() == genericID.value()) {
+          return;
+        }
+      }
+    }
+    String tyDesc;
+    if (opq->isSubtypeCore()) {
+      tyDesc = opq->isGeneric() ? "generic core type" : "core type";
+    } else if (opq->isSubtypeMix()) {
+      tyDesc = opq->isGeneric() ? "generic mix type" : "mix type";
+    } else {
+      tyDesc = opq->isGeneric() ? "generic type" : "type";
+    }
+    Error("A " + tyDesc + " named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (getActiveModule()->hasCoreType(name.value)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtCoreType(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtCoreType(name.value, None)) {
     Error("A core type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleCoreTypeInImports(name.value, reqInfo).first) {
     Error("A core type named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleCoreTypeInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasGenericCoreType(name.value)) {
-    if (genericID.has_value() && mod->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
+  } else if (getActiveModule()->hasGenericCoreType(name.value)) {
+    if (genericID.has_value() &&
+        getActiveModule()->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGenericCoreType(name.value, None)) {
-    if (genericID.has_value() && mod->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
+  } else if (getActiveModule()->hasBroughtGenericCoreType(name.value, None)) {
+    if (genericID.has_value() &&
+        getActiveModule()->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic core type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).first) {
     Error("A generic core type named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasMixType(name.value)) {
+  } else if (getActiveModule()->hasMixType(name.value)) {
     Error("A mix type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtMixType(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtMixType(name.value, None)) {
     Error("A mix type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleMixTypeInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleMixTypeInImports(name.value, reqInfo).first) {
     Error("A mix type named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleMixTypeInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleMixTypeInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasChoiceType(name.value)) {
+  } else if (getActiveModule()->hasChoiceType(name.value)) {
     Error("A choice type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtChoiceType(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtChoiceType(name.value, None)) {
     Error("A choice type named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
     Error("A choice type named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleChoiceTypeInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasTypeDef(name.value)) {
+  } else if (getActiveModule()->hasTypeDef(name.value)) {
     Error("A type definition named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtTypeDef(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtTypeDef(name.value, None)) {
     Error("A type definition named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
     Error("A type definition named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleTypeDefInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleTypeDefInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasFunction(name.value)) {
+  } else if (getActiveModule()->hasFunction(name.value)) {
     Error("A function named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtFunction(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtFunction(name.value, None)) {
     Error("A function named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleFunctionInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleFunctionInImports(name.value, reqInfo).first) {
     Error("A function named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleFunctionInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleFunctionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasGenericFunction(name.value)) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
+  } else if (getActiveModule()->hasGenericFunction(name.value)) {
+    if (genericID.has_value() &&
+        getActiveModule()->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGenericFunction(name.value, None)) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
+  } else if (getActiveModule()->hasBroughtGenericFunction(name.value, None)) {
+    if (genericID.has_value() &&
+        getActiveModule()->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
-    if (genericID.has_value() && mod->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
+  } else if (getActiveModule()->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
+    if (genericID.has_value() &&
+        getActiveModule()->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
     }
     Error("A generic function named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleGenericFunctionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasGlobalEntity(name.value)) {
+  } else if (getActiveModule()->hasGlobalEntity(name.value)) {
     Error("A global entity named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtGlobalEntity(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtGlobalEntity(name.value, None)) {
     Error("A global entity named " + highlightError(name.value) +
               " is brought into this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleGlobalEntityInImports(name.value, reqInfo).first) {
     Error("A global entity named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleGlobalEntityInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasRegion(name.value)) {
+  } else if (getActiveModule()->hasRegion(name.value)) {
     Error("A region named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtRegion(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtRegion(name.value, None)) {
     Error("A region named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleRegionInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleRegionInImports(name.value, reqInfo).first) {
     Error("A region named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleRegionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBox(name.value)) {
+  } else if (getActiveModule()->hasBox(name.value)) {
     Error("A box named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtBox(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtBox(name.value, None)) {
     Error("A box named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleBoxInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleBoxInImports(name.value, reqInfo).first) {
     Error("A box named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleRegionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasLib(name.value)) {
+  } else if (getActiveModule()->hasLib(name.value)) {
     Error("A lib named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasBroughtLib(name.value, None)) {
+  } else if (getActiveModule()->hasBroughtLib(name.value, None)) {
     Error("A lib named " + highlightError(name.value) + " is brought into this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
-  } else if (mod->hasAccessibleLibInImports(name.value, reqInfo).first) {
+  } else if (getActiveModule()->hasAccessibleLibInImports(name.value, reqInfo).first) {
     Error("A lib named " + highlightError(name.value) + " is present inside the module " +
-              highlightError(mod->hasAccessibleRegionInImports(name.value, reqInfo).second) +
+              highlightError(getActiveModule()->hasAccessibleRegionInImports(name.value, reqInfo).second) +
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
   }
-}
-
-QatModule* Context::getMod() const { return mod->getActive(); }
-
-String Context::getGlobalStringName() const {
-  auto res = "qat'str'" + std::to_string(stringCount);
-  stringCount++;
-  return res;
 }
 
 VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
@@ -294,13 +284,13 @@ VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
         return VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path().string());
       }
       case VisibilityKind::type: {
-        if (activeType) {
-          return VisibilityInfo::type(activeType->getFullName());
+        if (hasActiveType()) {
+          return VisibilityInfo::type(getActiveType());
         } else {
-          if (fn && fn->isMemberFunction()) {
-            return VisibilityInfo::type(((IR::MemberFunction*)fn)->getParentType()->getFullName());
+          if (hasActiveFunction() && getActiveFunction()->isMemberFunction()) {
+            return VisibilityInfo::type(((IR::MemberFunction*)getActiveFunction())->getParentType());
           } else {
-            return VisibilityInfo::type("");
+            return VisibilityInfo::type(nullptr);
           }
         }
         // TODO - Handle in case it is null
@@ -313,9 +303,9 @@ VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
     }
   } else {
     SHOW("No visibility kind")
-    if (activeType) {
+    if (hasActiveType()) {
       SHOW("Found active type")
-      return VisibilityInfo::type(activeType->getFullName());
+      return VisibilityInfo::type(getActiveType());
     } else {
       SHOW("No active type")
       switch (getMod()->getModuleType()) {
@@ -339,35 +329,27 @@ VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
 
 AccessInfo Context::getAccessInfo() const {
   // TODO - Consider changing string value to pointer of the actual entities
-  Maybe<String> lib  = None;
-  Maybe<String> box  = None;
-  Maybe<String> type = None;
-  String        file;
-  if (mod) {
-    file = mod->getParentFile()->getFilePath();
-    if (mod->hasClosestParentBox()) {
-      box = mod->getClosestParentBox()->getFullName();
+  Maybe<String>       lib  = None;
+  Maybe<String>       box  = None;
+  Maybe<IR::QatType*> type = None;
+  String              file;
+  if (getActiveModule()) {
+    file = getActiveModule()->getParentFile()->getFilePath();
+    if (getActiveModule()->hasClosestParentBox()) {
+      box = getActiveModule()->getClosestParentBox()->getFullName();
     }
-    if (mod->hasClosestParentLib()) {
-      lib = mod->getClosestParentLib()->getFullName();
+    if (getActiveModule()->hasClosestParentLib()) {
+      lib = getActiveModule()->getClosestParentLib()->getFullName();
     }
   }
-  if (activeType) {
-    type = activeType->getFullName();
-  } else if (fn) {
-    if (fn->isMemberFunction()) {
-      type = ((MemberFunction*)fn)->getParentType()->getFullName();
+  if (hasActiveType()) {
+    type = getActiveType();
+  } else if (hasActiveFunction()) {
+    if (getActiveFunction()->isMemberFunction()) {
+      type = ((MemberFunction*)getActiveFunction())->getParentType();
     }
   }
   return {lib, box, file, type};
-}
-
-Maybe<AccessInfo> Context::getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
-  if ((getMod()->getID() == otherMod->getID()) || getMod()->isParentModuleOf(otherMod)) {
-    return None;
-  } else {
-    return getAccessInfo();
-  }
 }
 
 String Context::highlightError(const String& message, const char* color) {
@@ -423,27 +405,6 @@ void Context::writeJsonResult(bool status) const {
   }
 }
 
-bool Context::moduleAlreadyHasErrors(IR::QatModule* cand) {
-  for (auto* module : modulesWithErrors) {
-    if (module->getID() == cand->getID()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-clang::LangAS Context::getProgramAddressSpaceAsLangAS() const {
-  if (dataLayout) {
-    return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
-  } else {
-    return clang::LangAS::Default;
-  }
-}
-
-bool Context::hasActiveGeneric() const { return !allActiveGenerics.empty(); }
-
-GenericEntityMarker& Context::getActiveGeneric() const { return allActiveGenerics.back(); }
-
 bool Context::hasGenericParameterFromLastMain(String const& name) const {
   if (lastMainActiveGeneric.empty()) {
     return allActiveGenerics.back().hasGenericParameter(name);
@@ -470,22 +431,6 @@ GenericParameter* Context::getGenericParameterFromLastMain(String const& name) c
     }
   }
   return nullptr;
-}
-
-void Context::addActiveGeneric(GenericEntityMarker marker, bool main) {
-  SHOW("ADDED ACTIVE GENERIC")
-  if (main) {
-    lastMainActiveGeneric.push_back(allActiveGenerics.size());
-  }
-  allActiveGenerics.push_back(marker);
-}
-
-void Context::removeActiveGeneric() {
-  SHOW("REMOVED ACTIVE GENERICS")
-  if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
-    lastMainActiveGeneric.pop_back();
-  }
-  allActiveGenerics.pop_back();
 }
 
 void Context::addError(const String& message, Maybe<FileRange> fileRange) {
@@ -515,14 +460,15 @@ void Context::addError(const String& message, Maybe<FileRange> fileRange) {
     printRelevantFileContent(fileRange.value(), true);
   }
   std::cerr << "\n";
-  if (mod && !moduleAlreadyHasErrors(mod)) {
+  if (hasActiveModule() && !moduleAlreadyHasErrors(getActiveModule())) {
     if (hasActiveGeneric()) {
       removeActiveGeneric();
     }
-    modulesWithErrors.push_back(mod);
-    for (const auto& modNRange : mod->getBroughtMentions()) {
-      mod = modNRange.first;
+    modulesWithErrors.push_back(getActiveModule());
+    for (const auto& modNRange : getActiveModule()->getBroughtMentions()) {
+      auto* oldMod = setActiveModule(modNRange.first);
       addError("Error occured in this file", modNRange.second);
+      (void)setActiveModule(oldMod);
     }
   }
 }
@@ -594,17 +540,6 @@ Vec<std::tuple<String, u64, u64>> Context::getContentForDiagnostics(FileRange co
       break;
     }
     lineCount++;
-  }
-  return result;
-}
-
-String Context::joinActiveGenericNames(bool highlight) const {
-  String result;
-  for (usize i = 0; i < allActiveGenerics.size(); i++) {
-    result.append(highlight ? highlightError(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
-    if (i < allActiveGenerics.size() - 1) {
-      result.append(" and ");
-    }
   }
   return result;
 }

@@ -80,7 +80,7 @@ public:
   IR::LocalValue* index;
   LoopType        type;
 
-  useit bool isTimes() const;
+  useit inline bool isTimes() const { return type == LoopType::nTimes; }
 };
 
 enum class BreakableType {
@@ -116,8 +116,17 @@ private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
 
   Vec<IR::QatModule*> modulesWithErrors;
-  bool                moduleAlreadyHasErrors(IR::QatModule* mod);
-  void                addError(const String& message, Maybe<FileRange> fileRange);
+
+  useit inline bool moduleAlreadyHasErrors(IR::QatModule* cand) {
+    for (auto* module : modulesWithErrors) {
+      if (module->getID() == cand->getID()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void addError(const String& message, Maybe<FileRange> fileRange);
 
   Vec<std::tuple<String, u64, u64>> getContentForDiagnostics(FileRange const& _range) const;
 
@@ -131,17 +140,27 @@ private:
   static Context* instance;
 
 public:
-  static Context* New();
+  static inline Context* New() {
+    if (instance) {
+      return instance;
+    } else {
+      instance = new Context();
+      return instance;
+    }
+  }
 
-  llvm::LLVMContext& getllCtx();
+  useit inline llvm::LLVMContext& getllCtx() {
+    std::cout << "llctx(" << &llctx << ")\n";
+    return (this->llctx);
+  }
 
   llvm::LLVMContext       llctx;
   clang::TargetInfo*      clangTargetInfo;
   Maybe<llvm::DataLayout> dataLayout;
   IRBuilderTy             builder;
-  QatModule*              mod        = nullptr;
-  IR::Function*           fn         = nullptr; // Active function
-  IR::ExpandedType*       activeType = nullptr; // Active core type
+  QatModule*              activeModule   = nullptr;
+  IR::Function*           activeFunction = nullptr;
+  Vec<IR::QatType*>       activeTypes;
   Vec<LoopInfo>           loopsInfo;
   Vec<Breakable>          breakables;
   Vec<fs::path>           executablePaths;
@@ -160,22 +179,100 @@ public:
   mutable Maybe<HighResTimePoint>  clangLinkStartTime;
   mutable Maybe<HighResTimePoint>  clangLinkEndTime;
 
-  useit bool                 hasActiveGeneric() const;
-  useit GenericEntityMarker& getActiveGeneric() const;
-  useit bool                 hasGenericParameterFromLastMain(String const& name) const;
-  useit GenericParameter*    getGenericParameterFromLastMain(String const& name) const;
-  void                       addActiveGeneric(GenericEntityMarker marker, bool main);
-  void                       removeActiveGeneric();
-  String                     joinActiveGenericNames(bool highlight) const;
-  useit clang::LangAS getProgramAddressSpaceAsLangAS() const;
-  void                nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
-  void                genericNameCheck(const String& name, const FileRange& range);
-  useit QatModule*    getMod() const; // Get the active IR module
-  useit String        getGlobalStringName() const;
-  useit AccessInfo    getAccessInfo() const;
-  useit Maybe<AccessInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const;
-  useit VisibilityInfo    getVisibInfo(Maybe<VisibilityKind> kind) const;
-  void                    writeJsonResult(bool status) const;
+  useit inline bool          hasActiveFunction() const { return activeFunction != nullptr; }
+  useit inline IR::Function* getActiveFunction() const { return activeFunction; }
+  useit inline IR::Function* setActiveFunction(IR::Function* fun) {
+    auto* oldFn    = activeFunction;
+    activeFunction = fun;
+    return oldFn;
+  }
+
+  useit inline bool           hasActiveModule() const { return activeModule != nullptr; }
+  useit inline IR::QatModule* getActiveModule() const { return activeModule; }
+  useit inline IR::QatModule* setActiveModule(IR::QatModule* module) {
+    auto* oldMod = activeModule;
+    activeModule = module;
+    return oldMod;
+  }
+  useit inline QatModule* getMod() const { return getActiveModule()->getActive(); }
+
+  useit inline bool         hasActiveType() const { return !activeTypes.empty(); }
+  useit inline IR::QatType* getActiveType() const { return activeTypes.back(); }
+  inline void               setActiveType(IR::QatType* typ) { activeTypes.push_back(typ); }
+  inline void               unsetActiveType() { activeTypes.pop_back(); }
+
+  useit inline bool                 hasActiveGeneric() const { return !allActiveGenerics.empty(); }
+  useit inline GenericEntityMarker& getActiveGeneric() const { return allActiveGenerics.back(); }
+  useit bool                        hasGenericParameterFromLastMain(String const& name) const;
+  useit GenericParameter*           getGenericParameterFromLastMain(String const& name) const;
+
+  inline void addActiveGeneric(GenericEntityMarker marker, bool main) {
+    if (main) {
+      lastMainActiveGeneric.push_back(allActiveGenerics.size());
+    }
+    allActiveGenerics.push_back(marker);
+  }
+
+  inline void removeActiveGeneric() {
+    if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
+      lastMainActiveGeneric.pop_back();
+    }
+    allActiveGenerics.pop_back();
+  }
+
+  useit inline String joinActiveGenericNames(bool highlight) const {
+    String result;
+    for (usize i = 0; i < allActiveGenerics.size(); i++) {
+      result.append(highlight ? highlightError(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
+      if (i < allActiveGenerics.size() - 1) {
+        result.append(" and ");
+      }
+    }
+    return result;
+  }
+
+  useit inline clang::LangAS getProgramAddressSpaceAsLangAS() const {
+    if (dataLayout) {
+      return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
+    } else {
+      return clang::LangAS::Default;
+    }
+  }
+
+  void nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
+
+  inline void genericNameCheck(const String& name, const FileRange& range) {
+    if (hasActiveFunction() && getActiveFunction()->hasGenericParameter(name)) {
+      Error("A generic parameter named " + highlightError(name) +
+                " is present in this function. This will lead to ambiguity.",
+            range);
+    } else if (hasActiveType() &&
+               ((getActiveType()->isExpanded() && getActiveType()->asExpanded()->hasGenericParameter(name)) ||
+                (getActiveType()->isOpaque() && getActiveType()->asOpaque()->hasGenericParameter(name)))) {
+      Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
+                highlightError(getActiveType()->toString()) + " so this will lead to ambiguity",
+            range);
+    }
+  }
+
+  useit inline String getGlobalStringName() const {
+    auto res = "qat'str'" + std::to_string(stringCount);
+    stringCount++;
+    return res;
+  }
+
+  useit AccessInfo getAccessInfo() const;
+
+  useit inline Maybe<AccessInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
+    if ((getMod()->getID() == otherMod->getID()) || getMod()->isParentModuleOf(otherMod)) {
+      return None;
+    } else {
+      return getAccessInfo();
+    }
+  }
+
+  useit VisibilityInfo getVisibInfo(Maybe<VisibilityKind> kind) const;
+  void                 writeJsonResult(bool status) const;
 
   exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
   void          Warning(const String& message, const FileRange& fileRange) const;

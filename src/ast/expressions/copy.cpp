@@ -9,27 +9,27 @@ Copy::Copy(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileR
 IR::Value* Copy::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->getType();
-  if ((expTy->isCoreType() && expEmit->isImplicitPointer()) ||
-      (expTy->isReference() && expTy->asReference()->getSubType()->isCoreType())) {
-    auto* cTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asCore()
-                                       : expEmit->getType()->asCore();
-    if (cTy->hasCopyConstructor()) {
+  if ((expTy->isExpanded() && expEmit->isImplicitPointer()) ||
+      (expTy->isReference() && expTy->asReference()->getSubType()->isExpanded())) {
+    auto* eTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asExpanded()
+                                       : expEmit->getType()->asExpanded();
+    if (eTy->hasCopyConstructor()) {
       llvm::Value* alloca = nullptr;
       if (local) {
-        if (!cTy->isSame(local->getType()) &&
-            (local->getType()->isMaybe() && !cTy->isSame(local->getType()->asMaybe()->getSubType()))) {
+        if (!eTy->isSame(local->getType()) &&
+            (local->getType()->isMaybe() && !eTy->isSame(local->getType()->asMaybe()->getSubType()))) {
           ctx->Error("The type provided in the local declaration does not match the type to be copied", fileRange);
         }
         alloca = local->getType()->isMaybe()
                      ? ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u)
                      : local->getAlloca();
       } else if (irName.has_value()) {
-        local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+        local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, eTy, isVar, irName->range);
         alloca = local->getAlloca();
       } else {
-        alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
+        alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), eTy->getLLVMType());
       }
-      (void)cTy->getCopyConstructor()->call(ctx, {alloca, expEmit->getLLVM()}, ctx->getMod());
+      (void)eTy->getCopyConstructor()->call(ctx, {alloca, expEmit->getLLVM()}, ctx->getMod());
       if (local) {
         if (local->getType()->isMaybe()) {
           ctx->builder.CreateStore(
@@ -40,10 +40,11 @@ IR::Value* Copy::emit(IR::Context* ctx) {
         val->setLocalID(local->getLocalID());
         return val;
       } else {
-        return new IR::Value(alloca, cTy, true, IR::Nature::pure);
+        return new IR::Value(alloca, eTy, true, IR::Nature::pure);
       }
     } else {
-      ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) + " does not have a copy constructor",
+      ctx->Error((eTy->isCoreType() ? "Core type " : (eTy->isMix() ? "Mix type " : "Type ")) +
+                     ctx->highlightError(eTy->getFullName()) + " does not have a copy constructor",
                  fileRange);
     }
   } else {

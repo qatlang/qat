@@ -12,15 +12,19 @@ PrerunDefault::PrerunDefault(Maybe<ast::QatType*> _type, FileRange range)
 void PrerunDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
 
 IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
-  if (theType.has_value()) {
-    auto* type = theType.value()->emit(ctx);
+  if (theType.has_value() || inferredType.has_value()) {
+    auto* type = theType.has_value() ? theType.value()->emit(ctx) : inferredType.value();
     if (type->isInteger()) {
       return new IR::PrerunValue(llvm::ConstantInt::get(type->asInteger()->getLLVMType(), 0u), type->asInteger());
     } else if (type->isUnsignedInteger()) {
       return new IR::PrerunValue(llvm::ConstantInt::get(type->asUnsignedInteger()->getLLVMType(), 0u),
                                  type->asUnsignedInteger());
+    } else if (type->isChoice() && type->asChoice()->hasDefault()) {
+      return new IR::PrerunValue(type->asChoice()->getDefault(), type);
     }
-    ctx->Error("Prerun " + ctx->highlightError("default") + " expression is currently not supported", fileRange);
+    ctx->Error("Type " + ctx->highlightError(type->toString()) + " does not have a prerun " +
+                   ctx->highlightError("default") + " value",
+               fileRange);
   } else if (genericAbstractType.has_value()) {
     auto* genVal = genericAbstractType.value();
     if (genVal->isTyped()) {

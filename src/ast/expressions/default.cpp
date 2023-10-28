@@ -15,7 +15,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
                        "is recommended for readability and decreased clutter",
                    fileRange);
       if (irName.has_value()) {
-        auto* block = ctx->fn->getBlock();
+        auto* block = ctx->getActiveFunction()->getBlock();
         auto* loc   = block->newValue(irName->value, resultType, isVar, irName->range);
         ctx->builder.CreateStore(llvm::ConstantInt::get(resultType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
@@ -29,7 +29,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
                        "is recommended for readability and decreased clutter",
                    fileRange);
       if (irName.has_value()) {
-        auto* block = ctx->fn->getBlock();
+        auto* block = ctx->getActiveFunction()->getBlock();
         auto* loc   = block->newValue(irName->value, resultType, isVar, irName->range);
         ctx->builder.CreateStore(llvm::ConstantInt::get(resultType->getLLVMType(), 0u), loc->getAlloca());
         return loc;
@@ -52,7 +52,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
           ctx->Error("The default constructor of " + ctx->highlightError(cTy->toString()) + " is not accessible here",
                      fileRange);
         }
-        auto* block = ctx->fn->getBlock();
+        auto* block = ctx->getActiveFunction()->getBlock();
         if (irName.has_value()) {
           auto* loc = block->newValue(irName->value, resultType, isVar, irName->range);
           (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
@@ -76,7 +76,7 @@ IR::Value* Default::emit(IR::Context* ctx) {
                        ctx->highlightWarning(mTy->toString()) + " and it's better to use " +
                        ctx->highlightWarning("none") + " for clarity",
                    fileRange);
-      auto* block = ctx->fn->getBlock();
+      auto* block = ctx->getActiveFunction()->getBlock();
       auto* loc   = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
                                   irName.has_value() ? irName->range : fileRange);
       if (mTy->hasSizedSubType(ctx)) {
@@ -93,7 +93,10 @@ IR::Value* Default::emit(IR::Context* ctx) {
     } else if (resultType->isChoice()) {
       auto* chTy = resultType->asChoice();
       if (chTy->hasDefault()) {
-        chTy->getDefault();
+        return new IR::PrerunValue(chTy->getDefault(), resultType);
+      } else {
+        ctx->Error("Choice type " + ctx->highlightError(resultType->toString()) + " does not have a default value",
+                   fileRange);
       }
     } else {
       ctx->Error("The type " + ctx->highlightError(resultType->toString()) + " does not have default value", fileRange);

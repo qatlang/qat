@@ -4,7 +4,8 @@
 
 namespace qat::ast {
 
-NoneExpression::NoneExpression(QatType* _type, FileRange _fileRange) : Expression(std::move(_fileRange)), type(_type) {}
+NoneExpression::NoneExpression(Maybe<FileRange> _isPacked, QatType* _type, FileRange _fileRange)
+    : Expression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
 
 bool NoneExpression::hasTypeSet() const { return type != nullptr; }
 
@@ -19,8 +20,8 @@ IR::Value* NoneExpression::emit(IR::Context* ctx) {
       }
     }
     SHOW("Type for none expression is: " << typ->toString())
-    auto* mTy    = IR::MaybeType::get(typ, ctx);
-    auto* newVal = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), mTy->getLLVMType());
+    auto* mTy    = IR::MaybeType::get(typ, isPacked.has_value(), ctx);
+    auto* newVal = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), mTy->getLLVMType());
     ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
                              ctx->builder.CreateStructGEP(mTy->getLLVMType(), newVal, 0u));
     ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),
@@ -37,6 +38,8 @@ Json NoneExpression::toJson() const {
   return Json()
       ._("nodeType", "none")
       ._("hasType", (type != nullptr))
+      ._("isPacked", isPacked.has_value())
+      ._("packRange", isPacked.has_value() ? isPacked.value() : JsonValue())
       ._("type", (type != nullptr ? type->toJson() : Json()))
       ._("fileRange", fileRange);
 }

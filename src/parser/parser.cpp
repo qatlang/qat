@@ -2465,14 +2465,20 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         break;
       }
       case TokenType::none: {
-        ast::QatType* noneType = nullptr;
-        auto          range    = RangeAt(i);
+        ast::QatType*    noneType = nullptr;
+        auto             range    = RangeAt(i);
+        auto             start    = i;
+        Maybe<FileRange> isPacked = None;
         if (isNext(TokenType::genericTypeStart, i)) {
+          if (isNext(TokenType::packed, i + 1)) {
+            isPacked = RangeAt(i + 2);
+            i++;
+          }
           auto endRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
           if (endRes.has_value()) {
             auto typeRes = parseType(preCtx, i + 1, endRes.value());
             if (typeRes.second + 1 != endRes.value()) {
-              Error("Unexpected end for the type of the none expression", RangeSpan(i, typeRes.second));
+              Error("Unexpected end for the type of the none expression", RangeSpan(start, typeRes.second));
             } else {
               noneType = typeRes.first;
               range    = RangeSpan(i, endRes.value());
@@ -2482,7 +2488,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
             Error("Expected end for generic type specification", RangeAt(i + 1));
           }
         }
-        setCachedExpr(new ast::NoneExpression(noneType, range));
+        setCachedExpr(new ast::NoneExpression(isPacked, noneType, range));
         break;
       }
       case TokenType::sizeOf: {

@@ -9,10 +9,11 @@ namespace qat::ast {
 class NoneExpression : public Expression {
   friend class Assignment;
   friend class LocalDeclaration;
-  QatType* type = nullptr;
+  QatType*         type = nullptr;
+  Maybe<FileRange> isPacked;
 
 public:
-  NoneExpression(QatType* _type, FileRange _fileRange);
+  NoneExpression(Maybe<FileRange> isPacked, QatType* _type, FileRange _fileRange);
 
   bool hasTypeSet() const;
 

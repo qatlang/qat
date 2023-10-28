@@ -23,7 +23,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
 
           IR::Value
           * LocalDeclaration::emit(IR::Context * ctx) {
-  auto* block = ctx->fn->getBlock();
+  auto* block = ctx->getActiveFunction()->getBlock();
   if (block->hasValue(name.value)) {
     ctx->Error("A local value named " + ctx->highlightError(name.value) +
                    " already exists in this scope. Please change name of this "
@@ -220,7 +220,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      moveVal->local = ctx->fn->getBlock()->newValue(name.value, declType, variability, name.range);
+      moveVal->local = ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range);
       (void)moveVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {
@@ -235,7 +235,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      copyVal->local = ctx->fn->getBlock()->newValue(name.value, declType, variability, name.range);
+      copyVal->local = ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range);
       (void)copyVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {

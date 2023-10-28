@@ -28,10 +28,10 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                 alloca = local->getLLVM();
               }
             } else if (irName) {
-              local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+              local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
               alloca = local->getLLVM();
             } else {
-              alloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), cTy->getLLVMType());
+              alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), cTy->getLLVMType());
             }
             (void)dFn->call(ctx, {alloca}, ctx->getMod());
             if (local) {
@@ -48,7 +48,9 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           }
         }
       }
-      if (ctx->fn->isMemberFunction() ? (!((IR::MemberFunction*)ctx->fn)->getParentType()->isSame(cTy)) : true) {
+      if (ctx->getActiveFunction()->isMemberFunction()
+              ? !((IR::MemberFunction*)ctx->getActiveFunction())->getParentType()->isSame(cTy)
+              : true) {
         if (cTy->hasAnyConstructor()) {
           ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) +
                          " have constructors and hence the plain initialiser "
@@ -138,7 +140,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           alloca = local->getLLVM();
         }
       } else if (irName) {
-        local  = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+        local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         alloca = local->getLLVM();
       } else {
         alloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
@@ -198,7 +200,8 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                                      IR::Nature::temporary);
             }
             auto* strSliceTy = IR::StringSliceType::get(ctx->llctx);
-            auto* strAlloca  = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), strSliceTy->getLLVMType());
+            auto* strAlloca =
+                IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), strSliceTy->getLLVMType());
             ctx->builder.CreateStore(strData->getLLVM(),
                                      ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 0));
             ctx->builder.CreateStore(strLen->getLLVM(),

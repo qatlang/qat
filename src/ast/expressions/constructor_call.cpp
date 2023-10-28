@@ -15,16 +15,16 @@ ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<O
 IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
   switch (ownTy.value_or(OwnType::parent)) {
     case OwnType::type: {
-      if (!ctx->fn->isMemberFunction()) {
+      if (!ctx->getActiveFunction()->isMemberFunction()) {
         ctx->Error("The current function is not a member function of any type", fileRange);
       }
       // FIXME - Add more checks when extension functions land
-      return IR::PointerOwner::OfType(((IR::MemberFunction*)ctx->fn)->getParentType());
+      return IR::PointerOwner::OfType(((IR::MemberFunction*)ctx->getActiveFunction())->getParentType());
     }
     case OwnType::heap:
       return IR::PointerOwner::OfHeap();
     case OwnType::parent:
-      return IR::PointerOwner::OfParentFunction(ctx->fn);
+      return IR::PointerOwner::OfParentFunction(ctx->getActiveFunction());
     case OwnType::region: {
       if (!ownerType) {
         ctx->Error("No region provided and hence the pointer cannot have " + ctx->highlightError("region") + " owner",
@@ -199,20 +199,20 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           llAlloca = local->getAlloca();
         }
       } else if (irName) {
-        local    = ctx->fn->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+        local    = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         llAlloca = local->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
-        auto loc = ctx->fn->getBlock()->newValue(utils::unique_id(), cTy, isVar, irName->range);
+        auto loc = ctx->getActiveFunction()->getBlock()->newValue(utils::unique_id(), cTy, isVar, irName->range);
         llAlloca = loc->getAlloca();
       }
     }
     if (hasOwnCount) {
       SHOW("Has own count : beginning setup")
-      auto* currBlock = ctx->fn->getBlock();
-      auto* condBlock = new IR::Block(ctx->fn, currBlock);
-      auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-      auto* restBlock = new IR::Block(ctx->fn, nullptr);
+      auto* currBlock = ctx->getActiveFunction()->getBlock();
+      auto* condBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+      auto* trueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+      auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
       restBlock->linkPrevBlock(currBlock);
       // NOLINTNEXTLINE(readability-magic-numbers)
       auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);

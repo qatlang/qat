@@ -141,7 +141,7 @@ void OperatorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
 
 IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   auto* fnEmit = (IR::MemberFunction*)prototype->emit(ctx);
-  ctx->fn      = fnEmit;
+  auto* oldFn  = ctx->setActiveFunction(fnEmit);
   SHOW("Set active operator function: " << fnEmit->getFullName())
   auto* block = new IR::Block(fnEmit, nullptr);
   SHOW("Created entry block")
@@ -180,6 +180,7 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   emitSentences(sentences, ctx);
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
+  (void)ctx->setActiveFunction(oldFn);
   return nullptr;
 }
 

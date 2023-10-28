@@ -12,7 +12,7 @@ IR::Value* SayLike::emit(IR::Context* ctx) {
   if ((sayType == SayType::dbg) ? cfg->isDebugMode() : true) {
     SHOW("Say sentence emitting..")
     auto* mod = ctx->getMod();
-    SHOW("Current block is: " << ctx->fn->getBlock()->getName())
+    SHOW("Current block is: " << ctx->getActiveFunction()->getBlock()->getName())
     mod->linkNative(IR::NativeUnit::printf);
     auto*             printfFn = mod->getLLVMModule()->getFunction("printf");
     String            formatStr;

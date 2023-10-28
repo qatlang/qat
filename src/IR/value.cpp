@@ -33,7 +33,7 @@ bool Value::isImplicitPointer() const {
 
 void Value::makeImplicitPointer(IR::Context* ctx, Maybe<String> name) {
   if (!isImplicitPointer()) {
-    auto* alloc = IR::Logic::newAlloca(ctx->fn, name.value_or(utils::unique_id()), ll->getType());
+    auto* alloc = IR::Logic::newAlloca(ctx->getActiveFunction(), name.value_or(utils::unique_id()), ll->getType());
     ctx->builder.CreateStore(ll, alloc);
     ll = alloc;
   }
@@ -70,8 +70,8 @@ Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* m
   } else {
     Vec<llvm::Value*> argVals = args;
     SHOW("Value: Casting return arg type to reference")
-    auto* retValAlloca =
-        IR::Logic::newAlloca(ctx->fn, utils::unique_id(), retArgTy->asReference()->getSubType()->getLLVMType());
+    auto* retValAlloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(),
+                                              retArgTy->asReference()->getSubType()->getLLVMType());
     argVals.push_back(retValAlloca);
     ctx->builder.CreateCall(fnTy, ll, argVals);
     return new Value(retValAlloca, retArgTy, false, IR::Nature::temporary);

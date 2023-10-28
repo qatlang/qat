@@ -17,7 +17,7 @@ void DestructorDefinition::define(IR::Context* ctx) {
 }
 
 IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
-  ctx->fn = memberFn;
+  auto* oldFn = ctx->setActiveFunction(memberFn);
   SHOW("Set active destructor: " << memberFn->getFullName())
   auto* block = new IR::Block(memberFn, nullptr);
   SHOW("Created entry block")
@@ -32,6 +32,7 @@ IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
   emitSentences(sentences, ctx);
   IR::functionReturnHandler(ctx, memberFn, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
+  (void)ctx->setActiveFunction(oldFn);
   return nullptr;
 }
 

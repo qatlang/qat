@@ -55,7 +55,7 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
   auto* mallocFn = mod->getLLVMModule()->getFunction("malloc");
   if (resTy->isMulti()) {
     SHOW("Creating alloca for multi pointer")
-    auto* llAlloca = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), resTy->getLLVMType());
+    auto* llAlloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), resTy->getLLVMType());
     ctx->builder.CreateStore(
         ctx->builder.CreatePointerCast(
             ctx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn,
@@ -114,9 +114,10 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
                  fileRange);
     }
     auto* mod       = ctx->getMod();
-    auto* currBlock = ctx->fn->getBlock();
-    auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    auto* restBlock = new IR::Block(ctx->fn, nullptr);
+    auto* fun       = ctx->getActiveFunction();
+    auto* currBlock = fun->getBlock();
+    auto* trueBlock = new IR::Block(fun, fun->getBlock());
+    auto* restBlock = new IR::Block(fun, nullptr);
     restBlock->linkPrevBlock(currBlock);
     SHOW("Created condition blocks")
     SHOW("Exp type is: " << exp->getType()->toString())
@@ -159,7 +160,8 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
     restBlock->setActive(ctx->builder);
     return nullptr;
   } else {
-    ctx->Error("heap'put requires an expression that is of the pointer type, but the provided expression is of type " +
+    ctx->Error(ctx->highlightError("heap'put") +
+                   " requires an expression that is of the pointer type, but the provided expression is of type " +
                    exp->getType()->toString(),
                ptr->fileRange);
   }
@@ -270,7 +272,7 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
                                        llvm::ConstantExpr::getSizeOf(ptrVal->getType()->getLLVMType()))}),
         llvm::PointerType::get(ptrType->asPointer()->getSubType()->getLLVMType(),
                                   ctx->dataLayout->getProgramAddressSpace()));
-    auto* resAlloc = IR::Logic::newAlloca(ctx->fn, utils::unique_id(), ptrType->getLLVMType());
+    auto* resAlloc = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), ptrType->getLLVMType());
     SHOW("Storing raw pointer into multipointer")
     ctx->builder.CreateStore(ptrRes, ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 0u));
     SHOW("Storing count into multipointer")

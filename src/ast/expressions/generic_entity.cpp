@@ -13,7 +13,6 @@ GenericEntity::GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<FillGene
 
 IR::Value* GenericEntity::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
-  auto* oldMod  = mod;
   auto  reqInfo = ctx->getAccessInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
@@ -45,8 +44,8 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
       }
     }
   }
-  auto* fun  = ctx->fn;
-  auto* curr = fun ? ctx->fn->getBlock() : nullptr;
+  auto* oldFn = ctx->getActiveFunction();
+  auto* curr  = ctx->hasActiveFunction() ? ctx->getActiveFunction()->getBlock() : nullptr;
   if (mod->hasGenericFunction(entityName.value) ||
       mod->hasBroughtGenericFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getAccessInfo()).first) {
@@ -55,7 +54,7 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic function " + ctx->highlightError(fullName.value) + " is not accessible here", fullName.range);
     }
-    ctx->mod = genericFn->getModule();
+    auto* oldMod = ctx->setActiveModule(genericFn->getModule());
     SHOW("Got module of generic function")
     if (genericTypes.empty()) {
       SHOW("Checking if all generic abstracts have defaults")
@@ -93,11 +92,11 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     SHOW("Calling fillGenerics")
     auto* fnRes = genericFn->fillGenerics(types, ctx, fileRange);
     SHOW("fillGenerics completed")
-    ctx->fn = fun;
+    (void)ctx->setActiveFunction(oldFn);
     if (curr) {
       curr->setActive(ctx->builder);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
     return fnRes;
   } else {
     // FIXME - Support static members of generic types

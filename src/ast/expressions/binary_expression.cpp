@@ -614,18 +614,18 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), (op == Op::equalTo) ? strCmpRes : !strCmpRes),
             IR::UnsignedType::getBool(ctx->llctx));
       }
-      auto* curr              = ctx->fn->getBlock();
-      auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
-      auto* strCmpTrueBlock   = new IR::Block(ctx->fn, curr);
-      auto* strCmpFalseBlock  = new IR::Block(ctx->fn, curr);
-      auto* iterCondBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
-      auto* iterTrueBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
-      auto* iterIncrBlock     = new IR::Block(ctx->fn, lenCheckTrueBlock);
-      auto* iterFalseBlock    = new IR::Block(ctx->fn, lenCheckTrueBlock);
-      auto* restBlock         = new IR::Block(ctx->fn, curr->getParent());
+      auto* curr              = ctx->getActiveFunction()->getBlock();
+      auto* lenCheckTrueBlock = new IR::Block(ctx->getActiveFunction(), curr);
+      auto* strCmpTrueBlock   = new IR::Block(ctx->getActiveFunction(), curr);
+      auto* strCmpFalseBlock  = new IR::Block(ctx->getActiveFunction(), curr);
+      auto* iterCondBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
+      auto* iterTrueBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
+      auto* iterIncrBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
+      auto* iterFalseBlock    = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
+      auto* restBlock         = new IR::Block(ctx->getActiveFunction(), curr->getParent());
       restBlock->linkPrevBlock(curr);
       auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->llctx);
-      auto* qatStrCmpIndex = ctx->fn->getFunctionCommonIndex();
+      auto* qatStrCmpIndex = ctx->getActiveFunction()->getFunctionCommonIndex();
       // NOTE - Length equality check
       ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(lhsCount, rhsCount), lenCheckTrueBlock->getBB(),
                                 strCmpFalseBlock->getBB());

@@ -14,8 +14,8 @@ GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expressio
 void GlobalDeclaration::define(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "global value", None);
-  auto* init = mod->getGlobalInitialiser(ctx);
-  ctx->fn    = init;
+  auto* init  = mod->getGlobalInitialiser(ctx);
+  auto* oldFn = ctx->setActiveFunction(init);
   init->getBlock()->setActive(ctx->builder);
   if (!type) {
     ctx->Error("Expected a type for global declaration", fileRange);
@@ -42,7 +42,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   }
   globalEntity =
       new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, initialValue, gvar, ctx->getVisibInfo(visibility));
-  ctx->fn = nullptr;
+  (void)ctx->setActiveFunction(oldFn);
 }
 
 IR::Value* GlobalDeclaration::emit(IR::Context* ctx) { return globalEntity; }

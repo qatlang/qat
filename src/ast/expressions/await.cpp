@@ -12,8 +12,8 @@ Await::Await(Expression* _exp, FileRange _range) : Expression(std::move(_range))
 IR::Value* Await::emit(IR::Context* ctx) {
   SHOW("Exp nodetype is: " << (int)exp->nodeType())
   SHOW("Starting await emitting")
-  if (!ctx->fn->isAsyncFunction()) {
-    if (ctx->fn->getFullName() != "main") {
+  if (!ctx->getActiveFunction()->isAsyncFunction()) {
+    if (ctx->getActiveFunction()->getFullName() != "main") {
       ctx->Error("Please make the function async. " + ctx->highlightError("await") +
                      " can be used only inside an async function, expect in the case of the main function",
                  fileRange);
@@ -27,15 +27,7 @@ IR::Value* Await::emit(IR::Context* ctx) {
     if (expEmit->isReference()) {
       expEmit->loadImplicitPointer(ctx->builder);
     }
-    // ctx->getMod()->linkNative(IR::NativeUnit::pthreadJoin);
-    // auto* pthreadJoin = ctx->getMod()->getLLVMModule()->getFunction("pthread_join");
-    // auto* retVal = IR::Logic::newAlloca(ctx->fn, utils::unique_id(),
-    // llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()); ctx->builder.CreateCall(
-    //     pthreadJoin->getFunctionType(), pthreadJoin,
-    //     {ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-    //                              ctx->builder.CreateStructGEP(futureTy->getLLVMType(), expEmit->getLLVM(), 0)),
-    //      retVal});
-    auto* fun        = ctx->fn;
+    auto* fun        = ctx->getActiveFunction();
     auto* trueBlock  = new IR::Block(fun, fun->getBlock());
     auto* falseBlock = new IR::Block(fun, fun->getBlock());
     auto* restBlock  = new IR::Block(fun, nullptr);

@@ -25,10 +25,10 @@ IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   } else {
     uniqueName = utils::unique_id();
   }
-  auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+  auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
   SHOW("Infinite loop true block " << trueBlock->getName())
-  auto* restBlock = new IR::Block(ctx->fn, nullptr);
-  restBlock->linkPrevBlock(ctx->fn->getBlock());
+  auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
+  restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
   SHOW("Infinite loop rest block " << restBlock->getName())
   (void)IR::addBranch(ctx->builder, trueBlock->getBB());
   trueBlock->setActive(ctx->builder);

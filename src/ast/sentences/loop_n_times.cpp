@@ -24,7 +24,7 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-    if (ctx->fn->getBlock()->hasValue(tag->value)) {
+    if (ctx->getActiveFunction()->getBlock()->hasValue(tag->value)) {
       ctx->Error("There already exists another local value with the same name as this tag", tag->range);
     }
   }
@@ -40,16 +40,17 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
       countTy = limit->getType()->asReference()->getSubType();
       llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
     }
-    auto  uniq      = hasTag() ? tag.value().value : utils::unique_id();
-    auto* loopIndex = ctx->fn->getBlock()->newValue(uniq, countTy, false, tag.has_value() ? tag->range : fileRange);
+    auto  uniq = hasTag() ? tag.value().value : utils::unique_id();
+    auto* loopIndex =
+        ctx->getActiveFunction()->getBlock()->newValue(uniq, countTy, false, tag.has_value() ? tag->range : fileRange);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u), loopIndex->getAlloca());
-    auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    SHOW("loop times true block " << ctx->fn->getFullName() << "." << trueBlock->getName())
-    auto* condBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-    SHOW("loop times cond block " << ctx->fn->getFullName() << "." << condBlock->getName())
-    auto* restBlock = new IR::Block(ctx->fn, nullptr);
-    restBlock->linkPrevBlock(ctx->fn->getBlock());
-    SHOW("loop times rest block " << ctx->fn->getFullName() << "." << restBlock->getName())
+    auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+    SHOW("loop times true block " << ctx->getActiveFunction()->getFullName() << "." << trueBlock->getName())
+    auto* condBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+    SHOW("loop times cond block " << ctx->getActiveFunction()->getFullName() << "." << condBlock->getName())
+    auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
+    restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
+    SHOW("loop times rest block " << ctx->getActiveFunction()->getFullName() << "." << restBlock->getName())
     ctx->builder.CreateCondBr(
         (countTy->isUnsignedInteger()
              ? ctx->builder.CreateICmpULT(

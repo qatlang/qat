@@ -15,7 +15,7 @@ GiveSentence::GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
 
 IR::Value* GiveSentence::emit(IR::Context* ctx) {
-  auto* fun = ctx->fn;
+  auto* fun = ctx->getActiveFunction();
   if (fun->isAsyncFunction() ? fun->getType()
                                    ->asFunction()
                                    ->getReturnArgType()

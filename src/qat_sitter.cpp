@@ -59,9 +59,9 @@ void QatSitter::init() {
       fs::remove_all(cfg->getOutputPath() / "llvm");
     }
     for (auto* entity : fileEntities) {
-      ctx->mod = entity;
-      SHOW("Calling emitNodes")
+      auto* oldMod = ctx->setActiveModule(entity);
       entity->emitNodes(ctx);
+      (void)ctx->setActiveModule(oldMod);
     }
     SHOW("Emitted nodes")
     ctx->qatEndTime = std::chrono::high_resolution_clock::now();

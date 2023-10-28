@@ -8,9 +8,9 @@ IR::Value* Self::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Self is not assignable", fileRange);
   }
-  if (ctx->fn) {
-    if (ctx->fn->isMemberFunction()) {
-      auto* mFn = (IR::MemberFunction*)ctx->fn;
+  if (ctx->hasActiveFunction()) {
+    if (ctx->getActiveFunction()->isMemberFunction()) {
+      auto* mFn = (IR::MemberFunction*)ctx->getActiveFunction();
       return new IR::Value(mFn->getFirstBlock()->getValue("''")->getLLVM(),
                            IR::ReferenceType::get(mFn->isVariationFunction(), mFn->getParentType(), ctx), false,
                            IR::Nature::temporary);

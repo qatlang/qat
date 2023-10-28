@@ -147,7 +147,7 @@ void MemberDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
 
 IR::Value* MemberDefinition::emit(IR::Context* ctx) {
   auto* fnEmit = (IR::MemberFunction*)prototype->emit(ctx);
-  ctx->fn      = fnEmit;
+  ctx->setActiveFunction(fnEmit);
   SHOW("Set active member function: " << fnEmit->getFullName())
   if (prototype->isAsync) {
     auto* fun        = fnEmit->getAsyncSubFunction();
@@ -158,8 +158,8 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
     ctx->getMod()->linkNative(IR::NativeUnit::pthreadCreate);
     ctx->getMod()->linkNative(IR::NativeUnit::pthreadAttrInit);
     SHOW("Linked pthread_create & pthread_attr_init functions to current module")
-    auto* pthreadCreate     = ctx->mod->getLLVMModule()->getFunction("pthread_create");
-    auto* pthreadAttrInitFn = ctx->mod->getLLVMModule()->getFunction("pthread_attr_init");
+    auto* pthreadCreate     = ctx->getMod()->getLLVMModule()->getFunction("pthread_create");
+    auto* pthreadAttrInitFn = ctx->getMod()->getLLVMModule()->getFunction("pthread_attr_init");
     auto* argAlloca         = ctx->builder.CreateAlloca(fnEmit->getAsyncArgType());
     auto* pthreadAttrAlloca = ctx->builder.CreateAlloca(llvm::StructType::getTypeByName(ctx->llctx, "pthread_attr_t"));
     SHOW("Create allocas for async arg and pthread_attr_t")

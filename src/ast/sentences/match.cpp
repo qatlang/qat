@@ -63,8 +63,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
   } else {
     isExpVariable = expEmit->isVariable();
   }
-  auto* curr      = ctx->fn->getBlock();
-  auto* restBlock = new IR::Block(ctx->fn, nullptr);
+  auto* curr      = ctx->getActiveFunction()->getBlock();
+  auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
   restBlock->linkPrevBlock(curr);
   bool elseNotRequired = false;
   if (expTy->isMix()) {
@@ -134,10 +134,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
             llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
                                    mTy->getIndexOfName(uMatch->getName().value))));
       }
-      auto* trueBlock = new IR::Block(ctx->fn, curr);
+      auto* trueBlock = new IR::Block(ctx->getActiveFunction(), curr);
       falseBlock      = nullptr;
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-        falseBlock = new IR::Block(ctx->fn, curr);
+        falseBlock = new IR::Block(ctx->getActiveFunction(), curr);
         if (conditions.size() == 1) {
           ctx->builder.CreateCondBr(conditions.front(), trueBlock->getBB(), falseBlock->getBB());
         } else {
@@ -264,7 +264,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
           ctx->Error("Unexpected match value type here", caseValElem->getMainRange());
         }
       }
-      auto* trueBlock = new IR::Block(ctx->fn, curr);
+      auto* trueBlock = new IR::Block(ctx->getActiveFunction(), curr);
       // NOTE - Maybe change this?
       falseBlock = nullptr;
       llvm::Value* cond;
@@ -274,7 +274,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         cond = caseComparisons.front();
       }
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-        falseBlock = new IR::Block(ctx->fn, curr);
+        falseBlock = new IR::Block(ctx->getActiveFunction(), curr);
         ctx->builder.CreateCondBr(cond, trueBlock->getBB(), falseBlock->getBB());
       } else {
         ctx->builder.CreateCondBr(cond, trueBlock->getBB(), restBlock->getBB());
@@ -364,7 +364,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         matchResult.push_back(CaseResult(caseRes, areAllConstValues));
         SHOW("Case constant result: " << (caseRes ? "true" : "false"))
         if (caseRes) {
-          auto* trueBlock = new IR::Block(ctx->fn, curr);
+          auto* trueBlock = new IR::Block(ctx->getActiveFunction(), curr);
           (void)IR::addBranch(ctx->builder, trueBlock->getBB());
           trueBlock->setActive(ctx->builder);
           emitSentences(section.second, ctx);
@@ -380,9 +380,9 @@ IR::Value* Match::emit(IR::Context* ctx) {
         matchResult.push_back(CaseResult(None, false));
       }
       SHOW("Creating case true block")
-      auto* caseTrueBlock = new IR::Block(ctx->fn, curr);
+      auto* caseTrueBlock = new IR::Block(ctx->getActiveFunction(), curr);
       SHOW("Creating case false block")
-      auto* checkFalseBlock = new IR::Block(ctx->fn, curr);
+      auto* checkFalseBlock = new IR::Block(ctx->getActiveFunction(), curr);
       SHOW("Setting thisCaseFalseBlock")
       IR::Block* thisCaseFalseBlock;
       for (usize j = 0; j < section.first.size(); j++) {
@@ -392,7 +392,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         if (j == section.first.size() - 1) {
           thisCaseFalseBlock = checkFalseBlock;
         } else {
-          thisCaseFalseBlock = new IR::Block(ctx->fn, curr);
+          thisCaseFalseBlock = new IR::Block(ctx->getActiveFunction(), curr);
         }
         IR::Value*   caseIR       = irStrVals.at(j);
         llvm::Value* caseStrBuff  = nullptr;
@@ -400,7 +400,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         // FIXME - Add optimisation for constant strings
         if (caseIR->getType()->isStringSlice() ||
             (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
-          auto* elemIter = ctx->fn->getFunctionCommonIndex();
+          auto* elemIter = ctx->getActiveFunction()->getFunctionCommonIndex();
           if (caseIR->isConstVal()) {
             caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
             caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
@@ -419,17 +419,17 @@ IR::Value* Match::emit(IR::Context* ctx) {
           }
           auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
           SHOW("Creating lenCheckTrueBlock")
-          auto* lenCheckTrueBlock = new IR::Block(ctx->fn, curr);
+          auto* lenCheckTrueBlock = new IR::Block(ctx->getActiveFunction(), curr);
           ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(strCount, caseStrCount), lenCheckTrueBlock->getBB(),
                                     thisCaseFalseBlock->getBB());
           lenCheckTrueBlock->setActive(ctx->builder);
           ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), elemIter->getLLVM());
           SHOW("Creating iter cond block")
-          auto* iterCondBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          auto* iterCondBlock = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
           SHOW("Creating iter true block")
-          auto* iterTrueBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          auto* iterTrueBlock = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
           SHOW("Creating iter false block")
-          auto* iterFalseBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          auto* iterFalseBlock = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
           (void)IR::addBranch(ctx->builder, iterCondBlock->getBB());
           iterCondBlock->setActive(ctx->builder);
           ctx->builder.CreateCondBr(
@@ -438,7 +438,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
           iterTrueBlock->setActive(ctx->builder);
           auto* Ty8Int = llvm::Type::getInt8Ty(ctx->llctx);
           SHOW("Creating iter incr block")
-          auto* iterIncrBlock = new IR::Block(ctx->fn, lenCheckTrueBlock);
+          auto* iterIncrBlock = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
           ctx->builder.CreateCondBr(
               ctx->builder.CreateICmpEQ(
                   ctx->builder.CreateLoad(
@@ -480,14 +480,14 @@ IR::Value* Match::emit(IR::Context* ctx) {
           elseCase.value().second);
     } else {
       if (isFalseForAllCases() && hasConstResultForAllCases()) {
-        auto* elseBlock = new IR::Block(ctx->fn, curr);
+        auto* elseBlock = new IR::Block(ctx->getActiveFunction(), curr);
         (void)IR::addBranch(ctx->builder, elseBlock->getBB());
         elseBlock->setActive(ctx->builder);
         emitSentences(elseCase.value().first, ctx);
         elseBlock->destroyLocals(ctx);
         (void)IR::addBranch(ctx->builder, restBlock->getBB());
       } else if (!isTrueForACase()) {
-        auto* activeBlock = ctx->fn->getBlock();
+        auto* activeBlock = ctx->getActiveFunction()->getBlock();
         emitSentences(elseCase.value().first, ctx);
         activeBlock->destroyLocals(ctx);
         (void)IR::addBranch(ctx->builder, restBlock->getBB());

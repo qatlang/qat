@@ -14,7 +14,6 @@ GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<Fil
 IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Generic named type START")
   auto* mod     = ctx->getMod();
-  auto* oldMod  = mod;
   auto  reqInfo = ctx->getAccessInfo();
   if (relative != 0) {
     if (mod->hasNthParent(relative)) {
@@ -45,7 +44,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     entityName = names.back();
   }
-  auto* fun  = ctx->fn;
+  auto* fun  = ctx->getActiveFunction();
   auto* curr = fun ? fun->getBlock() : nullptr;
   if (mod->hasGenericCoreType(entityName.value) ||
       mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
@@ -58,7 +57,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     SHOW("Added mention for generic")
     genericCoreTy->addMention(entityName.range);
-    ctx->mod = genericCoreTy->getModule();
+    auto*                   oldMod = ctx->setActiveModule(genericCoreTy->getModule());
     Vec<IR::GenericToFill*> types;
     if (genericTypes.empty()) {
       SHOW("Checking if all generic abstracts have defaults")
@@ -98,11 +97,11 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     SHOW("Generic filled: " << tyRes->toString())
     SHOW(
         "  with llvm type: " << (tyRes->getLLVMType()->isStructTy() ? tyRes->getLLVMType()->getStructName().str() : ""))
-    ctx->fn = fun;
+    (void)ctx->setActiveFunction(fun);
     if (curr) {
       curr->setActive(ctx->builder);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
     return tyRes;
   } else if (mod->hasGenericTypeDef(entityName.value) ||
              mod->hasBroughtGenericTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
@@ -114,7 +113,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
                  fullName.range);
     }
     genericTypeDef->addMention(entityName.range);
-    ctx->mod = genericTypeDef->getModule();
+    auto*                   oldMod = ctx->setActiveModule(genericTypeDef->getModule());
     Vec<IR::GenericToFill*> types;
     if (genericTypes.empty()) {
       SHOW("Checking if all generic abstracts have defaults")
@@ -149,11 +148,11 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
       }
     }
     auto tyRes = genericTypeDef->fillGenerics(types, ctx, fileRange);
-    ctx->fn    = fun;
+    (void)ctx->setActiveFunction(fun);
     if (curr) {
       curr->setActive(ctx->builder);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
     return tyRes;
   } else {
     // FIXME - Support static members of generic types

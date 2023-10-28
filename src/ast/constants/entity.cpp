@@ -10,8 +10,8 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
   auto* mod  = ctx->getMod();
   auto  name = identifiers.back();
   if (identifiers.size() == 1 && relative == 0) {
-    if (ctx->fn && ctx->fn->hasGenericParameter(identifiers.front().value)) {
-      auto* genVal = ctx->fn->getGenericParameter(identifiers.front().value);
+    if (ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(identifiers.front().value)) {
+      auto* genVal = ctx->getActiveFunction()->getGenericParameter(identifiers.front().value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
       } else if (genVal->isPrerun()) {
@@ -30,9 +30,13 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
           ctx->Error("Invalid generic kind", fileRange);
         }
       }
-    } else if (ctx->fn && ctx->fn->isMemberFunction() &&
-               ((IR::MemberFunction*)ctx->fn)->getParentType()->hasGenericParameter(identifiers.front().value)) {
-      auto* genVal = ((IR::MemberFunction*)ctx->fn)->getParentType()->getGenericParameter(identifiers.front().value);
+    } else if (ctx->hasActiveFunction() && ctx->getActiveFunction()->isMemberFunction() &&
+               ((IR::MemberFunction*)ctx->getActiveFunction())
+                   ->getParentType()
+                   ->hasGenericParameter(identifiers.front().value)) {
+      auto* genVal = ((IR::MemberFunction*)ctx->getActiveFunction())
+                         ->getParentType()
+                         ->getGenericParameter(identifiers.front().value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
       } else if (genVal->isPrerun()) {

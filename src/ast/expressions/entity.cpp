@@ -7,9 +7,9 @@ Entity::Entity(u32 _relative, Vec<Identifier> _name, FileRange _fileRange)
     : Expression(std::move(_fileRange)), names(std::move(_name)), relative(_relative) {}
 
 IR::Value* Entity::emit(IR::Context* ctx) {
-  auto* fun     = ctx->fn;
+  auto* fun     = ctx->getActiveFunction();
   auto  reqInfo = ctx->getAccessInfo();
-  if (fun) {
+  if (ctx->hasActiveFunction()) {
     auto* mod = ctx->getMod();
     if ((names.size() == 1) && (relative == 0)) {
       auto singleName = names.front();
@@ -22,9 +22,14 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         } else {
           ctx->Error("Invalid generic kind", genVal->getRange());
         }
-      } else if (ctx->activeType) {
-        if (ctx->activeType->hasGenericParameter(singleName.value)) {
-          auto* genVal = ((IR::MemberFunction*)(ctx->fn))->getParentType()->getGenericParameter(singleName.value);
+      } else if (ctx->hasActiveType() && (ctx->getActiveType()->isExpanded() || ctx->getActiveType()->isOpaque())) {
+        if ((ctx->getActiveType()->isExpanded() &&
+             ctx->getActiveType()->asExpanded()->hasGenericParameter(singleName.value)) ||
+            (ctx->getActiveType()->isOpaque() &&
+             ctx->getActiveType()->asOpaque()->hasGenericParameter(singleName.value))) {
+          auto* genVal = ctx->getActiveType()->isExpanded()
+                             ? ctx->getActiveType()->asExpanded()->getGenericParameter(singleName.value)
+                             : ctx->getActiveType()->asOpaque()->getGenericParameter(singleName.value);
           if (genVal->isTyped()) {
             return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
           } else if (genVal->isPrerun()) {

@@ -367,8 +367,8 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   } else {
     Vec<llvm::Value*> argVals = argValues;
     SHOW("Function: Casting return arg type to reference")
-    auto* retValAlloca =
-        IR::Logic::newAlloca(ctx->fn, utils::unique_id(), retArgTy->asReference()->getSubType()->getLLVMType());
+    auto* retValAlloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(),
+                                              retArgTy->asReference()->getSubType()->getLLVMType());
     argVals.push_back(retValAlloca);
     ctx->builder.CreateCall(llvmFunction->getFunctionType(), llvmFunction, argVals);
     SHOW("Call complete for fn: " << getFullName())
@@ -549,10 +549,10 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
       if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
         auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
         if (ptrTy->isMulti()) {
-          auto* currBlock = ctx->fn->getBlock();
-          auto* condBlock = new IR::Block(ctx->fn, currBlock);
-          auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-          auto* restBlock = new IR::Block(ctx->fn, nullptr);
+          auto* currBlock = ctx->getActiveFunction()->getBlock();
+          auto* condBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* trueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
           restBlock->linkPrevBlock(currBlock);
           // NOLINTNEXTLINE(readability-magic-numbers)
           auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
@@ -589,9 +589,9 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
           (void)IR::addBranch(ctx->builder, condBlock->getBB());
           restBlock->setActive(ctx->builder);
         } else {
-          auto* currBlock = ctx->fn->getBlock();
-          auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-          auto* restBlock = new IR::Block(ctx->fn, nullptr);
+          auto* currBlock = ctx->getActiveFunction()->getBlock();
+          auto* trueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
           restBlock->linkPrevBlock(currBlock);
           ctx->builder.CreateCondBr(
               ctx->builder.CreateICmpNE(
@@ -644,10 +644,10 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
           if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
             auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
             if (ptrTy->isMulti()) {
-              auto* currBlock = ctx->fn->getBlock();
-              auto* condBlock = new IR::Block(ctx->fn, currBlock);
-              auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-              auto* restBlock = new IR::Block(ctx->fn, nullptr);
+              auto* currBlock = ctx->getActiveFunction()->getBlock();
+              auto* condBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+              auto* trueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+              auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
               restBlock->linkPrevBlock(currBlock);
               // NOLINTNEXTLINE(readability-magic-numbers)
               auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
@@ -684,9 +684,9 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
               (void)IR::addBranch(ctx->builder, condBlock->getBB());
               restBlock->setActive(ctx->builder);
             } else {
-              auto* currBlock = ctx->fn->getBlock();
-              auto* trueBlock = new IR::Block(ctx->fn, currBlock);
-              auto* restBlock = new IR::Block(ctx->fn, nullptr);
+              auto* currBlock = ctx->getActiveFunction()->getBlock();
+              auto* trueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+              auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
               restBlock->linkPrevBlock(currBlock);
               ctx->builder.CreateCondBr(
                   ctx->builder.CreateICmpNE(

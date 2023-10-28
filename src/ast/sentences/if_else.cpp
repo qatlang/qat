@@ -39,8 +39,8 @@ bool IfElse::isFalseTill(usize ind) const {
 }
 
 IR::Value* IfElse::emit(IR::Context* ctx) {
-  auto* restBlock = new IR::Block(ctx->fn, nullptr);
-  restBlock->linkPrevBlock(ctx->fn->getBlock());
+  auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
+  restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
   for (usize i = 0; i < chain.size(); i++) {
     const auto& section = chain.at(i);
     auto*       exp     = section.first->emit(ctx);
@@ -63,7 +63,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
     if (!trueKnownValueBefore(i).first) {
       if (hasValueAt(i) && isFalseTill(i)) {
         if (getKnownValue(i)) {
-          auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+          auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
           (void)IR::addBranch(ctx->builder, trueBlock->getBB());
           trueBlock->setActive(ctx->builder);
           emitSentences(section.second, ctx);
@@ -72,14 +72,14 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
           break;
         }
       } else {
-        auto*      trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
+        auto*      trueBlock  = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
         IR::Block* falseBlock = nullptr;
         if (exp->isImplicitPointer() || exp->isReference()) {
           exp = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), exp->getLLVM()), expTy, false,
                               IR::Nature::temporary);
         }
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-          falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+          falseBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
           ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(), falseBlock->getBB());
         } else {
           ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(), restBlock->getBB());
@@ -97,7 +97,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
   }
   if (elseCase.has_value()) {
     if (hasAnyKnownValue() && isFalseTill(knownVals.size())) {
-      auto* elseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
+      auto* elseBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
       (void)IR::addBranch(ctx->builder, elseBlock->getBB());
       elseBlock->setActive(ctx->builder);
       emitSentences(elseCase.value(), ctx);
@@ -105,7 +105,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !trueKnownValueBefore(knownVals.size()).first)) {
       emitSentences(elseCase.value(), ctx);
-      ctx->fn->getBlock()->destroyLocals(ctx);
+      ctx->getActiveFunction()->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
   } else {

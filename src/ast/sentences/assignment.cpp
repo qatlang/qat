@@ -95,9 +95,9 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         }
       }
       if (subTy->isExpanded() && subTy->asExpanded()->hasDestructor()) {
-        auto* tagTrueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-        auto* restBlock    = new IR::Block(ctx->fn, nullptr);
-        restBlock->linkPrevBlock(ctx->fn->getBlock());
+        auto* tagTrueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+        auto* restBlock    = new IR::Block(ctx->getActiveFunction(), nullptr);
+        restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
         ctx->builder.CreateCondBr(
             ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                       llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
@@ -135,11 +135,11 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* maybeTagRhs = ctx->builder.CreateLoad(
               llvm::Type::getInt1Ty(ctx->llctx), ctx->builder.CreateStructGEP(mTy->getLLVMType(), exp->getLLVM(), 0u));
           auto* maybeValueRhsRef = ctx->builder.CreateStructGEP(mTy->getLLVMType(), exp->getLLVM(), 1u);
-          auto* currBlock        = ctx->fn->getBlock();
+          auto* currBlock        = ctx->getActiveFunction()->getBlock();
           auto* condBothTrue     = ctx->builder.CreateAnd(
               {ctx->builder.CreateICmpEQ(maybeTagLhs, trueBool), ctx->builder.CreateICmpEQ(maybeTagRhs, trueBool)});
-          auto* firstTrueBlock  = new IR::Block(ctx->fn, currBlock);
-          auto* firstFalseBlock = new IR::Block(ctx->fn, currBlock);
+          auto* firstTrueBlock  = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* firstFalseBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
           ctx->builder.CreateCondBr(condBothTrue, firstTrueBlock->getBB(), firstFalseBlock->getBB());
           firstTrueBlock->setActive(ctx->builder);
           if (exTy->hasCopyAssignment() || exTy->hasMoveAssignment()) {
@@ -157,8 +157,8 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           firstFalseBlock->setActive(ctx->builder);
           auto* condTrueAndFalse = ctx->builder.CreateAnd(
               {ctx->builder.CreateICmpEQ(maybeTagLhs, trueBool), ctx->builder.CreateICmpEQ(maybeTagRhs, falseBool)});
-          auto* secTrueBlock  = new IR::Block(ctx->fn, currBlock);
-          auto* secFalseBlock = new IR::Block(ctx->fn, currBlock);
+          auto* secTrueBlock  = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* secFalseBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
           ctx->builder.CreateCondBr(condTrueAndFalse, secTrueBlock->getBB(), secFalseBlock->getBB());
           secTrueBlock->setActive(ctx->builder);
           if (exTy->hasDestructor()) {
@@ -171,8 +171,8 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           secFalseBlock->setActive(ctx->builder);
           auto* condFalseAndTrue = ctx->builder.CreateAnd(
               {ctx->builder.CreateICmpEQ(maybeTagLhs, falseBool), ctx->builder.CreateICmpEQ(maybeTagRhs, trueBool)});
-          auto* thirdTrueBlock = new IR::Block(ctx->fn, currBlock);
-          auto* restBlock      = new IR::Block(ctx->fn, nullptr);
+          auto* thirdTrueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
+          auto* restBlock      = new IR::Block(ctx->getActiveFunction(), nullptr);
           restBlock->linkPrevBlock(currBlock);
           ctx->builder.CreateCondBr(condFalseAndTrue, thirdTrueBlock->getBB(), restBlock->getBB());
           thirdTrueBlock->setActive(ctx->builder);
@@ -210,16 +210,16 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
-          auto* trueBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-          auto* restBlock = new IR::Block(ctx->fn, nullptr);
-          restBlock->linkPrevBlock(ctx->fn->getBlock());
+          auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+          auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
+          restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), restBlock->getBB());
           trueBlock->setActive(ctx->builder);
           subTy->destroyValue(
               ctx,
               {new IR::Value(ctx->builder.CreateStructGEP(mTy->getLLVMType(), lhsVal->getLLVM(), 1u),
                              IR::ReferenceType::get(true, mTy->getSubType(), ctx), false, IR::Nature::temporary)},
-              ctx->fn);
+              ctx->getActiveFunction());
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           restBlock->setActive(ctx->builder);
         }
@@ -238,10 +238,10 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
           auto* condLhsTrue =
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), maybeTagLhsRef),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u));
-          auto* trueBlock  = new IR::Block(ctx->fn, ctx->fn->getBlock());
-          auto* falseBlock = new IR::Block(ctx->fn, ctx->fn->getBlock());
-          auto* restBlock  = new IR::Block(ctx->fn, nullptr);
-          restBlock->linkPrevBlock(ctx->fn->getBlock());
+          auto* trueBlock  = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+          auto* falseBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+          auto* restBlock  = new IR::Block(ctx->getActiveFunction(), nullptr);
+          restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
           ctx->builder.CreateCondBr(condLhsTrue, trueBlock->getBB(), falseBlock->getBB());
           trueBlock->setActive(ctx->builder);
           if (exTy->hasCopyAssignment() || exTy->hasMoveAssignment()) {
@@ -252,7 +252,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
               exTy->destroyValue(ctx,
                                  {new IR::Value(maybeValueLhsRef, IR::ReferenceType::get(true, mTy->getSubType(), ctx),
                                                 false, IR::Nature::temporary)},
-                                 ctx->fn);
+                                 ctx->getActiveFunction());
             }
             ctx->builder.CreateStore(ctx->builder.CreateLoad(exTy->getLLVMType(), exp->getLLVM()), maybeValueLhsRef);
           }

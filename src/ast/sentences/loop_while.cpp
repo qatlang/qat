@@ -27,7 +27,7 @@ IR::Value* LoopWhile::emit(IR::Context* ctx) {
   cond->loadImplicitPointer(ctx->builder);
   if (cond->getType()->isBool() ||
       (cond->getType()->isReference() && cond->getType()->asReference()->getSubType()->isBool())) {
-    auto* fun       = ctx->fn;
+    auto* fun       = ctx->getActiveFunction();
     auto* trueBlock = new IR::Block(fun, fun->getBlock());
     auto* condBlock = new IR::Block(fun, fun->getBlock());
     auto* restBlock = new IR::Block(fun, fun->getBlock());

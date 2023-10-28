@@ -8,7 +8,7 @@ SelfMember::SelfMember(Identifier _name, FileRange _fileRange)
 
 IR::Value* SelfMember::emit(IR::Context* ctx) {
   SHOW("Emitting self member at: " << (Json)fileRange)
-  auto* fun = ctx->fn;
+  auto* fun = ctx->getActiveFunction();
   if (fun->isMemberFunction()) {
     auto* mFn = (IR::MemberFunction*)fun;
     if (mFn->isStaticFunction()) {

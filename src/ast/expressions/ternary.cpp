@@ -23,7 +23,7 @@ IR::Value* TernaryExpression::emit(IR::Context* ctx) {
     }
     // FIXME - Support bool conversions and maybe
     if (genType->isBool()) {
-      auto* fun        = ctx->fn;
+      auto* fun        = ctx->getActiveFunction();
       auto* trueBlock  = new IR::Block(fun, fun->getBlock());
       auto* falseBlock = new IR::Block(fun, fun->getBlock());
       auto* mergeBlock = new IR::Block(fun, fun->getBlock());

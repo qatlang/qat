@@ -18,7 +18,7 @@ private:
   Vec<Identifier> names;
 
 public:
-  NamedType(u32 relative, Vec<Identifier> names, bool variable, FileRange fileRange);
+  NamedType(u32 relative, Vec<Identifier> names, FileRange fileRange);
 
   useit String getName() const;
   useit u32    getRelative() const;

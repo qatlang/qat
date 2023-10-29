@@ -4,8 +4,8 @@
 
 namespace qat::ast {
 
-NamedType::NamedType(u32 _relative, Vec<Identifier> _names, const bool _variable, FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), relative(_relative), names(std::move(_names)) {}
+NamedType::NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), relative(_relative), names(std::move(_names)) {}
 
 IR::QatType* NamedType::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
@@ -19,13 +19,18 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
   }
   auto entityName = names.back();
   if (names.size() == 1) {
-    if ((ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) ||
-        (ctx->activeType && ctx->activeType->hasGenericParameter(entityName.value))) {
+    if ((ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(entityName.value)) ||
+        (ctx->hasActiveType() && ((ctx->getActiveType()->isExpanded() &&
+                                   ctx->getActiveType()->asExpanded()->hasGenericParameter(entityName.value)) ||
+                                  (ctx->getActiveType()->isOpaque() &&
+                                   ctx->getActiveType()->asOpaque()->hasGenericParameter(entityName.value))))) {
       IR::GenericParameter* genParam;
-      if (ctx->fn && ctx->fn->hasGenericParameter(entityName.value)) {
-        genParam = ctx->fn->getGenericParameter(entityName.value);
+      if (ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(entityName.value)) {
+        genParam = ctx->getActiveFunction()->getGenericParameter(entityName.value);
       } else {
-        genParam = ctx->activeType->getGenericParameter(entityName.value);
+        genParam = ctx->getActiveType()->isExpanded()
+                       ? ctx->getActiveType()->asExpanded()->getGenericParameter(entityName.value)
+                       : ctx->getActiveType()->asOpaque()->getGenericParameter(entityName.value);
       }
       if (genParam->isTyped()) {
         return genParam->asTyped()->getType();
@@ -35,7 +40,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
           return exp->getType()->asTyped()->getSubType();
         } else {
           ctx->Error("Generic parameter " + ctx->highlightError(entityName.value) +
-                         " is a normal const expression and hence cannot be used as a type",
+                         " is a normal prerun expression and hence cannot be used as a type",
                      fileRange);
         }
       } else {
@@ -65,9 +70,29 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       }
     }
   }
-  if (mod->hasCoreType(entityName.value) ||
-      mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
-      mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
+  if (mod->hasOpaqueType(entityName.value) ||
+      mod->hasBroughtOpaqueType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      mod->hasAccessibleOpaqueTypeInImports(entityName.value, reqInfo).first) {
+    auto* oTy = mod->getOpaqueType(entityName.value, reqInfo);
+    if (!oTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error(
+          (oTy->isSubtypeCore() ? "Core type " : (oTy->isSubtypeMix() ? "Mix type " : "Incomplete opaque type ")) +
+              ctx->highlightError(oTy->getFullName()) + " inside module " + ctx->highlightError(mod->getFullName()) +
+              " is not accessible here",
+          entityName.range);
+    }
+    if (oTy->isGeneric()) {
+      ctx->Error(oTy->isSubtypeCore()
+                     ? "Core type "
+                     : (oTy->isSubtypeMix() ? "Mix type " : "Type ") + ctx->highlightError(oTy->toString()) +
+                           " is a generic type and hence cannot be used as a normal type",
+                 fileRange);
+    }
+    oTy->addMention(entityName.range);
+    return oTy;
+  } else if (mod->hasCoreType(entityName.value) ||
+             mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
     auto* cTy = mod->getCoreType(entityName.value, reqInfo);
     if (!cTy->getVisibility().isAccessible(reqInfo)) {
       ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) + " inside module " +
@@ -137,9 +162,9 @@ Json NamedType::toJson() const {
   for (auto const& nam : names) {
     nameJs.push_back(JsonValue(nam));
   }
-  return Json()._("typeKind", "named")._("names", nameJs)._("isVariable", isVariable())._("fileRange", fileRange);
+  return Json()._("typeKind", "named")._("names", nameJs)._("fileRange", fileRange);
 }
 
-String NamedType::toString() const { return (isVariable() ? "var " : "") + Identifier::fullName(names).value; }
+String NamedType::toString() const { return Identifier::fullName(names).value; }
 
 } // namespace qat::ast

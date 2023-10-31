@@ -23,12 +23,20 @@ private:
 
 protected:
   Maybe<IR::QatType*> inferredType;
+  IR::LocalValue*     localValue = nullptr;
+  IR::Value*          createIn   = nullptr;
 
 public:
   Expression(FileRange _fileRange);
 
-  bool isTypeInferred() const;
-  void setInferenceType(IR::QatType* type);
+  useit inline bool isLocalDecl() const { return localValue != nullptr; }
+  inline void       setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
+
+  useit inline bool canCreateIn() const { return createIn != nullptr; }
+  inline void       setCreateIn(IR::Value* _createIn) { createIn = _createIn; }
+
+  useit inline bool isTypeInferred() const { return inferredType.has_value(); }
+  inline void       setInferenceType(IR::QatType* _type) { inferredType = _type; }
 
   void                 setExpectedKind(ExpressionKind _kind);
   useit ExpressionKind getExpectedKind();

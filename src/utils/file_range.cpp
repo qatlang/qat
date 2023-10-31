@@ -26,6 +26,8 @@ FileRange::FileRange(const FileRange& first, const FileRange& second)
 FileRange::FileRange(Json json)
     : file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
 
+FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*this, other}; }
+
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
 
 FileRange::operator JsonValue() const { return (Json)(*this); }

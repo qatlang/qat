@@ -66,6 +66,8 @@ public:
   /** Ending position of the range */
   FilePos end;
 
+  FileRange spanTo(FileRange const& other) const;
+
   operator Json() const;
 
   operator JsonValue() const;

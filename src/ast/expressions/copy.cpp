@@ -1,6 +1,5 @@
 #include "./copy.hpp"
 #include "../../IR/logic.hpp"
-#include "../../IR/types/maybe.hpp"
 
 namespace qat::ast {
 
@@ -9,47 +8,75 @@ Copy::Copy(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileR
 IR::Value* Copy::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->getType();
-  if ((expTy->isExpanded() && expEmit->isImplicitPointer()) ||
-      (expTy->isReference() && expTy->asReference()->getSubType()->isExpanded())) {
-    auto* eTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asExpanded()
-                                       : expEmit->getType()->asExpanded();
-    if (eTy->hasCopyConstructor()) {
-      llvm::Value* alloca = nullptr;
-      if (local) {
-        if (!eTy->isSame(local->getType()) &&
-            (local->getType()->isMaybe() && !eTy->isSame(local->getType()->asMaybe()->getSubType()))) {
-          ctx->Error("The type provided in the local declaration does not match the type to be copied", fileRange);
+  if (expEmit->isImplicitPointer() || expTy->isReference()) {
+    if (expTy->isReference()) {
+      expEmit->loadImplicitPointer(ctx->builder);
+    }
+    auto* candTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType() : expEmit->getType();
+    if (!isAssignment) {
+      if (candTy->isCopyConstructible()) {
+        const bool didNotHaveCreateIn = !canCreateIn();
+        if (isLocalDecl()) {
+          if (!candTy->isSame(localValue->getType())) {
+            ctx->Error("The type provided in the local declaration does not match the type of the value to be copied",
+                       fileRange);
+          }
+          createIn = new IR::Value(localValue->getAlloca(), IR::ReferenceType::get(true, candTy, ctx), false,
+                                   IR::Nature::temporary);
+        } else if (!canCreateIn()) {
+          createIn =
+              new IR::Value(IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), candTy->getLLVMType()),
+                            candTy, isVar, IR::Nature::temporary);
         }
-        alloca = local->getType()->isMaybe()
-                     ? ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u)
-                     : local->getAlloca();
-      } else if (irName.has_value()) {
-        local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, eTy, isVar, irName->range);
-        alloca = local->getAlloca();
-      } else {
-        alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), eTy->getLLVMType());
-      }
-      (void)eTy->getCopyConstructor()->call(ctx, {alloca, expEmit->getLLVM()}, ctx->getMod());
-      if (local) {
-        if (local->getType()->isMaybe()) {
-          ctx->builder.CreateStore(
-              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-              ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
+        (void)candTy->copyConstructValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        if (didNotHaveCreateIn) {
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
+                               IR::Nature::temporary);
+        } else {
+          return createIn;
         }
-        auto* val = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
-        val->setLocalID(local->getLocalID());
-        return val;
+      } else if (candTy->isTriviallyCopyable()) {
+        if (isLocalDecl()) {
+          if (!candTy->isSame(localValue->getType())) {
+            ctx->Error("The type provided in the local declaration does not match the type of the value to be copied",
+                       fileRange);
+          }
+          createIn = new IR::Value(localValue->getAlloca(), IR::ReferenceType::get(true, candTy, ctx), false,
+                                   IR::Nature::temporary);
+        }
+        if (canCreateIn()) {
+          // FIXME - Use memcpy?
+          ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                   createIn->getLLVM());
+          return createIn;
+        } else {
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()), candTy, false,
+                               IR::Nature::temporary);
+        }
       } else {
-        return new IR::Value(alloca, eTy, true, IR::Nature::pure);
+        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                       ctx->highlightError(candTy->toString()) +
+                       " does not have a copy constructor and is also not trivially copyable",
+                   fileRange);
       }
     } else {
-      ctx->Error((eTy->isCoreType() ? "Core type " : (eTy->isMix() ? "Mix type " : "Type ")) +
-                     ctx->highlightError(eTy->getFullName()) + " does not have a copy constructor",
-                 fileRange);
+      if (candTy->isCopyAssignable()) {
+        (void)candTy->copyAssignValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        return createIn;
+      } else if (candTy->isTriviallyCopyable()) {
+        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                 createIn->getLLVM());
+        return createIn;
+      } else {
+        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                       ctx->highlightError(candTy->toString()) +
+                       " does not have a copy assignment operator and is also not trivially copyable",
+                   fileRange);
+      }
     }
   } else {
     ctx->Error(
-        "The value provided should either be a reference or a local variable. The provided value does not reside in an address and hence cannot be copied from",
+        "This expression is a value. Expression provided should either be a reference, a local or a global variable. The provided value does not reside in an address and hence cannot be copied from",
         fileRange);
   }
   return nullptr;

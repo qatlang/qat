@@ -11,9 +11,10 @@ class Copy : public Expression {
 
 private:
   Expression*       exp;
-  IR::LocalValue*   local = nullptr;
   Maybe<Identifier> irName;
   bool              isVar = false;
+
+  bool isAssignment = false;
 
 public:
   Copy(Expression* exp, FileRange fileRange);

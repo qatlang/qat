@@ -10,8 +10,10 @@ class Move : public Expression {
   friend class LocalDeclaration;
 
 private:
-  Expression*       exp;
-  IR::LocalValue*   local = nullptr;
+  Expression* exp;
+
+  bool isAssignment = false;
+
   Maybe<Identifier> irName;
   bool              isVar = false;
 

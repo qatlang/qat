@@ -8,47 +8,91 @@ Move::Move(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileR
 
 IR::Value* Move::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);
-  if ((expEmit->getType()->isCoreType() && expEmit->isImplicitPointer()) ||
-      (expEmit->getType()->isReference() && expEmit->getType()->asReference()->getSubType()->isCoreType())) {
-    auto* cTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType()->asCore()
-                                       : expEmit->getType()->asCore();
-    if (cTy->hasMoveConstructor()) {
-      llvm::Value* alloca = nullptr;
-      if (local) {
-        if (!cTy->isSame(local->getType()) &&
-            (local->getType()->isMaybe() && !cTy->isSame(local->getType()->asMaybe()->getSubType()))) {
-          ctx->Error("The type provided in the local declaration does not match the type to be moved", fileRange);
+  auto* expTy   = expEmit->getType();
+  if (expEmit->isImplicitPointer() || expTy->isReference()) {
+    if (expTy->isReference()) {
+      expEmit->loadImplicitPointer(ctx->builder);
+    }
+    auto* candTy = expEmit->isReference() ? expEmit->getType()->asReference()->getSubType() : expEmit->getType();
+    if (!isAssignment) {
+      if (candTy->isMoveConstructible()) {
+        const bool didNotHaveCreateIn = !canCreateIn();
+        if (isLocalDecl()) {
+          if (!candTy->isSame(localValue->getType())) {
+            ctx->Error("The type provided in the local declaration does not match the type of the value to be moved",
+                       fileRange);
+          }
+          createIn = new IR::Value(localValue->getAlloca(), IR::ReferenceType::get(true, candTy, ctx), false,
+                                   IR::Nature::temporary);
+        } else if (!canCreateIn()) {
+          createIn =
+              new IR::Value(IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), candTy->getLLVMType()),
+                            candTy, isVar, IR::Nature::temporary);
         }
-        alloca = local->getType()->isMaybe()
-                     ? ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u)
-                     : local->getAlloca();
-      } else if (irName.has_value()) {
-        SHOW("Created local for move from name")
-        local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-        alloca = local->getAlloca();
-      } else {
-        alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), cTy->getLLVMType());
-      }
-      (void)(cTy->getMoveConstructor()->call(ctx, {alloca, expEmit->getLLVM()}, ctx->getMod()));
-      if (local) {
-        if (local->getType()->isMaybe()) {
-          ctx->builder.CreateStore(
-              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-              ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
+        (void)candTy->moveConstructValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        if (expEmit->isLocalToFn()) {
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
         }
-        auto* val = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
-        val->setLocalID(local->getLocalID());
-        return val;
+        if (didNotHaveCreateIn) {
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
+                               IR::Nature::temporary);
+        } else {
+          return createIn;
+        }
+      } else if (candTy->isTriviallyMovable()) {
+        if (isLocalDecl()) {
+          if (!candTy->isSame(localValue->getType())) {
+            ctx->Error("The type provided in the local declaration does not match the type of the value to be moved",
+                       fileRange);
+          }
+          createIn = new IR::Value(localValue->getAlloca(), IR::ReferenceType::get(true, candTy, ctx), false,
+                                   IR::Nature::temporary);
+        }
+        if (canCreateIn()) {
+          ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                   createIn->getLLVM());
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
+          if (expEmit->isLocalToFn()) {
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+          }
+          return createIn;
+        } else {
+          auto* loadRes = ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM());
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
+          return new IR::Value(loadRes, candTy, false, IR::Nature::temporary);
+        }
       } else {
-        return new IR::Value(alloca, cTy, true, IR::Nature::pure);
+        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                       ctx->highlightError(candTy->toString()) +
+                       " does not have a move constructor and is also not trivially movable",
+                   fileRange);
       }
     } else {
-      ctx->Error("Core type " + ctx->highlightError(cTy->getFullName()) + " does not have a move ", fileRange);
+      if (candTy->isMoveAssignable()) {
+        (void)candTy->moveAssignValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        if (expEmit->isLocalToFn()) {
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+        }
+        return createIn;
+      } else if (candTy->isTriviallyMovable()) {
+        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                 createIn->getLLVM());
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
+        if (expEmit->isLocalToFn()) {
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+        }
+        return createIn;
+      } else {
+        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                       ctx->highlightError(candTy->toString()) +
+                       " does not have a move assignment operator and is also not trivially movable",
+                   fileRange);
+      }
     }
   } else {
-    ctx->Error("Invalid value provided to move expression. The value provided "
-               "should either be a variable reference or a local variable",
-               fileRange);
+    ctx->Error(
+        "This expression is a value. Expression provided should either be a reference, a local or a global variable. The provided value does not reside in an address and hence cannot be moved",
+        fileRange);
   }
   return nullptr;
 }

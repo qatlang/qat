@@ -65,6 +65,11 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   }
   SHOW("Types generated")
   if (isMainFn) {
+    if (visibility != VisibilityKind::pub) {
+      ctx->Error("This is the " + ctx->highlightError("main") + " function, please make this function public like " +
+                     ctx->highlightError("pub main"),
+                 name.range);
+    }
     if (ctx->getMod()->hasMainFn()) {
       ctx->Error(ctx->highlightError("main") + " function already exists in this module. Please check "
                                                "the codebase",
@@ -206,7 +211,7 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
   }
   SHOW("Getting IR function from prototype")
   auto* fnEmit = prototype->function;
-  ctx->fn      = fnEmit;
+  ctx->setActiveFunction(fnEmit);
   SHOW("Set active function: " << fnEmit->getFullName())
   if (prototype->isAsync) {
     auto* fun        = fnEmit->getAsyncSubFunction();
@@ -217,8 +222,8 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     ctx->getMod()->linkNative(IR::NativeUnit::pthreadCreate);
     ctx->getMod()->linkNative(IR::NativeUnit::pthreadAttrInit);
     SHOW("Linked pthread_create & pthread_attr_init functions to current module")
-    auto* pthreadCreate     = ctx->mod->getLLVMModule()->getFunction("pthread_create");
-    auto* pthreadAttrInitFn = ctx->mod->getLLVMModule()->getFunction("pthread_attr_init");
+    auto* pthreadCreate     = ctx->getMod()->getLLVMModule()->getFunction("pthread_create");
+    auto* pthreadAttrInitFn = ctx->getMod()->getLLVMModule()->getFunction("pthread_attr_init");
     auto* argAlloca         = ctx->builder.CreateAlloca(fnEmit->getAsyncArgType());
     auto* pthreadAttrAlloca = ctx->builder.CreateAlloca(llvm::StructType::getTypeByName(ctx->llctx, "pthread_attr_t"));
     SHOW("Create allocas for async arg and pthread_attr_t")

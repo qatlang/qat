@@ -22,33 +22,13 @@ PointerOwner PointerOwner::OfParentFunction(Function* fun) {
   return PointerOwner{.owner = (void*)fun, .ownerTy = PointerOwnerType::parentFunction};
 }
 
-PointerOwner PointerOwner::OfParentType(QatType* typ) {
-  return PointerOwner{.owner = (void*)typ, .ownerTy = PointerOwnerType::parentType};
+PointerOwner PointerOwner::OfParentInstance(QatType* typ) {
+  return PointerOwner{.owner = (void*)typ, .ownerTy = PointerOwnerType::parentInstance};
 }
 
 PointerOwner PointerOwner::OfRegion(Region* region) {
   return PointerOwner{.owner = region, .ownerTy = PointerOwnerType::region};
 }
-
-QatType* PointerOwner::ownerAsType() const { return (QatType*)owner; }
-
-Region* PointerOwner::ownerAsRegion() const { return ((QatType*)owner)->asRegion(); }
-
-Function* PointerOwner::ownerAsParentFunction() const { return (Function*)owner; }
-
-QatType* PointerOwner::ownerAsParentType() const { return (QatType*)owner; }
-
-bool PointerOwner::isType() const { return ownerTy == PointerOwnerType::type; }
-
-bool PointerOwner::isAnonymous() const { return ownerTy == PointerOwnerType::anonymous; }
-
-bool PointerOwner::isRegion() const { return ownerTy == PointerOwnerType::region; }
-
-bool PointerOwner::isHeap() const { return ownerTy == PointerOwnerType::heap; }
-
-bool PointerOwner::isParentFunction() const { return ownerTy == PointerOwnerType::parentFunction; }
-
-bool PointerOwner::isParentType() const { return ownerTy == PointerOwnerType::parentType; }
 
 bool PointerOwner::isSame(const PointerOwner& other) const {
   if (ownerTy == other.ownerTy) {
@@ -62,7 +42,7 @@ bool PointerOwner::isSame(const PointerOwner& other) const {
         return ownerAsType()->isSame(other.ownerAsType());
       case PointerOwnerType::parentFunction:
         return ownerAsParentFunction()->getID() == other.ownerAsParentFunction()->getID();
-      case PointerOwnerType::parentType:
+      case PointerOwnerType::parentInstance:
         return ownerAsParentType()->getID() == other.ownerAsParentType()->getID();
     }
   } else {
@@ -80,9 +60,12 @@ String PointerOwner::toString() const {
       return "";
     case PointerOwnerType::type:
       return "'type(" + ownerAsType()->toString() + ")";
-    case PointerOwnerType::parentType:
+    case PointerOwnerType::parentInstance:
+      return "''";
     case PointerOwnerType::parentFunction:
       return "'own";
+    case PointerOwnerType::Static:
+      return "'static";
   }
 }
 

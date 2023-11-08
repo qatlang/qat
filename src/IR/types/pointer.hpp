@@ -16,7 +16,8 @@ enum class PointerOwnerType {
   anonymous,
   type,
   parentFunction,
-  parentType,
+  parentInstance,
+  Static,
 };
 
 class PointerOwner {
@@ -28,20 +29,21 @@ public:
   useit static PointerOwner OfAnonymous();
   useit static PointerOwner OfType(QatType* type);
   useit static PointerOwner OfParentFunction(Function* fun);
-  useit static PointerOwner OfParentType(QatType* type);
+  useit static PointerOwner OfParentInstance(QatType* type);
   useit static PointerOwner OfRegion(Region* region);
 
-  useit QatType*  ownerAsType() const;
-  useit Region*   ownerAsRegion() const;
-  useit Function* ownerAsParentFunction() const;
-  useit QatType*  ownerAsParentType() const;
+  useit inline QatType*  ownerAsType() const { return (QatType*)owner; }
+  useit inline Region*   ownerAsRegion() const { return ((QatType*)owner)->asRegion(); }
+  useit inline Function* ownerAsParentFunction() const { return (Function*)owner; }
+  useit inline QatType*  ownerAsParentType() const { return (QatType*)owner; }
 
-  useit bool isType() const;
-  useit bool isAnonymous() const;
-  useit bool isRegion() const;
-  useit bool isHeap() const;
-  useit bool isParentFunction() const;
-  useit bool isParentType() const;
+  useit inline bool isType() const { return ownerTy == PointerOwnerType::type; }
+  useit inline bool isAnonymous() const { return ownerTy == PointerOwnerType::anonymous; }
+  useit inline bool isRegion() const { return ownerTy == PointerOwnerType::region; }
+  useit inline bool isHeap() const { return ownerTy == PointerOwnerType::heap; }
+  useit inline bool isParentFunction() const { return ownerTy == PointerOwnerType::parentFunction; }
+  useit inline bool isParentInstance() const { return ownerTy == PointerOwnerType::parentInstance; }
+  useit inline bool isStatic() const { return ownerTy == PointerOwnerType::Static; }
 
   useit bool isSame(const PointerOwner& other) const;
 

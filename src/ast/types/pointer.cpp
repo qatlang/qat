@@ -5,10 +5,10 @@
 
 namespace qat::ast {
 
-PointerType::PointerType(QatType* _type, bool _variable, PtrOwnType ownTy, Maybe<QatType*> _ownTyTy, bool _isMultiPtr,
-                         FileRange _fileRange)
-    : QatType(_variable, std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy),
-      isMultiPtr(_isMultiPtr) {}
+PointerType::PointerType(QatType* _type, bool _isSubtypeVar, PtrOwnType ownTy, Maybe<QatType*> _ownTyTy,
+                         bool _isMultiPtr, FileRange _fileRange)
+    : QatType(std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy), isMultiPtr(_isMultiPtr),
+      isSubtypeVar(_isSubtypeVar) {}
 
 Maybe<usize> PointerType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
@@ -26,8 +26,8 @@ String PointerType::pointerOwnerToString() const {
       return "type";
     case PtrOwnType::typeParent:
       return "typeParent";
-    case PtrOwnType::parent:
-      return "parent";
+    case PtrOwnType::function:
+      return "function";
     case PtrOwnType::anonymous:
       return "anonymous";
     case PtrOwnType::heap:
@@ -42,34 +42,27 @@ IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatTyp
     case PtrOwnType::type:
       return IR::PointerOwner::OfType(ownerVal.value());
     case PtrOwnType::typeParent:
-      return IR::PointerOwner::OfParentType(ctx->activeType);
+      return IR::PointerOwner::OfParentInstance(ctx->getActiveType());
     case PtrOwnType::anonymous:
       return IR::PointerOwner::OfAnonymous();
     case PtrOwnType::heap:
       return IR::PointerOwner::OfHeap();
-    case PtrOwnType::parent: {
-      if (ctx->fn) {
-        return IR::PointerOwner::OfParentFunction(ctx->fn);
-      } else {
-        return IR::PointerOwner::OfType(ctx->activeType);
-      }
-    }
+    case PtrOwnType::function:
+      return IR::PointerOwner::OfParentFunction(ctx->getActiveFunction());
     case PtrOwnType::region:
       return IR::PointerOwner::OfRegion(ownerVal.value()->asRegion());
   }
 }
 
 IR::QatType* PointerType::emit(IR::Context* ctx) {
-  if (ownTyp == PtrOwnType::parent) {
-    if (!ctx->fn && !ctx->activeType) {
-      ctx->Error("This pointer type is not inside a function or type and hence "
-                 "the pointer cannot have parent ownership",
-                 fileRange);
+  if (ownTyp == PtrOwnType::function) {
+    if (!ctx->getActiveFunction()) {
+      ctx->Error("This pointer type is not inside a function and hence cannot have function ownership", fileRange);
     }
   } else if (ownTyp == PtrOwnType::typeParent) {
-    if (!ctx->activeType) {
+    if (!ctx->hasActiveType()) {
       ctx->Error("This pointer type is not inside a type and hence the pointer "
-                 "cannot be owned by type",
+                 "cannot be owned by any type",
                  fileRange);
     }
   }
@@ -98,7 +91,7 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
     }
     ownerVal = regTy;
   }
-  return IR::PointerType::get(type->isVariable(), type->emit(ctx), getPointerOwner(ctx, ownerVal), isMultiPtr, ctx);
+  return IR::PointerType::get(isSubtypeVar, type->emit(ctx), getPointerOwner(ctx, ownerVal), isMultiPtr, ctx);
 }
 
 TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
@@ -107,16 +100,41 @@ Json PointerType::toJson() const {
   return Json()
       ._("typeKind", "pointer")
       ._("isMulti", isMultiPtr)
+      ._("isSubtypeVariable", isSubtypeVar)
       ._("subType", type->toJson())
       ._("ownerKind", pointerOwnerToString())
       ._("hasOwnerType", ownerTyTy.has_value())
       ._("ownerType", ownerTyTy.has_value() ? ownerTyTy.value()->toJson() : Json())
-      ._("isVariable", isVariable())
       ._("fileRange", fileRange);
 }
 
 String PointerType::toString() const {
-  return (String(isVariable() ? "var " : "") + (isMultiPtr ? "multiptr:[" : "ptr:[")) + type->toString() + "]";
+  Maybe<String> ownerStr;
+  switch (ownTyp) {
+    case PtrOwnType::type: {
+      ownerStr = String("'type(") + ownerTyTy.value()->toString() + ")";
+      break;
+    }
+    case PtrOwnType::typeParent: {
+      ownerStr = "''";
+      break;
+    }
+    case PtrOwnType::heap: {
+      ownerStr = "'heap";
+      break;
+    }
+    case PtrOwnType::function: {
+      ownerStr = "'own";
+      break;
+    }
+    case PtrOwnType::region: {
+      ownerStr = String("'region(") + ownerTyTy.value()->toString() + ")";
+      break;
+    }
+    default:;
+  }
+  return (isMultiPtr ? "multiptr:[" : "ptr:[") + String(isSubtypeVar ? "var " : "") + type->toString() +
+         (ownerStr.has_value() ? (" " + ownerStr.value()) : "") + "]";
 }
 
 } // namespace qat::ast

@@ -1,7 +1,7 @@
 #include "./function.hpp"
 #include "../ast/function.hpp"
-#include "../ast/types/const_generic.hpp"
 #include "../ast/types/generic_abstract.hpp"
+#include "../ast/types/prerun_generic.hpp"
 #include "../ast/types/typed_generic.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
@@ -44,11 +44,6 @@ LocalValue::LocalValue(String _name, IR::QatType* _type, bool _isVar, Function* 
       name(std::move(_name)), fileRange(std::move(_fileRange)) {
   SHOW("Type is " << type->toString())
   SHOW("Creating llvm::AllocaInst for " << name)
-  if (type->getLLVMType()) {
-    SHOW("LLVM type is not null")
-  } else {
-    SHOW("LLVM type is null")
-  }
   ll      = IR::Logic::newAlloca(fun, name, type->getLLVMType());
   localID = utils::unique_id();
   SHOW("AllocaInst name is: " << ((llvm::AllocaInst*)ll)->getName().str());
@@ -61,7 +56,7 @@ llvm::AllocaInst* LocalValue::getAlloca() const { return (llvm::AllocaInst*)ll; 
 FileRange LocalValue::getFileRange() const { return fileRange; }
 
 IR::Value* LocalValue::toNewIRValue() const {
-  auto* result = new IR::Value(this->getAlloca(), this->getType(), isVariable(), getNature());
+  auto* result = new IR::Value(getAlloca(), getType(), isVariable(), getNature());
   result->setLocalID(getLocalID());
   return result;
 }
@@ -256,11 +251,11 @@ void Block::destroyLocals(IR::Context* ctx) {
   SHOW("Locals being destroyed for " << name)
   for (auto* loc : values) {
     if (loc->getType()->isDestructible()) {
-      if (loc->getType()->isPointer()
-              ? (loc->getType()->asPointer()->getOwner().isFunction() &&
-                 (loc->getType()->asPointer()->getOwner().ownerAsFunction()->getID() == ctx->fn->getID()))
-              : true) {
-        loc->getType()->destroyValue(ctx, {loc}, ctx->fn);
+      if (loc->getType()->isPointer() ? (loc->getType()->asPointer()->getOwner().isParentFunction() &&
+                                         (loc->getType()->asPointer()->getOwner().ownerAsParentFunction()->getID() ==
+                                          ctx->getActiveFunction()->getID()))
+                                      : true) {
+        loc->getType()->destroyValue(ctx, {loc}, ctx->getActiveFunction());
       }
     }
   }
@@ -543,8 +538,8 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
       auto* cTy        = loc->getType()->asCore();
       auto* destructor = cTy->getDestructor();
       (void)destructor->call(ctx, {loc->getAlloca()}, ctx->getMod());
-    } else if (loc->getType()->isPointer() && loc->getType()->asPointer()->getOwner().isFunction() &&
-               loc->getType()->asPointer()->getOwner().ownerAsFunction()->getID() == fun->getID()) {
+    } else if (loc->getType()->isPointer() && loc->getType()->asPointer()->getOwner().isParentFunction() &&
+               loc->getType()->asPointer()->getOwner().ownerAsParentFunction()->getID() == fun->getID()) {
       auto* ptrTy = loc->getType()->asPointer();
       if (ptrTy->getSubType()->isCoreType() && ptrTy->getSubType()->asCore()->hasDestructor()) {
         auto* dstrFn = ptrTy->getSubType()->asCore()->getDestructor();
@@ -774,11 +769,11 @@ void destroyLocalsFrom(IR::Context* ctx, IR::Block* block) {
   block->collectLocalsFrom(locals);
   for (auto* loc : locals) {
     if (loc->getType()->isDestructible()) {
-      if (loc->getType()->isPointer()
-              ? (loc->getType()->asPointer()->getOwner().isFunction() &&
-                 (loc->getType()->asPointer()->getOwner().ownerAsFunction()->getID() == ctx->fn->getID()))
-              : true) {
-        loc->getType()->destroyValue(ctx, {loc}, ctx->fn);
+      if (loc->getType()->isPointer() ? (loc->getType()->asPointer()->getOwner().isParentFunction() &&
+                                         (loc->getType()->asPointer()->getOwner().ownerAsParentFunction()->getID() ==
+                                          ctx->getActiveFunction()->getID()))
+                                      : true) {
+        loc->getType()->destroyValue(ctx, {loc}, ctx->getActiveFunction());
       }
     }
   }

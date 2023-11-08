@@ -17,6 +17,8 @@
 namespace qat::ast {
 
 class DefineCoreType final : public Node {
+  friend class IR::GenericCoreType;
+
 public:
   class Member {
   public:
@@ -66,8 +68,16 @@ private:
 
   Vec<ast::GenericAbstractType*> generics;
   mutable Maybe<String>          variantName;
-  mutable IR::CoreType*          coreType        = nullptr;
-  mutable IR::GenericCoreType*   genericCoreType = nullptr;
+  mutable Vec<IR::CoreType*>     coreTypes;
+  void                           setCoreType(IR::CoreType*) const;
+  void                           unsetCoreType() const;
+  mutable Vec<IR::OpaqueType*>   opaquedTypes;
+  useit bool                     hasOpaque() const;
+  void                           setOpaque(IR::OpaqueType* opq) const;
+  useit IR::OpaqueType*           getOpaque() const;
+  void                            unsetOpaque() const;
+  mutable IR::GenericCoreType*    genericCoreType = nullptr;
+  mutable Vec<IR::GenericToFill*> genericsToFill;
 
 public:
   DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
@@ -98,7 +108,7 @@ public:
   useit bool hasMoveConstructor() const;
   useit bool hasCopyAssignment() const;
   useit bool hasMoveAssignment() const;
-  useit IR::CoreType* getCoreType();
+  useit IR::CoreType* getCoreType() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::defineCoreType; }

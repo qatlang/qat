@@ -1,4 +1,5 @@
 #include "./define_core_type.hpp"
+#include "../IR/generics.hpp"
 #include "../IR/logic.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../utils/identifier.hpp"
@@ -48,26 +49,31 @@ DefineCoreType::DefineCoreType(Identifier _name, VisibilityKind _visibility, Fil
 
 bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
 
+void DefineCoreType::setCoreType(IR::CoreType* cTy) const { coreTypes.push_back(cTy); }
+
+void DefineCoreType::unsetCoreType() const { coreTypes.pop_back(); }
+
+void DefineCoreType::setOpaque(IR::OpaqueType* oTy) const { opaquedTypes.push_back(oTy); }
+
+bool DefineCoreType::hasOpaque() const {
+  return false;
+  !opaquedTypes.empty();
+}
+
+IR::OpaqueType* DefineCoreType::getOpaque() const { return opaquedTypes.back(); }
+
+void DefineCoreType::unsetOpaque() const { opaquedTypes.pop_back(); }
+
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
                          isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
-  bool                       needsDestructor = false;
-  Vec<IR::CoreType::Member*> mems;
-  for (auto* mem : members) {
-    auto* memTy = mem->type->emit(ctx);
-    if (memTy->isDestructible()) {
-      needsDestructor = true;
-    }
-    mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
-                                            (mem->visibilityKind == VisibilityKind::type)
-                                                ? VisibilityInfo::type(mod->getFullNameWithChild(name.value))
-                                                : ctx->getVisibInfo(mem->visibilityKind)));
-  }
-  auto cTyName = name;
+  bool needsDestructor = false;
+  auto cTyName         = name;
   if (isGeneric()) {
     cTyName = Identifier(variantName.value(), name.range);
   }
+  SHOW("Creating IR generics")
   Vec<IR::GenericParameter*> genericsIR;
   for (auto* gen : generics) {
     if (!gen->isSet()) {
@@ -85,78 +91,140 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
     genericsIR.push_back(gen->toIRGenericType());
   }
+  bool             hasAllMems = true;
+  Vec<llvm::Type*> allMemEqTys;
+  for (auto* mem : members) {
+    auto memSize = mem->type->getTypeSizeInBits(ctx);
+    if (!memSize.has_value()) {
+      hasAllMems = false;
+      break;
+    } else {
+      allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
+    }
+  }
+  auto eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+  setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
+                                IR::OpaqueSubtypeKind::core, mod,
+                                hasAllMems ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+                                ctx->getVisibInfo(visibility), ctx->llctx));
+  if (genericCoreType) {
+    genericCoreType->opaqueVariants.push_back(
+        IR::GenericVariant<IR::OpaqueType>(getOpaque(), std::move(genericsToFill)));
+  }
+  SHOW("Created opaque for core type")
+  ctx->setActiveType(getOpaque());
+  Vec<IR::CoreType::Member*> mems;
+  SHOW("Generating core type members")
+  for (auto* mem : members) {
+    auto* memTy = mem->type->emit(ctx);
+    if (memTy->isOpaque() && !memTy->asOpaque()->hasSubType()) {
+      // FIXME - Support sized opaques?
+      if (hasOpaque() && memTy->isSame(getOpaque())) {
+        ctx->Error(
+            "Type nesting found. Member field " + ctx->highlightError(mem->name.value) + " is of type " +
+                ctx->highlightError(getOpaque()->toString()) +
+                " which is the same as its parent type. Check the logic for mistakes or try using a pointer or a reference to the parent as the type instead",
+            mem->type->fileRange);
+      } else {
+        ctx->Error("Member field " + ctx->highlightError(mem->name.value) + " has an incomplete type " +
+                       ctx->highlightError(memTy->toString()) + " with an unknown size",
+                   mem->type->fileRange);
+      }
+    }
+    if (memTy->isDestructible()) {
+      needsDestructor = true;
+    }
+    mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
+                                            (mem->visibilityKind == VisibilityKind::type)
+                                                ? VisibilityInfo::type(getOpaque())
+                                                : ctx->getVisibInfo(mem->visibilityKind)));
+  }
   SHOW("Creating core type: " << cTyName.value)
-  coreType = new IR::CoreType(mod, cTyName, genericsIR, mems, ctx->getVisibInfo(visibility), ctx->llctx);
+  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, ctx->getVisibInfo(visibility), ctx->llctx));
+  SHOW("CoreType ID: " << coreTypes.back()->getID())
+  ctx->unsetActiveType();
+  ctx->setActiveType(getCoreType());
+  if (genericCoreType) {
+    for (auto item = genericCoreType->opaqueVariants.begin(); item != genericCoreType->opaqueVariants.end(); item++) {
+      SHOW("Opaque variant: " << item->get())
+      if (item->get()->getID() == getOpaque()->getID()) {
+        genericCoreType->opaqueVariants.erase(item);
+        break;
+      }
+    }
+  }
+  unsetOpaque();
   if (destructorDefinition) {
-    coreType->hasDefinedDestructor = true;
+    getCoreType()->hasDefinedDestructor = true;
   }
   if (needsDestructor) {
-    coreType->needsImplicitDestructor = true;
+    getCoreType()->needsImplicitDestructor = true;
   }
   if (destructorDefinition || needsDestructor) {
-    coreType->createDestructor(fileRange, ctx);
+    getCoreType()->createDestructor(fileRange, ctx);
   }
   for (auto* stm : staticMembers) {
-    coreType->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
-                              stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
-                              ctx->llctx);
+    getCoreType()->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
+                                   stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
+                                   ctx->llctx);
   }
   if (defaultConstructor) {
-    defaultConstructor->setCoreType(coreType);
+    defaultConstructor->setCoreType(getCoreType());
   }
   if (copyConstructor) {
-    copyConstructor->setCoreType(coreType);
+    copyConstructor->setCoreType(getCoreType());
     if (!copyAssignment) {
-      ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+      ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence copy assignment operator is also required to be defined",
                  fileRange);
     }
   }
   if (moveConstructor) {
-    moveConstructor->setCoreType(coreType);
+    moveConstructor->setCoreType(getCoreType());
     if (!moveAssignment) {
-      ctx->Error("Move constructor is defined for the type " + ctx->highlightError(coreType->toString()) +
+      ctx->Error("Move constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence move assignment operator is also required to be defined",
                  fileRange);
     }
   }
   for (auto* conv : convertorDefinitions) {
-    conv->setCoreType(coreType);
+    conv->setCoreType(getCoreType());
   }
   for (auto* cons : constructorDefinitions) {
-    cons->setCoreType(coreType);
+    cons->setCoreType(getCoreType());
   }
   for (auto* memDef : memberDefinitions) {
-    memDef->setCoreType(coreType);
+    memDef->setCoreType(getCoreType());
   }
   for (auto* oprDef : operatorDefinitions) {
-    oprDef->setCoreType(coreType);
+    oprDef->setCoreType(getCoreType());
   }
   if (copyAssignment) {
-    copyAssignment->setCoreType(coreType);
+    copyAssignment->setCoreType(getCoreType());
     if (!copyConstructor) {
-      ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+      ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence copy constructor is also required to be defined",
                  fileRange);
     }
   }
   if (moveAssignment) {
-    moveAssignment->setCoreType(coreType);
+    moveAssignment->setCoreType(getCoreType());
     if (!moveConstructor) {
-      ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(coreType->toString()) +
+      ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence move constructor is also required to be defined",
                  fileRange);
     }
   }
   if (destructorDefinition) {
-    destructorDefinition->setCoreType(coreType);
+    destructorDefinition->setCoreType(getCoreType());
   } else {
     destructorDefinition = new ast::DestructorDefinition(fileRange, {}, {"", {0u, 0u}, {0u, 0u}});
-    destructorDefinition->setCoreType(coreType);
+    destructorDefinition->setCoreType(getCoreType());
   }
+  ctx->unsetActiveType();
 }
 
-IR::CoreType* DefineCoreType::getCoreType() { return coreType; }
+IR::CoreType* DefineCoreType::getCoreType() const { return coreTypes.back(); }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   for (auto* gen : generics) {
@@ -210,8 +278,7 @@ void DefineCoreType::define(IR::Context* ctx) {
 }
 
 IR::Value* DefineCoreType::emit(IR::Context* ctx) {
-  auto prevActiveType = ctx->activeType;
-  ctx->activeType     = coreType;
+  ctx->setActiveType(getCoreType());
   if (defaultConstructor) {
     (void)defaultConstructor->emit(ctx);
   }
@@ -242,7 +309,8 @@ IR::Value* DefineCoreType::emit(IR::Context* ctx) {
   if (destructorDefinition) {
     (void)destructorDefinition->emit(ctx);
   }
-  ctx->activeType = prevActiveType;
+  unsetCoreType();
+  ctx->unsetActiveType();
   return nullptr;
 }
 

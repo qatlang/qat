@@ -21,6 +21,8 @@ public:
   useit String   toString() const final;
   useit TypeKind typeKind() const final { return TypeKind::maybe; }
   useit bool     isTypeSized() const final;
+  useit bool     isTriviallyCopyable() const final { return subTy->isTriviallyCopyable(); }
+  useit bool     isTriviallyMovable() const final { return subTy->isTriviallyMovable(); }
   useit bool     isTypePacked() const;
   useit bool     isDestructible() const final;
   void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;

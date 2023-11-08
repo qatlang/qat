@@ -100,6 +100,10 @@ Maybe<String> OpaqueType::toPrerunGenericString(IR::PrerunValue* preVal) const {
 
 bool OpaqueType::isTypeSized() const { return subTy ? subTy->isTypeSized() : size.has_value(); }
 
+bool OpaqueType::isTriviallyCopyable() const { return subTy && subTy->isTriviallyCopyable(); }
+
+bool OpaqueType::isTriviallyMovable() const { return subTy && subTy->isTriviallyMovable(); }
+
 Maybe<bool> OpaqueType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (subTy) {
     return subTy->equalityOf(first, second);

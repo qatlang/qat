@@ -9,11 +9,11 @@ namespace qat::IR {
 
 TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& llctx)
     : subTypes(std::move(_types)), isPacked(_isPacked) {
-  Vec<llvm::Type*> subTypes;
-  for (auto* typ : types) {
-    subTypes.push_back(typ->getLLVMType());
+  Vec<llvm::Type*> subTypesLLVM;
+  for (auto* typ : subTypes) {
+    subTypesLLVM.push_back(typ->getLLVMType());
   }
-  llvmType = llvm::StructType::get(llctx, subTypes, isPacked);
+  llvmType = llvm::StructType::get(llctx, subTypesLLVM, isPacked);
 }
 
 bool TupleType::isDestructible() const {
@@ -82,10 +82,10 @@ TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 
 String TupleType::toString() const {
   String result = "(";
-  for (usize i = 0; i < types.size(); i++) {
-    result += types.at(i)->toString();
-    if (i != (types.size() - 1)) {
-      result += ", ";
+  for (usize i = 0; i < subTypes.size(); i++) {
+    result += subTypes.at(i)->toString();
+    if (i != (subTypes.size() - 1)) {
+      result += "; ";
     }
   }
   result += ")";

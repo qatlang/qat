@@ -35,12 +35,12 @@ protected:
   Maybe<MemberFunction*> copyAssignment;  // Copy assignment operator
   Maybe<MemberFunction*> moveAssignment;  // Move assignment operator
 
-  bool            needsImplicitDestructor = false;
-  bool            hasDefinedDestructor    = false;
-  MemberFunction* destructor              = nullptr; // Destructor
+  bool explicitTrivialCopy     = false;
+  bool explicitTrivialMove     = false;
+  bool needsImplicitDestructor = false;
+  bool hasDefinedDestructor    = false;
 
-  bool explicitCopy = false;
-  bool explicitMove = false;
+  Maybe<MemberFunction*> destructor = nullptr; // Destructor
 
   OpaqueType* opaqueEquivalent = nullptr;
 
@@ -88,8 +88,6 @@ public:
   void                  createDestructor(FileRange range, IR::Context* ctx);
   useit MemberFunction* getDestructor() const;
   useit QatModule*      getParent();
-
-  useit bool isTriviallyCopyable() const;
 
   useit bool           isAccessible(const AccessInfo& reqInfo) const;
   useit VisibilityInfo getVisibility() const;

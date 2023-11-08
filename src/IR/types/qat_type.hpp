@@ -69,6 +69,8 @@ public:
   useit virtual bool isMoveConstructible() const;
   useit virtual bool isMoveAssignable() const;
   useit virtual bool isDestructible() const;
+  useit virtual bool isTriviallyCopyable() const;
+  useit virtual bool isTriviallyMovable() const;
 
   virtual void copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
   virtual void copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);

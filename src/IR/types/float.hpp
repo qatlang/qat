@@ -17,6 +17,9 @@ private:
 public:
   useit static FloatType* get(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
+  useit bool isTriviallyCopyable() const final { return true; }
+  useit bool isTriviallyMovable() const final { return true; }
+
   useit bool          isTypeSized() const final;
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;

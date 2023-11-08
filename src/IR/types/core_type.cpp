@@ -146,6 +146,38 @@ bool CoreType::hasStatic(const String& _name) const {
 
 bool CoreType::isTypeSized() const { return !members.empty(); }
 
+bool CoreType::isTriviallyCopyable() const {
+  if (explicitTrivialCopy) {
+    return true;
+  } else if (hasCopyConstructor() || hasCopyAssignment()) {
+    return false;
+  } else {
+    auto result = true;
+    for (auto mem : members) {
+      if (!mem->type->isTriviallyCopyable()) {
+        result = false;
+        break;
+      }
+    }
+    return result;
+  }
+}
+
+bool CoreType::isTriviallyMovable() const {
+  if (explicitTrivialMove) {
+    return true;
+  } else if (hasMoveConstructor() || hasMoveAssignment()) {
+    return false;
+  } else {
+    for (auto mem : members) {
+      if (!mem->type->isTriviallyMovable()) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
 void CoreType::addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
                                const VisibilityInfo& visibility, llvm::LLVMContext& llctx) {
   staticMembers.push_back(new StaticMember(this, name, type, variability, initial, visibility));

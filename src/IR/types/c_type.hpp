@@ -123,6 +123,24 @@ public:
   useit static CType* getLongDouble(IR::Context* ctx);
 
   useit bool isTypeSized() const final;
+  useit bool isTriviallyCopyable() const final {
+    switch (cTypeKind) {
+      case CTypeKind::String:
+      case CTypeKind::Pointer:
+        return false;
+      default:
+        return true;
+    }
+  }
+  useit bool isTriviallyMovable() const final {
+    switch (cTypeKind) {
+      case CTypeKind::String:
+      case CTypeKind::Pointer:
+        return false;
+      default:
+        return true;
+    }
+  }
 
   TypeKind typeKind() const final;
   String   toString() const final;

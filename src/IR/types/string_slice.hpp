@@ -16,6 +16,8 @@ public:
 
   useit bool canBePrerunGeneric() const final;
   useit bool isTypeSized() const final;
+  useit bool isTriviallyCopyable() const final { return true; }
+  useit bool isTriviallyMovable() const final { return true; }
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };

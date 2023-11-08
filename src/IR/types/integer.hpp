@@ -18,6 +18,8 @@ public:
   useit TypeKind            typeKind() const final;
   useit String              toString() const final;
   useit bool                isTypeSized() const final;
+  useit bool                isTriviallyCopyable() const final { return true; }
+  useit bool                isTriviallyMovable() const final { return true; }
 
   useit bool canBePrerunGeneric() const final;
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;

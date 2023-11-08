@@ -257,23 +257,18 @@ bool ExpandedType::hasMove() const { return hasMoveConstructor() && hasMoveAssig
 bool ExpandedType::hasDestructor() const { return destructor != nullptr; }
 
 void ExpandedType::createDestructor(FileRange fRange, IR::Context* ctx) {
-  if (destructor == nullptr) {
+  if (destructor.has_value()) {
     destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
   }
 }
 
-IR::MemberFunction* ExpandedType::getDestructor() const { return destructor; }
+IR::MemberFunction* ExpandedType::getDestructor() const { return destructor.value_or(nullptr); }
 
 VisibilityInfo ExpandedType::getVisibility() const { return visibility; }
 
 bool ExpandedType::isAccessible(const AccessInfo& reqInfo) const { return visibility.isAccessible(reqInfo); }
 
 QatModule* ExpandedType::getParent() { return parent; }
-
-bool ExpandedType::isTriviallyCopyable() const {
-  return (constructors.empty() && fromConvertors.empty() && !hasDestructor() && !hasCopyConstructor() &&
-          !hasMoveConstructor());
-}
 
 bool ExpandedType::isExpanded() const { return true; }
 
@@ -285,12 +280,12 @@ bool ExpandedType::isDestructible() const {
 }
 
 void ExpandedType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
-  if (destructor && !vals.empty()) {
+  if (destructor.has_value() && !vals.empty()) {
     auto* inst = vals.front();
     if (inst->isReference()) {
       inst->loadImplicitPointer(ctx->builder);
     }
-    (void)destructor->call(ctx, {inst->getLLVM()}, ctx->getMod());
+    (void)destructor.value()->call(ctx, {inst->getLLVM()}, ctx->getMod());
   }
 }
 

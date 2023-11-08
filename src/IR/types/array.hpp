@@ -31,6 +31,8 @@ public:
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
   useit bool        isTypeSized() const final;
+  useit bool        isTriviallyCopyable() const final { return elementType->isTriviallyCopyable(); }
+  useit bool        isTriviallyMovable() const final { return elementType->isTriviallyMovable(); }
 
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;

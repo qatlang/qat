@@ -9,6 +9,9 @@ namespace qat::IR {
 class QatModule;
 
 class EntityOverview {
+  friend class CoreType;
+  friend class MixType;
+
 protected:
   String         ovKind;
   Json           ovInfo;

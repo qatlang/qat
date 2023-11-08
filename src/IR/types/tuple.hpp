@@ -28,6 +28,22 @@ public:
   void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
 
   useit bool isTypeSized() const;
+  useit bool isTriviallyCopyable() const final {
+    for (auto* sub : subTypes) {
+      if (!sub->isTriviallyCopyable()) {
+        return false;
+      }
+    }
+    return true;
+  }
+  useit bool isTriviallyMovable() const final {
+    for (auto* sub : subTypes) {
+      if (!sub->isTriviallyMovable()) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   useit Vec<QatType*> getSubTypes() const;
   useit QatType*      getSubtypeAt(u64 index);

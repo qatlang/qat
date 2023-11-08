@@ -66,6 +66,8 @@ public:
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* preVal) const final;
   useit bool          isTypeSized() const final;
   useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit bool        isTriviallyCopyable() const final;
+  useit bool        isTriviallyMovable() const final;
 
   useit bool isCopyConstructible() const final;
   useit bool isCopyAssignable() const final;

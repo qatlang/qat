@@ -19,9 +19,16 @@ public:
 
   useit IR::QatType* getValidType() const;
   useit IR::QatType* getErrorType() const;
+  useit bool         isTypePacked() const;
   useit bool         isTypeSized() const final;
-  useit TypeKind     typeKind() const final;
-  useit String       toString() const final;
+  useit bool         isTriviallyCopyable() const final {
+    return validType->isTriviallyCopyable() && errorType->isTriviallyCopyable();
+  }
+  useit bool isTriviallyMovable() const final {
+    return validType->isTriviallyMovable() && errorType->isTriviallyMovable();
+  }
+  useit TypeKind typeKind() const final;
+  useit String   toString() const final;
 };
 
 } // namespace qat::IR

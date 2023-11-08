@@ -269,6 +269,9 @@ OpaqueType* QatType::asOpaque() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asOpaque() : (OpaqueType*)this;
 }
 
+bool QatType::isTriviallyCopyable() const { return false; }
+bool QatType::isTriviallyMovable() const { return false; }
+
 bool QatType::isCopyConstructible() const { return false; }
 void QatType::copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
 

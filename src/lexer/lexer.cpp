@@ -158,10 +158,6 @@ Token Lexer::tokeniser() {
     }
     case '.': {
       read();
-      if (current == '.') {
-        read();
-        return Token::normal(TokenType::super, this->getPosition(2));
-      }
       return Token::normal(TokenType::stop, this->getPosition(1));
     }
     case ',': {
@@ -268,7 +264,7 @@ Token Lexer::tokeniser() {
         read();
         return Token::valued(TokenType::binaryOperator, "!=", this->getPosition(2));
       } else {
-        return Token::valued(TokenType::unaryOperator, "!", this->getPosition(1));
+        return Token::valued(TokenType::exclamation, "!", this->getPosition(1));
       }
     }
     case '~': {
@@ -565,7 +561,9 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("self", self);
   else Check_Normal_Keyword("void", voidType);
   else Check_Normal_Keyword("type", Type);
-  else Check_Normal_Keyword("const", constant);
+  else Check_Normal_Keyword("pre", pre);
+  else Check_Normal_Keyword("up", super);
+  //   else Check_Normal_Keyword("const", constant);
   else Check_Normal_Keyword("box", box);
   else Check_Normal_Keyword("from", from);
   else Check_Normal_Keyword("to", to);
@@ -594,6 +592,8 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("give", give);
   else Check_Normal_Keyword("var", var);
   else Check_Normal_Keyword("if", If);
+  else Check_Normal_Keyword("not", Not);
+  else Check_Normal_Keyword("any", any);
   else Check_Normal_Keyword("else", Else);
   else Check_Normal_Keyword("break", Break);
   else Check_Normal_Keyword("continue", Continue);

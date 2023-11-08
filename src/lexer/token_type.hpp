@@ -104,6 +104,10 @@ enum class TokenType {
   is,
   cType,
   result,
+  pre,
+  Not,
+  exclamation,
+  any,
 };
 
 } // namespace qat::lexer

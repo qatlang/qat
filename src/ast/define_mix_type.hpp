@@ -17,6 +17,8 @@ private:
   Vec<FileRange>                         fRanges;
   Maybe<usize>                           defaultVal;
 
+  IR::OpaqueType* opaquedType = nullptr;
+
 public:
   DefineMixType(Identifier name, Vec<Pair<Identifier, Maybe<QatType*>>> subTypes, Vec<FileRange> ranges,
                 Maybe<usize> defaultVal, bool isPacked, VisibilityKind visibility, FileRange fileRange);

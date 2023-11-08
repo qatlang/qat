@@ -38,6 +38,7 @@ private:
   Vec<fs::path>                 memberPaths;
   std::map<usize, lexer::Token> comments;
   ParserContext                 g_ctx;
+  IR::Context*                  irCtx;
 
   // Filter all comments from the original token sequence and set a new
   // sequence that maps comments to the relevant AST members
@@ -46,7 +47,7 @@ private:
   void filterComments();
 
 public:
-  Parser();
+  explicit Parser(IR::Context* irCtx);
   ~Parser();
 
   static u64                                     timeInMicroSeconds;
@@ -59,11 +60,12 @@ public:
   void parseMixType(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef,
                     Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
   void parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
-                       Maybe<usize>& defaultVal);
+                       bool& areValuesNegative, Maybe<usize>& defaultVal);
   void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
                           Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
                           Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
   exitFn void Error(const String& message, const FileRange& fileRange);
+  String      highlightError(const String& message, const char* color = colors::bold::yellow);
   static void Warning(const String& message, const FileRange& fileRange);
 
   useit ast::BringEntities* parseBroughtEntities(ParserContext& ctx, VisibilityKind visibKind, usize from, usize upto);
@@ -79,8 +81,7 @@ public:
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
   useit Pair<CacheSymbol, usize> parseSymbol(ParserContext& prev_ctx, usize start);
   useit Pair<Vec<ast::Argument*>, bool> parseFunctionParameters(ParserContext& prev_ctx, usize from, usize upto);
-  useit Pair<ast::ConstantExpression*, usize> parseConstantExpression(ParserContext& preCtx, usize from,
-                                                                      Maybe<usize> upto);
+  useit Pair<ast::PrerunExpression*, usize> parsePrerunExpression(ParserContext& preCtx, usize from, Maybe<usize> upto);
   useit Pair<ast::Expression*, usize> parseExpression(ParserContext& prev_ctx, const Maybe<CacheSymbol>& symbol,
                                                       usize from, Maybe<usize> upto,
                                                       Maybe<ast::Expression*> cachedExpressions = None);

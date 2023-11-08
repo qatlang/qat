@@ -12,10 +12,23 @@ private:
   QatType*       subType;
   VisibilityKind visibKind;
 
-public:
-  TypeDefinition(Identifier _name, QatType* _subType, FileRange _fileRange, VisibilityKind _visibKind);
+  Vec<ast::GenericAbstractType*>     generics;
+  mutable Maybe<String>              variantName;
+  mutable IR::DefinitionType*        typeDefinition        = nullptr;
+  mutable IR::GenericDefinitionType* genericTypeDefinition = nullptr;
 
-  void  defineType(IR::Context* ctx) final;
+public:
+  TypeDefinition(Identifier _name, Vec<ast::GenericAbstractType*> _generics, QatType* _subType, FileRange _fileRange,
+                 VisibilityKind _visibKind);
+
+  void setVariantName(const String& name) const;
+  void unsetVariantName() const;
+  void createType(IR::Context* ctx) const;
+  void defineType(IR::Context* ctx) final;
+  void define(IR::Context* ctx) final;
+
+  useit bool isGeneric() const;
+  useit IR::DefinitionType* getDefinition() const;
   useit IR::Value* emit(IR::Context* _) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::typeDefinition; }
   useit Json       toJson() const final;

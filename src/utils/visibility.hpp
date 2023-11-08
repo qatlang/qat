@@ -8,6 +8,10 @@
 
 namespace qat {
 
+namespace IR {
+class QatType;
+}
+
 /**
  *  Visibility
  *
@@ -47,6 +51,7 @@ class AccessInfo;
 class VisibilityInfo {
 private:
   VisibilityInfo(VisibilityKind _kind, String _value) : kind(_kind), value(std::move(_value)) {}
+  explicit VisibilityInfo(IR::QatType* _type) : kind(VisibilityKind::type), typePtr(_type) {}
 
 public:
   // Nature of the Visibility of the entity
@@ -55,9 +60,11 @@ public:
   // library name, box name or file path.
   String value;
 
+  IR::QatType* typePtr = nullptr;
+
   VisibilityInfo(const VisibilityInfo& other);
 
-  static VisibilityInfo type(std::string typeName) { return {VisibilityKind::type, std::move(typeName)}; }
+  static VisibilityInfo type(IR::QatType* type) { return VisibilityInfo(type); }
   static VisibilityInfo pub() { return {VisibilityKind::pub, ""}; }
   static VisibilityInfo lib(String name) { return {VisibilityKind::lib, std::move(name)}; }
   static VisibilityInfo file(String path) { return {VisibilityKind::file, std::move(path)}; }
@@ -67,8 +74,8 @@ public:
   useit bool isAccessible(const AccessInfo& reqInfo) const;
 
   useit bool operator==(const VisibilityInfo& other) const;
-             operator Json() const;
-             operator JsonValue() const;
+  operator Json() const;
+  operator JsonValue() const;
 };
 
 // Information about the entity requesting access
@@ -81,18 +88,18 @@ private:
   // Compulsory parent file of the entity requesting for access
   String file;
   // Parent type of the entity requesting for access
-  Maybe<String> type;
+  Maybe<IR::QatType*> type;
 
 public:
-  AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type);
+  AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<IR::QatType*> _type);
 
   useit bool   hasLib() const;
   useit bool   hasBox() const;
   useit bool   hasType() const;
   useit String getLib() const;
   useit String getBox() const;
-  useit String getType() const;
-  useit String getFile() const;
+  useit IR::QatType* getType() const;
+  useit String       getFile() const;
 };
 
 class Visibility {

@@ -1,4 +1,5 @@
 #include "./visibility.hpp"
+#include "../IR/types/qat_type.hpp"
 
 namespace qat {
 
@@ -24,20 +25,20 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
   }
 }
 
-AccessInfo::AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<String> _type)
-    : lib(std::move(_lib)), box(std::move(_box)), file(std::move(_file)), type(std::move(_type)) {}
+AccessInfo::AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<IR::QatType*> _type)
+    : lib(std::move(_lib)), box(std::move(_box)), file(std::move(_file)), type(_type) {}
 
 bool AccessInfo::hasLib() const { return lib.has_value(); }
 
 bool AccessInfo::hasBox() const { return box.has_value(); }
 
-bool AccessInfo::hasType() const { return type.has_value(); }
+bool AccessInfo::hasType() const { return type.has_value() && (type.value() != nullptr); }
 
 String AccessInfo::getLib() const { return lib.value_or(""); }
 
 String AccessInfo::getBox() const { return box.value_or(""); }
 
-String AccessInfo::getType() const { return type.value_or(""); }
+IR::QatType* AccessInfo::getType() const { return type.value_or(nullptr); }
 
 String AccessInfo::getFile() const { return file; }
 
@@ -66,7 +67,7 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo
     }
     case VisibilityKind::type: {
       if (req_info.hasType()) {
-        return (req_info.getType().find(visibility.value) == 0);
+        return req_info.getType()->isSame(visibility.typePtr);
       }
       return false;
     }
@@ -78,10 +79,16 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo
 bool VisibilityInfo::isAccessible(const AccessInfo& reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
 
 bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
-  return (kind == other.kind) && (value == other.value);
+  return (kind == other.kind) && (value == other.value) && (typePtr == other.typePtr);
 }
 
-VisibilityInfo::operator Json() const { return Json()._("nature", Visibility::getValue(kind))._("value", value); }
+VisibilityInfo::operator Json() const {
+  return Json()
+      ._("nature", Visibility::getValue(kind))
+      ._("value", value)
+      ._("hasType", typePtr != nullptr)
+      ._("typeID", typePtr ? typePtr->getID() : "");
+}
 
 VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
 

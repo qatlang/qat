@@ -1,6 +1,7 @@
 #ifndef QAT_IR_GENERIC_VARIANT_HPP
 #define QAT_IR_GENERIC_VARIANT_HPP
 
+#include "../show.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
 #include "./generics.hpp"
@@ -31,7 +32,7 @@ public:
           } else {
             auto* preVal = dest.at(i)->asPrerun();
             if (preVal->getType()->isTyped()) {
-              if (!genTy->asType()->isSame(dest.at(i)->asPrerun()->getType()->asTyped()->getSubType())) {
+              if (!genTy->asType()->isSame(preVal->getType()->asTyped()->getSubType())) {
                 return false;
               }
             } else {
@@ -42,20 +43,36 @@ public:
           if (dest.at(i)->isPrerun()) {
             auto* genExp  = genTy->asPrerun();
             auto* destExp = dest.at(i)->asPrerun();
-            if (genExp->getType()->isSame(destExp->getType())) {
-              auto eqRes = genExp->getType()->equalityOf(genExp, destExp);
-              if (eqRes.has_value()) {
-                if (!eqRes.value()) {
+            if (genExp->getType()->isTyped()) {
+              if (destExp->getType()->isTyped()) {
+                if (!genExp->getType()->asTyped()->getSubType()->isSame(destExp->getType()->asTyped()->getSubType())) {
                   return false;
                 }
               } else {
                 return false;
               }
             } else {
-              return false;
+              if (genExp->getType()->isSame(destExp->getType())) {
+                auto eqRes = genExp->getType()->equalityOf(genExp, destExp);
+                if (eqRes.has_value()) {
+                  if (!eqRes.value()) {
+                    return false;
+                  }
+                } else {
+                  return false;
+                }
+              } else {
+                return false;
+              }
             }
           } else {
-            return false;
+            if (genTy->asPrerun()->getType()->isTyped()) {
+              if (!dest.at(i)->asType()->isSame(genTy->asPrerun()->getType()->asTyped()->getSubType())) {
+                return false;
+              }
+            } else {
+              return false;
+            }
           }
         } else {
           errorFn("Invalid generic kind", genTy->getRange());

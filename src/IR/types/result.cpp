@@ -5,15 +5,24 @@ namespace qat::IR {
 
 ResultType::ResultType(IR::QatType* _resTy, IR::QatType* _errTy, bool _isPacked, IR::Context* ctx)
     : validType(_resTy), errorType(_errTy), isPacked(_isPacked) {
-  const usize validTypeSize = validType->isTypeSized()
-                                  ? ((usize)(ctx->dataLayout.value().getTypeAllocSizeInBits(validType->getLLVMType())))
-                                  : 8u;
-  const usize errorTypeSize = (usize)(ctx->dataLayout.value().getTypeAllocSizeInBits(errorType->getLLVMType()));
-  llvmType                  = llvm::StructType::create(
+  const usize validTypeSize =
+      validType->isTypeSized()
+          ? ((validType->isOpaque() && !validType->asOpaque()->hasSubType())
+                 ? validType->asOpaque()->getDeducedSize()
+                 : ((usize)(ctx->dataLayout.value().getTypeAllocSizeInBits(validType->getLLVMType()))))
+          : 8u;
+  const usize errorTypeSize =
+      errorType->isTypeSized()
+          ? ((errorType->isOpaque() && !errorType->asOpaque()->hasSubType())
+                 ? errorType->asOpaque()->getDeducedSize()
+                 : ((usize)(ctx->dataLayout.value().getTypeAllocSizeInBits(errorType->getLLVMType()))))
+          : 8u;
+  llvmType = llvm::StructType::create(
       ctx->llctx,
       {llvm::Type::getInt1Ty(ctx->llctx),
-                        llvm::Type::getIntNTy(ctx->llctx, (validTypeSize > errorTypeSize) ? validTypeSize : errorTypeSize)},
-      "result:[" + validType->toString() + ", " + errorType->toString() + "]", isPacked);
+       llvm::Type::getIntNTy(ctx->llctx, (validTypeSize > errorTypeSize) ? validTypeSize : errorTypeSize)},
+      "result:[" + String(isPacked ? "pack, " : "") + validType->toString() + ", " + errorType->toString() + "]",
+      isPacked);
 }
 
 ResultType* ResultType::get(IR::QatType* validType, IR::QatType* errorType, bool isPacked, IR::Context* ctx) {
@@ -29,6 +38,8 @@ ResultType* ResultType::get(IR::QatType* validType, IR::QatType* errorType, bool
 IR::QatType* ResultType::getValidType() const { return validType; }
 
 IR::QatType* ResultType::getErrorType() const { return errorType; }
+
+bool ResultType::isTypePacked() const { return isPacked; }
 
 bool ResultType::isTypeSized() const { return true; }
 

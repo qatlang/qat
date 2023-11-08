@@ -6,22 +6,28 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
-#include "./qat_type.hpp"
+#include "../generic_variant.hpp"
+#include "./expanded_type.hpp"
 #include "llvm/IR/LLVMContext.h"
+
+namespace qat::ast {
+class GenericAbstractType;
+class TypeDefinition;
+} // namespace qat::ast
 
 namespace qat::IR {
 
 class QatModule;
 
-class DefinitionType : public QatType, public EntityOverview {
+class DefinitionType : public ExpandedType, public EntityOverview {
 private:
-  Identifier     name;
-  QatType*       subType;
-  QatModule*     parent;
-  VisibilityInfo visibInfo;
+  QatType* subType;
 
 public:
-  DefinitionType(Identifier _name, QatType* _actualType, QatModule* mod, const VisibilityInfo& _visibInfo);
+  DefinitionType(Identifier _name, QatType* _actualType, Vec<GenericParameter*> _generics, QatModule* mod,
+                 const VisibilityInfo& _visibInfo);
+
+  void setSubType(QatType* _subType);
 
   useit Identifier getName() const;
   useit String     getFullName() const;
@@ -33,14 +39,44 @@ public:
   useit bool       isDestructible() const final;
   useit bool       isTypeSized() const final;
 
+  useit bool isTriviallyCopyable() const final;
+  useit bool isTriviallyMovable() const final;
+
   void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
   void updateOverview() final;
 
-  useit bool canBeConstGeneric() const final;
-  useit Maybe<String> toConstGenericString(IR::ConstantValue* constant) const final;
-  useit Maybe<bool> equalityOf(IR::ConstantValue* first, IR::ConstantValue* second) const final;
+  useit bool canBePrerunGeneric() const final;
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* constant) const final;
+  useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
 
   useit VisibilityInfo getVisibility() const;
+};
+
+class GenericDefinitionType : public Uniq, public EntityOverview {
+private:
+  Identifier                     name;
+  Vec<ast::GenericAbstractType*> generics;
+  ast::TypeDefinition*           defineTypeDef;
+  QatModule*                     parent;
+  VisibilityInfo                 visibility;
+
+  mutable Vec<GenericVariant<DefinitionType>> variants;
+
+public:
+  GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::TypeDefinition* defineCoreType,
+                        QatModule* parent, const VisibilityInfo& visibInfo);
+
+  ~GenericDefinitionType() = default;
+
+  useit Identifier      getName() const;
+  useit usize           getTypeCount() const;
+  useit bool            allTypesHaveDefaults() const;
+  useit usize           getVariantCount() const;
+  useit QatModule*      getModule() const;
+  useit DefinitionType* fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
+
+  useit ast::GenericAbstractType* getGenericAt(usize index) const;
+  useit VisibilityInfo            getVisibility() const;
 };
 
 } // namespace qat::IR

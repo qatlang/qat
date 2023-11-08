@@ -2,21 +2,25 @@
 #include "../ast/define_core_type.hpp"
 #include "../ast/function.hpp"
 #include "../ast/node.hpp"
+#include "../ast/type_definition.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
+#include "lld/Common/Driver.h"
 #include "types/core_type.hpp"
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
 #include "types/region.hpp"
 #include "types/void.hpp"
 #include "value.hpp"
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
+#include "llvm/Support/CodeGen.h"
 #include "llvm/Support/raw_ostream.h"
 #include <filesystem>
 #include <fstream>
@@ -72,15 +76,18 @@ QatModule* QatModule::getFolderModule(const fs::path& fPath) {
 }
 
 QatModule::QatModule(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _type,
-                     const utils::VisibilityInfo& _visibility, llvm::LLVMContext& ctx)
+                     const VisibilityInfo& _visibility, IR::Context* ctx)
     : EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
       filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
-  llvmModule = new llvm::Module(getFullName(), ctx);
+  llvmModule = new llvm::Module(getFullName(), ctx->llctx);
   llvmModule->setModuleIdentifier(getFullName());
   llvmModule->setSourceFileName(filePath.string());
-  llvmModule->setCodeModel(llvm::CodeModel::Small);
+  llvmModule->setCodeModel(llvm::CodeModel::Medium);
   llvmModule->setSDKVersion(cli::Config::get()->getVersionTuple());
   llvmModule->setTargetTriple(cli::Config::get()->getTargetTriple());
+  if (ctx->dataLayout) {
+    llvmModule->setDataLayout(ctx->dataLayout.value());
+  }
   allModules.push_back(this);
 }
 
@@ -98,7 +105,7 @@ QatModule::~QatModule() {
 };
 
 QatModule* QatModule::Create(const Identifier& name, const fs::path& filepath, const fs::path& basePath,
-                             ModuleType type, const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx) {
+                             ModuleType type, const VisibilityInfo& visib_info, IR::Context* ctx) {
   return new QatModule(name, filepath, basePath, type, visib_info, ctx);
 }
 
@@ -114,7 +121,7 @@ Vec<Function*> QatModule::collectModuleInitialisers() {
 
 ModuleType QatModule::getModuleType() const { return moduleType; }
 
-const utils::VisibilityInfo& QatModule::getVisibility() const { return visibility; }
+const VisibilityInfo& QatModule::getVisibility() const { return visibility; }
 
 QatModule* QatModule::getActive() { // NOLINT(misc-no-recursion)
   if (active) {
@@ -170,9 +177,8 @@ void QatModule::addMember(QatModule* mod) {
 }
 
 Function* QatModule::createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
-                                    bool isVariadic, const FileRange& fileRange,
-                                    const utils::VisibilityInfo& visibility, llvm::GlobalValue::LinkageTypes linkage,
-                                    llvm::LLVMContext& ctx) {
+                                    bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
+                                    llvm::GlobalValue::LinkageTypes linkage, IR::Context* ctx) {
   SHOW("Creating IR function")
   auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
                                fileRange, visibility, ctx);
@@ -182,8 +188,7 @@ Function* QatModule::createFunction(const Identifier& name, QatType* returnType,
 }
 
 QatModule* QatModule::CreateSubmodule(QatModule* parent, fs::path filepath, fs::path basePath, Identifier sname,
-                                      ModuleType type, const utils::VisibilityInfo& visibilityInfo,
-                                      llvm::LLVMContext& ctx) {
+                                      ModuleType type, const VisibilityInfo& visibilityInfo, IR::Context* ctx) {
   SHOW("Creating submodule: " << sname.value)
   auto* sub = new QatModule(std::move(sname), std::move(filepath), std::move(basePath), type, visibilityInfo, ctx);
   if (parent) {
@@ -195,8 +200,8 @@ QatModule* QatModule::CreateSubmodule(QatModule* parent, fs::path filepath, fs::
 }
 
 QatModule* QatModule::CreateFileMod(QatModule* parent, fs::path filepath, fs::path basePath, Identifier fname,
-                                    Vec<String> content, Vec<ast::Node*> nodes, utils::VisibilityInfo visibilityInfo,
-                                    llvm::LLVMContext& ctx) {
+                                    Vec<String> content, Vec<ast::Node*> nodes, VisibilityInfo visibilityInfo,
+                                    IR::Context* ctx) {
   auto* sub =
       new QatModule(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
   sub->content = std::move(content);
@@ -209,8 +214,8 @@ QatModule* QatModule::CreateFileMod(QatModule* parent, fs::path filepath, fs::pa
 }
 
 QatModule* QatModule::CreateRootLib(QatModule* parent, fs::path filepath, fs::path basePath, Identifier fname,
-                                    Vec<String> content, Vec<ast::Node*> nodes,
-                                    const utils::VisibilityInfo& visibilityInfo, llvm::LLVMContext& ctx) {
+                                    Vec<String> content, Vec<ast::Node*> nodes, const VisibilityInfo& visibilityInfo,
+                                    IR::Context* ctx) {
   auto* sub =
       new QatModule(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
   sub->content = std::move(content);
@@ -470,7 +475,7 @@ String QatModule::getLinkingName(Vec<utils::UnitNameInfo> const& names, bool sho
           break;
         }
         case utils::UnitNameType::genericList: {
-          result += "'[";
+          result += ":[";
           for (usize j = 0; j < unit.subUnits.size(); j++) {
             result += unit.subUnits.at(j).getUsableName();
             if (j != (unit.subUnits.size() - 1)) {
@@ -490,10 +495,10 @@ bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box
 
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!moduleInitialiser) {
-    moduleInitialiser = IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
-                                             {/* Generics */}, IR::VoidType::get(ctx->llctx), false, {}, false,
-                                             name.range, utils::VisibilityInfo::pub(), ctx->llctx);
-    auto* entry       = new IR::Block(moduleInitialiser, nullptr);
+    moduleInitialiser =
+        IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), {/* Generics */},
+                             IR::VoidType::get(ctx->llctx), false, {}, false, name.range, VisibilityInfo::pub(), ctx);
+    auto* entry = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
   }
   return moduleInitialiser;
@@ -506,7 +511,7 @@ bool QatModule::shouldCallInitialiser() const { return nonConstantGlobals != 0; 
 bool QatModule::isSubmodule() const { return parent != nullptr; }
 
 void QatModule::addNamedSubmodule(const Identifier& sname, const String& filename, ModuleType type,
-                                  const utils::VisibilityInfo& visib_info, llvm::LLVMContext& ctx) {
+                                  const VisibilityInfo& visib_info, IR::Context* ctx) {
   SHOW("Creating submodule: " << sname.value)
   active = CreateSubmodule(this, filename, basePath.string(), sname, type, visib_info, ctx);
 }
@@ -522,7 +527,7 @@ bool QatModule::hasLib(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtLib(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtLib(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::lib) {
@@ -539,7 +544,7 @@ bool QatModule::hasBroughtLib(const String& name, Maybe<utils::RequesterInfo> re
 }
 
 Pair<bool, String> QatModule::hasAccessibleLibInImports( // NOLINT(misc-no-recursion)
-    const String& name, const utils::RequesterInfo& reqInfo) const {
+    const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -556,7 +561,7 @@ Pair<bool, String> QatModule::hasAccessibleLibInImports( // NOLINT(misc-no-recur
   return {false, ""};
 }
 
-QatModule* QatModule::getLib(const String& name, const utils::RequesterInfo& reqInfo) {
+QatModule* QatModule::getLib(const String& name, const AccessInfo& reqInfo) {
   for (auto* sub : submodules) {
     if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name)) {
       return sub;
@@ -591,8 +596,8 @@ QatModule* QatModule::getLib(const String& name, const utils::RequesterInfo& req
   return nullptr;
 }
 
-void QatModule::openLib(const Identifier& name, const String& filename, const utils::VisibilityInfo& visib_info,
-                        llvm::LLVMContext& ctx) {
+void QatModule::openLib(const Identifier& name, const String& filename, const VisibilityInfo& visib_info,
+                        IR::Context* ctx) {
   if (!hasLib(name.value)) {
     addNamedSubmodule(name, filename, ModuleType::lib, visib_info, ctx);
   }
@@ -609,7 +614,7 @@ bool QatModule::hasBox(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtBox(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtBox(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::box) {
@@ -625,7 +630,7 @@ bool QatModule::hasBroughtBox(const String& name, Maybe<utils::RequesterInfo> re
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleBoxInImports(const String& name, const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleBoxInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -642,7 +647,7 @@ Pair<bool, String> QatModule::hasAccessibleBoxInImports(const String& name, cons
   return {false, ""};
 }
 
-QatModule* QatModule::getBox(const String& name, const utils::RequesterInfo& reqInfo) {
+QatModule* QatModule::getBox(const String& name, const AccessInfo& reqInfo) {
   for (auto* sub : submodules) {
     if ((sub->moduleType == ModuleType::box) && (sub->getName() == name)) {
       return sub;
@@ -677,7 +682,7 @@ QatModule* QatModule::getBox(const String& name, const utils::RequesterInfo& req
   return nullptr;
 }
 
-void QatModule::openBox(const Identifier& _name, Maybe<utils::VisibilityInfo> visib_info) {
+void QatModule::openBox(const Identifier& _name, Maybe<VisibilityInfo> visib_info, IR::Context* ctx) {
   SHOW("Opening box: " << _name.value)
   if (hasBox(_name.value)) {
     for (auto* sub : submodules) {
@@ -689,13 +694,13 @@ void QatModule::openBox(const Identifier& _name, Maybe<utils::VisibilityInfo> vi
       }
     }
   } else {
-    addNamedSubmodule(_name, filePath.string(), ModuleType::box, visib_info.value(), llvmModule->getContext());
+    addNamedSubmodule(_name, filePath.string(), ModuleType::box, visib_info.value(), ctx);
   }
 }
 
 void QatModule::closeBox() { closeSubmodule(); }
 
-bool QatModule::hasBroughtModule(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtModule(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (!brought.isNamed()) {
@@ -712,8 +717,7 @@ bool QatModule::hasBroughtModule(const String& name, Maybe<utils::RequesterInfo>
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleBroughtModuleInImports(const String&               name,
-                                                                  const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleBroughtModuleInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -730,7 +734,7 @@ Pair<bool, String> QatModule::hasAccessibleBroughtModuleInImports(const String& 
   return {false, ""};
 }
 
-QatModule* QatModule::getBroughtModule(const String& name, const utils::RequesterInfo& reqInfo) const {
+QatModule* QatModule::getBroughtModule(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (!brought.isNamed()) {
@@ -754,7 +758,7 @@ QatModule* QatModule::getBroughtModule(const String& name, const utils::Requeste
   return nullptr;
 }
 
-void QatModule::bringModule(QatModule* other, const utils::VisibilityInfo& _visibility, Maybe<Identifier> bName) {
+void QatModule::bringModule(QatModule* other, const VisibilityInfo& _visibility, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtModules.push_back(Brought<QatModule>(bName.value(), other, _visibility));
   } else {
@@ -762,7 +766,7 @@ void QatModule::bringModule(QatModule* other, const utils::VisibilityInfo& _visi
   }
 }
 
-void QatModule::bringCoreType(CoreType* cTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringCoreType(CoreType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtCoreTypes.push_back(Brought<CoreType>(bName.value(), cTy, visib));
   } else {
@@ -770,8 +774,7 @@ void QatModule::bringCoreType(CoreType* cTy, const utils::VisibilityInfo& visib,
   }
 }
 
-void QatModule::bringGenericCoreType(GenericCoreType* gCTy, const utils::VisibilityInfo& visib,
-                                     Maybe<Identifier> bName) {
+void QatModule::bringGenericCoreType(GenericCoreType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtGenericCoreTypes.push_back(Brought<GenericCoreType>(bName.value(), gCTy, visib));
   } else {
@@ -779,7 +782,7 @@ void QatModule::bringGenericCoreType(GenericCoreType* gCTy, const utils::Visibil
   }
 }
 
-void QatModule::bringMixType(MixType* mTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringMixType(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtMixTypes.push_back(Brought<MixType>(bName.value(), mTy, visib));
   } else {
@@ -787,7 +790,7 @@ void QatModule::bringMixType(MixType* mTy, const utils::VisibilityInfo& visib, M
   }
 }
 
-void QatModule::bringChoiceType(ChoiceType* chTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringChoiceType(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtChoiceTypes.push_back(Brought<ChoiceType>(bName.value(), chTy, visib));
   } else {
@@ -795,7 +798,7 @@ void QatModule::bringChoiceType(ChoiceType* chTy, const utils::VisibilityInfo& v
   }
 }
 
-void QatModule::bringTypeDefinition(DefinitionType* dTy, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringTypeDefinition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtTypeDefs.push_back(Brought<DefinitionType>(bName.value(), dTy, visib));
   } else {
@@ -803,7 +806,7 @@ void QatModule::bringTypeDefinition(DefinitionType* dTy, const utils::Visibility
   }
 }
 
-void QatModule::bringFunction(Function* fn, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringFunction(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtFunctions.push_back(Brought<Function>(bName.value(), fn, visib));
   } else {
@@ -811,8 +814,7 @@ void QatModule::bringFunction(Function* fn, const utils::VisibilityInfo& visib, 
   }
 }
 
-void QatModule::bringGenericFunction(GenericFunction* gFn, const utils::VisibilityInfo& visib,
-                                     Maybe<Identifier> bName) {
+void QatModule::bringGenericFunction(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtGenericFunctions.push_back(Brought<GenericFunction>(bName.value(), gFn, visib));
   } else {
@@ -820,7 +822,7 @@ void QatModule::bringGenericFunction(GenericFunction* gFn, const utils::Visibili
   }
 }
 
-void QatModule::bringRegion(Region* reg, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringRegion(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtRegions.push_back(Brought<Region>(bName.value(), reg, visib));
   } else {
@@ -828,7 +830,7 @@ void QatModule::bringRegion(Region* reg, const utils::VisibilityInfo& visib, May
   }
 }
 
-void QatModule::bringGlobalEntity(GlobalEntity* gEnt, const utils::VisibilityInfo& visib, Maybe<Identifier> bName) {
+void QatModule::bringGlobalEntity(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtGlobalEntities.push_back(Brought<GlobalEntity>(bName.value(), gEnt, visib));
   } else {
@@ -851,7 +853,7 @@ bool QatModule::hasFunction(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtFunction(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtFunction(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtFunctions) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
@@ -865,8 +867,7 @@ bool QatModule::hasBroughtFunction(const String& name, Maybe<utils::RequesterInf
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleFunctionInImports(const String&               name,
-                                                             const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleFunctionInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -885,7 +886,7 @@ Pair<bool, String> QatModule::hasAccessibleFunctionInImports(const String&      
   return {false, ""};
 }
 
-Function* QatModule::getFunction(const String& name, const utils::RequesterInfo& reqInfo) {
+Function* QatModule::getFunction(const String& name, const AccessInfo& reqInfo) {
   for (auto* function : functions) {
     if (function->getName().value == name) {
       return function;
@@ -932,7 +933,7 @@ bool QatModule::hasGenericFunction(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtGenericFunction(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtGenericFunction(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGenericFunctions) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
@@ -946,8 +947,8 @@ bool QatModule::hasBroughtGenericFunction(const String& name, Maybe<utils::Reque
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleGenericFunctionInImports(const String&               name,
-                                                                    const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleGenericFunctionInImports(const String&     name,
+                                                                    const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -964,7 +965,7 @@ Pair<bool, String> QatModule::hasAccessibleGenericFunctionInImports(const String
   return {false, ""};
 }
 
-GenericFunction* QatModule::getGenericFunction(const String& name, const utils::RequesterInfo& reqInfo) {
+GenericFunction* QatModule::getGenericFunction(const String& name, const AccessInfo& reqInfo) {
   for (auto* function : genericFunctions) {
     if (function->getName().value == name) {
       return function;
@@ -1007,7 +1008,7 @@ bool QatModule::hasRegion(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtRegion(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtRegion(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtRegions) {
     if (!brought.isNamed()) {
       auto* reg = brought.get();
@@ -1021,8 +1022,7 @@ bool QatModule::hasBroughtRegion(const String& name, Maybe<utils::RequesterInfo>
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleRegionInImports(const String&               name,
-                                                           const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleRegionInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1037,7 +1037,7 @@ Pair<bool, String> QatModule::hasAccessibleRegionInImports(const String&        
   return {false, ""};
 }
 
-Region* QatModule::getRegion(const String& name, const utils::RequesterInfo& reqInfo) const {
+Region* QatModule::getRegion(const String& name, const AccessInfo& reqInfo) const {
   for (auto* reg : regions) {
     if (reg->getName().value == name) {
       return reg;
@@ -1069,6 +1069,79 @@ Region* QatModule::getRegion(const String& name, const utils::RequesterInfo& req
   return nullptr;
 }
 
+// OPAQUE TYPE
+
+bool QatModule::hasOpaqueType(const String& name) const {
+  SHOW("Opaque count: " << opaqueTypes.size())
+  for (auto* typ : opaqueTypes) {
+    if (typ->getName().value == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool QatModule::hasBroughtOpaqueType(const String& name, Maybe<AccessInfo> reqInfo) const {
+  for (const auto& brought : broughtOpaqueTypes) {
+    if (!brought.isNamed()) {
+      auto* cType = brought.get();
+      if (cType->getName().value == name) {
+        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+      }
+    } else if (brought.getName().value == name) {
+      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleOpaqueTypeInImports(const String& name, const AccessInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName() && (bMod->hasOpaqueType(name) || bMod->hasBroughtOpaqueType(name, reqInfo) ||
+                                        bMod->hasAccessibleOpaqueTypeInImports(name, reqInfo).first)) {
+        if (bMod->getOpaqueType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+          return {true, bMod->filePath.string()};
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+OpaqueType* QatModule::getOpaqueType(const String& name, const AccessInfo& reqInfo) const {
+  for (auto* opaqueType : opaqueTypes) {
+    if (opaqueType->getName().value == name) {
+      return opaqueType;
+    }
+  }
+  for (const auto& brought : broughtOpaqueTypes) {
+    if (!brought.isNamed()) {
+      auto* opaque = brought.get();
+      if (opaque->getName().value == name) {
+        return opaque;
+      }
+    } else if (brought.getName().value == name) {
+      return brought.get();
+    }
+  }
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasOpaqueType(name) || bMod->hasBroughtOpaqueType(name, reqInfo) ||
+            bMod->hasAccessibleOpaqueTypeInImports(name, reqInfo).first) {
+          if (bMod->getOpaqueType(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getOpaqueType(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 // CORE TYPE
 
 bool QatModule::hasCoreType(const String& name) const {
@@ -1081,7 +1154,7 @@ bool QatModule::hasCoreType(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtCoreType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtCoreType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtCoreTypes) {
     if (!brought.isNamed()) {
       auto* cType = brought.get();
@@ -1095,8 +1168,7 @@ bool QatModule::hasBroughtCoreType(const String& name, Maybe<utils::RequesterInf
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleCoreTypeInImports(const String&               name,
-                                                             const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleCoreTypeInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1111,7 +1183,7 @@ Pair<bool, String> QatModule::hasAccessibleCoreTypeInImports(const String&      
   return {false, ""};
 }
 
-CoreType* QatModule::getCoreType(const String& name, const utils::RequesterInfo& reqInfo) const {
+CoreType* QatModule::getCoreType(const String& name, const AccessInfo& reqInfo) const {
   for (auto* coreType : coreTypes) {
     if (coreType->getName().value == name) {
       return coreType;
@@ -1155,7 +1227,7 @@ bool QatModule::hasMixType(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtMixType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtMixType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtMixTypes) {
     if (!brought.isNamed()) {
       auto* uType = brought.get();
@@ -1169,8 +1241,7 @@ bool QatModule::hasBroughtMixType(const String& name, Maybe<utils::RequesterInfo
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleMixTypeInImports(const String&               name,
-                                                            const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleMixTypeInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1185,7 +1256,7 @@ Pair<bool, String> QatModule::hasAccessibleMixTypeInImports(const String&       
   return {false, ""};
 }
 
-MixType* QatModule::getMixType(const String& name, const utils::RequesterInfo& reqInfo) const {
+MixType* QatModule::getMixType(const String& name, const AccessInfo& reqInfo) const {
   for (auto* mixTy : mixTypes) {
     if (mixTy->getName().value == name) {
       return mixTy;
@@ -1229,7 +1300,7 @@ bool QatModule::hasChoiceType(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtChoiceType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtChoiceType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtChoiceTypes) {
     if (!brought.isNamed()) {
       auto* uType = brought.get();
@@ -1243,8 +1314,7 @@ bool QatModule::hasBroughtChoiceType(const String& name, Maybe<utils::RequesterI
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleChoiceTypeInImports(const String&               name,
-                                                               const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleChoiceTypeInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1259,7 +1329,7 @@ Pair<bool, String> QatModule::hasAccessibleChoiceTypeInImports(const String&    
   return {false, ""};
 }
 
-ChoiceType* QatModule::getChoiceType(const String& name, const utils::RequesterInfo& reqInfo) const {
+ChoiceType* QatModule::getChoiceType(const String& name, const AccessInfo& reqInfo) const {
   for (auto* choiceTy : choiceTypes) {
     if (choiceTy->getName().value == name) {
       return choiceTy;
@@ -1305,7 +1375,7 @@ bool QatModule::hasGenericCoreType(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtGenericCoreType(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtGenericCoreType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGenericCoreTypes) {
     if (!brought.isNamed()) {
       auto* bFn = brought.get();
@@ -1319,8 +1389,8 @@ bool QatModule::hasBroughtGenericCoreType(const String& name, Maybe<utils::Reque
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleGenericCoreTypeInImports(const String&               name,
-                                                                    const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleGenericCoreTypeInImports(const String&     name,
+                                                                    const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1337,7 +1407,7 @@ Pair<bool, String> QatModule::hasAccessibleGenericCoreTypeInImports(const String
   return {false, ""};
 }
 
-GenericCoreType* QatModule::getGenericCoreType(const String& name, const utils::RequesterInfo& reqInfo) {
+GenericCoreType* QatModule::getGenericCoreType(const String& name, const AccessInfo& reqInfo) {
   for (auto* tempCore : genericCoreTypes) {
     if (tempCore->getName().value == name) {
       return tempCore;
@@ -1381,7 +1451,7 @@ bool QatModule::hasTypeDef(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtTypeDef(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtTypeDefs) {
     if (!brought.isNamed()) {
       auto* tDef = brought.get();
@@ -1395,8 +1465,7 @@ bool QatModule::hasBroughtTypeDef(const String& name, Maybe<utils::RequesterInfo
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleTypeDefInImports(const String&               name,
-                                                            const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleTypeDefInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1411,7 +1480,7 @@ Pair<bool, String> QatModule::hasAccessibleTypeDefInImports(const String&       
   return {false, ""};
 }
 
-DefinitionType* QatModule::getTypeDef(const String& name, const utils::RequesterInfo& reqInfo) const {
+DefinitionType* QatModule::getTypeDef(const String& name, const AccessInfo& reqInfo) const {
   for (auto* tDef : typeDefs) {
     if (tDef->getName().value == name) {
       return tDef;
@@ -1443,6 +1512,84 @@ DefinitionType* QatModule::getTypeDef(const String& name, const utils::Requester
   return nullptr;
 }
 
+// GENERIC TYPEDEF
+
+bool QatModule::hasGenericTypeDef(const String& name) const {
+  for (auto* tempCTy : genericTypeDefinitions) {
+    SHOW("Generic type def: " << tempCTy->getName().value)
+    if (tempCTy->getName().value == name) {
+      SHOW("Found generic type def")
+      return true;
+    }
+  }
+  SHOW("No generic type defs named " + name + " found")
+  return false;
+}
+
+bool QatModule::hasBroughtGenericTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const {
+  for (const auto& brought : broughtGenericTypeDefinitions) {
+    if (!brought.isNamed()) {
+      auto* bFn = brought.get();
+      if (bFn->getName().value == name) {
+        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+      }
+    } else if (brought.getName().value == name) {
+      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> QatModule::hasAccessibleGenericTypeDefInImports(const String&     name,
+                                                                   const AccessInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasGenericTypeDef(name) || bMod->hasBroughtGenericTypeDef(name, reqInfo) ||
+            bMod->hasAccessibleGenericTypeDefInImports(name, reqInfo).first) {
+          if (bMod->getGenericTypeDef(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return {true, bMod->filePath.string()};
+          }
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+GenericDefinitionType* QatModule::getGenericTypeDef(const String& name, const AccessInfo& reqInfo) {
+  for (auto* tempDef : genericTypeDefinitions) {
+    if (tempDef->getName().value == name) {
+      return tempDef;
+    }
+  }
+  for (const auto& brought : broughtGenericTypeDefinitions) {
+    if (!brought.isNamed()) {
+      auto* bDTy = brought.get();
+      if ((bDTy->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+        return bDTy;
+      }
+    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+      return brought.get();
+    }
+  }
+  for (const auto& brought : broughtModules) {
+    if (!brought.isNamed()) {
+      auto* bMod = brought.get();
+      if (!bMod->shouldPrefixName()) {
+        if (bMod->hasGenericTypeDef(name) || bMod->hasBroughtGenericTypeDef(name, reqInfo) ||
+            bMod->hasAccessibleGenericTypeDefInImports(name, reqInfo).first) {
+          if (bMod->getGenericTypeDef(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
+            return bMod->getGenericTypeDef(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 // GLOBAL ENTITY
 
 bool QatModule::hasGlobalEntity(const String& name) const {
@@ -1454,7 +1601,7 @@ bool QatModule::hasGlobalEntity(const String& name) const {
   return false;
 }
 
-bool QatModule::hasBroughtGlobalEntity(const String& name, Maybe<utils::RequesterInfo> reqInfo) const {
+bool QatModule::hasBroughtGlobalEntity(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGlobalEntities) {
     if (!brought.isNamed()) {
       auto* bGlobal = brought.get();
@@ -1468,8 +1615,7 @@ bool QatModule::hasBroughtGlobalEntity(const String& name, Maybe<utils::Requeste
   return false;
 }
 
-Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(const String&               name,
-                                                                 const utils::RequesterInfo& reqInfo) const {
+Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(const String& name, const AccessInfo& reqInfo) const {
   for (const auto& brought : broughtModules) {
     if (!brought.isNamed()) {
       auto* bMod = brought.get();
@@ -1484,8 +1630,8 @@ Pair<bool, String> QatModule::hasAccessibleGlobalEntityInImports(const String&  
   return {false, ""};
 }
 
-GlobalEntity* QatModule::getGlobalEntity(const String&               name, // NOLINT(misc-no-recursion)
-                                         const utils::RequesterInfo& reqInfo) const {
+GlobalEntity* QatModule::getGlobalEntity(const String&     name, // NOLINT(misc-no-recursion)
+                                         const AccessInfo& reqInfo) const {
   for (auto* ent : globalEntities) {
     if (ent->getName().value == name) {
       return ent;
@@ -1588,8 +1734,7 @@ void QatModule::createModules(IR::Context* ctx) {
     hasCreatedModules = true;
     SHOW("Creating modules via nodes \nname = " << name.value << "\n    Path = " << filePath.string())
     SHOW("    hasParent = " << (parent != nullptr))
-    auto* oldMod = ctx->mod;
-    ctx->mod     = this;
+    auto* oldMod = ctx->setActiveModule(this);
     SHOW("Submodule count before creating modules via nodes: " << submodules.size())
     for (auto* node : nodes) {
       node->createModule(ctx);
@@ -1598,37 +1743,35 @@ void QatModule::createModules(IR::Context* ctx) {
     for (auto* sub : submodules) {
       sub->createModules(ctx);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
 void QatModule::handleFilesystemBrings(IR::Context* ctx) {
   if (!hasHandledFilesystemBrings) {
     hasHandledFilesystemBrings = true;
-    auto* oldMod               = ctx->mod;
-    ctx->mod                   = this;
+    auto* oldMod               = ctx->setActiveModule(this);
     for (auto* node : nodes) {
       node->handleFilesystemBrings(ctx);
     }
     for (auto* sub : submodules) {
       sub->handleFilesystemBrings(ctx);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
 void QatModule::handleBrings(IR::Context* ctx) {
   if (!hasHandledBrings) {
     hasHandledBrings = true;
-    auto* oldMod     = ctx->mod;
-    ctx->mod         = this;
+    auto* oldMod     = ctx->setActiveModule(this);
     for (auto* node : nodes) {
       node->handleBrings(ctx);
     }
     for (auto* sub : submodules) {
       sub->handleBrings(ctx);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
@@ -1636,18 +1779,18 @@ void QatModule::defineTypes(IR::Context* ctx) {
   if (!hasDefinedTypes) {
     hasDefinedTypes = true;
     SHOW("Defining types")
-    auto* oldMod = ctx->mod;
-    ctx->mod     = this;
+    auto* oldMod = ctx->setActiveModule(this);
     for (auto& node : nodes) {
       node->defineType(ctx);
-      if ((node->nodeType() == ast::NodeType::defineCoreType) && (((ast::DefineCoreType*)node)->isGeneric())) {
+      if (((node->nodeType() == ast::NodeType::defineCoreType) && ((ast::DefineCoreType*)node)->isGeneric()) ||
+          ((node->nodeType() == ast::NodeType::typeDefinition) && ((ast::TypeDefinition*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       }
     }
     for (auto* sub : submodules) {
       sub->defineTypes(ctx);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
@@ -1655,8 +1798,7 @@ void QatModule::defineNodes(IR::Context* ctx) {
   if (!hasDefinedNodes) {
     hasDefinedNodes = true;
     SHOW("Defining nodes")
-    auto* oldMod = ctx->mod;
-    ctx->mod     = this;
+    auto* oldMod = ctx->setActiveModule(this);
     for (auto& node : nodes) {
       node->define(ctx);
       if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isGeneric())) {
@@ -1669,15 +1811,14 @@ void QatModule::defineNodes(IR::Context* ctx) {
     for (auto* sub : submodules) {
       sub->defineNodes(ctx);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
 void QatModule::emitNodes(IR::Context* ctx) {
   if (!isEmitted) {
     isEmitted    = true;
-    auto* oldMod = ctx->mod;
-    ctx->mod     = this;
+    auto* oldMod = ctx->setActiveModule(this);
     SHOW("About to emit for module: " << getFullName())
     for (auto* node : nodes) {
       if (node) {
@@ -1726,7 +1867,7 @@ void QatModule::emitNodes(IR::Context* ctx) {
                      ctx->highlightError(llPath.parent_path().string()) + " with error: " + errorCode.message(),
                  None);
     }
-    ctx->mod = oldMod;
+    (void)ctx->setActiveModule(oldMod);
   }
 }
 
@@ -1743,25 +1884,32 @@ void QatModule::compileToObject(IR::Context* ctx) {
     if (moduleInfo.linkPthread) {
       compileCommand += "-pthread ";
     }
-    compileCommand.append("--target=").append(cfg->getTargetTriple()).append(" ");
+    compileCommand.append("--target=").append(ctx->clangTargetInfo->getTriple().getTriple()).append(" ");
     if (cfg->hasSysroot()) {
       compileCommand.append("--sysroot=").append(cfg->getSysroot()).append(" ");
-      //-Wl,--import-memory
-      // compileCommand.append(" -nostartfiles -Wl,--no-entry ");
+    }
+    if (ctx->clangTargetInfo->getTriple().isWasm()) {
+      // -Wl,--import-memory
+      compileCommand.append("-nostartfiles -Wl,--no-entry -Wl,--export-all ");
     }
     for (auto* sub : submodules) {
       sub->compileToObject(ctx);
     }
     // FIXME - Also link modules of other brought entities
-    objectFilePath =
-        fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
-                     filePath.lexically_relative(basePath).replace_filename(getWritableName().append(".o")))
-            .lexically_normal();
+    objectFilePath = fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
+                                  filePath.lexically_relative(basePath).replace_filename(getWritableName().append(
+                                      ctx->clangTargetInfo->getTriple().isOSWindows()
+                                          ? ".obj"
+                                          : (ctx->clangTargetInfo->getTriple().isWasm() ? ".wasm" : ".o"))))
+                         .lexically_normal();
     std::error_code errorCode;
     SHOW("Creating all folders in object file output path: " << objectFilePath.value())
     fs::create_directories(objectFilePath.value().parent_path(), errorCode);
     if (!errorCode) {
-      compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
+      compileCommand.append(llPath.string())
+          .append(" -o ")
+          .append(objectFilePath.value().string())
+          .append(PlatformIsWindows ? " > nul" : " > /dev/null");
       SHOW("Command is: " << compileCommand)
       if (std::system(compileCommand.c_str())) {
         ctx->writeJsonResult(false);
@@ -1791,71 +1939,127 @@ void QatModule::bundleLibs(IR::Context* ctx) {
     targetCMD.append("--target=").append(cfg->getTargetTriple()).append(" ");
     if (cfg->hasSysroot()) {
       targetCMD.append("--sysroot=").append(cfg->getSysroot()).append(" ");
-      // -Wl,--import-memory
-      // cmdRem.append(" -nostartfiles -Wl,--no-entry ");
     }
-    String cmdTwo(" " + (objectFilePath.has_value() ? objectFilePath.value().string().append(" ") : ""));
+    if (ctx->clangTargetInfo->getTriple().isWasm()) {
+      // -Wl,--import-memory
+      targetCMD.append("-nostartfiles -Wl,--no-entry -Wl,--export-all ");
+    }
+    Vec<String> objectFiles;
+    if (objectFilePath.has_value()) {
+      objectFiles.push_back(objectFilePath.value().string());
+    }
     for (auto* sub : submodules) {
       if (objectFilePath.has_value()) {
-        cmdTwo.append(sub->objectFilePath.value().string()).append(" ");
+        objectFiles.push_back(sub->objectFilePath.value().string());
       }
     }
     for (const auto& bMod : broughtModules) {
       SHOW("Brought module: " << bMod.get())
       SHOW("Brought module name: " << bMod.get()->name.value)
       SHOW("Brought module has Object: " << bMod.get()->objectFilePath.has_value())
+
       if (bMod.get()->objectFilePath.has_value()) {
-        cmdTwo.append(bMod.get()->objectFilePath.value().string()).append(" ");
+        objectFiles.push_back(bMod.get()->objectFilePath.value().string());
       }
     }
+    String inputFiles = "";
+    for (usize i = 0; i < objectFiles.size(); i++) {
+      inputFiles.append(objectFiles.at(i));
+      if (i != (objectFiles.size() - 1)) {
+        inputFiles.append(" ");
+      }
+    }
+    inputFiles.append(" ");
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
       auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                       filePath.lexically_relative(basePath)
                           .replace_filename(moduleInfo.outputName.value_or(name.value))
-                          .replace_extension(cfg->getTargetTriple().find("windows") != String::npos ? "exe" : ""))
+                          .replace_extension(ctx->clangTargetInfo->getTriple().isOSWindows()
+                                                 ? "exe"
+                                                 : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
                          .string();
       ctx->executablePaths.push_back(fs::absolute(outPath).lexically_normal());
       auto staticCommand =
-          String("clang -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
-      auto sharedCommand =
-          String("clang -shared -fPIC -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(cmdTwo);
+          String("clang -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(inputFiles);
+      auto sharedCommand = String("clang -shared -fPIC -o ")
+                               .append(outPath)
+                               .append(" ")
+                               .append(cmdOne)
+                               .append(targetCMD)
+                               .append(inputFiles);
       if (cfg->shouldBuildStatic()) {
         SHOW("Static Build Command :: " << staticCommand)
         if (std::system(staticCommand.c_str())) {
           ctx->Error("Statically linking & compiling executable failed: " + filePath.string(), None);
         }
-      }
-      if (cfg->shouldBuildShared()) {
+      } else if (cfg->shouldBuildShared()) {
         SHOW("Dynamic Build Command :: " << sharedCommand)
         if (std::system(sharedCommand.c_str())) {
           ctx->Error("Dynamically linking & compiling executable failed: " + filePath.string(), None);
         }
       }
+      std::ifstream file(filePath, std::ios::binary);
+      auto          fsize = file.tellg();
+      file.seekg(0, std::ios::end);
+      fsize = file.tellg() - fsize;
+      ctx->binarySizes.push_back(fsize);
+      file.close();
     } else {
       if (cfg->shouldBuildStatic()) {
-        auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
-                        filePath.lexically_relative(basePath).replace_filename(
-                            moduleInfo.outputName.value_or(getWritableName()).append(".a")))
-                           .string()
-                           .append(" ");
-        SHOW("Archiving library " << String("ar r ")
-                                         .append(outPath)
-                                         .append(cmdTwo)
-                                         .append(PlatformIsWindows ? " > nul" : " > /dev/null")
-                                         .c_str())
-        if (std::system(String("ar r ")
-                            .append(outPath)
-                            .append(cmdTwo)
-                            .append(PlatformIsWindows ? " > nul" : " > /dev/null")
-                            .c_str())) {
-          ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) + " failed", None);
+        auto outPath = fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
+                                    filePath.lexically_relative(basePath).replace_filename(
+                                        moduleInfo.outputName.value_or(getWritableName())
+                                            .append(ctx->clangTargetInfo->getTriple().isOSWindows() ? ".lib" : ".a")))
+                           .string();
+        String                   stdOutStr;
+        String                   stdErrStr;
+        llvm::raw_string_ostream linkerStdOut(stdOutStr);
+        llvm::raw_string_ostream linkerStdErr(stdErrStr);
+        if (ctx->clangTargetInfo->getTriple().isOSBinFormatCOFF()) {
+          Vec<const char*> allArgs{"lld.link", "-flavor", "link", "/SUBSYSTEM:CONSOLE", ("/OUT:" + outPath).c_str()};
+          for (auto& obj : objectFiles) {
+            allArgs.push_back(obj.c_str());
+          }
+          auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
+                                     {{lld::WinLink, &lld::coff::link}});
+          if (result.retCode != 0) {
+            ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) +
+                           " failed. The linker output was: " + linkerStdErr.str(),
+                       None);
+          }
+        } else if (ctx->clangTargetInfo->getTriple().isOSBinFormatELF()) {
+          Vec<const char*> allArgs{"ld.lld", "-flavor", "gnu", "-r", "-o", outPath.c_str()};
+          for (auto& obj : objectFiles) {
+            allArgs.push_back(obj.c_str());
+          }
+          auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
+                                     {{lld::Gnu, &lld::elf::link}});
+          if (result.retCode != 0) {
+            ctx->Error("Static build of module " + ctx->highlightError(filePath.string()) +
+                           " failed. The linker output was: " + linkerStdErr.str(),
+                       None);
+          }
+        } else if (ctx->clangTargetInfo->getTriple().isOSBinFormatWasm()) {
+          Vec<const char*> allArgs{"wasm-ld", "-flavor", "wasm", "--export-dynamic", "-o", outPath.c_str()};
+          for (auto& obj : objectFiles) {
+            allArgs.push_back(obj.c_str());
+          }
+          auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
+                                     {{lld::Wasm, &lld::wasm::link}});
+          if (result.retCode != 0) {
+            ctx->Error("Static build of WASM module " + ctx->highlightError(filePath.string()) +
+                           " failed. The linker output was: " + linkerStdErr.str(),
+                       None);
+          }
         }
+        // FIXME - Support other targets
       }
       if (cfg->shouldBuildShared()) {
         auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                         filePath.lexically_relative(basePath).replace_filename(
-                            moduleInfo.outputName.value_or(getWritableName()).append(".so")))
+                            moduleInfo.outputName.value_or(getWritableName())
+                                .append(ctx->clangTargetInfo->getTriple().isOSWindows() ? ".dll" : ".so")))
                            .string()
                            .append(" ");
         if (std::system(String("clang ")
@@ -1863,7 +2067,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                             .append(" -shared -o ")
                             .append(outPath)
                             .append(cmdOne)
-                            .append(cmdTwo)
+                            .append(inputFiles)
                             .c_str())) {
           ctx->Error("Dynamic build of module " + ctx->highlightError(filePath.string()) + " failed", None);
         }
@@ -1930,59 +2134,85 @@ void QatModule::exportJsonFromAST(IR::Context* ctx) {
 
 llvm::Module* QatModule::getLLVMModule() const { return llvmModule; }
 
+void QatModule::linkIntrinsic(IntrinsicID intr) {
+  auto& llCtx = llvmModule->getContext();
+  switch (intr) {
+    case IntrinsicID::vaStart: {
+      llvm::Function::Create(
+          llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt8PtrTy(llCtx)}, false),
+          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_start", llvmModule);
+      break;
+    }
+    case IntrinsicID::vaCopy: {
+      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                     {llvm::Type::getInt8PtrTy(llCtx), llvm::Type::getInt8PtrTy(llCtx)},
+                                                     false),
+                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_copy", llvmModule);
+      break;
+    }
+    case IntrinsicID::vaEnd: {
+      llvm::Function::Create(
+          llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt8PtrTy(llCtx)}, false),
+          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_end", llvmModule);
+      break;
+    }
+  }
+}
+
 void QatModule::linkNative(NativeUnit nval) {
   // FIXME - Use integer widths according to the specification and not the same
   // on all platforms
-  llvm::LLVMContext& ctx = llvmModule->getContext();
+  llvm::LLVMContext& llCtx = llvmModule->getContext();
   switch (nval) {
     case NativeUnit::printf: {
       if (!llvmModule->getFunction("printf")) {
-        llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, true),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "printf", llvmModule);
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
+                                                       {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
+                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "printf", llvmModule);
       }
       break;
     }
     case NativeUnit::malloc: {
       if (!llvmModule->getFunction("malloc")) {
         SHOW("Creating malloc function")
-        llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(), {llvm::Type::getInt64Ty(ctx)}, false),
-            llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
+                                                       {llvm::Type::getInt64Ty(llCtx)}, false),
+                               llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
       }
       break;
     }
     case NativeUnit::free: {
       if (!llvmModule->getFunction("free")) {
-        llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "free", llvmModule);
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                       {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
+                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "free", llvmModule);
       }
       break;
     }
     case NativeUnit::realloc: {
       if (!llvmModule->getFunction("realloc")) {
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx)->getPointerTo(),
-                                    {llvm::Type::getInt8Ty(ctx)->getPointerTo(), llvm::Type::getInt64Ty(ctx)}, false),
+            llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
+                                    {llvm::Type::getInt8Ty(llCtx)->getPointerTo(), llvm::Type::getInt64Ty(llCtx)},
+                                    false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "realloc", llvmModule);
       }
       break;
     }
     case NativeUnit::pthreadCreate: {
       if (!llvmModule->getFunction("pthread_create")) {
-        llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(ctx)->getPointerTo();
-        llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(ctx)->getPointerTo();
+        llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(llCtx)->getPointerTo();
+        llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
         auto*       pthreadFnTy  = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
-        if (!llvm::StructType::getTypeByName(ctx, "pthread_attr_t")) {
-          llvm::StructType::create(ctx,
-                                   {llvm::Type::getInt64Ty(ctx), llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 48u)},
-                                   "pthread_attr_t");
+        if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
+          llvm::StructType::create(
+              llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
+              "pthread_attr_t");
         }
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx),
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
                                     {pthreadPtrTy,
-                                     llvm::StructType::getTypeByName(ctx, "pthread_attr_t")->getPointerTo(),
+                                     llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo(),
                                      pthreadFnTy->getPointerTo(), voidPtrTy},
                                     false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_create", llvmModule);
@@ -1992,10 +2222,10 @@ void QatModule::linkNative(NativeUnit nval) {
     }
     case NativeUnit::pthreadJoin: {
       if (!llvmModule->getFunction("pthread_join")) {
-        llvm::Type* pthreadTy = llvm::Type::getInt64Ty(ctx);
-        llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(ctx)->getPointerTo();
+        llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
+        llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {pthreadTy, voidPtrTy->getPointerTo()}, false),
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx), {pthreadTy, voidPtrTy->getPointerTo()}, false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_join", llvmModule);
         moduleInfo.linkPthread = true;
       }
@@ -2003,23 +2233,23 @@ void QatModule::linkNative(NativeUnit nval) {
     }
     case NativeUnit::pthreadExit: {
       if (!llvmModule->getFunction("pthread_exit")) {
-        llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8Ty(ctx)->getPointerTo()}, false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_exit", llvmModule);
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                       {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
+                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_exit", llvmModule);
         moduleInfo.linkPthread = true;
       }
       break;
     }
     case NativeUnit::pthreadAttrInit: {
       if (!llvmModule->getFunction("pthread_attr_init")) {
-        if (!llvm::StructType::getTypeByName(ctx, "pthread_attr_t")) {
-          llvm::StructType::create(ctx,
-                                   {llvm::Type::getInt64Ty(ctx), llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 48u)},
-                                   "pthread_attr_t");
+        if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
+          llvm::StructType::create(
+              llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
+              "pthread_attr_t");
         }
         llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx),
-                                    {llvm::StructType::getTypeByName(ctx, "pthread_attr_t")->getPointerTo()}, false),
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
+                                    {llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()}, false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_attr_init", llvmModule);
         moduleInfo.linkPthread = true;
       }

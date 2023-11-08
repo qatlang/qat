@@ -7,17 +7,21 @@
 
 namespace qat::ast {
 
-class TupleValue : public Expression {
+class TupleValue : public Expression, public LocalDeclCompatible, public TypeInferrable {
+  friend class LocalDeclaration;
+
+  bool             isPacked = false;
   Vec<Expression*> members;
 
 public:
   TupleValue(Vec<Expression*> _members, FileRange _fileRange);
 
-  IR::Value* emit(IR::Context* ctx);
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
-  Json toJson() const;
-
-  NodeType nodeType() const { return NodeType::tupleValue; }
+  useit IR::Value* emit(IR::Context* ctx);
+  useit Json       toJson() const;
+  useit NodeType   nodeType() const { return NodeType::tupleValue; }
 };
 
 } // namespace qat::ast

@@ -110,27 +110,25 @@ Config::Config(u64 count, const char** args)
       String arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
         verbose = true;
-      } else if (String(arg).find("-t=") == 0) {
-        targetTriple = String(arg).substr(3);
       } else if (String(arg).find("--target=") == 0) {
-        targetTriple = String(arg).substr(9); // NOLINT(readability-magic-numbers)
-      } else if (arg == "-t" || arg == "--target") {
+        if (String(arg).length() > std::string::traits_type::length("--target=")) {
+          targetTriple = String(arg).substr(std::string::traits_type::length("--target="));
+        } else {
+          cli::Error("Expected a valid path after --target=", None);
+        }
+      } else if (arg == "--target") {
         if ((i + 1) < count) {
           targetTriple = args[i + 1];
           i++;
         } else {
-          cli::Error("Expected a target after " + arg + " flag", None);
+          cli::Error("Expected a target after --target", None);
         }
       } else if (String(arg).find("--sysroot=") == 0) {
-        if (String(arg).length() > 10) {
-          sysRoot = String(arg).substr(10);
+        if (String(arg).length() > std::string::traits_type::length("--sysroot=")) {
+          sysRoot = String(arg).substr(std::string::traits_type::length("--sysroot="));
         } else {
-          cli::Error("Expected valid path for sysroot", None);
+          cli::Error("Expected valid path for --sysroot", None);
         }
-      } else if (arg == "--export-ast") {
-        export_ast = true;
-      } else if (arg == "--export-code-info") {
-        exportCodeInfo = true;
       } else if (arg == "--sysroot") {
         if (i + 1 < count) {
           sysRoot = args[i + 1];
@@ -138,8 +136,24 @@ Config::Config(u64 count, const char** args)
         } else {
           cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
         }
-      } else if (arg == "--wasm") {
-        isWASM = true;
+      } else if (String(arg).find("--clang-path=") == 0) {
+        if (String(arg).length() > std::string::traits_type::length("--clang-path=")) {
+          clangPath = String(arg.substr(std::string::traits_type::length("--clang-path=")));
+        } else {
+          cli::Error("Expected valid path for --clang-path", None);
+        }
+      } else if (String(arg) == "--clang-path") {
+        if ((i + 1) < count) {
+          clangPath = String(args[i + 1]);
+          i++;
+        } else {
+          cli::Error("Expected argument after --clang-path which would be the path to the clang executable to use",
+                     None);
+        }
+      } else if (arg == "--export-ast") {
+        export_ast = true;
+      } else if (arg == "--export-code-info") {
+        exportCodeInfo = true;
       } else if (arg == "-o" || arg == "--output") {
         if ((i + 1) < count) {
           String out(args[i + 1]);
@@ -229,8 +243,6 @@ bool Config::isReleaseMode() const { return releaseMode; }
 bool Config::hasSysroot() const { return sysRoot.has_value(); }
 
 String Config::getSysroot() const { return sysRoot.value_or(""); }
-
-bool Config::isWasmMode() const { return isWASM; }
 
 bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
 

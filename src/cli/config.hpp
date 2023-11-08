@@ -32,6 +32,10 @@ private:
   // Compile target value
   Maybe<String> targetTriple;
 
+  Maybe<String> clangPath;
+
+  Maybe<String> lldPath;
+
   // Sysroot for alternative system folder for the linker
   Maybe<String> sysRoot;
 
@@ -68,8 +72,6 @@ private:
   bool noColors;
 
   bool releaseMode;
-
-  bool isWASM;
 
   Maybe<bool> buildShared;
 
@@ -127,7 +129,6 @@ public:
   useit bool     isReleaseMode() const;
   useit bool     hasSysroot() const;
   useit String   getSysroot() const;
-  useit bool     isWasmMode() const;
   useit bool     shouldBuildStatic() const;
   useit bool     shouldBuildShared() const;
   useit bool     keepLLVM() const;

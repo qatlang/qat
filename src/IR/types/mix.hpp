@@ -17,9 +17,9 @@ class QatModule;
 class MixType : public ExpandedType, public EntityOverview {
 private:
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
-  u64                                    maxSize = 0;
+  u64                                    maxSize = 8u;
   bool                                   isPack  = false;
-  // NOLINTNEXTLINE(readability-magic-numbers)
+
   usize        tagBitWidth = 1;
   Maybe<usize> defaultVal;
   FileRange    fileRange;
@@ -46,6 +46,8 @@ public:
   useit String           toString() const final;
   useit TypeKind         typeKind() const final;
   useit bool             isTypeSized() const final;
+  useit bool             isTriviallyCopyable() const final;
+  useit bool             isTriviallyMovable() const final;
   void                   updateOverview() final;
   void                   getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 };

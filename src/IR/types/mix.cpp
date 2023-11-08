@@ -29,7 +29,11 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
       SHOW("Getting size of the subtype in SUM TYPE")
-      usize size = parent->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(typ->getLLVMType());
+      usize size = typ->isOpaque()
+                       ? ((typ->asOpaque()->hasSubType() && typ->asOpaque()->getSubType()->isTypeSized())
+                              ? ctx->dataLayout->getTypeAllocSizeInBits(typ->asOpaque()->getSubType()->getLLVMType())
+                              : typ->asOpaque()->getDeducedSize())
+                       : ctx->dataLayout->getTypeAllocSizeInBits(typ->getLLVMType());
       SHOW("Got size " << size << " of subtype named " << sub.first.value)
       if (size > maxSize) {
         maxSize = size;
@@ -73,21 +77,21 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
   // NOTE - Possibly make this modular when mix types can have custom destructors
   if (needsDestructor) {
     destructor           = IR::MemberFunction::CreateDestructor(this, _name.range, _fileRange, ctx);
-    auto* entryBlock     = new IR::Block(destructor, nullptr);
+    auto* entryBlock     = new IR::Block(destructor.value(), nullptr);
     auto* tagIntTy       = llvm::Type::getIntNTy(ctx->llctx, tagBitWidth);
-    auto* remainingBlock = new IR::Block(destructor, nullptr);
+    auto* remainingBlock = new IR::Block(destructor.value(), nullptr);
     remainingBlock->linkPrevBlock(entryBlock);
     entryBlock->setActive(ctx->builder);
-    auto* inst = destructor->getLLVMFunction()->getArg(0);
+    auto* inst = destructor.value()->getLLVMFunction()->getArg(0);
     for (auto sub : subtypes) {
       if (sub.second.has_value() && sub.second.value()->isDestructible()) {
         auto* subTy = sub.second.value();
         SHOW("Getting index of name of subfield")
         auto subIdx = getIndexOfName(sub.first.value);
         SHOW("Getting current block")
-        auto* currBlock  = destructor->getBlock();
-        auto* trueBlock  = new IR::Block(destructor, currBlock);
-        auto* falseBlock = new IR::Block(destructor, currBlock);
+        auto* currBlock  = destructor.value()->getBlock();
+        auto* trueBlock  = new IR::Block(destructor.value(), currBlock);
+        auto* falseBlock = new IR::Block(destructor.value(), currBlock);
         SHOW("Created true and false blocks")
         ctx->builder.CreateCondBr(
             ctx->builder.CreateICmpEQ(
@@ -101,7 +105,7 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
                                ctx->builder.CreateStructGEP(llvmType, inst, 1u),
                                llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace())),
                            IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
-            destructor);
+            destructor.value());
         (void)IR::addBranch(ctx->builder, remainingBlock->getBB());
         falseBlock->setActive(ctx->builder);
       }
@@ -199,6 +203,42 @@ u64 MixType::getDataBitwidth() const { return maxSize; }
 FileRange MixType::getFileRange() const { return fileRange; }
 
 bool MixType::isTypeSized() const { return true; }
+
+bool MixType::isTriviallyCopyable() const {
+  if (explicitTrivialCopy) {
+    return true;
+  } else if (hasCopyConstructor() || hasCopyAssignment()) {
+    return false;
+  } else {
+    auto result = true;
+    for (auto sub : subtypes) {
+      if (sub.second.has_value()) {
+        if (!sub.second.value()->isTriviallyCopyable()) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+}
+
+bool MixType::isTriviallyMovable() const {
+  if (explicitTrivialMove) {
+    return true;
+  } else if (hasMoveConstructor() || hasMoveAssignment()) {
+    return false;
+  } else {
+    for (auto sub : subtypes) {
+      if (sub.second.has_value()) {
+        if (!sub.second.value()->isTriviallyMovable()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}
 
 String MixType::toString() const { return getFullName(); }
 

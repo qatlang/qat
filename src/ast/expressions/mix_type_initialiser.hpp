@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class MixTypeInitialiser : public Expression {
+class MixTypeInitialiser : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
   friend class LocalDeclaration;
 
 private:
@@ -14,12 +14,11 @@ private:
   String             subName;
   Maybe<Expression*> expression;
 
-  IR::LocalValue*   local = nullptr;
-  Maybe<Identifier> irName;
-  bool              isVar = false;
-
 public:
   MixTypeInitialiser(QatType* type, String subName, Maybe<Expression*> expression, FileRange fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  IN_PLACE_CREATABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

@@ -21,23 +21,21 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           auto* dFn = cTy->getDefaultConstructor();
           if (dFn->isAccessible(ctx->getAccessInfo())) {
             llvm::Value* alloca = nullptr;
-            if (local) {
-              if (local->getType()->isMaybe()) {
-                alloca = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u);
+            if (isLocalDecl()) {
+              if (localValue->getType()->isMaybe()) {
+                alloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getLLVM(), 1u);
               } else {
-                alloca = local->getLLVM();
+                alloca = localValue->getLLVM();
               }
             } else if (irName) {
-              local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-              alloca = local->getLLVM();
+              localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+              alloca     = localValue->getLLVM();
             } else {
               alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), cTy->getLLVMType());
             }
             (void)dFn->call(ctx, {alloca}, ctx->getMod());
-            if (local) {
-              auto* val = new IR::Value(local->getLLVM(), local->getType(), local->isVariable(), local->getNature());
-              val->setLocalID(local->getLocalID());
-              return val;
+            if (isLocalDecl()) {
+              return localValue->toNewIRValue();
             } else {
               return new IR::Value(alloca, cTy, true, IR::Nature::pure);
             }
@@ -133,15 +131,15 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         }
       }
       llvm::Value* alloca = nullptr;
-      if (local) {
-        if (local->getType()->isMaybe()) {
-          alloca = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u);
+      if (isLocalDecl()) {
+        if (localValue->getType()->isMaybe()) {
+          alloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getLLVM(), 1u);
         } else {
-          alloca = local->getLLVM();
+          alloca = localValue->getLLVM();
         }
       } else if (irName) {
-        local  = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-        alloca = local->getLLVM();
+        localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+        alloca     = localValue->getLLVM();
       } else {
         alloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
       }
@@ -149,8 +147,8 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         auto* memPtr = ctx->builder.CreateStructGEP(cTy->getLLVMType(), alloca, indices.at(i));
         ctx->builder.CreateStore(irVals.at(i)->getLLVM(), memPtr);
       }
-      if (local) {
-        return new IR::Value(local->getLLVM(), local->getType(), local->isVariable(), local->getNature());
+      if (isLocalDecl()) {
+        return localValue->toNewIRValue();
       } else {
         return new IR::Value(alloca, cTy, true, IR::Nature::pure);
       }

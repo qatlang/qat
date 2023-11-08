@@ -18,11 +18,11 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
   auto*      mod      = ctx->getMod();
   IR::Value* countRes = nullptr;
   if (count) {
-    if (count->nodeType() == NodeType::unsignedLiteral || count->nodeType() == NodeType::integerLiteral) {
-      count->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx)); // NOLINT(readability-magic-numbers)
-    } else if (count->nodeType() == NodeType::Default) {
+    if (count->nodeType() == NodeType::Default) {
       ctx->Error("Default value for u64 is 0, which is an invalid value for the number of instances to allocate",
                  count->fileRange);
+    } else if (count->hasTypeInferrance()) {
+      count->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
     }
     countRes = count->emit(ctx);
     if (countRes->getType()->isReference()) {

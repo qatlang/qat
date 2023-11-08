@@ -17,26 +17,56 @@ enum class ExpressionKind {
   pure,       // prvalue
 };
 
+#define LOCAL_DECL_COMPATIBLE_FUNCTIONS                                                                                \
+  useit bool                 isLocalDeclCompatible() const final { return true; }                                      \
+  useit LocalDeclCompatible* asLocalDeclCompatible() final { return (LocalDeclCompatible*)this; }
+
+#define IN_PLACE_CREATABLE_FUNCTIONS                                                                                   \
+  useit bool              isInPlaceCreatable() const final { return true; }                                            \
+  useit InPlaceCreatable* asInPlaceCreatable() final { return (InPlaceCreatable*)this; }
+
+#define TYPE_INFERRABLE_FUNCTIONS                                                                                      \
+  useit bool            hasTypeInferrance() const final { return true; }                                               \
+  useit TypeInferrable* asTypeInferrable() { return (TypeInferrable*)this; }
+
+class LocalDeclCompatible {
+public:
+  IR::LocalValue*   localValue = nullptr;
+  Maybe<Identifier> irName;
+  bool              isVar = false;
+  useit inline bool isLocalDecl() const { return localValue != nullptr; }
+  inline void       setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
+};
+
+class InPlaceCreatable {
+public:
+  IR::Value*        createIn = nullptr;
+  useit inline bool canCreateIn() const { return createIn != nullptr; }
+  inline void       setCreateIn(IR::Value* _createIn) { createIn = _createIn; }
+};
+
+class TypeInferrable {
+public:
+  IR::QatType*      inferredType = nullptr;
+  useit inline bool isTypeInferred() const { return inferredType != nullptr; }
+  inline void       setInferenceType(IR::QatType* _type) { inferredType = _type; }
+};
+
 class Expression : public Node {
 private:
   ExpressionKind expected;
 
-protected:
-  Maybe<IR::QatType*> inferredType;
-  IR::LocalValue*     localValue = nullptr;
-  IR::Value*          createIn   = nullptr;
-
 public:
   Expression(FileRange _fileRange);
 
-  useit inline bool isLocalDecl() const { return localValue != nullptr; }
-  inline void       setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
+  useit virtual bool                 isLocalDeclCompatible() const { return false; }
+  useit virtual LocalDeclCompatible* asLocalDeclCompatible() { return nullptr; }
 
-  useit inline bool canCreateIn() const { return createIn != nullptr; }
-  inline void       setCreateIn(IR::Value* _createIn) { createIn = _createIn; }
+  useit virtual bool              isInPlaceCreatable() const { return false; }
+  useit virtual InPlaceCreatable* asInPlaceCreatable() { return nullptr; }
 
-  useit inline bool isTypeInferred() const { return inferredType.has_value(); }
-  inline void       setInferenceType(IR::QatType* _type) { inferredType = _type; }
+  useit virtual bool            hasTypeInferrance() const { return false; }
+  useit virtual TypeInferrable* asTypeInferrable() { return nullptr; }
 
   void                 setExpectedKind(ExpressionKind _kind);
   useit ExpressionKind getExpectedKind();

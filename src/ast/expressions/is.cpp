@@ -11,31 +11,34 @@ IsExpression::IsExpression(Expression* _subExpr, FileRange _fileRange)
 
 IR::Value* IsExpression::emit(IR::Context* ctx) {
   if (subExpr) {
-    if (local && !local->getType()->isMaybe()) {
-      ctx->Error("Expected an expression of type " + ctx->highlightError(local->getType()->toString()) +
+    SHOW("Found sub expression")
+    if (isLocalDecl() && !localValue->getType()->isMaybe()) {
+      ctx->Error("Expected an expression of type " + ctx->highlightError(localValue->getType()->toString()) +
                      ", but found an is expression",
                  fileRange);
-    } else if (local && !local->getType()->asMaybe()->hasSizedSubType(ctx)) {
+    } else if (isLocalDecl() && !localValue->getType()->asMaybe()->hasSizedSubType(ctx)) {
       auto* subIR = subExpr->emit(ctx);
-      if (local->getType()->asMaybe()->getSubType()->isSame(subIR->getType()) ||
+      if (localValue->getType()->asMaybe()->getSubType()->isSame(subIR->getType()) ||
           (subIR->getType()->isReference() &&
-           local->getType()->asMaybe()->getSubType()->isSame(subIR->getType()->asReference()->getSubType()))) {
+           localValue->getType()->asMaybe()->getSubType()->isSame(subIR->getType()->asReference()->getSubType()))) {
         ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-                                 local->getLLVM());
+                                 localValue->getLLVM());
         return nullptr;
       } else {
         ctx->Error("Expected an expression of type " +
-                       ctx->highlightError(local->getType()->asMaybe()->getSubType()->toString()) +
+                       ctx->highlightError(localValue->getType()->asMaybe()->getSubType()->toString()) +
                        " for the declaration, but found an expression of type " +
                        ctx->highlightError(subIR->getType()->toString()),
                    fileRange);
       }
     }
-    if (inferredType) {
-      if (inferredType.value()->isMaybe()) {
-        subExpr->setInferenceType(inferredType.value()->asMaybe()->getSubType());
+    if (isTypeInferred()) {
+      if (inferredType->isMaybe()) {
+        if (subExpr->hasTypeInferrance()) {
+          subExpr->asTypeInferrable()->setInferenceType(inferredType->asMaybe()->getSubType());
+        }
       } else {
-        ctx->Error("Expected type is " + ctx->highlightError(inferredType.value()->toString()) +
+        ctx->Error("Expected type is " + ctx->highlightError(inferredType->toString()) +
                        ", but an `is` expression is provided",
                    fileRange);
       }
@@ -43,16 +46,17 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
     auto* subIR   = subExpr->emit(ctx);
     auto* subType = subIR->getType();
     auto* expectSubTy =
-        local
-            ? local->getType()->asMaybe()->getSubType()
+        isLocalDecl()
+            ? localValue->getType()->asMaybe()->getSubType()
             : (confirmedRef
                    ? (subType->isReference() ? subType->asReference() : IR::ReferenceType::get(isRefVar, subType, ctx))
                    : (subType->isReference() ? subType->asReference()->getSubType() : subType));
-    if (local && local->getType()->isMaybe() && !local->getType()->asMaybe()->getSubType()->isSame(subType) &&
+    if (isLocalDecl() && localValue->getType()->isMaybe() &&
+        !localValue->getType()->asMaybe()->getSubType()->isSame(subType) &&
         !(subType->isReference() &&
-          local->getType()->asMaybe()->getSubType()->isSame(subType->asReference()->getSubType()))) {
+          localValue->getType()->asMaybe()->getSubType()->isSame(subType->asReference()->getSubType()))) {
       ctx->Error("Expected an expression of type " +
-                     ctx->highlightError(local->getType()->asMaybe()->getSubType()->toString()) +
+                     ctx->highlightError(localValue->getType()->asMaybe()->getSubType()->toString()) +
                      ", but found an expression of type " + ctx->highlightError(subType->toString()),
                  fileRange);
     }
@@ -63,9 +67,9 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
       }
       IR::MemberFunction* mFn = nullptr;
       if (subType->isExpanded()) {
-        if (subType->asExpanded()->hasCopy()) {
+        if (subType->asExpanded()->hasCopyConstructor()) {
           mFn = subType->asExpanded()->getCopyConstructor();
-        } else if (subType->asExpanded()->hasMove()) {
+        } else if (subType->asExpanded()->hasMoveConstructor()) {
           mFn = subType->asExpanded()->getMoveConstructor();
         }
       }
@@ -73,9 +77,10 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
         llvm::Value* maybeTagPtr   = nullptr;
         llvm::Value* maybeValuePtr = nullptr;
         IR::Value*   returnValue   = nullptr;
-        if (local) {
-          maybeValuePtr = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u);
-          maybeTagPtr   = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u);
+        if (isLocalDecl()) {
+          maybeValuePtr =
+              ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 1u);
+          maybeTagPtr = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u);
         } else {
           auto* maybeTy = IR::MaybeType::get(subType, false, ctx);
           auto* block   = ctx->getActiveFunction()->getBlock();
@@ -91,11 +96,11 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
       } else {
         auto* subValue = ctx->builder.CreateLoad(expectSubTy->getLLVMType(), subIR->getLLVM());
         auto* maybeTy  = IR::MaybeType::get(expectSubTy, false, ctx);
-        if (local) {
+        if (isLocalDecl()) {
           ctx->builder.CreateStore(subValue,
-                                   ctx->builder.CreateStructGEP(maybeTy->getLLVMType(), local->getAlloca(), 1u));
+                                   ctx->builder.CreateStructGEP(maybeTy->getLLVMType(), localValue->getAlloca(), 1u));
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-                                   ctx->builder.CreateStructGEP(maybeTy->getLLVMType(), local->getAlloca(), 0u));
+                                   ctx->builder.CreateStructGEP(maybeTy->getLLVMType(), localValue->getAlloca(), 0u));
           return nullptr;
         } else {
           auto* block  = ctx->getActiveFunction()->getBlock();
@@ -113,19 +118,20 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
         if (subType->isReference()) {
           subIR->loadImplicitPointer(ctx->builder);
         }
-        if (local) {
+        if (isLocalDecl()) {
           if (expectSubTy->asReference()->getSubType()->isTypeSized()) {
             ctx->builder.CreateStore(
                 ctx->builder.CreatePointerCast(
                     subIR->getLLVM(), llvm::Type::getInt8PtrTy(ctx->llctx, ctx->dataLayout->getProgramAddressSpace())),
-                ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u));
+                ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 1u));
           } else {
-            ctx->builder.CreateStore(subIR->getLLVM(), ctx->builder.CreateStructGEP(local->getType()->getLLVMType(),
-                                                                                    local->getAlloca(), 1u));
+            ctx->builder.CreateStore(
+                subIR->getLLVM(),
+                ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 1u));
           }
           ctx->builder.CreateStore(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-              ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
+              ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u));
           return nullptr;
         } else {
           auto maybeTy  = IR::MaybeType::get(expectSubTy, false, ctx);
@@ -148,17 +154,17 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
                    subExpr->fileRange);
       }
     } else {
-      if (local) {
+      if (isLocalDecl()) {
         if (expectSubTy->isTypeSized()) {
           subIR->loadImplicitPointer(ctx->builder);
           ctx->builder.CreateStore(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-              ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
-          ctx->builder.CreateStore(
-              subIR->getLLVM(), ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u));
+              ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u));
+          ctx->builder.CreateStore(subIR->getLLVM(), ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(),
+                                                                                  localValue->getAlloca(), 1u));
         } else {
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-                                   local->getAlloca());
+                                   localValue->getAlloca());
         }
         return nullptr;
       } else {
@@ -183,21 +189,21 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
       }
     }
   } else {
-    if (local) {
-      if (local->getType()->isMaybe()) {
-        if (local->getType()->asMaybe()->hasSizedSubType(ctx)) {
+    if (isLocalDecl()) {
+      if (localValue->getType()->isMaybe()) {
+        if (localValue->getType()->asMaybe()->hasSizedSubType(ctx)) {
           ctx->Error("Expected an expression of type " +
-                         ctx->highlightError(local->getType()->asMaybe()->getSubType()->toString()) +
+                         ctx->highlightError(localValue->getType()->asMaybe()->getSubType()->toString()) +
                          ", but no expression was provided",
                      fileRange);
         } else {
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false),
-                                   local->getAlloca(), false);
+                                   localValue->getAlloca(), false);
           return nullptr;
         }
       } else {
-        ctx->Error("Expected expression of type " + ctx->highlightError(local->getType()->toString()) + ", but an " +
-                       ctx->highlightError("is") + " expression was provided",
+        ctx->Error("Expected expression of type " + ctx->highlightError(localValue->getType()->toString()) +
+                       ", but an " + ctx->highlightError("is") + " expression was provided",
                    fileRange);
       }
     } else if (irName.has_value()) {

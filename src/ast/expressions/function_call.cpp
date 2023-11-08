@@ -32,7 +32,9 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     for (usize i = 0; i < values.size(); i++) {
       if (fnTy->getArgumentCount() > (u64)i) {
         auto* argTy = fnTy->getArgumentTypeAt(i)->getType();
-        values.at(i)->setInferenceType(argTy);
+        if (values.at(i)->hasTypeInferrance()) {
+          values.at(i)->asTypeInferrable()->setInferenceType(argTy);
+        }
       }
       argsEmit.push_back(values.at(i)->emit(ctx));
     }

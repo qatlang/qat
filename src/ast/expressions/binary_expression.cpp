@@ -24,20 +24,21 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   IR::Value* rhsEmit = nullptr;
   if (lhs->nodeType() == NodeType::Default) {
     rhsEmit = rhs->emit(ctx);
-    lhs->setInferenceType(rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()
-                                                 : rhsEmit->getType());
+    lhs->asTypeInferrable()->setInferenceType(rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()
+                                                                     : rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::Default) {
     lhsEmit = lhs->emit(ctx);
-    rhs->setInferenceType(lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()
-                                                 : lhsEmit->getType());
+    rhs->asTypeInferrable()->setInferenceType(lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()
+                                                                     : lhsEmit->getType());
     rhsEmit = rhs->emit(ctx);
   } else if (lhs->nodeType() == NodeType::nullPointer) {
     rhsEmit = rhs->emit(ctx);
     if (rhsEmit->getType()->isPointer() ||
         (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isPointer())) {
-      lhs->setInferenceType(rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
-                                                   : rhsEmit->getType()->asPointer());
+      lhs->asTypeInferrable()->setInferenceType(rhsEmit->isReference()
+                                                    ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                                    : rhsEmit->getType()->asPointer());
       lhsEmit = lhs->emit(ctx);
     } else {
       ctx->Error("Invalid type found to set for the null pointer. The LHS is a "
@@ -49,8 +50,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     if (lhsEmit->getType()->isPointer() ||
         (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isPointer())) {
       SHOW("Set type for RHS null pointer")
-      rhs->setInferenceType(lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
-                                                   : lhsEmit->getType()->asPointer());
+      rhs->asTypeInferrable()->setInferenceType(lhsEmit->isReference()
+                                                    ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
+                                                    : lhsEmit->getType()->asPointer());
       rhsEmit = rhs->emit(ctx);
     } else {
       ctx->Error("Invalid type found to set for the null pointer. The LHS is a "
@@ -61,52 +63,57 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     rhsEmit = rhs->emit(ctx);
     if (rhsEmit->getType()->isInteger() ||
         (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      lhs->setInferenceType(rhsEmit->getType()->isInteger() ? rhsEmit->getType()
-                                                            : rhsEmit->getType()->asReference()->getSubType());
+      lhs->asTypeInferrable()->setInferenceType(
+          rhsEmit->getType()->isInteger() ? rhsEmit->getType() : rhsEmit->getType()->asReference()->getSubType());
+
     } else if (rhsEmit->getType()->isUnsignedInteger() ||
                (rhsEmit->getType()->isReference() &&
                 rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      lhs->setInferenceType(rhsEmit->getType()->isUnsignedInteger() ? rhsEmit->getType()
-                                                                    : rhsEmit->getType()->asReference()->getSubType());
+      lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType()->isUnsignedInteger()
+                                                    ? rhsEmit->getType()
+                                                    : rhsEmit->getType()->asReference()->getSubType());
     }
     lhsEmit = lhs->emit(ctx);
   } else if (lhs->nodeType() == NodeType::unsignedLiteral) {
     rhsEmit = rhs->emit(ctx);
     if (rhsEmit->getType()->isInteger() ||
         (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      lhs->setInferenceType(rhsEmit->getType()->isInteger() ? rhsEmit->getType()
-                                                            : rhsEmit->getType()->asReference()->getSubType());
+      lhs->asTypeInferrable()->setInferenceType(
+          rhsEmit->getType()->isInteger() ? rhsEmit->getType() : rhsEmit->getType()->asReference()->getSubType());
     } else if (rhsEmit->getType()->isUnsignedInteger() ||
                (rhsEmit->getType()->isReference() &&
                 rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      lhs->setInferenceType(rhsEmit->getType()->isUnsignedInteger() ? rhsEmit->getType()
-                                                                    : rhsEmit->getType()->asReference()->getSubType());
+      lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType()->isUnsignedInteger()
+                                                    ? rhsEmit->getType()
+                                                    : rhsEmit->getType()->asReference()->getSubType());
     }
     lhsEmit = lhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::integerLiteral) {
     lhsEmit = lhs->emit(ctx);
     if (lhsEmit->getType()->isInteger() ||
         (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      rhs->setInferenceType(lhsEmit->getType()->isInteger() ? lhsEmit->getType()
-                                                            : lhsEmit->getType()->asReference()->getSubType());
+      rhs->asTypeInferrable()->setInferenceType(
+          lhsEmit->getType()->isInteger() ? lhsEmit->getType() : lhsEmit->getType()->asReference()->getSubType());
     } else if (lhsEmit->getType()->isUnsignedInteger() ||
                (lhsEmit->getType()->isReference() &&
                 lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      rhs->setInferenceType(lhsEmit->getType()->isUnsignedInteger() ? lhsEmit->getType()
-                                                                    : lhsEmit->getType()->asReference()->getSubType());
+      rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType()->isUnsignedInteger()
+                                                    ? lhsEmit->getType()
+                                                    : lhsEmit->getType()->asReference()->getSubType());
     }
     rhsEmit = rhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::unsignedLiteral) {
     lhsEmit = lhs->emit(ctx);
     if (lhsEmit->getType()->isInteger() ||
         (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      rhs->setInferenceType(lhsEmit->getType()->isInteger() ? lhsEmit->getType()
-                                                            : lhsEmit->getType()->asReference()->getSubType());
+      rhs->asTypeInferrable()->setInferenceType(
+          lhsEmit->getType()->isInteger() ? lhsEmit->getType() : lhsEmit->getType()->asReference()->getSubType());
     } else if (lhsEmit->getType()->isUnsignedInteger() ||
                (lhsEmit->getType()->isReference() &&
                 lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      rhs->setInferenceType(lhsEmit->getType()->isUnsignedInteger() ? lhsEmit->getType()
-                                                                    : lhsEmit->getType()->asReference()->getSubType());
+      rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType()->isUnsignedInteger()
+                                                    ? lhsEmit->getType()
+                                                    : lhsEmit->getType()->asReference()->getSubType());
     }
     rhsEmit = rhs->emit(ctx);
   } else {

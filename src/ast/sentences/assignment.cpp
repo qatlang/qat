@@ -22,8 +22,10 @@ Assignment::Assignment(Expression* _lhs, Expression* _value, FileRange _fileRang
 
 IR::Value* Assignment::emit(IR::Context* ctx) {
   auto* lhsVal = lhs->emit(ctx);
-  value->setInferenceType(lhsVal->getType()->isReference() ? lhsVal->getType()->asReference()->getSubType()
-                                                           : lhsVal->getType());
+  if (value->hasTypeInferrance()) {
+    value->asTypeInferrable()->setInferenceType(
+        lhsVal->getType()->isReference() ? lhsVal->getType()->asReference()->getSubType() : lhsVal->getType());
+  }
   SHOW("Emitted lhs and rhs of Assignment")
   if (lhsVal->getType()->isMaybe() ||
       (lhsVal->getType()->isReference() && lhsVal->getType()->asReference()->getSubType()->isMaybe())) {
@@ -50,7 +52,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
     if (!mTy->hasSizedSubType(ctx)) {
       if (value->nodeType() == NodeType::arrayLiteral) {
         if (mTy->getSubType()->isArray()) {
-          value->setInferenceType(mTy->getSubType());
+          value->asTypeInferrable()->setInferenceType(mTy->getSubType());
         }
       } else if (value->nodeType() == NodeType::none) {
         if (((NoneExpression*)value)->hasTypeSet()) {

@@ -5,19 +5,20 @@
 
 namespace qat::ast {
 
-class Copy : public Expression {
+class Copy : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
   friend class Assignment;
   friend class LocalDeclaration;
 
 private:
-  Expression*       exp;
-  Maybe<Identifier> irName;
-  bool              isVar = false;
+  Expression* exp;
 
   bool isAssignment = false;
 
 public:
   Copy(Expression* exp, FileRange fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  IN_PLACE_CREATABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::copyExpression; }

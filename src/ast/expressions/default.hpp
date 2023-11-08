@@ -6,16 +6,17 @@
 
 namespace qat::ast {
 
-class Default : public Expression {
+class Default : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class LocalDeclaration;
 
 private:
   Maybe<ast::QatType*> providedType;
-  Maybe<Identifier>    irName;
-  bool                 isVar = false;
 
 public:
   Default(Maybe<ast::QatType*> _providedType, FileRange _fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::Default; }

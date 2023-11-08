@@ -5,12 +5,14 @@
 
 namespace qat::ast {
 
-class IntegerLiteral : public PrerunExpression {
+class IntegerLiteral : public PrerunExpression, public TypeInferrable {
 private:
   String value;
 
 public:
   IntegerLiteral(String _value, FileRange _fileRange);
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;

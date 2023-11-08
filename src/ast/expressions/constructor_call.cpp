@@ -61,7 +61,9 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   if (ownCount.has_value()) {
     SHOW("Own count is present")
     // NOLINTBEGIN(readability-magic-numbers)
-    ownCount.value()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
+    if (ownCount.value()->hasTypeInferrance()) {
+      ownCount.value()->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
+    }
     SHOW("Own count type inference complete")
     // NOLINTEND(readability-magic-numbers)
   }
@@ -192,15 +194,15 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         }
       }
     } else {
-      if (local) {
-        if (local->getType()->isMaybe()) {
-          llAlloca = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 1u);
+      if (isLocalDecl()) {
+        if (localValue->getType()->isMaybe()) {
+          llAlloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 1u);
         } else {
-          llAlloca = local->getAlloca();
+          llAlloca = localValue->getAlloca();
         }
       } else if (irName) {
-        local    = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-        llAlloca = local->getAlloca();
+        localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+        llAlloca   = localValue->getAlloca();
       } else {
         SHOW("Creating alloca for core type")
         auto loc = ctx->getActiveFunction()->getBlock()->newValue(utils::unique_id(), cTy, isVar, irName->range);
@@ -243,13 +245,14 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       restBlock->setActive(ctx->builder);
       auto* ptrTy = IR::PointerType::get(true, cTy, ownerValue, true, ctx);
       auto* resVal =
-          local
-              ? (local->getType()->isMaybe()
-                     ? new IR::Value(
-                           ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getLLVM(), 1u),
-                           IR::ReferenceType::get(local->isVariable(), local->getType()->asMaybe()->getSubType(), ctx),
-                           false, IR::Nature::temporary)
-                     : local)
+          isLocalDecl()
+              ? (localValue->getType()->isMaybe()
+                     ? new IR::Value(ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(),
+                                                                  localValue->getLLVM(), 1u),
+                                     IR::ReferenceType::get(localValue->isVariable(),
+                                                            localValue->getType()->asMaybe()->getSubType(), ctx),
+                                     false, IR::Nature::temporary)
+                     : localValue)
               : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy, isVar,
                                     irName.has_value() ? irName->range : fileRange);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
@@ -264,20 +267,19 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
       (void)cons->call(ctx, valsLLVM, ctx->getMod());
     }
-    if (local && local->getType()->isMaybe()) {
-      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                               ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), local->getAlloca(), 0u));
-      auto* res = new IR::Value(local->getAlloca(), local->getType(), local->isVariable(), local->getNature());
-      res->setLocalID(local->getLocalID());
-      return res;
+    if (isLocalDecl() && localValue->getType()->isMaybe()) {
+      ctx->builder.CreateStore(
+          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
+          ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u));
+      return localValue->toNewIRValue();
     } else {
       auto* res =
           new IR::Value(llAlloca,
                         ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, cTy, ownerValue, hasOwnCount, ctx)
                                           : (IR::QatType*)cTy,
                         ownTy.has_value() ? false : isVar, IR::Nature::temporary);
-      if (local) {
-        res->setLocalID(local->getLocalID());
+      if (isLocalDecl()) {
+        res->setLocalID(localValue->getLocalID());
       }
       return res;
     }

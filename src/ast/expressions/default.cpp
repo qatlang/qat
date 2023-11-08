@@ -7,7 +7,7 @@ Default::Default(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
     : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
 IR::Value* Default::emit(IR::Context* ctx) {
-  auto resultType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType.value_or(nullptr);
+  auto resultType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType;
   if (resultType) {
     if (resultType->isInteger()) {
       ctx->Warning("The recognised type for the " + ctx->highlightWarning("default") +

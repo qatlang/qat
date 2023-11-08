@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class NoneExpression : public Expression {
+class NoneExpression : public Expression, public TypeInferrable {
   friend class Assignment;
   friend class LocalDeclaration;
   QatType*         type = nullptr;
@@ -16,6 +16,8 @@ public:
   NoneExpression(Maybe<FileRange> isPacked, QatType* _type, FileRange _fileRange);
 
   bool hasTypeSet() const;
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

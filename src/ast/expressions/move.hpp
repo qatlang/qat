@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class Move : public Expression {
+class Move : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
   friend class Assignment;
   friend class LocalDeclaration;
 
@@ -14,11 +14,11 @@ private:
 
   bool isAssignment = false;
 
-  Maybe<Identifier> irName;
-  bool              isVar = false;
-
 public:
   Move(Expression* exp, FileRange fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  IN_PLACE_CREATABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::moveExpression; }

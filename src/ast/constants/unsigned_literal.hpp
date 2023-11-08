@@ -6,12 +6,14 @@
 
 namespace qat::ast {
 
-class UnsignedLiteral : public PrerunExpression {
+class UnsignedLiteral : public PrerunExpression, public TypeInferrable {
 private:
   String value;
 
 public:
   UnsignedLiteral(String _value, FileRange _fileRange);
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;

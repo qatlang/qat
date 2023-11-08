@@ -10,12 +10,12 @@ NoneExpression::NoneExpression(Maybe<FileRange> _isPacked, QatType* _type, FileR
 bool NoneExpression::hasTypeSet() const { return type != nullptr; }
 
 IR::Value* NoneExpression::emit(IR::Context* ctx) {
-  if (type || inferredType) {
-    auto* typ = type ? type->emit(ctx) : inferredType.value();
+  if (type || isTypeInferred()) {
+    auto* typ = type ? type->emit(ctx) : inferredType;
     if (inferredType && type) {
-      if (!typ->isSame(inferredType.value())) {
+      if (!typ->isSame(inferredType)) {
         ctx->Error("The type provided for this none expression is " + ctx->highlightError(typ->toString()) +
-                       ", but the expected type is " + ctx->highlightError(inferredType.value()->toString()),
+                       ", but the expected type is " + ctx->highlightError(inferredType->toString()),
                    fileRange);
       }
     }

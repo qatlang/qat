@@ -14,7 +14,7 @@ namespace qat::ast {
  * the result
  *
  */
-class TernaryExpression : public Expression {
+class TernaryExpression : public Expression, public TypeInferrable {
 private:
   Expression* condition;
   Expression* trueExpr;
@@ -22,6 +22,8 @@ private:
 
 public:
   TernaryExpression(Expression* _condition, Expression* _trueExpr, Expression* _falseExpr, FileRange _fileRange);
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class IsExpression : public Expression {
+class IsExpression : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class Assignment;
   friend class LocalDeclaration;
 
@@ -13,12 +13,11 @@ class IsExpression : public Expression {
   bool        confirmedRef = false;
   bool        isRefVar     = false;
 
-  IR::LocalValue*   local = nullptr;
-  Maybe<Identifier> irName;
-  bool              isVar = false;
-
 public:
   IsExpression(Expression* subExpr, FileRange fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::isExpression; }

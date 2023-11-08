@@ -69,7 +69,9 @@ IR::Value* GiveSentence::emit(IR::Context* ctx) {
                           ? fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()
                           : fun->getType()->asFunction()->getReturnType();
       retType       = fun->isAsyncFunction() ? retType->asFuture()->getSubType() : retType;
-      give_expr.value()->setInferenceType(retType);
+      if (give_expr.value()->hasTypeInferrance()) {
+        give_expr.value()->asTypeInferrable()->setInferenceType(retType);
+      }
       auto* retVal = give_expr.value()->emit(ctx);
       SHOW("ret val emitted")
       SHOW("RetType: " << retType->toString() << "\nRetValType: " << retVal->getType()->toString())

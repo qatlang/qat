@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class ConstructorCall : public Expression {
+class ConstructorCall : public Expression, public LocalDeclCompatible {
   friend class LocalDeclaration;
 
 public:
@@ -24,16 +24,14 @@ private:
   Maybe<QatType*>    ownerType;
   Maybe<Expression*> ownCount;
 
-  mutable IR::LocalValue*   local = nullptr;
-  mutable Maybe<Identifier> irName;
-  mutable bool              isVar = true;
-
   IR::PointerOwner getIRPtrOwnerTy(IR::Context* ctx) const;
   String           ownTyToString() const;
 
 public:
   ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<QatType*> _ownerType,
                   Maybe<Expression*> _ownCount, FileRange _fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
 
   useit bool isOwning() const;
 

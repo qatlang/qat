@@ -85,7 +85,10 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
             ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
           } else if (genericCoreTy->getGenericAt(i)->isPrerun() &&
                      (genericCoreTy->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
-            gen->asPrerun()->setInferenceType(genericCoreTy->getGenericAt(i)->asPrerun()->getType());
+            if (gen->asPrerun()->hasTypeInferrance()) {
+              gen->asPrerun()->asTypeInferrable()->setInferenceType(
+                  genericCoreTy->getGenericAt(i)->asPrerun()->getType());
+            }
           }
         }
         types.push_back(genericTypes.at(i)->toFill(ctx));
@@ -141,7 +144,10 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
             ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericTypeDef->getGenericAt(i));
           } else if (genericTypeDef->getGenericAt(i)->isPrerun() &&
                      (genericTypeDef->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
-            gen->asPrerun()->setInferenceType(genericTypeDef->getGenericAt(i)->asPrerun()->getType());
+            if (gen->asPrerun()->hasTypeInferrance()) {
+              gen->asPrerun()->asTypeInferrable()->setInferenceType(
+                  genericTypeDef->getGenericAt(i)->asPrerun()->getType());
+            }
           }
         }
         types.push_back(genericTypes.at(i)->toFill(ctx));

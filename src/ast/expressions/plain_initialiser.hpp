@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PlainInitialiser : public Expression {
+class PlainInitialiser : public Expression, public LocalDeclCompatible {
   friend class LocalDeclaration;
 
 private:
@@ -15,13 +15,11 @@ private:
   Vec<u64>                     indices;
   Vec<Expression*>             fieldValues;
 
-  IR::LocalValue*   local = nullptr;
-  Maybe<Identifier> irName;
-  bool              isVar = false;
-
 public:
   PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
                    FileRange _fileRange);
+
+  LOCAL_DECL_COMPATIBLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::plainInitialiser; }

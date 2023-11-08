@@ -12,8 +12,8 @@ PrerunDefault::PrerunDefault(Maybe<ast::QatType*> _type, FileRange range)
 void PrerunDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
 
 IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
-  if (theType.has_value() || inferredType.has_value()) {
-    auto* type = theType.has_value() ? theType.value()->emit(ctx) : inferredType.value();
+  if (theType.has_value() || isTypeInferred()) {
+    auto* type = theType.has_value() ? theType.value()->emit(ctx) : inferredType;
     if (type->isInteger()) {
       return new IR::PrerunValue(llvm::ConstantInt::get(type->asInteger()->getLLVMType(), 0u), type->asInteger());
     } else if (type->isUnsignedInteger()) {

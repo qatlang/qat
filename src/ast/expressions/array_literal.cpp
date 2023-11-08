@@ -10,39 +10,37 @@
 namespace qat::ast {
 
 ArrayLiteral::ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), values(std::move(_values)), local(nullptr), isVar(false) {}
-
-bool ArrayLiteral::hasLocal() const { return (local != nullptr); }
+    : Expression(std::move(_fileRange)), values(std::move(_values)) {}
 
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
   IR::ArrayType* arrTyOfLocal = nullptr;
-  if (hasLocal()) {
-    if (local->getType()->isMaybe()) {
-      arrTyOfLocal = local->getType()->asMaybe()->getSubType()->asArray();
+  if (isLocalDecl()) {
+    if (localValue->getType()->isMaybe()) {
+      arrTyOfLocal = localValue->getType()->asMaybe()->getSubType()->asArray();
     } else {
-      arrTyOfLocal = local->getType()->asArray();
+      arrTyOfLocal = localValue->getType()->asArray();
     }
   }
-  if (hasLocal() && (arrTyOfLocal->getLength() != values.size())) {
+  if (isLocalDecl() && (arrTyOfLocal->getLength() != values.size())) {
     ctx->Error("The expected length of the array is " + ctx->highlightError(std::to_string(arrTyOfLocal->getLength())) +
                    ", but this array literal has " + ctx->highlightError(std::to_string(values.size())) + " elements",
                fileRange);
-  } else if (inferredType.has_value() && inferredType.value()->isArray() &&
-             inferredType.value()->asArray()->getLength() != values.size()) {
-    auto infLen = inferredType.value()->asArray()->getLength();
+  } else if (isTypeInferred() && inferredType->isArray() && inferredType->asArray()->getLength() != values.size()) {
+    auto infLen = inferredType->asArray()->getLength();
     ctx->Error("The length of the array type inferred is " + ctx->highlightError(std::to_string(infLen)) + ", but " +
                    ((values.size() < infLen) ? "only " : "") + ctx->highlightError(std::to_string(values.size())) +
                    " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
                fileRange);
-  } else if (inferredType && !inferredType.value()->isArray()) {
-    ctx->Error("Inferred type is " + ctx->highlightError(inferredType.value()->toString()) + ", but found an array",
-               fileRange);
+  } else if (isTypeInferred() && !inferredType->isArray()) {
+    ctx->Error("Inferred type is " + ctx->highlightError(inferredType->toString()) + ", but found an array", fileRange);
   }
   Vec<IR::Value*> valsIR;
   for (auto* val : values) {
-    if (arrTyOfLocal || inferredType) {
-      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType.value()->asArray()->getElementType();
-      val->setInferenceType(elemTy);
+    if (arrTyOfLocal || isTypeInferred()) {
+      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType->asArray()->getElementType();
+      if (val->hasTypeInferrance()) {
+        val->asTypeInferrable()->setInferenceType(elemTy);
+      }
     }
     valsIR.push_back(val->emit(ctx));
   }
@@ -78,16 +76,16 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
     }
     // TODO - Implement constant array literals
     llvm::Value* alloca;
-    if (hasLocal()) {
-      if (local->getType()->isMaybe()) {
-        auto* locll = local->getLLVM();
-        alloca      = ctx->builder.CreateStructGEP(local->getType()->getLLVMType(), locll, 1u);
+    if (isLocalDecl()) {
+      if (localValue->getType()->isMaybe()) {
+        auto* locll = localValue->getLLVM();
+        alloca      = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), locll, 1u);
       } else {
-        alloca = local->getLLVM();
+        alloca = localValue->getLLVM();
       }
-    } else if (name) {
+    } else if (irName) {
       auto* loc = ctx->getActiveFunction()->getBlock()->newValue(
-          name->value, IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar, name->range);
+          irName->value, IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar, irName->range);
       alloca = loc->getAlloca();
     } else {
       alloca = ctx->builder.CreateAlloca(llvm::ArrayType::get(elemTy->getLLVMType(), values.size()));
@@ -104,19 +102,20 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(valsIR.at(i)->getLLVM(), elemPtr);
     }
     return new IR::Value(alloca, IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx),
-                         local ? local->isVariable() : isVar, local ? local->getNature() : IR::Nature::pure);
+                         isLocalDecl() ? localValue->isVariable() : isVar,
+                         isLocalDecl() ? localValue->getNature() : IR::Nature::pure);
   } else {
-    if (hasLocal()) {
-      if (local->getType()->isArray()) {
+    if (isLocalDecl()) {
+      if (localValue->getType()->isArray()) {
         ctx->builder.CreateStore(llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(arrTyOfLocal->getLLVMType()), {}),
-                                 local->getLLVM());
+                                 localValue->getLLVM());
       }
     } else {
-      if (inferredType.value()->asArray()->getElementType()) {
+      if (inferredType->asArray()->getElementType()) {
         return new IR::PrerunValue(
-            llvm::ConstantArray::get(
-                llvm::ArrayType::get(inferredType.value()->asArray()->getElementType()->getLLVMType(), 0u), {}),
-            IR::ArrayType::get(inferredType.value()->asArray()->getElementType(), 0u, ctx->llctx));
+            llvm::ConstantArray::get(llvm::ArrayType::get(inferredType->asArray()->getElementType()->getLLVMType(), 0u),
+                                     {}),
+            IR::ArrayType::get(inferredType->asArray()->getElementType(), 0u, ctx->llctx));
       } else {
         ctx->Error("Element type for the empty array is not provided and could not be inferred", fileRange);
       }

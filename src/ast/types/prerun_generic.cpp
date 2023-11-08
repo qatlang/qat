@@ -26,7 +26,9 @@ void PrerunGeneric::emit(IR::Context* ctx) const {
   }
   if (hasDefault()) {
     auto* astVal = defaultValueAST.value();
-    astVal->setInferenceType(expressionType);
+    if (astVal->hasTypeInferrance()) {
+      astVal->asTypeInferrable()->setInferenceType(expressionType);
+    }
     defaultValue = astVal->emit(ctx);
     if (defaultValue) {
       if (!defaultValue->getType()->isSame(expressionType)) {

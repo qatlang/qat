@@ -9,9 +9,11 @@ namespace qat::ast {
  *  A null pointer
  *
  */
-class NullPointer : public PrerunExpression {
+class NullPointer : public PrerunExpression, public TypeInferrable {
 public:
   explicit NullPointer(FileRange _fileRange);
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;

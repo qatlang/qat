@@ -11,20 +11,17 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Null pointer is not assignable", fileRange);
   }
-  if (inferredType) {
+  if (isTypeInferred()) {
     return new IR::PrerunValue(
-        inferredType.value()->asPointer()->isMulti()
+        inferredType->asPointer()->isMulti()
             ? llvm::ConstantStruct::get(
-                  llvm::dyn_cast<llvm::StructType>(inferredType.value()->getLLVMType()),
-                  {llvm::ConstantPointerNull::get(
-                       inferredType.value()->asPointer()->getSubType()->getLLVMType()->getPointerTo(
-                           ctx->dataLayout->getProgramAddressSpace())),
+                  llvm::dyn_cast<llvm::StructType>(inferredType->getLLVMType()),
+                  {llvm::ConstantPointerNull::get(inferredType->asPointer()->getSubType()->getLLVMType()->getPointerTo(
+                       ctx->dataLayout->getProgramAddressSpace())),
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
-            : llvm::ConstantPointerNull::get(
-                  inferredType.value()->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
-        IR::PointerType::get(
-            inferredType.value()->asPointer()->isSubtypeVariable(), inferredType.value()->asPointer()->getSubType(),
-            inferredType.value()->asPointer()->getOwner(), inferredType.value()->asPointer()->isMulti(), ctx));
+            : llvm::ConstantPointerNull::get(inferredType->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
+        IR::PointerType::get(inferredType->asPointer()->isSubtypeVariable(), inferredType->asPointer()->getSubType(),
+                             inferredType->asPointer()->getOwner(), inferredType->asPointer()->isMulti(), ctx));
   } else {
     return new IR::PrerunValue(
         llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),

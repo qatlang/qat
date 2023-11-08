@@ -66,14 +66,14 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
                        ", but the provided value is not compatible",
                    value.value()->fileRange);
       }
-      auto* loc  = block->newValue(name.value, declType, variability, name.range);
-      arr->local = loc;
+      auto* loc       = block->newValue(name.value, declType, variability, name.range);
+      arr->localValue = loc;
       (void)arr->emit(ctx);
       maybeTagFill(loc);
       return nullptr;
     } else {
-      arr->name  = name;
-      arr->isVar = variability;
+      arr->irName = name;
+      arr->isVar  = variability;
       (void)arr->emit(ctx);
       return nullptr;
     }
@@ -94,8 +94,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* plainTy = plain->type->emit(ctx);
       if (declType->isSame(plainTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(plainTy))) {
-        auto* loc    = block->newValue(name.value, declType, variability, name.range);
-        plain->local = loc;
+        auto* loc         = block->newValue(name.value, declType, variability, name.range);
+        plain->localValue = loc;
         (void)plain->emit(ctx);
         maybeTagFill(loc);
         return nullptr;
@@ -139,8 +139,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
                                        : declType->isSame(constrTy))) {
         SHOW("Local Declaration => name : " << name.value << " type: " << declType->toString()
                                             << " variability: " << variability)
-        auto* loc   = block->newValue(name.value, declType, variability, name.range);
-        cons->local = loc;
+        auto* loc        = block->newValue(name.value, declType, variability, name.range);
+        cons->localValue = loc;
         if (type) {
           cons->isVar = variability;
         }
@@ -171,8 +171,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto* mixTy = mixTyIn->type->emit(ctx);
       if (declType->isSame(mixTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(mixTy))) {
-        auto* loc      = block->newValue(name.value, declType, variability, name.range);
-        mixTyIn->local = loc;
+        auto* loc = block->newValue(name.value, declType, variability, name.range);
+        mixTyIn->setLocalValue(loc);
         (void)mixTyIn->emit(ctx);
         maybeTagFill(loc);
         return nullptr;
@@ -192,11 +192,11 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
       declType = type->emit(ctx);
       maybeTypeCheck();
       auto* defVal = (Default*)(value.value());
-      if (defVal->inferredType) {
-        if (!defVal->inferredType.value()->isSame(declType)) {
+      if (defVal->isTypeInferred()) {
+        if (!defVal->inferredType->isSame(declType)) {
           ctx->Error("Type of the declaration is " + ctx->highlightError(declType->toString()) +
                          " does not match the type provided for the " + ctx->highlightError("default") +
-                         " expression, which is " + ctx->highlightError(defVal->inferredType.value()->toString()),
+                         " expression, which is " + ctx->highlightError(defVal->inferredType->toString()),
                      defVal->fileRange);
         }
       }
@@ -205,7 +205,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
       defVal->isVar  = variability;
       (void)defVal->emit(ctx);
       return nullptr;
-    } else if (value.value()->isTypeInferred()) {
+    } else if (((Default*)value.value())->isTypeInferred()) {
       auto* defVal   = ((Default*)value.value());
       defVal->irName = name;
       defVal->isVar  = variability;
@@ -220,7 +220,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      moveVal->local = ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range);
+      moveVal->setLocalValue(
+          ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
       (void)moveVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {
@@ -235,7 +236,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     if (type) {
       declType = type->emit(ctx);
       maybeTypeCheck();
-      copyVal->local = ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range);
+      copyVal->setLocalValue(
+          ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
       (void)copyVal->emit(ctx);
       return nullptr;
     } else if (!isRef) {
@@ -255,12 +257,16 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         declType = type->emit(ctx);
         maybeTypeCheck();
         if (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer()) {
-          value.value()->setInferenceType(declType->asMaybe()->getSubType()->asPointer());
+          if (value.value()->hasTypeInferrance()) {
+            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType()->asPointer());
+          }
         } else if (declType->isPointer() ||
                    (declType->isReference() && declType->asReference()->getSubType()->isPointer())) {
           auto* typeToSet =
               declType->isReference() ? declType->asReference()->getSubType()->asPointer() : declType->asPointer();
-          value.value()->setInferenceType(typeToSet);
+          if (value.value()->hasTypeInferrance()) {
+            value.value()->asTypeInferrable()->setInferenceType(typeToSet);
+          }
         } else {
           ctx->Error("Invalid type recognised for the value to be assigned, "
                      "which is a null pointer. Expected a pointer type in the "
@@ -275,9 +281,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            value.value()->setInferenceType(declType->asMaybe()->getSubType());
+            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType());
           } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            value.value()->setInferenceType(declType);
+            value.value()->asTypeInferrable()->setInferenceType(declType);
           } else {
             ctx->Error("Invalid type to set for integer literal", fileRange);
           }
@@ -293,9 +299,9 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         if (!isRef) {
           if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
                                       declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            value.value()->setInferenceType(declType->asMaybe()->getSubType());
+            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType());
           } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            value.value()->setInferenceType(declType);
+            value.value()->asTypeInferrable()->setInferenceType(declType);
           } else {
             ctx->Error("Invalid type to set for unsigned integer literal", fileRange);
           }

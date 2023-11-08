@@ -81,7 +81,9 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     for (usize i = 0; i < arguments.size(); i++) {
       if (fnTy->getArgumentCount() > (u64)i) {
         auto* argTy = fnTy->getArgumentTypeAt(i + 1)->getType();
-        arguments.at(i)->setInferenceType(argTy);
+        if (arguments.at(i)->hasTypeInferrance()) {
+          arguments.at(i)->asTypeInferrable()->setInferenceType(argTy);
+        }
       }
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }

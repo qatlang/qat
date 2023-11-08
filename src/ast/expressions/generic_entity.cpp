@@ -85,7 +85,9 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
       } else if (genericFn->getGenericAt(i)->isPrerun() &&
                  (genericFn->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
         SHOW("Generic abstract is const and has valid type")
-        gen->asPrerun()->setInferenceType(genericFn->getGenericAt(i)->asPrerun()->getType());
+        if (gen->asPrerun()->hasTypeInferrance()) {
+          gen->asPrerun()->asTypeInferrable()->setInferenceType(genericFn->getGenericAt(i)->asPrerun()->getType());
+        }
       }
       types.push_back(genericTypes.at(i)->toFill(ctx));
     }

@@ -13,7 +13,9 @@ ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, FileRang
     : QatType(std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
 
 void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {
-  lengthExp->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
+  if (lengthExp->hasTypeInferrance()) {
+    lengthExp->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
+  }
 }
 
 Maybe<usize> ArrayType::getTypeSizeInBits(IR::Context* ctx) const {

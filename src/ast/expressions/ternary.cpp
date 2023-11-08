@@ -34,13 +34,19 @@ IR::Value* TernaryExpression::emit(IR::Context* ctx) {
       ctx->builder.CreateCondBr(genCond->getLLVM(), trueBlock->getBB(), falseBlock->getBB());
       IR::Value* trueVal  = nullptr;
       IR::Value* falseVal = nullptr;
-      if (inferredType) {
-        trueExpr->setInferenceType(inferredType.value());
-        falseExpr->setInferenceType(inferredType.value());
+      if (isTypeInferred()) {
+        if (trueExpr->hasTypeInferrance()) {
+          trueExpr->asTypeInferrable()->setInferenceType(inferredType);
+        }
+        if (falseExpr->hasTypeInferrance()) {
+          falseExpr->asTypeInferrable()->setInferenceType(inferredType);
+        }
       } else {
         trueBlock->setActive(ctx->builder);
         trueVal = trueExpr->emit(ctx);
-        falseExpr->setInferenceType(trueVal->getType());
+        if (falseExpr->hasTypeInferrance()) {
+          falseExpr->asTypeInferrable()->setInferenceType(trueVal->getType());
+        }
       }
       /* true case */
       if (!trueVal) {

@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunDefault : public PrerunExpression {
+class PrerunDefault : public PrerunExpression, public TypeInferrable {
   mutable Maybe<ast::QatType*>             theType;
   mutable Maybe<ast::GenericAbstractType*> genericAbstractType;
 
@@ -14,6 +14,8 @@ public:
   PrerunDefault(Maybe<ast::QatType*> _type, FileRange range);
 
   void setGenericAbstract(ast::GenericAbstractType* genAbs) const;
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit NodeType         nodeType() const final { return NodeType::prerunDefault; }

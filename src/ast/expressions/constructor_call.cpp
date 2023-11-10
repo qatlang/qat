@@ -204,8 +204,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
         llAlloca   = localValue->getAlloca();
       } else {
-        SHOW("Creating alloca for core type")
-        auto loc = ctx->getActiveFunction()->getBlock()->newValue(utils::unique_id(), cTy, isVar, irName->range);
+        auto loc = ctx->getActiveFunction()->getBlock()->newValue(utils::unique_id(), cTy, isVar, fileRange);
         llAlloca = loc->getAlloca();
       }
     }

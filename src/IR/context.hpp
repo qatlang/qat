@@ -21,6 +21,10 @@ namespace qat {
 
 class QatSitter;
 
+namespace ast {
+struct VisibilitySpec;
+}
+
 } // namespace qat
 
 namespace qat::IR {
@@ -271,7 +275,7 @@ public:
     }
   }
 
-  useit VisibilityInfo getVisibInfo(Maybe<VisibilityKind> kind, FileRange fileRange);
+  useit VisibilityInfo getVisibInfo(Maybe<ast::VisibilitySpec> spec);
   useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
   void writeJsonResult(bool status) const;

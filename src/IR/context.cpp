@@ -291,22 +291,22 @@ llvm::GlobalValue::LinkageTypes Context::getGlobalLinkageForVisibility(Visibilit
   }
 }
 
-VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind, FileRange fileRange) {
-  if (kind.has_value() && (kind.value() != VisibilityKind::parent)) {
+VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
+  if (spec.has_value() && (spec.value().kind != VisibilityKind::parent)) {
     SHOW("Visibility kind has value")
-    switch (kind.value()) {
+    switch (spec->kind) {
       case VisibilityKind::box: {
         if (getMod()->hasClosestParentBox()) {
           return VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
         } else {
-          Error("The current module does not have a parent box", fileRange);
+          Error("The current module does not have a parent box", spec->range);
         }
       }
       case VisibilityKind::lib: {
         if (getMod()->hasClosestParentLib()) {
           return VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
         } else {
-          Error("The current module does not have a parent lib", fileRange);
+          Error("The current module does not have a parent lib", spec->range);
         }
       }
       case VisibilityKind::file: {
@@ -323,7 +323,7 @@ VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind, FileRange fileR
             return VisibilityInfo::type(((IR::MemberFunction*)getActiveFunction())->getParentType());
           } else {
             Error("There is no parent type and hence " + highlightError("type") + " visibility cannot be used here",
-                  fileRange);
+                  spec->range);
           }
         }
       }

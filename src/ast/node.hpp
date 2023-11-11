@@ -24,6 +24,11 @@
 
 namespace qat::ast {
 
+struct VisibilitySpec {
+  VisibilityKind kind;
+  FileRange      range;
+};
+
 //  Node is the base class for all AST members of the language, and it
 // requires a FileRange instance that indicates its position in the
 // corresponding file

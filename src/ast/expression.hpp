@@ -27,7 +27,7 @@ enum class ExpressionKind {
 
 #define TYPE_INFERRABLE_FUNCTIONS                                                                                      \
   useit bool            hasTypeInferrance() const final { return true; }                                               \
-  useit TypeInferrable* asTypeInferrable() { return (TypeInferrable*)this; }
+  useit TypeInferrable* asTypeInferrable() final { return (TypeInferrable*)this; }
 
 class LocalDeclCompatible {
 public:

@@ -271,8 +271,10 @@ public:
     }
   }
 
-  useit VisibilityInfo getVisibInfo(Maybe<VisibilityKind> kind) const;
-  void                 writeJsonResult(bool status) const;
+  useit VisibilityInfo getVisibInfo(Maybe<VisibilityKind> kind, FileRange fileRange);
+  useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
+
+  void writeJsonResult(bool status) const;
 
   exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
   void          Warning(const String& message, const FileRange& fileRange) const;

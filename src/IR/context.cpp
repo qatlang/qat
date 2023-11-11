@@ -8,8 +8,10 @@
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
+#include "qat_module.hpp"
 #include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/DiagnosticDriver.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Target/TargetOptions.h"
 #include <chrono>
@@ -267,15 +269,45 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
   }
 }
 
-VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
+llvm::GlobalValue::LinkageTypes Context::getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const {
+  switch (visibInfo.kind) {
+    case VisibilityKind::pub:
+      return llvm::GlobalValue::LinkageTypes::ExternalLinkage;
+    case VisibilityKind::type:
+      return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+    case VisibilityKind::folder:
+    case VisibilityKind::file:
+    case VisibilityKind::box:
+    case VisibilityKind::lib: {
+      if (getMod()->getID() == visibInfo.value) {
+        if (!getMod()->hasSubmodules()) {
+          return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+        }
+      }
+      return llvm::GlobalValue::LinkageTypes::ExternalLinkage;
+    }
+    case VisibilityKind::parent:
+      return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+  }
+}
+
+VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind, FileRange fileRange) {
   if (kind.has_value() && (kind.value() != VisibilityKind::parent)) {
     SHOW("Visibility kind has value")
     switch (kind.value()) {
       case VisibilityKind::box: {
-        return VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
+        if (getMod()->hasClosestParentBox()) {
+          return VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
+        } else {
+          Error("The current module does not have a parent box", fileRange);
+        }
       }
       case VisibilityKind::lib: {
-        return VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
+        if (getMod()->hasClosestParentLib()) {
+          return VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
+        } else {
+          Error("The current module does not have a parent lib", fileRange);
+        }
       }
       case VisibilityKind::file: {
         return VisibilityInfo::file(getMod()->getFilePath());
@@ -290,10 +322,10 @@ VisibilityInfo Context::getVisibInfo(Maybe<VisibilityKind> kind) const {
           if (hasActiveFunction() && getActiveFunction()->isMemberFunction()) {
             return VisibilityInfo::type(((IR::MemberFunction*)getActiveFunction())->getParentType());
           } else {
-            return VisibilityInfo::type(nullptr);
+            Error("There is no parent type and hence " + highlightError("type") + " visibility cannot be used here",
+                  fileRange);
           }
         }
-        // TODO - Handle in case it is null
       }
       case VisibilityKind::pub: {
         return VisibilityInfo::pub();

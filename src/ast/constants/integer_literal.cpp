@@ -15,8 +15,8 @@ IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
                fileRange);
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::PrerunValue(llvm::ConstantInt::get(inferredType ? (llvm::IntegerType*)(inferredType->getLLVMType())
-                                                                 : llvm::Type::getInt32Ty(ctx->llctx),
+  return new IR::PrerunValue(llvm::ConstantInt::get(isTypeInferred() ? (llvm::IntegerType*)(inferredType->getLLVMType())
+                                                                     : llvm::Type::getInt32Ty(ctx->llctx),
                                                     value, 10u),
                              isTypeInferred() ? inferredType : IR::IntegerType::get(32, ctx->llctx));
   // NOLINTEND(readability-magic-numbers)

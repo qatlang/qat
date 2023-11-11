@@ -242,7 +242,11 @@ bool Config::isReleaseMode() const { return releaseMode; }
 
 bool Config::hasSysroot() const { return sysRoot.has_value(); }
 
-String Config::getSysroot() const { return sysRoot.value_or(""); }
+String Config::getSysroot() const { return sysRoot.value(); }
+
+bool Config::hasClangPath() const { return clangPath.has_value(); }
+
+String Config::getClangPath() const { return clangPath.value(); }
 
 bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
 

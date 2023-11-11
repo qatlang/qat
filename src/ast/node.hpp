@@ -27,6 +27,8 @@ namespace qat::ast {
 struct VisibilitySpec {
   VisibilityKind kind;
   FileRange      range;
+
+  useit Json toJson() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
 };
 
 //  Node is the base class for all AST members of the language, and it

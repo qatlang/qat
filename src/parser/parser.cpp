@@ -1234,6 +1234,11 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
       case TokenType::identifier: {
+        if (hasCachedSymbol()) {
+          auto cachSym = getCachedSymbol();
+          Error("Another symbol " + highlightError(cachSym.toString()) + " found before this",
+                cachSym.fileRange.spanTo(RangeAt(i)));
+        }
         auto start   = i;
         auto sym_res = parseSymbol(ctx, i);
         i            = sym_res.second;

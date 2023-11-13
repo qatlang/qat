@@ -23,6 +23,8 @@ public:
   FileRange       fileRange;
   usize           tokenIndex;
 
+  useit String toString() const;
+
   useit bool      hasRelative() const;
   useit FileRange extend_fileRange(const FileRange& upto);
 };

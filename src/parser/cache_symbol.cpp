@@ -8,6 +8,20 @@ CacheSymbol::CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, qat::FileRang
 CacheSymbol::CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, qat::FileRange _fileRange)
     : relative(_relative), name(std::move(_name)), fileRange(std::move(_fileRange)), tokenIndex(_tokenIndex) {}
 
+String CacheSymbol::toString() const {
+  String result;
+  for (usize i = 0; i < relative; i++) {
+    result += "up:";
+  }
+  for (usize i = 0; i < name.size(); i++) {
+    result += name.at(i).value;
+    if (i != (name.size() - 1)) {
+      result += ":";
+    }
+  }
+  return result;
+}
+
 bool CacheSymbol::hasRelative() const { return relative != 0; }
 
 FileRange CacheSymbol::extend_fileRange(const FileRange& upto) {

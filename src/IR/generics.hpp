@@ -67,6 +67,7 @@ public:
   useit bool isEqualTo(GenericToFill* fill) const;
 
   useit virtual Json toJson() const = 0;
+  virtual ~GenericParameter()       = default;
 };
 
 class TypedGeneric : public GenericParameter {

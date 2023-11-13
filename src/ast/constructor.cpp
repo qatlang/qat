@@ -48,15 +48,21 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
   IR::MemberFunction* function = nullptr;
   if (type == ConstructorType::normal) {
     Vec<IR::QatType*>          generatedTypes;
+    Vec<String>                presentMembers;
     Vec<IR::CoreType::Member*> presentRefMembers;
-    // FIXME - Check if member arguments are repeating
     SHOW("Generating types")
     for (auto* arg : arguments) {
       if (arg->isTypeMember()) {
         SHOW("Arg is type member")
         if (coreType->hasMember(arg->getName().value)) {
+          for (auto mem : presentMembers) {
+            if (mem == arg->getName().value) {
+              ctx->Error("The member " + ctx->highlightError(mem) + " is repeating here", arg->getName().range);
+            }
+          }
           auto* mem = coreType->getMember(arg->getName().value);
           mem->addMention(arg->getName().range);
+          presentMembers.push_back(arg->getName().value);
           SHOW("Getting core type member: " << arg->getName().value)
           if (mem->type->isReference()) {
             presentRefMembers.push_back(mem);

@@ -178,10 +178,10 @@ void QatModule::addMember(QatModule* mod) {
 
 Function* QatModule::createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
                                     bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
-                                    llvm::GlobalValue::LinkageTypes linkage, IR::Context* ctx) {
+                                    Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx) {
   SHOW("Creating IR function")
   auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
-                               fileRange, visibility, ctx);
+                               fileRange, visibility, ctx, linkage);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -509,6 +509,8 @@ void QatModule::incrementNonConstGlobalCounter() { nonConstantGlobals++; }
 bool QatModule::shouldCallInitialiser() const { return nonConstantGlobals != 0; }
 
 bool QatModule::isSubmodule() const { return parent != nullptr; }
+
+bool QatModule::hasSubmodules() const { return !submodules.empty(); }
 
 void QatModule::addNamedSubmodule(const Identifier& sname, const String& filename, ModuleType type,
                                   const VisibilityInfo& visib_info, IR::Context* ctx) {
@@ -1875,7 +1877,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
   if (!isCompiledToObject) {
     SHOW("Compiling Module `" << name.value << "` from file " << filePath.string())
     auto*  cfg = cli::Config::get();
-    String compileCommand("clang ");
+    String compileCommand(cfg->hasClangPath() ? (fs::absolute(cfg->getClangPath()).string() + " ") : "clang ");
     if (cfg->shouldBuildShared()) {
       compileCommand.append("-fPIC -c ");
     } else {
@@ -1980,9 +1982,15 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                                                  : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
                          .string();
       ctx->executablePaths.push_back(fs::absolute(outPath).lexically_normal());
-      auto staticCommand =
-          String("clang -o ").append(outPath).append(" ").append(cmdOne).append(targetCMD).append(inputFiles);
-      auto sharedCommand = String("clang -shared -fPIC -o ")
+      auto staticCommand = String(cfg->hasClangPath() ? cfg->getClangPath() : "clang")
+                               .append(" -o ")
+                               .append(outPath)
+                               .append(" ")
+                               .append(cmdOne)
+                               .append(targetCMD)
+                               .append(inputFiles);
+      auto sharedCommand = String(cfg->hasClangPath() ? cfg->getClangPath() : "clang")
+                               .append(" -shared -fPIC -o ")
                                .append(outPath)
                                .append(" ")
                                .append(cmdOne)
@@ -2062,7 +2070,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                                 .append(ctx->clangTargetInfo->getTriple().isOSWindows() ? ".dll" : ".so")))
                            .string()
                            .append(" ");
-        if (std::system(String("clang ")
+        if (std::system(String(cfg->hasClangPath() ? (cfg->getClangPath() + " ") : "clang ")
                             .append(hasMain ? "-fuse-ld=lld" : "")
                             .append(" -shared -o ")
                             .append(outPath)

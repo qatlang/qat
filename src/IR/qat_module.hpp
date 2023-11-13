@@ -143,8 +143,9 @@ private:
   Vec<Brought<GlobalEntity>>          broughtGlobalEntities;
   Vec<Region*>                        regions;
   Vec<Brought<Region>>                broughtRegions;
-  Function*                           moduleInitialiser  = nullptr;
-  u64                                 nonConstantGlobals = 0;
+  Function*                           moduleInitialiser   = nullptr;
+  Function*                           moduleDeinitialiser = nullptr;
+  u64                                 nonConstantGlobals  = 0;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -221,8 +222,9 @@ public:
   useit const VisibilityInfo& getVisibility() const;
   useit Function* createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
                                  bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
-                                 llvm::GlobalValue::LinkageTypes linkage, IR::Context* ctx);
+                                 Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx);
   useit bool      isSubmodule() const;
+  useit bool      hasSubmodules() const;
 
   useit bool hasIntegerBitwidth(u64 bits) const;
   void       addIntegerBitwidth(u64 bits);

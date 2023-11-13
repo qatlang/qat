@@ -12,6 +12,7 @@ rebuild.bat
 release.sh
 release.bat
 refresh.sh
+refresh.bat
 run.sh
 
 # Other

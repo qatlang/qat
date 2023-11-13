@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#define DEFAULT_FUNCTION_LINKAGE llvm::GlobalValue::LinkageTypes::ExternalLinkage
+
 namespace qat::ast {
 class FunctionDefinition;
 class GenericAbstractType;
@@ -133,15 +135,13 @@ protected:
   Function(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, QatType* returnType, bool _is_async,
            Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
            const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn = false,
-           llvm::GlobalValue::LinkageTypes _linkage         = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-           bool                            ignoreParentName = false);
+           Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, bool ignoreParentName = false);
 
 public:
   static Function*   Create(QatModule* mod, Identifier name, Vec<GenericParameter*> _generics, QatType* return_type,
                             bool is_async, Vec<Argument> args, bool has_variadic_args, FileRange fileRange,
                             const VisibilityInfo& visibilityInfo, IR::Context* ctx,
-                            llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-                            bool                            ignoreParentName = false);
+                            Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, bool ignoreParentName = false);
   useit Value*       call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
   useit virtual bool isMemberFunction() const;
   useit bool         hasVariadicArgs() const;

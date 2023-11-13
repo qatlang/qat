@@ -141,7 +141,6 @@ LocalValue* Block::getValue(const String& name) const {
 
 LocalValue* Block::newValue(const String& name, IR::QatType* type, bool isVar, FileRange fileRange) {
   values.push_back(new LocalValue(name, type, isVar, fn, std::move(fileRange)));
-  SHOW("Heap allocated LocalValue")
   return values.back();
 }
 
@@ -276,7 +275,7 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
 Function::Function(QatModule* _mod, Identifier _name, Vec<GenericParameter*> _generics, QatType* returnType,
                    bool _is_async, Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
                    const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn,
-                   llvm::GlobalValue::LinkageTypes llvmLinkage, bool ignoreParentName)
+                   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, bool ignoreParentName)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
       name(std::move(_name)), generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)),
       visibility_info(_visibility_info), fileRange(std::move(_fileRange)), is_async(_is_async),
@@ -297,19 +296,18 @@ Function::Function(QatModule* _mod, Identifier _name, Vec<GenericParameter*> _ge
     type = new FunctionType(returnType, argTypes, ctx->llctx);
   }
   if (isMemberFn) {
-    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U, name.value,
-                                mod->getLLVMModule());
+    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()),
+                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, name.value, mod->getLLVMModule());
   } else {
-    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage, 0U,
-                                (ignoreParentName ? name.value : mod->getFullNameWithChild(name.value)),
-                                mod->getLLVMModule());
+    ll = llvm::Function::Create(
+        (llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U,
+        (ignoreParentName ? name.value : mod->getFullNameWithChild(name.value)), mod->getLLVMModule());
   }
   if (is_async) {
-    asyncFn =
-        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
-                                                       {llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()}, false),
-                               llvm::GlobalValue::LinkageTypes::WeakAnyLinkage, 0U,
-                               (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
+    asyncFn = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
+                                {llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()}, false),
+        DEFAULT_FUNCTION_LINKAGE, 0U, (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
     Vec<llvm::Type*> argTys;
     for (const auto& fnArg : getType()->asFunction()->getArgumentTypes()) {
       argTys.push_back(fnArg->getType()->getLLVMType());
@@ -338,7 +336,7 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
     // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
     if (!destMod->getLLVMModule()->getFunction(getFullName())) {
       llvm::Function::Create((llvm::FunctionType*)getType()->getLLVMType(),
-                             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, llvmFunction->getAddressSpace(),
+                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
                              getFullName(), destMod->getLLVMModule());
     }
   }
@@ -374,7 +372,7 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
 Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericParameter*> _generics, QatType* returnTy,
                            const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
                            const VisibilityInfo& visibilityInfo, IR::Context* ctx,
-                           llvm::GlobalValue::LinkageTypes linkage, bool ignoreParentName) {
+                           Maybe<llvm::GlobalValue::LinkageTypes> linkage, bool ignoreParentName) {
   return new Function(mod, std::move(name), std::move(_generics), returnTy, isAsync, std::move(args), hasVariadicArgs,
                       std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
 }

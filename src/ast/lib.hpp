@@ -12,12 +12,12 @@ namespace qat::ast {
 // Library in the language
 class Lib : public Node {
 private:
-  Identifier     name;
-  Vec<Node*>     members;
-  VisibilityKind visibility;
+  Identifier            name;
+  Vec<Node*>            members;
+  Maybe<VisibilitySpec> visibSpec;
 
 public:
-  Lib(Identifier _name, Vec<Node*> _members, VisibilityKind _visibility, const FileRange& _file_range);
+  Lib(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, const FileRange& _file_range);
 
   void  createModule(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final;

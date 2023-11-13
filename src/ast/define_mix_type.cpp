@@ -5,9 +5,10 @@
 namespace qat::ast {
 
 DefineMixType::DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes, Vec<FileRange> _ranges,
-                             Maybe<usize> _defaultVal, bool _isPacked, VisibilityKind _visibility, FileRange _fileRange)
+                             Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec,
+                             FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), subtypes(std::move(_subTypes)), isPacked(_isPacked),
-      visibility(_visibility), fRanges(std::move(_ranges)), defaultVal(_defaultVal) {}
+      visibSpec(_visibSpec), fRanges(std::move(_ranges)), defaultVal(_defaultVal) {}
 
 bool DefineMixType::isGeneric() const { return !generics.empty(); }
 
@@ -41,7 +42,7 @@ void DefineMixType::createType(IR::Context* ctx) {
                 {llvm::Type::getIntNTy(ctx->llctx, tagBitwidth), llvm::Type::getIntNTy(ctx->llctx, maxSubtypeSize)},
                 isPacked)))
           : None,
-      ctx->getVisibInfo(visibility), ctx->llctx);
+      ctx->getVisibInfo(visibSpec), ctx->llctx);
   ctx->setActiveType(opaquedType);
   Vec<Pair<Identifier, Maybe<IR::QatType*>>> subTypesIR;
   bool                                       hasAssociatedType = false;
@@ -89,7 +90,7 @@ void DefineMixType::createType(IR::Context* ctx) {
                fileRange);
   }
   ctx->unsetActiveType();
-  new IR::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibility),
+  new IR::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibSpec),
                   fileRange);
 }
 
@@ -115,7 +116,13 @@ Json DefineMixType::toJson() const {
                                ._("hasType", sub.second.has_value())
                                ._("type", sub.second.has_value() ? sub.second.value()->toJson() : JsonValue()));
   }
-  return Json()._("nodeType", "defineUnionType")._("name", name)._("subTypes", subTypesJson)._("fileRange", fileRange);
+  return Json()
+      ._("nodeType", "defineMixType")
+      ._("name", name)
+      ._("subTypes", subTypesJson)
+      ._("fileRange", fileRange)
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue());
 }
 
 } // namespace qat::ast

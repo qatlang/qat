@@ -5,14 +5,15 @@
 #include "../utils/identifier.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
+#include "node.hpp"
 #include "types/generic_abstract.hpp"
 #include <algorithm>
 
 namespace qat::ast {
 
 DefineCoreType::Member::Member( //
-    QatType* _type, Identifier _name, bool _variability, VisibilityKind _kind, FileRange _fileRange)
-    : type(_type), name(std::move(_name)), variability(_variability), visibilityKind(_kind),
+    QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : type(_type), name(std::move(_name)), variability(_variability), visibSpec(_visibSpec),
       fileRange(std::move(_fileRange)) {}
 
 Json DefineCoreType::Member::toJson() const {
@@ -21,13 +22,14 @@ Json DefineCoreType::Member::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", kindToJsonValue(visibilityKind))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 
 DefineCoreType::StaticMember::StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
-                                           VisibilityKind _kind, FileRange _fileRange)
-    : type(_type), name(std::move(_name)), variability(_variability), value(_value), visibilityKind(_kind),
+                                           Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : type(_type), name(std::move(_name)), variability(_variability), value(_value), visibSpec(_visibSpec),
       fileRange(std::move(_fileRange)) {}
 
 Json DefineCoreType::StaticMember::toJson() const {
@@ -36,13 +38,14 @@ Json DefineCoreType::StaticMember::toJson() const {
       ._("name", name)
       ._("type", type->toJson())
       ._("variability", variability)
-      ._("visibility", kindToJsonValue(visibilityKind))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
+DefineCoreType::DefineCoreType(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
                                Vec<ast::GenericAbstractType*> _generics, bool _isPacked)
-    : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibility(_visibility),
+    : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibSpec(_visibSpec),
       generics(std::move(_generics)) {
   SHOW("Created define core type " + name.value)
 }
@@ -106,7 +109,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
                                 IR::OpaqueSubtypeKind::core, mod,
                                 hasAllMems ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-                                ctx->getVisibInfo(visibility), ctx->llctx));
+                                ctx->getVisibInfo(visibSpec), ctx->llctx));
   if (genericCoreType) {
     genericCoreType->opaqueVariants.push_back(
         IR::GenericVariant<IR::OpaqueType>(getOpaque(), std::move(genericsToFill)));
@@ -135,12 +138,12 @@ void DefineCoreType::createType(IR::Context* ctx) const {
       needsDestructor = true;
     }
     mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
-                                            (mem->visibilityKind == VisibilityKind::type)
+                                            (mem->visibSpec.has_value() && mem->visibSpec->kind == VisibilityKind::type)
                                                 ? VisibilityInfo::type(getOpaque())
-                                                : ctx->getVisibInfo(mem->visibilityKind)));
+                                                : ctx->getVisibInfo(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
-  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, ctx->getVisibInfo(visibility), ctx->llctx));
+  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, ctx->getVisibInfo(visibSpec), ctx->llctx));
   SHOW("CoreType ID: " << coreTypes.back()->getID())
   ctx->unsetActiveType();
   ctx->setActiveType(getCoreType());
@@ -165,7 +168,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   }
   for (auto* stm : staticMembers) {
     getCoreType()->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
-                                   stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibilityKind),
+                                   stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibSpec),
                                    ctx->llctx);
   }
   if (defaultConstructor) {
@@ -233,7 +236,7 @@ void DefineCoreType::defineType(IR::Context* ctx) {
   if (!isGeneric()) {
     createType(ctx);
   } else {
-    genericCoreType = new IR::GenericCoreType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibility));
+    genericCoreType = new IR::GenericCoreType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
   }
 }
 
@@ -364,7 +367,8 @@ Json DefineCoreType::toJson() const {
       ._("members", membersJsonValue)
       ._("staticMembers", staticMembersJsonValue)
       ._("isPacked", isPacked)
-      ._("visibility", kindToJsonValue(visibility))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

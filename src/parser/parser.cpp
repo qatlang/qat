@@ -118,8 +118,8 @@ void Parser::setTokens(Deque<lexer::Token>* allTokens) {
 
 void Parser::filterComments() {}
 
-ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, VisibilityKind visibKind, usize fromMain,
-                                                 usize uptoMain) {
+ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibSpec,
+                                                 usize fromMain, usize uptoMain) {
   using lexer::TokenType;
   Vec<ast::BroughtGroup*> rootGroups;
 
@@ -188,7 +188,7 @@ ast::BringEntities* Parser::parseBroughtEntities(ParserContext& ctx, VisibilityK
     }
   };
   handler(None, fromMain, uptoMain);
-  return new ast::BringEntities(rootGroups, visibKind, RangeSpan(fromMain, uptoMain));
+  return new ast::BringEntities(rootGroups, visibSpec, RangeSpan(fromMain, uptoMain));
 }
 
 Vec<fs::path>& Parser::getBroughtPaths() { return broughtPaths; }
@@ -247,7 +247,7 @@ ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const FileRange& s
   return new ast::ModInfo(outputName, std::move(foreignID), std::move(nativeLibs), {startRange, RangeAt(upto)});
 }
 
-ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, VisibilityKind kind,
+ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
                                            const FileRange& startRange) {
   using lexer::TokenType;
   Vec<ast::StringLiteral*>        paths;
@@ -301,7 +301,7 @@ ast::BringPaths* Parser::parseBroughtPaths(bool isMember, usize from, usize upto
       }
     }
   }
-  return new ast::BringPaths(isMember, std::move(paths), std::move(names), kind, {startRange, RangeAt(upto)});
+  return new ast::BringPaths(isMember, std::move(paths), std::move(names), spec, {startRange, RangeAt(upto)});
 }
 
 Pair<ast::PrerunExpression*, usize> Parser::parsePrerunExpression(ParserContext& preCtx, usize from,
@@ -964,10 +964,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
   std::deque<Token>         cacheT;
   std::deque<ast::QatType*> cacheTy;
 
-  Maybe<VisibilityKind> visibility;
-  auto                  setVisibility = [&](VisibilityKind kind) { visibility = kind; };
-  auto                  getVisibility = [&]() {
-    auto res   = visibility.value_or(VisibilityKind::parent);
+  Maybe<ast::VisibilitySpec> visibility;
+  auto                       setVisibility = [&](ast::VisibilitySpec kind) { visibility = kind; };
+  auto                       getVisibility = [&]() {
+    auto res   = visibility;
     visibility = None;
     return res;
   };
@@ -1296,8 +1296,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             }
             auto  IsAsync   = isAsync();
             auto* prototype = new ast::FunctionPrototype(
-                IdentifierAt(start), argResult.first, argResult.second, retType, IsAsync,
-                llvm::GlobalValue::WeakAnyLinkage, callConv, getVisibility(),
+                IdentifierAt(start), argResult.first, argResult.second, retType, IsAsync, callConv, getVisibility(),
                 RangeSpan((isPrev(TokenType::identifier, start) ? start - 1 : start), pClose), genericList);
             if (isNext(TokenType::bracketOpen, i)) {
               auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
@@ -1366,9 +1365,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             Error("Function name should be just one identifier", cacheSym.fileRange);
           }
           auto* prototype = new ast::FunctionPrototype(
-              cacheSym.name.front(), argResult.first, argResult.second, retType, IsAsync,
-              isExternal ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::WeakAnyLinkage, callConv,
-              getVisibility(),
+              cacheSym.name.front(), argResult.first, argResult.second, retType, IsAsync, callConv, getVisibility(),
               isPrev(TokenType::Async, cacheSym.tokenIndex)
                   ? FileRange{RangeAt(cacheSym.tokenIndex - 1), token.fileRange}
                   : FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange});
@@ -1414,21 +1411,21 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
   return result;
 }
 
-Pair<VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
+Pair<ast::VisibilitySpec, usize> Parser::parseVisibilityKind(usize from) {
   using lexer::TokenType;
   if (isNext(TokenType::child, from)) {
     if (isNext(TokenType::Type, from + 1)) {
-      return {VisibilityKind::type, from + 2};
+      return {{VisibilityKind::type, RangeSpan(from, from + 2)}, from + 2};
     } else if (isNext(TokenType::lib, from + 1)) {
-      return {VisibilityKind::lib, from + 2};
+      return {{VisibilityKind::lib, RangeSpan(from, from + 2)}, from + 2};
     } else if (isNext(TokenType::box, from + 1)) {
-      return {VisibilityKind::box, from + 2};
+      return {{VisibilityKind::box, RangeSpan(from, from + 2)}, from + 2};
     } else if (isNext(TokenType::identifier, from + 1)) {
       auto val = ValueAt(from + 2);
       if (val == "file") {
-        return {VisibilityKind::file, from + 2};
+        return {{VisibilityKind::file, RangeSpan(from, from + 2)}, from + 2};
       } else if (val == "folder") {
-        return {VisibilityKind::folder, from + 2};
+        return {{VisibilityKind::folder, RangeSpan(from, from + 2)}, from + 2};
       } else {
         Error("Invalid identifier found after pub' for visibility", RangeAt(from + 2));
       }
@@ -1436,7 +1433,7 @@ Pair<VisibilityKind, usize> Parser::parseVisibilityKind(usize from) {
       Error("Invalid token found after pub' for visibility", RangeSpan(from, from + 1));
     }
   } else {
-    return {VisibilityKind::pub, from};
+    return {{VisibilityKind::pub, RangeAt(from)}, from};
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -1477,15 +1474,10 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
     return res;
   };
 
-  // Maybe<VisibilityKind> broadVisib;
-  Maybe<VisibilityKind> visibility;
-  auto                  setVisibility = [&](VisibilityKind kind) { visibility = kind; };
-  auto                  getVisibility = [&]() {
-    auto res = visibility.value_or(
-        // broadVisib.value_or(
-        VisibilityKind::type
-        // )
-    );
+  Maybe<ast::VisibilitySpec> visibility;
+  auto                       setVisibility = [&](ast::VisibilitySpec kind) { visibility = kind; };
+  auto                       getVisibility = [&]() {
+    auto res   = visibility;
     visibility = None;
     return res;
   };
@@ -1617,8 +1609,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
               coreTy->setCopyConstructor(new ast::ConstructorDefinition(
-                  ast::ConstructorPrototype::Copy(RangeAt(start), RangeSpan(i, i + 1), argName), std::move(snts),
-                  RangeSpan(i, bClose)));
+                  ast::ConstructorPrototype::Copy(getVisibility(), RangeAt(start), RangeSpan(i, i + 1), argName),
+                  std::move(snts), RangeSpan(i, bClose)));
               i = bClose;
             } else {
               Error("Expected end for [", RangeAt(i + 2));
@@ -1646,8 +1638,8 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
               auto bClose = bCloseRes.value();
               auto snts   = parseSentences(preCtx, i + 2, bClose);
               coreTy->setMoveConstructor(new ast::ConstructorDefinition(
-                  ast::ConstructorPrototype::Move(RangeAt(start), RangeSpan(i, i + 1), argName), std::move(snts),
-                  RangeSpan(i, bClose)));
+                  ast::ConstructorPrototype::Move(getVisibility(), RangeAt(start), RangeSpan(i, i + 1), argName),
+                  std::move(snts), RangeSpan(i, bClose)));
               i = bClose;
             } else {
               Error("Expected end for [", RangeAt(i + 2));
@@ -1718,8 +1710,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setCopyAssignment(new ast::OperatorDefinition(
                       new ast::OperatorPrototype(true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {},
-                                                 nullptr, VisibilityKind::pub, RangeSpan(i, i + 3),
-                                                 IdentifierAt(i + 3)),
+                                                 nullptr, getVisibility(), RangeSpan(i, i + 3), IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
                 } else {
@@ -1754,7 +1745,7 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   auto snts   = parseSentences(preCtx, i + 4, bClose);
                   coreTy->setMoveAssignment(new ast::OperatorDefinition(
                       new ast::OperatorPrototype(true, ast::Op::moveAssignment, RangeAt(start), {}, nullptr,
-                                                 VisibilityKind::pub, RangeSpan(i, i + 3), IdentifierAt(i + 3)),
+                                                 getVisibility(), RangeSpan(i, i + 3), IdentifierAt(i + 3)),
                       std::move(snts), RangeSpan(i, bClose)));
                   i = bClose;
                 } else {

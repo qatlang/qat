@@ -7,9 +7,9 @@
 namespace qat::ast {
 
 GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
-                                     VisibilityKind _kind, FileRange _fileRange)
+                                     Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value), isVariable(_isVariable),
-      visibility(_kind) {}
+      visibSpec(_visibSpec) {}
 
 void GlobalDeclaration::define(IR::Context* ctx) {
   auto* mod = ctx->getMod();
@@ -17,6 +17,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   auto* init  = mod->getGlobalInitialiser(ctx);
   auto* oldFn = ctx->setActiveFunction(init);
   init->getBlock()->setActive(ctx->builder);
+  auto visibInfo = ctx->getVisibInfo(visibSpec);
   if (!type) {
     ctx->Error("Expected a type for global declaration", fileRange);
   }
@@ -30,7 +31,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   SHOW("Global is a variable: " << (isVariable ? "true" : "false"))
   if (val->isConstVal()) {
     gvar = new llvm::GlobalVariable(
-        *mod->getLLVMModule(), typ->getLLVMType(), !isVariable, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+        *mod->getLLVMModule(), typ->getLLVMType(), !isVariable, ctx->getGlobalLinkageForVisibility(visibInfo),
         llvm::dyn_cast<llvm::Constant>(val->getLLVM()), mod->getFullNameWithChild(name.value));
     initialValue = llvm::cast<llvm::Constant>(val->getLLVM());
   } else {
@@ -40,8 +41,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
         llvm::Constant::getNullValue(typ->getLLVMType()), mod->getFullNameWithChild(name.value));
     ctx->builder.CreateStore(val->getLLVM(), gvar);
   }
-  globalEntity =
-      new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, initialValue, gvar, ctx->getVisibInfo(visibility));
+  globalEntity = new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, initialValue, gvar, visibInfo);
   (void)ctx->setActiveFunction(oldFn);
 }
 
@@ -54,7 +54,8 @@ Json GlobalDeclaration::toJson() const {
       ._("type", type ? type->toJson() : Json())
       ._("value", value ? value->toJson() : Json())
       ._("variability", isVariable)
-      ._("visibility", kindToJsonValue(visibility))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec.value().toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

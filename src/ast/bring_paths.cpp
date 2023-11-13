@@ -4,15 +4,15 @@
 namespace qat::ast {
 
 BringPaths::BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-                       Maybe<VisibilityKind> _visibility, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibility(_visibility),
+                       Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibSpec(_visibSpec),
       names(std::move(_names)) {}
 
 void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
-  if (visibility.has_value()) {
+  if (visibSpec.has_value()) {
     if (isMember) {
-      if (visibility.value() != VisibilityKind::pub) {
+      if (visibSpec->kind != VisibilityKind::pub) {
         ctx->Error("This is a bring'member sentence and hence cannot have any visibility other than " +
                        ctx->highlightError("pub"),
                    fileRange);
@@ -33,7 +33,7 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             ctx->nameCheckInModule(name, "named folder module", None);
             auto* folderModule = IR::QatModule::getFolderModule(path);
             folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
-            mod->bringModule(folderModule, ctx->getVisibInfo(visibility), name);
+            mod->bringModule(folderModule, ctx->getVisibInfo(visibSpec), name);
           } else {
             if (isMember) {
               auto* folderModule = IR::QatModule::getFolderModule(path);
@@ -42,7 +42,7 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             } else {
               auto* folderModule = IR::QatModule::getFolderModule(path);
               folderModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
-              mod->bringModule(folderModule, ctx->getVisibInfo(visibility));
+              mod->bringModule(folderModule, ctx->getVisibInfo(visibSpec));
             }
           }
         } else {
@@ -60,7 +60,7 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             ctx->nameCheckInModule(name, "named file module", None);
             auto* fileModule = IR::QatModule::getFileModule(path);
             fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
-            mod->bringModule(fileModule, ctx->getVisibInfo(visibility), name);
+            mod->bringModule(fileModule, ctx->getVisibInfo(visibSpec), name);
           } else {
             if (isMember) {
               auto* fileModule = IR::QatModule::getFileModule(path);
@@ -69,7 +69,7 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             } else {
               auto* fileModule = IR::QatModule::getFileModule(path);
               fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
-              mod->bringModule(fileModule, ctx->getVisibInfo(visibility));
+              mod->bringModule(fileModule, ctx->getVisibInfo(visibSpec));
             }
           }
         } else {
@@ -93,8 +93,8 @@ Json BringPaths::toJson() const {
   return Json()
       ._("nodeType", "bringPaths")
       ._("paths", std::move(pths))
-      ._("hasVisibility", visibility.has_value())
-      ._("visibility", visibility.has_value() ? kindToJsonValue(visibility.value()) : Json())
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

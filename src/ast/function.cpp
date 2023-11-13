@@ -15,12 +15,12 @@
 namespace qat::ast {
 
 FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                     QatType* _returnType, bool _is_async, llvm::GlobalValue::LinkageTypes _linkageType,
-                                     String _callingConv, VisibilityKind _visibility, const FileRange& _fileRange,
+                                     QatType* _returnType, bool _is_async, String _callingConv,
+                                     Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                                      Vec<ast::GenericAbstractType*> _generics)
     : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibility(_visibility),
-      generics(std::move(_generics)), linkageType(_linkageType) {}
+      isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibSpec(_visibSpec),
+      generics(std::move(_generics)) {}
 
 FunctionPrototype::~FunctionPrototype() {
   for (auto* arg : arguments) {
@@ -65,7 +65,7 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   }
   SHOW("Types generated")
   if (isMainFn) {
-    if (visibility != VisibilityKind::pub) {
+    if (visibSpec.has_value() && visibSpec->kind != VisibilityKind::pub) {
       ctx->Error("This is the " + ctx->highlightError("main") + " function, please make this function public like " +
                      ctx->highlightError("pub main"),
                  name.range);
@@ -137,14 +137,14 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     }
     SHOW("About to create generic function")
     auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy, isAsync, args,
-                                     isVariadic, fileRange, ctx->getVisibInfo(visibility), ctx);
+                                     isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx);
     SHOW("Created IR function")
     return fun;
   } else {
     SHOW("About to create function")
     auto* fun = mod->createFunction(
         Identifier((ctx->clangTargetInfo->getTriple().isWasm() && isMainFn) ? "_start" : fnName, name.range), retTy,
-        isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(visibility), linkageType, ctx);
+        isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), linkageType, ctx);
     SHOW("Created IR function")
     return fun;
   }
@@ -183,6 +183,8 @@ Json FunctionPrototype::toJson() const {
       ._("returnType", returnType->toJson())
       ._("arguments", args)
       ._("isVariadic", isVariadic)
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("callingConvention", callingConv);
 }
 
@@ -194,7 +196,7 @@ void FunctionDefinition::define(IR::Context* ctx) {
     prototype->define(ctx);
   } else {
     auto* tempFn = new IR::GenericFunction(prototype->name, prototype->generics, this, ctx->getMod(),
-                                           ctx->getVisibInfo(prototype->visibility));
+                                           ctx->getVisibInfo(prototype->visibSpec));
     for (auto* gen : prototype->generics) {
       gen->emit(ctx);
     }

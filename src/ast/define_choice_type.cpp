@@ -4,10 +4,10 @@
 namespace qat::ast {
 
 DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<Value>>> _fields,
-                                   bool _areValuesUnsigned, Maybe<usize> _defaulVal, VisibilityKind _visibility,
+                                   bool _areValuesUnsigned, Maybe<usize> _defaulVal, Maybe<VisibilitySpec> _visibSpec,
                                    FileRange _fileRange)
     : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)),
-      areValuesUnsigned(_areValuesUnsigned), visibility(_visibility), defaultVal(_defaulVal) {}
+      areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec), defaultVal(_defaulVal) {}
 
 void DefineChoiceType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
@@ -50,7 +50,7 @@ void DefineChoiceType::createType(IR::Context* ctx) {
     }
   }
   new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), areValuesUnsigned, None,
-                     ctx->getVisibInfo(visibility), ctx->llctx, fileRange);
+                     ctx->getVisibInfo(visibSpec), ctx->llctx, fileRange);
 }
 
 void DefineChoiceType::defineType(IR::Context* ctx) {
@@ -70,7 +70,8 @@ Json DefineChoiceType::toJson() const {
   return Json()
       ._("name", name)
       ._("fields", fieldsJson)
-      ._("visibility", kindToJsonValue(visibility))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

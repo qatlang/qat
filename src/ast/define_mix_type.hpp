@@ -13,7 +13,7 @@ private:
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
   bool                                   isPacked;
   Vec<QatType*>                          generics;
-  VisibilityKind                         visibility;
+  Maybe<VisibilitySpec>                  visibSpec;
   Vec<FileRange>                         fRanges;
   Maybe<usize>                           defaultVal;
 
@@ -21,7 +21,7 @@ private:
 
 public:
   DefineMixType(Identifier name, Vec<Pair<Identifier, Maybe<QatType*>>> subTypes, Vec<FileRange> ranges,
-                Maybe<usize> defaultVal, bool isPacked, VisibilityKind visibility, FileRange fileRange);
+                Maybe<usize> defaultVal, bool isPacked, Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
 
   void       createType(IR::Context* ctx);
   void       defineType(IR::Context* ctx) final;

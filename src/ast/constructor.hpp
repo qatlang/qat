@@ -24,22 +24,24 @@ class ConstructorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  IR::CoreType*     coreType;
-  Vec<Argument*>    arguments;
-  VisibilityKind    visibility;
-  ConstructorType   type;
-  Maybe<Identifier> argName;
-  FileRange         nameRange;
+  IR::CoreType*         coreType;
+  Vec<Argument*>        arguments;
+  Maybe<VisibilitySpec> visibSpec;
+  ConstructorType       type;
+  Maybe<Identifier>     argName;
+  FileRange             nameRange;
 
   ConstructorPrototype(ConstructorType constrType, FileRange nameRange, Vec<Argument*> _arguments,
-                       VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> argName = None);
+                       Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange, Maybe<Identifier> argName = None);
 
 public:
-  static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, VisibilityKind visibility,
+  static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, Maybe<VisibilitySpec> visibSpec,
                                       FileRange fileRange);
-  static ConstructorPrototype* Default(VisibilityKind visibility, FileRange nameRange, FileRange fileRange);
-  static ConstructorPrototype* Copy(FileRange nameRange, FileRange fileRange, Identifier argName);
-  static ConstructorPrototype* Move(FileRange nameRange, FileRange fileRange, Identifier argName);
+  static ConstructorPrototype* Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange);
+  static ConstructorPrototype* Copy(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
+                                    Identifier argName);
+  static ConstructorPrototype* Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
+                                    Identifier argName);
 
   void setCoreType(IR::CoreType* _coreType);
 

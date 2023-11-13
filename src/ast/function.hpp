@@ -14,26 +14,27 @@ namespace qat::ast {
 class FunctionPrototype final : public Node {
 private:
   friend class FunctionDefinition;
-  Identifier     name;
-  bool           isAsync;
-  Vec<Argument*> arguments;
-  bool           isVariadic;
-  QatType*       returnType;
-  String         callingConv;
-  VisibilityKind visibility;
+  Identifier            name;
+  bool                  isAsync;
+  Vec<Argument*>        arguments;
+  bool                  isVariadic;
+  QatType*              returnType;
+  String                callingConv;
+  Maybe<VisibilitySpec> visibSpec;
 
   Vec<GenericAbstractType*> generics;
   IR::GenericFunction*      genericFn = nullptr;
-  mutable Maybe<String>     variantName;
 
-  mutable llvm::GlobalValue::LinkageTypes linkageType;
-  mutable IR::Function*                   function = nullptr;
-  mutable bool                            isMainFn = false;
+  mutable Maybe<llvm::GlobalValue::LinkageTypes> linkageType;
+
+  mutable Maybe<String> variantName;
+  mutable IR::Function* function = nullptr;
+  mutable bool          isMainFn = false;
 
 public:
   FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
-                    llvm::GlobalValue::LinkageTypes _linkageType, String _callingConv, VisibilityKind _visibility,
-                    const FileRange& _fileRange, Vec<GenericAbstractType*> _generics = {});
+                    String _callingConv, Maybe<VisibilitySpec> _visibility, const FileRange& _fileRange,
+                    Vec<GenericAbstractType*> _generics = {});
 
   useit bool isGeneric() const;
   useit Vec<GenericAbstractType*> getGenerics() const;

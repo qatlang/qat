@@ -12,12 +12,12 @@ class BringPaths : public Sentence {
 private:
   bool                       isMember;
   Vec<StringLiteral*>        paths;
-  Maybe<VisibilityKind>      visibility;
+  Maybe<VisibilitySpec>      visibSpec;
   Vec<Maybe<StringLiteral*>> names;
 
 public:
   BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-             Maybe<VisibilityKind> _visibility, FileRange _fileRange);
+             Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   void             handleFilesystemBrings(IR::Context* ctx) const override;

@@ -19,17 +19,17 @@ namespace qat::ast {
  */
 class GlobalDeclaration : public Node {
 private:
-  Identifier     name;
-  QatType*       type;
-  Expression*    value;
-  bool           isVariable;
-  VisibilityKind visibility;
+  Identifier            name;
+  QatType*              type;
+  Expression*           value;
+  bool                  isVariable;
+  Maybe<VisibilitySpec> visibSpec;
 
   mutable IR::GlobalEntity* globalEntity = nullptr;
 
 public:
-  GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable, VisibilityKind _visibility,
-                    FileRange _fileRange);
+  GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
+                    Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

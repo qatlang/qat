@@ -16,20 +16,20 @@ class OperatorPrototype final : public Node {
   friend class OperatorDefinition;
 
 private:
-  bool              isVariationFn;
-  Op                opr;
-  Vec<Argument*>    arguments;
-  QatType*          returnType;
-  VisibilityKind    kind;
-  Maybe<Identifier> argName;
-  FileRange         nameRange;
+  bool                  isVariationFn;
+  Op                    opr;
+  Vec<Argument*>        arguments;
+  QatType*              returnType;
+  Maybe<VisibilitySpec> visibSpec;
+  Maybe<Identifier>     argName;
+  FileRange             nameRange;
 
   mutable IR::CoreType*       coreType = nullptr;
   mutable IR::MemberFunction* memberFn = nullptr;
 
 public:
   OperatorPrototype(bool _isVariationFn, Op _op, FileRange nameRange, Vec<Argument*> _arguments, QatType* _returnType,
-                    VisibilityKind kind, const FileRange& _fileRange, Maybe<Identifier> _argName);
+                    Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName);
 
   void setCoreType(IR::CoreType* _coreType) const;
 

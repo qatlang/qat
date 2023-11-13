@@ -22,13 +22,13 @@ class DefineCoreType final : public Node {
 public:
   class Member {
   public:
-    Member(QatType* _type, Identifier _name, bool _variability, VisibilityKind _kind, FileRange _fileRange);
+    Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
 
-    QatType*       type;
-    Identifier     name;
-    bool           variability;
-    VisibilityKind visibilityKind;
-    FileRange      fileRange;
+    QatType*              type;
+    Identifier            name;
+    bool                  variability;
+    Maybe<VisibilitySpec> visibSpec;
+    FileRange             fileRange;
 
     useit Json toJson() const;
   };
@@ -36,15 +36,15 @@ public:
   // Static member representation in the AST
   class StaticMember {
   public:
-    StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value, VisibilityKind _kind,
-                 FileRange _fileRange);
+    StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
+                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
 
-    QatType*       type;
-    Identifier     name;
-    bool           variability;
-    Expression*    value;
-    VisibilityKind visibilityKind;
-    FileRange      fileRange;
+    QatType*              type;
+    Identifier            name;
+    bool                  variability;
+    Expression*           value;
+    Maybe<VisibilitySpec> visibSpec;
+    FileRange             fileRange;
 
     useit Json toJson() const;
   };
@@ -64,7 +64,7 @@ private:
   mutable OperatorDefinition*    copyAssignment       = nullptr;
   mutable OperatorDefinition*    moveAssignment       = nullptr;
   mutable DestructorDefinition*  destructorDefinition = nullptr;
-  VisibilityKind                 visibility;
+  Maybe<VisibilitySpec>          visibSpec;
 
   Vec<ast::GenericAbstractType*> generics;
   mutable Maybe<String>          variantName;
@@ -80,7 +80,7 @@ private:
   mutable Vec<IR::GenericToFill*> genericsToFill;
 
 public:
-  DefineCoreType(Identifier _name, VisibilityKind _visibility, FileRange _fileRange,
+  DefineCoreType(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
                  Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
 
   void addMember(Member* mem);

@@ -5,20 +5,21 @@
 
 namespace qat::ast {
 
-DefineRegion::DefineRegion(Identifier _name, VisibilityKind _visibKind, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), visibKind(_visibKind) {}
+DefineRegion::DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : Node(std::move(_fileRange)), name(std::move(_name)), visibSpec(_visibSpec) {}
 
 void DefineRegion::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "region", None);
-  IR::Region::get(name, mod, ctx->getVisibInfo(visibKind), ctx, fileRange);
+  IR::Region::get(name, mod, ctx->getVisibInfo(visibSpec), ctx, fileRange);
 }
 
 Json DefineRegion::toJson() const {
   return Json()
       ._("nodeType", "defineRegion")
       ._("name", name)
-      ._("visibilityKind", kindToJsonValue(visibKind))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

@@ -8,9 +8,9 @@ namespace qat::ast {
 
 class TypeDefinition : public Node {
 private:
-  Identifier     name;
-  QatType*       subType;
-  VisibilityKind visibKind;
+  Identifier            name;
+  QatType*              subType;
+  Maybe<VisibilitySpec> visibSpec;
 
   Vec<ast::GenericAbstractType*>     generics;
   mutable Maybe<String>              variantName;
@@ -19,7 +19,7 @@ private:
 
 public:
   TypeDefinition(Identifier _name, Vec<ast::GenericAbstractType*> _generics, QatType* _subType, FileRange _fileRange,
-                 VisibilityKind _visibKind);
+                 Maybe<VisibilitySpec> _visibSpec);
 
   void setVariantName(const String& name) const;
   void unsetVariantName() const;

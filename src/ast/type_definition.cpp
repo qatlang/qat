@@ -5,8 +5,8 @@
 namespace qat::ast {
 
 TypeDefinition::TypeDefinition(Identifier _name, Vec<ast::GenericAbstractType*> _generics, QatType* _subType,
-                               FileRange _fileRange, VisibilityKind _visibKind)
-    : Node(std::move(_fileRange)), name(std::move(_name)), subType(_subType), visibKind(_visibKind),
+                               FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec)
+    : Node(std::move(_fileRange)), name(std::move(_name)), subType(_subType), visibSpec(_visibSpec),
       generics(_generics) {}
 
 bool TypeDefinition::isGeneric() const { return !generics.empty(); }
@@ -43,13 +43,13 @@ void TypeDefinition::createType(IR::Context* ctx) const {
   if (isGeneric()) {
     ctx->getActiveGeneric().generics = genericsIR;
   }
-  typeDefinition = new IR::DefinitionType(dTyName, subType->emit(ctx), genericsIR, mod, ctx->getVisibInfo(visibKind));
+  typeDefinition = new IR::DefinitionType(dTyName, subType->emit(ctx), genericsIR, mod, ctx->getVisibInfo(visibSpec));
 }
 
 void TypeDefinition::defineType(IR::Context* ctx) {
   if (isGeneric()) {
     genericTypeDefinition =
-        new IR::GenericDefinitionType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibKind));
+        new IR::GenericDefinitionType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
   } else {
     createType(ctx);
   }
@@ -74,7 +74,8 @@ Json TypeDefinition::toJson() const {
       ._("subType", subType->toJson())
       ._("hasGenerics", !generics.empty())
       ._("generics", genJson)
-      ._("visibility", kindToJsonValue(visibKind))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

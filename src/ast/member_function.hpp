@@ -15,28 +15,28 @@ class MemberPrototype : public Node {
   friend class MemberDefinition;
 
 private:
-  bool           isVariationFn;
-  Identifier     name;
-  bool           isAsync;
-  Vec<Argument*> arguments;
-  bool           isVariadic;
-  QatType*       returnType;
-  VisibilityKind kind;
-  bool           isStatic;
+  bool                  isVariationFn;
+  Identifier            name;
+  bool                  isAsync;
+  Vec<Argument*>        arguments;
+  bool                  isVariadic;
+  QatType*              returnType;
+  Maybe<VisibilitySpec> visibSpec;
+  bool                  isStatic;
 
   mutable IR::CoreType*       coreType;
   mutable IR::MemberFunction* memberFn = nullptr;
 
   MemberPrototype(bool isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                  QatType* _returnType, bool _is_async, VisibilityKind kind, FileRange _fileRange);
+                  QatType* _returnType, bool _is_async, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
 public:
   static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
-                                 bool _isVariadic, QatType* _returnType, bool _is_async, VisibilityKind _kind,
-                                 const FileRange& _fileRange);
+                                 bool _isVariadic, QatType* _returnType, bool _is_async,
+                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
   static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                 QatType* _returnType, bool _is_async, VisibilityKind _kind,
+                                 QatType* _returnType, bool _is_async, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
   void setCoreType(IR::CoreType* _coreType) const;

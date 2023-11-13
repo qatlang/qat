@@ -7,21 +7,21 @@
 namespace qat::ast {
 
 ConvertorPrototype::ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName,
-                                       QatType* _candidateType, bool _isMemberArg, VisibilityKind _visibility,
+                                       QatType* _candidateType, bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec,
                                        const FileRange& _fileRange)
     : Node(_fileRange), argName(std::move(_argName)), candidateType(_candidateType), isMemberArgument(_isMemberArg),
-      visibility(_visibility), isFrom(_isFrom), nameRange(std::move(_nameRange)) {}
+      visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)) {}
 
 ConvertorPrototype* ConvertorPrototype::From(FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
-                                             bool _isMemberArg, VisibilityKind _visibility,
+                                             bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec,
                                              const FileRange& _fileRange) {
-  return new ConvertorPrototype(true, std::move(_nameRange), _argName, _candidateType, _isMemberArg, _visibility,
+  return new ConvertorPrototype(true, std::move(_nameRange), _argName, _candidateType, _isMemberArg, _visibSpec,
                                 _fileRange);
 }
 
-ConvertorPrototype* ConvertorPrototype::To(FileRange _nameRange, QatType* _candidateType, VisibilityKind _visibility,
-                                           const FileRange& _fileRange) {
-  return new ConvertorPrototype(false, std::move(_nameRange), None, _candidateType, false, _visibility, _fileRange);
+ConvertorPrototype* ConvertorPrototype::To(FileRange _nameRange, QatType* _candidateType,
+                                           Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange) {
+  return new ConvertorPrototype(false, std::move(_nameRange), None, _candidateType, false, _visibSpec, _fileRange);
 }
 
 void ConvertorPrototype::setCoreType(IR::CoreType* _coreType) const { coreType = _coreType; }
@@ -45,11 +45,11 @@ void ConvertorPrototype::define(IR::Context* ctx) {
   if (isFrom) {
     SHOW("Convertor is FROM")
     memberFn = IR::MemberFunction::CreateFromConvertor(coreType, nameRange, candidate, argName.value(), fileRange,
-                                                       ctx->getVisibInfo(visibility), ctx);
+                                                       ctx->getVisibInfo(visibSpec), ctx);
   } else {
     SHOW("Convertor is TO")
     memberFn = IR::MemberFunction::CreateToConvertor(coreType, nameRange, candidate, fileRange,
-                                                     ctx->getVisibInfo(visibility), ctx);
+                                                     ctx->getVisibInfo(visibSpec), ctx);
   }
 }
 
@@ -62,7 +62,8 @@ Json ConvertorPrototype::toJson() const {
       ._("hasArgument", argName.has_value())
       ._("argumentName", argName.has_value() ? argName.value().operator JsonValue() : Json())
       ._("candidateType", candidateType->toJson())
-      ._("visibility", kindToJsonValue(visibility));
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue());
 }
 
 ConvertorDefinition::ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,

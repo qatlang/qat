@@ -1,5 +1,6 @@
 #include "./constructor.hpp"
 #include "../show.hpp"
+#include "node.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <algorithm>
 // #include <bits/ranges_algo.h>
@@ -8,8 +9,9 @@
 namespace qat::ast {
 
 ConstructorPrototype::ConstructorPrototype(ConstructorType _type, FileRange _nameRange, Vec<Argument*> _arguments,
-                                           VisibilityKind _visibility, FileRange _fileRange, Maybe<Identifier> _argName)
-    : Node(std::move(_fileRange)), arguments(std::move(_arguments)), visibility(_visibility), type(_type),
+                                           Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
+                                           Maybe<Identifier> _argName)
+    : Node(std::move(_fileRange)), arguments(std::move(_arguments)), visibSpec(_visibSpec), type(_type),
       argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
 
 ConstructorPrototype::~ConstructorPrototype() {
@@ -18,25 +20,25 @@ ConstructorPrototype::~ConstructorPrototype() {
   }
 }
 
-ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args, VisibilityKind visibility,
-                                                   FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::normal, nameRange, std::move(args), visibility,
+ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args,
+                                                   Maybe<VisibilitySpec> visibSpec, FileRange fileRange) {
+  return new ast::ConstructorPrototype(ConstructorType::normal, nameRange, std::move(args), visibSpec,
                                        std::move(fileRange));
 }
 
-ConstructorPrototype* ConstructorPrototype::Default(VisibilityKind visibility, FileRange nameRange,
+ConstructorPrototype* ConstructorPrototype::Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
                                                     FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::Default, nameRange, {}, visibility, std::move(fileRange));
+  return new ast::ConstructorPrototype(ConstructorType::Default, nameRange, {}, visibSpec, std::move(fileRange));
 }
 
-ConstructorPrototype* ConstructorPrototype::Copy(FileRange nameRange, FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, VisibilityKind::pub, std::move(fileRange),
-                                       _argName);
+ConstructorPrototype* ConstructorPrototype::Copy(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
+                                                 FileRange fileRange, Identifier _argName) {
+  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, visibSpec, std::move(fileRange), _argName);
 }
 
-ConstructorPrototype* ConstructorPrototype::Move(FileRange nameRange, FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, VisibilityKind::pub, std::move(fileRange),
-                                       _argName);
+ConstructorPrototype* ConstructorPrototype::Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
+                                                 FileRange fileRange, Identifier _argName) {
+  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, visibSpec, std::move(fileRange), _argName);
 }
 
 IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
@@ -142,7 +144,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     }
     SHOW("About to create function")
     function = IR::MemberFunction::CreateConstructor(coreType, nameRange, args, false, fileRange,
-                                                     ctx->getVisibInfo(visibility), ctx);
+                                                     ctx->getVisibInfo(visibSpec), ctx);
     SHOW("Constructor created in the IR")
     // TODO - Set calling convention
     return function;
@@ -156,7 +158,7 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
       }
     }
     function =
-        IR::MemberFunction::DefaultConstructor(coreType, nameRange, ctx->getVisibInfo(visibility), fileRange, ctx);
+        IR::MemberFunction::DefaultConstructor(coreType, nameRange, ctx->getVisibInfo(visibSpec), fileRange, ctx);
     return function;
   } else if (type == ConstructorType::copy) {
     function = IR::MemberFunction::CopyConstructor(coreType, nameRange, argName.value(), fileRange, ctx);
@@ -183,7 +185,8 @@ Json ConstructorPrototype::toJson() const {
   return Json()
       ._("nodeType", "constructorPrototype")
       ._("arguments", args)
-      ._("visibility", kindToJsonValue(visibility))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

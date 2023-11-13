@@ -7,10 +7,10 @@
 namespace qat::ast {
 
 OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
-                                     QatType* _returnType, VisibilityKind kind, const FileRange& _fileRange,
-                                     Maybe<Identifier> _argName)
+                                     QatType* _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                     const FileRange& _fileRange, Maybe<Identifier> _argName)
     : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op), arguments(std::move(_arguments)),
-      returnType(_returnType), kind(kind), argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
+      returnType(_returnType), visibSpec(_visibSpec), argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
 
 OperatorPrototype::~OperatorPrototype() {
   for (auto* arg : arguments) {
@@ -108,8 +108,9 @@ void OperatorPrototype::define(IR::Context* ctx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create operator function")
-  memberFn = IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
-                                                returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(kind), ctx);
+  memberFn =
+      IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
+                                         returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(visibSpec), ctx);
 }
 
 IR::Value* OperatorPrototype::emit(IR::Context* ctx) { return memberFn; }
@@ -131,6 +132,8 @@ Json OperatorPrototype::toJson() const {
       ._("operator", OpToString(opr))
       ._("returnType", returnType->toJson())
       ._("arguments", args)
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

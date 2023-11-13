@@ -37,8 +37,8 @@ Json BroughtGroup::toJson() const {
       ._("fileRange", fileRange);
 }
 
-BringEntities::BringEntities(Vec<BroughtGroup*> _entities, VisibilityKind _visibility, FileRange _fileRange)
-    : Node(std::move(_fileRange)), entities(std::move(_entities)), visibility(_visibility) {}
+BringEntities::BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : Node(std::move(_fileRange)), entities(std::move(_entities)), visibSpec(_visibSpec) {}
 
 void BringEntities::handleBrings(IR::Context* ctx) const {
   auto* currentMod = ctx->getMod();
@@ -88,7 +88,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                    entName.range);
       }
       if (ent->isAllBrought()) {
-        currentMod->bringModule(mod, ctx->getVisibInfo(visibility));
+        currentMod->bringModule(mod, ctx->getVisibInfo(visibSpec));
         mod->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
       } else {
@@ -104,7 +104,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                    entName.range);
       }
       if (ent->isAllBrought()) {
-        currentMod->bringModule(mod, ctx->getVisibInfo(visibility));
+        currentMod->bringModule(mod, ctx->getVisibInfo(visibSpec));
         mod->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
       } else {
@@ -119,7 +119,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                    entName.range);
       }
       if (ent->isAllBrought()) {
-        currentMod->bringModule(mod, ctx->getVisibInfo(visibility));
+        currentMod->bringModule(mod, ctx->getVisibInfo(visibSpec));
         mod->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
       } else {
@@ -140,7 +140,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Core type " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringCoreType(cTy, ctx->getVisibInfo(visibility));
+        currentMod->bringCoreType(cTy, ctx->getVisibInfo(visibSpec));
         cTy->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
       } else if (mod->hasChoiceType(entName.value) ||
@@ -151,7 +151,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Choice type " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringChoiceType(chTy, ctx->getVisibInfo(visibility));
+        currentMod->bringChoiceType(chTy, ctx->getVisibInfo(visibSpec));
         chTy->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
       } else if (mod->hasMixType(entName.value) ||
@@ -162,7 +162,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Mix type " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringMixType(mTy, ctx->getVisibInfo(visibility));
+        currentMod->bringMixType(mTy, ctx->getVisibInfo(visibSpec));
         mTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasTypeDef(entName.value) ||
@@ -174,7 +174,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                          " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringTypeDefinition(dTy, ctx->getVisibInfo(visibility));
+        currentMod->bringTypeDefinition(dTy, ctx->getVisibInfo(visibSpec));
         dTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasRegion(entName.value) ||
@@ -185,7 +185,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Region " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringRegion(rTy, ctx->getVisibInfo(visibility));
+        currentMod->bringRegion(rTy, ctx->getVisibInfo(visibSpec));
         rTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasFunction(entName.value) ||
@@ -196,7 +196,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Function " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringFunction(otherFn, ctx->getVisibInfo(visibility));
+        currentMod->bringFunction(otherFn, ctx->getVisibInfo(visibSpec));
         otherFn->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasGenericFunction(entName.value) ||
@@ -208,7 +208,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                          " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringGenericFunction(gnFn, ctx->getVisibInfo(visibility));
+        currentMod->bringGenericFunction(gnFn, ctx->getVisibInfo(visibSpec));
         gnFn->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasGenericCoreType(entName.value) ||
@@ -220,7 +220,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
                          " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringGenericCoreType(gnCTy, ctx->getVisibInfo(visibility));
+        currentMod->bringGenericCoreType(gnCTy, ctx->getVisibInfo(visibSpec));
         gnCTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (mod->hasGlobalEntity(entName.value) ||
@@ -231,7 +231,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           ctx->Error("Global entity " + ctx->highlightError(entName.value) + " is not accessible in the current scope",
                      entName.range);
         }
-        currentMod->bringGlobalEntity(gEnt, ctx->getVisibInfo(visibility));
+        currentMod->bringGlobalEntity(gEnt, ctx->getVisibInfo(visibSpec));
         gEnt->addBroughtMention(currentMod, entName.range);
         ent->bring();
       } else if (initialRunComplete) {
@@ -260,7 +260,8 @@ Json BringEntities::toJson() const {
   return Json()
       ._("nodeType", "bringEntities")
       ._("entities", entitiesJson)
-      ._("visibility", kindToJsonValue(visibility))
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
 

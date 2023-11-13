@@ -173,7 +173,6 @@ IR::Value* ConstructorPrototype::emit(IR::Context* ctx) {
     function = IR::MemberFunction::MoveConstructor(coreType, nameRange, argName.value(), fileRange, ctx);
     return function;
   }
-  // FIXME - Support copy & move constructors
   return function;
 }
 
@@ -213,8 +212,7 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
   auto* coreRefTy  = argIRTypes.at(0)->getType()->asReference();
-  // FIXME - Check if variability should be true
-  auto* self = block->newValue("''", coreRefTy, true, coreRefTy->getSubType()->asCore()->getName().range);
+  auto* self       = block->newValue("''", coreRefTy, true, coreRefTy->getSubType()->asCore()->getName().range);
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   if ((prototype->type == ConstructorType::copy) || (prototype->type == ConstructorType::move)) {

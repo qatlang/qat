@@ -121,7 +121,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   for (auto* mem : members) {
     auto* memTy = mem->type->emit(ctx);
     if (memTy->isOpaque() && !memTy->asOpaque()->hasSubType()) {
-      // FIXME - Support sized opaques?
+      // NOTE - Support sized opaques?
       if (hasOpaque() && memTy->isSame(getOpaque())) {
         ctx->Error(
             "Type nesting found. Member field " + ctx->highlightError(mem->name.value) + " is of type " +

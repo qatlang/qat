@@ -724,35 +724,36 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  fileRange);
     }
   } else {
-    if (lhsType->isCoreType() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isCoreType())) {
-      SHOW("Core type binary operation")
-      auto* cTy   = lhsType->isReference() ? lhsType->asReference()->getSubType()->asCore() : lhsType->asCore();
+    if (lhsType->isExpanded() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isExpanded())) {
+      SHOW("Expanded type binary operation")
+      auto* eTy   = lhsType->isReference() ? lhsType->asReference()->getSubType()->asExpanded() : lhsType->asExpanded();
       auto  OpStr = OpToString(op);
       // FIXME - Incomplete logic?
-      if (cTy->hasBinaryOperator(OpStr, rhsType)) {
+      if (eTy->hasBinaryOperator(OpStr, rhsType)) {
         SHOW("RHS is matched exactly")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
-        auto* opFn = cTy->getBinaryOperator(OpStr, rhsType);
+        auto* opFn = eTy->getBinaryOperator(OpStr, rhsType);
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
-          ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " of core type " +
-                         ctx->highlightError(cTy->getFullName()) + " with RHS type " +
+          ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " of type " +
+                         ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
         }
         rhsEmit->loadImplicitPointer(ctx->builder);
         return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, ctx->getMod());
-      } else if (rhsType->isReference() && cTy->hasBinaryOperator(OpStr, rhsType->asReference()->getSubType())) {
+      } else if (rhsType->isReference() && eTy->hasBinaryOperator(OpStr, rhsType->asReference()->getSubType())) {
+        rhsEmit->loadImplicitPointer(ctx->builder);
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
-        auto* opFn = cTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
+        auto* opFn = eTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
-          ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of core type " +
-                         ctx->highlightError(cTy->getFullName()) +
-                         " with RHS type: " + ctx->highlightError(rhsType->toString()) + " is not accessible here",
+          ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of type " +
+                         ctx->highlightError(eTy->getFullName()) + " with right hand side type: " +
+                         ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
         }
         return opFn->call(
@@ -761,8 +762,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
              ctx->builder.CreateLoad(rhsType->asReference()->getSubType()->getLLVMType(), rhsEmit->getLLVM())},
             ctx->getMod());
       } else {
-        ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " not defined for core type: " +
-                       ctx->highlightError(cTy->getFullName() +
+        ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " not defined for type: " +
+                       ctx->highlightError(eTy->getFullName() +
                                            " that has RHS type: " + ctx->highlightError(rhsType->toString())),
                    fileRange);
       }

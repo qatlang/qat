@@ -90,6 +90,7 @@ enum class NodeType {
   constantEntity,
   prerunDefault,
   isExpression,
+  okExpression,
 };
 
 } // namespace qat::ast

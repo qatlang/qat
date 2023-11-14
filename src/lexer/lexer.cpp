@@ -610,6 +610,7 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("ptr", pointerType);
   else Check_Normal_Keyword("multiptr", multiPointerType);
   else Check_Normal_Keyword("is", is);
+  else Check_Normal_Keyword("ok", ok);
   else Check_Normal_Keyword("range", range);
   else Check_Normal_Keyword("result", result);
   else Check_VALUED_Keyword("int", cType);

@@ -34,6 +34,7 @@
 #include "../ast/expressions/move.hpp"
 #include "../ast/expressions/none.hpp"
 #include "../ast/expressions/not.hpp"
+#include "../ast/expressions/ok.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self.hpp"
 #include "../ast/expressions/self_member.hpp"
@@ -2964,6 +2965,22 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
           }
         } else {
           Error("Expected ( to start the expression to copy", RangeAt(i));
+        }
+        break;
+      }
+      case TokenType::ok: {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+          if (pCloseRes) {
+            auto  pClose = pCloseRes.value();
+            auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
+            setCachedExpr(new ast::Ok(exp, RangeSpan(i, pClose)));
+            i = pClose;
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
+          }
+        } else {
+          Error("Expected ( to start the " + highlightError("ok") + " expression", RangeAt(i));
         }
         break;
       }

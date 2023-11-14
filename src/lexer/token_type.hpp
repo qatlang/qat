@@ -108,6 +108,7 @@ enum class TokenType {
   Not,
   exclamation,
   any,
+  ok,
 };
 
 } // namespace qat::lexer

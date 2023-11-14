@@ -17,6 +17,7 @@ add_library(QAT_AST_EXPRESSIONS
 	move.cpp
 	none.cpp
 	not.cpp
+	ok.cpp
 	operator.cpp
 	plain_initialiser.cpp
 	radix_literal.cpp

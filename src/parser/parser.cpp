@@ -2936,38 +2936,6 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         break;
       }
-      case TokenType::move: {
-        if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
-          if (pCloseRes) {
-            auto  pClose = pCloseRes.value();
-            auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
-            setCachedExpr(new ast::Move(exp, RangeSpan(i, pClose)));
-            i = pClose;
-          } else {
-            Error("Expected end for (", RangeAt(i + 1));
-          }
-        } else {
-          Error("Expected ( to start the expression to move", RangeAt(i));
-        }
-        break;
-      }
-      case TokenType::copy: {
-        if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
-          if (pCloseRes) {
-            auto  pClose = pCloseRes.value();
-            auto* exp    = parseExpression(preCtx, None, i + 1, pClose).first;
-            setCachedExpr(new ast::Copy(exp, RangeSpan(i, pClose)));
-            i = pClose;
-          } else {
-            Error("Expected end for (", RangeAt(i + 1));
-          }
-        } else {
-          Error("Expected ( to start the expression to copy", RangeAt(i));
-        }
-        break;
-      }
       case TokenType::ok: {
         if (isNext(TokenType::parenthesisOpen, i)) {
           auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);

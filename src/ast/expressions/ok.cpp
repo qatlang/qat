@@ -65,6 +65,7 @@ IR::Value* Ok::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->llctx)),
                                ctx->builder.CreateStructGEP(inferredType->getLLVMType(), createIn->getLLVM(), 0u));
       if (!validTy->isTriviallyCopyable()) {
+        // MOVE WARNING
         ctx->Warning("There is a trivial move occuring here. Do you want to use " + ctx->highlightWarning("'move") +
                          " to make it explicit and clear?",
                      subExpr->fileRange);
@@ -75,6 +76,7 @@ IR::Value* Ok::emit(IR::Context* ctx) {
       }
       return createIn;
     } else {
+      // NON-TRIVIAL COPY & MOVE ERROR
       ctx->Error("The expression provided is of type " + ctx->highlightError(expr->getType()->toString()) + ". Type " +
                      ctx->highlightError(validTy->toString()) + " cannot be trivially copied or moved. Please do " +
                      ctx->highlightError("'copy") + " or " + ctx->highlightError("'move"),

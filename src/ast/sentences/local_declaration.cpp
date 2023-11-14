@@ -33,9 +33,8 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
     ctx->genericNameCheck(name.value, name.range);
   }
   IR::QatType* declType = nullptr;
-  if (type) {
-    SHOW("Type for local declaration: " << type->toString());
-  }
+
+  SHOW("Type for local declaration is " << (type ? type->toString() : "not provided"));
 
   auto maybeTypeCheck = [&]() {
     if (declType && declType->isMaybe() && !variability) {
@@ -44,272 +43,29 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
                    fileRange);
     }
   };
-  auto maybeTagFill = [&](IR::Value* loc) {
-    if (declType && declType->isMaybe()) {
-      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                               declType->asMaybe()->hasSizedSubType(ctx)
-                                   ? ctx->builder.CreateStructGEP(loc->getType()->getLLVMType(), loc->getLLVM(), 0u)
-                                   : loc->getLLVM());
-    }
-  };
-
-  SHOW("Edge cases starts here")
-  // EDGE CASE -> The following code avoids multiple allocations for newly
-  // created values, that are just meant to be assigned to the new entity
-  if (value.has_value() && (value.value()->nodeType() == NodeType::arrayLiteral)) {
-    auto* arr = (ast::ArrayLiteral*)(value.value());
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      if (!declType->isArray() && !(declType->isMaybe() && declType->asMaybe()->getSubType()->isArray())) {
-        ctx->Error("The type for this declaration is " + ctx->highlightError(declType->toString()) +
-                       ", but the provided value is not compatible",
-                   value.value()->fileRange);
-      }
-      auto* loc       = block->newValue(name.value, declType, variability, name.range);
-      arr->localValue = loc;
-      (void)arr->emit(ctx);
-      maybeTagFill(loc);
-      return nullptr;
-    } else {
-      arr->irName = name;
-      arr->isVar  = variability;
-      (void)arr->emit(ctx);
-      return nullptr;
-    }
-  } else if (value.has_value() && (value.value()->nodeType() == NodeType::plainInitialiser)) {
-    auto* plain = (ast::PlainInitialiser*)(value.value());
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      if (!declType->isCoreType() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       " and is not a core type. So the value provided cannot "
-                       "be a plain initialiser",
-                   value.value()->fileRange);
-      }
-      if (!(plain->type)) {
-        plain->type = type;
-      }
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-      auto* plainTy = plain->type->emit(ctx);
-      if (declType->isSame(plainTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(plainTy))) {
-        auto* loc         = block->newValue(name.value, declType, variability, name.range);
-        plain->localValue = loc;
-        (void)plain->emit(ctx);
-        maybeTagFill(loc);
-        return nullptr;
-      } else {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       ", but the value provided is of type " + ctx->highlightError(plainTy->toString()),
-                   value.value()->fileRange);
-      }
-    } else {
-      plain->irName = name;
-      plain->isVar  = variability;
-      (void)plain->emit(ctx);
-      return nullptr;
-    }
-  } else if (value.has_value() && (value.value()->nodeType() == NodeType::constructorCall)) {
-    auto* cons  = (ast::ConstructorCall*)(value.value());
-    bool  isOwn = (((ast::ConstructorCall*)(value.value())))->isOwning();
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      if (!isOwn && !declType->isCoreType() &&
-          (declType->isMaybe() && !declType->asMaybe()->getSubType()->isCoreType())) {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       " and is not a core type",
-                   fileRange);
-      } else if (isOwn &&
-                 (!declType->isPointer() ||
-                  (declType->isPointer() && !declType->asPointer()->getSubType()->isCoreType())) &&
-                 ((declType->isMaybe() && !declType->asMaybe()->getSubType()->isPointer()) ||
-                  (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer() &&
-                   !declType->asMaybe()->getSubType()->asPointer()->getSubType()->isCoreType()))) {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       " and is not a pointer",
-                   fileRange);
-      }
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-      auto* constrTy = cons->type->emit(ctx);
-      if (isOwn ? (declType->isMaybe() ? declType->asMaybe()->getSubType()->asPointer()->isSame(constrTy)
-                                       : declType->asPointer()->getSubType()->isSame(constrTy))
-                : (declType->isMaybe() ? declType->asMaybe()->getSubType()->isSame(constrTy)
-                                       : declType->isSame(constrTy))) {
-        SHOW("Local Declaration => name : " << name.value << " type: " << declType->toString()
-                                            << " variability: " << variability)
-        auto* loc        = block->newValue(name.value, declType, variability, name.range);
-        cons->localValue = loc;
-        if (type) {
-          cons->isVar = variability;
-        }
-        (void)cons->emit(ctx);
-        maybeTagFill(loc);
-        return nullptr;
-      } else {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       ", but the value provided is of type " + ctx->highlightError(constrTy->toString()),
-                   fileRange);
-      }
-    } else {
-      cons->irName = name;
-      cons->isVar  = variability;
-      (void)cons->emit(ctx);
-      return nullptr;
-    }
-  } else if (value.has_value() && (value.value()->nodeType() == NodeType::mixTypeInitialiser)) {
-    auto* mixTyIn = (ast::MixTypeInitialiser*)(value.value());
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      if (!declType->isMix() && (declType->isMaybe() && !declType->asMaybe()->getSubType()->isMix())) {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       " and is not a mix type",
-                   fileRange);
-      }
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-      auto* mixTy = mixTyIn->type->emit(ctx);
-      if (declType->isSame(mixTy) || (declType->isMaybe() && declType->asMaybe()->getSubType()->isSame(mixTy))) {
-        auto* loc = block->newValue(name.value, declType, variability, name.range);
-        mixTyIn->setLocalValue(loc);
-        (void)mixTyIn->emit(ctx);
-        maybeTagFill(loc);
-        return nullptr;
-      } else {
-        ctx->Error("The type provided for this declaration is " + ctx->highlightError(declType->toString()) +
-                       ", but the value provided is of type " + ctx->highlightError(mixTy->toString()),
-                   fileRange);
-      }
-    } else {
-      mixTyIn->irName = name;
-      mixTyIn->isVar  = variability;
-      (void)mixTyIn->emit(ctx);
-      return nullptr;
-    }
-  } else if (value && (value.value()->nodeType() == NodeType::Default)) {
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      auto* defVal = (Default*)(value.value());
-      if (defVal->isTypeInferred()) {
-        if (!defVal->inferredType->isSame(declType)) {
-          ctx->Error("Type of the declaration is " + ctx->highlightError(declType->toString()) +
-                         " does not match the type provided for the " + ctx->highlightError("default") +
-                         " expression, which is " + ctx->highlightError(defVal->inferredType->toString()),
-                     defVal->fileRange);
-        }
-      }
-      defVal->setInferenceType(declType);
-      defVal->irName = name;
-      defVal->isVar  = variability;
-      (void)defVal->emit(ctx);
-      return nullptr;
-    } else if (((Default*)value.value())->isTypeInferred()) {
-      auto* defVal   = ((Default*)value.value());
-      defVal->irName = name;
-      defVal->isVar  = variability;
-      (void)defVal->emit(ctx);
-      return nullptr;
-    } else {
-      ctx->Error("No type provided for creating default value", fileRange);
-    }
-  } else if (value && (value.value()->nodeType() == NodeType::moveExpression)) {
-    SHOW("Value assigned to declaration is Move exp")
-    auto* moveVal = (Move*)(value.value());
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      moveVal->setLocalValue(
-          ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
-      (void)moveVal->emit(ctx);
-      return nullptr;
-    } else if (!isRef) {
-      moveVal->irName = name;
-      moveVal->isVar  = variability;
-      (void)moveVal->emit(ctx);
-      return nullptr;
-    }
-  } else if (value && (value.value()->nodeType() == NodeType::copyExpression)) {
-    SHOW("Value assigned to declaration is Copy exp")
-    auto* copyVal = (Copy*)(value.value());
-    if (type) {
-      declType = type->emit(ctx);
-      maybeTypeCheck();
-      copyVal->setLocalValue(
-          ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
-      (void)copyVal->emit(ctx);
-      return nullptr;
-    } else if (!isRef) {
-      copyVal->irName = name;
-      copyVal->isVar  = variability;
-      (void)copyVal->emit(ctx);
-      return nullptr;
-    }
-  }
-
-  SHOW("Edge case ends here")
 
   IR::Value* expVal = nullptr;
   if (value.has_value()) {
-    if (value.value()->nodeType() == NodeType::nullPointer) {
-      if (type) {
-        declType = type->emit(ctx);
-        maybeTypeCheck();
-        if (declType->isMaybe() && declType->asMaybe()->getSubType()->isPointer()) {
-          if (value.value()->hasTypeInferrance()) {
-            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType()->asPointer());
-          }
-        } else if (declType->isPointer() ||
-                   (declType->isReference() && declType->asReference()->getSubType()->isPointer())) {
-          auto* typeToSet =
-              declType->isReference() ? declType->asReference()->getSubType()->asPointer() : declType->asPointer();
-          if (value.value()->hasTypeInferrance()) {
-            value.value()->asTypeInferrable()->setInferenceType(typeToSet);
-          }
-        } else {
-          ctx->Error("Invalid type recognised for the value to be assigned, "
-                     "which is a null pointer. Expected a pointer type in the "
-                     "declaration",
-                     fileRange);
+    if (type && value.value()->hasTypeInferrance()) {
+      declType = type->emit(ctx);
+      maybeTypeCheck();
+      value.value()->asTypeInferrable()->setInferenceType(declType);
+    }
+    if (value.value()->isLocalDeclCompatible()) {
+      if ((type || declType)) {
+        if (!declType) {
+          declType = type->emit(ctx);
+          maybeTypeCheck();
         }
+        value.value()->asLocalDeclCompatible()->setLocalValue(
+            ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
+      } else {
+        auto* localDeclCompat   = value.value()->asLocalDeclCompatible();
+        localDeclCompat->irName = name;
+        localDeclCompat->isVar  = variability;
       }
-    } else if (value.value()->nodeType() == NodeType::integerLiteral) {
-      if (type) {
-        declType = type->emit(ctx);
-        maybeTypeCheck();
-        if (!isRef) {
-          if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
-                                      declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType());
-          } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            value.value()->asTypeInferrable()->setInferenceType(declType);
-          } else {
-            ctx->Error("Invalid type to set for integer literal", fileRange);
-          }
-        } else {
-          ctx->Error("The value to be assigned is a signed integer and hence this declaration cannot be a reference",
-                     value.value()->fileRange);
-        }
-      }
-    } else if (value.value()->nodeType() == NodeType::unsignedLiteral) {
-      if (type) {
-        declType = type->emit(ctx);
-        maybeTypeCheck();
-        if (!isRef) {
-          if (declType->isMaybe() && (declType->asMaybe()->getSubType()->isInteger() ||
-                                      declType->asMaybe()->getSubType()->isUnsignedInteger())) {
-            value.value()->asTypeInferrable()->setInferenceType(declType->asMaybe()->getSubType());
-          } else if (declType->isInteger() || declType->isUnsignedInteger()) {
-            value.value()->asTypeInferrable()->setInferenceType(declType);
-          } else {
-            ctx->Error("Invalid type to set for unsigned integer literal", fileRange);
-          }
-        } else {
-          ctx->Error("The value to be assigned is an unsigned integer and hence this declaration cannot be a reference",
-                     value.value()->fileRange);
-        }
-      }
+      (void)value.value()->emit(ctx);
+      return nullptr;
     }
     SHOW("Emitting value")
     expVal = value.value()->emit(ctx);
@@ -371,107 +127,48 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
   SHOW("Creating new value")
   auto* newValue = block->newValue(name.value, declType, variability, name.range);
   if (expVal) {
-    if (declType->isMaybe()) {
-      SHOW("Got sub type")
-      auto* subTy = declType->asMaybe()->getSubType();
-      SHOW("Checking types and matching")
-      if (expVal->getType()->isSame(subTy) ||
-          (expVal->getType()->isReference() && expVal->getType()->asReference()->getSubType()->isSame(subTy))) {
-        SHOW("Maybe : Subtype matches")
-        if (expVal->isReference()) {
-          expVal->loadImplicitPointer(ctx->builder);
-          SHOW("Loaded implicit pointer for reference")
-        }
-        SHOW("Maybe: Checking Copy & Move constructor")
-        if (subTy->isCoreType()) {
-          SHOW("Has copy: " << subTy->asCore()->hasCopyConstructor())
-          SHOW("Has move: " << subTy->asCore()->hasMoveConstructor())
-        }
-        if ((expVal->isImplicitPointer() || expVal->isReference()) && subTy->isCoreType() &&
-            (subTy->asCore()->hasCopyConstructor() || subTy->asCore()->hasMoveConstructor())) {
-          SHOW("Getting copy / move constructor")
-          auto* constrFn = subTy->asCore()->hasCopyConstructor() ? subTy->asCore()->getCopyConstructor()
-                                                                 : subTy->asCore()->getMoveConstructor();
-          SHOW("Got copy/move constructor")
-          auto* newRef = ctx->builder.CreateStructGEP(newValue->getType()->getLLVMType(), newValue->getAlloca(), 1u);
-          (void)constrFn->call(ctx, {newRef, expVal->getLLVM()}, ctx->getMod());
-          if (subTy->asCore()->hasCopyConstructor()) {
-            ctx->Warning("The copy constructor of core type " + ctx->highlightWarning(subTy->asCore()->getFullName()) +
-                             " is invoked here. Please make the copy explicit.",
-                         value.value()->fileRange);
-          } else {
-            ctx->Warning("The move constructor of core type " + ctx->highlightWarning(subTy->asCore()->getFullName()) +
-                             " is invoked here. Please make the move explicit.",
-                         value.value()->fileRange);
+    if (expVal->getType()->isReference() || expVal->isImplicitPointer()) {
+      if (expVal->getType()->isReference()) {
+        expVal->loadImplicitPointer(ctx->builder);
+      }
+      auto* expValTy =
+          expVal->getType()->isReference() ? expVal->getType()->asReference()->getSubType() : expVal->getType();
+      if (!expValTy->isSame(newValue->getType())) {
+        ctx->Error("Type of the provided expression is " + ctx->highlightError(expValTy->toString()) +
+                       " and does not match the type of the declaration which is " +
+                       ctx->highlightError(declType->toString()),
+                   value.value()->fileRange);
+      }
+      if (expValTy->isTriviallyCopyable() || expValTy->isTriviallyMovable()) {
+        ctx->builder.CreateStore(ctx->builder.CreateLoad(expValTy->getLLVMType(), expVal->getLLVM()),
+                                 newValue->getLLVM());
+        if (!expValTy->isTriviallyCopyable()) {
+          // MOVE WARNING
+          ctx->Warning("There is a trivial move occuring here. Do you want to use " + ctx->highlightWarning("'move") +
+                           " to make it explicit and clear?",
+                       value.value()->fileRange);
+          ctx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expValTy->getLLVMType()), expVal->getLLVM());
+          if (expVal->isLocalToFn()) {
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expVal->getLocalID());
           }
-          SHOW("Called the constructor function")
-          return nullptr;
-        } else {
-          expVal->loadImplicitPointer(ctx->builder);
-          if (!expVal->getType()->isSame(subTy)) {
-            expVal = new IR::Value(ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()), declType, false,
-                                   IR::Nature::temporary);
-          }
-          // FIXME - Copy & move
-          ctx->builder.CreateStore(expVal->getLLVM(),
-                                   ctx->builder.CreateStructGEP(declType->getLLVMType(), newValue->getLLVM(), 1u));
         }
-        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                                 ctx->builder.CreateStructGEP(declType->getLLVMType(), newValue->getLLVM(), 0u));
-      } else if (expVal->getType()->isSame(declType) ||
-                 (expVal->getType()->isReference() &&
-                  expVal->getType()->asReference()->getSubType()->isSame(declType))) {
-        SHOW("Maybe : Absolute type matches")
-        if (!expVal->getType()->isSame(declType)) {
-          expVal = new IR::Value(ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()),
-                                 expVal->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
-        } else {
-          expVal->loadImplicitPointer(ctx->builder);
-        }
-        ctx->builder.CreateStore(expVal->getLLVM(), newValue->getLLVM());
       } else {
-        ctx->Error("Expected " + ctx->highlightError(declType->toString()) + " or " +
-                       ctx->highlightError(declType->asMaybe()->getSubType()->toString()) +
-                       " as the type of the value to be assigned",
-                   fileRange);
+        // NON-TRIVIAL COPY & MOVE ERROR
+        ctx->Error("The expression provided is of type " + ctx->highlightError(expValTy->toString()) + ". Type " +
+                       ctx->highlightError(expValTy->toString()) + " cannot be trivially copied or moved. Please do " +
+                       ctx->highlightError("'copy") + " or " + ctx->highlightError("'move"),
+                   value.value()->fileRange);
       }
-      return nullptr;
-    } else if ((expVal->getType()->isCoreType() && expVal->isImplicitPointer()) ||
-               (expVal->getType()->isReference() && expVal->getType()->asReference()->getSubType()->isCoreType())) {
-      auto* cTy = expVal->isReference() ? expVal->getType()->asReference()->getSubType()->asCore()
-                                        : expVal->getType()->asCore();
-      if (cTy->hasCopyConstructor()) {
-        if (expVal->isReference()) {
-          expVal->loadImplicitPointer(ctx->builder);
-        }
-        auto* cpFn = cTy->getCopyConstructor();
-        ctx->Warning("The copy constructor of core type " + ctx->highlightWarning(cTy->getFullName()) +
-                         " is invoked here. Please make the copy explicit.",
-                     value.value()->fileRange);
-        (void)cpFn->call(ctx, {newValue->getAlloca(), expVal->getLLVM()}, ctx->getMod());
-        return nullptr;
-      } else if (cTy->hasMoveConstructor()) {
-        if (expVal->isReference()) {
-          expVal->loadImplicitPointer(ctx->builder);
-        }
-        auto* mvFn = cTy->getMoveConstructor();
-        ctx->Warning("The move constructor of core type " + ctx->highlightWarning(cTy->getFullName()) +
-                         " is invoked here. Please make the move explicit.",
-                     value.value()->fileRange);
-        (void)mvFn->call(ctx, {newValue->getAlloca(), expVal->getLLVM()}, ctx->getMod());
-        return nullptr;
+    } else {
+      if (!expVal->getType()->isSame(newValue->getType())) {
+        ctx->Error("Type of the provided expression is " + ctx->highlightError(expVal->getType()->toString()) +
+                       " and does not match the type of the declaration which is " +
+                       ctx->highlightError(declType->toString()),
+                   value.value()->fileRange);
       }
+      ctx->builder.CreateStore(expVal->getLLVM(), newValue->getAlloca());
     }
-    SHOW("Creating store")
-    if ((expVal->isImplicitPointer() && !declType->isReference()) ||
-        (expVal->isImplicitPointer() && declType->isReference() && expVal->getType()->isReference())) {
-      expVal->loadImplicitPointer(ctx->builder);
-    } else if (!declType->isReference() && expVal->getType()->isReference()) {
-      expVal = new IR::Value(ctx->builder.CreateLoad(declType->getLLVMType(), expVal->getLLVM()), declType, false,
-                             IR::Nature::temporary);
-    }
-    ctx->builder.CreateStore(expVal->getLLVM(), newValue->getAlloca());
-    SHOW("llvm::StoreInst created")
+    return nullptr;
   } else {
     if (declType && declType->isMaybe()) {
       if (declType->asMaybe()->hasSizedSubType(ctx)) {

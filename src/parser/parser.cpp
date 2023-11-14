@@ -1601,8 +1601,31 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         auto start = i;
         if (coreTy->hasCopyConstructor()) {
           Error("A copy constructor is already defined for the core type", RangeAt(i));
+        } else if (coreTy->hasTrivialCopy()) {
+          Error(
+              highlightError("copy'trivial") +
+                  " has already been provided. copy constructor and copy assignment operator cannot be provided after that",
+              RangeAt(i));
         }
-        if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::child, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            if (ValueAt(i + 2) == "trivial") {
+              if (isNext(TokenType::stop, i + 2)) {
+                coreTy->setTrivialCopy(RangeSpan(start, i + 3));
+                i += 3;
+                break;
+              } else {
+                Error("Expected . to end the " + highlightError("copy'trivial") + " specification",
+                      RangeSpan(start, i + 2));
+              }
+            } else {
+              Error("Invalid identifier found. Expected " + highlightError("copy'trivial") + " to specify trivial copy",
+                    RangeAt(i + 2));
+            }
+          } else {
+            Error("Expected " + highlightError("copy'trivial") + " to specify trivial copy", RangeSpan(start, i + 1));
+          }
+        } else if (isNext(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
@@ -1630,8 +1653,31 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
         auto start = i;
         if (coreTy->hasMoveConstructor()) {
           Error("A move constructor is already defined for the core type", RangeAt(i));
+        } else if (coreTy->hasTrivialMove()) {
+          Error(
+              highlightError("move'trivial") +
+                  " has already been provided. move constructor and move assignment operator cannot be provided after that",
+              RangeAt(i));
         }
-        if (isNext(TokenType::identifier, i)) {
+        if (isNext(TokenType::child, i)) {
+          if (isNext(TokenType::identifier, i + 1)) {
+            if (ValueAt(i + 2) == "trivial") {
+              if (isNext(TokenType::stop, i + 2)) {
+                coreTy->setTrivialMove(RangeSpan(start, i + 3));
+                i += 3;
+                break;
+              } else {
+                Error("Expected . to end the " + highlightError("move'trivial") + " specification",
+                      RangeSpan(start, i + 2));
+              }
+            } else {
+              Error("Invalid identifier found. Expected " + highlightError("move'trivial") + " to specify trivial move",
+                    RangeAt(i + 2));
+            }
+          } else {
+            Error("Expected " + highlightError("move'trivial") + " to specify trivial move", RangeSpan(start, i + 1));
+          }
+        } else if (isNext(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (isNext(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
@@ -1703,6 +1749,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   RangeSpan(i, i + 1));
           }
           if (isNext(TokenType::assignment, i + 1)) {
+            if (coreTy->hasTrivialCopy()) {
+              Error(
+                  highlightError("copy'trivial") +
+                      " has already been provided. Copy assignment operator and Copy constructor cannot be provided after that",
+                  RangeSpan(start, i + 1));
+            }
             if (isNext(TokenType::identifier, i + 2)) {
               if (isNext(TokenType::bracketOpen, i + 3)) {
                 auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
@@ -1738,6 +1790,12 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
                   RangeSpan(i, i + 1));
           }
           if (isNext(TokenType::assignment, i + 1)) {
+            if (coreTy->hasTrivialMove()) {
+              Error(
+                  highlightError("move'trivial") +
+                      " has already been provided. Copy assignment operator and Copy constructor cannot be provided after that",
+                  RangeSpan(start, i + 1));
+            }
             if (isNext(TokenType::identifier, i + 2)) {
               if (isNext(TokenType::bracketOpen, i + 3)) {
                 auto bCloseRes = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i + 4);

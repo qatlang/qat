@@ -145,6 +145,8 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   SHOW("Creating core type: " << cTyName.value)
   setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, ctx->getVisibInfo(visibSpec), ctx->llctx));
   SHOW("CoreType ID: " << coreTypes.back()->getID())
+  getCoreType()->explicitTrivialCopy = trivialCopy.has_value();
+  getCoreType()->explicitTrivialMove = trivialMove.has_value();
   ctx->unsetActiveType();
   ctx->setActiveType(getCoreType());
   if (genericCoreType) {

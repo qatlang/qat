@@ -262,7 +262,7 @@ void ExpandedType::createDestructor(FileRange fRange, IR::Context* ctx) {
   }
 }
 
-IR::MemberFunction* ExpandedType::getDestructor() const { return destructor.value_or(nullptr); }
+IR::MemberFunction* ExpandedType::getDestructor() const { return destructor.value(); }
 
 VisibilityInfo ExpandedType::getVisibility() const { return visibility; }
 

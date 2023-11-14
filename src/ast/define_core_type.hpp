@@ -58,6 +58,8 @@ private:
   Vec<ConvertorDefinition*>      convertorDefinitions;
   Vec<OperatorDefinition*>       operatorDefinitions;
   Vec<ConstructorDefinition*>    constructorDefinitions;
+  Maybe<FileRange>               trivialCopy;
+  Maybe<FileRange>               trivialMove;
   mutable ConstructorDefinition* defaultConstructor   = nullptr;
   mutable ConstructorDefinition* copyConstructor      = nullptr;
   mutable ConstructorDefinition* moveConstructor      = nullptr;
@@ -100,6 +102,11 @@ public:
   void define(IR::Context* ctx) final;
   void setVariantName(const String& name) const;
   void unsetVariantName() const;
+
+  useit inline bool hasTrivialCopy() { return trivialCopy.has_value(); }
+  inline void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
+  useit inline bool hasTrivialMove() { return trivialMove.has_value(); }
+  inline void       setTrivialMove(FileRange range) { trivialMove = std::move(range); }
 
   useit bool isGeneric() const;
   useit bool hasDefaultConstructor() const;

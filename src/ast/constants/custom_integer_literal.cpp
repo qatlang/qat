@@ -11,6 +11,21 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
   if (isExpectedKind(ExpressionKind::assignable)) {
     ctx->Error("Integer literals are not assignable", fileRange);
   }
+  if (isUnsigned) {
+    if (ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
+      ctx->Error("The unsigned integer bitwidth " + ctx->highlightError("u" + std::to_string(bitWidth)) +
+                     " is not brought into this module. Please bring it using " +
+                     ctx->highlightError("bring u" + std::to_string(bitWidth) + "."),
+                 fileRange);
+    }
+  } else {
+    if (ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
+      ctx->Error("The integer bitwidth " + ctx->highlightError("i" + std::to_string(bitWidth)) +
+                     " is not brought into this module. Please bring it using " +
+                     ctx->highlightError("bring i" + std::to_string(bitWidth) + "."),
+                 fileRange);
+    }
+  }
   // NOLINTBEGIN(readability-magic-numbers)
   return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, bitWidth), value, 10u),
                              (isUnsigned ? (IR::QatType*)IR::UnsignedType::get(bitWidth, ctx->llctx)

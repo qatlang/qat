@@ -83,6 +83,7 @@ public:
   useit bool isFloat128() const;
   useit bool isLongDouble() const;
 
+  useit static CType* getFromCTypeKind(CTypeKind kind, IR::Context* ctx);
   useit static CType* getInt(IR::Context* ctx);
   useit static CType* getUInt(IR::Context* ctx);
   useit static CType* getBool(IR::Context* ctx);

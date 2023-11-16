@@ -202,6 +202,69 @@ CTypeKind CType::get_c_type_kind() const { return cTypeKind; }
 
 IR::QatType* CType::getSubType() const { return subType; }
 
+CType* CType::getFromCTypeKind(CTypeKind kind, IR::Context* ctx) {
+  switch (kind) {
+    case CTypeKind::String:
+      return getCString(ctx);
+    case CTypeKind::Bool:
+      return getBool(ctx);
+    case CTypeKind::Int:
+      return getInt(ctx);
+    case CTypeKind::Uint:
+      return getUInt(ctx);
+    case CTypeKind::Char:
+      return getChar(ctx);
+    case CTypeKind::UChar:
+      return getCharUnsigned(ctx);
+    case CTypeKind::WideChar:
+      return getWideChar(ctx);
+    case CTypeKind::UWideChar:
+      return getWideCharUnsigned(ctx);
+    case CTypeKind::LongInt:
+      return getLongInt(ctx);
+    case CTypeKind::ULongInt:
+      return getLongIntUnsigned(ctx);
+    case CTypeKind::LongLong:
+      return getLongLong(ctx);
+    case CTypeKind::ULongLong:
+      return getLongLongUnsigned(ctx);
+    case CTypeKind::Usize:
+      return getUsize(ctx);
+    case CTypeKind::Isize:
+      return getIsize(ctx);
+    case CTypeKind::Float:
+      return getFloat(ctx);
+    case CTypeKind::Double:
+      return getDouble(ctx);
+    case CTypeKind::IntMax:
+      return getIntMax(ctx);
+    case CTypeKind::UintMax:
+      return getUintMax(ctx);
+    case CTypeKind::IntPtr:
+      return getIntPtr(ctx);
+    case CTypeKind::UintPtr:
+      return getUintPtr(ctx);
+    case CTypeKind::PtrDiff:
+      return getPtrDiff(ctx);
+    case CTypeKind::UPtrDiff:
+      return getPtrDiffUnsigned(ctx);
+    case CTypeKind::Pointer:
+      return nullptr;
+    case CTypeKind::SigAtomic:
+      return getSigAtomic(ctx);
+    case CTypeKind::ProcessID:
+      return getProcessID(ctx);
+    case CTypeKind::HalfFloat:
+      return getHalfFloat(ctx);
+    case CTypeKind::BrainFloat:
+      return getBrainFloat(ctx);
+    case CTypeKind::Float128:
+      return getFloat128(ctx);
+    case CTypeKind::LongDouble:
+      return getLongDouble(ctx);
+  }
+}
+
 CType* CType::getBool(IR::Context* ctx) {
   for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::cType) {

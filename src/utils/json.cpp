@@ -42,6 +42,45 @@ JsonValue& JsonValue::operator=(unsigned val) {
   return *this;
 }
 
+JsonValue::JsonValue(long val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
+
+JsonValue& JsonValue::operator=(long val) {
+  if (isInt()) {
+    *((int64_t*)data) = (int64_t)val;
+  } else {
+    clear();
+    type = JsonValueType::integer;
+    data = new int64_t((int64_t)val);
+  }
+  return *this;
+}
+
+JsonValue::JsonValue(unsigned long val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
+
+JsonValue& JsonValue::operator=(unsigned long val) {
+  if (isInt()) {
+    *((int64_t*)data) = (int64_t)val;
+  } else {
+    clear();
+    type = JsonValueType::integer;
+    data = new int64_t((int64_t)val);
+  }
+  return *this;
+}
+
+JsonValue::JsonValue(long long val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
+
+JsonValue& JsonValue::operator=(long long val) {
+  if (isInt()) {
+    *((int64_t*)data) = (int64_t)val;
+  } else {
+    clear();
+    type = JsonValueType::integer;
+    data = new int64_t((int64_t)val);
+  }
+  return *this;
+}
+
 JsonValue::JsonValue(unsigned long long val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
 
 JsonValue& JsonValue::operator=(unsigned long long val) {
@@ -51,34 +90,6 @@ JsonValue& JsonValue::operator=(unsigned long long val) {
     clear();
     type = JsonValueType::integer;
     data = new int64_t((int64_t)val);
-  }
-  return *this;
-}
-
-#if PlatformIsLinux
-JsonValue::JsonValue(uint64_t val) : data(new int64_t((int64_t)val)), type(JsonValueType::integer) {}
-
-JsonValue& JsonValue::operator=(uint64_t val) {
-  if (isInt()) {
-    *((int64_t*)data) = (int64_t)val;
-  } else {
-    clear();
-    type = JsonValueType::integer;
-    data = new int64_t((int64_t)val);
-  }
-  return *this;
-}
-#endif
-
-JsonValue::JsonValue(int64_t val) : data(new int64_t(val)), type(JsonValueType::integer) {}
-
-JsonValue& JsonValue::operator=(int64_t val) {
-  if (isInt()) {
-    *((int64_t*)data) = val;
-  } else {
-    clear();
-    type = JsonValueType::integer;
-    data = new int64_t(val);
   }
   return *this;
 }

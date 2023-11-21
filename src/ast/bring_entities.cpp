@@ -30,11 +30,7 @@ Json BroughtGroup::toJson() const {
   for (auto const& mem : members) {
     membersJson.push_back(mem->toJson());
   }
-  return Json()
-      ._("relative", (unsigned long long)relative)
-      ._("entity", entityName)
-      ._("members", membersJson)
-      ._("fileRange", fileRange);
+  return Json()._("relative", relative)._("entity", entityName)._("members", membersJson)._("fileRange", fileRange);
 }
 
 BringEntities::BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)

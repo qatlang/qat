@@ -6,9 +6,6 @@ UnsignedLiteral::UnsignedLiteral(String _value, FileRange _fileRange)
     : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::PrerunValue* UnsignedLiteral::emit(IR::Context* ctx) {
-  if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->Error("Unsigned literals are not assignable", fileRange);
-  }
   if (isTypeInferred() && !inferredType->isUnsignedInteger()) {
     ctx->Error("The inferred type of this expression is " + inferredType->toString() +
                    ". Unsigned integer literal expects an unsigned integer type to be provided for type inference",

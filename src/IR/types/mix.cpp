@@ -129,13 +129,13 @@ void MixType::updateOverview() {
   ovInfo._("typeID", getID())
       ._("fullName", getFullName())
       ._("moduleID", parent->getID())
-      ._("tagBitWidth", (unsigned long long)tagBitWidth)
+      ._("tagBitWidth", tagBitWidth)
       ._("isPacked", isPack)
       ._("hasDefaultValue", defaultVal.has_value())
       ._("subTypes", subTyJson)
       ._("visibility", visibility);
   if (hasDefault()) {
-    ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
+    ovInfo._("defaultValue", defaultVal.value());
   }
 }
 

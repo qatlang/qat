@@ -31,27 +31,23 @@ private:
 public:
   JsonValue();
 
-  // int
   JsonValue(int val);
   JsonValue& operator=(int val);
 
-  // unsigned
   JsonValue(unsigned val);
   JsonValue& operator=(unsigned val);
 
-  // unsigned long long
+  JsonValue(long val);
+  JsonValue& operator=(long val);
+
+  JsonValue(unsigned long val);
+  JsonValue& operator=(unsigned long val);
+
+  JsonValue(long long val);
+  JsonValue& operator=(long long val);
+
   JsonValue(unsigned long long val);
   JsonValue& operator=(unsigned long long val);
-
-#if PlatformIsLinux
-  // uint64_t
-  JsonValue(uint64_t val);
-  JsonValue& operator=(uint64_t val);
-#endif
-
-  // int64_t
-  JsonValue(int64_t val);
-  JsonValue& operator=(int64_t val);
 
   // double
   JsonValue(double val);

@@ -10,9 +10,7 @@ FilePos::FilePos(Json json) : line(json["line"].asInt()), character(json["char"]
 
 FilePos::operator JsonValue() const { return (Json)(*this); }
 
-FilePos::operator Json() const {
-  return Json()._("line", (unsigned long long)line)._("char", (unsigned long long)character);
-}
+FilePos::operator Json() const { return Json()._("line", line)._("char", character); }
 
 std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << pos.character; }
 

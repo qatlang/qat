@@ -2,26 +2,26 @@
 #define QAT_AST_DEFINE_CHOICE_TYPE_HPP
 
 #include "./node.hpp"
+#include "expression.hpp"
 
 namespace qat::ast {
 
+class QatType;
+
 class DefineChoiceType : public Node {
 public:
-  struct Value {
-    i64       data;
-    FileRange range;
-  };
-
 private:
-  Identifier                          name;
-  Vec<Pair<Identifier, Maybe<Value>>> fields;
-  bool                                areValuesUnsigned;
-  Maybe<VisibilitySpec>               visibSpec;
-  Maybe<usize>                        defaultVal;
+  Identifier                                      name;
+  Vec<Pair<Identifier, Maybe<PrerunExpression*>>> fields;
+  bool                                            areValuesUnsigned;
+  Maybe<VisibilitySpec>                           visibSpec;
+  Maybe<usize>                                    defaultVal;
+  Maybe<ast::QatType*>                            providedIntegerTy;
 
 public:
-  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<Value>>> fields, bool areValuesUnsigned,
-                   Maybe<usize> defaultVal, Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
+  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> fields,
+                   Maybe<ast::QatType*> providedIntegerTy, bool areValuesUnsigned, Maybe<usize> defaultVal,
+                   Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
 
   void  createType(IR::Context* ctx);
   void  defineType(IR::Context* ctx) final;

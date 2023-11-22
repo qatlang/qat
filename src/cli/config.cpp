@@ -124,8 +124,8 @@ Config::Config(u64 count, const char** args)
           cli::Error("Expected a target after --target", None);
         }
       } else if (String(arg).find("--sysroot=") == 0) {
-        if (String(arg).length() > std::string::traits_type::length("--sysroot=")) {
-          sysRoot = String(arg).substr(std::string::traits_type::length("--sysroot="));
+        if (String(arg).length() > String::traits_type::length("--sysroot=")) {
+          sysRoot = String(arg).substr(String::traits_type::length("--sysroot="));
         } else {
           cli::Error("Expected valid path for --sysroot", None);
         }
@@ -136,19 +136,44 @@ Config::Config(u64 count, const char** args)
         } else {
           cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
         }
-      } else if (String(arg).find("--clang-path=") == 0) {
-        if (String(arg).length() > std::string::traits_type::length("--clang-path=")) {
-          clangPath = String(arg.substr(std::string::traits_type::length("--clang-path=")));
+      } else if (String(arg).find("--clang=") == 0) {
+        if (String(arg).length() > String::traits_type::length("--clang=")) {
+          clangPath = String(arg.substr(String::traits_type::length("--clang=")));
+          if (!fs::exists(clangPath.value())) {
+            cli::Error("Provided path for --clang does not exist: " + clangPath.value(), None);
+          }
         } else {
-          cli::Error("Expected valid path for --clang-path", None);
+          cli::Error("Expected valid path after --clang=", None);
         }
-      } else if (String(arg) == "--clang-path") {
+      } else if (String(arg) == "--clang") {
         if ((i + 1) < count) {
           clangPath = String(args[i + 1]);
+          if (!fs::exists(clangPath.value())) {
+            cli::Error("Provided path for --clang does not exist: " + clangPath.value(), None);
+          }
           i++;
         } else {
-          cli::Error("Expected argument after --clang-path which would be the path to the clang executable to use",
+          cli::Error("Expected argument after --clang which would be the path to the clang executable to be used",
                      None);
+        }
+      } else if (String(arg).find("--linker=") == 0) {
+        if (String(arg).length() > String::traits_type::length("--linker=")) {
+          linkerPath = String(arg.substr(String::traits_type::length("--linker=")));
+          if (!fs::exists(linkerPath.value())) {
+            cli::Error("Provided --linker path does not exist: " + linkerPath.value(), None);
+          }
+        } else {
+          cli::Error("Expected valid path after --linker=", None);
+        }
+      } else if (String(arg) == "--linker") {
+        if ((i + 1) < count) {
+          linkerPath = String(args[i + 1]);
+          if (!fs::exists(linkerPath.value())) {
+            cli::Error("Provided --linker path does not exist: " + linkerPath.value(), None);
+          }
+          i++;
+        } else {
+          cli::Error("Expected argument after --linker which would be the path to the linker to be used", None);
         }
       } else if (arg == "--export-ast") {
         export_ast = true;
@@ -232,6 +257,8 @@ bool Config::isRun() const { return run; }
 
 bool Config::isAnalyse() const { return analyse; }
 
+bool Config::hasTargetTriple() const { return targetTriple.has_value(); }
+
 String Config::getTargetTriple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
 
 bool Config::noColorMode() const { return noColors; }
@@ -247,6 +274,10 @@ String Config::getSysroot() const { return sysRoot.value(); }
 bool Config::hasClangPath() const { return clangPath.has_value(); }
 
 String Config::getClangPath() const { return clangPath.value(); }
+
+bool Config::hasLinkerPath() const { return linkerPath.has_value(); }
+
+String Config::getLinkerPath() const { return linkerPath.value(); }
 
 bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
 

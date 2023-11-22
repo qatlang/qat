@@ -12,13 +12,12 @@ class Config {
 private:
   Config(u64 count, const char** args);
 
-  String          invokePath;
-  Vec<fs::path>   paths;
-  Maybe<fs::path> outputPath;
-  Maybe<String>   targetTriple;
-  Maybe<String>   clangPath;
-  // FIXME - Use this value
-  Maybe<String>      lldPath;
+  String             invokePath;
+  Vec<fs::path>      paths;
+  Maybe<fs::path>    outputPath;
+  Maybe<String>      targetTriple;
+  Maybe<String>      clangPath;
+  Maybe<String>      linkerPath;
   Maybe<String>      sysRoot;
   String             buildCommit;
   llvm::VersionTuple versionTuple;
@@ -59,18 +58,23 @@ public:
   useit fs::path getOutputPath() const;
   useit bool     isVerbose() const;
   useit bool     shouldExportAST() const;
-  useit String   getTargetTriple() const;
-  useit bool     noColorMode() const;
-  useit bool     isDebugMode() const;
-  useit bool     isReleaseMode() const;
-  useit bool     hasSysroot() const;
-  useit String   getSysroot() const;
-  useit bool     hasClangPath() const;
-  useit String   getClangPath() const;
-  useit bool     shouldBuildStatic() const;
-  useit bool     shouldBuildShared() const;
-  useit bool     keepLLVM() const;
-  useit bool     exportCodeMetadata() const;
+
+  useit bool   hasTargetTriple() const;
+  useit String getTargetTriple() const;
+
+  useit bool   noColorMode() const;
+  useit bool   isDebugMode() const;
+  useit bool   isReleaseMode() const;
+  useit bool   hasSysroot() const;
+  useit String getSysroot() const;
+  useit bool   hasClangPath() const;
+  useit String getClangPath() const;
+  useit bool   hasLinkerPath() const;
+  useit String getLinkerPath() const;
+  useit bool   shouldBuildStatic() const;
+  useit bool   shouldBuildShared() const;
+  useit bool   keepLLVM() const;
+  useit bool   exportCodeMetadata() const;
   useit const llvm::VersionTuple& getVersionTuple() const;
 
   // Whether compiler should exit after arguments are handled by Config

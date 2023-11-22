@@ -11,14 +11,20 @@ class CustomIntegerLiteral : public PrerunExpression {
 private:
   String value;
 
-  u64 bitWidth;
+  Maybe<u32>  bitWidth;
+  Maybe<u8>   radix;
+  Maybe<bool> isUnsigned;
 
-  bool isUnsigned;
+  static String radixDigits;
+  static String radixDigitsUpper;
 
 public:
-  CustomIntegerLiteral(String _value, bool _isUnsigned, u32 _bitWidth, FileRange _fileRange);
+  CustomIntegerLiteral(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth, Maybe<u8> _radix,
+                       FileRange _fileRange);
 
   IR::PrerunValue* emit(IR::Context* ctx) override;
+
+  useit static String radixToString(u8 val);
 
   useit Json   toJson() const override;
   useit String toString() const final;

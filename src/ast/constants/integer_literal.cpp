@@ -6,18 +6,23 @@ IntegerLiteral::IntegerLiteral(String _value, FileRange _fileRange)
     : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
-  if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->Error("Integer literals are not assignable", fileRange);
-  }
   if (isTypeInferred() && (!inferredType->isInteger() && !inferredType->isUnsignedInteger())) {
     ctx->Error("The inferred type of this expression is " + inferredType->toString() +
                    ". The only supported types in type inference for integer literal are signed & unsigned integers",
                fileRange);
   }
+  String intValue = value;
+  if (value.find('_') != String::npos) {
+    for (auto intCh : value) {
+      if (intCh != '_') {
+        intValue += intCh;
+      }
+    }
+  }
   // NOLINTBEGIN(readability-magic-numbers)
   return new IR::PrerunValue(llvm::ConstantInt::get(isTypeInferred() ? (llvm::IntegerType*)(inferredType->getLLVMType())
                                                                      : llvm::Type::getInt32Ty(ctx->llctx),
-                                                    value, 10u),
+                                                    intValue, 10u),
                              isTypeInferred() ? inferredType : IR::IntegerType::get(32, ctx->llctx));
   // NOLINTEND(readability-magic-numbers)
 }

@@ -1,5 +1,7 @@
 #include "./choice.hpp"
+#include "../context.hpp"
 #include "../qat_module.hpp"
+#include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Constants.h"
 #include <cmath>
 
@@ -7,9 +9,10 @@ namespace qat::IR {
 
 #define MAX_PRERUN_GENERIC_BITWIDTH 64u
 
-ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields, Maybe<Vec<i64>> _values,
+ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields,
+                       Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<IR::QatType*> _providedType,
                        bool areValuesUnsigned, Maybe<usize> _defaultVal, const VisibilityInfo& _visibility,
-                       llvm::LLVMContext& llctx, FileRange _fileRange)
+                       IR::Context* _ctx, FileRange _fileRange)
     : EntityOverview("choiceType",
                      Json()
                          ._("moduleID", _parent->getID())
@@ -18,13 +21,22 @@ ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fi
                          ._("visibility", _visibility),
                      _name.range),
       name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
-      visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)) {
-  if (!values.has_value()) {
-    findBitwidthNormal();
-    llvmType = llvm::Type::getIntNTy(llctx, bitwidth);
+      providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)),
+      ctx(_ctx) {
+  if (values.has_value()) {
+    if (providedType.has_value()) {
+      llvmType = providedType.value()->getLLVMType();
+    } else {
+      findBitwidthForValues();
+      llvmType = llvm::Type::getIntNTy(ctx->llctx, bitwidth);
+    }
   } else {
-    findBitwidthForValues();
-    llvmType = llvm::Type::getIntNTy(llctx, bitwidth);
+    if (providedType.has_value()) {
+      llvmType = providedType.value()->getLLVMType();
+    } else {
+      findBitwidthNormal();
+      llvmType = llvm::Type::getIntNTy(ctx->llctx, bitwidth);
+    }
   }
   if (parent) {
     parent->choiceTypes.push_back(this);
@@ -44,10 +56,10 @@ bool ChoiceType::hasCustomValue() const { return values.has_value(); }
 bool ChoiceType::hasDefault() const { return defaultVal.has_value(); }
 
 llvm::ConstantInt* ChoiceType::getDefault() const {
-  return values.has_value() ? llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth),
-                                                     values->at(defaultVal.value()), !areValuesUnsigned)
-                            : llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth),
-                                                     defaultVal.value(), false);
+  return values.has_value()
+             ? values->at(defaultVal.value())
+             : llvm::cast<llvm::ConstantInt>(llvm::ConstantInt::get(
+                   llvmType, defaultVal.value(), providedType.has_value() ? providedType.value()->isInteger() : false));
 }
 
 bool ChoiceType::hasField(const String& name) const {
@@ -68,8 +80,7 @@ llvm::ConstantInt* ChoiceType::getValueFor(const String& name) const {
     }
   }
   if (values.has_value()) {
-    return llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth), values.value().at(index),
-                                  !areValuesUnsigned);
+    return values.value().at(index);
   } else {
     return llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth), index, false);
   }
@@ -89,13 +100,40 @@ void ChoiceType::findBitwidthForValues() const {
   u64 result = 1;
   for (auto val : values.value()) {
     if (areValuesUnsigned) {
-      while (std::pow(2, result) < ((u64)val)) {
+      while (
+          llvm::cast<llvm::ConstantInt>(
+              llvm::ConstantFoldConstant(
+                  llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULT,
+                                              llvm::ConstantInt::get(val->getType(), std::pow(2, result), false), val),
+                  ctx->dataLayout.value()))
+              ->getUniqueInteger()
+              .getBoolValue()) {
         result++;
       }
-    } else if (std::pow(2, result) < val) {
-      auto sigVal = val;
-      if (std::pow(2, result) < (-sigVal)) {
-        while (std::pow(2, result) < (-sigVal)) {
+    } else if (llvm::cast<llvm::ConstantInt>(
+                   llvm::ConstantFoldConstant(
+                       llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                                   llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
+                                                   val),
+                       ctx->dataLayout.value()))
+                   ->getUniqueInteger()
+                   .getBoolValue()) {
+      auto sigVal = llvm::ConstantExpr::getNeg(val);
+      if (llvm::cast<llvm::ConstantInt>(
+              llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(
+                                             llvm::CmpInst::Predicate::ICMP_SLT,
+                                             llvm::ConstantInt::get(val->getType(), std::pow(2, result), true), sigVal),
+                                         ctx->dataLayout.value()))
+              ->getUniqueInteger()
+              .getBoolValue()) {
+        while (llvm::cast<llvm::ConstantInt>(
+                   llvm::ConstantFoldConstant(
+                       llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                                                   llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
+                                                   sigVal),
+                       ctx->dataLayout.value()))
+                   ->getUniqueInteger()
+                   .getBoolValue()) {
           result++;
         }
       }
@@ -130,27 +168,32 @@ void ChoiceType::updateOverview() {
   if (values) {
     Vec<JsonValue> valsValsJson;
     for (auto val : values.value()) {
-      valsValsJson.push_back((unsigned long long)val);
+      valsValsJson.push_back(val);
     }
   }
   ovInfo._("fields", fieldsJson)
       ._("values", valuesJson)
       ._("typeID", getID())
       ._("fullName", getFullName())
-      ._("bitWidth", (unsigned long long)bitwidth)
+      ._("bitWidth", bitwidth)
       ._("areValuesUnsigned", areValuesUnsigned);
   if (defaultVal) {
-    ovInfo._("defaultValue", (unsigned long long)defaultVal.value());
+    ovInfo._("defaultValue", defaultVal.value());
   }
 }
 
-bool ChoiceType::canBePrerunGeneric() const { return bitwidth <= MAX_PRERUN_GENERIC_BITWIDTH; }
+bool ChoiceType::canBePrerunGeneric() const { return true; }
 
 Maybe<String> ChoiceType::toPrerunGenericString(IR::PrerunValue* val) const {
   if (canBePrerunGeneric()) {
     for (auto const& field : fields) {
-      if (((u64)getValueFor(field.value)) ==
-          *(llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())->getValue().getRawData())) {
+      if (llvm::cast<llvm::ConstantInt>(
+              llvm::ConstantFoldConstant(
+                  llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, getValueFor(field.value),
+                                              llvm::cast<llvm::ConstantInt>(val->getLLVMConstant())),
+                  ctx->dataLayout.value()))
+              ->getValue()
+              .getBoolValue()) {
         return getFullName() + "'" + field.value;
       }
     }

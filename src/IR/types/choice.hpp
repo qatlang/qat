@@ -15,21 +15,24 @@ class QatModule;
 
 class ChoiceType : public QatType, public EntityOverview {
 private:
-  Identifier      name;
-  QatModule*      parent;
-  Vec<Identifier> fields;
-  Maybe<Vec<i64>> values;
-  bool            areValuesUnsigned = false;
-  VisibilityInfo  visibility;
-  Maybe<usize>    defaultVal;
+  Identifier                     name;
+  QatModule*                     parent;
+  Vec<Identifier>                fields;
+  Maybe<Vec<llvm::ConstantInt*>> values;
+  Maybe<IR::QatType*>            providedType;
+  bool                           areValuesUnsigned = false;
+  VisibilityInfo                 visibility;
+  Maybe<usize>                   defaultVal;
 
-  mutable u64 bitwidth = 1;
+  IR::Context* ctx;
+  mutable u64  bitwidth = 1;
 
   FileRange fileRange;
 
 public:
-  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<i64>> values, bool areValuesUnsigned,
-             Maybe<usize> defaultVal, const VisibilityInfo& visibility, llvm::LLVMContext& llctx, FileRange fileRange);
+  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
+             Maybe<IR::QatType*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
+             const VisibilityInfo& visibility, IR::Context* ctx, FileRange fileRange);
 
   useit Identifier getName() const;
   useit String     getFullName() const;

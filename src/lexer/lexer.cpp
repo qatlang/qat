@@ -437,17 +437,62 @@ Token Lexer::tokeniser() {
     case '8':
     case '9': {
       String       numVal;
-      bool         is_float = false;
+      bool         isFloat          = false;
+      bool         exponentialFloat = false;
       const String alphabets("abcdefghijklmnopqrstuvwxyz");
       const String digits("0123456789");
-      bool         found_spec = false;
-      while (((digits.find(current, 0) != String::npos) || (!is_float && (current == '.')) ||
-              (!found_spec && (current == '_'))) &&
-             !file.eof()) {
-        if (current == '.') {
+      bool         foundRadix = true;
+      if (current == '0') {
+        read();
+        if (current == 'b') {
           read();
-          if (digits.find(current, 0) != String::npos) {
-            is_float = true;
+          numVal = "0b";
+        } else if (current == 'c') {
+          read();
+          numVal = "0c";
+        } else if (current == 'x') {
+          read();
+          numVal = "0x";
+        } else if (current == 'r') {
+          read();
+          while (digits.find(current) != String::npos) {
+            numVal += current;
+            read();
+          }
+          if (current == '_') {
+            numVal += '_';
+            read();
+          } else {
+            throwError("Invalid custom radix integer literal");
+          }
+        } else {
+          numVal += "0";
+          foundRadix = false;
+        }
+      }
+      bool foundSpec = false;
+      while (((digits.find(current) != String::npos) || (foundRadix && (alphabets.find(current) != String::npos)) ||
+              (!isFloat && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
+              (!foundSpec && (current == '_'))) &&
+             !file.eof()) {
+        if (!foundRadix && current == 'e') {
+          isFloat          = true;
+          exponentialFloat = true;
+          String expStr;
+          read();
+          while (digits.find(current) != String::npos) {
+            expStr += current;
+            read();
+          }
+          numVal += "e" + expStr;
+          continue;
+        } else if (current == '.') {
+          read();
+          if (digits.find(current) != String::npos) {
+            if (foundRadix) {
+              throwError("This literal is in custom radix format and hence cannot contain decimal point");
+            }
+            isFloat = true;
             numVal += '.';
           } else {
             /// This is in the reverse order since the last element is returned
@@ -461,63 +506,34 @@ Token Lexer::tokeniser() {
             return tokeniser();
           }
         } else if (current == '_') {
-          found_spec = true;
-          String bitString;
+          String specString;
           read();
-          if (current == 'u') {
-            read();
-            if (current == 's') {
-              read();
-              if (current == 'i') {
-                read();
-                if (current == 'z') {
-                  read();
-                  if (current == 'e') {
-                    read();
-                    auto resString = numVal + "_usize";
-                    return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
-                  }
-                } else {
-                  throwError("Invalid unsigned integer literal");
-                }
-              } else {
-                throwError("Invalid unsigned integer literal");
-              }
-            } else {
-              while (digits.find(current) != String::npos) {
-                bitString += current;
-                read();
-              }
-              auto resString = numVal;
-              resString.append("_u").append(bitString);
-              return Token::valued(TokenType::unsignedLiteral, resString, this->getPosition(resString.length()));
-            }
-          } else if (current == 'i') {
-            read();
-            while (digits.find(current) != String::npos) {
-              bitString += current;
+          if (digits.find(current) != String::npos) {
+            numVal += "_";
+          } else if (alphabets.find(current) != String::npos) {
+            foundSpec  = true;
+            specString = "_";
+            while ((alphabets.find(current) != String::npos) || (digits.find(current) != String::npos)) {
+              specString += current;
               read();
             }
-            auto resString = numVal;
-            resString.append("_i").append(bitString);
-            return Token::valued(TokenType::integerLiteral, resString, this->getPosition(resString.length()));
-          } else if (current == 'f') {
-            read();
-            while ((digits.find(current) != String::npos) || (alphabets.find(current) != String::npos)) {
-              bitString += current;
-              read();
+            numVal += specString;
+            if (specString == "_f32" || specString == "_f64" || specString == "_f128" || specString == "_f128ppc" ||
+                specString == "_f16" || specString == "_fbrain" || specString == "_float" || specString == "_double" ||
+                specString == "_longdouble" || specString == "_cFloat128" || specString == "_cFloatHalf" ||
+                specString == "_cFloatBrain") {
+              isFloat = true;
             }
-            auto resString = numVal;
-            resString.append("_f").append(bitString);
-            return Token::valued(TokenType::floatLiteral, resString, this->getPosition(resString.length()));
+            return Token::valued(isFloat ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
+                                 this->getPosition(numVal.length()));
           } else {
-            throwError("Invalid integer literal suffix");
+            throwError("Invalid literal. Found _ without anything following");
           }
         }
         numVal += current;
         read();
       }
-      return Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
+      return Token::valued(isFloat ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
                            this->getPosition(numVal.length()) //
       );
     }

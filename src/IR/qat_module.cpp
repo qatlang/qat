@@ -408,10 +408,17 @@ Vec<utils::UnitNameInfo> QatModule::getLinkNameUnits() const {
   }
 }
 
-String QatModule::getLinkingName(Vec<utils::UnitNameInfo> const& names, bool shouldOverrideParents) const {
-  if (isInForeignModuleOfType("C")) {
+String QatModule::getLinkingName(Vec<utils::UnitNameInfo> const& names, Maybe<String> foreignID) const {
+  auto isForeign = [&](String const& id) {
+    if (foreignID.has_value()) {
+      return (foreignID.value() == id);
+    } else {
+      return isInForeignModuleOfType(id);
+    }
+  };
+  if (isForeign("C")) {
     return names.back().getUsableName();
-  } else if (isInForeignModuleOfType("C++")) {
+  } else if (isForeign("C++")) {
     String result("");
     // FIXME - Implement C++ name mangling
     return result;

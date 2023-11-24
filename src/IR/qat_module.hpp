@@ -209,7 +209,7 @@ public:
   FileRange        getFileRange() const;
 
   useit Vec<utils::UnitNameInfo> getLinkNameUnits() const;
-  useit String getLinkingName(Vec<utils::UnitNameInfo> const& names, bool shouldOverrideParents) const;
+  useit String                   getLinkingName(Vec<utils::UnitNameInfo> const& names, Maybe<String> foreignID) const;
 
   useit bool       isParentModuleOf(QatModule* other) const;
   useit bool       hasClosestParentLib() const;

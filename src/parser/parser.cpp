@@ -316,6 +316,11 @@ Pair<ast::PrerunExpression*, usize> Parser::parsePrerunExpression(ParserContext&
   for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
     auto& token = tokens->at(i);
     switch (token.type) {
+      case TokenType::FALSE:
+      case TokenType::TRUE: {
+        cacheExp = new ast::BooleanLiteral(token.type == TokenType::TRUE, RangeAt(i));
+        break;
+      }
       case TokenType::integerLiteral: {
         usize     radPos = 0;
         Maybe<u8> radix;
@@ -410,6 +415,24 @@ Pair<ast::PrerunExpression*, usize> Parser::parsePrerunExpression(ParserContext&
                 RangeAt(i + 1));
         }
         cacheExp = new ast::StringLiteral(value, range);
+        break;
+      }
+      case TokenType::sizeOf: {
+        if (isNext(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+          if (pCloseRes.has_value()) {
+            auto* type = parseType(preCtx, i + 1, pCloseRes.value()).first;
+            cacheExp   = new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value()));
+            i          = pCloseRes.value();
+          } else {
+            Error("Expected end for (", RangeAt(i + 1));
+          }
+        } else {
+          Error("Expected ( to start the expression for sizeOf. Make sure that "
+                "you "
+                "provide a value, so that the size of its type can be calculated",
+                RangeAt(i));
+        }
         break;
       }
       case TokenType::Default: {
@@ -2612,67 +2635,15 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         break;
       }
-      case TokenType::unsignedLiteral: {
-        if ((token.value.find('_') != String::npos) && (token.value.find('u') != (token.value.length() - 1))) {
-          u64    bits  = 32; // NOLINT(readability-magic-numbers)
-          auto   split = token.value.find('_');
-          String number(token.value.substr(0, split));
-          if ((split + 2) < token.value.length()) {
-            if (token.value.substr(split + 1) == "usize") {
-              bits = (sizeof(usize) * 8u); // NOLINT(readability-magic-numbers)
-            } else {
-              bits = std::stoul(token.value.substr(split + 2));
-            }
-          }
-          setCachedExpr(new ast::CustomIntegerLiteral(number, true, bits, token.fileRange));
-        } else {
-          setCachedExpr(new ast::UnsignedLiteral(
-              (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
-              token.fileRange));
-        }
-        break;
-      }
+      case TokenType::TRUE:
+      case TokenType::FALSE:
+      case TokenType::sizeOf:
+      case TokenType::StringLiteral:
+      case TokenType::floatLiteral:
       case TokenType::integerLiteral: {
-        if ((token.value.find('_') != String::npos) && (token.value.find('i') != (token.value.length() - 1))) {
-          u64    bits  = 32; // NOLINT(readability-magic-numbers)
-          auto   split = token.value.find('_');
-          String number(token.value.substr(0, split));
-          if ((split + 2) < token.value.length()) {
-            bits = std::stoul(token.value.substr(split + 2));
-          }
-          setCachedExpr(new ast::CustomIntegerLiteral(number, false, bits, token.fileRange));
-        } else {
-          setCachedExpr(new ast::IntegerLiteral(
-              (token.value.find('_') != String::npos) ? token.value.substr(0, token.value.find('_')) : token.value,
-              token.fileRange));
-        }
-        break;
-      }
-      case TokenType::floatLiteral: {
-        auto number = token.value;
-        if (number.find('_') != String::npos) {
-          SHOW("Found custom float literal: " << number.substr(number.find('_') + 1))
-          setCachedExpr(new ast::CustomFloatLiteral(number.substr(0, number.find('_')),
-                                                    number.substr(number.find('_') + 1), token.fileRange));
-        } else {
-          SHOW("Found float literal")
-          setCachedExpr(new ast::FloatLiteral(token.value, token.fileRange));
-        }
-        break;
-      }
-      case TokenType::StringLiteral: {
-        auto val    = token.value;
-        auto fRange = token.fileRange;
-        if (isNext(TokenType::StringLiteral, i)) {
-          auto pos = i;
-          while (isNext(TokenType::StringLiteral, pos)) {
-            val += ValueAt(pos + 1);
-            fRange = FileRange(fRange, RangeAt(pos + 1));
-            pos++;
-          }
-          i = pos;
-        }
-        setCachedExpr(new ast::StringLiteral(val, fRange));
+        auto preRes = parsePrerunExpression(preCtx, i - 1, upto);
+        setCachedExpr(preRes.first);
+        i = preRes.second;
         break;
       }
       case TokenType::none: {
@@ -2702,31 +2673,8 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         setCachedExpr(new ast::NoneExpression(isPacked, noneType, range));
         break;
       }
-      case TokenType::sizeOf: {
-        if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
-          if (pCloseRes.has_value()) {
-            auto* type = parseType(preCtx, i + 1, pCloseRes.value()).first;
-            setCachedExpr(new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value())));
-            i = pCloseRes.value();
-          } else {
-            Error("Expected end for (", RangeAt(i + 1));
-          }
-        } else {
-          Error("Expected ( to start the expression for sizeOf. Make sure that "
-                "you "
-                "provide a value, so that the size of its type can be calculated",
-                RangeAt(i));
-        }
-        break;
-      }
       case TokenType::null: {
         setCachedExpr(new ast::NullPointer(token.fileRange));
-        break;
-      }
-      case TokenType::FALSE:
-      case TokenType::TRUE: {
-        setCachedExpr(new ast::BooleanLiteral(token.type == TokenType::TRUE, RangeAt(i)));
         break;
       }
       case TokenType::super:

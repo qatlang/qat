@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+namespace qat::IR {
+class Context;
+}
+
 namespace qat::lexer {
 
 class Lexer {
@@ -26,8 +30,10 @@ private:
 
   u64 totalCharacterCount = 0;
 
+  IR::Context* irCtx;
+
 public:
-  Lexer() = default;
+  Lexer(IR::Context* _irCtx) : irCtx(_irCtx){};
 
   ~Lexer();
 
@@ -37,7 +43,7 @@ public:
   static u64 timeInMicroSeconds;
 
   void               clearTokens();
-  void               throwError(const String& message);
+  void               throwError(const String& message, Maybe<usize> offset = None);
   void               analyse();
   void               read();
   void               changeFile(fs::path newFile);

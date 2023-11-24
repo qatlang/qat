@@ -1,4 +1,5 @@
 #include "lexer.hpp"
+#include "../IR/context.hpp"
 #include "../cli/color.hpp"
 #include "../memory_tracker.hpp"
 #include "../show.hpp"
@@ -454,6 +455,7 @@ Token Lexer::tokeniser() {
           read();
           numVal = "0x";
         } else if (current == 'r') {
+          numVal += "0r";
           read();
           while (digits.find(current) != String::npos) {
             numVal += current;
@@ -490,7 +492,8 @@ Token Lexer::tokeniser() {
           read();
           if (digits.find(current) != String::npos) {
             if (foundRadix) {
-              throwError("This literal is in custom radix format and hence cannot contain decimal point");
+              throwError("This literal is in custom radix format and hence cannot contain decimal point ",
+                         numVal.length() + 1);
             }
             isFloat = true;
             numVal += '.';
@@ -703,12 +706,10 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   }
 }
 
-void Lexer::throwError(const String& message) {
-  std::cout << colors::highIntensityBackground::red << " lexer error " << colors::reset << " " << colors::bold::red
-            << message << colors::reset << " | " << colors::underline::green
-            << fs::absolute(filePath).lexically_normal().string() << ":" << lineNumber << ":" << characterNumber
-            << colors::reset << "\n";
-  exit(1);
+void Lexer::throwError(const String& message, Maybe<usize> offset) {
+  irCtx->Error(message, offset.has_value() ? getPosition(offset.value())
+                                           : FileRange{filePath, FilePos{lineNumber, characterNumber},
+                                                       FilePos{lineNumber, characterNumber + 1}});
 }
 
 } // namespace qat::lexer

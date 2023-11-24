@@ -190,6 +190,7 @@ public:
                                         Vec<String> content, Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo,
                                         IR::Context* ctx);
 
+  static bool           tripleIsEquivalent(llvm::Triple const& first, llvm::Triple const& second);
   static Vec<Function*> collectModuleInitialisers();
 
   useit ModuleType getModuleType() const;

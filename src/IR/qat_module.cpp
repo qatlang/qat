@@ -187,6 +187,15 @@ Function* QatModule::createFunction(const Identifier& name, QatType* returnType,
   return fun;
 }
 
+bool QatModule::tripleIsEquivalent(const llvm::Triple& first, const llvm::Triple& second) {
+  if (first == second) {
+    return true;
+  } else {
+    return (first.getOS() == second.getOS()) && (first.getArch() == second.getArch()) &&
+           (first.getEnvironment() == second.getEnvironment()) && (first.getObjectFormat() == second.getObjectFormat());
+  }
+}
+
 QatModule* QatModule::CreateSubmodule(QatModule* parent, fs::path filepath, fs::path basePath, Identifier sname,
                                       ModuleType type, const VisibilityInfo& visibilityInfo, IR::Context* ctx) {
   SHOW("Creating submodule: " << sname.value)

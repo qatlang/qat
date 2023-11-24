@@ -41,24 +41,111 @@ enum class ModuleType { lib, box, file, folder };
 enum class NativeUnit { printf, malloc, free, realloc, pthreadCreate, pthreadJoin, pthreadExit, pthreadAttrInit };
 enum class IntrinsicID { vaStart, vaEnd, vaCopy };
 
+enum class LibToLinkType {
+  namedLib,
+  libPath,
+  staticAndSharedPaths,
+  nameWithLookupPath,
+};
+
+class LibToLink {
+
+  LibToLink(LibToLinkType _type, FileRange _fileRange) : type(_type), fileRange(_fileRange) {}
+
+public:
+  Maybe<Identifier>              name;
+  Maybe<Pair<String, FileRange>> path;
+  Maybe<Pair<String, FileRange>> sharedPath;
+  LibToLinkType                  type;
+  FileRange                      fileRange;
+
+  useit static LibToLink fromName(Identifier _name, FileRange _fileRange) {
+    LibToLink result(LibToLinkType::namedLib, _fileRange);
+    result.name = _name;
+    return result;
+  }
+
+  useit static LibToLink fromPath(Pair<String, FileRange> _path, FileRange _fileRange) {
+    LibToLink result(LibToLinkType::libPath, _fileRange);
+    result.path = _path;
+    return result;
+  }
+
+  useit static LibToLink fromStaticAndShared(Pair<String, FileRange> _staticPath, Pair<String, FileRange> _sharedPath,
+                                             FileRange _fileRange) {
+    LibToLink result(LibToLinkType::staticAndSharedPaths, _fileRange);
+    result.path       = _staticPath;
+    result.sharedPath = _sharedPath;
+    return result;
+  }
+
+  useit static LibToLink fromNameWithPath(Identifier _name, Pair<String, FileRange> _path, FileRange _fileRange) {
+    LibToLink result(LibToLinkType::nameWithLookupPath, _fileRange);
+    result.name = _name;
+    result.path = _path;
+    return result;
+  }
+
+  useit bool isName() { return type == LibToLinkType::namedLib; }
+  useit bool isLibPath() { return type == LibToLinkType::libPath; }
+  useit bool isStaticAndSharedPaths() { return type == LibToLinkType::staticAndSharedPaths; }
+  useit bool isNameWithLookupPath() { return type == LibToLinkType::nameWithLookupPath; }
+
+  useit bool operator==(LibToLink const& other) {
+    if (type == other.type) {
+      switch (type) {
+        case LibToLinkType::namedLib: {
+          return name.value().value == other.name.value().value;
+        }
+        case LibToLinkType::libPath: {
+          return fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+                                                                  : fs::path(path->first)) ==
+                 fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
+                                                                        : fs::path(other.path->first));
+        }
+        case LibToLinkType::staticAndSharedPaths: {
+          return (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+                                                                   : fs::path(path->first)) ==
+                  fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
+                                                                         : fs::path(other.path->first))) &&
+                 (fs::absolute(fs::path(sharedPath->first).is_relative() ? (fileRange.file / sharedPath->first)
+                                                                         : fs::path(sharedPath->first)) ==
+                  fs::absolute(fs::path(other.sharedPath->first).is_relative()
+                                   ? (fileRange.file / other.sharedPath->first)
+                                   : fs::path(other.sharedPath->first)));
+        }
+        case LibToLinkType::nameWithLookupPath: {
+          return (name.value().value == other.name.value().value) &&
+                 (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+                                                                   : fs::path(path->first)) ==
+                  fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
+                                                                         : fs::path(other.path->first)));
+        }
+      }
+    } else {
+      return false;
+    }
+  }
+};
+
 class ModuleInfo {
   friend class ast::ModInfo;
   friend class QatModule;
 
 private:
-  Maybe<String> outputName;
-  Deque<String> nativeLibsToLink;
-  bool          linkPthread = false;
-  Maybe<String> foreignID;
-  Maybe<String> alternativeName;
+  Maybe<String>    outputName;
+  Deque<LibToLink> nativeLibsToLink;
+  bool             linkPthread = false;
+  Maybe<String>    foreignID;
+  Maybe<String>    alternativeName;
 
-  void addLibToLink(const String& name) {
+  void addLibToLink(LibToLink libVal) {
     for (const auto& lib : nativeLibsToLink) {
-      if (lib == name) {
+      if (lib == libVal) {
         return;
       }
     }
-    nativeLibsToLink.push_back(name);
+    nativeLibsToLink.push_back(libVal);
   }
   useit bool   isForeign() const { return foreignID.has_value(); }
   useit bool   isForeignC() const { return foreignID.has_value() && (foreignID.value() == "C"); }

@@ -17,10 +17,10 @@ class ModInfo : public Node {
 private:
   Maybe<KeyValue<String>> foreignID;
   Maybe<StringLiteral*>   outputName;
-  Vec<StringLiteral*>     linkLibs;
+  Vec<PrerunExpression*>  linkLibs;
 
 public:
-  ModInfo(Maybe<StringLiteral*> _outputName, Maybe<KeyValue<String>> _foreignID, Vec<StringLiteral*> _linkLibs,
+  ModInfo(Maybe<StringLiteral*> _outputName, Maybe<KeyValue<String>> _foreignID, Vec<PrerunExpression*> _linkLibs,
           FileRange _fileRange);
 
   void  createModule(IR::Context* ctx) const final;

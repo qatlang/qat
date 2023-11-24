@@ -42,7 +42,6 @@ enum class TokenType {
   associatedAssignment,
   separator,
   integerLiteral,
-  unsignedLiteral,
   floatLiteral,
   StringLiteral,
   say,

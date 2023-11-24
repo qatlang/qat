@@ -78,6 +78,7 @@
 #include "../ast/types/unsigned.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
+#include "../utils/is_integer.hpp"
 #include "cache_symbol.hpp"
 #include "parser_context.hpp"
 #include <chrono>
@@ -203,7 +204,7 @@ void Parser::clearMemberPaths() { memberPaths.clear(); }
 ast::ModInfo* Parser::parseModuleInfo(usize from, usize upto, const FileRange& startRange) {
   Maybe<ast::StringLiteral*>   outputName;
   Maybe<ast::KeyValue<String>> foreignID;
-  Vec<ast::StringLiteral*>     nativeLibs;
+  Vec<ast::PrerunExpression*>  nativeLibs;
   using lexer::TokenType;
   for (usize i = from + 1; i < upto; i++) {
     auto token = tokens->at(i);
@@ -316,11 +317,81 @@ Pair<ast::PrerunExpression*, usize> Parser::parsePrerunExpression(ParserContext&
     auto& token = tokens->at(i);
     switch (token.type) {
       case TokenType::integerLiteral: {
-        cacheExp = new ast::IntegerLiteral(token.value, token.fileRange);
+        usize     radPos = 0;
+        Maybe<u8> radix;
+        if (token.value.find("0b") == 0) {
+          radix  = 2;
+          radPos = 2;
+        } else if (token.value.find("0c") == 0) {
+          radix  = 8;
+          radPos = 2;
+        } else if (token.value.find("0x") == 0) {
+          radix  = 16;
+          radPos = 2;
+        } else if (token.value.find("0r") == 0) {
+          if (token.value.find("_") != String::npos) {
+            // Check for being integer is not required here as it is done within the lexer itself
+            auto radVal = std::stoul(token.value.substr(2, token.value.find("_") - 2));
+            if ((radVal > 36u) || (radVal < 2)) {
+              Error("Radix value has to be a value from 2 to 36", token.fileRange);
+            }
+            radix  = (u8)radVal;
+            radPos = token.value.find("_") + 1;
+          } else {
+            Error("Expected _ to be found to separate the radix specification from the number value", token.fileRange);
+          }
+        }
+        usize lastUnderscorePos = token.value.find_last_of('_');
+        if (token.value.find('_', radPos) != String::npos && (lastUnderscorePos < (token.value.length() - 1)) &&
+            (token.value.at(lastUnderscorePos + 1) == 'i' || token.value.at(lastUnderscorePos + 1) == 'u')) {
+          String bitStr =
+              (lastUnderscorePos + 2 < token.value.length()) ? token.value.substr(lastUnderscorePos + 2) : "";
+          bool       isUnsigned = token.value.at(token.value.find_last_of('_') + 1) == 'u';
+          Maybe<u64> bits       = (!bitStr.empty() && utils::isInteger(bitStr)) ? Maybe<u64>(std::stoul(bitStr)) : None;
+          String     number(token.value.substr(radPos, lastUnderscorePos - radPos));
+          if (!bitStr.empty()) {
+            SHOW("CUSTOM_INTEGER_LITERAL: " << number << " bits: " << bits.value())
+            cacheExp = new ast::CustomIntegerLiteral(number, isUnsigned, bits, radix, token.fileRange);
+          } else {
+            SHOW("INTEGER_LITERAL: " << token.value << " isUnsigned: " << (isUnsigned ? "true" : "false"))
+            cacheExp = isUnsigned
+                           ? (ast::PrerunExpression*)(new ast::UnsignedLiteral(token.value.substr(0, lastUnderscorePos),
+                                                                               token.fileRange))
+                           : (ast::PrerunExpression*)(new ast::IntegerLiteral(token.value.substr(0, lastUnderscorePos),
+                                                                              token.fileRange));
+          }
+        } else if (radix.has_value()) {
+          SHOW("CUSTOM_INTEGER_LITERAL: " << token.value.substr(radPos))
+          cacheExp = new ast::CustomIntegerLiteral(token.value.substr(radPos), None, None, radix, token.fileRange);
+        } else {
+          bool nonDigitChar = false;
+          for (auto dig : token.value) {
+            if (String("0123456789_").find(dig) == String::npos) {
+              nonDigitChar = true;
+              break;
+            }
+          }
+          if (nonDigitChar) {
+            SHOW("CUSTOM_INTEGER_LITERAL: " << token.value)
+            cacheExp = new ast::CustomIntegerLiteral(token.value, None, None, None, token.fileRange);
+          } else {
+            SHOW("INTEGER_LITERAL: " << token.value)
+            cacheExp = new ast::IntegerLiteral(token.value, token.fileRange);
+          }
+        }
         break;
       }
-      case TokenType::unsignedLiteral: {
-        cacheExp = new ast::UnsignedLiteral(token.value, token.fileRange);
+      case TokenType::floatLiteral: {
+        auto number         = token.value;
+        auto lastUnderscore = number.find_last_of('_');
+        if (lastUnderscore != String::npos) {
+          SHOW("Found custom float literal: " << number.substr(lastUnderscore + 1))
+          cacheExp = new ast::CustomFloatLiteral(number.substr(0, lastUnderscore), number.substr(lastUnderscore + 1),
+                                                 token.fileRange);
+        } else {
+          SHOW("Found float literal")
+          cacheExp = new ast::FloatLiteral(token.value, token.fileRange);
+        }
         break;
       }
       case TokenType::StringLiteral: {

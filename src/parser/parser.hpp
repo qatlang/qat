@@ -59,7 +59,7 @@ public:
   void parseCoreType(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
   void parseMixType(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef,
                     Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
-  void parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
+  void parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
                        bool& areValuesNegative, Maybe<usize>& defaultVal);
   void parseMatchContents(ParserContext& prev_ctx, usize from, usize upto,
                           Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,

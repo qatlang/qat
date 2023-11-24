@@ -1203,26 +1203,41 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
       case TokenType::choice: {
+        auto start = i;
         if (isNext(TokenType::identifier, i)) {
-          if (isNext(TokenType::curlybraceOpen, i + 1)) {
-            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-            if (bCloseRes.has_value()) {
-              auto                                                       bClose = bCloseRes.value();
-              Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>> fields;
-              Maybe<usize>                                               defaultVal;
-              bool                                                       areValuesNegative = false;
-              parseChoiceType(i + 2, bClose, fields, areValuesNegative, defaultVal);
-              result.push_back(new ast::DefineChoiceType(IdentifierAt(i + 1), std::move(fields), areValuesNegative,
-                                                         defaultVal, getVisibility(), RangeSpan(i, bClose)));
-              i = bClose;
+          auto                 typeName = IdentifierAt(i + 1);
+          Maybe<ast::QatType*> providedTy;
+          if (isNext(TokenType::typeSeparator, i + 1)) {
+            auto curPos = firstPrimaryPosition(TokenType::curlybraceOpen, i + 2);
+            if (curPos.has_value()) {
+              auto typRes = parseType(preCtx, i + 2, curPos);
+              providedTy  = typRes.first;
+              i           = curPos.value() - 1;
             } else {
-              Error("Expected end for {", RangeAt(i + 2));
+              Error("Expected { after this to start the definition of choice type", RangeAt(i + 2));
             }
           } else {
-            Error("Expected { to start the definition of the choice type", RangeSpan(i, i + 1));
+            i++;
+          }
+          if (isNext(TokenType::curlybraceOpen, i)) {
+            auto bCloseRes = getPairEnd(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
+            if (bCloseRes.has_value()) {
+              auto                                                 bClose = bCloseRes.value();
+              Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> fields;
+              Maybe<usize>                                         defaultVal;
+              bool                                                 areValuesNegative = false;
+              parseChoiceType(i + 1, bClose, fields, areValuesNegative, defaultVal);
+              result.push_back(new ast::DefineChoiceType(typeName, std::move(fields), providedTy, areValuesNegative,
+                                                         defaultVal, getVisibility(), RangeSpan(start, bClose)));
+              i = bClose;
+            } else {
+              Error("Expected end for {", RangeAt(i + 1));
+            }
+          } else {
+            Error("Expected { to start the definition of the choice type", RangeSpan(start, i));
           }
         } else {
-          Error("Expected an identifier for the name of the choice type", RangeAt(i));
+          Error("Expected an identifier after this for the name of the choice type", RangeAt(i));
         }
         break;
       }
@@ -2104,7 +2119,7 @@ void Parser::parseMixType(ParserContext& preCtx, usize from, usize upto,
   }
 }
 
-void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>>& fields,
+void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
                              bool& areValuesNegative, Maybe<usize>& defaultVal) {
   using lexer::TokenType;
 
@@ -2126,44 +2141,27 @@ void Parser::parseChoiceType(usize from, usize upto, Vec<Pair<Identifier, Maybe<
       case TokenType::identifier: {
         auto start = i;
         if (isNext(TokenType::separator, i) || (i + 1 == upto)) {
-          fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
+          fields.push_back(Pair<Identifier, Maybe<ast::PrerunExpression*>>(
               {ValueAt(i), isPrev(TokenType::Default, i)
                                ? FileRange(tokens->at(i - 1).fileRange, tokens->at(i).fileRange)
                                : RangeAt(i)},
               None));
           i++;
         } else if (isNext(TokenType::assignment, i)) {
-          auto fieldName  = ValueAt(i);
-          bool isNegative = false;
-          if (isNext(TokenType::binaryOperator, i + 1) && ValueAt(i + 2) == "-") {
-            isNegative        = true;
-            areValuesNegative = true;
-            i += 2;
-          } else {
-            i += 1;
-          }
-          i64       val = 0;
-          FileRange valRange{"", {0u, 0u}, {0u, 0u}};
-          if (isNext(TokenType::integerLiteral, i) || isNext(TokenType::unsignedLiteral, i)) {
-            if (ValueAt(i + 1).find('_') != String::npos) {
-              val = std::stoi(ValueAt(i + 1).substr(0, ValueAt(i + 1).find('_')));
-            } else {
-              val = std::stoi(ValueAt(i + 1));
-            }
-            i++;
-          } else {
-            Error("Expected an integer or unsigned integer literal as the value for the variant of the choice type",
-                  RangeAt(i));
-          }
-          if (isNegative) {
-            val = -val;
-          }
+          auto fieldName = ValueAt(i);
+
+          Maybe<ast::PrerunExpression*> val;
+
+          auto preCtx = ParserContext();
+          auto valRes = parsePrerunExpression(preCtx, i + 1, None);
+          val         = valRes.first;
+          i           = valRes.second;
           if (isNext(TokenType::separator, i) || (isNext(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
-            fields.push_back(Pair<Identifier, Maybe<ast::DefineChoiceType::Value>>(
+            fields.push_back(Pair<Identifier, Maybe<ast::PrerunExpression*>>(
                 Identifier{ValueAt(start), isPrev(TokenType::Default, start)
                                                ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
                                                : RangeAt(start)},
-                ast::DefineChoiceType::Value{val, valRange}));
+                val));
             i++;
           } else {
             Error("Invalid token found after integer value for the choice "
@@ -4205,7 +4203,9 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate, cons
   using lexer::TokenType;
   for (usize i = from + 1; i < tokens->size(); i++) {
     auto tok = tokens->at(i);
-    if (tok.type == TokenType::parenthesisOpen) {
+    if (tok.type == candidate) {
+      return i;
+    } else if (tok.type == TokenType::parenthesisOpen) {
       auto endRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
       if (endRes.has_value() && (endRes.value() < tokens->size())) {
         i = endRes.value();
@@ -4235,8 +4235,6 @@ Maybe<usize> Parser::firstPrimaryPosition(const lexer::TokenType candidate, cons
       } else {
         return None;
       }
-    } else if (tok.type == candidate) {
-      return i;
     }
   }
   return None;

@@ -6,6 +6,7 @@ add_library(QAT_AST_CONSTANTS
 	entity.cpp
 	float_literal.cpp
 	integer_literal.cpp
+	negative.cpp
 	null_pointer.cpp
 	string_literal.cpp
 	size_of_type.cpp

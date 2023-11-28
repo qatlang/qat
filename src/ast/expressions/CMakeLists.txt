@@ -15,6 +15,7 @@ add_library(QAT_AST_EXPRESSIONS
 	index_access.cpp
 	member_access.cpp
 	move.cpp
+	negative.cpp
 	none.cpp
 	not.cpp
 	ok.cpp

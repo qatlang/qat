@@ -61,7 +61,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     SHOW("Own count is present")
     // NOLINTBEGIN(readability-magic-numbers)
     if (ownCount.value()->hasTypeInferrance()) {
-      ownCount.value()->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
+      ownCount.value()->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx));
     }
     SHOW("Own count type inference complete")
     // NOLINTEND(readability-magic-numbers)
@@ -227,7 +227,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
       restBlock->linkPrevBlock(currBlock);
       // NOLINTNEXTLINE(readability-magic-numbers)
-      auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, fileRange);
+      auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx), true, fileRange);
       ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false), count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       condBlock->setActive(ctx->builder);

@@ -39,7 +39,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       return new IR::PrerunValue(
           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), instType->asArray()->getLength()),
           // NOLINTNEXTLINE(readability-magic-numbers)
-          IR::IntegerType::get(64u, ctx->llctx));
+          IR::IntegerType::get(64u, ctx));
     } else {
       ctx->Error("Invalid name for member access " + ctx->highlightError(name) + " for expression with type " +
                      ctx->highlightError(instType->toString()),
@@ -53,23 +53,23 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       if (inst->isLLVMConstant()) {
         SHOW("String slice is a constant")
         return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(1u)),
-                                   IR::UnsignedType::get(64u, ctx->llctx));
+                                   IR::UnsignedType::get(64u, ctx));
       } else {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 1u),
-            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx->llctx), ctx), false, IR::Nature::temporary);
+            IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx), ctx), false, IR::Nature::temporary);
       }
     } else if (name == "buffer") {
       if (inst->isLLVMConstant()) {
-        return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(0u),
-                                   IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx),
-                                                        IR::PointerOwner::OfAnonymous(), false, ctx));
+        return new IR::PrerunValue(
+            inst->getLLVMConstant()->getAggregateElement(0u),
+            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), IR::PointerOwner::OfAnonymous(), false, ctx));
       } else {
         SHOW("String slice is an implicit pointer or a reference")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
-            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), // NOLINT(readability-magic-numbers)
+            IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), // NOLINT(readability-magic-numbers)
                                  IR::PointerOwner::OfAnonymous(), false, ctx),
             false, IR::Nature::temporary);
       }
@@ -88,7 +88,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                         ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
                     true),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for " + ctx->highlightError("future") + " and hence cannot get data", fileRange);
       }
@@ -103,7 +103,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                         ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
                     true),
                 llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-            IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+            IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("Invalid value for future and hence cannot get data", fileRange);
       }
@@ -120,10 +120,10 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       if (inst->isLLVMConstant()) {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
           return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
-                                     IR::UnsignedType::getBool(ctx->llctx));
+                                     IR::UnsignedType::getBool(ctx));
         } else {
           return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()),
-                                     IR::UnsignedType::getBool(ctx->llctx));
+                                     IR::UnsignedType::getBool(ctx));
         }
       } else {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
@@ -132,12 +132,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                   ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
                                           ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
                   llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+              IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
         } else {
           return new IR::Value(
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), inst->getLLVM()),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u)),
-              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+              IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
         }
       }
     } else if (name == "hasNoValue") {
@@ -150,13 +150,13 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                                              .getBoolValue()
                                          ? 0u
                                          : 1u),
-              IR::UnsignedType::getBool(ctx->llctx));
+              IR::UnsignedType::getBool(ctx));
         } else {
           return new IR::PrerunValue(
               llvm::ConstantInt::get(
                   llvm::Type::getInt1Ty(ctx->llctx),
                   llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant())->getValue().getBoolValue() ? 0u : 1u),
-              IR::UnsignedType::getBool(ctx->llctx));
+              IR::UnsignedType::getBool(ctx));
         }
       } else {
         if (instType->asMaybe()->hasSizedSubType(ctx)) {
@@ -165,12 +165,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                   ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx),
                                           ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 0u)),
                   llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+              IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
         } else {
           return new IR::Value(
               ctx->builder.CreateICmpEQ(ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx), inst->getLLVM()),
                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
-              IR::UnsignedType::getBool(ctx->llctx), false, IR::Nature::temporary);
+              IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
         }
       }
     } else {
@@ -211,13 +211,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
           inst->makeImplicitPointer(ctx, None);
         }
         if (inst->isLLVMConstant()) {
-          return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u),
-                                     IR::UnsignedType::get(64u, ctx->llctx));
+          return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::UnsignedType::get(64u, ctx));
         } else {
           return new IR::Value(
               ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
                                       ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 1u)),
-              IR::UnsignedType::get(64u, ctx->llctx), false, IR::Nature::temporary);
+              IR::UnsignedType::get(64u, ctx), false, IR::Nature::temporary);
         }
       } else {
         ctx->Error("The pointer is not a multi pointer and hence the length cannot be determined", fileRange);

@@ -13,7 +13,7 @@ Maybe<usize> IntegerType::getTypeSizeInBits(IR::Context* ctx) const {
 
 IR::QatType* IntegerType::emit(IR::Context* ctx) {
   if (ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
-    return IR::IntegerType::get(bitWidth, ctx->llctx);
+    return IR::IntegerType::get(bitWidth, ctx);
   } else {
     ctx->Error("This signed integer bitwidth is not allowed to be used since it is not brought into the module scope",
                fileRange);

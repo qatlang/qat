@@ -17,7 +17,7 @@ private:
   QatType*                  elementType;
   mutable PrerunExpression* lengthExp;
 
-  void typeInferenceForLength(llvm::LLVMContext& llCtx) const;
+  void typeInferenceForLength(IR::Context* ctx) const;
 
 public:
   ArrayType(QatType* _element_type, PrerunExpression* lengthExp, FileRange _fileRange);

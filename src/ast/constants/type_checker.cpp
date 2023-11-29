@@ -26,7 +26,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
             name == "bits"
                 ? ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSizeInBits(typs.at(0)->getLLVMType())
                 : ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSize(typs.at(0)->getLLVMType())),
-        IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
+        IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx));
   } else if (name == "isCore") {
     bool res = true;
     for (auto* typ : typs) {
@@ -36,7 +36,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isMix") {
     bool res = true;
     for (auto* typ : typs) {
@@ -46,7 +46,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isChoice") {
     bool res = true;
     for (auto* typ : typs) {
@@ -56,7 +56,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isTuple") {
     bool res = true;
     for (auto* typ : typs) {
@@ -66,7 +66,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isArray") {
     bool res = true;
     for (auto* typ : typs) {
@@ -76,7 +76,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isTypeDefinition") {
     bool res = true;
     for (auto* typ : typs) {
@@ -86,7 +86,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isSigned") {
     bool res = true;
     for (auto* typ : typs) {
@@ -96,7 +96,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isUnsigned") {
     bool res = true;
     for (auto* typ : typs) {
@@ -106,7 +106,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isIntegral") {
     bool res = true;
     for (auto* typ : typs) {
@@ -116,7 +116,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isFloatingPoint") {
     bool res = true;
     for (auto* typ : typs) {
@@ -126,7 +126,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isPointer") {
     bool res = true;
     for (auto* typ : typs) {
@@ -136,7 +136,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasDefault") {
     bool res = true;
     for (auto* typ : typs) {
@@ -164,7 +164,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "isDestructible") {
     bool res = true;
     for (auto* typ : typs) {
@@ -176,7 +176,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasAnyConstructor") {
     bool res = true;
     for (auto* typ : typs) {
@@ -189,7 +189,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasAnyFromConvertor") {
     bool res = true;
     for (auto* typ : typs) {
@@ -202,7 +202,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasCopyConstructor") {
     bool res = true;
     for (auto* typ : typs) {
@@ -215,7 +215,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasMoveConstructor") {
     bool res = true;
     for (auto* typ : typs) {
@@ -228,7 +228,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasCopyAssignment") {
     bool res = true;
     for (auto* typ : typs) {
@@ -241,7 +241,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "hasMoveAssignment") {
     bool res = true;
     for (auto* typ : typs) {
@@ -254,7 +254,7 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
       }
     }
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, 1u), (res ? 1u : 0u)),
-                               IR::UnsignedType::getBool(ctx->llctx));
+                               IR::UnsignedType::getBool(ctx));
   } else if (name == "name") {
     if (typs.size() > 1) {
       ctx->Error("name type checker expects only one type as argument", fileRange);

@@ -91,6 +91,8 @@ enum class NodeType {
   prerunDefault,
   isExpression,
   okExpression,
+  negative,
+  prerunNegative,
 };
 
 } // namespace qat::ast

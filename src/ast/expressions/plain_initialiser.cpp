@@ -180,8 +180,8 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                 ctx->builder.CreateLoad(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx),
                                                                ctx->dataLayout->getProgramAddressSpace()),
                                         ctx->builder.CreateStructGEP(dataType->getLLVMType(), strData->getLLVM(), 0u)),
-                IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx->llctx), IR::PointerOwner::OfAnonymous(),
-                                     false, ctx),
+                IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), IR::PointerOwner::OfAnonymous(), false,
+                                     ctx),
                 false, IR::Nature::temporary);
           } else {
             if (strData->isImplicitPointer() || strData->getType()->isReference()) {

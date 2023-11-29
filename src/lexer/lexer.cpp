@@ -335,7 +335,6 @@ Token Lexer::tokeniser() {
       if ((current == '+' && operatorValue == "+") || (current == '-' && operatorValue == "-")) {
         operatorValue += current;
         read();
-        const String identifierStart = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
         return Token::valued(TokenType::unaryOperator, operatorValue, this->getPosition(2));
       } else if (current == '=' && operatorValue != "<" && operatorValue != ">") {
         operatorValue += current;

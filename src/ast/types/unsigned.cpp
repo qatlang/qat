@@ -14,9 +14,9 @@ Maybe<usize> UnsignedType::getTypeSizeInBits(IR::Context* ctx) const {
 IR::QatType* UnsignedType::emit(IR::Context* ctx) {
   if (ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
     if (isBool) {
-      return IR::UnsignedType::getBool(ctx->llctx);
+      return IR::UnsignedType::getBool(ctx);
     } else {
-      return IR::UnsignedType::get(bitWidth, ctx->llctx);
+      return IR::UnsignedType::get(bitWidth, ctx);
     }
   } else {
     ctx->Error("This unsigned integer bitwidth is not allowed to be used since it is not brought into the module scope",

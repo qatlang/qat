@@ -13,6 +13,7 @@ IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
   }
   String intValue = value;
   if (value.find('_') != String::npos) {
+    intValue = "";
     for (auto intCh : value) {
       if (intCh != '_') {
         intValue += intCh;
@@ -20,10 +21,11 @@ IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
     }
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::PrerunValue(llvm::ConstantInt::get(isTypeInferred() ? (llvm::IntegerType*)(inferredType->getLLVMType())
-                                                                     : llvm::Type::getInt32Ty(ctx->llctx),
+  return new IR::PrerunValue(llvm::ConstantInt::get(isTypeInferred()
+                                                        ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
+                                                        : llvm::Type::getInt32Ty(ctx->llctx),
                                                     intValue, 10u),
-                             isTypeInferred() ? inferredType : IR::IntegerType::get(32, ctx->llctx));
+                             isTypeInferred() ? inferredType : IR::IntegerType::get(32, ctx));
   // NOLINTEND(readability-magic-numbers)
 }
 

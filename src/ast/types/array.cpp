@@ -12,15 +12,15 @@ namespace qat::ast {
 ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange)
     : QatType(std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
 
-void ArrayType::typeInferenceForLength(llvm::LLVMContext& llCtx) const {
+void ArrayType::typeInferenceForLength(IR::Context* ctx) const {
   if (lengthExp->hasTypeInferrance()) {
-    lengthExp->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, llCtx));
+    lengthExp->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, ctx));
   }
 }
 
 Maybe<usize> ArrayType::getTypeSizeInBits(IR::Context* ctx) const {
   auto elemSize = elementType->getTypeSizeInBits(ctx);
-  typeInferenceForLength(ctx->llctx);
+  typeInferenceForLength(ctx);
   auto* lengthIR = lengthExp->emit(ctx);
   if (lengthIR->getType()->isUnsignedInteger() &&
       (lengthIR->getType()->asUnsignedInteger()->getBitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
@@ -37,7 +37,7 @@ Maybe<usize> ArrayType::getTypeSizeInBits(IR::Context* ctx) const {
 }
 
 IR::QatType* ArrayType::emit(IR::Context* ctx) {
-  typeInferenceForLength(ctx->llctx);
+  typeInferenceForLength(ctx);
   auto* lengthIR = lengthExp->emit(ctx);
   if (lengthIR->getType()->isUnsignedInteger()) {
     if (lengthIR->getType()->asUnsignedInteger()->getBitwidth() > ARRAY_LENGTH_BITWIDTH) {

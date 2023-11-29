@@ -29,7 +29,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   llvm::GlobalVariable*  gvar = nullptr;
   Maybe<llvm::Constant*> initialValue;
   SHOW("Global is a variable: " << (isVariable ? "true" : "false"))
-  if (val->isConstVal()) {
+  if (val->isPrerunValue()) {
     gvar = new llvm::GlobalVariable(
         *mod->getLLVMModule(), typ->getLLVMType(), !isVariable, ctx->getGlobalLinkageForVisibility(visibInfo),
         llvm::dyn_cast<llvm::Constant>(val->getLLVM()), mod->getFullNameWithChild(name.value));

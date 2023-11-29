@@ -128,7 +128,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                            IR::ReferenceType::get(inst->isReference()
                                                       ? inst->getType()->asReference()->isSubtypeVariable()
                                                       : inst->isVariable(),
-                                                  IR::UnsignedType::get(8, ctx->llctx), ctx),
+                                                  IR::UnsignedType::get(8u, ctx), ctx),
                            false, IR::Nature::temporary);
     } else {
       ctx->Error("Invalid value for string slice and hence string cannot be indexed", fileRange);
@@ -142,7 +142,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     }
     bool isVarExp = inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable() : inst->isVariable();
     return new IR::Value(ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->llctx), instVal, {ind->getLLVM()}),
-                         IR::ReferenceType::get(isVarExp, IR::UnsignedType::get(8, ctx->llctx), ctx), false,
+                         IR::ReferenceType::get(isVarExp, IR::UnsignedType::get(8u, ctx), ctx), false,
                          IR::Nature::temporary);
   } else if (instType->isCoreType()) {
     auto*               cTy     = instType->asCore();

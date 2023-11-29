@@ -16,7 +16,7 @@ IR::PrerunValue* UnsignedLiteral::emit(IR::Context* ctx) {
                                                         ? llvm::dyn_cast<llvm::IntegerType>(inferredType->getLLVMType())
                                                         : llvm::Type::getInt32Ty(ctx->llctx),
                                                     value, 10u),
-                             isTypeInferred() ? inferredType : IR::UnsignedType::get(32u, ctx->llctx));
+                             isTypeInferred() ? inferredType : IR::UnsignedType::get(32u, ctx));
   // NOLINTEND(readability-magic-numbers)
 }
 

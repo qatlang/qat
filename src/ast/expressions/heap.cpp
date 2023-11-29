@@ -22,7 +22,7 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
       ctx->Error("Default value for u64 is 0, which is an invalid value for the number of instances to allocate",
                  count->fileRange);
     } else if (count->hasTypeInferrance()) {
-      count->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx->llctx));
+      count->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(64u, ctx));
     }
     countRes = count->emit(ctx);
     if (countRes->getType()->isReference()) {

@@ -111,8 +111,8 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
                                                     : llvm::Type::getIntNTy(ctx->llctx, usableBitwidth),
                              numberValue, radix.value_or(DEFAULT_RADIX_VALUE)),
       suffixType.has_value() ? suffixType.value()
-                             : (numberIsUnsigned ? (IR::QatType*)IR::UnsignedType::get(usableBitwidth, ctx->llctx)
-                                                 : (IR::QatType*)IR::IntegerType::get(usableBitwidth, ctx->llctx)));
+                             : (numberIsUnsigned ? (IR::QatType*)IR::UnsignedType::get(usableBitwidth, ctx)
+                                                 : (IR::QatType*)IR::IntegerType::get(usableBitwidth, ctx)));
 }
 
 String CustomIntegerLiteral::radixToString(u8 val) {

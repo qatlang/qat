@@ -10,7 +10,7 @@ IR::PrerunValue* SizeOfType::emit(IR::Context* ctx) {
   return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
                                                     ctx->getMod()->getLLVMModule()->getDataLayout().getTypeStoreSize(
                                                         type->emit(ctx)->getLLVMType())),
-                             IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx->llctx));
+                             IR::UnsignedType::get(LLVM_SIZEOF_RESULT_BITWIDTH, ctx));
 }
 
 String SizeOfType::toString() const { return "type'size(" + type->toString() + ")"; }

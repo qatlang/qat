@@ -8,11 +8,12 @@ namespace qat::IR {
 
 class IntegerType : public QatType {
 private:
-  const u64 bitWidth;
-  IntegerType(u64 _bitWidth, llvm::LLVMContext& ctx);
+  const u64    bitWidth;
+  IR::Context* ctx;
+  IntegerType(u64 _bitWidth, IR::Context* ctx);
 
 public:
-  useit static IntegerType* get(u64 _bits, llvm::LLVMContext& ctx);
+  useit static IntegerType* get(u64 _bits, IR::Context* ctx);
   useit bool                isBitWidth(u64 width) const;
   useit u64                 getBitwidth() const;
   useit TypeKind            typeKind() const final;

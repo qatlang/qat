@@ -5,6 +5,7 @@ add_library(QAT_IR
 	entity_overview.cpp
 	function.cpp
 	global_entity.cpp
+	link_names.cpp
 	member_function.cpp
 	control_flow.cpp
 	qat_module.cpp

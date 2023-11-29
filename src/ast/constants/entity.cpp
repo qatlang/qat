@@ -31,11 +31,15 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
         }
       }
     } else if (ctx->hasActiveFunction() && ctx->getActiveFunction()->isMemberFunction() &&
+               (((IR::MemberFunction*)ctx->getActiveFunction())->getParentType()->isExpanded()) &&
                ((IR::MemberFunction*)ctx->getActiveFunction())
                    ->getParentType()
+                   ->asExpanded()
                    ->hasGenericParameter(identifiers.front().value)) {
+      // FIXME - Also check generic skills
       auto* genVal = ((IR::MemberFunction*)ctx->getActiveFunction())
                          ->getParentType()
+                         ->asExpanded()
                          ->getGenericParameter(identifiers.front().value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));

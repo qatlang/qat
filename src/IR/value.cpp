@@ -88,7 +88,7 @@ bool Value::isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); 
 
 llvm::Constant* Value::getLLVMConstant() const { return llvm::cast<llvm::Constant>(ll); }
 
-bool Value::isConstVal() const { return false; }
+bool Value::isPrerunValue() const { return false; }
 
 PrerunValue* Value::asConst() const { return (PrerunValue*)this; }
 
@@ -108,7 +108,7 @@ PrerunValue::PrerunValue(IR::TypedType* _typed) : Value(nullptr, _typed, false, 
 
 llvm::Constant* PrerunValue::getLLVM() const { return (llvm::Constant*)ll; }
 
-bool PrerunValue::isConstVal() const { return true; }
+bool PrerunValue::isPrerunValue() const { return true; }
 
 bool PrerunValue::isEqualTo(PrerunValue* other) {
   if (getType()->isTyped()) {

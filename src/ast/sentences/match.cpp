@@ -311,7 +311,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     llvm::Value* strBuff;
     llvm::Value* strCount;
     bool         isMatchStrConstant = false;
-    if (expEmit->isConstVal()) {
+    if (expEmit->isPrerunValue()) {
       isMatchStrConstant = true;
       strBuff            = expEmit->asConst()->getLLVMConstant()->getAggregateElement(0u);
       strCount           = expEmit->asConst()->getLLVMConstant()->getAggregateElement(1u);
@@ -341,7 +341,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         }
         auto* strEmit = strExp->asExp()->getExpression()->emit(ctx);
         irStrVals.push_back(strEmit);
-        if (strEmit->isConstVal()) {
+        if (strEmit->isPrerunValue()) {
           hasConstantVals = true;
         } else {
           areAllConstValues = false;
@@ -350,7 +350,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       if (hasConstantVals && isMatchStrConstant) {
         bool caseRes = false;
         for (auto* irStr : irStrVals) {
-          if (irStr->isConstVal()) {
+          if (irStr->isPrerunValue()) {
             auto* irStrConst = irStr->getLLVMConstant();
             SHOW("Comparing constant string in match block")
             if (IR::Logic::compareConstantStrings(
@@ -386,7 +386,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
       SHOW("Setting thisCaseFalseBlock")
       IR::Block* thisCaseFalseBlock;
       for (usize j = 0; j < section.first.size(); j++) {
-        if (irStrVals.at(j)->isConstVal() && isMatchStrConstant) {
+        if (irStrVals.at(j)->isPrerunValue() && isMatchStrConstant) {
           continue;
         }
         if (j == section.first.size() - 1) {
@@ -401,7 +401,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
         if (caseIR->getType()->isStringSlice() ||
             (caseIR->isReference() && caseIR->getType()->asReference()->getSubType()->isStringSlice())) {
           auto* elemIter = ctx->getActiveFunction()->getFunctionCommonIndex();
-          if (caseIR->isConstVal()) {
+          if (caseIR->isPrerunValue()) {
             caseStrBuff  = caseIR->getLLVMConstant()->getAggregateElement(0u);
             caseStrCount = caseIR->getLLVMConstant()->getAggregateElement(1u);
           } else {

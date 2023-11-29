@@ -387,7 +387,7 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
                                               << " and RHS type: " << expVal->getType()->toString())
         ctx->builder.CreateStore(expVal->getLLVM(), lhsVal->getLLVM());
         return nullptr;
-      } else if (expVal->isConstVal() &&
+      } else if (expVal->isPrerunValue() &&
                  ((lhsTy->isInteger() || (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isInteger()) ||
                    lhsTy->isUnsignedInteger() ||
                    (lhsTy->isReference() && lhsTy->asReference()->getSubType()->isUnsignedInteger())) &&

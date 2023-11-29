@@ -40,7 +40,7 @@ public:
   useit bool                 isReference() const;
   useit bool                 isPointer() const;
   useit bool                 isVariable() const;
-  useit virtual bool         isConstVal() const;
+  useit virtual bool         isPrerunValue() const;
   useit PrerunValue*         asConst() const;
   useit bool                 isLLVMConstant() const;
   useit llvm::Constant* getLLVMConstant() const;
@@ -67,7 +67,7 @@ public:
 
   bool isEqualTo(PrerunValue* other);
 
-  useit bool isConstVal() const final;
+  useit bool isPrerunValue() const final;
 };
 
 } // namespace qat::IR

@@ -53,7 +53,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
                      " type",
                  section.first->fileRange);
     }
-    if (exp->isConstVal()) {
+    if (exp->isPrerunValue()) {
       SHOW("Is const condition in if-else")
       auto condConstVal = *(llvm::dyn_cast<llvm::ConstantInt>(exp->asConst()->getLLVM())->getValue().getRawData());
       knownVals.push_back(condConstVal == 1u);

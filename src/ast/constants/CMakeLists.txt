@@ -6,11 +6,12 @@ add_library(QAT_AST_CONSTANTS
 	entity.cpp
 	float_literal.cpp
 	integer_literal.cpp
+	member_access.cpp
 	negative.cpp
 	null_pointer.cpp
 	string_literal.cpp
-	size_of_type.cpp
 	type_checker.cpp
+	type_wrap.cpp
 	unsigned_literal.cpp)
 
 target_link_directories(QAT_AST_CONSTANTS PUBLIC ../../utils)

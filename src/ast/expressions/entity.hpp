@@ -18,12 +18,8 @@ private:
   Vec<Identifier> names;
   u32             relative;
 
-  bool canBeChoice = false;
-
 public:
   Entity(u32 relative, Vec<Identifier> _name, FileRange _fileRange);
-
-  void setCanBeChoice();
 
   useit IR::Value* emit(IR::Context* ctx);
   useit Json       toJson() const final;

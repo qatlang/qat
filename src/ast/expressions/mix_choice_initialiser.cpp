@@ -1,4 +1,4 @@
-#include "./mix_type_initialiser.hpp"
+#include "./mix_choice_initialiser.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../utils/split_string.hpp"
 #include "../constants/integer_literal.hpp"
@@ -9,35 +9,38 @@
 
 namespace qat::ast {
 
-MixTypeInitialiser::MixTypeInitialiser(QatType* _type, String _subName, Maybe<Expression*> _expression,
-                                       FileRange _fileRange)
+MixOrChoiceInitialiser::MixOrChoiceInitialiser(Maybe<QatType*> _type, Identifier _subName,
+                                               Maybe<Expression*> _expression, FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
+IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
   // FIXME - Support heaped value
-  auto  reqInfo  = ctx->getAccessInfo();
-  auto* typeEmit = type->emit(ctx);
+  auto reqInfo = ctx->getAccessInfo();
+  if (!type.has_value() && !isTypeInferred()) {
+    ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
+  }
+  auto* typeEmit = type.has_value() ? type.value()->emit(ctx) : inferredType;
   if (typeEmit->isMix()) {
     auto* mixTy = typeEmit->asMix();
     if (mixTy->isAccessible(ctx->getAccessInfo())) {
-      auto subRes = mixTy->hasSubTypeWithName(subName);
+      auto subRes = mixTy->hasSubTypeWithName(subName.value);
       if (subRes.first) {
         if (subRes.second) {
           if (!expression.has_value()) {
-            ctx->Error("Field " + ctx->highlightError(subName) + " of mix type " +
+            ctx->Error("Field " + ctx->highlightError(subName.value) + " of mix type " +
                            ctx->highlightError(mixTy->getFullName()) + " expects a value to be associated with it",
                        fileRange);
           }
         } else {
           if (expression.has_value()) {
-            ctx->Error("Field " + ctx->highlightError(subName) + " of mix type " +
+            ctx->Error("Field " + ctx->highlightError(subName.value) + " of mix type " +
                            ctx->highlightError(mixTy->getFullName()) + " cannot have any value associated with it",
                        fileRange);
           }
         }
         llvm::Value* exp = nullptr;
         if (subRes.second) {
-          auto* typ = mixTy->getSubTypeWithName(subName);
+          auto* typ = mixTy->getSubTypeWithName(subName.value);
           if (expression.value()->hasTypeInferrance()) {
             expression.value()->asTypeInferrable()->setInferenceType(typ);
           }
@@ -65,7 +68,7 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
           exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getDataBitwidth()), 0u, true);
         }
         auto* index = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getTagBitwidth()),
-                                             mixTy->getIndexOfName(subName));
+                                             mixTy->getIndexOfName(subName.value));
         if (isLocalDecl()) {
           if (localValue->getType()->isSame(mixTy)) {
             createIn = localValue->toNewIRValue();
@@ -82,27 +85,50 @@ IR::Value* MixTypeInitialiser::emit(IR::Context* ctx) {
         if (subRes.second) {
           ctx->builder.CreateStore(exp, ctx->builder.CreatePointerCast(
                                             ctx->builder.CreateStructGEP(mixTy->getLLVMType(), createIn->getLLVM(), 1),
-                                            mixTy->getSubTypeWithName(subName)->getLLVMType()->getPointerTo()));
+                                            mixTy->getSubTypeWithName(subName.value)->getLLVMType()->getPointerTo()));
         }
         return createIn;
       } else {
-        ctx->Error("No field named " + ctx->highlightError(subName) + " is present inside mix type " +
+        ctx->Error("No field named " + ctx->highlightError(subName.value) + " is present inside mix type " +
                        ctx->highlightError(mixTy->getFullName()),
                    fileRange);
       }
     } else {
       ctx->Error("Mix type " + ctx->highlightError(mixTy->getFullName()) + " is not accessible here", fileRange);
     }
+  } else if (typeEmit->isChoice()) {
+    if (expression.has_value()) {
+      ctx->Error("An expression is provided here, but the recognised type is a choice type: " +
+                     ctx->highlightError(typeEmit->toString()) +
+                     ". Please remove the expression or check the logic here",
+                 expression.value()->fileRange);
+    }
+    auto* chTy = typeEmit->asChoice();
+    if (chTy->hasField(subName.value)) {
+      if (isLocalDecl()) {
+        ctx->builder.CreateStore(chTy->getValueFor(subName.value), localValue->getLLVM());
+        return nullptr;
+      } else if (canCreateIn()) {
+        ctx->builder.CreateStore(chTy->getValueFor(subName.value), createIn->getLLVM());
+      } else {
+        return new IR::PrerunValue(chTy->getValueFor(subName.value), chTy);
+      }
+    } else {
+      ctx->Error("Choice type " + ctx->highlightError(chTy->toString()) + " does not have a variant named " +
+                     ctx->highlightError(subName.value),
+                 subName.range);
+    }
   } else {
-    ctx->Error(ctx->highlightError(typeEmit->toString()) + " is not a mix type", fileRange);
+    ctx->Error(ctx->highlightError(typeEmit->toString()) + " is not a mix type or a choice type", fileRange);
   }
   return nullptr;
 }
 
-Json MixTypeInitialiser::toJson() const {
+Json MixOrChoiceInitialiser::toJson() const {
   return Json()
       ._("nodeType", "mixTypeInitialiser")
-      ._("type", type->toJson())
+      ._("hasType", type.has_value())
+      ._("type", type.has_value() ? type.value()->toJson() : JsonValue())
       ._("subName", subName)
       ._("hasExpression", expression.has_value())
       ._("expression", expression.has_value() ? expression.value()->toJson() : JsonValue())

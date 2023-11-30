@@ -6,19 +6,23 @@
 
 namespace qat::ast {
 
-class MixTypeInitialiser : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
+class MixOrChoiceInitialiser : public Expression,
+                               public LocalDeclCompatible,
+                               public InPlaceCreatable,
+                               public TypeInferrable {
   friend class LocalDeclaration;
 
 private:
-  QatType*           type;
-  String             subName;
+  Maybe<QatType*>    type;
+  Identifier         subName;
   Maybe<Expression*> expression;
 
 public:
-  MixTypeInitialiser(QatType* type, String subName, Maybe<Expression*> expression, FileRange fileRange);
+  MixOrChoiceInitialiser(Maybe<QatType*> type, Identifier subName, Maybe<Expression*> expression, FileRange fileRange);
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

@@ -13,9 +13,6 @@ private:
   u32             relative;
   Vec<Identifier> identifiers;
 
-  bool canBeChoice = false;
-  bool isChoice    = false;
-
 public:
   PrerunEntity(u32 relative, Vec<Identifier> _ids, FileRange _fileRange);
 

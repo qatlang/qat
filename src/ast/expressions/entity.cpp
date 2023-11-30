@@ -94,13 +94,8 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         } else if (mod->hasChoiceType(singleName.value) ||
                    mod->hasBroughtChoiceType(singleName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                    mod->hasAccessibleChoiceTypeInImports(singleName.value, reqInfo).first) {
-          // FIXME - Maybe change this syntax?
-          if (canBeChoice) {
-            return new IR::Value(nullptr, mod->getChoiceType(singleName.value, reqInfo), false, IR::Nature::pure);
-          } else {
-            ctx->Error(ctx->highlightError(singleName.value) + " is a choice type and cannnot be used as a value",
-                       singleName.range);
-          }
+          ctx->Error(ctx->highlightError(singleName.value) + " is a choice type and cannnot be used as a value",
+                     singleName.range);
         }
         ctx->Error("No value named " + ctx->highlightError(Identifier::fullName(names).value) + " found", fileRange);
       }
@@ -195,19 +190,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
                    mod->hasBroughtChoiceType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                    mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
           auto* chTy = mod->getChoiceType(entityName.value, reqInfo);
-          if (canBeChoice) {
-            if (chTy->getVisibility().isAccessible(reqInfo)) {
-              chTy->addMention(entityName.range);
-              return new IR::Value(nullptr, chTy, false, IR::Nature::pure);
-            } else {
-              ctx->Error("Choice type " + ctx->highlightError(chTy->getFullName()) + " is not accessible here",
-                         entityName.range);
-            }
-          } else {
-            ctx->Error(chTy->getFullName() + " is a mix type and cannot be used as a value in an "
-                                             "expression",
-                       fileRange);
-          }
+          ctx->Error(chTy->getFullName() + " is a choice type and cannot be used as a value in an "
+                                           "expression",
+                     fileRange);
         } else if (mod->hasTypeDef(entityName.value) ||
                    mod->hasBroughtTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                    mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
@@ -225,8 +210,6 @@ IR::Value* Entity::emit(IR::Context* ctx) {
   }
   return nullptr;
 }
-
-void Entity::setCanBeChoice() { canBeChoice = true; }
 
 Json Entity::toJson() const {
   Vec<JsonValue> namesJs;

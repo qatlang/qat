@@ -16,15 +16,15 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
                      " is a static function and cannot use the expression " + ctx->highlightError("''" + name.value),
                  fileRange);
     }
-    auto* expandedTy = mFn->getParentType();
-    if (expandedTy->isCoreType() && expandedTy->asCore()->hasMember(name.value)) {
-      auto* cTy   = expandedTy->asCore();
+    auto* parentTy = mFn->getParentType();
+    if (parentTy->isCoreType() && parentTy->asCore()->hasMember(name.value)) {
+      auto* cTy   = parentTy->asCore();
       auto  index = cTy->getIndexOf(name.value).value();
       auto* mem   = cTy->getMemberAt(index);
       mem->addMention(name.range);
       auto* selfVal = mFn->getBlock()->getValue("''");
       auto* res =
-          new IR::Value(ctx->builder.CreateStructGEP(expandedTy->getLLVMType(), selfVal->getLLVM(), index),
+          new IR::Value(ctx->builder.CreateStructGEP(parentTy->getLLVMType(), selfVal->getLLVM(), index),
                         IR::ReferenceType::get(selfVal->getType()->asReference()->isSubtypeVariable(), mem->type, ctx),
                         false, IR::Nature::temporary);
       while (res->getType()->isReference() && res->getType()->asReference()->getSubType()->isReference()) {
@@ -33,15 +33,17 @@ IR::Value* SelfMember::emit(IR::Context* ctx) {
             res->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
       }
       return res;
-    } else if (expandedTy->isMix()) {
+    } else if (parentTy->isMix()) {
       ctx->Error("Cannot access member fields by name since the parent type " +
-                     ctx->highlightError(expandedTy->getFullName()) + " of this member function is a mix type",
+                     ctx->highlightError(parentTy->toString()) + " of this member function is a mix type",
+                 fileRange);
+    } else if (parentTy->isCoreType()) {
+      ctx->Error("The parent type of this member function " + ctx->highlightError(parentTy->toString()) +
+                     " does not have a member field named " + ctx->highlightError(name.value),
                  fileRange);
     } else {
-      ctx->Error("The parent type of this member function " + ctx->highlightError(expandedTy->getFullName()) +
-                     " does not have a "
-                     "member field named " +
-                     ctx->highlightError(name.value),
+      ctx->Error("The parent type of this member function is " + ctx->highlightError(parentTy->toString()) +
+                     " that does not support member field access",
                  fileRange);
     }
   } else {

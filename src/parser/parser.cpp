@@ -414,25 +414,7 @@ Pair<ast::PrerunExpression*, usize> Parser::parsePrerunExpression(ParserContext&
           Error("To append adjacent string literals, please use the + operator like \"Hello\" + \"World\"",
                 RangeAt(i + 1));
         }
-        cacheExp = new ast::StringLiteral(value, range);
-        break;
-      }
-      case TokenType::sizeOf: {
-        if (isNext(TokenType::parenthesisOpen, i)) {
-          auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
-          if (pCloseRes.has_value()) {
-            auto* type = parseType(preCtx, i + 1, pCloseRes.value()).first;
-            cacheExp   = new ast::SizeOfType(type, RangeSpan(i, pCloseRes.value()));
-            i          = pCloseRes.value();
-          } else {
-            Error("Expected end for (", RangeAt(i + 1));
-          }
-        } else {
-          Error("Expected ( to start the expression for sizeOf. Make sure that "
-                "you "
-                "provide a value, so that the size of its type can be calculated",
-                RangeAt(i));
-        }
+        setCachedPreExp(new ast::StringLiteral(value, range), i);
         break;
       }
       case TokenType::Default: {
@@ -2635,7 +2617,6 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
       }
       case TokenType::TRUE:
       case TokenType::FALSE:
-      case TokenType::sizeOf:
       case TokenType::StringLiteral:
       case TokenType::floatLiteral:
       case TokenType::integerLiteral: {

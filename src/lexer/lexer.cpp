@@ -594,7 +594,6 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("default", Default);
   else Check_Normal_Keyword("static", Static);
   else Check_Normal_Keyword("async", Async);
-  else Check_Normal_Keyword("sizeOf", sizeOf);
   else Check_Normal_Keyword("variadic", variadic);
   else Check_Normal_Keyword("loop", loop);
   else Check_Normal_Keyword("while", While);

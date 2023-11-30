@@ -64,7 +64,6 @@ enum class TokenType {
   loop,
   While,
   over,
-  sizeOf,
   unaryOperator,
   comment,
   altArrow,

@@ -28,7 +28,7 @@ add_library(QAT_AST_EXPRESSIONS
 	ternary.cpp
 	to_conversion.cpp
 	tuple_value.cpp
-	mix_type_initialiser.cpp)
+	mix_choice_initialiser.cpp)
 
 target_link_directories(QAT_AST_EXPRESSIONS PUBLIC ../../utils)
 

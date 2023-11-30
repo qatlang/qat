@@ -56,17 +56,20 @@ private:
   bool         isSubtypeVar;
   PointerOwner owner;
   bool         hasMulti;
+  bool         nonNullable;
 
-  PointerType(bool _isSubVar, QatType* _subtype, PointerOwner _owner, bool _hasMulti, IR::Context* ctx);
+  PointerType(bool _isSubVar, QatType* _subtype, bool nonNullable, PointerOwner _owner, bool _hasMulti,
+              IR::Context* ctx);
 
 public:
-  useit static PointerType* get(bool _isSubtypeVariable, QatType* _type, PointerOwner _owner, bool _hasMulti,
-                                IR::Context* ctx);
+  useit static PointerType* get(bool _isSubtypeVariable, QatType* _type, bool _nonNullable, PointerOwner _owner,
+                                bool _hasMulti, IR::Context* ctx);
 
   useit QatType*     getSubType() const;
   useit PointerOwner getOwner() const;
   useit bool         isSubtypeVariable() const;
   useit bool         isMulti() const;
+  useit bool         isNullable() const;
   useit bool         isTypeSized() const;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;

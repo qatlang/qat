@@ -1,18 +1,7 @@
 #include "./local_declaration.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../show.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "../expressions/array_literal.hpp"
-#include "../expressions/constructor_call.hpp"
-#include "../expressions/copy.hpp"
-#include "../expressions/default.hpp"
-#include "../expressions/mix_type_initialiser.hpp"
-#include "../expressions/move.hpp"
-#include "../expressions/plain_initialiser.hpp"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 
@@ -85,7 +74,7 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
                   !declType->isSame(expVal->getType()))) {
       ctx->Error("Type of the local value " + ctx->highlightError(name.value) + " is " +
                      ctx->highlightError(declType->toString()) +
-                     " does not match the expression to be assigned which is of type " +
+                     " which is not compatible with the expression to be assigned which is of type " +
                      ctx->highlightError(expVal->getType()->toString()),
                  fileRange);
     }
@@ -99,12 +88,6 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         if (!isRef) {
           declType = expVal->getType()->asReference()->getSubType();
         }
-      } else if (declType->isFunction()) {
-        declType       = IR::PointerType::get(false, declType, IR::PointerOwner::OfAnonymous(), false, ctx);
-        auto* fnCast   = ctx->builder.CreateBitCast(expVal->getLLVM(), declType->getLLVMType());
-        auto* newValue = block->newValue(name.value, declType, variability, name.range);
-        ctx->builder.CreateStore(fnCast, newValue->getLLVM());
-        return nullptr;
       }
     } else {
       ctx->Error("Type inference for declarations require a value", fileRange);

@@ -48,6 +48,13 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
+    } else if (canBeChoice &&
+               (mod->hasChoiceType(name.value) || mod->hasBroughtChoiceType(name.value, ctx->getAccessInfo()) ||
+                mod->hasAccessibleChoiceTypeInImports(name.value, ctx->getAccessInfo()).first)) {
+      auto* chTy = mod->getChoiceType(name.value, ctx->getAccessInfo());
+      chTy->addMention(name.range);
+      isChoice = true;
+      return new IR::PrerunValue(nullptr, chTy);
     }
   } else {
     auto reqInfo = ctx->getAccessInfo();
@@ -88,7 +95,14 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
   } else if (mod->hasChoiceType(name.value) ||
              mod->hasBroughtChoiceType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getChoiceType(name.value, reqInfo)));
+    if (canBeChoice) {
+      auto* chTy = mod->getChoiceType(name.value, reqInfo);
+      chTy->addMention(name.range);
+      isChoice = true;
+      return new IR::PrerunValue(nullptr, chTy);
+    } else {
+      return new IR::PrerunValue(IR::TypedType::get(mod->getChoiceType(name.value, reqInfo)));
+    }
   } else if (mod->hasRegion(name.value) || mod->hasBroughtRegion(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleRegionInImports(name.value, reqInfo).first) {
     return new IR::PrerunValue(IR::TypedType::get(mod->getRegion(name.value, reqInfo)));

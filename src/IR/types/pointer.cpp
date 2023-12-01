@@ -72,10 +72,10 @@ String PointerOwner::toString() const {
 
 PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNullable, PointerOwner _owner,
                          bool _hasMulti, IR::Context* ctx)
-    : subType(_type), isSubtypeVar(_isSubtypeVariable), nonNullable(_nonNullable), owner(_owner), hasMulti(_hasMulti) {
+    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable) {
   if (_hasMulti) {
     linkingName = (nonNullable ? "qat'multiptr![" : "qat'multiptr:[") + String(isSubtypeVar ? "var " : "") +
-                  subType->getNameForLinking() + "]";
+                  subType->getNameForLinking() + (owner.isAnonymous() ? "" : ",") + owner.toString() + "]";
     if (llvm::StructType::getTypeByName(ctx->llctx, linkingName)) {
       llvmType = llvm::StructType::getTypeByName(ctx->llctx, linkingName);
     } else {
@@ -88,7 +88,7 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
     }
   } else {
     linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
-                  subType->getNameForLinking() + "]";
+                  subType->getNameForLinking() + (owner.isAnonymous() ? "" : ",") + owner.toString() + "]";
     llvmType =
         llvm::PointerType::get(subType->isTypeSized() ? llvm::Type::getInt8Ty(ctx->llctx) : subType->getLLVMType(), 0U);
   }
@@ -117,6 +117,8 @@ bool PointerType::isMulti() const { return hasMulti; }
 
 bool PointerType::isNullable() const { return !nonNullable; }
 
+bool PointerType::isNonNullable() const { return nonNullable; }
+
 QatType* PointerType::getSubType() const { return subType; }
 
 PointerOwner PointerType::getOwner() const { return owner; }
@@ -125,7 +127,8 @@ TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
 
 String PointerType::toString() const {
   return String(isMulti() ? (nonNullable ? "multiptr![" : "multiptr:[") : (nonNullable ? "ptr![" : "ptr:[")) +
-         String(isSubtypeVariable() ? "var " : "") + subType->toString() + " " + owner.toString() + "]";
+         String(isSubtypeVariable() ? "var " : "") + subType->toString() + (owner.isAnonymous() ? "" : " ") +
+         owner.toString() + "]";
 }
 
 } // namespace qat::IR

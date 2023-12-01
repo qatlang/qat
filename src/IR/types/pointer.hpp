@@ -70,6 +70,7 @@ public:
   useit bool         isSubtypeVariable() const;
   useit bool         isMulti() const;
   useit bool         isNullable() const;
+  useit bool         isNonNullable() const;
   useit bool         isTypeSized() const;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;

@@ -161,7 +161,11 @@ bool QatType::isSame(QatType* other) {
         return thisVal->get_c_type_kind() == otherVal->get_c_type_kind() &&
                (thisVal->isCPointer() ? (thisVal->getSubType()->isSame(otherVal->getSubType())) : true);
       }
-      case TypeKind::stringSlice:
+      case TypeKind::stringSlice: {
+        auto* thisVal  = (StringSliceType*)this;
+        auto* otherVal = (StringSliceType*)other;
+        return thisVal->isPacked() == otherVal->isPacked();
+      }
       case TypeKind::Void: {
         return true;
       }

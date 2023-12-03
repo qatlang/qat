@@ -8,24 +8,31 @@
 
 namespace qat::IR {
 
-StringSliceType::StringSliceType(llvm::LLVMContext& llctx) {
-  if (llvm::StructType::getTypeByName(llctx, "str")) {
-    llvmType = llvm::StructType::getTypeByName(llctx, "str");
+StringSliceType::StringSliceType(llvm::LLVMContext& llctx, bool _isPacked) : isPack(_isPacked) {
+  linkingName = "qat'str" + String(isPack ? ":[pack]" : "");
+  if (llvm::StructType::getTypeByName(llctx, linkingName)) {
+    llvmType = llvm::StructType::getTypeByName(llctx, linkingName);
   } else {
     llvmType = llvm::StructType::create(
-        {llvm::PointerType::get(llvm::Type::getInt8Ty(llctx), 0U), llvm::Type::getInt64Ty(llctx)}, "str");
+        {
+            llvm::PointerType::get(llvm::Type::getInt8Ty(llctx), 0U),
+            llvm::Type::getInt64Ty(llctx),
+        },
+        linkingName, isPack);
   }
 }
 
+bool StringSliceType::isPacked() const { return isPack; }
+
 bool StringSliceType::isTypeSized() const { return true; }
 
-StringSliceType* StringSliceType::get(llvm::LLVMContext& llctx) {
+StringSliceType* StringSliceType::get(llvm::LLVMContext& llctx, bool isPacked) {
   for (auto* typ : types) {
-    if (typ->typeKind() == TypeKind::stringSlice) {
+    if (typ->typeKind() == TypeKind::stringSlice && (((StringSliceType*)typ)->isPack = isPacked)) {
       return (StringSliceType*)typ;
     }
   }
-  return new StringSliceType(llctx);
+  return new StringSliceType(llctx, isPacked);
 }
 
 bool StringSliceType::canBePrerunGeneric() const { return true; }
@@ -56,6 +63,6 @@ Maybe<bool> StringSliceType::equalityOf(IR::PrerunValue* first, IR::PrerunValue*
 
 TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }
 
-String StringSliceType::toString() const { return "str"; }
+String StringSliceType::toString() const { return "str" + String(isPack ? ":[pack]" : ""); }
 
 } // namespace qat::IR

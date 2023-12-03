@@ -7,10 +7,13 @@ namespace qat::IR {
 
 class StringSliceType : public QatType {
 private:
-  StringSliceType(llvm::LLVMContext& llctx);
+  bool isPack;
+
+  StringSliceType(llvm::LLVMContext& llctx, bool isPacked = false);
 
 public:
-  useit static StringSliceType* get(llvm::LLVMContext& llctx);
+  useit static StringSliceType* get(llvm::LLVMContext& llctx, bool isPacked = false);
+  useit bool                    isPacked() const;
   useit TypeKind                typeKind() const override;
   useit String                  toString() const override;
 

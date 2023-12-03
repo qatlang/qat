@@ -3,7 +3,6 @@
 
 #include "../expression.hpp"
 #include "./operator.hpp"
-#include <string>
 #include <utility>
 
 namespace qat::ast {

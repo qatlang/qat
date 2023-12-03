@@ -159,8 +159,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                                 llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
                                                                           ctx->dataLayout->getProgramAddressSpace()),
                                 ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u))),
-            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx), false,
-            IR::Nature::temporary);
+            IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
+                                         IR::PointerOwner::OfAnonymous(), false, ctx),
+            false, IR::Nature::temporary);
         lhsVal = lhsEmit->getLLVM();
         SHOW("Set LhsEmit")
       }
@@ -186,8 +187,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                                  llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
                                                                            ctx->dataLayout->getProgramAddressSpace()),
                                  ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)))),
-            IR::PointerType::get(false, ptrType->getSubType(), IR::PointerOwner::OfAnonymous(), false, ctx), false,
-            IR::Nature::temporary);
+            IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
+                                                    IR::PointerOwner::OfAnonymous(), false, ctx),
+            false, IR::Nature::temporary);
         rhsVal = rhsEmit->getLLVM();
         SHOW("Set RhsEmit")
       }

@@ -841,13 +841,26 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         if (cacheTy.has_value()) {
           return {cacheTy.value(), i - 1};
         }
-        if (isNext(TokenType::genericTypeStart, i)) {
-          bool isSubtypeVar = false;
+        if (isNext(TokenType::genericTypeStart, i) || isNext(TokenType::exclamation, i)) {
+          bool      isSubtypeVar  = false;
+          bool      isNonNullable = false;
+          TokenType startTy       = TokenType::genericTypeStart;
+          TokenType endTy         = TokenType::genericTypeEnd;
+          if (isNext(TokenType::exclamation, i)) {
+            if (isNext(TokenType::bracketOpen, i + 1)) {
+              isNonNullable = true;
+              startTy       = TokenType::bracketOpen;
+              endTy         = TokenType::bracketClose;
+              i++;
+            } else {
+              Error("Expected [ to start the subtype of the pointer", RangeSpan(i, i + 1));
+            }
+          }
           if (isNext(TokenType::var, i + 1)) {
             isSubtypeVar = true;
             i++;
           }
-          auto bCloseRes = getPairEnd(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+          auto bCloseRes = getPairEnd(startTy, endTy, i + 1);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
             auto bClose = bCloseRes.value();
             if (isPrimaryWithin(TokenType::child, i + 1, bClose)) {
@@ -857,20 +870,20 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
                 if (childPos + 2 != bClose) {
                   Error("Invalid ownership " + highlightError("'own"), RangeSpan(childPos, bClose));
                 }
-                cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::function, None,
-                                               isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::function, isNonNullable,
+                                               None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
               } else if (isNext(TokenType::heap, childPos)) {
                 if (childPos + 2 != bClose) {
                   Error("Invalid ownership " + highlightError("'heap"), RangeSpan(childPos, bClose));
                 }
-                cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::heap, None, isMultiPtr,
-                                               {token.fileRange, RangeAt(bClose)});
+                cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::heap, isNonNullable,
+                                               None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
               } else if (isNext(TokenType::Type, childPos)) {
                 if (isNext(TokenType::parenthesisOpen, childPos + 1)) {
                   auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, childPos + 2);
                   if (pCloseRes.has_value()) {
                     // FIXME - Less assumptions about end of the type
-                    cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::type,
+                    cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::type, isNonNullable,
                                                    parseType(preCtx, childPos + 2, pCloseRes.value()).first, isMultiPtr,
                                                    {token.fileRange, RangeAt(bClose)});
                   } else {
@@ -887,12 +900,12 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
               }
             } else if (tokens->at(bClose - 1).type == TokenType::self) {
               cacheTy = new ast::PointerType(parseType(ctx, i + 1, bClose - 1).first, isSubtypeVar,
-                                             ast::PtrOwnType::typeParent, None, isMultiPtr,
+                                             ast::PtrOwnType::typeParent, isNonNullable, None, isMultiPtr,
                                              {token.fileRange, RangeAt(bClose)});
             } else {
               auto subTypeRes = parseType(ctx, i + 1, bClose);
-              cacheTy         = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anonymous, None,
-                                                     isMultiPtr, {token.fileRange, RangeAt(bClose)});
+              cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anonymous, isNonNullable,
+                                             None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
             }
             i = bClose;
             break;

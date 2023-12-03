@@ -253,7 +253,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       restBlock->setActive(ctx->builder);
-      auto* ptrTy = IR::PointerType::get(true, eTy, ownerValue, true, ctx);
+      auto* ptrTy = IR::PointerType::get(true, eTy, false, ownerValue, true, ctx);
       auto* resVal =
           isLocalDecl()
               ? (localValue->getType()->isMaybe()
@@ -283,11 +283,11 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u));
       return localValue->toNewIRValue();
     } else {
-      auto* res =
-          new IR::Value(llAlloca,
-                        ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, eTy, ownerValue, hasOwnCount, ctx)
-                                          : (IR::QatType*)eTy,
-                        ownTy.has_value() ? false : isVar, IR::Nature::temporary);
+      auto* res = new IR::Value(
+          llAlloca,
+          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, eTy, false, ownerValue, hasOwnCount, ctx)
+                            : (IR::QatType*)eTy,
+          ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (isLocalDecl()) {
         res->setLocalID(localValue->getLocalID());
       }

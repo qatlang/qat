@@ -24,13 +24,14 @@ private:
   Maybe<ast::QatType*> ownerTyTy;
   bool                 isMultiPtr;
   bool                 isSubtypeVar;
+  bool                 isNonNullable;
 
   useit IR::PointerOwner getPointerOwner(IR::Context* ctx, Maybe<IR::QatType*> ownerVal) const;
   useit String           pointerOwnerToString() const;
 
 public:
-  PointerType(QatType* _type, bool isSubtypeVar, PtrOwnType _ownTy, Maybe<QatType*> _ownerTyTy, bool _isMultiPtr,
-              FileRange _fileRange);
+  PointerType(QatType* _type, bool isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<QatType*> _ownerTyTy,
+              bool _isMultiPtr, FileRange _fileRange);
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

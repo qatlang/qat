@@ -51,7 +51,7 @@ IR::Value* HeapGet::emit(IR::Context* ctx) {
                                   mod->getLLVMModule()->getDataLayout().getTypeAllocSize(typRes->getLLVMType()));
   }
   mod->linkNative(IR::NativeUnit::malloc);
-  auto* resTy    = IR::PointerType::get(true, typRes, IR::PointerOwner::OfHeap(), count != nullptr, ctx);
+  auto* resTy    = IR::PointerType::get(true, typRes, false, IR::PointerOwner::OfHeap(), count != nullptr, ctx);
   auto* mallocFn = mod->getLLVMModule()->getFunction("malloc");
   if (resTy->isMulti()) {
     SHOW("Creating alloca for multi pointer")

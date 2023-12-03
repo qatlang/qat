@@ -29,6 +29,7 @@ FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& llctx) : kind(_kind
       llvmType = llvm::Type::getFP128Ty(llctx);
     }
   }
+  linkingName = "qat'" + toString();
 }
 
 FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {

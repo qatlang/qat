@@ -12,7 +12,8 @@ namespace qat::IR {
 
 ArrayType::ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& llctx)
     : elementType(_element_type), length(_length) {
-  llvmType = llvm::ArrayType::get(elementType->getLLVMType(), length);
+  llvmType    = llvm::ArrayType::get(elementType->getLLVMType(), length);
+  linkingName = "qat'array:[" + elementType->getNameForLinking() + "," + std::to_string(length) + "]";
 }
 
 ArrayType* ArrayType::get(QatType* elementType, u64 _length, llvm::LLVMContext& llctx) {

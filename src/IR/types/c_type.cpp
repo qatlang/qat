@@ -195,7 +195,8 @@ String cTypeKindToString(CTypeKind kind) {
 }
 
 CType::CType(IR::QatType* actual, CTypeKind c_kind) : subType(actual), cTypeKind(c_kind) {
-  llvmType = actual->getLLVMType();
+  llvmType    = actual->getLLVMType();
+  linkingName = "qat'ctype:[" + toString() + "]";
 }
 
 CTypeKind CType::get_c_type_kind() const { return cTypeKind; }
@@ -274,7 +275,7 @@ CType* CType::getBool(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getBoolWidth(), ctx->llctx), CTypeKind::Bool);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getBoolWidth(), ctx), CTypeKind::Bool);
 }
 
 CType* CType::getInt(IR::Context* ctx) {
@@ -286,7 +287,7 @@ CType* CType::getInt(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getIntWidth(), ctx->llctx), CTypeKind::Int);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getIntWidth(), ctx), CTypeKind::Int);
 }
 
 CType* CType::getUInt(IR::Context* ctx) {
@@ -298,7 +299,7 @@ CType* CType::getUInt(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getIntWidth(), ctx->llctx), CTypeKind::Uint);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getIntWidth(), ctx), CTypeKind::Uint);
 }
 
 CType* CType::getChar(IR::Context* ctx) {
@@ -310,7 +311,7 @@ CType* CType::getChar(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getCharWidth(), ctx->llctx), CTypeKind::Char);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getCharWidth(), ctx), CTypeKind::Char);
 }
 
 CType* CType::getCharUnsigned(IR::Context* ctx) {
@@ -322,7 +323,7 @@ CType* CType::getCharUnsigned(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getCharWidth(), ctx->llctx), CTypeKind::UChar);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getCharWidth(), ctx), CTypeKind::UChar);
 }
 
 CType* CType::getWideChar(IR::Context* ctx) {
@@ -334,7 +335,7 @@ CType* CType::getWideChar(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getWCharWidth(), ctx->llctx), CTypeKind::WideChar);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getWCharWidth(), ctx), CTypeKind::WideChar);
 }
 
 CType* CType::getWideCharUnsigned(IR::Context* ctx) {
@@ -346,7 +347,7 @@ CType* CType::getWideCharUnsigned(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getWCharWidth(), ctx->llctx), CTypeKind::UWideChar);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getWCharWidth(), ctx), CTypeKind::UWideChar);
 }
 
 CType* CType::getLongInt(IR::Context* ctx) {
@@ -358,7 +359,7 @@ CType* CType::getLongInt(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getLongWidth(), ctx->llctx), CTypeKind::LongInt);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getLongWidth(), ctx), CTypeKind::LongInt);
 }
 
 CType* CType::getLongIntUnsigned(IR::Context* ctx) {
@@ -370,7 +371,7 @@ CType* CType::getLongIntUnsigned(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getLongWidth(), ctx->llctx), CTypeKind::ULongInt);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getLongWidth(), ctx), CTypeKind::ULongInt);
 }
 
 CType* CType::getLongLong(IR::Context* ctx) {
@@ -382,7 +383,7 @@ CType* CType::getLongLong(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getLongLongWidth(), ctx->llctx), CTypeKind::LongLong);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getLongLongWidth(), ctx), CTypeKind::LongLong);
 }
 
 CType* CType::getLongLongUnsigned(IR::Context* ctx) {
@@ -394,7 +395,7 @@ CType* CType::getLongLongUnsigned(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getLongLongWidth(), ctx->llctx), CTypeKind::ULongLong);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getLongLongWidth(), ctx), CTypeKind::ULongLong);
 }
 
 CType* CType::getIsize(IR::Context* ctx) {
@@ -407,7 +408,7 @@ CType* CType::getIsize(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSignedSizeType()), ctx->llctx),
+      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSignedSizeType()), ctx),
       CTypeKind::Isize);
 }
 
@@ -420,9 +421,8 @@ CType* CType::getUsize(IR::Context* ctx) {
       }
     }
   }
-  return new CType(
-      IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType()), ctx->llctx),
-      CTypeKind::Usize);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType()), ctx),
+                   CTypeKind::Usize);
 }
 
 CType* CType::getFloat(IR::Context* ctx) {
@@ -504,7 +504,7 @@ CType* CType::getIntMax(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getIntMaxTWidth(), ctx->llctx), CTypeKind::IntMax);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getIntMaxTWidth(), ctx), CTypeKind::IntMax);
 }
 
 CType* CType::getUintMax(IR::Context* ctx) {
@@ -516,7 +516,7 @@ CType* CType::getUintMax(IR::Context* ctx) {
       }
     }
   }
-  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getIntMaxTWidth(), ctx->llctx), CTypeKind::UintMax);
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getIntMaxTWidth(), ctx), CTypeKind::UintMax);
 }
 
 CType* CType::getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Context* ctx) {
@@ -530,7 +530,7 @@ CType* CType::getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Conte
       }
     }
   }
-  return new CType(IR::PointerType::get(isSubTypeVariable, subType, PointerOwner::OfAnonymous(), false, ctx),
+  return new CType(IR::PointerType::get(isSubTypeVariable, subType, false, PointerOwner::OfAnonymous(), false, ctx),
                    CTypeKind::Pointer);
 }
 
@@ -543,9 +543,8 @@ CType* CType::getIntPtr(IR::Context* ctx) {
       }
     }
   }
-  return new CType(
-      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getIntPtrType()), ctx->llctx),
-      CTypeKind::IntPtr);
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getIntPtrType()), ctx),
+                   CTypeKind::IntPtr);
 }
 
 CType* CType::getUintPtr(IR::Context* ctx) {
@@ -558,7 +557,7 @@ CType* CType::getUintPtr(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getUIntMaxType()), ctx->llctx),
+      IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getUIntMaxType()), ctx),
       CTypeKind::UintPtr);
 }
 
@@ -573,7 +572,7 @@ CType* CType::getPtrDiff(IR::Context* ctx) {
   }
   return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getPtrDiffType(
                                             ctx->getProgramAddressSpaceAsLangAS())),
-                                        ctx->llctx),
+                                        ctx),
                    CTypeKind::PtrDiff);
 }
 
@@ -589,7 +588,7 @@ CType* CType::getPtrDiffUnsigned(IR::Context* ctx) {
   return new CType(
       IR::UnsignedType::get(ctx->clangTargetInfo->getTypeWidth(
                                 ctx->clangTargetInfo->getUnsignedPtrDiffType(ctx->getProgramAddressSpaceAsLangAS())),
-                            ctx->llctx),
+                            ctx),
       CTypeKind::UPtrDiff);
 }
 
@@ -603,7 +602,7 @@ CType* CType::getSigAtomic(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSigAtomicType()), ctx->llctx),
+      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSigAtomicType()), ctx),
       CTypeKind::SigAtomic);
 }
 
@@ -617,7 +616,7 @@ CType* CType::getProcessID(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getProcessIDType()), ctx->llctx),
+      IR::IntegerType::get(ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getProcessIDType()), ctx),
       CTypeKind::ProcessID);
 }
 
@@ -631,7 +630,7 @@ CType* CType::getCString(IR::Context* ctx) {
     }
   }
   return new CType(
-      IR::PointerType::get(false, IR::IntegerType::get(8, ctx->llctx), PointerOwner::OfAnonymous(), false, ctx),
+      IR::PointerType::get(false, IR::IntegerType::get(8, ctx), false, PointerOwner::OfAnonymous(), false, ctx),
       CTypeKind::String);
 }
 

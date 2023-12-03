@@ -34,6 +34,7 @@ public:
   useit QatModule* getParent();
   useit QatType*   getSubType();
   useit TypeKind   typeKind() const final;
+  useit LinkNames  getLinkNames() const final;
   useit String     toString() const final;
   useit bool       isExpanded() const final;
   useit bool       isDestructible() const final;

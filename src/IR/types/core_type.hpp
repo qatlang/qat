@@ -53,12 +53,14 @@ private:
   IR::OpaqueType*    opaquedType = nullptr;
   Vec<Member*>       members;
   Vec<StaticMember*> staticMembers;
+  Maybe<MetaInfo>    metaInfo;
 
   // TODO - Add support for extension functions
 
 public:
   CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
-           Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx);
+           Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+           Maybe<MetaInfo> metaInfo);
 
   ~CoreType() final;
 
@@ -75,11 +77,12 @@ public:
   useit bool          isTriviallyCopyable() const final;
   useit bool          isTriviallyMovable() const final;
 
-  useit TypeKind typeKind() const override;
-  useit String   toString() const override;
-  void           addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
-                                 const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
-  void           updateOverview() final;
+  useit LinkNames getLinkNames() const final;
+  useit TypeKind  typeKind() const override;
+  useit String    toString() const override;
+  void            addStaticMember(const Identifier& name, QatType* type, bool variability, Value* initial,
+                                  const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
+  void            updateOverview() final;
 };
 
 class GenericCoreType : public Uniq, public EntityOverview {

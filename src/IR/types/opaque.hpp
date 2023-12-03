@@ -6,6 +6,7 @@
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
 #include "../generics.hpp"
+#include "../meta_info.hpp"
 #include "qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
@@ -33,15 +34,16 @@ class OpaqueType : public EntityOverview, public QatType {
   IR::ExpandedType*        subTy = nullptr;
   Maybe<usize>             size;
   VisibilityInfo           visibility;
+  Maybe<MetaInfo>          metaInfo;
 
   OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
              Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
-             VisibilityInfo _visibility, llvm::LLVMContext& llctx);
+             VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
 public:
   useit static OpaqueType* get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
                                Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
-                               VisibilityInfo visibility, llvm::LLVMContext& llCtx);
+                               VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
   useit String                getFullName() const;
   useit Identifier            getName() const;

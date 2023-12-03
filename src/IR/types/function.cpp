@@ -32,6 +32,14 @@ String ArgumentType::toString() const { return type->toString() + (name.has_valu
 FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& llctx)
     : returnType(_retType), argTypes(std::move(_argTypes)) {
   SHOW("Creating function type")
+  linkingName = "qat'fn_type:[(";
+  for (usize i = 0; i < argTypes.size(); i++) {
+    linkingName += argTypes.at(i)->getType()->getNameForLinking();
+    if (i != (argTypes.size() - 1)) {
+      linkingName += ", ";
+    }
+  }
+  linkingName += ")->" + returnType->getNameForLinking() + "]";
   Vec<llvm::Type*> argTys;
   for (auto* arg : argTypes) {
     SHOW("Arg name is " << arg->getName())

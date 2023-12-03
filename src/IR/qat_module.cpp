@@ -7,6 +7,7 @@
 #include "../show.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
+#include "link_names.hpp"
 #include "lld/Common/Driver.h"
 #include "types/core_type.hpp"
 #include "types/float.hpp"
@@ -182,7 +183,9 @@ Function* QatModule::createFunction(const Identifier& name, QatType* returnType,
                                     bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
                                     Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx) {
   SHOW("Creating IR function")
-  auto* fun = Function::Create(this, name, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
+  auto nmUnits = getLinkNames();
+  nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, None, {}), None);
+  auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
                                fileRange, visibility, ctx, linkage);
   SHOW("Created function")
   functions.push_back(fun);
@@ -390,122 +393,23 @@ String QatModule::getFullNameWithChild(const String& child) const {
   }
 }
 
-Vec<utils::UnitNameInfo> QatModule::getLinkNameUnits() const {
+LinkNames QatModule::getLinkNames() const {
   if (parent) {
-    auto parentVal = parent->getLinkNameUnits();
+    auto parentVal = parent->getLinkNames();
     if (shouldPrefixName()) {
-      parentVal.push_back(utils::UnitNameInfo(
-          name.value, moduleType == ModuleType::box ? utils::UnitNameType::box : utils::UnitNameType::lib, this,
-          moduleInfo.alternativeName));
+      parentVal.addUnit(LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib,
+                                     moduleInfo.alternativeName, {}),
+                        moduleInfo.foreignID);
     }
     return parentVal;
   } else {
     if (shouldPrefixName()) {
-      return Vec<utils::UnitNameInfo>({utils::UnitNameInfo(
-          name.value, moduleType == ModuleType::box ? utils::UnitNameType::box : utils::UnitNameType::lib, this,
-          moduleInfo.alternativeName)});
+      return LinkNames({LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib,
+                                     moduleInfo.alternativeName, {})},
+                       moduleInfo.foreignID, nullptr);
     } else {
-      return Vec<utils::UnitNameInfo>();
+      return LinkNames({}, moduleInfo.foreignID, nullptr);
     }
-  }
-}
-
-String QatModule::getLinkingName(Vec<utils::UnitNameInfo> const& names, Maybe<String> foreignID) const {
-  auto isForeign = [&](String const& id) {
-    if (foreignID.has_value()) {
-      return (foreignID.value() == id);
-    } else {
-      return isInForeignModuleOfType(id);
-    }
-  };
-  if (isForeign("C")) {
-    return names.back().getUsableName();
-  } else if (isForeign("C++")) {
-    String result("");
-    // FIXME - Implement C++ name mangling
-    return result;
-  } else {
-    String result = "qat'";
-    for (usize i = 0; i < names.size(); i++) {
-      auto& unit = names.at(i);
-      if (unit.namingType != utils::UnitNameType::genericList) {
-        result += ":";
-      }
-      switch (unit.namingType) {
-        case utils::UnitNameType::box: {
-          result += "box_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::lib: {
-          result += "lib_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::type: {
-          result += "type_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::TypeDef: {
-          result += "type_def_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::choice: {
-          result += "type_choice_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::mix: {
-          result += "type_mix_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::staticField: {
-          result += "static_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::region: {
-          result += "region_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::function: {
-          result += "fn_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::staticFunction: {
-          result += "staticfn_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::variationMethod: {
-          result += "variation_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::method: {
-          result += "method_";
-          result += unit.getUsableName();
-          break;
-        }
-        case utils::UnitNameType::genericList: {
-          result += ":[";
-          for (usize j = 0; j < unit.subUnits.size(); j++) {
-            result += unit.subUnits.at(j).getUsableName();
-            if (j != (unit.subUnits.size() - 1)) {
-              result += ",";
-            }
-          }
-          result += "]";
-          break;
-        }
-      }
-    }
-    return result;
   }
 }
 
@@ -513,10 +417,10 @@ bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box
 
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!moduleInitialiser) {
-    moduleInitialiser =
-        IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), {/* Generics */},
-                             IR::VoidType::get(ctx->llctx), false, {}, false, name.range, VisibilityInfo::pub(), ctx);
-    auto* entry = new IR::Block(moduleInitialiser, nullptr);
+    moduleInitialiser = IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
+                                             None, {/* Generics */}, IR::VoidType::get(ctx->llctx), false, {}, false,
+                                             name.range, VisibilityInfo::pub(), ctx);
+    auto* entry       = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
   }
   return moduleInitialiser;

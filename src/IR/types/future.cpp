@@ -13,18 +13,19 @@
 namespace qat::IR {
 
 FutureType::FutureType(QatType* _subType, bool _isPacked, IR::Context* ctx) : subTy(_subType), isPacked(_isPacked) {
+  linkingName = "qat'future:[" + String(isPacked ? "pack," : "") + subTy->getNameForLinking() + "]";
   if (subTy->isVoid()) {
     llvmType = llvm::StructType::create(ctx->llctx,
                                         {llvm::Type::getInt64Ty(ctx->llctx),
                                          llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),
                                          llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo()},
-                                        "future:[void]", false);
+                                        linkingName, false);
   } else {
     llvmType = llvm::StructType::create(
         ctx->llctx,
         {llvm::Type::getInt64Ty(ctx->llctx), llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),
          llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(), subTy->getLLVMType()->getPointerTo()},
-        "future:[" + subTy->toString() + "]", false);
+        linkingName, false);
   }
 }
 
@@ -41,7 +42,7 @@ FutureType* FutureType::get(QatType* subType, bool isPacked, IR::Context* ctx) {
 
 QatType* FutureType::getSubType() const { return subTy; }
 
-String FutureType::toString() const { return "future:[" + subTy->toString() + "]"; }
+String FutureType::toString() const { return "future:[" + String(isPacked ? "pack, " : "") + subTy->toString() + "]"; }
 
 TypeKind FutureType::typeKind() const { return TypeKind::future; }
 

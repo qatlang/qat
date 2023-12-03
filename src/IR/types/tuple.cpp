@@ -13,7 +13,15 @@ TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ll
   for (auto* typ : subTypes) {
     subTypesLLVM.push_back(typ->getLLVMType());
   }
-  llvmType = llvm::StructType::get(llctx, subTypesLLVM, isPacked);
+  llvmType    = llvm::StructType::get(llctx, subTypesLLVM, isPacked);
+  linkingName = "qat'tuple:[" + String(isPacked ? "pack," : "");
+  for (usize i = 0; i < subTypes.size(); i++) {
+    linkingName += subTypes.at(i)->getNameForLinking();
+    if (i != (subTypes.size() - 1)) {
+      linkingName += ",";
+    }
+  }
+  linkingName += "]";
 }
 
 bool TupleType::isDestructible() const {
@@ -81,7 +89,7 @@ bool TupleType::isTypeSized() const { return !subTypes.empty(); }
 TypeKind TupleType::typeKind() const { return TypeKind::tuple; }
 
 String TupleType::toString() const {
-  String result = "(";
+  String result = String(isPacked ? "pack " : "") + "(";
   for (usize i = 0; i < subTypes.size(); i++) {
     result += subTypes.at(i)->toString();
     if (i != (subTypes.size() - 1)) {

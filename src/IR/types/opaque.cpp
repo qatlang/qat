@@ -1,13 +1,14 @@
 #include "./opaque.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
+#include "./string_slice.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::IR {
 
 OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
                        Maybe<OpaqueSubtypeKind> _subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
-                       VisibilityInfo _visibility, llvm::LLVMContext& llctx)
+                       VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
     : EntityOverview(_subtypeKind.has_value()
                          ? (_subtypeKind.value() == OpaqueSubtypeKind::core
                                 ? "coreType"
@@ -15,8 +16,37 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
                          : "opaqueType",
                      Json(), _name.range),
       name(std::move(_name)), generics(std::move(_generics)), genericID(_genericID),
-      subtypeKind(std::move(_subtypeKind)), parent(_parent), size(_size), visibility(_visibility) {
-  llvmType = llvm::StructType::create(llctx, parent->getFullNameWithChild(name.value));
+      subtypeKind(std::move(_subtypeKind)), parent(_parent), size(_size), visibility(_visibility), metaInfo(_metaInfo) {
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    if (metaInfo->hasKey("foreign")) {
+      foreignID = metaInfo->getForeignID();
+    }
+  }
+  auto linkNames = parent->getLinkNames().newWith(
+      LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
+                                   ? LinkUnitType::mix
+                                   : LinkUnitType::type),
+      foreignID);
+  if (isGeneric()) {
+    Vec<LinkNames> genericLinkNames;
+    for (auto* param : generics) {
+      if (param->isTyped()) {
+        genericLinkNames.push_back(
+            LinkNames({LinkNameUnit(param->asTyped()->getType()->getNameForLinking(), LinkUnitType::genericTypeValue)},
+                      None, nullptr));
+      } else if (param->isPrerun()) {
+        auto preRes = param->asPrerun();
+        genericLinkNames.push_back(
+            LinkNames({LinkNameUnit(preRes->getType()->toPrerunGenericString(preRes->getExpression()).value(),
+                                    LinkUnitType::genericPrerunValue)},
+                      None, nullptr));
+      }
+    }
+    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericLinkNames), None);
+  }
+  linkingName = linkNames.toName();
+  llvmType    = llvm::StructType::create(llctx, linkingName);
   if (!isGeneric()) {
     parent->opaqueTypes.push_back(this);
   }
@@ -24,8 +54,9 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
 
 OpaqueType* OpaqueType::get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
                             Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
-                            VisibilityInfo visibility, llvm::LLVMContext& llCtx) {
-  return new OpaqueType(std::move(name), std::move(generics), genericID, subtypeKind, parent, size, visibility, llCtx);
+                            VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
+  return new OpaqueType(std::move(name), std::move(generics), genericID, subtypeKind, parent, size, visibility, llCtx,
+                        metaInfo);
 }
 
 String OpaqueType::getFullName() const { return parent->getFullNameWithChild(name.value); }

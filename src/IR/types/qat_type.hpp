@@ -3,6 +3,7 @@
 
 #include "../../utils/json.hpp"
 #include "../../utils/macros.hpp"
+#include "../link_names.hpp"
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
 #include "llvm/IR/LLVMContext.h"
@@ -41,6 +42,7 @@ class ResultType;
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
 protected:
+  String               linkingName;
   static Vec<QatType*> types;
   llvm::Type*          llvmType;
 
@@ -55,6 +57,7 @@ public:
   useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;
   useit virtual bool          isTypeSized() const;
   useit virtual Maybe<bool>   equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const;
+  useit String                getNameForLinking() const;
 
   useit static bool         checkTypeExists(const String& name);
   useit static Vec<Region*> allRegions();

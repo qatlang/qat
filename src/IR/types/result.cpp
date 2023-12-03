@@ -17,12 +17,13 @@ ResultType::ResultType(IR::QatType* _resTy, IR::QatType* _errTy, bool _isPacked,
                  ? errorType->asOpaque()->getDeducedSize()
                  : ((usize)(ctx->dataLayout.value().getTypeAllocSizeInBits(errorType->getLLVMType()))))
           : 8u;
+  linkingName = "qat'result:[" + String(isPacked ? "pack," : "") + validType->getNameForLinking() + "," +
+                errorType->getNameForLinking() + "]";
   llvmType = llvm::StructType::create(
       ctx->llctx,
       {llvm::Type::getInt1Ty(ctx->llctx),
        llvm::Type::getIntNTy(ctx->llctx, (validTypeSize > errorTypeSize) ? validTypeSize : errorTypeSize)},
-      "result:[" + String(isPacked ? "pack, " : "") + validType->toString() + ", " + errorType->toString() + "]",
-      isPacked);
+      linkingName, isPacked);
 }
 
 ResultType* ResultType::get(IR::QatType* validType, IR::QatType* errorType, bool isPacked, IR::Context* ctx) {

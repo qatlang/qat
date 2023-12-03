@@ -12,7 +12,7 @@ namespace qat::IR {
 ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fields,
                        Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<IR::QatType*> _providedType,
                        bool areValuesUnsigned, Maybe<usize> _defaultVal, const VisibilityInfo& _visibility,
-                       IR::Context* _ctx, FileRange _fileRange)
+                       IR::Context* _ctx, FileRange _fileRange, Maybe<MetaInfo> _metaInfo)
     : EntityOverview("choiceType",
                      Json()
                          ._("moduleID", _parent->getID())
@@ -21,8 +21,13 @@ ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fi
                          ._("visibility", _visibility),
                      _name.range),
       name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
-      providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal), fileRange(std::move(_fileRange)),
-      ctx(_ctx) {
+      providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal), metaInfo(_metaInfo), ctx(_ctx),
+      fileRange(std::move(_fileRange)) {
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+  }
+  linkingName = parent->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::choice), foreignID).toName();
   if (values.has_value()) {
     if (providedType.has_value()) {
       llvmType = providedType.value()->getLLVMType();

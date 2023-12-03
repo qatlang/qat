@@ -11,13 +11,12 @@
 namespace qat::IR {
 
 MaybeType::MaybeType(QatType* _subType, bool _isPacked, IR::Context* ctx) : subTy(_subType), isPacked(_isPacked) {
+  linkingName = "qat'maybe:[" + String(isPacked ? "pack," : "") + subTy->getNameForLinking() + "]";
   // TODO - Error/warn if subtype is opaque
-  if (hasSizedSubType(ctx)) {
-    llvmType = llvm::StructType::create(ctx->llctx, {llvm::Type::getInt1Ty(ctx->llctx), subTy->getLLVMType()},
-                                        "maybe:[" + String(isPacked ? "pack, " : "") + subTy->toString() + "]", false);
-  } else {
-    llvmType = llvm::Type::getInt1Ty(ctx->llctx);
-  }
+  llvmType = llvm::StructType::create(ctx->llctx,
+                                      {llvm::Type::getInt1Ty(ctx->llctx),
+                                       hasSizedSubType(ctx) ? subTy->getLLVMType() : llvm::Type::getInt8Ty(ctx->llctx)},
+                                      linkingName, false);
 }
 
 MaybeType* MaybeType::get(QatType* subTy, bool isPacked, IR::Context* ctx) {

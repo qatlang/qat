@@ -13,9 +13,9 @@
 #include "./types/float.hpp"
 #include "./types/mix.hpp"
 #include "entity_overview.hpp"
+#include "link_names.hpp"
 #include "lld/Common/Driver.h"
 #include "types/definition.hpp"
-#include "unit_name_info.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <vector>
 
@@ -295,8 +295,7 @@ public:
   void             setFileRange(FileRange fileRange);
   FileRange        getFileRange() const;
 
-  useit Vec<utils::UnitNameInfo> getLinkNameUnits() const;
-  useit String                   getLinkingName(Vec<utils::UnitNameInfo> const& names, Maybe<String> foreignID) const;
+  useit LinkNames getLinkNames() const;
 
   useit bool       isParentModuleOf(QatModule* other) const;
   useit bool       hasClosestParentLib() const;

@@ -12,7 +12,9 @@
 #include "./types/pointer.hpp"
 #include "./types/region.hpp"
 #include "control_flow.hpp"
+#include "link_names.hpp"
 #include "member_function.hpp"
+#include "meta_info.hpp"
 #include "types/qat_type.hpp"
 #include "types/reference.hpp"
 #include "types/unsigned.hpp"
@@ -272,15 +274,40 @@ void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
   }
 }
 
-Function::Function(QatModule* _mod, Identifier _name, Vec<GenericParameter*> _generics, QatType* returnType,
-                   bool _is_async, Vec<Argument> _args, bool _isVariadicArguments, FileRange _fileRange,
-                   const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn,
-                   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, bool ignoreParentName)
+Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
+                   QatType* returnType, bool _is_async, Vec<Argument> _args, bool _isVariadicArguments,
+                   FileRange _fileRange, const VisibilityInfo& _visibility_info, IR::Context* _ctx, bool isMemberFn,
+                   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)),
-      visibility_info(_visibility_info), fileRange(std::move(_fileRange)), is_async(_is_async),
-      hasVariadicArguments(_isVariadicArguments) //
+      name(std::move(_name)), namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))),
+      generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)), visibility_info(_visibility_info),
+      fileRange(std::move(_fileRange)), is_async(_is_async), hasVariadicArguments(_isVariadicArguments),
+      metaInfo(_metaInfo), ctx(_ctx) //
 {
+  if (!_namingInfo.has_value()) {
+    Maybe<String> foreignID;
+    if (metaInfo) {
+      foreignID = metaInfo->getForeignID();
+    }
+    namingInfo = mod->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
+    if (isGeneric()) {
+      Vec<LinkNames> genericLinkNames;
+      for (auto* param : generics) {
+        if (param->isTyped()) {
+          genericLinkNames.push_back(LinkNames(
+              {LinkNameUnit(param->asTyped()->getType()->getNameForLinking(), LinkUnitType::genericTypeValue)}, None,
+              nullptr));
+        } else if (param->isPrerun()) {
+          auto preRes = param->asPrerun()->getExpression();
+          genericLinkNames.push_back(LinkNames({LinkNameUnit(preRes->getType()->toPrerunGenericString(preRes).value(),
+                                                             LinkUnitType::genericPrerunValue)},
+                                               None, nullptr));
+        }
+      }
+      namingInfo.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericLinkNames), None);
+    }
+  }
+  linkingName = namingInfo.toName();
   SHOW("Function name :: " << name.value)
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
@@ -296,18 +323,17 @@ Function::Function(QatModule* _mod, Identifier _name, Vec<GenericParameter*> _ge
     type = new FunctionType(returnType, argTypes, ctx->llctx);
   }
   if (isMemberFn) {
-    ll = llvm::Function::Create((llvm::FunctionType*)(getType()->getLLVMType()),
-                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, name.value, mod->getLLVMModule());
+    ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(getType()->getLLVMType()),
+                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName, mod->getLLVMModule());
   } else {
-    ll = llvm::Function::Create(
-        (llvm::FunctionType*)(getType()->getLLVMType()), llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U,
-        (ignoreParentName ? name.value : mod->getFullNameWithChild(name.value)), mod->getLLVMModule());
+    ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(getType()->getLLVMType()),
+                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName, mod->getLLVMModule());
   }
   if (is_async) {
-    asyncFn = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()}, false),
-        DEFAULT_FUNCTION_LINKAGE, 0U, (llvm::dyn_cast<llvm::Function>(ll))->getName() + "'async", mod->getLLVMModule());
+    asyncFn =
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
+                                                       {llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()}, false),
+                               DEFAULT_FUNCTION_LINKAGE, 0U, linkingName + "'async", mod->getLLVMModule());
     Vec<llvm::Type*> argTys;
     for (const auto& fnArg : getType()->asFunction()->getArgumentTypes()) {
       argTys.push_back(fnArg->getType()->getLLVMType());
@@ -324,6 +350,8 @@ Function::~Function() {
     delete gen;
   }
 }
+
+bool Function::isGeneric() const { return !generics.empty(); }
 
 llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }
 
@@ -369,12 +397,12 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   }
 }
 
-Function* Function::Create(QatModule* mod, Identifier name, Vec<GenericParameter*> _generics, QatType* returnTy,
-                           const bool isAsync, Vec<Argument> args, const bool hasVariadicArgs, FileRange fileRange,
-                           const VisibilityInfo& visibilityInfo, IR::Context* ctx,
-                           Maybe<llvm::GlobalValue::LinkageTypes> linkage, bool ignoreParentName) {
-  return new Function(mod, std::move(name), std::move(_generics), returnTy, isAsync, std::move(args), hasVariadicArgs,
-                      std::move(fileRange), visibilityInfo, ctx, false, linkage, ignoreParentName);
+Function* Function::Create(QatModule* mod, Identifier name, Maybe<LinkNames> namingInfo,
+                           Vec<GenericParameter*> _generics, QatType* returnTy, const bool isAsync, Vec<Argument> args,
+                           const bool hasVariadicArgs, FileRange fileRange, const VisibilityInfo& visibilityInfo,
+                           IR::Context* ctx, Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
+  return new Function(mod, std::move(name), namingInfo, std::move(_generics), returnTy, isAsync, std::move(args),
+                      hasVariadicArgs, std::move(fileRange), visibilityInfo, ctx, false, linkage, metaInfo);
 }
 
 void Function::updateOverview() {
@@ -425,10 +453,9 @@ bool Function::isAccessible(const AccessInfo& req_info) const {
 
 IR::LocalValue* Function::getFunctionCommonIndex() {
   if (!strComparisonIndex) {
-    strComparisonIndex =
-        getFirstBlock()->newValue("qat'function'commonIndex",
-                                  // NOLINTNEXTLINE(readability-magic-numbers)
-                                  IR::UnsignedType::get(64u, getLLVMFunction()->getContext()), true, name.range);
+    strComparisonIndex = getFirstBlock()->newValue("qat'function'commonIndex",
+                                                   // NOLINTNEXTLINE(readability-magic-numbers)
+                                                   IR::UnsignedType::get(64u, ctx), true, name.range);
   }
   return strComparisonIndex;
 }
@@ -548,7 +575,7 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
           auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
           restBlock->linkPrevBlock(currBlock);
           // NOLINTNEXTLINE(readability-magic-numbers)
-          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
+          auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx), true, {""});
           ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
                                    count->getLLVM());
           ctx->builder.CreateCondBr(
@@ -643,7 +670,7 @@ void memberFunctionHandler(IR::Context* ctx, IR::Function* fun) {
               auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
               restBlock->linkPrevBlock(currBlock);
               // NOLINTNEXTLINE(readability-magic-numbers)
-              auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx->llctx), true, {""});
+              auto* count = currBlock->newValue(utils::unique_id(), IR::UnsignedType::get(64u, ctx), true, {""});
               ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u, false),
                                        count->getLLVM());
               ctx->builder.CreateCondBr(

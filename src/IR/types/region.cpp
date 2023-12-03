@@ -25,6 +25,8 @@ Region::Region(Identifier _name, QatModule* _module, const VisibilityInfo& _visi
     : EntityOverview("region", Json()._("moduleID", _module->getID())._("visibility", _visibInfo), _name.range),
       name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
   parent->regions.push_back(this);
+  auto linkNames  = parent->getLinkNames().newWith(LinkNameUnit(_name.value, LinkUnitType::region), None);
+  linkingName     = linkNames.toName();
   auto& llCtx     = ctx->llctx;
   auto* Ty64Int   = llvm::Type::getInt64Ty(llCtx);
   auto* zero64Bit = llvm::ConstantInt::get(Ty64Int, 0u);
@@ -35,10 +37,10 @@ Region::Region(Identifier _name, QatModule* _module, const VisibilityInfo& _visi
       llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
       llvm::ConstantPointerNull::get(
           llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace())),
-      "qat'region(" + parent->getFullNameWithChild(name.value) + ")'blocks");
+      linkNames.newWith(LinkNameUnit("blocks", LinkUnitType::global), None).toName());
   blockCount = new llvm::GlobalVariable(*mod->getLLVMModule(), Ty64Int, false,
                                         llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage, zero64Bit,
-                                        "qat'region(" + parent->getFullNameWithChild(name.value) + ")'count");
+                                        linkNames.newWith(LinkNameUnit("count", LinkUnitType::global), None).toName());
   ownFn      = llvm::Function::Create(
       llvm::FunctionType::get(
           llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace()),
@@ -47,11 +49,11 @@ Region::Region(Identifier _name, QatModule* _module, const VisibilityInfo& _visi
            llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), ctx->dataLayout->getProgramAddressSpace())},
           false),
       llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-      "qat'region(" + parent->getFullNameWithChild(name.value) + ")'own", mod->getLLVMModule());
-  destructor =
-      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {}, false),
-                             llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-                             "qat'region(" + parent->getFullNameWithChild(name.value) + ")'end", mod->getLLVMModule());
+      linkNames.newWith(LinkNameUnit("own", LinkUnitType::function), None).toName(), mod->getLLVMModule());
+  destructor = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {}, false),
+                                      llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
+                                      linkNames.newWith(LinkNameUnit("end", LinkUnitType::function), None).toName(),
+                                      mod->getLLVMModule());
   // #if NDEBUG
   // #define LogInProgram(val)
   // #else
@@ -433,7 +435,7 @@ IR::Value* Region::ownData(IR::QatType* otype, Maybe<llvm::Value*> _count, IR::C
                           llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())
                     : llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()))}),
           otype->getLLVMType()->getPointerTo()),
-      IR::PointerType::get(true, otype, PointerOwner::OfRegion(this), _count.has_value(), ctx), false,
+      IR::PointerType::get(true, otype, false, PointerOwner::OfRegion(this), _count.has_value(), ctx), false,
       IR::Nature::temporary);
 }
 

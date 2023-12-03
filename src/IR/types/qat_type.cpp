@@ -45,6 +45,8 @@ void QatType::clearAll() {
 
 bool QatType::hasNoValueSemantics() const { return false; }
 
+String QatType::getNameForLinking() const { return linkingName; }
+
 bool QatType::canBePrerunGeneric() const { return false; }
 
 Maybe<String> QatType::toPrerunGenericString(IR::PrerunValue* val) const { return None; }
@@ -123,6 +125,7 @@ bool QatType::isSame(QatType* other) {
       }
       case TypeKind::pointer: {
         return (((PointerType*)this)->isSubtypeVariable() == ((PointerType*)other)->isSubtypeVariable()) &&
+               (((PointerType*)this)->isNullable() == ((PointerType*)other)->isNullable()) &&
                (((PointerType*)this)->getSubType()->isSame(((PointerType*)other)->getSubType())) &&
                (((PointerType*)this)->getOwner().isSame(((PointerType*)other)->getOwner()));
       }

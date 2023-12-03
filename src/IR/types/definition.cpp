@@ -14,7 +14,12 @@ DefinitionType::DefinitionType(Identifier _name, QatType* _subType, Vec<GenericP
     : ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
       subType(_subType) {
   setSubType(subType);
+  linkingName = subType->getNameForLinking();
   parent->typeDefs.push_back(this);
+}
+
+LinkNames DefinitionType::getLinkNames() const {
+  return LinkNames({LinkNameUnit(linkingName, LinkUnitType::typeName)}, None, nullptr);
 }
 
 void DefinitionType::setSubType(QatType* _subType) {

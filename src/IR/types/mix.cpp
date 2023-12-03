@@ -21,10 +21,14 @@ namespace qat::IR {
 
 MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParameter*> _generics, QatModule* _parent,
                  Vec<Pair<Identifier, Maybe<QatType*>>> _subtypes, Maybe<usize> _defaultVal, IR::Context* ctx,
-                 bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange)
+                 bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange, Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
-      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), opaquedType(_opaquedTy) {
+      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), opaquedType(_opaquedTy) {
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+  }
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
@@ -41,26 +45,20 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
     }
   }
   findTagBitWidth(subtypes.size());
+  SHOW("Opaqued type is: " << opaquedType)
   SHOW("Tag bitwidth is " << tagBitWidth)
-  if (opaquedType) {
-    llvmType = opaquedType->getLLVMType();
-    llvm::cast<llvm::StructType>(llvmType)->setBody(
-        {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)}, _isPacked);
-  } else {
-    llvmType = llvm::StructType::create(
-        ctx->llctx, {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)},
-        parent->getFullNameWithChild(name.value), _isPacked);
-  }
+  linkingName = opaquedType->getNameForLinking();
+  llvmType    = opaquedType->getLLVMType();
+  llvm::cast<llvm::StructType>(llvmType)->setBody(
+      {llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), llvm::Type::getIntNTy(ctx->llctx, maxSize)}, _isPacked);
   if (parent) {
     parent->mixTypes.push_back(this);
   }
-  if (opaquedType) {
-    opaquedType->setSubType(this);
-    ovInfo            = opaquedType->ovInfo;
-    ovRange           = opaquedType->ovRange;
-    ovMentions        = opaquedType->ovMentions;
-    ovBroughtMentions = opaquedType->ovBroughtMentions;
-  }
+  opaquedType->setSubType(this);
+  ovInfo               = opaquedType->ovInfo;
+  ovRange              = opaquedType->ovRange;
+  ovMentions           = opaquedType->ovMentions;
+  ovBroughtMentions    = opaquedType->ovBroughtMentions;
   auto needsDestructor = false;
   for (auto sub : subtypes) {
     if (sub.second.has_value()) {
@@ -76,7 +74,7 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
   SHOW("Mix type needs destructor: " << (needsDestructor ? "true" : "false"))
   // NOTE - Possibly make this modular when mix types can have custom destructors
   if (needsDestructor) {
-    destructor           = IR::MemberFunction::CreateDestructor(this, _name.range, _fileRange, ctx);
+    destructor           = IR::MemberFunction::CreateDestructor(this, nullptr, _name.range, _fileRange, ctx);
     auto* entryBlock     = new IR::Block(destructor.value(), nullptr);
     auto* tagIntTy       = llvm::Type::getIntNTy(ctx->llctx, tagBitWidth);
     auto* remainingBlock = new IR::Block(destructor.value(), nullptr);
@@ -115,6 +113,32 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
     ctx->builder.CreateStore(llvm::ConstantExpr::getNullValue(llvmType), inst);
     ctx->builder.CreateRetVoid();
   }
+}
+
+LinkNames MixType::getLinkNames() const {
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+  }
+  auto linkNames = parent->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::mix), foreignID);
+  if (isGeneric()) {
+    Vec<LinkNames> genericlinkNames;
+    for (auto* param : generics) {
+      if (param->isTyped()) {
+        genericlinkNames.push_back(
+            LinkNames({LinkNameUnit(param->asTyped()->getType()->getNameForLinking(), LinkUnitType::genericTypeValue)},
+                      None, nullptr));
+      } else if (param->isPrerun()) {
+        auto* preRes = param->asPrerun();
+        genericlinkNames.push_back(
+            LinkNames({LinkNameUnit(preRes->getType()->toPrerunGenericString(preRes->getExpression()).value(),
+                                    LinkUnitType::genericPrerunValue)},
+                      None, nullptr));
+      }
+    }
+    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericlinkNames), None);
+  }
+  return linkNames;
 }
 
 void MixType::updateOverview() {

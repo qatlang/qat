@@ -20,9 +20,10 @@ private:
   u64                                    maxSize = 8u;
   bool                                   isPack  = false;
 
-  usize        tagBitWidth = 1;
-  Maybe<usize> defaultVal;
-  FileRange    fileRange;
+  usize           tagBitWidth = 1;
+  Maybe<usize>    defaultVal;
+  FileRange       fileRange;
+  Maybe<MetaInfo> metaInfo;
 
   IR::OpaqueType* opaquedType = nullptr;
 
@@ -31,7 +32,7 @@ private:
 public:
   MixType(Identifier name, IR::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, QatModule* parent,
           Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal, IR::Context* ctx, bool isPacked,
-          const VisibilityInfo& visibility, FileRange fileRange);
+          const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
   useit usize getIndexOfName(const String& name) const;
   useit Pair<bool, bool> hasSubTypeWithName(const String& sname) const;
@@ -45,6 +46,7 @@ public:
   useit FileRange        getFileRange() const;
   useit String           toString() const final;
   useit TypeKind         typeKind() const final;
+  useit LinkNames        getLinkNames() const final;
   useit bool             isTypeSized() const final;
   useit bool             isTriviallyCopyable() const final;
   useit bool             isTriviallyMovable() const final;

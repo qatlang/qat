@@ -5,6 +5,7 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
+#include "../meta_info.hpp"
 #include "./qat_type.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
@@ -23,6 +24,7 @@ private:
   bool                           areValuesUnsigned = false;
   VisibilityInfo                 visibility;
   Maybe<usize>                   defaultVal;
+  Maybe<MetaInfo>                metaInfo;
 
   IR::Context* ctx;
   mutable u64  bitwidth = 1;
@@ -32,7 +34,7 @@ private:
 public:
   ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
              Maybe<IR::QatType*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
-             const VisibilityInfo& visibility, IR::Context* ctx, FileRange fileRange);
+             const VisibilityInfo& visibility, IR::Context* ctx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
   useit Identifier getName() const;
   useit String     getFullName() const;

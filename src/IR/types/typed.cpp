@@ -9,10 +9,18 @@ TypedType::TypedType(IR::QatType* _subTy) : subTy(_subTy) {
   while (subTy->isTyped()) {
     subTy = subTy->asTyped()->getSubType();
   }
-  llvmType = subTy->getLLVMType();
+  llvmType    = subTy->getLLVMType();
+  linkingName = "type(" + subTy->getNameForLinking() + ")";
 }
 
-TypedType* TypedType::get(QatType* _subTy) { return new TypedType(_subTy); }
+TypedType* TypedType::get(QatType* _subTy) {
+  for (auto* typ : types) {
+    if (typ->isTyped() && typ->asTyped()->getSubType()->getID() == _subTy->getID()) {
+      return typ->asTyped();
+    }
+  }
+  return new TypedType(_subTy);
+}
 
 IR::QatType* TypedType::getSubType() const { return subTy->isTyped() ? subTy->asTyped()->getSubType() : subTy; }
 

@@ -17,22 +17,27 @@
 namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
-                   Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx)
+                   Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+                   Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
-      opaquedType(_opaqued), members(std::move(_members)) {
+      opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
   SHOW("Generating LLVM Type for core type members")
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+  }
   Vec<llvm::Type*> subtypes;
   for (auto* mem : members) {
     subtypes.push_back(mem->type->getLLVMType());
   }
+  SHOW("Opaqued type is: " << opaquedType)
   SHOW("All members' LLVM types obtained")
-  if (opaquedType) {
-    llvmType = opaquedType->getLLVMType();
-    llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, false);
-  } else {
-    llvmType = llvm::StructType::create(llctx, subtypes, mod->getFullNameWithChild(name.value), false);
+  llvmType    = opaquedType->getLLVMType();
+  linkingName = opaquedType->getNameForLinking();
+  llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, false);
+  if (!isGeneric()) {
+    mod->coreTypes.push_back(this);
   }
-  mod->coreTypes.push_back(this);
   if (opaquedType) {
     opaquedType->setSubType(this);
     ovInfo            = opaquedType->ovInfo;
@@ -40,6 +45,32 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _gen
     ovBroughtMentions = opaquedType->ovBroughtMentions;
     ovRange           = opaquedType->ovRange;
   }
+}
+
+LinkNames CoreType::getLinkNames() const {
+  Maybe<String> foreignID;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+  }
+  auto linkNames = parent->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::type), foreignID);
+  if (isGeneric()) {
+    Vec<LinkNames> genericlinkNames;
+    for (auto* param : generics) {
+      if (param->isTyped()) {
+        genericlinkNames.push_back(
+            LinkNames({LinkNameUnit(param->asTyped()->getType()->getNameForLinking(), LinkUnitType::genericTypeValue)},
+                      None, nullptr));
+      } else if (param->isPrerun()) {
+        auto* preRes = param->asPrerun();
+        genericlinkNames.push_back(
+            LinkNames({LinkNameUnit(preRes->getType()->toPrerunGenericString(preRes->getExpression()).value(),
+                                    LinkUnitType::genericPrerunValue)},
+                      None, nullptr));
+      }
+    }
+    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericlinkNames), None);
+  }
+  return linkNames;
 }
 
 CoreType::~CoreType() {

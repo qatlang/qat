@@ -257,8 +257,8 @@ bool ExpandedType::hasMove() const { return hasMoveConstructor() && hasMoveAssig
 bool ExpandedType::hasDestructor() const { return destructor != nullptr; }
 
 void ExpandedType::createDestructor(FileRange fRange, IR::Context* ctx) {
-  if (destructor.has_value()) {
-    destructor = IR::MemberFunction::CreateDestructor(this, fRange, fRange, ctx);
+  if (!destructor.has_value()) {
+    destructor = IR::MemberFunction::CreateDestructor(this, nullptr, fRange, fRange, ctx);
   }
 }
 

@@ -40,7 +40,7 @@ protected:
   bool needsImplicitDestructor = false;
   bool hasDefinedDestructor    = false;
 
-  Maybe<MemberFunction*> destructor = nullptr; // Destructor
+  Maybe<MemberFunction*> destructor; // Destructor
 
   OpaqueType* opaqueEquivalent = nullptr;
 

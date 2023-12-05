@@ -144,10 +144,11 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     return new IR::Value(ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->llctx), instVal, {ind->getLLVM()}),
                          IR::ReferenceType::get(isVarExp, IR::UnsignedType::get(8u, ctx), ctx), false,
                          IR::Nature::temporary);
-  } else if (instType->isCoreType()) {
-    auto*               cTy     = instType->asCore();
+  } else if (instType->isExpanded()) {
+    auto*               cTy     = instType->asExpanded();
     IR::MemberFunction* opFn    = nullptr;
     IR::Value*          operand = nullptr;
+    Maybe<String>       localID = inst->getLocalID();
     if (cTy->hasBinaryOperator("[]", indType)) {
       opFn    = cTy->getBinaryOperator("[]", indType);
       operand = ind;
@@ -187,7 +188,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                  index->fileRange);
     }
     inst->loadImplicitPointer(ctx->builder);
-    return opFn->call(ctx, {inst->getLLVM(), operand->getLLVM()}, ctx->getMod());
+    return opFn->call(ctx, {inst->getLLVM(), operand->getLLVM()}, localID, ctx->getMod());
   } else {
     ctx->Error("The expression of type " + instType->toString() + " cannot be used for index access",
                instance->fileRange);

@@ -28,6 +28,7 @@ IR::Value* Negative::emit(IR::Context* ctx) {
   } else if (valTy->isExpanded()) {
     // FIXME - Prerun expanded type values
     if (valTy->asExpanded()->hasUnaryOperator("-")) {
+      auto localID = irVal->getLocalID();
       if (irVal->getType()->isReference() || irVal->isImplicitPointer()) {
         if (irVal->getType()->isReference()) {
           irVal->loadImplicitPointer(ctx->builder);
@@ -38,7 +39,7 @@ IR::Value* Negative::emit(IR::Context* ctx) {
         irVal = loc;
       }
       auto opFn = valTy->asExpanded()->getUnaryOperator("-");
-      return opFn->call(ctx, {irVal->getLLVM()}, ctx->getMod());
+      return opFn->call(ctx, {irVal->getLLVM()}, localID, ctx->getMod());
     } else {
       ctx->Error("Type " + ctx->highlightError(valTy->toString()) + " does not have the " +
                      ctx->highlightError("unary -") + " operator",

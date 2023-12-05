@@ -307,8 +307,8 @@ public:
   useit QatModule* getNthParent(u32 n);
 
   useit const VisibilityInfo& getVisibility() const;
-  useit Function* createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
-                                 bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
+  useit Function* createFunction(const Identifier& name, QatType* returnType, Vec<Argument> args, bool isVariadic,
+                                 const FileRange& fileRange, const VisibilityInfo& visibility,
                                  Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx);
   useit bool      isSubmodule() const;
   useit bool      hasSubmodules() const;

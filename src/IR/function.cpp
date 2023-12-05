@@ -353,11 +353,8 @@ Function::~Function() {
 
 bool Function::isGeneric() const { return !generics.empty(); }
 
-llvm::Function* Function::getAsyncSubFunction() const { return asyncFn.value(); }
-
-llvm::StructType* Function::getAsyncArgType() const { return asyncArgTy.value(); }
-
-IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, QatModule* destMod) {
+IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, Maybe<String> localID,
+                          QatModule* destMod) {
   SHOW("Linking function if it is external")
   auto* llvmFunction = llvm::dyn_cast<llvm::Function>(ll);
   if (destMod->getID() != mod->getID()) {
@@ -368,33 +365,19 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
                              getFullName(), destMod->getLLVMModule());
     }
   }
-  bool         hasRetArg = false;
-  IR::QatType* retArgTy  = nullptr;
-  hasRetArg              = getType()->asFunction()->hasReturnArgument();
-  if (hasRetArg) {
-    retArgTy = getType()->asFunction()->getReturnArgType();
+  SHOW("Getting return type")
+  auto* retType = ((FunctionType*)getType())->getReturnType();
+  SHOW("Getting function type")
+  auto* fnTy = (llvm::FunctionType*)getType()->asFunction()->getLLVMType();
+  SHOW("Got function type")
+  SHOW("Creating LLVM call: " << getFullName())
+  auto result = new IR::Value(
+      ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType->getType(),
+      retType->getType()->isReference() && retType->getType()->asReference()->isSubtypeVariable(), Nature::temporary);
+  if (localID && retType->isReturnSelf()) {
+    result->setLocalID(localID.value());
   }
-  if (!hasRetArg) {
-    SHOW("Getting return type")
-    auto* retType = ((FunctionType*)getType())->getReturnType();
-    SHOW("Getting function type")
-    auto* fnTy = (llvm::FunctionType*)getType()->asFunction()->getLLVMType();
-    SHOW("Got function type")
-    SHOW("Creating LLVM call: " << getFullName())
-    return new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType,
-                         retType->isReference() && retType->asReference()->isSubtypeVariable(),
-                         (retType->isReference() && retType->asReference()->isSubtypeVariable()) ? Nature::assignable
-                                                                                                 : Nature::temporary);
-  } else {
-    Vec<llvm::Value*> argVals = argValues;
-    SHOW("Function: Casting return arg type to reference")
-    auto* retValAlloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(),
-                                              retArgTy->asReference()->getSubType()->getLLVMType());
-    argVals.push_back(retValAlloca);
-    ctx->builder.CreateCall(llvmFunction->getFunctionType(), llvmFunction, argVals);
-    SHOW("Call complete for fn: " << getFullName())
-    return new Value(retValAlloca, retArgTy->asReference()->getSubType(), false, IR::Nature::temporary);
-  }
+  return result;
 }
 
 Function* Function::Create(QatModule* mod, Identifier name, Maybe<LinkNames> namingInfo,

@@ -22,8 +22,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     if (fnVal->getType()->isFunction()) {
       fun = (IR::Function*)fnVal;
     }
-    if (fnTy->hasReturnArgument() ? ((fnTy->getArgumentTypes().size() - 1) != values.size())
-                                  : fnTy->getArgumentTypes().size() != values.size()) {
+    if (fnTy->getArgumentTypes().size() != values.size()) {
       ctx->Error("Number of arguments provided for the function call does not "
                  "match the function signature",
                  fileRange);
@@ -40,7 +39,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     }
     SHOW("Argument values generated")
     auto fnArgsTy = fnTy->getArgumentTypes();
-    for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
+    for (usize i = 0; i < fnArgsTy.size(); i++) {
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) &&
           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()) &&
           (argsEmit.at(i)->getType()->isReference() &&
@@ -54,7 +53,7 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       }
     }
     Vec<llvm::Value*> argValues;
-    for (usize i = 0; i < (fnArgsTy.size() - (fnTy->hasReturnArgument() ? 1 : 0)); i++) {
+    for (usize i = 0; i < fnArgsTy.size(); i++) {
       SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->getType()->toString())
       if (fnArgsTy.at(i)->getType()->isReference() &&
           (!argsEmit.at(i)->isReference() && !argsEmit.at(i)->isImplicitPointer())) {
@@ -73,10 +72,10 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       argValues.push_back(argsEmit.at(i)->getLLVM());
     }
     if (fun.has_value()) {
-      return fun.value()->call(ctx, argValues, mod);
+      return fun.value()->call(ctx, argValues, None, mod);
     } else {
       fnVal->loadImplicitPointer(ctx->builder);
-      return fnVal->call(ctx, argValues, mod);
+      return fnVal->call(ctx, argValues, None, mod);
     }
   } else {
     // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)

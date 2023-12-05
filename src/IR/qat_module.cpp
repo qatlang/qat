@@ -179,14 +179,14 @@ void QatModule::addMember(QatModule* mod) {
   submodules.push_back(mod);
 }
 
-Function* QatModule::createFunction(const Identifier& name, QatType* returnType, bool isAsync, Vec<Argument> args,
-                                    bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
+Function* QatModule::createFunction(const Identifier& name, QatType* returnType, Vec<Argument> args, bool isVariadic,
+                                    const FileRange& fileRange, const VisibilityInfo& visibility,
                                     Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx) {
   SHOW("Creating IR function")
   auto nmUnits = getLinkNames();
   nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, None, {}), None);
-  auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, returnType, isAsync, std::move(args), isVariadic,
-                               fileRange, visibility, ctx, linkage);
+  auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, IR::ReturnType::get(returnType), std::move(args),
+                               isVariadic, fileRange, visibility, ctx, linkage);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -418,8 +418,8 @@ bool QatModule::shouldPrefixName() const { return (moduleType == ModuleType::box
 Function* QatModule::getGlobalInitialiser(IR::Context* ctx) {
   if (!moduleInitialiser) {
     moduleInitialiser = IR::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
-                                             None, {/* Generics */}, IR::VoidType::get(ctx->llctx), false, {}, false,
-                                             name.range, VisibilityInfo::pub(), ctx);
+                                             None, {/* Generics */}, IR::ReturnType::get(IR::VoidType::get(ctx->llctx)),
+                                             {}, false, name.range, VisibilityInfo::pub(), ctx);
     auto* entry       = new IR::Block(moduleInitialiser, nullptr);
     entry->setActive(ctx->builder);
   }

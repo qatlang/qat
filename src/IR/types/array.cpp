@@ -112,7 +112,7 @@ void ArrayType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Functio
                        {ctx->builder.CreateInBoundsGEP(
                            elementType->getLLVMType(), value->getLLVM(),
                            {llvm::ConstantInt::get(Ty64Int, 0u), ctx->builder.CreateLoad(Ty64Int, count->getLLVM())})},
-                       ctx->getMod());
+                       None, ctx->getMod());
     ctx->builder.CreateStore(
         ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, count->getLLVM()), llvm::ConstantInt::get(Ty64Int, 1u)),
         count->getLLVM());

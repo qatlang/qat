@@ -33,7 +33,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
             } else {
               alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), cTy->getLLVMType());
             }
-            (void)dFn->call(ctx, {alloca}, ctx->getMod());
+            (void)dFn->call(ctx, {alloca}, None, ctx->getMod());
             if (isLocalDecl()) {
               return localValue->toNewIRValue();
             } else {

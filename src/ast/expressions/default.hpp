@@ -8,6 +8,7 @@ namespace qat::ast {
 
 class Default : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class LocalDeclaration;
+  friend class Assignment;
 
 private:
   Maybe<ast::QatType*> providedType;

@@ -90,7 +90,7 @@ IR::Value* IsExpression::emit(IR::Context* ctx) {
           maybeValuePtr = ctx->builder.CreateStructGEP(maybeTy->getLLVMType(), loc->getAlloca(), 1u);
           returnValue   = loc->toNewIRValue();
         }
-        (void)mFn->call(ctx, {maybeValuePtr, subIR->getLLVM()}, ctx->getMod());
+        (void)mFn->call(ctx, {maybeValuePtr, subIR->getLLVM()}, None, ctx->getMod());
         ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u, false), maybeTagPtr);
         return returnValue;
       } else {

@@ -45,37 +45,25 @@ void Value::loadImplicitPointer(llvm::IRBuilder<>& builder) {
   }
 }
 
-Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) { // NOLINT(misc-unused-parameters)
-  llvm::FunctionType* fnTy      = nullptr;
-  bool                hasRetArg = false;
-  IR::QatType*        retArgTy  = nullptr;
+Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> _localID,
+                   QatModule* mod) { // NOLINT(misc-unused-parameters)
+  llvm::FunctionType* fnTy  = nullptr;
+  IR::FunctionType*   funTy = nullptr;
   if (type->isPointer() && type->asPointer()->getSubType()->isFunction()) {
-    fnTy      = llvm::dyn_cast<llvm::FunctionType>(type->asPointer()->getSubType()->getLLVMType());
-    hasRetArg = type->asPointer()->getSubType()->asFunction()->hasReturnArgument();
-    if (hasRetArg) {
-      retArgTy = type->asPointer()->getSubType()->asFunction()->getReturnArgType();
-    }
+    fnTy  = llvm::dyn_cast<llvm::FunctionType>(type->asPointer()->getSubType()->getLLVMType());
+    funTy = type->asPointer()->getSubType()->asFunction();
   } else {
-    fnTy      = llvm::dyn_cast<llvm::FunctionType>(getType()->getLLVMType());
-    hasRetArg = type->asFunction()->hasReturnArgument();
-    if (hasRetArg) {
-      retArgTy = type->asFunction()->getReturnArgType();
-    }
+    fnTy  = llvm::dyn_cast<llvm::FunctionType>(getType()->getLLVMType());
+    funTy = type->asFunction();
   }
-  if (!hasRetArg) {
-    return new Value(ctx->builder.CreateCall(fnTy, ll, args),
-                     type->isPointer() ? type->asPointer()->getSubType()->asFunction()->getReturnType()
-                                       : type->asFunction()->getReturnType(),
-                     false, IR::Nature::temporary);
-  } else {
-    Vec<llvm::Value*> argVals = args;
-    SHOW("Value: Casting return arg type to reference")
-    auto* retValAlloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(),
-                                              retArgTy->asReference()->getSubType()->getLLVMType());
-    argVals.push_back(retValAlloca);
-    ctx->builder.CreateCall(fnTy, ll, argVals);
-    return new Value(retValAlloca, retArgTy, false, IR::Nature::temporary);
+  auto result = new Value(ctx->builder.CreateCall(fnTy, ll, args),
+                          type->isPointer() ? type->asPointer()->getSubType()->asFunction()->getReturnType()->getType()
+                                            : type->asFunction()->getReturnType()->getType(),
+                          false, IR::Nature::temporary);
+  if (_localID && funTy->getReturnType()->isReturnSelf()) {
+    result->setLocalID(_localID.value());
   }
+  return result;
 }
 
 bool Value::isPointer() const { return type->isPointer(); }

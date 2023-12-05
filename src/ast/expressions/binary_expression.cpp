@@ -727,6 +727,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       // FIXME - Incomplete logic?
       if (eTy->hasBinaryOperator(OpStr, rhsType)) {
         SHOW("RHS is matched exactly")
+        auto localID = lhsEmit->getLocalID();
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
@@ -738,8 +739,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                      fileRange);
         }
         rhsEmit->loadImplicitPointer(ctx->builder);
-        return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, ctx->getMod());
+        return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, localID, ctx->getMod());
       } else if (rhsType->isReference() && eTy->hasBinaryOperator(OpStr, rhsType->asReference()->getSubType())) {
+        auto localID = rhsEmit->getLocalID();
         rhsEmit->loadImplicitPointer(ctx->builder);
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
@@ -756,7 +758,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
             ctx,
             {lhsEmit->getLLVM(),
              ctx->builder.CreateLoad(rhsType->asReference()->getSubType()->getLLVMType(), rhsEmit->getLLVM())},
-            ctx->getMod());
+            localID, ctx->getMod());
       } else {
         ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " not defined for type: " +
                        ctx->highlightError(eTy->getFullName() +

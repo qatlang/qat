@@ -53,11 +53,11 @@ IR::Value* Default::emit(IR::Context* ctx) {
         }
         auto* block = ctx->getActiveFunction()->getBlock();
         if (isLocalDecl()) {
-          (void)defFn->call(ctx, {localValue->getAlloca()}, ctx->getMod());
+          (void)defFn->call(ctx, {localValue->getAlloca()}, None, ctx->getMod());
           return nullptr;
         } else {
           auto* loc = block->newValue(irName.has_value() ? irName->value : utils::unique_id(), eTy, true, fileRange);
-          (void)defFn->call(ctx, {loc->getAlloca()}, ctx->getMod());
+          (void)defFn->call(ctx, {loc->getAlloca()}, None, ctx->getMod());
           return loc->toNewIRValue();
         }
       } else {

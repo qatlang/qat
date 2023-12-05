@@ -246,7 +246,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
       SHOW("Pushed all constructor arg values")
       // FIXME - Same copied values will be passed to multiple instances
-      (void)cons->call(ctx, valsLLVM, ctx->getMod());
+      (void)cons->call(ctx, valsLLVM, None, ctx->getMod());
       ctx->builder.CreateStore(
           ctx->builder.CreateAdd(llvm::ConstantInt::get(count->getType()->getLLVMType(), 1u, false),
                                  ctx->builder.CreateLoad(count->getType()->getLLVMType(), count->getLLVM())),
@@ -275,7 +275,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       for (auto* val : valsIR) {
         valsLLVM.push_back(val->getLLVM());
       }
-      (void)cons->call(ctx, valsLLVM, ctx->getMod());
+      (void)cons->call(ctx, valsLLVM, None, ctx->getMod());
     }
     if (isLocalDecl() && localValue->getType()->isMaybe()) {
       ctx->builder.CreateStore(

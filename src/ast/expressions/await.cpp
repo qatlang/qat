@@ -12,13 +12,6 @@ Await::Await(Expression* _exp, FileRange _range) : Expression(std::move(_range))
 IR::Value* Await::emit(IR::Context* ctx) {
   SHOW("Exp nodetype is: " << (int)exp->nodeType())
   SHOW("Starting await emitting")
-  if (!ctx->getActiveFunction()->isAsyncFunction()) {
-    if (ctx->getActiveFunction()->getFullName() != "main") {
-      ctx->Error("Please make the function async. " + ctx->highlightError("await") +
-                     " can be used only inside an async function, expect in the case of the main function",
-                 fileRange);
-    }
-  }
   auto* expEmit = exp->emit(ctx);
   if ((expEmit->isReference() && expEmit->getType()->asReference()->getSubType()->isFuture()) ||
       (expEmit->isImplicitPointer() && expEmit->getType()->isFuture())) {

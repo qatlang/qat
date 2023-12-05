@@ -1954,9 +1954,9 @@ void Parser::parseCoreType(ParserContext& preCtx, usize from, usize upto, ast::D
           isUnary = true;
           opr     = ValueAt(i + 1);
           i++;
-        } else if (isNext(TokenType::pointerType, i)) {
+        } else if (isNext(TokenType::referenceType, i)) {
           isUnary = true;
-          opr     = "#";
+          opr     = "@";
           i++;
         } else if (isNext(TokenType::assignment, i)) {
           opr = "=";
@@ -3110,7 +3110,7 @@ Pair<ast::Expression*, usize> Parser::parseExpression(ParserContext&            
         }
         break;
       }
-      case TokenType::pointerType: {
+      case TokenType::referenceType: {
         if (hasCachedExpr() || hasCachedSymbol()) {
           if (hasCachedSymbol()) {
             if (hasCachedExpr()) {

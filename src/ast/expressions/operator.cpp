@@ -56,7 +56,7 @@ Op OpFromString(const String& str) {
     return Op::Index;
   } else if (str == "!") {
     return Op::Not;
-  } else if (str == "#") {
+  } else if (str == "@") {
     return Op::dereference;
   }
 } // NOLINT(clang-diagnostic-return-type)
@@ -65,6 +65,7 @@ String OpToString(Op opr) {
   switch (opr) {
     case Op::add:
       return "+";
+    case Op::minus:
     case Op::subtract:
       return "-";
     case Op::multiply:
@@ -103,8 +104,6 @@ String OpToString(Op opr) {
       return "||";
     case Op::Index:
       return "[]";
-    case Op::minus:
-      return "-";
     case Op::Not:
       return "!";
     case Op::copyAssignment:
@@ -112,7 +111,7 @@ String OpToString(Op opr) {
     case Op::moveAssignment:
       return "move =";
     case Op::dereference:
-      return "#";
+      return "@";
   }
 }
 

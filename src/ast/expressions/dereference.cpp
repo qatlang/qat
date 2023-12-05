@@ -35,15 +35,16 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
             : expEmit->getLLVM(),
         IR::ReferenceType::get(expTy->asPointer()->isSubtypeVariable(), expTy->asPointer()->getSubType(), ctx), false,
         IR::Nature::temporary);
-  } else if (expTy->isCoreType()) {
-    if (expTy->asCore()->hasUnaryOperator("#")) {
+  } else if (expTy->isExpanded()) {
+    if (expTy->asExpanded()->hasUnaryOperator("@")) {
+      auto localID = expEmit->getLocalID();
       if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
         expEmit->makeImplicitPointer(ctx, None);
       } else if (expEmit->isReference()) {
         expEmit->loadImplicitPointer(ctx->builder);
       }
-      auto* uFn = expTy->asCore()->getUnaryOperator("#");
-      return uFn->call(ctx, {expEmit->getLLVM()}, ctx->getMod());
+      auto* uFn = expTy->asExpanded()->getUnaryOperator("@");
+      return uFn->call(ctx, {expEmit->getLLVM()}, localID, ctx->getMod());
     } else {
       ctx->Error("Core type " + ctx->highlightError(expTy->asCore()->getFullName()) +
                      " does not have the dereference operator #",

@@ -9,10 +9,13 @@
 namespace qat::ast {
 class MemberAccess : public Expression {
   Expression* instance;
+  bool        isPointerAccess;
+  bool        isVariationAccess;
   String      name;
 
 public:
-  MemberAccess(Expression* _instance, String _name, FileRange _fileRange);
+  MemberAccess(Expression* _instance, bool _isPointerAccess, bool _isVariationAccess, String _name,
+               FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

@@ -9,18 +9,53 @@
 
 namespace qat::ast {
 
-MemberAccess::MemberAccess(Expression* _instance, String _name, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), instance(_instance), name(std::move(_name)) {}
+MemberAccess::MemberAccess(Expression* _instance, bool _isPointerAccess, bool _isVariationAccess, String _name,
+                           FileRange _fileRange)
+    : Expression(std::move(_fileRange)), instance(_instance), isPointerAccess(_isPointerAccess),
+      isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
 
 IR::Value* MemberAccess::emit(IR::Context* ctx) {
   // NOLINTBEGIN(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
   auto* inst     = instance->emit(ctx);
   auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
-  if (instType->isReference()) {
-    inst->loadImplicitPointer(ctx->builder);
-    isVar    = instType->asReference()->isSubtypeVariable();
-    instType = instType->asReference()->getSubType();
+  if (isPointerAccess) {
+    if (instType->isReference()) {
+      inst->loadImplicitPointer(ctx->builder);
+      isVar    = instType->asReference()->isSubtypeVariable();
+      instType = instType->asReference()->getSubType();
+    }
+    if (instType->isPointer()) {
+      if (inst->getType()->isReference()) {
+        inst = new IR::Value(ctx->builder.CreateLoad(instType->getLLVMType(), inst->getLLVM()), instType, false,
+                             IR::Nature::temporary);
+      } else {
+        inst->loadImplicitPointer(ctx->builder);
+      }
+      auto* ptrTy = instType->asPointer();
+      if (!ptrTy->isNonNullable()) {
+        ctx->Error("The expression is of pointer type " + ctx->highlightError(ptrTy->toString()) +
+                       " which is a nullable pointer type -> cannot be used here",
+                   fileRange);
+      }
+      if (ptrTy->isMulti()) {
+        ctx->Error("The expression is of multi-pointer type " + ctx->highlightError(ptrTy->toString()) +
+                       " and -> cannot be used here",
+                   fileRange);
+      }
+      isVar    = ptrTy->isSubtypeVariable();
+      instType = ptrTy->getSubType();
+    } else {
+      ctx->Error("The expression is of type " + ctx->highlightError(instType->toString()) +
+                     " which is not a pointer type, and hence -> cannot be used here",
+                 fileRange);
+    }
+  } else {
+    if (instType->isReference()) {
+      inst->loadImplicitPointer(ctx->builder);
+      isVar    = instType->asReference()->isSubtypeVariable();
+      instType = instType->asReference()->getSubType();
+    }
   }
   if (instType->isArray()) {
     if (name == "length") {
@@ -34,11 +69,11 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  fileRange);
     }
   } else if (instType->isStringSlice()) {
-    if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant()) {
+    if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
       inst->makeImplicitPointer(ctx, None);
     }
     if (name == "length") {
-      if (inst->isLLVMConstant()) {
+      if (inst->isLLVMConstant() && !isPointerAccess) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::UnsignedType::get(64u, ctx));
       } else {
         return new IR::Value(
@@ -46,12 +81,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             IR::ReferenceType::get(false, IR::UnsignedType::get(64u, ctx), ctx), false, IR::Nature::temporary);
       }
     } else if (name == "buffer") {
-      if (inst->isLLVMConstant()) {
+      if (inst->isLLVMConstant() && !isPointerAccess) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(0u),
                                    IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false,
                                                         IR::PointerOwner::OfAnonymous(), false, ctx));
       } else {
-        SHOW("String slice is an implicit pointer or a reference")
+        SHOW("String slice is an implicit pointer or a reference or pointer")
         return new IR::Value(
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), inst->getLLVM(), 0u),
             IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false, // NOLINT(readability-magic-numbers)
@@ -59,10 +94,12 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             false, IR::Nature::temporary);
       }
     } else {
-      ctx->Error("Invalid name for member access: " + ctx->highlightError(name), fileRange);
+      ctx->Error("Invalid name for member access: " + ctx->highlightError(name) + " for expression of type " +
+                     instType->toString(),
+                 fileRange);
     }
   } else if (instType->isFuture()) {
-    if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant()) {
+    if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
       inst->makeImplicitPointer(ctx, None);
     }
     if (name == "isDone") {
@@ -90,7 +127,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  fileRange);
     }
   } else if (instType->isMaybe()) {
-    if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant()) {
+    if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
       inst->makeImplicitPointer(ctx, None);
     }
     if (name == "hasValue") {
@@ -127,51 +164,64 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                      ctx->highlightError(instType->toString()),
                  fileRange);
     }
-  } else if (instType->isCoreType()) {
-    if (!instType->asCore()->hasMember(name)) {
-      ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) + " does not have a member named " +
+  } else if (instType->isExpanded()) {
+    if ((instType->isCoreType() && !instType->asCore()->hasMember(name)) &&
+        (isVariationAccess ? !instType->asExpanded()->hasVariationFn(name)
+                           : !instType->asExpanded()->hasNormalMemberFn(name))) {
+      ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) +
+                     " does not have a member field, member function or variation function named " +
                      ctx->highlightError(name) + ". Please check the logic",
                  fileRange);
     }
-    auto* cTy = instType->asCore();
-    auto* mem = cTy->getMemberAt(instType->asCore()->getIndexOf(name).value());
-    if (!mem->visibility.isAccessible(ctx->getAccessInfo())) {
-      ctx->Error("Member " + ctx->highlightError(name) + " of core type " + ctx->highlightError(cTy->getFullName()) +
-                     " is not accessible here",
-                 fileRange);
-    }
-    if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer() &&
-        !inst->isLLVMConstant()) {
-      inst->makeImplicitPointer(ctx, None);
-    }
-    if (inst->isLLVMConstant()) {
-      return new IR::PrerunValue(
-          inst->getLLVMConstant()->getAggregateElement(instType->asCore()->getIndexOf(name).value()), mem->type);
-    } else {
-      return new IR::Value(ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
-                                                        instType->asCore()->getIndexOf(name).value()),
-                           IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name), ctx), false,
-                           IR::Nature::temporary);
-    }
-  } else if (instType->isPointer()) {
-    if (name == "length") {
-      if (instType->asPointer()->isMulti()) {
-        if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant()) {
-          inst->makeImplicitPointer(ctx, None);
-        }
-        if (inst->isLLVMConstant()) {
-          return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::UnsignedType::get(64u, ctx));
-        } else {
-          return new IR::Value(
-              ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                      ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 1u)),
-              IR::UnsignedType::get(64u, ctx), false, IR::Nature::temporary);
-        }
+    auto* eTy = instType->asExpanded();
+    if (eTy->isCoreType() && eTy->asCore()->hasMember(name)) {
+      if (isVariationAccess) {
+        ctx->Error(ctx->highlightError(name) + " is a member field of type " + ctx->highlightError(eTy->getFullName()) +
+                       " and hence variation access cannot be used. Please change " +
+                       ctx->highlightError("'var:" + name) + " to " + ctx->highlightError("'" + name),
+                   fileRange);
+      }
+      auto* mem = eTy->asCore()->getMemberAt(instType->asCore()->getIndexOf(name).value());
+      if (!mem->visibility.isAccessible(ctx->getAccessInfo())) {
+        ctx->Error("Member " + ctx->highlightError(name) + " of core type " + ctx->highlightError(eTy->getFullName()) +
+                       " is not accessible here",
+                   fileRange);
+      }
+      if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->isLLVMConstant() &&
+          !isPointerAccess) {
+        inst->makeImplicitPointer(ctx, None);
+      }
+      if (inst->isLLVMConstant() && !isPointerAccess) {
+        return new IR::PrerunValue(
+            inst->getLLVMConstant()->getAggregateElement(instType->asCore()->getIndexOf(name).value()), mem->type);
       } else {
-        ctx->Error("The pointer is not a multi pointer and hence the length cannot be determined", fileRange);
+        return new IR::Value(ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
+                                                          instType->asCore()->getIndexOf(name).value()),
+                             IR::ReferenceType::get(isVar, instType->asCore()->getTypeOfMember(name), ctx), false,
+                             IR::Nature::temporary);
+      }
+    } else if (!isVariationAccess && eTy->hasNormalMemberFn(name)) {
+      // FIXME - Implement
+      ctx->Error("Referencing member function is not supported", fileRange);
+    } else if (isVariationAccess && eTy->hasVariationFn(name)) {
+      // FIXME - Implement
+      ctx->Error("Referencing variation function is not supported", fileRange);
+    }
+  } else if (instType->isPointer() && instType->asPointer()->isMulti()) {
+    if (name == "length") {
+      if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
+        inst->makeImplicitPointer(ctx, None);
+      }
+      if (inst->isLLVMConstant() && !isPointerAccess) {
+        return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::UnsignedType::get(64u, ctx));
+      } else {
+        return new IR::Value(
+            ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                    ctx->builder.CreateStructGEP(instType->getLLVMType(), inst->getLLVM(), 1u)),
+            IR::UnsignedType::get(64u, ctx), false, IR::Nature::temporary);
       }
     } else {
-      ctx->Error("Invalid member name for pointer datatype", fileRange);
+      ctx->Error("Invalid member name for pointer datatype " + ctx->highlightError(instType->toString()), fileRange);
     }
   } else {
     ctx->Error("Member access for this type is not supported", fileRange);

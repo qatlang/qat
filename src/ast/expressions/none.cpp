@@ -11,11 +11,31 @@ bool NoneExpression::hasTypeSet() const { return type != nullptr; }
 
 IR::Value* NoneExpression::emit(IR::Context* ctx) {
   if (type || isTypeInferred()) {
-    auto* typ = type ? type->emit(ctx) : inferredType;
+    if (isTypeInferred()) {
+      if (!inferredType->isMaybe()) {
+        ctx->Error("The inferred type of the " + ctx->highlightError("none") + " expression is " +
+                       ctx->highlightError(inferredType->toString()) + " which is not a maybe type",
+                   fileRange);
+      } else if (type && isPacked.has_value() && inferredType->isMaybe() &&
+                 (!inferredType->asMaybe()->isTypePacked())) {
+        ctx->Error("The inferred maybe type is " + ctx->highlightError(inferredType->toString()) +
+                       " which is not packed, but " + ctx->highlightError("pack") +
+                       " is provided for the none expression. Please change this to " +
+                       ctx->highlightError("none:[" + type->toString() + "]"),
+                   isPacked.value());
+      } else if (type && !isPacked.has_value() && inferredType->isMaybe() && inferredType->asMaybe()->isTypePacked()) {
+        ctx->Error("The inferred maybe type is " + ctx->highlightError(inferredType->toString()) +
+                       " which is packed, but " + ctx->highlightError("pack") +
+                       " is not provided in the none expression. Please change this to " +
+                       ctx->highlightError("none:[pack, " + type->toString() + "]"),
+                   fileRange);
+      }
+    }
+    auto* typ = type ? type->emit(ctx) : inferredType->asMaybe()->getSubType();
     if (inferredType && type) {
-      if (!typ->isSame(inferredType)) {
+      if (!typ->isSame(inferredType->asMaybe()->getSubType())) {
         ctx->Error("The type provided for this none expression is " + ctx->highlightError(typ->toString()) +
-                       ", but the expected type is " + ctx->highlightError(inferredType->toString()),
+                       ", but the expected type is " + ctx->highlightError(inferredType->asMaybe()->toString()),
                    fileRange);
       }
     }

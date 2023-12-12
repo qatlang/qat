@@ -15,7 +15,7 @@ public:
   useit IR::PrerunValue* emit(IR::Context* ctx);
   useit Json             toJson() const;
   useit String           toString() const;
-  useit NodeType         nodeType() const { NodeType::prerunMemberAccess; }
+  useit NodeType         nodeType() const { return NodeType::prerunMemberAccess; }
 };
 
 } // namespace qat::ast

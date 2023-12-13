@@ -103,21 +103,35 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       inst->makeImplicitPointer(ctx, None);
     }
     if (name == "isDone") {
-      return new IR::Value(ctx->builder.CreateLoad(
-                               llvm::Type::getInt1Ty(ctx->llctx),
-                               ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                                       ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(),
-                                                                                    inst->getLLVM(), 2u)),
-                               true),
-                           IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      return new IR::Value(
+          ctx->builder.CreateLoad(
+              llvm::Type::getInt1Ty(ctx->llctx),
+              ctx->builder.CreatePointerCast(
+                  ctx->builder.CreateInBoundsGEP(
+                      llvm::Type::getInt64Ty(ctx->llctx),
+                      ctx->builder.CreateLoad(
+                          llvm::Type::getInt64Ty(ctx->llctx)
+                              ->getPointerTo(ctx->dataLayout.value().getProgramAddressSpace()),
+                          ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 1u)),
+                      {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 1u)}),
+                  llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(ctx->dataLayout.value().getProgramAddressSpace())),
+              true),
+          IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
     } else if (name == "isNotDone") {
       return new IR::Value(
           ctx->builder.CreateICmpEQ(
               ctx->builder.CreateLoad(
                   llvm::Type::getInt1Ty(ctx->llctx),
-                  ctx->builder.CreateLoad(
-                      llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                      ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 2u)),
+                  ctx->builder.CreatePointerCast(
+                      ctx->builder.CreateInBoundsGEP(
+                          llvm::Type::getInt64Ty(ctx->llctx),
+                          ctx->builder.CreateLoad(
+                              llvm::Type::getInt64Ty(ctx->llctx)
+                                  ->getPointerTo(ctx->dataLayout.value().getProgramAddressSpace()),
+                              ctx->builder.CreateStructGEP(instType->asFuture()->getLLVMType(), inst->getLLVM(), 1u)),
+                          {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 1u)}),
+                      llvm::Type::getInt1Ty(ctx->llctx)
+                          ->getPointerTo(ctx->dataLayout.value().getProgramAddressSpace())),
                   true),
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
           IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);

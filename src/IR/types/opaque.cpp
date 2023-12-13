@@ -153,35 +153,44 @@ bool OpaqueType::isMoveAssignable() const { return subTy && subTy->isMoveAssigna
 
 bool OpaqueType::isDestructible() const { return subTy && subTy->isDestructible(); }
 
-void OpaqueType::copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+void OpaqueType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
   if (subTy) {
-    subTy->copyConstructValue(ctx, vals, fun);
+    subTy->copyConstructValue(ctx, first, second, fun);
+  } else {
+    ctx->Error("Could not copy construct an instance of opaque type " + ctx->highlightError(toString()), None);
   }
 }
 
-void OpaqueType::copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+void OpaqueType::copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
   if (subTy) {
-    subTy->copyAssignValue(ctx, vals, fun);
+    subTy->copyAssignValue(ctx, first, second, fun);
+  } else {
+    ctx->Error("Could not copy assign an instance of opaque type " + ctx->highlightError(toString()), None);
   }
 }
 
-void OpaqueType::moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+void OpaqueType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
   if (subTy) {
-    subTy->moveConstructValue(ctx, vals, fun);
+    subTy->moveConstructValue(ctx, first, second, fun);
+  } else {
+    ctx->Error("Could not move construct an instance of opaque type " + ctx->highlightError(toString()), None);
   }
 }
 
-void OpaqueType::moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+void OpaqueType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
   if (subTy) {
-    subTy->moveAssignValue(ctx, vals, fun);
+    subTy->moveAssignValue(ctx, first, second, fun);
+  } else {
+    ctx->Error("Could not move assign an instance of opaque type " + ctx->highlightError(toString()), None);
   }
 }
 
-void OpaqueType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
+void OpaqueType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
   if (subTy) {
-    subTy->destroyValue(ctx, vals, fun);
+    subTy->destroyValue(ctx, instance, fun);
+  } else {
+    ctx->Error("Could not destroy an instance of opaque type " + ctx->highlightError(toString()), None);
   }
-  // FIXME - Evaluate if an error should be thrown if there is no subtype set
 }
 
 TypeKind OpaqueType::typeKind() const { return TypeKind::opaque; }

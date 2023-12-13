@@ -77,11 +77,11 @@ public:
   useit bool isMoveAssignable() const final;
   useit bool isDestructible() const final;
 
-  void copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
-  void copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
-  void moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
-  void moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
-  void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
 
   useit TypeKind typeKind() const final;
   useit String   toString() const final;

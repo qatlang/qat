@@ -24,8 +24,17 @@ public:
   useit bool     isTriviallyCopyable() const final { return subTy->isTriviallyCopyable(); }
   useit bool     isTriviallyMovable() const final { return subTy->isTriviallyMovable(); }
   useit bool     isTypePacked() const;
-  useit bool     isDestructible() const final;
-  void           destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+
+  useit bool isCopyConstructible() const final;
+  void       copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  useit bool isMoveConstructible() const final;
+  void       moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  useit bool isCopyAssignable() const final;
+  void       copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  useit bool isMoveAssignable() const final;
+  void       moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  useit bool isDestructible() const final;
+  void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

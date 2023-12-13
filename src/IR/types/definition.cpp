@@ -33,10 +33,34 @@ VisibilityInfo DefinitionType::getVisibility() const { return visibility; }
 
 bool DefinitionType::isExpanded() const { return subType->isExpanded(); }
 
+bool DefinitionType::isCopyConstructible() const { return subType->isCopyConstructible(); }
+
+bool DefinitionType::isCopyAssignable() const { return subType->isCopyAssignable(); }
+
+bool DefinitionType::isMoveConstructible() const { return subType->isMoveConstructible(); }
+
+bool DefinitionType::isMoveAssignable() const { return subType->isMoveAssignable(); }
+
 bool DefinitionType::isDestructible() const { return subType->isDestructible(); }
 
-void DefinitionType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
-  subType->destroyValue(ctx, vals, fun);
+void DefinitionType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  subType->copyConstructValue(ctx, first, second, fun);
+}
+
+void DefinitionType::copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  subType->copyAssignValue(ctx, first, second, fun);
+}
+
+void DefinitionType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  subType->moveConstructValue(ctx, first, second, fun);
+}
+
+void DefinitionType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  subType->moveAssignValue(ctx, first, second, fun);
+}
+
+void DefinitionType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  subType->destroyValue(ctx, instance, fun);
 }
 
 Identifier DefinitionType::getName() const { return name; }

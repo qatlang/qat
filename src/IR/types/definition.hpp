@@ -37,13 +37,21 @@ public:
   useit LinkNames  getLinkNames() const final;
   useit String     toString() const final;
   useit bool       isExpanded() const final;
-  useit bool       isDestructible() const final;
   useit bool       isTypeSized() const final;
 
   useit bool isTriviallyCopyable() const final;
   useit bool isTriviallyMovable() const final;
+  useit bool isCopyConstructible() const final;
+  useit bool isCopyAssignable() const final;
+  useit bool isMoveConstructible() const final;
+  useit bool isMoveAssignable() const final;
+  useit bool isDestructible() const final;
 
-  void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
   void updateOverview() final;
 
   useit bool canBePrerunGeneric() const final;

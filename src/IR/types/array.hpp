@@ -34,8 +34,16 @@ public:
   useit bool        isTriviallyCopyable() const final { return elementType->isTriviallyCopyable(); }
   useit bool        isTriviallyMovable() const final { return elementType->isTriviallyMovable(); }
 
+  useit bool isCopyConstructible() const final;
+  useit bool isMoveConstructible() const final;
+  useit bool isCopyAssignable() const final;
+  useit bool isMoveAssignable() const final;
   useit bool isDestructible() const final;
-  void       destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) final;
+  void       copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void       copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void       moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void       moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
+  void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
 };
 
 } // namespace qat::IR

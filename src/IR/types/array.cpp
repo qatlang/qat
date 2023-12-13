@@ -4,6 +4,7 @@
 #include "../control_flow.hpp"
 #include "../value.hpp"
 #include "./qat_type.hpp"
+#include "reference.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
@@ -85,39 +86,141 @@ Maybe<bool> ArrayType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* secon
 
 bool ArrayType::isTypeSized() const { return length > 0; }
 
+bool ArrayType::isCopyConstructible() const { return elementType->isCopyConstructible(); }
+
+bool ArrayType::isMoveConstructible() const { return elementType->isMoveConstructible(); }
+
+bool ArrayType::isCopyAssignable() const { return elementType->isCopyAssignable(); }
+
+bool ArrayType::isMoveAssignable() const { return elementType->isMoveAssignable(); }
+
 bool ArrayType::isDestructible() const { return elementType->isDestructible(); }
 
-void ArrayType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
-  if (elementType->isDestructible() && !vals.empty()) {
-    auto* value = vals.front();
-    if (value->isReference()) {
-      value->loadImplicitPointer(ctx->builder);
-    }
-    auto* currBlock = fun->getBlock();
-    auto* condBlock = new IR::Block(fun, currBlock);
-    auto* trueBlock = new IR::Block(fun, currBlock);
-    auto* restBlock = new IR::Block(fun, currBlock->getParent());
-    restBlock->linkPrevBlock(currBlock);
-    auto* count   = fun->getFunctionCommonIndex();
+void ArrayType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isCopyConstructible()) {
     auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
-    ctx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), count->getLLVM());
-    (void)IR::addBranch(ctx->builder, condBlock->getBB());
-    condBlock->setActive(ctx->builder);
-    ctx->builder.CreateCondBr(ctx->builder.CreateICmpULT(ctx->builder.CreateLoad(Ty64Int, count->getLLVM()),
-                                                         llvm::ConstantInt::get(Ty64Int, getLength())),
-                              trueBlock->getBB(), restBlock->getBB());
-    trueBlock->setActive(ctx->builder);
-    auto* dstrFn = elementType->asExpanded()->getDestructor();
-    (void)dstrFn->call(ctx,
-                       {ctx->builder.CreateInBoundsGEP(
-                           elementType->getLLVMType(), value->getLLVM(),
-                           {llvm::ConstantInt::get(Ty64Int, 0u), ctx->builder.CreateLoad(Ty64Int, count->getLLVM())})},
-                       None, ctx->getMod());
-    ctx->builder.CreateStore(
-        ctx->builder.CreateAdd(ctx->builder.CreateLoad(Ty64Int, count->getLLVM()), llvm::ConstantInt::get(Ty64Int, 1u)),
-        count->getLLVM());
-    (void)IR::addBranch(ctx->builder, condBlock->getBB());
-    restBlock->setActive(ctx->builder);
+    auto* firstIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), first->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    auto* secondIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), second->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    for (usize i = 0; i < length; i++) {
+      if (i != 0) {
+        firstIndexing  = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), firstIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+        secondIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), secondIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+      }
+      elementType->copyConstructValue(
+          ctx,
+          new IR::Value(firstIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          new IR::Value(secondIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          fun);
+    }
+  } else {
+    ctx->Error("Could not copy construct an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+void ArrayType::copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isCopyAssignable()) {
+    auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+    auto* firstIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), first->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    auto* secondIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), second->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    for (usize i = 0; i < length; i++) {
+      if (i != 0) {
+        firstIndexing  = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), firstIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+        secondIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), secondIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+      }
+      elementType->copyAssignValue(
+          ctx,
+          new IR::Value(firstIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          new IR::Value(secondIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          fun);
+    }
+  } else {
+    ctx->Error("Could not copy assign an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+void ArrayType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isMoveAssignable()) {
+    auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+    auto* firstIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), first->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    auto* secondIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), second->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    for (usize i = 0; i < length; i++) {
+      if (i != 0) {
+        firstIndexing  = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), firstIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+        secondIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), secondIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+      }
+      elementType->moveConstructValue(
+          ctx,
+          new IR::Value(firstIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          new IR::Value(secondIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          fun);
+    }
+  } else {
+    ctx->Error("Could not move construct an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+void ArrayType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isMoveAssignable()) {
+    auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+    auto* firstIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), first->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    auto* secondIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), second->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    for (usize i = 0; i < length; i++) {
+      if (i != 0) {
+        firstIndexing  = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), firstIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+        secondIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), secondIndexing,
+                                                        {llvm::ConstantInt::get(Ty64Int, 1u)});
+      }
+      elementType->moveAssignValue(
+          ctx,
+          new IR::Value(firstIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          new IR::Value(secondIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          fun);
+    }
+  } else {
+    ctx->Error("Could not move assign an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+void ArrayType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  if (elementType->isDestructible()) {
+    auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
+    auto* instanceIndexing =
+        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), instance->getLLVM(),
+                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    for (usize i = 0; i < length; i++) {
+      if (i != 0) {
+        instanceIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), instanceIndexing,
+                                                          {llvm::ConstantInt::get(Ty64Int, 1u)});
+      }
+      elementType->destroyValue(
+          ctx,
+          new IR::Value(instanceIndexing, IR::ReferenceType::get(true, elementType, ctx), false, IR::Nature::temporary),
+          fun);
+    }
+  } else {
+    ctx->Error("Could not destroy instance of type " + ctx->highlightError(toString()), None);
   }
 }
 

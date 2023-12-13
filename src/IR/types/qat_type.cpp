@@ -43,6 +43,15 @@ void QatType::clearAll() {
   }
 }
 
+bool QatType::isTypeDoneByDefault() const {
+  for (auto* doSkill : doneSkills) {
+    if (doSkill->isDefaultForType()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool QatType::hasNoValueSemantics() const { return false; }
 
 String QatType::getNameForLinking() const { return linkingName; }
@@ -226,7 +235,8 @@ bool QatType::isSame(QatType* other) {
         auto* thisVal  = (FunctionType*)this;
         auto* otherVal = (FunctionType*)other;
         if (thisVal->getArgumentCount() == otherVal->getArgumentCount()) {
-          if (thisVal->getReturnType()->isSame(otherVal->getReturnType())) {
+          if (thisVal->getReturnType()->getType()->isSame(otherVal->getReturnType()->getType()) &&
+              (thisVal->getReturnType()->isReturnSelf() == otherVal->getReturnType()->isReturnSelf())) {
             for (usize i = 0; i < thisVal->getArgumentCount(); i++) {
               auto* thisArg  = thisVal->getArgumentTypeAt(i);
               auto* otherArg = otherVal->getArgumentTypeAt(i);
@@ -279,20 +289,62 @@ OpaqueType* QatType::asOpaque() const {
 bool QatType::isTriviallyCopyable() const { return false; }
 bool QatType::isTriviallyMovable() const { return false; }
 
-bool QatType::isCopyConstructible() const { return false; }
-void QatType::copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+bool QatType::isCopyConstructible() const { return isTriviallyCopyable(); }
+void QatType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyCopyable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(getLLVMType(), second->getLLVM()), first->getLLVM());
+  } else {
+    ctx->Error("Could not copy construct an instance of type " + ctx->highlightError(toString()) +
+                   " as it is not trivially copyable",
+               None);
+  }
+}
 
-bool QatType::isCopyAssignable() const { return false; }
-void QatType::copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+bool QatType::isCopyAssignable() const { return isTriviallyCopyable(); }
+void QatType::copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyCopyable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(getLLVMType(), second->getLLVM()), first->getLLVM());
+  } else {
+    ctx->Error("Could not copy assign an instance of type " + ctx->highlightError(toString()) +
+                   " as it is not trivially copyable",
+               None);
+  }
+}
 
-bool QatType::isMoveConstructible() const { return false; }
-void QatType::moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+bool QatType::isMoveConstructible() const { return isTriviallyMovable(); }
+void QatType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(getLLVMType(), second->getLLVM()), first->getLLVM());
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(getLLVMType()), second->getLLVM());
+  } else {
+    ctx->Error("Could not move construct an instance of type " + ctx->highlightError(toString()) +
+                   " as it is not trivially movable",
+               None);
+  }
+}
 
-bool QatType::isMoveAssignable() const { return false; }
-void QatType::moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+bool QatType::isMoveAssignable() const { return isTriviallyMovable(); }
+void QatType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(getLLVMType(), second->getLLVM()), first->getLLVM());
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(getLLVMType()), second->getLLVM());
+  } else {
+    ctx->Error("Could not move assign an instance of type " + ctx->highlightError(toString()) +
+                   " as it is not trivially movable",
+               None);
+  }
+}
 
-bool QatType::isDestructible() const { return false; }
-void QatType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {}
+bool QatType::isDestructible() const { return isTriviallyMovable(); }
+void QatType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(getLLVMType()), instance->getLLVM());
+  } else {
+    ctx->Error("Could not destroy an instance of type " + ctx->highlightError(toString()) +
+                   " as it is not trivially movable",
+               None);
+  }
+}
 
 bool QatType::isDefinition() const {
   return (typeKind() == TypeKind::definition) ||

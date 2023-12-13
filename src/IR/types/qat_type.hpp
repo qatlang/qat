@@ -38,6 +38,7 @@ class TypedType;
 class PrerunValue;
 class CType;
 class ResultType;
+class DoSkill;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -45,14 +46,15 @@ protected:
   String               linkingName;
   static Vec<QatType*> types;
   llvm::Type*          llvmType;
+  Vec<DoSkill*>        doneSkills;
 
 public:
   QatType();
   virtual ~QatType() = default;
   static void clearAll();
 
-  useit virtual bool hasNoValueSemantics() const;
-
+  useit bool                  isTypeDoneByDefault() const;
+  useit virtual bool          hasNoValueSemantics() const;
   useit virtual bool          canBePrerunGeneric() const;
   useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;
   useit virtual bool          isTypeSized() const;
@@ -75,11 +77,11 @@ public:
   useit virtual bool isTriviallyCopyable() const;
   useit virtual bool isTriviallyMovable() const;
 
-  virtual void copyConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
-  virtual void copyAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
-  virtual void moveConstructValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
-  virtual void moveAssignValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
-  virtual void destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun);
+  virtual void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
 
   useit bool        isOpaque() const;
   useit OpaqueType* asOpaque() const;

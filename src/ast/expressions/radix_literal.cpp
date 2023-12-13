@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 RadixLiteral::RadixLiteral(String _value, u64 _radix, FileRange _fileRange)
-    : value(std::move(_value)), radix(_radix), Expression(std::move(_fileRange)) {}
+    : Expression(std::move(_fileRange)), value(std::move(_value)), radix(_radix) {}
 
 IR::Value* RadixLiteral::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {

@@ -29,7 +29,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
               new IR::Value(IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), candTy->getLLVMType()),
                             candTy, isVar, IR::Nature::temporary);
         }
-        (void)candTy->moveConstructValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        (void)candTy->moveConstructValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (expEmit->isLocalToFn()) {
           ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
         }
@@ -68,16 +68,16 @@ IR::Value* Move::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else {
-      if (candTy->isMoveAssignable()) {
-        (void)candTy->moveAssignValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+      if (candTy->isTriviallyMovable()) {
+        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                 createIn->getLLVM());
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
         if (expEmit->isLocalToFn()) {
           ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
         }
         return createIn;
-      } else if (candTy->isTriviallyMovable()) {
-        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
-                                 createIn->getLLVM());
-        ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
+      } else if (candTy->isMoveAssignable()) {
+        (void)candTy->moveAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (expEmit->isLocalToFn()) {
           ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
         }

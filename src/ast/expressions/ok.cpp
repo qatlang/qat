@@ -65,6 +65,15 @@ IR::Value* Ok::emit(IR::Context* ctx) {
       ctx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->llctx)),
                                ctx->builder.CreateStructGEP(inferredType->getLLVMType(), createIn->getLLVM(), 0u));
       if (!validTy->isTriviallyCopyable()) {
+        if (expr->getType()->isSame(inferredType->asResult()->getValidType())) {
+          if (!expr->isVariable()) {
+            ctx->Error("This is an expression without variability and hence cannot be moved from", fileRange);
+          }
+        } else if (!expr->getType()->asReference()->isSubtypeVariable()) {
+          ctx->Error("This expression is of type " + ctx->highlightError(expr->getType()->toString()) +
+                         " which is a reference without variability and hence cannot be trivially moved from",
+                     fileRange);
+        }
         // MOVE WARNING
         ctx->Warning("There is a trivial move occuring here. Do you want to use " + ctx->highlightWarning("'move") +
                          " to make it explicit and clear?",
@@ -79,7 +88,7 @@ IR::Value* Ok::emit(IR::Context* ctx) {
       // NON-TRIVIAL COPY & MOVE ERROR
       ctx->Error("The expression provided is of type " + ctx->highlightError(expr->getType()->toString()) + ". Type " +
                      ctx->highlightError(validTy->toString()) + " cannot be trivially copied or moved. Please do " +
-                     ctx->highlightError("'copy") + " or " + ctx->highlightError("'move"),
+                     ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
                  subExpr->fileRange);
     }
   } else if (expr->getType()->isSame(inferredType->asResult()->getValidType())) {

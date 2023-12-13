@@ -16,168 +16,106 @@ GiveSentence::GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
 
 IR::Value* GiveSentence::emit(IR::Context* ctx) {
   auto* fun = ctx->getActiveFunction();
-  if (fun->isAsyncFunction() ? fun->getType()
-                                   ->asFunction()
-                                   ->getReturnArgType()
-                                   ->asReference()
-                                   ->getSubType()
-                                   ->asFuture()
-                                   ->getSubType()
-                                   ->isVoid()
-                             : fun->getType()->asFunction()->getReturnType()->isVoid()) {
-    if (fun->isAsyncFunction()) {
-      auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->getLLVMType();
-      auto* futRet =
-          ctx->builder.CreateLoad(futureTy->getPointerTo(), fun->getBlock()->getValue("qat'future")->getAlloca());
-      ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-                               ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                                       ctx->builder.CreateStructGEP(futureTy, futRet, 2u)));
-      ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-      auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-      ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-                              {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
-      SHOW("Creating return for async function with void return")
-      if (give_expr.has_value()) {
-        auto* giveExpr = give_expr.value()->emit(ctx);
-        if (!giveExpr->getType()->isVoid()) {
-          ctx->Error("The return type of the function is " + ctx->highlightError("void") +
-                         " but the expression is of type " + ctx->highlightError(giveExpr->getType()->toString()),
-                     give_expr.value()->fileRange);
-        }
+  if (give_expr.has_value()) {
+    if (fun->getType()->asFunction()->getReturnType()->isReturnSelf()) {
+      if (give_expr.value()->nodeType() != NodeType::self) {
+        ctx->Error("This function is marked to return '' and cannot return anything else", fileRange);
       }
-      IR::destructorCaller(ctx, fun);
-      IR::memberFunctionHandler(ctx, fun);
-      return new IR::Value(
-          ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
-          IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
-    } else {
-      if (give_expr.has_value()) {
-        auto* giveExpr = give_expr.value()->emit(ctx);
-        if (!giveExpr->getType()->isVoid()) {
-          ctx->Error("The return type of the function is " + ctx->highlightError("void") +
-                         " but the expression is of type " + ctx->highlightError(giveExpr->getType()->toString()),
-                     give_expr.value()->fileRange);
-        }
-      }
-      IR::destructorCaller(ctx, fun);
-      IR::memberFunctionHandler(ctx, fun);
-      return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
     }
-  } else {
-    if (give_expr.has_value()) {
-      auto* retType = fun->isAsyncFunction()
-                          ? fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()
-                          : fun->getType()->asFunction()->getReturnType();
-      retType       = fun->isAsyncFunction() ? retType->asFuture()->getSubType() : retType;
-      if (give_expr.value()->hasTypeInferrance()) {
-        give_expr.value()->asTypeInferrable()->setInferenceType(retType);
-      }
-      auto* retVal = give_expr.value()->emit(ctx);
-      SHOW("ret val emitted")
-      SHOW("RetType: " << retType->toString() << "\nRetValType: " << retVal->getType()->toString())
-      if (retType->isSame(retVal->getType()) ||
-          (retType->isReference() &&
-           retType->asReference()->getSubType()->isSame(
-               retVal->isReference() ? retVal->getType()->asReference()->getSubType() : retVal->getType()) &&
-           (retType->asReference()->isSubtypeVariable()
-                ? (retVal->isImplicitPointer()
-                       ? retVal->isVariable()
-                       : (retVal->isReference() && retVal->getType()->asReference()->isSubtypeVariable()))
-                : true)) ||
-          (retVal->getType()->isReference() && retVal->getType()->asReference()->getSubType()->isSame(retType))) {
-        SHOW("Return type is same")
-        if (retVal->getType()->isReference() && !(retType->isReference())) {
-          retVal = new IR::Value(ctx->builder.CreateLoad(retType->getLLVMType(), retVal->getLLVM()), retType, false,
-                                 IR::Nature::temporary);
-        } else if (retVal->isImplicitPointer() && !retType->isReference()) {
-          retVal->loadImplicitPointer(ctx->builder);
-        }
-        if (retType->isReference() && retVal->isLocalToFn()) {
-          ctx->Warning("Returning reference to a local value. The value "
-                       "pointed to by the reference might be destroyed before "
-                       "the function call is complete",
-                       fileRange);
-        }
-        if (fun->isAsyncFunction()) {
-          auto* futureTy = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
-          SHOW("Got future type")
-          auto* futureRet = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(),
-                                                    fun->getBlock()->getValue("qat'future")->getAlloca());
-          SHOW("Got future ret")
-          ctx->builder.CreateStore(
-              retVal->getLLVM(),
-              ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
-                                      ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 3u)));
-          SHOW("Stored value to future")
-          ctx->builder.CreateStore(
-              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-              ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                      ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)));
-          SHOW("Stored tag")
-          ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-          auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-          ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-                                  {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
-          IR::destructorCaller(ctx, fun);
-          IR::memberFunctionHandler(ctx, fun);
-          return new IR::Value(ctx->builder.CreateRet(llvm::ConstantPointerNull::get(
-                                   llvm::dyn_cast<llvm::PointerType>(fun->getAsyncSubFunction()->getReturnType()))),
-                               IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+    auto* retType = fun->getType()->asFunction()->getReturnType()->getType();
+    if (give_expr.value()->hasTypeInferrance()) {
+      give_expr.value()->asTypeInferrable()->setInferenceType(retType);
+    }
+    auto* retVal = give_expr.value()->emit(ctx);
+    SHOW("RetType: " << retType->toString() << "\nRetValType: " << retVal->getType()->toString())
+    if (retType->isSame(retVal->getType())) {
+      if (retType->isVoid()) {
+        IR::destructorCaller(ctx, fun);
+        IR::memberFunctionHandler(ctx, fun);
+        return new IR::Value(ctx->builder.CreateRetVoid(), retType, false, IR::Nature::temporary);
+      } else {
+        if (retVal->isImplicitPointer()) {
+          if (retType->isTriviallyCopyable() || retType->isTriviallyMovable()) {
+            auto* loadRes = ctx->builder.CreateLoad(retType->getLLVMType(), retVal->getLLVM());
+            if (!retType->isTriviallyCopyable()) {
+              if (!retVal->isVariable()) {
+                ctx->Error("This expression does not have variability, and hence cannot be trivially moved from",
+                           give_expr.value()->fileRange);
+              }
+              ctx->builder.CreateStore(llvm::Constant::getNullValue(retType->getLLVMType()), retVal->getLLVM());
+            }
+            IR::destructorCaller(ctx, fun);
+            IR::memberFunctionHandler(ctx, fun);
+            return new IR::Value(ctx->builder.CreateRet(loadRes), retType, false, IR::Nature::temporary);
+          } else {
+            ctx->Error(
+                "This expression is of type " + ctx->highlightError(retType->toString()) +
+                    " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+                    ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
+                fileRange);
+          }
         } else {
           IR::destructorCaller(ctx, fun);
           IR::memberFunctionHandler(ctx, fun);
-          return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retVal->getType(), false, IR::Nature::pure);
+          return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retType, false, IR::Nature::temporary);
         }
-      } else if (fun->isAsyncFunction() && retType->isFuture() &&
-                 (retType->asFuture()->getSubType()->isSame(retVal->getType()) ||
-                  (retVal->isReference() &&
-                   retType->asFuture()->getSubType()->isSame(retVal->getType()->asReference()->getSubType())) ||
-                  (retType->asFuture()->getSubType()->isReference() &&
-                   (retVal->isImplicitPointer() &&
-                    (retType->asFuture()->getSubType()->asReference()->isSubtypeVariable() ? retVal->isVariable()
-                                                                                           : true) &&
-                    retType->asFuture()->getSubType()->asReference()->getSubType()->isSame(retVal->getType()))))) {
-        SHOW("GIVE: Async fn and value type matches return type")
-        // FIXME - Check returning of future values
-        // FIXME - Implement copy & move semantics
-        if (retType->asFuture()->getSubType()->isSame(retVal->getType())) {
-          retVal->loadImplicitPointer(ctx->builder);
-        } else if (retVal->isReference() &&
-                   retType->asFuture()->getSubType()->isSame(retVal->getType()->asReference()->getSubType())) {
-          retVal = new IR::Value(
-              ctx->builder.CreateLoad(retVal->getType()->asReference()->getSubType()->getLLVMType(), retVal->getLLVM()),
-              retVal->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+      }
+    } else if (retType->isReference() &&
+               retType->asReference()->getSubType()->isSame(
+                   retVal->isReference() ? retVal->getType()->asReference()->getSubType() : retVal->getType()) &&
+               (retType->asReference()->isSubtypeVariable()
+                    ? (retVal->isImplicitPointer()
+                           ? retVal->isVariable()
+                           : (retVal->isReference() && retVal->getType()->asReference()->isSubtypeVariable()))
+                    : true)) {
+      SHOW("Return type is compatible")
+      if (retType->isReference() && !retVal->isReference() && retVal->isLocalToFn()) {
+        ctx->Warning(
+            "Returning reference to a local value. The value pointed to by the reference might be destroyed before the function call is complete",
+            fileRange);
+      }
+      if (retVal->isReference()) {
+        retVal->loadImplicitPointer(ctx->builder);
+      }
+      IR::destructorCaller(ctx, fun);
+      IR::memberFunctionHandler(ctx, fun);
+      return new IR::Value(ctx->builder.CreateRet(retVal->getLLVM()), retType, false, IR::Nature::pure);
+    } else if (retVal->getType()->isReference() && retVal->getType()->asReference()->getSubType()->isSame(retType)) {
+      if (retType->isTriviallyCopyable() || retType->isTriviallyMovable()) {
+        retVal->loadImplicitPointer(ctx->builder);
+        auto* loadRes = ctx->builder.CreateLoad(retType->getLLVMType(), retVal->getLLVM());
+        if (!retType->isTriviallyCopyable()) {
+          if (!retVal->getType()->asReference()->isSubtypeVariable()) {
+            ctx->Error("The expression is of type " + ctx->highlightError(retVal->getType()->toString()) +
+                           " which is a reference without variability, and hence cannot be trivially moved from",
+                       give_expr.value()->fileRange);
+          }
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(retType->getLLVMType()), retVal->getLLVM());
         }
-        auto* futureTy  = fun->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
-        auto* futureRet = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(),
-                                                  fun->getBlock()->getValue("qat'future")->getAlloca());
-        ctx->builder.CreateStore(
-            retVal->getLLVM(),
-            ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
-                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 3u)),
-            true);
-        ctx->builder.CreateStore(
-            llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-            ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRet, 2u)),
-            true);
-        ctx->getMod()->linkNative(IR::NativeUnit::pthreadExit);
-        auto* pthreadExit = ctx->getMod()->getLLVMModule()->getFunction("pthread_exit");
-        ctx->builder.CreateCall(pthreadExit->getFunctionType(), pthreadExit,
-                                {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())});
         IR::destructorCaller(ctx, fun);
         IR::memberFunctionHandler(ctx, fun);
-        return new IR::Value(
-            ctx->builder.CreateRet(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo())),
-            IR::VoidType::get(ctx->llctx), false, IR::Nature::pure);
+        return new IR::Value(ctx->builder.CreateRet(loadRes), retType, false, IR::Nature::temporary);
       } else {
-        ctx->Error("Given value type of the function is " + fun->getType()->asFunction()->getReturnType()->toString() +
-                       ", but the provided value in the give sentence is " + retVal->getType()->toString(),
-                   give_expr.value()->fileRange);
+        ctx->Error(
+            "This expression is of type " + ctx->highlightError(retType->toString()) +
+                " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+                ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
+            fileRange);
       }
     } else {
-      ctx->Error("No value is provided for the give sentence. Please provide a "
-                 "value of the appropriate type",
+      ctx->Error("Given value type of the function is " + fun->getType()->asFunction()->getReturnType()->toString() +
+                     ", but the provided value in the give sentence is " + retVal->getType()->toString(),
+                 give_expr.value()->fileRange);
+    }
+  } else {
+    if (fun->getType()->asFunction()->getReturnType()->getType()->isVoid()) {
+      IR::destructorCaller(ctx, fun);
+      IR::memberFunctionHandler(ctx, fun);
+      return new IR::Value(ctx->builder.CreateRetVoid(), IR::VoidType::get(ctx->llctx), false, IR::Nature::temporary);
+    } else {
+      ctx->Error("No value is provided to give while the given type of the function is " +
+                     ctx->highlightError(fun->getType()->asFunction()->getReturnType()->toString()) +
+                     ". Please provide a value of the appropriate type",
                  fileRange);
     }
   }

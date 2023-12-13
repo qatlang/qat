@@ -28,7 +28,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
               new IR::Value(IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), candTy->getLLVMType()),
                             candTy, isVar, IR::Nature::temporary);
         }
-        (void)candTy->copyConstructValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        (void)candTy->copyConstructValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (didNotHaveCreateIn) {
           return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
                                IR::Nature::temporary);
@@ -61,7 +61,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
       }
     } else {
       if (candTy->isCopyAssignable()) {
-        (void)candTy->copyAssignValue(ctx, {createIn, expEmit}, ctx->getActiveFunction());
+        (void)candTy->copyAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         return createIn;
       } else if (candTy->isTriviallyCopyable()) {
         ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),

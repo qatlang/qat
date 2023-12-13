@@ -199,7 +199,7 @@ Maybe<String> ChoiceType::toPrerunGenericString(IR::PrerunValue* val) const {
                   ctx->dataLayout.value()))
               ->getValue()
               .getBoolValue()) {
-        return getFullName() + "'" + field.value;
+        return getFullName() + "::" + field.value;
       }
     }
     return None;

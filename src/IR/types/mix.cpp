@@ -55,64 +55,10 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
     parent->mixTypes.push_back(this);
   }
   opaquedType->setSubType(this);
-  ovInfo               = opaquedType->ovInfo;
-  ovRange              = opaquedType->ovRange;
-  ovMentions           = opaquedType->ovMentions;
-  ovBroughtMentions    = opaquedType->ovBroughtMentions;
-  auto needsDestructor = false;
-  for (auto sub : subtypes) {
-    if (sub.second.has_value()) {
-      SHOW("Mix type subfield type is: " << sub.second.value()->toString())
-      if (sub.second.value()->isDestructible()) {
-        SHOW("Setting needs destructor")
-        // FIXME - Problem is order of creation of types & destructors
-        needsDestructor = true;
-        break;
-      }
-    }
-  }
-  SHOW("Mix type needs destructor: " << (needsDestructor ? "true" : "false"))
-  // NOTE - Possibly make this modular when mix types can have custom destructors
-  if (needsDestructor) {
-    destructor           = IR::MemberFunction::CreateDestructor(this, nullptr, _name.range, _fileRange, ctx);
-    auto* entryBlock     = new IR::Block(destructor.value(), nullptr);
-    auto* tagIntTy       = llvm::Type::getIntNTy(ctx->llctx, tagBitWidth);
-    auto* remainingBlock = new IR::Block(destructor.value(), nullptr);
-    remainingBlock->linkPrevBlock(entryBlock);
-    entryBlock->setActive(ctx->builder);
-    auto* inst = destructor.value()->getLLVMFunction()->getArg(0);
-    for (auto sub : subtypes) {
-      if (sub.second.has_value() && sub.second.value()->isDestructible()) {
-        auto* subTy = sub.second.value();
-        SHOW("Getting index of name of subfield")
-        auto subIdx = getIndexOfName(sub.first.value);
-        SHOW("Getting current block")
-        auto* currBlock  = destructor.value()->getBlock();
-        auto* trueBlock  = new IR::Block(destructor.value(), currBlock);
-        auto* falseBlock = new IR::Block(destructor.value(), currBlock);
-        SHOW("Created true and false blocks")
-        ctx->builder.CreateCondBr(
-            ctx->builder.CreateICmpEQ(
-                ctx->builder.CreateLoad(tagIntTy, ctx->builder.CreateStructGEP(llvmType, inst, 0u)),
-                llvm::ConstantInt::get(tagIntTy, subIdx)),
-            trueBlock->getBB(), falseBlock->getBB());
-        trueBlock->setActive(ctx->builder);
-        subTy->destroyValue(
-            ctx,
-            {new IR::Value(ctx->builder.CreatePointerCast(
-                               ctx->builder.CreateStructGEP(llvmType, inst, 1u),
-                               llvm::PointerType::get(subTy->getLLVMType(), ctx->dataLayout->getProgramAddressSpace())),
-                           IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
-            destructor.value());
-        (void)IR::addBranch(ctx->builder, remainingBlock->getBB());
-        falseBlock->setActive(ctx->builder);
-      }
-    }
-    (void)IR::addBranch(ctx->builder, remainingBlock->getBB());
-    remainingBlock->setActive(ctx->builder);
-    ctx->builder.CreateStore(llvm::ConstantExpr::getNullValue(llvmType), inst);
-    ctx->builder.CreateRetVoid();
-  }
+  ovInfo            = opaquedType->ovInfo;
+  ovRange           = opaquedType->ovRange;
+  ovMentions        = opaquedType->ovMentions;
+  ovBroughtMentions = opaquedType->ovBroughtMentions;
 }
 
 LinkNames MixType::getLinkNames() const {
@@ -228,39 +174,387 @@ FileRange MixType::getFileRange() const { return fileRange; }
 
 bool MixType::isTypeSized() const { return true; }
 
-bool MixType::isTriviallyCopyable() const {
-  if (explicitTrivialCopy) {
-    return true;
-  } else if (hasCopyConstructor() || hasCopyAssignment()) {
-    return false;
-  } else {
-    auto result = true;
-    for (auto sub : subtypes) {
-      if (sub.second.has_value()) {
-        if (!sub.second.value()->isTriviallyCopyable()) {
-          result = false;
-          break;
-        }
+bool MixType::isTriviallyCopyable() const { return false; }
+
+bool MixType::isTriviallyMovable() const { return false; }
+
+bool MixType::isCopyConstructible() const {
+  for (auto sub : subtypes) {
+    if (sub.second.has_value() && !sub.second.value()->isCopyConstructible()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MixType::isCopyAssignable() const {
+  for (auto sub : subtypes) {
+    if (sub.second.has_value() && !sub.second.value()->isCopyAssignable()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MixType::isMoveConstructible() const {
+  for (auto sub : subtypes) {
+    if (sub.second.has_value() && !sub.second.value()->isMoveConstructible()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MixType::isMoveAssignable() const {
+  for (auto sub : subtypes) {
+    if (sub.second.has_value() && !sub.second.value()->isMoveAssignable()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void MixType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isCopyConstructible()) {
+    auto*      prevTag     = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                     ctx->builder.CreateStructGEP(getLLVMType(), second->getLLVM(), 0u));
+    auto*      prevDataPtr = ctx->builder.CreateStructGEP(getLLVMType(), second->getLLVM(), 1u);
+    auto*      resDataPtr  = ctx->builder.CreateStructGEP(getLLVMType(), first->getLLVM(), 1u);
+    IR::Block* trueBlock   = nullptr;
+    IR::Block* falseBlock  = nullptr;
+    IR::Block* restBlock   = new IR::Block(fun, fun->getBlock()->getParent());
+    restBlock->linkPrevBlock(fun->getBlock());
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isCopyConstructible()) {
+        auto* subTy = subtypes.at(i).second.value();
+        trueBlock   = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        falseBlock  = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(prevTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            trueBlock->getBB(), falseBlock->getBB());
+        trueBlock->setActive(ctx->builder);
+        subTy->copyConstructValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              resDataPtr, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              prevDataPtr, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                  ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false),
+                                 ctx->builder.CreateStructGEP(getLLVMType(), first->getLLVM(), 0u));
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        falseBlock->setActive(ctx->builder);
       }
     }
-    return result;
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error("Could not copy construct an instance of type " + ctx->highlightError(toString()), None);
   }
 }
 
-bool MixType::isTriviallyMovable() const {
-  if (explicitTrivialMove) {
-    return true;
-  } else if (hasMoveConstructor() || hasMoveAssignment()) {
-    return false;
-  } else {
-    for (auto sub : subtypes) {
-      if (sub.second.has_value()) {
-        if (!sub.second.value()->isTriviallyMovable()) {
-          return false;
-        }
+void MixType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isMoveConstructible()) {
+    auto*      prevTag     = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                     ctx->builder.CreateStructGEP(getLLVMType(), second->getLLVM(), 0u));
+    auto*      prevDataPtr = ctx->builder.CreateStructGEP(getLLVMType(), second->getLLVM(), 1u);
+    auto*      resDataPtr  = ctx->builder.CreateStructGEP(getLLVMType(), first->getLLVM(), 1u);
+    IR::Block* trueBlock   = nullptr;
+    IR::Block* falseBlock  = nullptr;
+    IR::Block* restBlock   = new IR::Block(fun, fun->getBlock()->getParent());
+    restBlock->linkPrevBlock(fun->getBlock());
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isMoveConstructible()) {
+        auto* subTy = subtypes.at(i).second.value();
+        trueBlock   = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        falseBlock  = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(prevTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            trueBlock->getBB(), falseBlock->getBB());
+        trueBlock->setActive(ctx->builder);
+        subTy->moveConstructValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              resDataPtr, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              prevDataPtr, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                  ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false),
+                                 ctx->builder.CreateStructGEP(getLLVMType(), first->getLLVM(), 0u));
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        falseBlock->setActive(ctx->builder);
       }
     }
-    return true;
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error("Could not move construct an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+void MixType::copyAssignValue(IR::Context* ctx, IR::Value* firstInst, IR::Value* secondInst, IR::Function* fun) {
+  if (isCopyAssignable()) {
+    auto* firstTag          = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                      ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 0u));
+    auto* firstData         = ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 1u);
+    auto* secondTag         = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                      ctx->builder.CreateStructGEP(getLLVMType(), secondInst->getLLVM(), 0u));
+    auto* secondData        = ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 1u);
+    auto* sameTagTrueBlock  = new IR::Block(fun, fun->getBlock());
+    auto* sameTagFalseBlock = new IR::Block(fun, fun->getBlock());
+    auto* restBlock         = new IR::Block(fun, fun->getBlock()->getParent());
+    restBlock->linkPrevBlock(fun->getBlock());
+    ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->getBB(),
+                              sameTagFalseBlock->getBB());
+    sameTagTrueBlock->setActive(ctx->builder);
+    IR::Block* cmpTrueBlock  = nullptr;
+    IR::Block* cmpFalseBlock = nullptr;
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isCopyAssignable()) {
+        auto* subTy   = subtypes.at(i).second.value();
+        cmpTrueBlock  = new IR::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+        cmpFalseBlock = new IR::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(firstTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            cmpTrueBlock->getBB(), cmpFalseBlock->getBB());
+        cmpTrueBlock->setActive(ctx->builder);
+        subTy->copyAssignValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              secondData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        cmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    sameTagFalseBlock->setActive(ctx->builder);
+    IR::Block* firstCmpTrueBlock  = nullptr;
+    IR::Block* firstCmpFalseBlock = nullptr;
+    IR::Block* firstCmpRestBlock  = new IR::Block(fun, sameTagFalseBlock);
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isDestructible()) {
+        auto* subTy        = subtypes.at(i).second.value();
+        firstCmpTrueBlock  = new IR::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+        firstCmpFalseBlock = new IR::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(firstTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            firstCmpTrueBlock->getBB(), firstCmpFalseBlock->getBB());
+        firstCmpTrueBlock->setActive(ctx->builder);
+        subTy->destroyValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, firstCmpRestBlock->getBB());
+        firstCmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, firstCmpRestBlock->getBB());
+    firstCmpRestBlock->setActive(ctx->builder);
+    IR::Block* secondCmpTrueBlock  = nullptr;
+    IR::Block* secondCmpFalseBlock = nullptr;
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isCopyConstructible()) {
+        auto* subTy         = subtypes.at(i).second.value();
+        secondCmpTrueBlock  = new IR::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+        secondCmpFalseBlock = new IR::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(secondTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            secondCmpTrueBlock->getBB(), secondCmpFalseBlock->getBB());
+        secondCmpTrueBlock->setActive(ctx->builder);
+        subTy->copyConstructValue(
+            ctx,
+
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              secondData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        secondCmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error("Could not copy assign an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+void MixType::moveAssignValue(IR::Context* ctx, IR::Value* firstInst, IR::Value* secondInst, IR::Function* fun) {
+  if (isMoveAssignable()) {
+    auto* firstTag          = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                      ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 0u));
+    auto* firstData         = ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 1u);
+    auto* secondTag         = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                      ctx->builder.CreateStructGEP(getLLVMType(), secondInst->getLLVM(), 0u));
+    auto* secondData        = ctx->builder.CreateStructGEP(getLLVMType(), firstInst->getLLVM(), 1u);
+    auto* sameTagTrueBlock  = new IR::Block(fun, fun->getBlock());
+    auto* sameTagFalseBlock = new IR::Block(fun, fun->getBlock());
+    auto* restBlock         = new IR::Block(fun, fun->getBlock()->getParent());
+    restBlock->linkPrevBlock(fun->getBlock());
+    ctx->builder.CreateCondBr(ctx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->getBB(),
+                              sameTagFalseBlock->getBB());
+    sameTagTrueBlock->setActive(ctx->builder);
+    IR::Block* cmpTrueBlock  = nullptr;
+    IR::Block* cmpFalseBlock = nullptr;
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isCopyAssignable()) {
+        auto* subTy   = subtypes.at(i).second.value();
+        cmpTrueBlock  = new IR::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+        cmpFalseBlock = new IR::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(firstTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            cmpTrueBlock->getBB(), cmpFalseBlock->getBB());
+        cmpTrueBlock->setActive(ctx->builder);
+        subTy->moveAssignValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              secondData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        cmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    sameTagFalseBlock->setActive(ctx->builder);
+    IR::Block* firstCmpTrueBlock  = nullptr;
+    IR::Block* firstCmpFalseBlock = nullptr;
+    IR::Block* firstCmpRestBlock  = new IR::Block(fun, sameTagFalseBlock);
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isDestructible()) {
+        auto* subTy        = subtypes.at(i).second.value();
+        firstCmpTrueBlock  = new IR::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+        firstCmpFalseBlock = new IR::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(firstTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            firstCmpTrueBlock->getBB(), firstCmpFalseBlock->getBB());
+        firstCmpTrueBlock->setActive(ctx->builder);
+        subTy->destroyValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, firstCmpRestBlock->getBB());
+        firstCmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, firstCmpRestBlock->getBB());
+    firstCmpRestBlock->setActive(ctx->builder);
+    IR::Block* secondCmpTrueBlock  = nullptr;
+    IR::Block* secondCmpFalseBlock = nullptr;
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isCopyConstructible()) {
+        auto* subTy         = subtypes.at(i).second.value();
+        secondCmpTrueBlock  = new IR::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+        secondCmpFalseBlock = new IR::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(secondTag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            secondCmpTrueBlock->getBB(), secondCmpFalseBlock->getBB());
+        secondCmpTrueBlock->setActive(ctx->builder);
+        subTy->moveConstructValue(
+            ctx,
+
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              firstData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              secondData, llvm::PointerType::get(subTy->getLLVMType(),
+                                                                 ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        secondCmpFalseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error("Could not move assign an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+bool MixType::isDestructible() const {
+  for (auto sub : subtypes) {
+    if (sub.second.has_value() && !sub.second.value()->isDestructible()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void MixType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  if (isDestructible()) {
+    auto*      tag        = ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth),
+                                                    ctx->builder.CreateStructGEP(getLLVMType(), instance->getLLVM(), 0u));
+    auto*      dataPtr    = ctx->builder.CreateStructGEP(getLLVMType(), instance->getLLVM(), 1u);
+    IR::Block* trueBlock  = nullptr;
+    IR::Block* falseBlock = nullptr;
+    IR::Block* restBlock  = new IR::Block(fun, fun->getBlock()->getParent());
+    restBlock->linkPrevBlock(fun->getBlock());
+    for (usize i = 0; i < subtypes.size(); i++) {
+      if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->isDestructible()) {
+        auto* subTy = subtypes.at(i).second.value();
+        trueBlock   = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        falseBlock  = new IR::Block(fun, falseBlock ? falseBlock : fun->getBlock());
+        ctx->builder.CreateCondBr(
+            ctx->builder.CreateICmpEQ(tag,
+                                      llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, tagBitWidth), i, false)),
+            trueBlock->getBB(), falseBlock->getBB());
+        trueBlock->setActive(ctx->builder);
+        subTy->destroyValue(
+            ctx,
+            new IR::Value(ctx->builder.CreatePointerCast(
+                              dataPtr, llvm::PointerType::get(subTy->getLLVMType(),
+                                                              ctx->dataLayout.value().getProgramAddressSpace())),
+                          IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+            fun);
+        (void)IR::addBranch(ctx->builder, restBlock->getBB());
+        falseBlock->setActive(ctx->builder);
+      }
+    }
+    (void)IR::addBranch(ctx->builder, restBlock->getBB());
+    restBlock->setActive(ctx->builder);
+  } else {
+    ctx->Error("Could not destroy an instance of type " + ctx->highlightError(toString()), None);
   }
 }
 

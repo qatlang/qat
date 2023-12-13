@@ -55,8 +55,10 @@ public:
 
   useit String            getFullName() const;
   useit Identifier        getName() const;
-  useit bool              hasMemberFunction(const String& fnName) const;
-  useit MemberFunction*   getMemberFunction(const String& fnName) const;
+  useit bool              hasNormalMemberFn(const String& fnName) const;
+  useit bool              hasVariationFn(String const& name) const;
+  useit MemberFunction*   getVariationFn(const String& name) const;
+  useit MemberFunction*   getNormalMemberFn(const String& fnName) const;
   useit bool              hasStaticFunction(const String& fnName) const;
   useit MemberFunction*   getStaticFunction(const String& fnName) const;
   useit bool              hasBinaryOperator(const String& opr, IR::QatType* type) const;
@@ -93,8 +95,6 @@ public:
   useit bool           isAccessible(const AccessInfo& reqInfo) const;
   useit VisibilityInfo getVisibility() const;
   useit bool           isExpanded() const override;
-  useit bool           isDestructible() const override;
-  void                 destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) override;
 };
 
 } // namespace qat::IR

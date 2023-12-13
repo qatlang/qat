@@ -37,20 +37,38 @@ String ExpandedType::getFullName() const { return parent->getFullNameWithChild(n
 
 Identifier ExpandedType::getName() const { return name; }
 
-bool ExpandedType::hasMemberFunction(const String& fnName) const {
-  for (auto* memberFunction : memberFunctions) {
-    SHOW("Found member function: " << memberFunction->getName().value)
-    if (memberFunction->getName().value == fnName) {
+bool ExpandedType::hasNormalMemberFn(const String& fnName) const {
+  for (auto* mFn : memberFunctions) {
+    SHOW("Found member function: " << mFn->getName().value)
+    if (!mFn->isVariationFunction() && mFn->getName().value == fnName) {
       return true;
     }
   }
   return false;
 }
 
-MemberFunction* ExpandedType::getMemberFunction(const String& fnName) const {
+bool ExpandedType::hasVariationFn(String const& fnName) const {
+  for (auto* mFn : memberFunctions) {
+    if (mFn->isVariationFunction() && mFn->getName().value == fnName) {
+      return true;
+    }
+  }
+  return false;
+}
+
+MemberFunction* ExpandedType::getNormalMemberFn(const String& fnName) const {
   for (auto* memberFunction : memberFunctions) {
-    if (memberFunction->getName().value == fnName) {
+    if (!memberFunction->isVariationFunction() && memberFunction->getName().value == fnName) {
       return memberFunction;
+    }
+  }
+  return nullptr;
+}
+
+MemberFunction* ExpandedType::getVariationFn(const String& fnName) const {
+  for (auto* mFn : memberFunctions) {
+    if (mFn->isVariationFunction() && (mFn->getName().value == fnName)) {
+      return mFn;
     }
   }
   return nullptr;
@@ -214,7 +232,7 @@ MemberFunction* ExpandedType::getFromConvertor(IR::QatType* typ) const {
 
 bool ExpandedType::hasToConvertor(IR::QatType* typ) const {
   for (auto* fconv : fromConvertors) {
-    auto* retTy = fconv->getType()->asFunction()->getReturnType();
+    auto* retTy = fconv->getType()->asFunction()->getReturnType()->getType();
     if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
         (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
       return true;
@@ -225,7 +243,7 @@ bool ExpandedType::hasToConvertor(IR::QatType* typ) const {
 
 MemberFunction* ExpandedType::getToConvertor(IR::QatType* typ) const {
   for (auto* tconv : fromConvertors) {
-    auto* retTy = tconv->getType()->asFunction()->getReturnType();
+    auto* retTy = tconv->getType()->asFunction()->getReturnType()->getType();
     if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
         (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
       return tconv;
@@ -236,19 +254,19 @@ MemberFunction* ExpandedType::getToConvertor(IR::QatType* typ) const {
 
 bool ExpandedType::hasCopyConstructor() const { return copyConstructor.has_value(); }
 
-MemberFunction* ExpandedType::getCopyConstructor() const { return copyConstructor.value_or(nullptr); }
+MemberFunction* ExpandedType::getCopyConstructor() const { return copyConstructor.value(); }
 
 bool ExpandedType::hasMoveConstructor() const { return moveConstructor.has_value(); }
 
-MemberFunction* ExpandedType::getMoveConstructor() const { return moveConstructor.value_or(nullptr); }
+MemberFunction* ExpandedType::getMoveConstructor() const { return moveConstructor.value(); }
 
 bool ExpandedType::hasCopyAssignment() const { return copyAssignment.has_value(); }
 
-MemberFunction* ExpandedType::getCopyAssignment() const { return copyAssignment.value_or(nullptr); }
+MemberFunction* ExpandedType::getCopyAssignment() const { return copyAssignment.value(); }
 
 bool ExpandedType::hasMoveAssignment() const { return moveAssignment.has_value(); }
 
-MemberFunction* ExpandedType::getMoveAssignment() const { return moveAssignment.value_or(nullptr); }
+MemberFunction* ExpandedType::getMoveAssignment() const { return moveAssignment.value(); }
 
 bool ExpandedType::hasCopy() const { return hasCopyConstructor() && hasCopyAssignment(); }
 
@@ -271,22 +289,5 @@ bool ExpandedType::isAccessible(const AccessInfo& reqInfo) const { return visibi
 QatModule* ExpandedType::getParent() { return parent; }
 
 bool ExpandedType::isExpanded() const { return true; }
-
-bool ExpandedType::isDestructible() const {
-  SHOW("ExpandedType isDestructible: " << ((hasDefinedDestructor || needsImplicitDestructor || (destructor != nullptr))
-                                               ? "true"
-                                               : "false"))
-  return hasDefinedDestructor || needsImplicitDestructor || (destructor != nullptr);
-}
-
-void ExpandedType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
-  if (destructor.has_value() && !vals.empty()) {
-    auto* inst = vals.front();
-    if (inst->isReference()) {
-      inst->loadImplicitPointer(ctx->builder);
-    }
-    (void)destructor.value()->call(ctx, {inst->getLLVM()}, ctx->getMod());
-  }
-}
 
 } // namespace qat::IR

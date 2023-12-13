@@ -12,12 +12,10 @@ ArgumentType::ArgumentType(QatType* _type, bool _variability)
 ArgumentType::ArgumentType(String _name, QatType* _type, bool _variability)
     : name(_name), type(_type), variability(_variability), isMemberArg(false) {}
 
-ArgumentType::ArgumentType(String _name, QatType* _type, bool _isMemberArg, bool _variability, bool _isRetArg)
-    : name(_name), type(_type), variability(_variability), isMemberArg(_isMemberArg), isReturnArg(_isRetArg) {}
+ArgumentType::ArgumentType(String _name, QatType* _type, bool _isMemberArg, bool _variability)
+    : name(_name), type(_type), variability(_variability), isMemberArg(_isMemberArg) {}
 
 bool ArgumentType::isMemberArgument() const { return isMemberArg; }
-
-bool ArgumentType::isReturnArgument() const { return isReturnArg; }
 
 bool ArgumentType::hasName() const { return name.has_value(); }
 
@@ -29,7 +27,19 @@ bool ArgumentType::isVariable() const { return variability; }
 
 String ArgumentType::toString() const { return type->toString() + (name.has_value() ? (" " + name.value()) : ""); }
 
-FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& llctx)
+ReturnType::ReturnType(QatType* _retTy, bool _isRetSelfRef) : retTy(_retTy), isReturnSelfRef(_isRetSelfRef) {}
+
+ReturnType* ReturnType::get(QatType* _retTy) { return new ReturnType(_retTy, false); }
+
+ReturnType* ReturnType::get(QatType* _retTy, bool _isRetSelf) { return new ReturnType(_retTy, _isRetSelf); }
+
+QatType* ReturnType::getType() const { return retTy; }
+
+bool ReturnType::isReturnSelf() const { return retTy; }
+
+String ReturnType::toString() const { return isReturnSelfRef ? "''" : retTy->toString(); }
+
+FunctionType::FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& llctx)
     : returnType(_retType), argTypes(std::move(_argTypes)) {
   SHOW("Creating function type")
   linkingName = "qat'fn_type:[(";
@@ -39,7 +49,7 @@ FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm
       linkingName += ", ";
     }
   }
-  linkingName += ")->" + returnType->getNameForLinking() + "]";
+  linkingName += ") -> " + returnType->getType()->getNameForLinking() + "]";
   Vec<llvm::Type*> argTys;
   for (auto* arg : argTypes) {
     SHOW("Arg name is " << arg->getName())
@@ -49,20 +59,23 @@ FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, llvm
     argTys.push_back(arg->getType()->getLLVMType());
   }
   SHOW("Got arg llvm types in FunctionType")
-  llvmType = llvm::FunctionType::get(returnType->getLLVMType(), argTys, false);
+  llvmType = llvm::FunctionType::get(returnType->getType()->getLLVMType(), argTys, false);
 }
 
-QatType* FunctionType::getReturnType() { return returnType; }
+FunctionType::~FunctionType() {
+  delete returnType;
+  for (auto* argTy : argTypes) {
+    delete argTy;
+  }
+}
+
+ReturnType* FunctionType::getReturnType() { return returnType; }
 
 ArgumentType* FunctionType::getArgumentTypeAt(u32 index) { return argTypes.at(index); }
-
-IR::QatType* FunctionType::getReturnArgType() const { return argTypes.empty() ? nullptr : argTypes.back()->getType(); }
 
 Vec<ArgumentType*> FunctionType::getArgumentTypes() const { return argTypes; }
 
 u64 FunctionType::getArgumentCount() const { return argTypes.size(); }
-
-bool FunctionType::hasReturnArgument() const { return argTypes.empty() ? false : argTypes.back()->isReturnArgument(); }
 
 String FunctionType::toString() const {
   String result("(");

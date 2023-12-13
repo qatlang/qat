@@ -50,10 +50,12 @@ protected:
 
 public:
   QatType();
-  virtual ~QatType() = default;
+  virtual ~QatType();
   static void clearAll();
 
-  useit bool                  isTypeDoneByDefault() const;
+  useit bool     hasDefaultSkill() const;
+  useit DoSkill* getDefaultSkill() const;
+
   useit virtual bool          hasNoValueSemantics() const;
   useit virtual bool          canBePrerunGeneric() const;
   useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;

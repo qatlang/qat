@@ -25,6 +25,12 @@ namespace qat::IR {
 
 QatType::QatType() { types.push_back(this); }
 
+QatType::~QatType() {
+  for (auto* skill : doneSkills) {
+    delete skill;
+  }
+}
+
 Vec<QatType*> QatType::types = {};
 
 Vec<Region*> QatType::allRegions() {
@@ -43,13 +49,22 @@ void QatType::clearAll() {
   }
 }
 
-bool QatType::isTypeDoneByDefault() const {
+bool QatType::hasDefaultSkill() const {
   for (auto* doSkill : doneSkills) {
     if (doSkill->isDefaultForType()) {
       return true;
     }
   }
   return false;
+}
+
+DoSkill* QatType::getDefaultSkill() const {
+  for (auto* doSkill : doneSkills) {
+    if (doSkill->isDefaultForType()) {
+      return doSkill;
+    }
+  }
+  return nullptr;
 }
 
 bool QatType::hasNoValueSemantics() const { return false; }

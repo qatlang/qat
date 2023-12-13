@@ -71,7 +71,9 @@ public:
   useit bool         isMulti() const;
   useit bool         isNullable() const;
   useit bool         isNonNullable() const;
-  useit bool         isTypeSized() const;
+  useit bool         isTypeSized() const final;
+  useit bool         isTriviallyCopyable() const final;
+  useit bool         isTriviallyMovable() const final;
   useit TypeKind     typeKind() const override;
   useit String       toString() const override;
 };

@@ -54,7 +54,7 @@ bool PointerOwner::isSame(const PointerOwner& other) const {
 String PointerOwner::toString() const {
   switch (ownerTy) {
     case PointerOwnerType::region:
-      return "'region";
+      return "'region(" + ownerAsRegion()->toString() + ")";
     case PointerOwnerType::heap:
       return "'heap";
     case PointerOwnerType::anonymous:
@@ -62,9 +62,9 @@ String PointerOwner::toString() const {
     case PointerOwnerType::type:
       return "'type(" + ownerAsType()->toString() + ")";
     case PointerOwnerType::parentInstance:
-      return "''";
+      return "''(" + ownerAsParentType()->toString() + ")";
     case PointerOwnerType::parentFunction:
-      return "'own";
+      return "'own(" + ownerAsParentFunction()->getFullName() + ")";
     case PointerOwnerType::Static:
       return "'static";
   }
@@ -112,6 +112,10 @@ PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, bool _non
 bool PointerType::isSubtypeVariable() const { return isSubtypeVar; }
 
 bool PointerType::isTypeSized() const { return true; }
+
+bool PointerType::isTriviallyCopyable() const { return true; }
+
+bool PointerType::isTriviallyMovable() const { return !nonNullable; }
 
 bool PointerType::isMulti() const { return hasMulti; }
 

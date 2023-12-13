@@ -24,29 +24,149 @@ TupleType::TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& ll
   linkingName += "]";
 }
 
-bool TupleType::isDestructible() const {
+bool TupleType::isCopyConstructible() const {
   for (auto* sub : subTypes) {
-    if (sub->isDestructible()) {
-      return true;
+    if (!sub->isCopyConstructible()) {
+      return false;
     }
   }
-  return false;
+  return true;
 }
 
-void TupleType::destroyValue(IR::Context* ctx, Vec<IR::Value*> vals, IR::Function* fun) {
-  if (isDestructible() && !vals.empty()) {
-    auto* instIR = vals.front();
-    if (instIR->isReference()) {
-      instIR->loadImplicitPointer(ctx->builder);
+bool TupleType::isCopyAssignable() const {
+  for (auto* sub : subTypes) {
+    if (!sub->isCopyAssignable()) {
+      return false;
     }
-    for (usize i = 0; i < subTypes.size(); i++) {
-      auto* subTy = subTypes.at(i);
-      if (subTy->isDestructible() && !subTy->isPointer()) {
+  }
+  return true;
+}
+
+bool TupleType::isMoveConstructible() const {
+  for (auto* sub : subTypes) {
+    if (!sub->isMoveConstructible()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TupleType::isMoveAssignable() const {
+  for (auto* sub : subTypes) {
+    if (!sub->isMoveAssignable()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TupleType::isDestructible() const {
+  for (auto* sub : subTypes) {
+    if (!sub->isDestructible()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void TupleType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyCopyable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(llvmType, second->getLLVM()), first->getLLVM());
+  } else {
+    if (isCopyConstructible()) {
+      for (usize i = 0; i < subTypes.size(); i++) {
+        auto* subTy = subTypes.at(i);
+        subTy->copyConstructValue(ctx,
+                                  new IR::Value(ctx->builder.CreateStructGEP(llvmType, first->getLLVM(), i),
+                                                IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+                                  new IR::Value(ctx->builder.CreateStructGEP(llvmType, second->getLLVM(), i),
+                                                IR::ReferenceType::get(false, subTy, ctx), false,
+                                                IR::Nature::temporary),
+                                  fun);
+      }
+    } else {
+      ctx->Error("Could not copy construct an instance of type " + ctx->highlightError(toString()), None);
+    }
+  }
+}
+
+void TupleType::copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyCopyable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(llvmType, second->getLLVM()), first->getLLVM());
+  } else {
+    if (isCopyAssignable()) {
+      for (usize i = 0; i < subTypes.size(); i++) {
+        auto* subTy = subTypes.at(i);
+        subTy->copyAssignValue(ctx,
+                               new IR::Value(ctx->builder.CreateStructGEP(llvmType, first->getLLVM(), i),
+                                             IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+                               new IR::Value(ctx->builder.CreateStructGEP(llvmType, second->getLLVM(), i),
+                                             IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+                               fun);
+      }
+    } else {
+      ctx->Error("Could not copy assign an instance of type " + ctx->highlightError(toString()), None);
+    }
+  }
+}
+
+void TupleType::moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(llvmType, second->getLLVM()), first->getLLVM());
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->getLLVM());
+  } else {
+    if (isMoveConstructible()) {
+      for (usize i = 0; i < subTypes.size(); i++) {
+        auto* subTy = subTypes.at(i);
+        subTy->moveConstructValue(ctx,
+                                  new IR::Value(ctx->builder.CreateStructGEP(llvmType, first->getLLVM(), i),
+                                                IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+                                  new IR::Value(ctx->builder.CreateStructGEP(llvmType, second->getLLVM(), i),
+                                                IR::ReferenceType::get(false, subTy, ctx), false,
+                                                IR::Nature::temporary),
+                                  fun);
+      }
+    } else {
+      ctx->Error("Could not move construct an instance of type " + ctx->highlightError(toString()), None);
+    }
+  }
+}
+
+void TupleType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(ctx->builder.CreateLoad(llvmType, second->getLLVM()), first->getLLVM());
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->getLLVM());
+  } else {
+    if (isMoveAssignable()) {
+      for (usize i = 0; i < subTypes.size(); i++) {
+        auto* subTy = subTypes.at(i);
+        subTy->moveAssignValue(ctx,
+                               new IR::Value(ctx->builder.CreateStructGEP(llvmType, first->getLLVM(), i),
+                                             IR::ReferenceType::get(true, subTy, ctx), false, IR::Nature::temporary),
+                               new IR::Value(ctx->builder.CreateStructGEP(llvmType, second->getLLVM(), i),
+                                             IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
+                               fun);
+      }
+    } else {
+      ctx->Error("Could not move assign an instance of type " + ctx->highlightError(toString()), None);
+    }
+  }
+}
+
+void TupleType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  if (isTriviallyMovable()) {
+    ctx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), instance->getLLVM());
+  } else {
+    if (isDestructible()) {
+      for (usize i = 0; i < subTypes.size(); i++) {
+        auto* subTy = subTypes.at(i);
         subTy->destroyValue(ctx,
-                            {new IR::Value(ctx->builder.CreateStructGEP(llvmType, instIR->getLLVM(), i),
-                                           IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary)},
+                            new IR::Value(ctx->builder.CreateStructGEP(llvmType, instance->getLLVM(), i),
+                                          IR::ReferenceType::get(false, subTy, ctx), false, IR::Nature::temporary),
                             fun);
       }
+    } else {
+      ctx->Error("Could not destroy an instance of type " + ctx->highlightError(toString()), None);
     }
   }
 }

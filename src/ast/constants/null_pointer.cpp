@@ -29,16 +29,16 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
             : llvm::ConstantPointerNull::get(inferredType->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
         IR::PointerType::get(inferredType->asPointer()->isSubtypeVariable(), inferredType->asPointer()->getSubType(),
-                             true, inferredType->asPointer()->getOwner(), inferredType->asPointer()->isMulti(), ctx));
+                             false, inferredType->asPointer()->getOwner(), inferredType->asPointer()->isMulti(), ctx));
   } else {
     return new IR::PrerunValue(
         llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), true, IR::PointerOwner::OfAnonymous(), false, ctx));
+        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), false, IR::PointerOwner::OfAnonymous(), false, ctx));
   }
 }
 
 String NullPointer::toString() const { return "null"; }
 
-Json NullPointer::toJson() const { return Json()._("nodeType", "nullPointer"); }
+Json NullPointer::toJson() const { return Json()._("nodeType", "nullPointer")._("fileRange", fileRange); }
 
 } // namespace qat::ast

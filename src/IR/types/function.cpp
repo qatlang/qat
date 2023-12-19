@@ -35,7 +35,7 @@ ReturnType* ReturnType::get(QatType* _retTy, bool _isRetSelf) { return new Retur
 
 QatType* ReturnType::getType() const { return retTy; }
 
-bool ReturnType::isReturnSelf() const { return retTy; }
+bool ReturnType::isReturnSelf() const { return isReturnSelfRef; }
 
 String ReturnType::toString() const { return isReturnSelfRef ? "''" : retTy->toString(); }
 

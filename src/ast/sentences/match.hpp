@@ -1,58 +1,42 @@
 #ifndef QAT_AST_MATCH_HPP
 #define QAT_AST_MATCH_HPP
 
+#include "../../utils/file_range.hpp"
 #include "../expression.hpp"
 #include "../sentence.hpp"
-#include "../../utils/file_range.hpp"
 
 namespace qat::ast {
 
-enum class MatchType { mix, choice, Exp };
+enum class MatchType { mixOrChoice, Exp };
 
-class MixMatchValue;
-class ChoiceMatchValue;
+class MixOrChoiceMatchValue;
 class ExpressionMatchValue;
 
 class MatchValue {
 public:
   ~MatchValue() = default;
 
-  useit MixMatchValue*        asMix();
-  useit ChoiceMatchValue*     asChoice();
-  useit ExpressionMatchValue* asExp();
-  useit virtual FileRange     getMainRange() const = 0;
-  useit virtual MatchType     getType() const      = 0;
-  useit virtual Json          toJson() const       = 0;
+  useit MixOrChoiceMatchValue* asMixOrChoice();
+  useit ExpressionMatchValue*  asExp();
+  useit virtual FileRange      getMainRange() const = 0;
+  useit virtual MatchType      getType() const      = 0;
+  useit virtual Json           toJson() const       = 0;
 };
 
-class MixMatchValue : public MatchValue {
+class MixOrChoiceMatchValue : public MatchValue {
 private:
   Identifier        name;
   Maybe<Identifier> valueName;
   bool              isVar;
 
 public:
-  MixMatchValue(Identifier name, Maybe<Identifier> valueName, bool isVar);
+  MixOrChoiceMatchValue(Identifier name, Maybe<Identifier> valueName, bool isVar);
 
   useit Identifier getName() const;
   useit bool       hasValueName() const;
   useit Identifier getValueName() const;
   useit bool       isVariable() const;
-  useit MatchType  getType() const final { return MatchType::mix; }
-  useit FileRange  getMainRange() const final { return name.range; }
-  useit Json       toJson() const final;
-};
-
-class ChoiceMatchValue : public MatchValue {
-private:
-  Identifier name;
-
-public:
-  explicit ChoiceMatchValue(Identifier name);
-
-  useit Identifier getName() const;
-  useit FileRange  getFileRange() const;
-  useit MatchType  getType() const final { return MatchType::choice; }
+  useit MatchType  getType() const final { return MatchType::mixOrChoice; }
   useit FileRange  getMainRange() const final { return name.range; }
   useit Json       toJson() const final;
 };

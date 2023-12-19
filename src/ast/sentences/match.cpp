@@ -5,36 +5,27 @@
 
 namespace qat::ast {
 
-MixMatchValue*        MatchValue::asMix() { return (MixMatchValue*)this; }
-ChoiceMatchValue*     MatchValue::asChoice() { return (ChoiceMatchValue*)this; }
-ExpressionMatchValue* MatchValue::asExp() { return (ExpressionMatchValue*)this; }
+MixOrChoiceMatchValue* MatchValue::asMixOrChoice() { return (MixOrChoiceMatchValue*)this; }
+ExpressionMatchValue*  MatchValue::asExp() { return (ExpressionMatchValue*)this; }
 
-MixMatchValue::MixMatchValue(Identifier _name, Maybe<Identifier> _valueName, bool _isVar)
+MixOrChoiceMatchValue::MixOrChoiceMatchValue(Identifier _name, Maybe<Identifier> _valueName, bool _isVar)
     : name(std::move(_name)), valueName(std::move(_valueName)), isVar(_isVar) {}
 
-Identifier MixMatchValue::getName() const { return name; }
+Identifier MixOrChoiceMatchValue::getName() const { return name; }
 
-bool MixMatchValue::hasValueName() const { return valueName.has_value(); }
+bool MixOrChoiceMatchValue::hasValueName() const { return valueName.has_value(); }
 
-bool MixMatchValue::isVariable() const { return isVar; }
+bool MixOrChoiceMatchValue::isVariable() const { return isVar; }
 
-Identifier MixMatchValue::getValueName() const { return valueName.value(); }
+Identifier MixOrChoiceMatchValue::getValueName() const { return valueName.value(); }
 
-Json MixMatchValue::toJson() const {
+Json MixOrChoiceMatchValue::toJson() const {
   return Json()
       ._("matchValueType", "mix")
       ._("name", name)
       ._("hasValue", valueName.has_value())
       ._("valueName", valueName.has_value() ? valueName.value() : JsonValue());
 }
-
-ChoiceMatchValue::ChoiceMatchValue(Identifier _name) : name(std::move(_name)) {}
-
-Identifier ChoiceMatchValue::getName() const { return name; }
-
-FileRange ChoiceMatchValue::getFileRange() const { return name.range; }
-
-Json ChoiceMatchValue::toJson() const { return Json()._("matchValueType", "choice")._("name", name); }
 
 ExpressionMatchValue::ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
 
@@ -78,12 +69,12 @@ IR::Value* Match::emit(IR::Context* ctx) {
       const auto&       section = chain.at(i);
       Vec<llvm::Value*> conditions;
       for (usize k = 0; k < section.first.size(); k++) {
-        if (section.first.at(k)->getType() != MatchType::mix) {
+        if (section.first.at(k)->getType() != MatchType::mixOrChoice) {
           ctx->Error("Expected the name of a variant of the mix type " +
                          ctx->highlightError(expTy->asMix()->getFullName()),
                      section.first.at(k)->getMainRange());
         }
-        auto* uMatch = section.first.at(k)->asMix();
+        auto* uMatch = section.first.at(k)->asMixOrChoice();
         if (uMatch->isVariable()) {
           if (!isExpVariable) {
             ctx->Error("The expression being matched does not possess variability and "
@@ -114,16 +105,16 @@ IR::Value* Match::emit(IR::Context* ctx) {
         }
         // NOTE - When expressions are supported for mix types, take care of this
         for (usize mixValIdx = k + 1; mixValIdx < section.first.size(); mixValIdx++) {
-          if (uMatch->getName().value == chain.at(i).first.at(mixValIdx)->asMix()->getName().value) {
+          if (uMatch->getName().value == chain.at(i).first.at(mixValIdx)->asMixOrChoice()->getName().value) {
             ctx->Error("Repeating subfield of the mix type ",
-                       chain.at(i).first.at(mixValIdx)->asMix()->getName().range);
+                       chain.at(i).first.at(mixValIdx)->asMixOrChoice()->getName().range);
           }
         }
         for (usize j = i + 1; j < chain.size(); j++) {
           for (auto* matchVal : chain.at(j).first) {
-            if (uMatch->getName().value == matchVal->asMix()->getName().value) {
+            if (uMatch->getName().value == matchVal->asMixOrChoice()->getName().value) {
               ctx->Error("Repeating subfield of the mix type " + ctx->highlightError(mTy->getFullName()),
-                         matchVal->asMix()->getName().range);
+                         matchVal->asMixOrChoice()->getName().range);
             }
           }
         }
@@ -152,8 +143,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
       }
       trueBlock->setActive(ctx->builder);
       SHOW("True block name is: " << trueBlock->getName())
-      if ((section.first.size() == 1) && section.first.front()->asMix()->hasValueName()) {
-        auto* uMatch = section.first.front()->asMix();
+      if ((section.first.size() == 1) && section.first.front()->asMixOrChoice()->hasValueName()) {
+        auto* uMatch = section.first.front()->asMixOrChoice();
         SHOW("Match case has value name: " << uMatch->getValueName().value)
         if (trueBlock->hasValue(uMatch->getValueName().value)) {
           SHOW("Local entity with match case value name exists")
@@ -216,7 +207,28 @@ IR::Value* Match::emit(IR::Context* ctx) {
       const auto&       section = chain.at(i);
       Vec<llvm::Value*> caseComparisons;
       for (auto* caseValElem : section.first) {
-        if (caseValElem->getType() == MatchType::mix) {
+        if (caseValElem->getType() == MatchType::mixOrChoice) {
+          auto* cMatch = caseValElem->asMixOrChoice();
+          if (cMatch->hasValueName()) {
+            ctx->Error("Destructuring an expression of choice type by name is not supported",
+                       cMatch->getValueName().range);
+          }
+          for (const auto& mField : mentionedFields) {
+            if (mField.value == cMatch->getName().value) {
+              ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
+                             ctx->highlightError(chTy->getFullName()) +
+                             " is repeating here. Please check logic and make necessary changes",
+                         cMatch->getMainRange());
+            }
+          }
+          mentionedFields.push_back(cMatch->getName());
+          if (chTy->hasField(cMatch->getName().value)) {
+            caseComparisons.push_back(ctx->builder.CreateICmpEQ(choiceVal, chTy->getValueFor(cMatch->getName().value)));
+          } else {
+            ctx->Error("No variant named " + ctx->highlightError(cMatch->getName().value) + " in choice type " +
+                           ctx->highlightError(chTy->getFullName()),
+                       cMatch->getName().range);
+          }
           ctx->Error("Expected the name of a variant of the choice type " +
                          ctx->highlightError(expTy->asMix()->getFullName()),
                      caseValElem->getMainRange());
@@ -238,27 +250,6 @@ IR::Value* Match::emit(IR::Context* ctx) {
                        "or an expression of type " +
                            ctx->highlightError(chTy->getFullName()),
                        eMatch->getMainRange());
-          }
-        } else if (caseValElem->getType() == MatchType::choice) {
-          auto* cMatch = caseValElem->asChoice();
-          for (const auto& mField : mentionedFields) {
-            if (mField.value == cMatch->getName().value) {
-              ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
-                             ctx->highlightError(chTy->getFullName()) +
-                             " is repeating here. Please check logic and make "
-                             "necessary changes",
-                         cMatch->getFileRange());
-            }
-          }
-          mentionedFields.push_back(cMatch->getName());
-          if (chTy->hasField(cMatch->getName().value)) {
-            caseComparisons.push_back(ctx->builder.CreateICmpEQ(
-                choiceVal, llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, chTy->getBitwidth()),
-                                                  (u64)chTy->getValueFor(cMatch->getName().value))));
-          } else {
-            ctx->Error("No variant named " + ctx->highlightError(cMatch->getName().value) + " in choice type " +
-                           ctx->highlightError(chTy->getFullName()),
-                       cMatch->getName().range);
           }
         } else {
           ctx->Error("Unexpected match value type here", caseValElem->getMainRange());

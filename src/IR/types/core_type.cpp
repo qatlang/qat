@@ -103,7 +103,7 @@ void CoreType::updateOverview() {
                ._("staticMembers", statMemJson)
                ._("memberFunctions", memFnJson)
                ._("hasDefaultConstructor", defaultConstructor != nullptr)
-               ._("hasDestructor", destructor != nullptr)
+               ._("hasDestructor", destructor.has_value())
                ._("hasCopyConstructor", copyConstructor.has_value())
                ._("hasMoveConstructor", moveConstructor.has_value())
                ._("hasCopyAssignment", copyAssignment.has_value())
@@ -148,6 +148,14 @@ Maybe<usize> CoreType::getIndexOf(const String& member) const {
 
 String CoreType::getMemberNameAt(u64 index) const {
   return (index < members.size()) ? members.at(index)->name.value : "";
+}
+
+usize CoreType::getMemberIndex(String const& memName) const {
+  for (usize i = 0; i < members.size(); i++) {
+    if (members[i]->name.value == memName) {
+      return i;
+    }
+  }
 }
 
 QatType* CoreType::getTypeOfMember(const String& member) const {
@@ -267,7 +275,6 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* 
   }
   IR::fillGenerics(ctx, generics, types, range);
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
-  defineCoreType->setVariantName(variantName);
   ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::coreType, range}, true);
   defineCoreType->genericsToFill = types;
   (void)defineCoreType->define(ctx);
@@ -277,7 +284,6 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* 
   for (auto* temp : generics) {
     temp->unset();
   }
-  defineCoreType->unsetVariantName();
   if (ctx->getActiveGeneric().warningCount > 0) {
     auto count = ctx->getActiveGeneric().warningCount;
     ctx->removeActiveGeneric();

@@ -15,7 +15,8 @@
 
 namespace qat::ast {
 class DefineCoreType;
-}
+class Expression;
+} // namespace qat::ast
 
 namespace qat::IR {
 
@@ -28,9 +29,10 @@ class CoreType final : public ExpandedType, public EntityOverview {
   friend class GenericParameter;
 
 public:
-  class Member final : public EntityOverview {
+  class Member final : public EntityOverview, public Uniq {
   public:
-    Member(Identifier _name, QatType* _type, bool _variability, const VisibilityInfo& _visibility)
+    Member(Identifier _name, QatType* _type, bool _variability, Maybe<ast::Expression*> _defVal,
+           const VisibilityInfo& _visibility)
         : EntityOverview("coreTypeMember",
                          Json()
                              ._("name", _name.value)
@@ -39,14 +41,16 @@ public:
                              ._("isVariable", _variability)
                              ._("visibility", _visibility),
                          _name.range),
-          name(std::move(_name)), type(_type), visibility(_visibility), variability(_variability) {}
+          name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
+          variability(_variability) {}
 
     ~Member() final = default;
 
-    Identifier     name;
-    QatType*       type;
-    VisibilityInfo visibility;
-    bool           variability;
+    Identifier              name;
+    QatType*                type;
+    Maybe<ast::Expression*> defaultValue;
+    VisibilityInfo          visibility;
+    bool                    variability;
   };
 
 private:
@@ -54,8 +58,6 @@ private:
   Vec<Member*>       members;
   Vec<StaticMember*> staticMembers;
   Maybe<MetaInfo>    metaInfo;
-
-  // TODO - Add support for extension functions
 
 public:
   CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
@@ -69,6 +71,7 @@ public:
   useit Member*      getMember(const String& name) const;
   useit u64          getMemberCount() const;
   useit Member*      getMemberAt(u64 index);
+  useit usize        getMemberIndex(String const& name) const;
   useit String       getMemberNameAt(u64 index) const;
   useit QatType*     getTypeOfMember(const String& member) const;
   useit Vec<Member*>& getMembers();

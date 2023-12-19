@@ -15,6 +15,7 @@ MixOrChoiceInitialiser::MixOrChoiceInitialiser(Maybe<QatType*> _type, Identifier
 
 IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
   // FIXME - Support heaped value
+  SHOW("Mix/Choice type initialiser")
   auto reqInfo = ctx->getAccessInfo();
   if (!type.has_value() && !isTypeInferred()) {
     ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
@@ -24,6 +25,7 @@ IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
     auto* mixTy = typeEmit->asMix();
     if (mixTy->isAccessible(ctx->getAccessInfo())) {
       auto subRes = mixTy->hasSubTypeWithName(subName.value);
+      SHOW("Subtype check")
       if (subRes.first) {
         if (subRes.second) {
           if (!expression.has_value()) {
@@ -65,17 +67,35 @@ IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
                        expression.value()->fileRange);
           }
         } else {
-          exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getDataBitwidth()), 0u, true);
+          exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getDataBitwidth()), 0u);
         }
         auto* index = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mixTy->getTagBitwidth()),
                                              mixTy->getIndexOfName(subName.value));
         if (isLocalDecl()) {
+          SHOW("Is local decl")
           if (localValue->getType()->isSame(mixTy)) {
             createIn = localValue->toNewIRValue();
           } else {
             ctx->Error("The type of the local declaration is not compatible here", fileRange);
           }
-        } else if (!createIn) {
+        } else if (canCreateIn()) {
+          SHOW("Is createIn")
+          if (createIn->isReference() || createIn->isImplicitPointer()) {
+            auto expTy =
+                createIn->isImplicitPointer() ? createIn->getType() : createIn->getType()->asReference()->getSubType();
+            if (!expTy->isSame(mixTy)) {
+              ctx->Error(
+                  "Trying to optimise the mix type initialisation by creating in-place, but the expression type is " +
+                      ctx->highlightError(mixTy->toString()) +
+                      " which does not match with the underlying type for in-place creation which is " +
+                      ctx->highlightError(expTy->toString()),
+                  fileRange);
+            }
+          } else {
+            ctx->Error("Trying to optimise the copy by creating in-place, but the containing type is not a reference",
+                       fileRange);
+          }
+        } else {
           createIn = ctx->getActiveFunction()->getBlock()->newValue(
               irName.has_value() ? irName->value : utils::unique_id(), mixTy, isVar,
               irName.has_value() ? irName->range : fileRange);
@@ -109,6 +129,22 @@ IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
         ctx->builder.CreateStore(chTy->getValueFor(subName.value), localValue->getLLVM());
         return nullptr;
       } else if (canCreateIn()) {
+        if (createIn->isReference() || createIn->isImplicitPointer()) {
+          auto expTy =
+              createIn->isImplicitPointer() ? createIn->getType() : createIn->getType()->asReference()->getSubType();
+          if (!expTy->isSame(chTy)) {
+            ctx->Error(
+                "Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +
+                    ctx->highlightError(chTy->toString()) +
+                    " which does not match with the underlying type for in-place creation which is " +
+                    ctx->highlightError(expTy->toString()),
+                fileRange);
+          }
+        } else {
+          ctx->Error(
+              "Trying to optimise the choice type initialisation by creating in-place, but the containing type is not a reference",
+              fileRange);
+        }
         ctx->builder.CreateStore(chTy->getValueFor(subName.value), createIn->getLLVM());
       } else {
         return new IR::PrerunValue(chTy->getValueFor(subName.value), chTy);

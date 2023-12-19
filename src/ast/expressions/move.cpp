@@ -24,7 +24,22 @@ IR::Value* Move::emit(IR::Context* ctx) {
           }
           createIn = new IR::Value(localValue->getAlloca(), IR::ReferenceType::get(true, candTy, ctx), false,
                                    IR::Nature::temporary);
-        } else if (!canCreateIn()) {
+        } else if (canCreateIn()) {
+          if (createIn->isReference() || createIn->isImplicitPointer()) {
+            auto expTy =
+                createIn->isImplicitPointer() ? createIn->getType() : createIn->getType()->asReference()->getSubType();
+            if (!expTy->isSame(candTy)) {
+              ctx->Error("Trying to optimise the move by creating in-place, but the expression type is " +
+                             ctx->highlightError(candTy->toString()) +
+                             " which does not match with the underlying type for in-place creation which is " +
+                             ctx->highlightError(expTy->toString()),
+                         fileRange);
+            }
+          } else {
+            ctx->Error("Trying to optimise the move by creating in-place, but the containing type is not a reference",
+                       fileRange);
+          }
+        } else {
           createIn =
               new IR::Value(IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), candTy->getLLVMType()),
                             candTy, isVar, IR::Nature::temporary);
@@ -49,6 +64,20 @@ IR::Value* Move::emit(IR::Context* ctx) {
                                    IR::Nature::temporary);
         }
         if (canCreateIn()) {
+          if (createIn->isReference() || createIn->isImplicitPointer()) {
+            auto expTy =
+                createIn->isImplicitPointer() ? createIn->getType() : createIn->getType()->asReference()->getSubType();
+            if (!expTy->isSame(candTy)) {
+              ctx->Error("Trying to optimise the move by creating in-place, but the expression type is " +
+                             ctx->highlightError(candTy->toString()) +
+                             " which does not match with the underlying type for in-place creation which is " +
+                             ctx->highlightError(expTy->toString()),
+                         fileRange);
+            }
+          } else {
+            ctx->Error("Trying to optimise the move by creating in-place, but the containing type is not a reference",
+                       fileRange);
+          }
           ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
                                    createIn->getLLVM());
           ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());

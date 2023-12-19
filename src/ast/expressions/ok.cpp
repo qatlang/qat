@@ -17,7 +17,23 @@ IR::Value* Ok::emit(IR::Context* ctx) {
     }
     if (isLocalDecl()) {
       createIn = localValue->toNewIRValue();
-    } else if (!canCreateIn()) {
+    } else if (canCreateIn()) {
+      if (createIn->isReference() || createIn->isImplicitPointer()) {
+        auto expTy =
+            createIn->isImplicitPointer() ? createIn->getType() : createIn->getType()->asReference()->getSubType();
+        if (!expTy->isSame(inferredType)) {
+          ctx->Error("Trying to optimise the ok expression by creating in-place, but the expression type is " +
+                         ctx->highlightError(inferredType->toString()) +
+                         " which does not match with the underlying type for in-place creation which is " +
+                         ctx->highlightError(expTy->toString()),
+                     fileRange);
+        }
+      } else {
+        ctx->Error(
+            "Trying to optimise the ok expression by creating in-place, but the containing type is not a reference",
+            fileRange);
+      }
+    } else {
       createIn = ctx->getActiveFunction()->getBlock()->newValue(irName.has_value() ? irName->value : utils::unique_id(),
                                                                 inferredType, isVar,
                                                                 irName.has_value() ? irName->range : fileRange);

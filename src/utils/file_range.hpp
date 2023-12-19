@@ -66,7 +66,9 @@ public:
   /** Ending position of the range */
   FilePos end;
 
-  FileRange spanTo(FileRange const& other) const;
+  useit FileRange spanTo(FileRange const& other) const;
+  useit FileRange trimTo(FilePos othStart) const;
+  useit String    startToString() const;
 
   operator Json() const;
 

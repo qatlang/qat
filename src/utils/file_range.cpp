@@ -26,6 +26,12 @@ FileRange::FileRange(Json json)
 
 FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*this, other}; }
 
+FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, start, othStart); }
+
+String FileRange::startToString() const {
+  return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character);
+}
+
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
 
 FileRange::operator JsonValue() const { return (Json)(*this); }

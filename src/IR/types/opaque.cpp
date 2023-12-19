@@ -46,7 +46,8 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
     linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericLinkNames), None);
   }
   linkingName = linkNames.toName();
-  llvmType    = llvm::StructType::create(llctx, linkingName);
+  SHOW("Linking name is " << linkingName)
+  llvmType = llvm::StructType::create(llctx, linkingName);
   if (!isGeneric()) {
     parent->opaqueTypes.push_back(this);
   }
@@ -59,7 +60,20 @@ OpaqueType* OpaqueType::get(Identifier name, Vec<GenericParameter*> generics, Ma
                         metaInfo);
 }
 
-String OpaqueType::getFullName() const { return parent->getFullNameWithChild(name.value); }
+String OpaqueType::getFullName() const {
+  auto result = parent->getFullNameWithChild(name.value);
+  if (isGeneric()) {
+    result += ":[";
+    for (usize i = 0; i < generics.size(); i++) {
+      result += generics.at(i)->toString();
+      if (i != (generics.size() - 1)) {
+        result += ", ";
+      }
+    }
+    result += "]";
+  }
+  return result;
+}
 
 Identifier OpaqueType::getName() const { return name; }
 

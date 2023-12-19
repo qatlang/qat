@@ -70,6 +70,10 @@ bool Value::isPointer() const { return type->isPointer(); }
 
 bool Value::isReference() const { return type->isReference(); }
 
+bool Value::isSelfValue() const { return isSelf; }
+
+void Value::setSelf() { isSelf = true; }
+
 bool Value::isVariable() const { return variable; }
 
 bool Value::isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }

@@ -83,22 +83,17 @@ void QatSitter::init() {
         std::fstream mStream;
         mStream.open(codeStructFilePath, std::ios_base::out);
         if (mStream.is_open()) {
-          try {
-            mStream << Json()
-                           ._("modules", modulesJson)
-                           ._("functions", functionsJson)
-                           ._("genericFunctions", genericFunctionsJson)
-                           ._("coreTypes", coreTypesJson)
-                           ._("genericCoreTypes", genericCoreTypesJson)
-                           ._("mixTypes", mixTypesJson)
-                           ._("regions", regionJson)
-                           ._("choiceTypes", choiceJson)
-                           ._("typeDefinitions", defsJson);
-            mStream.close();
-          } catch (std::exception& ex) {
-            SHOW("Exception while converting to JSON")
-            SHOW("Exception is: " << ex.what())
-          }
+          mStream << Json()
+                         ._("modules", modulesJson)
+                         ._("functions", functionsJson)
+                         ._("genericFunctions", genericFunctionsJson)
+                         ._("coreTypes", coreTypesJson)
+                         ._("genericCoreTypes", genericCoreTypesJson)
+                         ._("mixTypes", mixTypesJson)
+                         ._("regions", regionJson)
+                         ._("choiceTypes", choiceJson)
+                         ._("typeDefinitions", defsJson);
+          mStream.close();
         } else {
           ctx->Error("Could not open the code info file for output", codeStructFilePath);
         }

@@ -29,6 +29,7 @@ protected:
   bool          variable; // Variability nature
   llvm::Value*  ll;       // LLVM value
   Maybe<String> localID;  // ID of the local in a function
+  bool          isSelf = false;
 
 public:
   Value(llvm::Value* _llValue, IR::QatType* _type, bool _isVariable, Nature kind);
@@ -43,15 +44,18 @@ public:
   useit virtual bool         isPrerunValue() const;
   useit PrerunValue*         asConst() const;
   useit bool                 isLLVMConstant() const;
+  useit bool                 isSelfValue() const;
   useit llvm::Constant* getLLVMConstant() const;
   useit bool            isLocalToFn() const;
   useit String          getLocalID() const;
   void                  setLocalID(const String& locID);
   useit Nature          getNature() const;
   useit bool            isImplicitPointer() const;
-  void                  makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
-  void                  loadImplicitPointer(llvm::IRBuilder<>& builder);
-  useit virtual Value*  call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod);
+  useit virtual Value*  call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod);
+
+  void setSelf();
+  void makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
+  void loadImplicitPointer(llvm::IRBuilder<>& builder);
 
   static void clearAll();
 };

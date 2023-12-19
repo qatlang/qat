@@ -138,6 +138,16 @@ bool GenericParameter::isPrerun() const { return kind == GenericKind::prerunGene
 
 PrerunGeneric* GenericParameter::asPrerun() const { return (PrerunGeneric*)this; }
 
+String GenericParameter::toString() const {
+  if (isPrerun()) {
+    return asPrerun()->getExpression()->getType()->toPrerunGenericString(asPrerun()->getExpression()).value();
+  } else if (isTyped()) {
+    return asTyped()->getType()->toString();
+  } else {
+    // FIXME - Do something here
+  }
+}
+
 TypedGeneric::TypedGeneric(Identifier _name, IR::QatType* _type, FileRange _range)
     : GenericParameter(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
 

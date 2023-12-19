@@ -8,7 +8,7 @@
 namespace qat::IR {
 
 struct MetaInfo {
-  explicit MetaInfo(Vec<Pair<Identifier, IR::PrerunValue*>> keyValues) {
+  MetaInfo(Vec<Pair<Identifier, IR::PrerunValue*>> keyValues, FileRange _fileRange) : fileRange(_fileRange) {
     for (auto& kv : keyValues) {
       keys.push_back(kv.first);
       values.push_back(kv.second);
@@ -17,6 +17,7 @@ struct MetaInfo {
 
   Vec<Identifier>       keys;
   Vec<IR::PrerunValue*> values;
+  FileRange             fileRange;
 
   useit bool hasKey(String const& name) const {
     for (auto& k : keys) {

@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-ConstructorCall::ConstructorCall(QatType* _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
+ConstructorCall::ConstructorCall(Maybe<QatType*> _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
                                  Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount, FileRange _fileRange)
     : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy), ownerType(_ownerType),
       ownCount(_ownCount) {}
@@ -55,7 +55,17 @@ String ConstructorCall::ownTyToString() const {
 
 IR::Value* ConstructorCall::emit(IR::Context* ctx) {
   SHOW("Constructor Call - Emitting type")
-  auto* typ = type->emit(ctx);
+  if (!type.has_value() && !isTypeInferred()) {
+    ctx->Error("No type provided for constructor call, and no type inferred from scope", fileRange);
+  }
+  auto* typ = type.has_value() ? type.value()->emit(ctx) : inferredType;
+  if (type.has_value() && isTypeInferred()) {
+    if (!typ->isSame(inferredType)) {
+      ctx->Error("The provided type for the constructor call is " + ctx->highlightError(typ->toString()) +
+                     " but the inferred type is " + ctx->highlightError(inferredType->toString()),
+                 fileRange);
+    }
+  }
   SHOW("Emitted type")
   if (ownCount.has_value()) {
     SHOW("Own count is present")
@@ -90,12 +100,12 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     }
   }
   if (typ->isExpanded()) {
-    auto*             eTy = typ->asExpanded();
-    Vec<IR::Value*>   valsIR;
-    Vec<IR::QatType*> valsType;
+    auto*                                eTy = typ->asExpanded();
+    Vec<IR::Value*>                      valsIR;
+    Vec<Pair<Maybe<bool>, IR::QatType*>> valsType;
     for (auto* arg : args) {
       auto* argVal = arg->emit(ctx);
-      valsType.push_back(argVal->getType());
+      valsType.push_back({argVal->isImplicitPointer() ? Maybe<bool>(argVal->isVariable()) : None, argVal->getType()});
       valsIR.push_back(argVal);
     }
     SHOW("Argument values emitted for function call")
@@ -116,8 +126,8 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
             fileRange);
       }
     } else if (args.size() == 1) {
-      if (eTy->hasFromConvertor(valsType.front())) {
-        cons = eTy->getFromConvertor(valsType.front());
+      if (eTy->hasFromConvertor(valsType[0].first, valsType[0].second)) {
+        cons = eTy->getFromConvertor(valsType[0].first, valsType[0].second);
         if (!cons->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("This convertor of type " + ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                      fileRange);
@@ -125,7 +135,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
         SHOW("Found convertor with type")
       } else {
         ctx->Error("No from convertor found for type " + ctx->highlightError(eTy->getFullName()) + " with type " +
-                       ctx->highlightError(valsType.front()->toString()),
+                       ctx->highlightError(valsType.front().second->toString()),
                    fileRange);
       }
     } else {
@@ -145,8 +155,8 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
     auto argTys = cons->getType()->asFunction()->getArgumentTypes();
     for (usize i = 1; i < argTys.size(); i++) {
       if (argTys.at(i)->getType()->isReference()) {
-        if (!valsType.at(i - 1)->isReference()) {
-          if (!valsIR.at(i - 1)->isImplicitPointer()) {
+        if (!valsType.at(i - 1).second->isReference()) {
+          if (!valsType.at(i - 1).first.has_value()) {
             valsIR.at(i - 1)->makeImplicitPointer(ctx, None);
           }
           if (argTys.at(i)->getType()->asReference()->isSubtypeVariable() && !valsIR.at(i - 1)->isVariable()) {
@@ -164,7 +174,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           }
         }
       } else {
-        auto* valTy = valsType.at(i - 1);
+        auto* valTy = valsType.at(i - 1).second;
         auto* val   = valsIR.at(i - 1);
         if (valTy->isReference() || val->isImplicitPointer()) {
           if (valTy->isReference()) {
@@ -289,13 +299,13 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
                             : (IR::QatType*)eTy,
           ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (isLocalDecl()) {
-        res->setLocalID(localValue->getLocalID());
+        res->setLocalID(localValue->getLocalID().value());
       }
       return res;
     }
   } else {
     ctx->Error("The provided type " + ctx->highlightError(typ->toString()) + " cannot have a constructor",
-               type->fileRange);
+               type.has_value() ? type.value()->fileRange : fileRange);
   }
   return nullptr;
 }
@@ -309,7 +319,8 @@ Json ConstructorCall::toJson() const {
   }
   return Json()
       ._("nodeType", "constructorCall")
-      ._("type", type->toJson())
+      ._("hasType", type.has_value())
+      ._("type", type.has_value() ? type.value()->toJson() : JsonValue())
       ._("arguments", argsJson)
       ._("isOwn", ownTy.has_value())
       ._("ownType", ownTy.has_value() ? JsonValue(ownTyToString()) : JsonValue())

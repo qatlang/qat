@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class ConstructorCall : public Expression, public LocalDeclCompatible {
+class ConstructorCall : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class LocalDeclaration;
 
 public:
@@ -18,7 +18,7 @@ public:
   };
 
 private:
-  QatType*           type;
+  Maybe<QatType*>    type;
   Vec<Expression*>   args;
   Maybe<OwnType>     ownTy;
   Maybe<QatType*>    ownerType;
@@ -28,10 +28,11 @@ private:
   String           ownTyToString() const;
 
 public:
-  ConstructorCall(QatType* _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<QatType*> _ownerType,
+  ConstructorCall(Maybe<QatType*> _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<QatType*> _ownerType,
                   Maybe<Expression*> _ownCount, FileRange _fileRange);
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit bool isOwning() const;
 

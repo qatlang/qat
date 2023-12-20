@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <string>
 
 namespace qat::IR {
 
@@ -42,6 +43,22 @@ CodeProblem::operator Json() const {
       ._("hasRange", range.has_value())
       ._("fileRange", range.has_value() ? (Json)(range.value()) : Json());
 }
+
+QatError::QatError() = default;
+
+QatError::QatError(String _message, Maybe<FileRange> _range) : message(_message), fileRange(_range) {}
+
+QatError& QatError::add(String value) {
+  message.append(value);
+  return *this;
+}
+
+QatError& QatError::colored(String value, const char* color) {
+  auto* cfg = cli::Config::get();
+  message.append(ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`"));
+}
+
+void QatError::setRange(FileRange range) { fileRange = range; }
 
 Context* Context::instance = nullptr;
 
@@ -465,7 +482,7 @@ GenericParameter* Context::getGenericParameterFromLastMain(String const& name) c
   return nullptr;
 }
 
-void Context::addError(const String& message, Maybe<FileRange> fileRange) {
+void Context::addError(String const& message, Maybe<FileRange> fileRange) {
   auto* cfg = cli::Config::get();
   if (hasActiveGeneric()) {
     codeProblems.push_back(CodeProblem(true,
@@ -483,7 +500,8 @@ void Context::addError(const String& message, Maybe<FileRange> fileRange) {
   std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR ";
   if (fileRange) {
     std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
-              << fileRange.value().start.line << ":" << fileRange.value().start.character;
+              << fileRange.value().start.line << ":" << fileRange.value().start.character << " to "
+              << fileRange.value().end.line << ":" << fileRange.value().end.character;
   }
   std::cerr << Colored(colors::bold::white) << "\n"
             << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
@@ -510,9 +528,20 @@ void Context::printRelevantFileContent(FileRange const& fileRange, bool isError)
   if (!fs::is_regular_file(fileRange.file)) {
     return;
   }
-  auto lines = getContentForDiagnostics(fileRange);
-  for (auto& lineInfo : lines) {
-    std::cerr << "▌ " << std::get<0>(lineInfo) << "\n";
+  auto  lines       = getContentForDiagnostics(fileRange);
+  auto  endLine     = lines.first + lines.second.size();
+  usize lineNumSize = std::to_string(lines.first).size();
+  if (lineNumSize < std::to_string(endLine).size()) {
+    lineNumSize = std::to_string(endLine).size();
+  }
+  usize lineIndex = 0;
+  std::cerr << "\n";
+  for (auto& lineInfo : lines.second) {
+    String lineNum = std::to_string(lines.first + lineIndex);
+    while (lineNum.size() < lineNumSize) {
+      lineNum += " ";
+    }
+    std::cerr << lineNum << " | " << std::get<0>(lineInfo) << "\n";
     if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
       String spacing;
       if (std::get<1>(lineInfo) > 0) {
@@ -525,14 +554,13 @@ void Context::printRelevantFileContent(FileRange const& fileRange, bool isError)
           spacing += " ";
         }
       }
-      auto indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
-      if (indicatorCount > 0) {
-        indicatorCount--;
-      }
+      auto   indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
       String indicator(indicatorCount, '^');
-      std::cerr << "▌ " << spacing << (isError ? Colored(colors::bold::red) : Colored(colors::bold::purple))
-                << indicator << Colored(colors::reset) << "\n";
+      std::cerr << String(lineNumSize, ' ') << " | " << spacing
+                << (isError ? Colored(colors::bold::red) : Colored(colors::bold::purple)) << indicator
+                << Colored(colors::reset) << "\n";
     }
+    lineIndex++;
   }
 }
 
@@ -541,39 +569,66 @@ void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   writeJsonResult(false);
   sitter->destroy();
   delete cli::Config::get();
-  MemoryTracker::report();
   ast::Node::clearAll();
+  MemoryTracker::report();
   exit(0);
 }
 
-Vec<std::tuple<String, u64, u64>> Context::getContentForDiagnostics(FileRange const& _range) const {
+void Context::Errors(Vec<QatError> errors) {
+  for (auto& err : errors) {
+    addError(err.message, err.fileRange);
+  }
+  writeJsonResult(false);
+  sitter->destroy();
+  delete cli::Config::get();
+  ast::Node::clearAll();
+  MemoryTracker::report();
+  exit(0);
+}
+
+Pair<usize, Vec<std::tuple<String, u64, u64>>> Context::getContentForDiagnostics(FileRange const& _range) const {
   Vec<std::tuple<String, u64, u64>> result;
-  std::ifstream                     file(_range.file);
-  String                            line;
-  u64                               lineCount = 0;
+
+  std::ifstream file(_range.file);
+  String        line;
+  u64           lineCount = 0;
+  const usize   startLine = _range.start.line;
+  const usize   startChar = _range.start.character;
+  const usize   endLine   = _range.end.line;
+  const usize   endChar   = _range.end.character;
+  usize         firstLine = startLine;
   while (std::getline(file, line)) {
-    if ((_range.start.line > 0u) && (lineCount == (_range.start.line - 2))) {
+    lineCount++;
+    usize i = 0;
+    while (line[i] == '\t') {
+      i++;
+    }
+    if ((startLine > 0u) && (lineCount == (startLine - 1))) {
       // Line before the first relevant line in file range
       result.push_back({line, 0u, 0u});
-    } else if ((lineCount >= _range.start.line - 1) && (lineCount < _range.end.line)) {
+      firstLine = lineCount;
+    } else if ((lineCount >= startLine) && (lineCount <= endLine)) {
       // Relevant line
-      if (_range.start.line == _range.end.line) {
-        result.push_back({line, _range.start.character - 1, _range.end.character});
-      } else if (lineCount == _range.start.line) {
-        result.push_back({line, _range.start.character, line.size() - 1});
-      } else if (lineCount == _range.end.line) {
-        result.push_back({line, 0u, _range.end.character});
+      if (startLine == endLine) {
+        // Only one line for the relevant content
+        result.push_back({line, startChar, endChar});
+      } else if (lineCount == startLine) {
+        // First relevant line
+        result.push_back({line, startChar, line.size()});
+      } else if (lineCount == endLine) {
+        // Last relevant line
+        result.push_back({line, i, endChar});
       } else {
-        result.push_back({line, 0u, line.size() - 1});
+        // Relevant lines in the middle
+        result.push_back({line, i, line.size()});
       }
-    } else if ((_range.start.line <= UINT64_MAX) && (lineCount == (_range.end.line))) {
+    } else if ((endLine < UINT64_MAX) && (lineCount == (endLine + 1))) {
       // Line after the last relevant line in file range
       result.push_back({line, 0u, 0u});
       break;
     }
-    lineCount++;
   }
-  return result;
+  return {firstLine, result};
 }
 
 void Context::Warning(const String& message, const FileRange& fileRange) const {

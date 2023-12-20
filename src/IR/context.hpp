@@ -113,6 +113,20 @@ public:
   operator Json() const;
 };
 
+class QatError {
+  friend class IR::Context;
+  String           message;
+  Maybe<FileRange> fileRange;
+
+public:
+  QatError();
+  QatError(String message, Maybe<FileRange> fileRange);
+
+  QatError& add(String value);
+  QatError& colored(String value, const char* color = colors::bold::yellow);
+  void      setRange(FileRange range);
+};
+
 class Context {
   friend class qat::QatSitter;
 
@@ -132,7 +146,7 @@ private:
 
   void addError(const String& message, Maybe<FileRange> fileRange);
 
-  Vec<std::tuple<String, u64, u64>> getContentForDiagnostics(FileRange const& _range) const;
+  Pair<usize, Vec<std::tuple<String, u64, u64>>> getContentForDiagnostics(FileRange const& _range) const;
 
   void printRelevantFileContent(FileRange const& fileRange, bool isError) const;
 
@@ -281,6 +295,7 @@ public:
   void writeJsonResult(bool status) const;
 
   exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
+  exitFn void   Errors(Vec<QatError> errors);
   void          Warning(const String& message, const FileRange& fileRange) const;
   static String highlightError(const String& message, const char* color = colors::bold::yellow);
   static String highlightWarning(const String& message, const char* color = colors::bold::yellow);

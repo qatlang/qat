@@ -47,11 +47,11 @@ public:
   useit bool                 isSelfValue() const;
   useit llvm::Constant* getLLVMConstant() const;
   useit bool            isLocalToFn() const;
-  useit String          getLocalID() const;
-  void                  setLocalID(const String& locID);
-  useit Nature          getNature() const;
-  useit bool            isImplicitPointer() const;
-  useit virtual Value*  call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod);
+  useit Maybe<String>  getLocalID() const;
+  void                 setLocalID(const String& locID);
+  useit Nature         getNature() const;
+  useit bool           isImplicitPointer() const;
+  useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod);
 
   void setSelf();
   void makeImplicitPointer(IR::Context* ctx, Maybe<String> name);

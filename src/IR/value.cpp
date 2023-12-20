@@ -23,7 +23,7 @@ llvm::Value* Value::getLLVM() const { return ll; }
 
 bool Value::isLocalToFn() const { return localID.has_value(); }
 
-String Value::getLocalID() const { return localID.value(); }
+Maybe<String> Value::getLocalID() const { return localID; }
 
 void Value::setLocalID(const String& locID) { localID = locID; }
 

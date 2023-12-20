@@ -2,6 +2,7 @@
 #include "../../memory_tracker.hpp"
 #include "../function.hpp"
 #include "region.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
@@ -112,6 +113,27 @@ PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, bool _non
 bool PointerType::isSubtypeVariable() const { return isSubtypeVar; }
 
 bool PointerType::isTypeSized() const { return true; }
+
+bool PointerType::hasDefaultValue() const { return !nonNullable; }
+
+IR::Value* PointerType::getDefaultValue(IR::Context* ctx) {
+  if (hasDefaultValue()) {
+    if (isMulti()) {
+      return new IR::PrerunValue(
+          llvm::ConstantStruct::get(
+              llvm::cast<llvm::StructType>(getLLVMType()),
+              {llvm::ConstantPointerNull::get(llvm::PointerType::get(
+                  getSubType()->isVoid() ? llvm::Type::getInt8Ty(ctx->llctx) : getSubType()->getLLVMType(),
+                  ctx->dataLayout.value().getProgramAddressSpace()))}),
+          this);
+    } else {
+      return new IR::PrerunValue(llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(getLLVMType())), this);
+    }
+  } else {
+    ctx->Error("Type " + ctx->highlightError(toString()) + " do not have a default value", None);
+    return nullptr;
+  }
+}
 
 bool PointerType::isTriviallyCopyable() const { return true; }
 

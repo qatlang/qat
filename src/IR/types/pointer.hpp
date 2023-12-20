@@ -67,15 +67,18 @@ public:
 
   useit QatType*     getSubType() const;
   useit PointerOwner getOwner() const;
-  useit bool         isSubtypeVariable() const;
-  useit bool         isMulti() const;
-  useit bool         isNullable() const;
-  useit bool         isNonNullable() const;
-  useit bool         isTypeSized() const final;
-  useit bool         isTriviallyCopyable() const final;
-  useit bool         isTriviallyMovable() const final;
-  useit TypeKind     typeKind() const override;
-  useit String       toString() const override;
+
+  useit bool isSubtypeVariable() const;
+  useit bool isMulti() const;
+  useit bool isNullable() const;
+  useit bool isNonNullable() const;
+  useit bool isTypeSized() const final;
+  useit bool hasDefaultValue() const final;
+  useit bool isTriviallyCopyable() const final;
+  useit bool isTriviallyMovable() const final;
+  useit IR::Value* getDefaultValue(IR::Context* ctx) final;
+  useit TypeKind   typeKind() const override;
+  useit String     toString() const override;
 };
 
 } // namespace qat::IR

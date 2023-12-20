@@ -300,12 +300,12 @@ bool QatType::isTriviallyMovable() const { return false; }
 
 bool QatType::hasDefaultValue() const { return false; }
 
-IR::Value* QatType::getDefaultValue() const { return nullptr; }
+IR::Value* QatType::getDefaultValue(IR::Context* ctx) { return nullptr; }
 
 bool QatType::isDefaultConstructible() const { return hasDefaultValue(); }
 void QatType::defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
   if (hasDefaultValue()) {
-    auto* defVal = getDefaultValue();
+    auto* defVal = getDefaultValue(ctx);
     ctx->builder.CreateStore(defVal->isPrerunValue() ? defVal->getLLVM()
                                                      : ctx->builder.CreateLoad(llvmType, defVal->getLLVM()),
                              instance->getLLVM());

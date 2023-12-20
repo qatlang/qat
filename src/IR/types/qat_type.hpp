@@ -81,7 +81,7 @@ public:
   useit virtual bool isTriviallyCopyable() const;
   useit virtual bool isTriviallyMovable() const;
 
-  virtual IR::Value* getDefaultValue() const;
+  virtual IR::Value* getDefaultValue(IR::Context* ctx);
   virtual void       defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
   virtual void       copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
   virtual void       copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);

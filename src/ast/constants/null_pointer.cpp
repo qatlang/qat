@@ -5,36 +5,42 @@
 
 namespace qat::ast {
 
-NullPointer::NullPointer(FileRange _fileRange) : PrerunExpression(std::move(_fileRange)) {}
+NullPointer::NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
+    : PrerunExpression(std::move(_fileRange)), providedType(_providedType) {}
 
 IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
-  if (isTypeInferred()) {
-    if (inferredType->isPointer()) {
-      if (!inferredType->asPointer()->isNullable()) {
-        ctx->Error("The inferred type is " + ctx->highlightError(inferredType->toString()) +
-                       " which is not a nullable pointer type",
-                   fileRange);
-      }
-    } else {
-      ctx->Error("The inferred type for null is " + ctx->highlightError(inferredType->toString()) +
-                     " which is not a pointer type",
+  if (!providedType.has_value() && !isTypeInferred()) {
+    ctx->Error("No type provided for null pointer and no type inferred from scope", fileRange);
+  }
+  auto theType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType;
+  if (providedType.has_value() && isTypeInferred()) {
+    if (!theType->isSame(inferredType)) {
+      ctx->Error("The provided type for the null pointer is " + ctx->highlightError(theType->toString()) +
+                     ", but the inferred type is " + ctx->highlightError(inferredType->toString()),
                  fileRange);
     }
-    return new IR::PrerunValue(
-        inferredType->asPointer()->isMulti()
-            ? llvm::ConstantStruct::get(
-                  llvm::dyn_cast<llvm::StructType>(inferredType->getLLVMType()),
-                  {llvm::ConstantPointerNull::get(inferredType->asPointer()->getSubType()->getLLVMType()->getPointerTo(
-                       ctx->dataLayout->getProgramAddressSpace())),
-                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
-            : llvm::ConstantPointerNull::get(inferredType->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
-        IR::PointerType::get(inferredType->asPointer()->isSubtypeVariable(), inferredType->asPointer()->getSubType(),
-                             false, inferredType->asPointer()->getOwner(), inferredType->asPointer()->isMulti(), ctx));
-  } else {
-    return new IR::PrerunValue(
-        llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-        IR::PointerType::get(false, IR::VoidType::get(ctx->llctx), false, IR::PointerOwner::OfAnonymous(), false, ctx));
   }
+  if (theType->isPointer()) {
+    if (!theType->asPointer()->isNullable()) {
+      ctx->Error("The inferred type is " + ctx->highlightError(theType->toString()) +
+                     " which is not a nullable pointer type",
+                 fileRange);
+    }
+  } else {
+    ctx->Error("The inferred type for null is " + ctx->highlightError(theType->toString()) +
+                   " which is not a pointer type",
+               fileRange);
+  }
+  return new IR::PrerunValue(
+      theType->asPointer()->isMulti()
+          ? llvm::ConstantStruct::get(
+                llvm::dyn_cast<llvm::StructType>(theType->getLLVMType()),
+                {llvm::ConstantPointerNull::get(theType->asPointer()->getSubType()->getLLVMType()->getPointerTo(
+                     ctx->dataLayout->getProgramAddressSpace())),
+                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
+          : llvm::ConstantPointerNull::get(theType->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
+      IR::PointerType::get(theType->asPointer()->isSubtypeVariable(), theType->asPointer()->getSubType(), false,
+                           theType->asPointer()->getOwner(), theType->asPointer()->isMulti(), ctx));
 }
 
 String NullPointer::toString() const { return "null"; }

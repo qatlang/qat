@@ -2,6 +2,7 @@
 #define QAT_AST_CONSTANTS_NULL_POINTER_HPP
 
 #include "../expression.hpp"
+#include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
@@ -10,8 +11,10 @@ namespace qat::ast {
  *
  */
 class NullPointer : public PrerunExpression, public TypeInferrable {
+  Maybe<ast::QatType*> providedType;
+
 public:
-  explicit NullPointer(FileRange _fileRange);
+  explicit NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange);
 
   TYPE_INFERRABLE_FUNCTIONS
 

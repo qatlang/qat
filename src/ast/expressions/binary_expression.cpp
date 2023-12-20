@@ -623,7 +623,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       auto* strCmpFalseBlock  = new IR::Block(ctx->getActiveFunction(), curr);
       auto* iterCondBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
       auto* iterTrueBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
-      auto* iterIncrBlock     = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
+      auto* iterIncrBlock     = new IR::Block(ctx->getActiveFunction(), iterTrueBlock);
       auto* iterFalseBlock    = new IR::Block(ctx->getActiveFunction(), lenCheckTrueBlock);
       auto* restBlock         = new IR::Block(ctx->getActiveFunction(), curr->getParent());
       restBlock->linkPrevBlock(curr);
@@ -725,13 +725,15 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       auto* eTy   = lhsType->isReference() ? lhsType->asReference()->getSubType()->asExpanded() : lhsType->asExpanded();
       auto  OpStr = OpToString(op);
       // FIXME - Incomplete logic?
-      if (eTy->hasBinaryOperator(OpStr, rhsType)) {
+      if (eTy->hasBinaryOperator(OpStr,
+                                 {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType})) {
         SHOW("RHS is matched exactly")
         auto localID = lhsEmit->getLocalID();
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
-        auto* opFn = eTy->getBinaryOperator(OpStr, rhsType);
+        auto* opFn = eTy->getBinaryOperator(
+            OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " of type " +
                          ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
@@ -740,14 +742,15 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         rhsEmit->loadImplicitPointer(ctx->builder);
         return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, localID, ctx->getMod());
-      } else if (rhsType->isReference() && eTy->hasBinaryOperator(OpStr, rhsType->asReference()->getSubType())) {
+      } else if (rhsType->isReference() &&
+                 eTy->hasBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})) {
         auto localID = rhsEmit->getLocalID();
         rhsEmit->loadImplicitPointer(ctx->builder);
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
-        auto* opFn = eTy->getBinaryOperator(OpStr, rhsType->asReference()->getSubType());
+        auto* opFn = eTy->getBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of type " +
                          ctx->highlightError(eTy->getFullName()) + " with right hand side type: " +

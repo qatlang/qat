@@ -102,12 +102,6 @@ bool QatType::isCompatible(QatType* other) {
     } else {
       return isSame(other);
     }
-  } else if (isUnsignedInteger() && other->isUnsignedInteger()) {
-    if (asUnsignedInteger()->getBitwidth() == other->asUnsignedInteger()->getBitwidth()) {
-      return true;
-    } else {
-      return isSame(other);
-    }
   } else {
     return isSame(other);
   }
@@ -303,6 +297,22 @@ OpaqueType* QatType::asOpaque() const {
 
 bool QatType::isTriviallyCopyable() const { return false; }
 bool QatType::isTriviallyMovable() const { return false; }
+
+bool QatType::hasDefaultValue() const { return false; }
+
+IR::Value* QatType::getDefaultValue() const { return nullptr; }
+
+bool QatType::isDefaultConstructible() const { return hasDefaultValue(); }
+void QatType::defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
+  if (hasDefaultValue()) {
+    auto* defVal = getDefaultValue();
+    ctx->builder.CreateStore(defVal->isPrerunValue() ? defVal->getLLVM()
+                                                     : ctx->builder.CreateLoad(llvmType, defVal->getLLVM()),
+                             instance->getLLVM());
+  } else {
+    ctx->Error("Could not default construct an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
 
 bool QatType::isCopyConstructible() const { return isTriviallyCopyable(); }
 void QatType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {

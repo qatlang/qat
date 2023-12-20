@@ -28,6 +28,7 @@ enum class TypeKind {
   maybe,
   linkedGeneric,
   result,
+  selfType,
 };
 
 } // namespace qat::ast

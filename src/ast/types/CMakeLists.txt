@@ -14,6 +14,7 @@ add_library(QAT_AST_TYPES
 	prerun_generic.cpp
 	qat_type.cpp
 	result.cpp
+	self_type.cpp
 	string_slice.cpp
 	tuple.cpp
 	typed_generic.cpp

@@ -159,9 +159,9 @@ DefinitionType* GenericDefinitionType::fillGenerics(Vec<GenericToFill*>& types, 
   defineTypeDef->setVariantName(variantName);
   ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::typeDefinition, range}, true);
   (void)defineTypeDef->define(ctx);
-  (void)defineTypeDef->emit(ctx);
   auto* dTy = defineTypeDef->getDefinition();
   variants.push_back(GenericVariant<DefinitionType>(dTy, types));
+  (void)defineTypeDef->emit(ctx);
   for (auto* temp : generics) {
     temp->unset();
   }

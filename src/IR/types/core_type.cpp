@@ -279,8 +279,10 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* 
   defineCoreType->genericsToFill = types;
   (void)defineCoreType->define(ctx);
   auto* cTy = defineCoreType->getCoreType();
-  (void)defineCoreType->emit(ctx);
   variants.push_back(GenericVariant<CoreType>(cTy, types));
+  defineCoreType->setCoreType(cTy);
+  (void)defineCoreType->emit(ctx);
+  defineCoreType->unsetCoreType();
   for (auto* temp : generics) {
     temp->unset();
   }

@@ -33,115 +33,118 @@ GenericParameter* ExpandedType::getGenericParameter(const String& name) const {
   return nullptr;
 }
 
-String ExpandedType::getFullName() const { return parent->getFullNameWithChild(name.value); }
+String ExpandedType::getFullName() const {
+  auto result = parent->getFullNameWithChild(name.value);
+  if (isGeneric()) {
+    result += ":[";
+    for (usize i = 0; i < generics.size(); i++) {
+      result += generics.at(i)->toString();
+      if (i != (generics.size() - 1)) {
+        result += ", ";
+      }
+    }
+    result += "]";
+  }
+  return result;
+}
 
 Identifier ExpandedType::getName() const { return name; }
 
-bool ExpandedType::hasNormalMemberFn(const String& fnName) const {
+Maybe<MemberFunction*> ExpandedType::checkNormalMemberFn(const Vec<MemberFunction*>& memberFunctions,
+                                                         const String&               name) {
   for (auto* mFn : memberFunctions) {
-    SHOW("Found member function: " << mFn->getName().value)
-    if (!mFn->isVariationFunction() && mFn->getName().value == fnName) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool ExpandedType::hasVariationFn(String const& fnName) const {
-  for (auto* mFn : memberFunctions) {
-    if (mFn->isVariationFunction() && mFn->getName().value == fnName) {
-      return true;
-    }
-  }
-  return false;
-}
-
-MemberFunction* ExpandedType::getNormalMemberFn(const String& fnName) const {
-  for (auto* memberFunction : memberFunctions) {
-    if (!memberFunction->isVariationFunction() && memberFunction->getName().value == fnName) {
-      return memberFunction;
-    }
-  }
-  return nullptr;
-}
-
-MemberFunction* ExpandedType::getVariationFn(const String& fnName) const {
-  for (auto* mFn : memberFunctions) {
-    if (mFn->isVariationFunction() && (mFn->getName().value == fnName)) {
+    if (!mFn->isVariationFunction() && mFn->getName().value == name) {
       return mFn;
     }
   }
-  return nullptr;
+  return None;
+}
+
+bool ExpandedType::hasNormalMemberFn(const String& fnName) const {
+  return checkNormalMemberFn(memberFunctions, fnName).has_value();
+}
+
+Maybe<MemberFunction*> ExpandedType::checkVariationFn(Vec<MemberFunction*> const& variationFunctions,
+                                                      const String&               name) {
+  for (auto* mFn : variationFunctions) {
+    if (mFn->isVariationFunction() && mFn->getName().value == name) {
+      return mFn;
+    }
+  }
+  return None;
+}
+
+bool ExpandedType::hasVariationFn(String const& fnName) const {
+  return checkVariationFn(memberFunctions, fnName).has_value();
+}
+
+MemberFunction* ExpandedType::getNormalMemberFn(const String& fnName) const {
+  return checkNormalMemberFn(memberFunctions, fnName).value();
+}
+
+MemberFunction* ExpandedType::getVariationFn(const String& fnName) const {
+  return checkVariationFn(memberFunctions, fnName).value();
+}
+
+Maybe<IR::MemberFunction*> ExpandedType::checkStaticFunction(Vec<IR::MemberFunction*> const& staticFns,
+                                                             const String&                   name) {
+  for (const auto& fun : staticFns) {
+    if (fun->getName().value == name) {
+      return fun;
+    }
+  }
+  return None;
 }
 
 bool ExpandedType::hasStaticFunction(const String& fnName) const {
-  for (const auto& fun : staticFunctions) {
-    if (fun->getName().value == fnName) {
-      return true;
-    }
-  }
-  return false;
+  return checkStaticFunction(staticFunctions, fnName).has_value();
 }
 
 MemberFunction* ExpandedType::getStaticFunction(const String& fnName) const {
-  for (auto* staticFunction : staticFunctions) {
-    if (staticFunction->getName().value == fnName) {
-      return staticFunction;
-    }
-  }
-  return nullptr;
+  return checkStaticFunction(staticFunctions, fnName).value();
 }
 
-bool ExpandedType::hasBinaryOperator(const String& opr, IR::QatType* type) const {
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
+Maybe<IR::MemberFunction*> ExpandedType::checkBinaryOperator(Vec<IR::MemberFunction*> const& binOps, const String& opr,
+                                                             Pair<Maybe<bool>, IR::QatType*> argType) {
+  for (auto* bin : binOps) {
+    if (bin->getName().value == opr) {
       auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-      if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-MemberFunction* ExpandedType::getBinaryOperator(const String& opr, IR::QatType* type) const {
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
-      auto* binArgTy = bin->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-      if (binArgTy->isSame(type) || (binArgTy->isReference() && binArgTy->asReference()->getSubType()->isSame(type))) {
+      if (binArgTy->isSame(argType.second) ||
+          (argType.first.has_value() && binArgTy->isReference() &&
+           (binArgTy->asReference()->isSubtypeVariable() ? argType.first.value() : true) &&
+           binArgTy->asReference()->getSubType()->isSame(argType.second)) ||
+          (argType.second->isReference() && argType.second->asReference()->getSubType()->isSame(binArgTy))) {
         return bin;
       }
     }
   }
-  return nullptr;
+  return None;
 }
 
-bool ExpandedType::hasUnaryOperator(const String& opr) const {
-  for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
-      return true;
-    }
-  }
-  return false;
+bool ExpandedType::hasBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(binaryOperators, opr, argType).has_value();
 }
 
-MemberFunction* ExpandedType::getUnaryOperator(const String& opr) const {
+MemberFunction* ExpandedType::getBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(binaryOperators, opr, argType).value();
+}
+
+Maybe<IR::MemberFunction*> ExpandedType::checkUnaryOperator(Vec<IR::MemberFunction*> const& unaryOperators,
+                                                            const String&                   opr) {
   for (auto* unr : unaryOperators) {
-    if (utils::splitString(unr->getName().value, "'")[1] == opr) {
+    if (unr->getName().value == opr) {
       return unr;
     }
   }
-  return nullptr;
+  return None;
 }
 
-u64 ExpandedType::getOperatorVariantIndex(const String& opr) const {
-  u64 index = 0;
-  for (auto* bin : binaryOperators) {
-    if (utils::splitString(bin->getName().value, "'")[1] == opr) {
-      index++;
-    }
-  }
-  return index;
+bool ExpandedType::hasUnaryOperator(const String& opr) const {
+  return checkUnaryOperator(unaryOperators, opr).has_value();
+}
+
+MemberFunction* ExpandedType::getUnaryOperator(const String& opr) const {
+  return checkUnaryOperator(unaryOperators, opr).value();
 }
 
 bool ExpandedType::hasDefaultConstructor() const { return defaultConstructor != nullptr; }
@@ -152,44 +155,22 @@ bool ExpandedType::hasAnyConstructor() const { return (!constructors.empty()) ||
 
 bool ExpandedType::hasAnyFromConvertor() const { return !fromConvertors.empty(); }
 
-bool ExpandedType::hasConstructorWithTypes(Vec<IR::QatType*> types) const {
-  for (auto* con : constructors) {
+Maybe<IR::MemberFunction*> ExpandedType::checkConstructorWithTypes(Vec<IR::MemberFunction*> const&      cons,
+                                                                   Vec<Pair<Maybe<bool>, IR::QatType*>> types) {
+  for (auto* con : cons) {
     auto argTys = con->getType()->asFunction()->getArgumentTypes();
     if (types.size() == (argTys.size() - 1)) {
       bool result = true;
       for (usize i = 1; i < argTys.size(); i++) {
         auto* argType = argTys.at(i)->getType();
-        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
-            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
-                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
-            (!(types.at(i - 1)->isReference() &&
-               (types.at(i - 1)->asReference()->getSubType()->isSame(argType) ||
-                types.at(i - 1)->asReference()->getSubType()->isCompatible(argType))))) {
-          result = false;
-          break;
-        }
-      }
-      if (result) {
-        return true;
-      }
-    } else {
-      continue;
-    }
-  }
-  return false;
-}
-
-MemberFunction* ExpandedType::getConstructorWithTypes(Vec<IR::QatType*> types) const {
-  for (auto* con : constructors) {
-    auto argTys = con->getType()->asFunction()->getArgumentTypes();
-    if (types.size() == (argTys.size() - 1)) {
-      bool result = true;
-      for (usize i = 1; i < argTys.size(); i++) {
-        auto* argType = argTys.at(i)->getType();
-        if (!argType->isSame(types.at(i - 1)) && !argType->isCompatible(types.at(i - 1)) &&
-            (!(argType->isReference() && (argType->asReference()->getSubType()->isSame(types.at(i - 1)) ||
-                                          argType->asReference()->getSubType()->isCompatible(types.at(i - 1))))) &&
-            (!(types.at(i - 1)->isReference() && types.at(i - 1)->asReference()->getSubType()->isSame(argType)))) {
+        if (!argType->isSame(types.at(i - 1).second) && !argType->isCompatible(types.at(i - 1).second) &&
+            (!(types.at(i - 1).first.has_value() && argType->isReference() &&
+               (argType->asReference()->isSubtypeVariable() ? types.at(i - 1).first.value() : true) &&
+               (argType->asReference()->getSubType()->isSame(types.at(i - 1).second) ||
+                argType->asReference()->getSubType()->isCompatible(types.at(i - 1).second)))) &&
+            (!(types.at(i - 1).second->isReference() &&
+               (types.at(i - 1).second->asReference()->getSubType()->isSame(argType) ||
+                types.at(i - 1).second->asReference()->getSubType()->isCompatible(argType))))) {
           result = false;
           break;
         }
@@ -201,55 +182,58 @@ MemberFunction* ExpandedType::getConstructorWithTypes(Vec<IR::QatType*> types) c
       continue;
     }
   }
-  return nullptr;
+  return None;
 }
 
-bool ExpandedType::hasFromConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
-    auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
-        (argTy->isReference() &&
-         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
-      return true;
-    }
-  }
-  return false;
+bool ExpandedType::hasConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> argTypes) const {
+  return checkConstructorWithTypes(constructors, argTypes).has_value();
 }
 
-MemberFunction* ExpandedType::getFromConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
+MemberFunction* ExpandedType::getConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> argTypes) const {
+  return checkConstructorWithTypes(constructors, argTypes).value();
+}
+
+Maybe<IR::MemberFunction*> ExpandedType::checkFromConvertor(Vec<IR::MemberFunction*> const& fromConvs,
+                                                            Maybe<bool> isValueVar, IR::QatType* candTy) {
+  for (auto* fconv : fromConvs) {
     auto* argTy = fconv->getType()->asFunction()->getArgumentTypeAt(1)->getType();
-    if (argTy->isSame(typ) || argTy->isCompatible(typ) ||
-        (argTy->isReference() &&
-         (argTy->asReference()->getSubType()->isSame(typ) || argTy->asReference()->getSubType()->isCompatible(typ))) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(argTy))) {
+    if (argTy->isSame(candTy) || argTy->isCompatible(candTy) ||
+        (isValueVar.has_value() && argTy->isReference() &&
+         (argTy->asReference()->isSubtypeVariable() ? isValueVar.value() : true) &&
+         (argTy->asReference()->getSubType()->isSame(candTy) ||
+          argTy->asReference()->getSubType()->isCompatible(candTy))) ||
+        (candTy->isReference() && candTy->asReference()->getSubType()->isSame(argTy))) {
       return fconv;
     }
   }
-  return nullptr;
+  return None;
 }
 
-bool ExpandedType::hasToConvertor(IR::QatType* typ) const {
-  for (auto* fconv : fromConvertors) {
-    auto* retTy = fconv->getType()->asFunction()->getReturnType()->getType();
-    if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
-      return true;
-    }
-  }
-  return false;
+bool ExpandedType::hasFromConvertor(Maybe<bool> isValueVar, IR::QatType* candTy) const {
+  return checkFromConvertor(fromConvertors, isValueVar, candTy).has_value();
 }
 
-MemberFunction* ExpandedType::getToConvertor(IR::QatType* typ) const {
-  for (auto* tconv : fromConvertors) {
+MemberFunction* ExpandedType::getFromConvertor(Maybe<bool> isValueVar, IR::QatType* candTy) const {
+  return checkFromConvertor(fromConvertors, isValueVar, candTy).value();
+}
+
+Maybe<MemberFunction*> ExpandedType::checkToConvertor(Vec<MemberFunction*> const& toConvertors, IR::QatType* targetTy) {
+  for (auto* tconv : toConvertors) {
     auto* retTy = tconv->getType()->asFunction()->getReturnType()->getType();
-    if (retTy->isSame(typ) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(typ)) ||
-        (typ->isReference() && typ->asReference()->getSubType()->isSame(retTy))) {
+    if (retTy->isSame(targetTy) || (retTy->isReference() && retTy->asReference()->getSubType()->isSame(targetTy)) ||
+        (targetTy->isReference() && targetTy->asReference()->getSubType()->isSame(retTy))) {
       return tconv;
     }
   }
-  return nullptr;
+  return None;
+}
+
+bool ExpandedType::hasToConvertor(IR::QatType* typ) const {
+  return ExpandedType::checkToConvertor(toConvertors, typ).has_value();
+}
+
+MemberFunction* ExpandedType::getToConvertor(IR::QatType* typ) const {
+  return ExpandedType::checkToConvertor(toConvertors, typ).value();
 }
 
 bool ExpandedType::hasCopyConstructor() const { return copyConstructor.has_value(); }
@@ -272,13 +256,7 @@ bool ExpandedType::hasCopy() const { return hasCopyConstructor() && hasCopyAssig
 
 bool ExpandedType::hasMove() const { return hasMoveConstructor() && hasMoveAssignment(); }
 
-bool ExpandedType::hasDestructor() const { return destructor != nullptr; }
-
-void ExpandedType::createDestructor(FileRange fRange, IR::Context* ctx) {
-  if (!destructor.has_value()) {
-    destructor = IR::MemberFunction::CreateDestructor(this, nullptr, fRange, fRange, ctx);
-  }
-}
+bool ExpandedType::hasDestructor() const { return destructor.has_value(); }
 
 IR::MemberFunction* ExpandedType::getDestructor() const { return destructor.value(); }
 

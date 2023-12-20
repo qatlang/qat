@@ -53,25 +53,48 @@ public:
   useit bool              hasGenericParameter(const String& name) const;
   useit GenericParameter* getGenericParameter(const String& name) const;
 
-  useit String            getFullName() const;
-  useit Identifier        getName() const;
-  useit bool              hasNormalMemberFn(const String& fnName) const;
-  useit bool              hasVariationFn(String const& name) const;
-  useit MemberFunction*   getVariationFn(const String& name) const;
-  useit MemberFunction*   getNormalMemberFn(const String& fnName) const;
-  useit bool              hasStaticFunction(const String& fnName) const;
-  useit MemberFunction*   getStaticFunction(const String& fnName) const;
-  useit bool              hasBinaryOperator(const String& opr, IR::QatType* type) const;
-  useit MemberFunction*   getBinaryOperator(const String& opr, IR::QatType* type) const;
-  useit bool              hasUnaryOperator(const String& opr) const;
-  useit MemberFunction*   getUnaryOperator(const String& opr) const;
-  useit u64               getOperatorVariantIndex(const String& opr) const;
-  useit bool              hasFromConvertor(IR::QatType* type) const;
-  useit MemberFunction*   getFromConvertor(IR::QatType* type) const;
-  useit bool              hasToConvertor(IR::QatType* type) const;
-  useit MemberFunction*   getToConvertor(IR::QatType* type) const;
-  useit bool              hasConstructorWithTypes(Vec<IR::QatType*> types) const;
-  useit MemberFunction*   getConstructorWithTypes(Vec<IR::QatType*> types) const;
+  useit String     getFullName() const;
+  useit Identifier getName() const;
+
+  useit static Maybe<MemberFunction*> checkVariationFn(Vec<MemberFunction*> const& variationFunctions,
+                                                       String const&               name);
+  useit bool                          hasVariationFn(String const& name) const;
+  useit MemberFunction*               getVariationFn(const String& name) const;
+
+  useit static Maybe<MemberFunction*> checkNormalMemberFn(Vec<MemberFunction*> const& memberFunctions,
+                                                          String const&               name);
+  useit bool                          hasNormalMemberFn(const String& fnName) const;
+  useit MemberFunction*               getNormalMemberFn(const String& fnName) const;
+
+  useit static Maybe<IR::MemberFunction*> checkStaticFunction(Vec<MemberFunction*> const& staticFns,
+                                                              String const&               name);
+  useit bool                              hasStaticFunction(const String& fnName) const;
+  useit MemberFunction*                   getStaticFunction(const String& fnName) const;
+
+  useit static Maybe<IR::MemberFunction*> checkBinaryOperator(Vec<MemberFunction*> const& binOps, const String& opr,
+                                                              Pair<Maybe<bool>, IR::QatType*> argType);
+  useit bool            hasBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit MemberFunction* getBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+
+  useit static Maybe<IR::MemberFunction*> checkUnaryOperator(Vec<MemberFunction*> const& unaryOps, String const& opr);
+  useit bool                              hasUnaryOperator(const String& opr) const;
+  useit MemberFunction*                   getUnaryOperator(const String& opr) const;
+
+  useit static Maybe<IR::MemberFunction*> checkFromConvertor(Vec<MemberFunction*> const& fromConvs,
+                                                             Maybe<bool> isValueVar, IR::QatType* argType);
+  useit bool                              hasFromConvertor(Maybe<bool> isValueVar, IR::QatType* argType) const;
+  useit MemberFunction*                   getFromConvertor(Maybe<bool> isValueVar, IR::QatType* argType) const;
+
+  useit static Maybe<IR::MemberFunction*> checkToConvertor(Vec<MemberFunction*> const& toConvertors,
+                                                           IR::QatType*                targetTy);
+  useit bool                              hasToConvertor(IR::QatType* type) const;
+  useit MemberFunction*                   getToConvertor(IR::QatType* type) const;
+
+  useit static Maybe<IR::MemberFunction*> checkConstructorWithTypes(Vec<MemberFunction*> const&          cons,
+                                                                    Vec<Pair<Maybe<bool>, IR::QatType*>> types);
+  useit bool                              hasConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
+  useit MemberFunction*                   getConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
+
   useit bool              hasDefaultConstructor() const;
   useit MemberFunction*   getDefaultConstructor() const;
   useit bool              hasAnyFromConvertor() const;
@@ -87,7 +110,6 @@ public:
   useit bool              hasCopy() const;
   useit bool              hasMove() const;
   useit bool              hasDestructor() const;
-  void                    createDestructor(FileRange range, IR::Context* ctx);
   useit MemberFunction*   getDestructor() const;
   useit QatModule*        getParent();
   useit virtual LinkNames getLinkNames() const = 0;

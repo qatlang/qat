@@ -11,6 +11,7 @@ add_library(QAT_AST_SENTENCES
 	loop_n_times.cpp
 	loop_while.cpp
 	match.cpp
+	member_initialisation.cpp
 	multithread_give.cpp
 	multithread.cpp
 	say_sentence.cpp)

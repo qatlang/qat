@@ -8,17 +8,16 @@ String CustomIntegerLiteral::radixDigits      = "0123456789abcdefghijklmnopqrstu
 String CustomIntegerLiteral::radixDigitsUpper = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 CustomIntegerLiteral::CustomIntegerLiteral(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth,
-                                           Maybe<u8> _radix, FileRange _fileRange)
+                                           Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange)
     : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), radix(_radix),
-      isUnsigned(_isUnsigned) {}
+      isUnsigned(_isUnsigned), suffix(_suffix) {}
 
 #define DEFAULT_RADIX_VALUE      10u
 #define DEFAULT_INTEGER_BITWIDTH 32u
 
 IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
-  bool          numberIsUnsigned = false;
-  String        numberValue;
-  Maybe<String> suffix;
+  bool   numberIsUnsigned = false;
+  String numberValue;
   SHOW("ast::CustomIntegerLiteral: " << value << " Has radix: " << (radix.has_value() ? "true" : "false"))
   if (radix) {
     SHOW("Has radix")
@@ -31,16 +30,10 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
     if (underscoreCount > 1) {
       ctx->Error("Separating digits using _ is not allowed in custom radix integer literals", fileRange);
     }
-    if (value.find_last_of('_') != String::npos) {
-      numberValue = value.substr(0, value.find_last_of('_'));
-      suffix      = value.substr(value.find_last_of('_'));
-      if (suffix.value() == "_") {
-        ctx->Error("Expected a specification for this integer literal. Found just _", fileRange);
-      } else {
-        suffix = suffix.value().substr(1u);
+    for (auto& numChar : value) {
+      if (numChar != '_') {
+        numberValue += numChar;
       }
-    } else {
-      numberValue = value;
     }
     for (usize i = 0; i < numberValue.length(); i++) {
       if ((radixDigits.substr(0, radix.value()).find(numberValue.at(i)) == String::npos) &&
@@ -56,21 +49,12 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
       }
     }
   } else {
-    if (!bitWidth) {
-      suffix = value.substr(value.find_last_of("_"));
-      if (suffix.value() == "_") {
-        ctx->Error("Expected a specification for this integer literal. Found just _", fileRange);
+    for (usize i = 0; i < value.length(); i++) {
+      if (value.at(i) != '_') {
+        numberValue += value.at(i);
       } else {
-        suffix = suffix.value().substr(1u);
-      }
-    }
-    auto mainStr = bitWidth ? value : value.substr(0, value.find_last_of("_"));
-    for (usize i = 0; i < mainStr.length(); i++) {
-      if (mainStr.at(i) != '_') {
-        numberValue += mainStr.at(i);
-      } else {
-        if (i + 1 < mainStr.length()) {
-          if (mainStr.at(i + 1) == '_') {
+        if (i + 1 < value.length()) {
+          if (value.at(i + 1) == '_') {
             ctx->Error("Two adjacent underscores found in custom integer literal",
                        FileRange{fileRange.file, FilePos{fileRange.start.line, fileRange.start.character + i},
                                  FilePos{fileRange.start.line, fileRange.start.character + i + 1}});
@@ -98,12 +82,13 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
   u32 usableBitwidth = bitWidth.has_value() ? bitWidth.value() : DEFAULT_INTEGER_BITWIDTH;
 
   Maybe<IR::QatType*> suffixType;
-  if (suffix) {
-    auto cTypeKind = IR::cTypeKindFromString(suffix.value());
+  if (suffix.has_value()) {
+    auto cTypeKind = IR::cTypeKindFromString(suffix.value().value);
     if (cTypeKind.has_value()) {
       suffixType = IR::CType::getFromCTypeKind(cTypeKind.value(), ctx);
     } else {
-      ctx->Error("Invalid suffix for custom integer literal: " + ctx->highlightError(suffix.value()), fileRange);
+      ctx->Error("Invalid suffix for custom integer literal: " + ctx->highlightError(suffix.value().value),
+                 suffix.value().range);
     }
   }
   return new IR::PrerunValue(

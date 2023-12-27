@@ -11,16 +11,17 @@ class CustomIntegerLiteral : public PrerunExpression {
 private:
   String value;
 
-  Maybe<u32>  bitWidth;
-  Maybe<u8>   radix;
-  Maybe<bool> isUnsigned;
+  Maybe<u32>        bitWidth;
+  Maybe<u8>         radix;
+  Maybe<bool>       isUnsigned;
+  Maybe<Identifier> suffix;
 
   static String radixDigits;
   static String radixDigitsUpper;
 
 public:
   CustomIntegerLiteral(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth, Maybe<u8> _radix,
-                       FileRange _fileRange);
+                       Maybe<Identifier> _suffix, FileRange _fileRange);
 
   IR::PrerunValue* emit(IR::Context* ctx) override;
 

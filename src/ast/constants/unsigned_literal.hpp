@@ -8,10 +8,11 @@ namespace qat::ast {
 
 class UnsignedLiteral : public PrerunExpression, public TypeInferrable {
 private:
-  String value;
+  String                      value;
+  Maybe<Pair<u64, FileRange>> bits;
 
 public:
-  UnsignedLiteral(String _value, FileRange _fileRange);
+  UnsignedLiteral(String _value, Maybe<Pair<u64, FileRange>> bits, FileRange _fileRange);
 
   TYPE_INFERRABLE_FUNCTIONS
 

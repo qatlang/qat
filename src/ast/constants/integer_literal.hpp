@@ -7,10 +7,11 @@ namespace qat::ast {
 
 class IntegerLiteral : public PrerunExpression, public TypeInferrable {
 private:
-  String value;
+  String                      value;
+  Maybe<Pair<u64, FileRange>> bits;
 
 public:
-  IntegerLiteral(String _value, FileRange _fileRange);
+  IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange);
 
   TYPE_INFERRABLE_FUNCTIONS
 

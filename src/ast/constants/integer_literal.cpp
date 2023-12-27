@@ -2,14 +2,21 @@
 
 namespace qat::ast {
 
-IntegerLiteral::IntegerLiteral(String _value, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
+IntegerLiteral::IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
+    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
 
 IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
-  if (isTypeInferred() && (!inferredType->isInteger() && !inferredType->isUnsignedInteger())) {
+  if (isTypeInferred() && (!inferredType->isInteger() && !inferredType->isUnsignedInteger() &&
+                           (inferredType->isCType() && !(inferredType->asCType()->getSubType()->isUnsignedInteger() ||
+                                                         inferredType->asCType()->getSubType()->isInteger())))) {
     ctx->Error("The inferred type of this expression is " + inferredType->toString() +
                    ". The only supported types in type inference for integer literal are signed & unsigned integers",
                fileRange);
+  }
+  if (bits.has_value() && !ctx->getMod()->hasIntegerBitwidth(bits.value().first)) {
+    ctx->Error("The custom integer bitwidth " + ctx->highlightError(std::to_string(bits.value().first)) +
+                   " is not brought into the current module",
+               bits.value().second);
   }
   String intValue = value;
   if (value.find('_') != String::npos) {
@@ -21,11 +28,12 @@ IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
     }
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::PrerunValue(llvm::ConstantInt::get(isTypeInferred()
-                                                        ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
-                                                        : llvm::Type::getInt32Ty(ctx->llctx),
-                                                    intValue, 10u),
-                             isTypeInferred() ? inferredType : IR::IntegerType::get(32, ctx));
+  return new IR::PrerunValue(
+      llvm::ConstantInt::get(isTypeInferred()
+                                 ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
+                                 : llvm::Type::getIntNTy(ctx->llctx, bits.has_value() ? bits.value().first : 32u),
+                             intValue, 10u),
+      isTypeInferred() ? inferredType : IR::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx));
   // NOLINTEND(readability-magic-numbers)
 }
 

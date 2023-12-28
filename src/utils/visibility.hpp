@@ -10,7 +10,8 @@ namespace qat {
 
 namespace IR {
 class QatType;
-}
+class QatModule;
+} // namespace IR
 
 /**
  *  Visibility
@@ -50,26 +51,22 @@ class AccessInfo;
  */
 class VisibilityInfo {
 private:
-  VisibilityInfo(VisibilityKind _kind, String _value) : kind(_kind), value(std::move(_value)) {}
+  VisibilityInfo(VisibilityKind _kind, IR::QatModule* _module) : kind(_kind), moduleVal(_module) {}
   explicit VisibilityInfo(IR::QatType* _type) : kind(VisibilityKind::type), typePtr(_type) {}
 
 public:
-  // Nature of the Visibility of the entity
   VisibilityKind kind;
-  // Value related to the VisibilityKind. If not empty, this is either a
-  // library name, box name or file path.
-  String value;
-
-  IR::QatType* typePtr = nullptr;
+  IR::QatModule* moduleVal = nullptr;
+  IR::QatType*   typePtr   = nullptr;
 
   VisibilityInfo(const VisibilityInfo& other);
 
   static VisibilityInfo type(IR::QatType* type) { return VisibilityInfo(type); }
-  static VisibilityInfo pub() { return {VisibilityKind::pub, ""}; }
-  static VisibilityInfo lib(String name) { return {VisibilityKind::lib, std::move(name)}; }
-  static VisibilityInfo file(String path) { return {VisibilityKind::file, std::move(path)}; }
-  static VisibilityInfo folder(String path) { return {VisibilityKind::folder, std::move(path)}; }
-  static VisibilityInfo box(String name) { return {VisibilityKind::box, std::move(name)}; }
+  static VisibilityInfo pub() { return {VisibilityKind::pub, nullptr}; }
+  static VisibilityInfo lib(IR::QatModule* mod) { return {VisibilityKind::lib, mod}; }
+  static VisibilityInfo file(IR::QatModule* mod) { return {VisibilityKind::file, mod}; }
+  static VisibilityInfo folder(IR::QatModule* mod) { return {VisibilityKind::folder, mod}; }
+  static VisibilityInfo box(IR::QatModule* mod) { return {VisibilityKind::box, mod}; }
 
   useit bool isAccessible(const AccessInfo& reqInfo) const;
 
@@ -81,25 +78,16 @@ public:
 // Information about the entity requesting access
 class AccessInfo {
 private:
-  // Parent library of the entity requesting for access
-  Maybe<String> lib;
-  // Parent box of the entity requesting for access
-  Maybe<String> box;
-  // Compulsory parent file of the entity requesting for access
-  String file;
+  IR::QatModule* module;
   // Parent type of the entity requesting for access
   Maybe<IR::QatType*> type;
 
 public:
-  AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<IR::QatType*> _type);
+  AccessInfo(IR::QatModule* _lib, Maybe<IR::QatType*> _type);
 
-  useit bool   hasLib() const;
-  useit bool   hasBox() const;
-  useit bool   hasType() const;
-  useit String getLib() const;
-  useit String getBox() const;
+  useit bool hasType() const;
+  useit IR::QatModule* getModule() const;
   useit IR::QatType* getType() const;
-  useit String       getFile() const;
 };
 
 class Visibility {

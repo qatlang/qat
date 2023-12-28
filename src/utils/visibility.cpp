@@ -1,4 +1,5 @@
 #include "./visibility.hpp"
+#include "../IR/qat_module.hpp"
 #include "../IR/types/qat_type.hpp"
 
 namespace qat {
@@ -25,67 +26,59 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
   }
 }
 
-AccessInfo::AccessInfo(Maybe<String> _lib, Maybe<String> _box, String _file, Maybe<IR::QatType*> _type)
-    : lib(std::move(_lib)), box(std::move(_box)), file(std::move(_file)), type(_type) {}
-
-bool AccessInfo::hasLib() const { return lib.has_value(); }
-
-bool AccessInfo::hasBox() const { return box.has_value(); }
+AccessInfo::AccessInfo(IR::QatModule* _module, Maybe<IR::QatType*> _type) : module(_module), type(_type) {}
 
 bool AccessInfo::hasType() const { return type.has_value() && (type.value() != nullptr); }
 
-String AccessInfo::getLib() const { return lib.value_or(""); }
-
-String AccessInfo::getBox() const { return box.value_or(""); }
+IR::QatModule* AccessInfo::getModule() const { return module; }
 
 IR::QatType* AccessInfo::getType() const { return type.value_or(nullptr); }
 
-String AccessInfo::getFile() const { return file; }
-
 bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo& req_info) {
   switch (visibility.kind) {
-    case VisibilityKind::box: {
-      if (req_info.hasBox()) {
-        return (req_info.getBox().find(visibility.value) == 0);
-      }
-      return false;
-    }
-    case VisibilityKind::file: {
-      return (visibility.value == req_info.getFile());
-    }
-    case VisibilityKind::folder: {
-      return (req_info.getFile().find(visibility.value) == 0);
-    }
+    case VisibilityKind::box:
+    case VisibilityKind::file:
+    case VisibilityKind::folder:
     case VisibilityKind::lib: {
-      if (req_info.hasLib()) {
-        return (req_info.getLib().find(visibility.value) == 0);
-      }
-      return false;
+      SHOW("VisibilityInfo: Module")
+      return (visibility.moduleVal->getID() == req_info.getModule()->getID()) ||
+             visibility.moduleVal->isParentModuleOf(req_info.getModule());
     }
     case VisibilityKind::pub: {
+      SHOW("VisibilityInfo: PUB")
       return true;
     }
     case VisibilityKind::type: {
+      SHOW("VisibilityInfo: TYPE")
       if (req_info.hasType()) {
         return req_info.getType()->isSame(visibility.typePtr);
       }
       return false;
     }
-    case VisibilityKind::parent:
+    case VisibilityKind::parent: {
+      SHOW("VisibilityInfo: PARENT")
+      if (visibility.typePtr && req_info.hasType()) {
+        return visibility.typePtr->isSame(req_info.getType());
+      } else if (visibility.moduleVal && req_info.getModule()) {
+        return (visibility.moduleVal->getID() == req_info.getModule()->getID()) ||
+               visibility.moduleVal->isParentModuleOf(req_info.getModule());
+      }
       return false;
+    }
   }
 }
 
 bool VisibilityInfo::isAccessible(const AccessInfo& reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
 
 bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
-  return (kind == other.kind) && (value == other.value) && (typePtr == other.typePtr);
+  return (kind == other.kind) && (typePtr == other.typePtr) && (moduleVal == other.moduleVal);
 }
 
 VisibilityInfo::operator Json() const {
   return Json()
       ._("nature", Visibility::getValue(kind))
-      ._("value", value)
+      ._("hasModule", moduleVal != nullptr)
+      ._("moduleID", moduleVal ? moduleVal->getID() : "")
       ._("hasType", typePtr != nullptr)
       ._("typeID", typePtr ? typePtr->getID() : "");
 }

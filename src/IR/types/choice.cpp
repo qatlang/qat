@@ -48,6 +48,10 @@ ChoiceType::ChoiceType(Identifier _name, QatModule* _parent, Vec<Identifier> _fi
   }
 }
 
+bool ChoiceType::hasProvidedType() const { return providedType.has_value(); }
+
+IR::QatType* ChoiceType::getProvidedType() const { return providedType.value(); }
+
 Identifier ChoiceType::getName() const { return name; }
 
 String ChoiceType::getFullName() const { return parent->getFullNameWithChild(name.value); }

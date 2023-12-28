@@ -64,7 +64,7 @@ Region::Region(Identifier _name, QatModule* _module, const VisibilityInfo& _visi
   //                           \
   //                                                               0U, ctx->getMod()->getLLVMModule())});
   //   ;
-  //   (void)IR::StringSliceType::get(ctx->llctx);
+  //   (void)IR::StringSliceType::get(ctx);
   //   mod->linkNative(NativeUnit::printf);
   //   auto* printFn = mod->getLLVMModule()->getFunction("printf");
   // #endif

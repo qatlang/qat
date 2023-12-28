@@ -9,10 +9,11 @@ class StringSliceType : public QatType {
 private:
   bool isPack;
 
-  StringSliceType(llvm::LLVMContext& llctx, bool isPacked = false);
+  StringSliceType(IR::Context* ctx, bool isPacked = false);
 
 public:
-  useit static StringSliceType* get(llvm::LLVMContext& llctx, bool isPacked = false);
+  useit static StringSliceType* get(IR::Context* ctx, bool isPacked = false);
+  useit static IR::PrerunValue* Create(IR::Context* ctx, String value);
   useit bool                    isPacked() const;
   useit TypeKind                typeKind() const override;
   useit String                  toString() const override;

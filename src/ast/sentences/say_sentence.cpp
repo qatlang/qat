@@ -43,20 +43,20 @@ IR::Value* SayLike::emit(IR::Context* ctx) {
           auto* strStruct = val->getLLVM();
           llvmValues.push_back(ctx->builder.CreateLoad(
               llvm::Type::getInt64Ty(ctx->llctx),
-              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), strStruct, 1)));
+              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), strStruct, 1)));
           llvmValues.push_back(ctx->builder.CreateLoad(
               llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
-              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), strStruct, 0)));
+              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), strStruct, 0)));
         } else {
           auto* strStruct = val->getLLVM();
-          auto* tempAlloc = ctx->builder.CreateAlloca(IR::StringSliceType::get(ctx->llctx)->getLLVMType());
+          auto* tempAlloc = ctx->builder.CreateAlloca(IR::StringSliceType::get(ctx)->getLLVMType());
           ctx->builder.CreateStore(strStruct, tempAlloc);
           llvmValues.push_back(ctx->builder.CreateLoad(
               llvm::Type::getInt64Ty(ctx->llctx),
-              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), tempAlloc, 1)));
+              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), tempAlloc, 1)));
           llvmValues.push_back(ctx->builder.CreateLoad(
               llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo(),
-              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), tempAlloc, 0)));
+              ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), tempAlloc, 0)));
         }
       } else if (typ->isCType() && typ->asCType()->isCString()) {
         formatStr += "%s";

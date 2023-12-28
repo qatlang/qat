@@ -34,11 +34,11 @@ IR::PrerunValue* PrerunMemberAccess::emit(IR::Context* ctx) {
     } else if (memberName.value == "name") {
       auto result = irExp->getType()->asTyped()->getSubType()->toString();
       return new IR::PrerunValue(
-          llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
+          llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx)->getLLVMType()),
                                     {ctx->builder.CreateGlobalStringPtr(result, ctx->getGlobalStringName(), 0U,
                                                                         ctx->getMod()->getLLVMModule()),
                                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), result.length())}),
-          IR::StringSliceType::get(ctx->llctx));
+          IR::StringSliceType::get(ctx));
     } else if (memberName.value == "isPacked") {
       return new IR::PrerunValue(
           llvm::ConstantInt::get(

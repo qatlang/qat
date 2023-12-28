@@ -42,7 +42,7 @@ public:
   useit bool                 isPointer() const;
   useit bool                 isVariable() const;
   useit virtual bool         isPrerunValue() const;
-  useit PrerunValue*         asConst() const;
+  useit PrerunValue*         asPrerun() const;
   useit bool                 isLLVMConstant() const;
   useit bool                 isSelfValue() const;
   useit llvm::Constant* getLLVMConstant() const;

@@ -2,37 +2,49 @@
 #include "../../IR/logic.hpp"
 #include "../../memory_tracker.hpp"
 #include "../../show.hpp"
+#include "../context.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
 
-StringSliceType::StringSliceType(llvm::LLVMContext& llctx, bool _isPacked) : isPack(_isPacked) {
+StringSliceType::StringSliceType(IR::Context* ctx, bool _isPacked) : isPack(_isPacked) {
   linkingName = "qat'str" + String(isPack ? ":[pack]" : "");
-  if (llvm::StructType::getTypeByName(llctx, linkingName)) {
-    llvmType = llvm::StructType::getTypeByName(llctx, linkingName);
+  if (llvm::StructType::getTypeByName(ctx->llctx, linkingName)) {
+    llvmType = llvm::StructType::getTypeByName(ctx->llctx, linkingName);
   } else {
     llvmType = llvm::StructType::create(
         {
-            llvm::PointerType::get(llvm::Type::getInt8Ty(llctx), 0U),
-            llvm::Type::getInt64Ty(llctx),
+            llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0U),
+            llvm::Type::getIntNTy(ctx->llctx, ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType())),
         },
         linkingName, isPack);
   }
+}
+
+IR::PrerunValue* StringSliceType::Create(IR::Context* ctx, String value) {
+  auto strTy = IR::StringSliceType::get(ctx);
+  return new IR::PrerunValue(
+      llvm::ConstantStruct::get(
+          llvm::cast<llvm::StructType>(strTy->getLLVMType()),
+          {ctx->builder.CreateGlobalStringPtr(value, ctx->getGlobalStringName(),
+                                              ctx->dataLayout.value().getDefaultGlobalsAddressSpace()),
+           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), value.length())}),
+      strTy);
 }
 
 bool StringSliceType::isPacked() const { return isPack; }
 
 bool StringSliceType::isTypeSized() const { return true; }
 
-StringSliceType* StringSliceType::get(llvm::LLVMContext& llctx, bool isPacked) {
+StringSliceType* StringSliceType::get(IR::Context* ctx, bool isPacked) {
   for (auto* typ : types) {
     if (typ->typeKind() == TypeKind::stringSlice && (((StringSliceType*)typ)->isPack = isPacked)) {
       return (StringSliceType*)typ;
     }
   }
-  return new StringSliceType(llctx, isPacked);
+  return new StringSliceType(ctx, isPacked);
 }
 
 bool StringSliceType::canBePrerunGeneric() const { return true; }

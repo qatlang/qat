@@ -46,7 +46,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
         }
         (void)candTy->moveConstructValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (expEmit->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
         }
         if (didNotHaveCreateIn) {
           return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
@@ -82,7 +82,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
                                    createIn->getLLVM());
           ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
           if (expEmit->isLocalToFn()) {
-            ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
           }
           return createIn;
         } else {
@@ -102,13 +102,13 @@ IR::Value* Move::emit(IR::Context* ctx) {
                                  createIn->getLLVM());
         ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
         if (expEmit->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
         }
         return createIn;
       } else if (candTy->isMoveAssignable()) {
         (void)candTy->moveAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (expEmit->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID());
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
         }
         return createIn;
       } else {

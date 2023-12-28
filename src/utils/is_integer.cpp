@@ -2,7 +2,7 @@
 
 namespace qat::utils {
 
-bool isInteger(const String &value) {
+bool isInteger(String value) {
   bool   result = true;
   String digits = "0123456789";
   for (usize i = 0; i < value.length(); i++) {

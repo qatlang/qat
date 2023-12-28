@@ -304,8 +304,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
     bool         isMatchStrConstant = false;
     if (expEmit->isPrerunValue()) {
       isMatchStrConstant = true;
-      strBuff            = expEmit->asConst()->getLLVMConstant()->getAggregateElement(0u);
-      strCount           = expEmit->asConst()->getLLVMConstant()->getAggregateElement(1u);
+      strBuff            = expEmit->asPrerun()->getLLVMConstant()->getAggregateElement(0u);
+      strCount           = expEmit->asPrerun()->getLLVMConstant()->getAggregateElement(1u);
     } else {
       if (expEmit->isImplicitPointer() || expEmit->isReference()) {
         if (expEmit->isReference()) {

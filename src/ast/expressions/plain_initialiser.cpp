@@ -197,7 +197,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
               strLen = new IR::Value(ctx->builder.CreateLoad(lenType->getLLVMType(), strLen->getLLVM()), lenType, false,
                                      IR::Nature::temporary);
             }
-            auto* strSliceTy = IR::StringSliceType::get(ctx->llctx);
+            auto* strSliceTy = IR::StringSliceType::get(ctx);
             auto* strAlloca =
                 IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), strSliceTy->getLLVMType());
             ctx->builder.CreateStore(strData->getLLVM(),
@@ -226,7 +226,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
         if (strDataTy->isPointer() && strDataTy->asPointer()->isMulti() &&
             (strDataTy->asPointer()->getSubType()->isUnsignedInteger() &&
              strDataTy->asPointer()->getSubType()->asUnsignedInteger()->isBitWidth(8u))) {
-          auto* strTy = IR::StringSliceType::get(ctx->llctx);
+          auto* strTy = IR::StringSliceType::get(ctx);
           if (strData->isImplicitPointer() || strData->isReference()) {
             if (strData->isReference()) {
               strData->loadImplicitPointer(ctx->builder);

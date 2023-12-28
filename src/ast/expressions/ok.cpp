@@ -96,7 +96,7 @@ IR::Value* Ok::emit(IR::Context* ctx) {
                      subExpr->fileRange);
         ctx->builder.CreateStore(llvm::ConstantExpr::getNullValue(validTy->getLLVMType()), expr->getLLVM());
         if (expr->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expr->getLocalID());
+          ctx->getActiveFunction()->getBlock()->addMovedValue(expr->getLocalID().value());
         }
       }
       return createIn;

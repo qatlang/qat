@@ -261,13 +261,13 @@ IR::PrerunValue* TypeChecker::emit(IR::Context* ctx) {
     }
     return new IR::PrerunValue(
         llvm::ConstantStruct::get(
-            llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx->llctx)->getLLVMType()),
+            llvm::cast<llvm::StructType>(IR::StringSliceType::get(ctx)->getLLVMType()),
             // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function
             {ctx->builder.CreateGlobalStringPtr(typs.at(0)->toString(), ctx->getGlobalStringName(),
                                                 ctx->dataLayout->getDefaultGlobalsAddressSpace(),
                                                 ctx->getMod()->getLLVMModule()),
              llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), (typs.at(0)->toString().size() + 1))}),
-        IR::StringSliceType::get(ctx->llctx));
+        IR::StringSliceType::get(ctx));
   } else {
     ctx->Error("Type checker " + ctx->highlightError(name) + " is not supported", fileRange);
   }

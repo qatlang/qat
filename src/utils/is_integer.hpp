@@ -5,7 +5,7 @@
 
 namespace qat::utils {
 
-bool isInteger(const String &value);
+bool isInteger(String value);
 
 } // namespace qat::utils
 

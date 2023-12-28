@@ -82,7 +82,7 @@ llvm::Constant* Value::getLLVMConstant() const { return llvm::cast<llvm::Constan
 
 bool Value::isPrerunValue() const { return false; }
 
-PrerunValue* Value::asConst() const { return (PrerunValue*)this; }
+PrerunValue* Value::asPrerun() const { return (PrerunValue*)this; }
 
 Nature Value::getNature() const { return nature; }
 
@@ -110,9 +110,9 @@ bool PrerunValue::isEqualTo(PrerunValue* other) {
       return false;
     }
   } else {
-    if (asConst()->getType()->isTyped()) {
+    if (asPrerun()->getType()->isTyped()) {
       if (other->getType()->isTyped()) {
-        return asConst()->getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());
+        return asPrerun()->getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());
       } else {
         return false;
       }

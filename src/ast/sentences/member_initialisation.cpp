@@ -154,7 +154,7 @@ IR::Value* MemberInit::emit(IR::Context* ctx) {
             } else {
               ctx->builder.CreateStore(irVal->getLLVM(), memRef->getLLVM());
             }
-          } else if (irVal->isReference() && irVal->getType()->asReference()->isSame(memTy)) {
+          } else if (irVal->isReference() && irVal->getType()->asReference()->getSubType()->isSame(memTy)) {
             if (memTy->isTriviallyCopyable() || memTy->isTriviallyMovable()) {
               ctx->builder.CreateStore(ctx->builder.CreateLoad(memTy->getLLVMType(), irVal->getLLVM()),
                                        memRef->getLLVM());

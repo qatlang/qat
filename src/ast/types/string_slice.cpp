@@ -14,7 +14,7 @@ Maybe<usize> StringSliceType::getTypeSizeInBits(IR::Context* ctx) const {
        llvm::Type::getInt64Ty(ctx->llctx)})));
 }
 
-IR::QatType* StringSliceType::emit(IR::Context* ctx) { return IR::StringSliceType::get(ctx->llctx); }
+IR::QatType* StringSliceType::emit(IR::Context* ctx) { return IR::StringSliceType::get(ctx); }
 
 TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }
 

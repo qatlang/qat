@@ -74,19 +74,19 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       mod->hasBroughtOpaqueType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleOpaqueTypeInImports(entityName.value, reqInfo).first) {
     auto* oTy = mod->getOpaqueType(entityName.value, reqInfo);
-    if (!oTy->getVisibility().isAccessible(reqInfo)) {
-      ctx->Error(
-          (oTy->isSubtypeCore() ? "Core type " : (oTy->isSubtypeMix() ? "Mix type " : "Incomplete opaque type ")) +
-              ctx->highlightError(oTy->getFullName()) + " inside module " + ctx->highlightError(mod->getFullName()) +
-              " is not accessible here",
-          entityName.range);
-    }
     if (oTy->isGeneric()) {
       ctx->Error(oTy->isSubtypeCore()
                      ? "Core type "
                      : (oTy->isSubtypeMix() ? "Mix type " : "Type ") + ctx->highlightError(oTy->toString()) +
                            " is a generic type and hence cannot be used as a normal type",
                  fileRange);
+    }
+    if (!oTy->getVisibility().isAccessible(reqInfo)) {
+      ctx->Error(
+          (oTy->isSubtypeCore() ? "Core type " : (oTy->isSubtypeMix() ? "Mix type " : "Incomplete opaque type ")) +
+              ctx->highlightError(oTy->getFullName()) + " inside module " + ctx->highlightError(mod->getFullName()) +
+              " is not accessible here",
+          entityName.range);
     }
     oTy->addMention(entityName.range);
     return oTy;

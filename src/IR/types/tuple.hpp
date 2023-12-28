@@ -55,8 +55,8 @@ public:
   }
 
   useit Vec<QatType*> getSubTypes() const;
-  useit QatType*      getSubtypeAt(u64 index);
-  useit u64           getSubTypeCount() const;
+  useit QatType*      getSubtypeAt(u32 index);
+  useit u32           getSubTypeCount() const;
   useit bool          isPackedTuple() const;
   useit TypeKind      typeKind() const final;
   useit String        toString() const final;

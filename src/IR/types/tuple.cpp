@@ -198,9 +198,9 @@ TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMCo
 
 Vec<QatType*> TupleType::getSubTypes() const { return subTypes; }
 
-QatType* TupleType::getSubtypeAt(u64 index) { return subTypes.at(index); }
+QatType* TupleType::getSubtypeAt(u32 index) { return subTypes.at(index); }
 
-u64 TupleType::getSubTypeCount() const { return subTypes.size(); }
+u32 TupleType::getSubTypeCount() const { return subTypes.size(); }
 
 bool TupleType::isPackedTuple() const { return isPacked; }
 

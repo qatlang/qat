@@ -48,55 +48,55 @@ Deque<Token>* Lexer::getTokens() {
 Vec<String> Lexer::getContent() const { return content; }
 
 void Lexer::read() {
-  try {
-    if (file.eof()) {
-      prev    = current;
-      current = -1;
-    } else {
-      prev = current;
-      file.get(current);
-      if (current != -1) {
-        if (content.empty()) {
-          content.push_back("");
-        }
-        if (current != '\n' || current != '\r') {
-          content.back() += current;
-        }
+  //   try {
+  if (file.eof()) {
+    prev    = current;
+    current = -1;
+  } else {
+    prev = current;
+    file.get(current);
+    if (current != -1) {
+      if (content.empty()) {
+        content.push_back("");
       }
-      characterNumber++;
-      totalCharacterCount++;
-    }
-    if (current == '\n') {
-      previousLineEnd = characterNumber;
-      lineNumber++;
-      characterNumber = 0;
-      content.push_back("");
-    } else if (current == '\r') {
-      prev = current;
-      file.get(current);
-      if (current != -1) {
-        if (current == '\n') {
-          previousLineEnd = characterNumber;
-          lineNumber++;
-          characterNumber = 0;
-          totalCharacterCount++;
-          content.push_back("");
-        } else {
-          characterNumber++;
-          totalCharacterCount++;
-          (content.back() += "\r") += current;
-        }
+      if (current != '\n' || current != '\r') {
+        content.back() += current;
       }
-      totalCharacterCount++;
-      characterNumber = (current == '\n') ? 0 : 1;
     }
-  } catch (std::exception& err) {
-    throwError(String("Lexer failed while reading the file. Error: ") + err.what());
+    characterNumber++;
+    totalCharacterCount++;
   }
+  if (current == '\n') {
+    previousLineEnd = characterNumber - 1;
+    lineNumber++;
+    characterNumber = 0;
+    content.push_back("");
+  } else if (current == '\r') {
+    prev = current;
+    file.get(current);
+    if (current != -1) {
+      if (current == '\n') {
+        previousLineEnd = characterNumber - 2;
+        lineNumber++;
+        characterNumber = 0;
+        totalCharacterCount++;
+        content.push_back("");
+      } else {
+        characterNumber++;
+        totalCharacterCount++;
+        (content.back() += "\r") += current;
+      }
+    }
+    totalCharacterCount++;
+    characterNumber = (current == '\n') ? 0 : 1;
+  }
+  //   } catch (std::exception& err) {
+  //     throwError(String("Lexer failed while reading the file. Error: ") + err.what());
+  //   }
 }
 
 FileRange Lexer::getPosition(u64 length) {
-  FilePos end = {lineNumber, characterNumber};
+  FilePos end = {lineNumber, characterNumber > 0 ? (characterNumber - 1) : characterNumber};
   if (characterNumber == 0) {
     if (previousLineEnd.has_value()) {
       end = {lineNumber - 1, previousLineEnd.value()};
@@ -348,9 +348,6 @@ Token Lexer::tokeniser() {
         operatorValue += current;
         read();
         return Token::valued(TokenType::binaryOperator, operatorValue, this->getPosition(2));
-      } else if (current == '~' && operatorValue == "<") {
-        read();
-        return Token::normal(TokenType::variationMarker, this->getPosition(2));
       } else if (current == '>' && operatorValue == "-") {
         read();
         return Token::normal(TokenType::givenTypeSeparator, this->getPosition(2));
@@ -576,7 +573,7 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("bring", bring);
   else Check_Normal_Keyword("pub", Public);
   else Check_Normal_Keyword("new", New);
-  else Check_Normal_Keyword("self", self);
+  else Check_Normal_Keyword("self", selfWord);
   else Check_Normal_Keyword("void", voidType);
   else Check_Normal_Keyword("type", Type);
   else Check_Normal_Keyword("pre", pre);
@@ -593,7 +590,6 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("await", Await);
   else Check_Normal_Keyword("default", Default);
   else Check_Normal_Keyword("static", Static);
-  else Check_Normal_Keyword("async", Async);
   else Check_Normal_Keyword("variadic", variadic);
   else Check_Normal_Keyword("loop", loop);
   else Check_Normal_Keyword("while", While);

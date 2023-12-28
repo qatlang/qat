@@ -47,7 +47,6 @@ enum class TokenType {
   say,
   as,
   self,
-  variationMarker,
   lib,
   box,
   endOfFile,
@@ -73,7 +72,6 @@ enum class TokenType {
   genericTypeStart,
   genericTypeEnd,
   Await,
-  Async,
   semiColon,
   ternary,
   isNullPointer,
@@ -107,6 +105,7 @@ enum class TokenType {
   exclamation,
   any,
   ok,
+  selfWord,
 };
 
 } // namespace qat::lexer

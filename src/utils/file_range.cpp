@@ -12,7 +12,7 @@ FilePos::operator JsonValue() const { return (Json)(*this); }
 
 FilePos::operator Json() const { return Json()._("line", line)._("char", character); }
 
-std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << pos.character; }
+std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << (pos.character + 1); }
 
 FileRange::FileRange(fs::path _filePath) : file(std::move(_filePath)), start({0u, 0u}), end({0u, 0u}) {}
 
@@ -29,7 +29,7 @@ FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*th
 FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, start, othStart); }
 
 String FileRange::startToString() const {
-  return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character);
+  return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
 }
 
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }

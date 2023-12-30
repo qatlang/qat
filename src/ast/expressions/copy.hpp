@@ -11,11 +11,12 @@ class Copy : public Expression, public LocalDeclCompatible, public InPlaceCreata
 
 private:
   Expression* exp;
+  bool        isExpSelf = false;
 
   bool isAssignment = false;
 
 public:
-  Copy(Expression* exp, FileRange fileRange);
+  Copy(Expression* exp, bool _isExpSelf, FileRange fileRange);
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS

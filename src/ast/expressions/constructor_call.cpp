@@ -1,6 +1,6 @@
 #include "./constructor_call.hpp"
 #include "../../IR/control_flow.hpp"
-#include "../../IR/types/maybe.hpp"
+#include "../../IR/logic.hpp"
 #include "../../IR/types/region.hpp"
 #include "../constants/unsigned_literal.hpp"
 #include "llvm/IR/Constants.h"
@@ -186,6 +186,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
     }
     SHOW("About to create llAlloca")
+    bool         shouldLoadValue = false;
     llvm::Value* llAlloca;
     if (ownTy.has_value()) {
       ctx->getMod()->linkNative(IR::NativeUnit::malloc);
@@ -216,17 +217,13 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
     } else {
       if (isLocalDecl()) {
-        if (localValue->getType()->isMaybe()) {
-          llAlloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 1u);
-        } else {
-          llAlloca = localValue->getAlloca();
-        }
-      } else if (irName) {
+        llAlloca = localValue->getAlloca();
+      } else if (irName.has_value()) {
         localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, eTy, isVar, irName->range);
         llAlloca   = localValue->getAlloca();
       } else {
-        auto loc = ctx->getActiveFunction()->getBlock()->newValue(utils::unique_id(), eTy, isVar, fileRange);
-        llAlloca = loc->getAlloca();
+        llAlloca        = IR::Logic::newAlloca(ctx->getActiveFunction(), None, eTy->getLLVMType());
+        shouldLoadValue = true;
       }
     }
     if (hasOwnCount) {
@@ -263,18 +260,10 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
           count->getLLVM());
       (void)IR::addBranch(ctx->builder, condBlock->getBB());
       restBlock->setActive(ctx->builder);
-      auto* ptrTy = IR::PointerType::get(true, eTy, false, ownerValue, true, ctx);
-      auto* resVal =
-          isLocalDecl()
-              ? (localValue->getType()->isMaybe()
-                     ? new IR::Value(ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(),
-                                                                  localValue->getLLVM(), 1u),
-                                     IR::ReferenceType::get(localValue->isVariable(),
-                                                            localValue->getType()->asMaybe()->getSubType(), ctx),
-                                     false, IR::Nature::temporary)
-                     : localValue)
-              : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy, isVar,
-                                    irName.has_value() ? irName->range : fileRange);
+      auto* ptrTy  = IR::PointerType::get(true, eTy, false, ownerValue, true, ctx);
+      auto* resVal = isLocalDecl() ? localValue
+                                   : restBlock->newValue(irName.has_value() ? irName->value : utils::unique_id(), ptrTy,
+                                                         isVar, irName.has_value() ? irName->range : fileRange);
       ctx->builder.CreateStore(llAlloca, ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 0u));
       ctx->builder.CreateStore(oCount->getLLVM(),
                                ctx->builder.CreateStructGEP(ptrTy->getLLVMType(), resVal->getLLVM(), 1u));
@@ -287,16 +276,12 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       }
       (void)cons->call(ctx, valsLLVM, None, ctx->getMod());
     }
-    if (isLocalDecl() && localValue->getType()->isMaybe()) {
-      ctx->builder.CreateStore(
-          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 1u),
-          ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getAlloca(), 0u));
+    if (isLocalDecl()) {
       return localValue->toNewIRValue();
     } else {
       auto* res = new IR::Value(
-          llAlloca,
-          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, eTy, false, ownerValue, hasOwnCount, ctx)
-                            : (IR::QatType*)eTy,
+          shouldLoadValue ? ctx->builder.CreateLoad(eTy->getLLVMType(), llAlloca) : llAlloca,
+          ownTy.has_value() ? (IR::QatType*)IR::PointerType::get(isVar, eTy, false, ownerValue, hasOwnCount, ctx) : eTy,
           ownTy.has_value() ? false : isVar, IR::Nature::temporary);
       if (isLocalDecl()) {
         res->setLocalID(localValue->getLocalID().value());
@@ -304,7 +289,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       return res;
     }
   } else {
-    ctx->Error("The provided type " + ctx->highlightError(typ->toString()) + " cannot have a constructor",
+    ctx->Error("The provided type " + ctx->highlightError(typ->toString()) + " cannot be constructed",
                type.has_value() ? type.value()->fileRange : fileRange);
   }
   return nullptr;

@@ -7,10 +7,12 @@ PrerunEntity::PrerunEntity(u32 _relative, Vec<Identifier> _ids, FileRange _range
     : PrerunExpression(std::move(_range)), relative(_relative), identifiers(std::move(_ids)) {}
 
 IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
+  SHOW("PrerunEntity")
   auto* mod  = ctx->getMod();
   auto  name = identifiers.back();
   if (identifiers.size() == 1 && relative == 0) {
     if (ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(identifiers.front().value)) {
+      SHOW("PrerunEntity: Has active function and generic parameter")
       auto* genVal = ctx->getActiveFunction()->getGenericParameter(identifiers.front().value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
@@ -19,9 +21,24 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
-    } else if (ctx->hasActiveGeneric()) {
-      if (ctx->hasGenericParameterFromLastMain(identifiers.front().value)) {
-        auto* genVal = ctx->getGenericParameterFromLastMain(identifiers.front().value);
+    }
+    if (ctx->hasActiveType()) {
+      if (ctx->getActiveType()->isExpanded() && ctx->getActiveType()->asExpanded()->isGeneric()) {
+        if (ctx->getActiveType()->asExpanded()->hasGenericParameter(identifiers.front().value)) {
+          auto* genVal = ctx->getActiveType()->asExpanded()->getGenericParameter(identifiers.front().value);
+          if (genVal->isTyped()) {
+            return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
+          } else if (genVal->isPrerun()) {
+            return genVal->asPrerun()->getExpression();
+          } else {
+            ctx->Error("Invalid generic kind", fileRange);
+          }
+        }
+      }
+    }
+    if (ctx->hasActiveGeneric()) {
+      if (ctx->hasGenericParameterFromLastMain(identifiers[0].value)) {
+        auto* genVal = ctx->getGenericParameterFromLastMain(name.value);
         if (genVal->isTyped()) {
           return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
         } else if (genVal->isPrerun()) {
@@ -30,17 +47,18 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
           ctx->Error("Invalid generic kind", fileRange);
         }
       }
-    } else if (ctx->hasActiveFunction() && ctx->getActiveFunction()->isMemberFunction() &&
-               (((IR::MemberFunction*)ctx->getActiveFunction())->getParentType()->isExpanded()) &&
-               ((IR::MemberFunction*)ctx->getActiveFunction())
-                   ->getParentType()
-                   ->asExpanded()
-                   ->hasGenericParameter(identifiers.front().value)) {
+    }
+    if (ctx->hasActiveFunction() && ctx->getActiveFunction()->isMemberFunction() &&
+        (((IR::MemberFunction*)ctx->getActiveFunction())->getParentType()->isExpanded()) &&
+        ((IR::MemberFunction*)ctx->getActiveFunction())
+            ->getParentType()
+            ->asExpanded()
+            ->hasGenericParameter(identifiers[0].value)) {
       // FIXME - Also check generic skills
       auto* genVal = ((IR::MemberFunction*)ctx->getActiveFunction())
                          ->getParentType()
                          ->asExpanded()
-                         ->getGenericParameter(identifiers.front().value);
+                         ->getGenericParameter(identifiers[0].value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
       } else if (genVal->isPrerun()) {
@@ -49,6 +67,7 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
         ctx->Error("Invalid generic kind", fileRange);
       }
     }
+    ctx->Error("Could not find an entity with name " + ctx->highlightError(identifiers[0].value), fileRange);
   } else {
     auto reqInfo = ctx->getAccessInfo();
     if (relative > 0) {

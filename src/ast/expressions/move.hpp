@@ -11,11 +11,12 @@ class Move : public Expression, public LocalDeclCompatible, public InPlaceCreata
 
 private:
   Expression* exp;
+  bool        isExpSelf = false;
 
   bool isAssignment = false;
 
 public:
-  Move(Expression* exp, FileRange fileRange);
+  Move(Expression* exp, bool _isExpSelf, FileRange fileRange);
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS

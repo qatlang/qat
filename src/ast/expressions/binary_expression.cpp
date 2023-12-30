@@ -53,62 +53,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  "null pointer and so RHS is expected to be of pointer type",
                  fileRange);
     }
-  } else if (lhs->nodeType() == NodeType::integerLiteral) {
+  } else if (lhs->nodeType() == NodeType::integerLiteral || lhs->nodeType() == NodeType::unsignedLiteral) {
     rhsEmit = rhs->emit(ctx);
-    if (rhsEmit->getType()->isInteger() ||
-        (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      lhs->asTypeInferrable()->setInferenceType(
-          rhsEmit->getType()->isInteger() ? rhsEmit->getType() : rhsEmit->getType()->asReference()->getSubType());
-
-    } else if (rhsEmit->getType()->isUnsignedInteger() ||
-               (rhsEmit->getType()->isReference() &&
-                rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType()->isUnsignedInteger()
-                                                    ? rhsEmit->getType()
-                                                    : rhsEmit->getType()->asReference()->getSubType());
-    }
+    lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
-  } else if (lhs->nodeType() == NodeType::unsignedLiteral) {
-    rhsEmit = rhs->emit(ctx);
-    if (rhsEmit->getType()->isInteger() ||
-        (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      lhs->asTypeInferrable()->setInferenceType(
-          rhsEmit->getType()->isInteger() ? rhsEmit->getType() : rhsEmit->getType()->asReference()->getSubType());
-    } else if (rhsEmit->getType()->isUnsignedInteger() ||
-               (rhsEmit->getType()->isReference() &&
-                rhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType()->isUnsignedInteger()
-                                                    ? rhsEmit->getType()
-                                                    : rhsEmit->getType()->asReference()->getSubType());
-    }
+  } else if (rhs->nodeType() == NodeType::integerLiteral || rhs->nodeType() == NodeType::unsignedLiteral) {
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->nodeType() == NodeType::integerLiteral) {
-    lhsEmit = lhs->emit(ctx);
-    if (lhsEmit->getType()->isInteger() ||
-        (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      rhs->asTypeInferrable()->setInferenceType(
-          lhsEmit->getType()->isInteger() ? lhsEmit->getType() : lhsEmit->getType()->asReference()->getSubType());
-    } else if (lhsEmit->getType()->isUnsignedInteger() ||
-               (lhsEmit->getType()->isReference() &&
-                lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType()->isUnsignedInteger()
-                                                    ? lhsEmit->getType()
-                                                    : lhsEmit->getType()->asReference()->getSubType());
-    }
-    rhsEmit = rhs->emit(ctx);
-  } else if (rhs->nodeType() == NodeType::unsignedLiteral) {
-    lhsEmit = lhs->emit(ctx);
-    if (lhsEmit->getType()->isInteger() ||
-        (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isInteger())) {
-      rhs->asTypeInferrable()->setInferenceType(
-          lhsEmit->getType()->isInteger() ? lhsEmit->getType() : lhsEmit->getType()->asReference()->getSubType());
-    } else if (lhsEmit->getType()->isUnsignedInteger() ||
-               (lhsEmit->getType()->isReference() &&
-                lhsEmit->getType()->asReference()->getSubType()->isUnsignedInteger())) {
-      rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType()->isUnsignedInteger()
-                                                    ? lhsEmit->getType()
-                                                    : lhsEmit->getType()->asReference()->getSubType());
-    }
+    rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType());
     rhsEmit = rhs->emit(ctx);
   } else {
     lhsEmit = lhs->emit(ctx);
@@ -123,72 +74,6 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   llvm::Value* rhsVal           = rhsEmit->getLLVM();
   auto         referenceHandler = [&]() {
     SHOW("Reference handler ::")
-    if ((lhsEmit->getType()->isReference()
-                     ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
-                lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
-                     : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) ||
-        (rhsEmit->getType()->isReference()
-                     ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
-                rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
-                     : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti()))) {
-      if (lhsEmit->getType()->isReference()
-                      ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
-                 lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
-                      : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) {
-        SHOW("LHS side")
-        if (lhsEmit->getType()->isReference()) {
-          SHOW("Loading LHS")
-          lhsEmit->loadImplicitPointer(ctx->builder);
-        }
-        SHOW("LHS: Getting pointer type")
-        auto* ptrType = lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
-                                                                  : lhsEmit->getType()->asPointer();
-        SHOW("LHS got pointer type")
-        lhsType            = ptrType;
-        bool isLHSConstant = llvm::isa<llvm::Constant>(lhsEmit->getLLVM());
-        lhsEmit            = new IR::Value(
-            isLHSConstant ? llvm::dyn_cast<llvm::Value>(
-                                llvm::dyn_cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u))
-                          : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
-                                llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
-                                                                          ctx->dataLayout->getProgramAddressSpace()),
-                                ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u))),
-            IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
-                                         IR::PointerOwner::OfAnonymous(), false, ctx),
-            false, IR::Nature::temporary);
-        lhsVal = lhsEmit->getLLVM();
-        SHOW("Set LhsEmit")
-      }
-      if (rhsEmit->getType()->isReference()
-                      ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
-                 rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
-                      : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti())) {
-        SHOW("RHS side")
-        if (rhsEmit->getType()->isReference()) {
-          SHOW("Loading RHS")
-          rhsEmit->loadImplicitPointer(ctx->builder);
-        }
-        SHOW("RHS: Getting pointer type")
-        auto* ptrType = rhsEmit->getType()->isReference() ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
-                                                                  : rhsEmit->getType()->asPointer();
-        SHOW("RHS got pointer type")
-        rhsType            = ptrType;
-        bool isRHSConstant = llvm::isa<llvm::Constant>(rhsEmit->getLLVM());
-        rhsEmit            = new IR::Value(
-            (isRHSConstant ? llvm::dyn_cast<llvm::Value>(
-                                 llvm::dyn_cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u))
-                                              : llvm::dyn_cast<llvm::Value>(ctx->builder.CreateLoad(
-                                 llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
-                                                                           ctx->dataLayout->getProgramAddressSpace()),
-                                 ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)))),
-            IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
-                                                    IR::PointerOwner::OfAnonymous(), false, ctx),
-            false, IR::Nature::temporary);
-        rhsVal = rhsEmit->getLLVM();
-        SHOW("Set RhsEmit")
-      }
-      return;
-    }
     SHOW("Loading implicit LHS")
     lhsEmit->loadImplicitPointer(ctx->builder);
     SHOW("Loaded LHS")
@@ -210,7 +95,15 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       rhsVal = ctx->builder.CreateLoad(rhsType->getLLVMType(), rhsVal, false);
     }
   };
-  if (lhsType->isInteger() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isInteger())) {
+  auto lhsValueType = lhsType->isReference() ? lhsType->asReference()->getSubType() : lhsType;
+  if (lhsValueType->isCType()) {
+    lhsValueType = lhsValueType->asCType()->getSubType();
+  }
+  auto rhsValueType = rhsType->isReference() ? rhsType->asReference()->getSubType() : rhsType;
+  if (rhsValueType->isCType()) {
+    rhsValueType = rhsValueType->asCType()->getSubType();
+  }
+  if (lhsValueType->isInteger()) {
     referenceHandler();
     SHOW("Integer binary operation: " << OpToString(op))
     if (lhsType->isSame(rhsType)) {
@@ -325,13 +218,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       } else {
         // FIXME - Support side flipped operator
         ctx->Error("No operator found that matches both operand types. The left hand "
-                   "side is a signed integer, and the right hand side is " +
-                       rhsType->toString(),
+                   "side is " +
+                       ctx->highlightError(lhsType->toString()) + ", and the right hand side is " +
+                       ctx->highlightError(rhsType->toString()),
                    fileRange);
       }
     }
-  } else if (lhsType->isUnsignedInteger() ||
-             (lhsType->isReference() && lhsType->asReference()->getSubType()->isUnsignedInteger())) {
+  } else if (lhsValueType->isUnsignedInteger()) {
     SHOW("Unsigned integer binary operation")
     referenceHandler();
     if (lhsType->isSame(rhsType)) {
@@ -445,12 +338,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       } else {
         // FIXME - Support side flipped operator
         ctx->Error("No operator found that matches both operand types. The left hand "
-                   "side is an unsigned integer, and the right hand side is " +
-                       rhsType->toString(),
+                   "side is " +
+                       ctx->highlightError(lhsType->toString()) + ", and the right hand side is " +
+                       ctx->highlightError(rhsType->toString()),
                    fileRange);
       }
     }
-  } else if (lhsType->isFloat() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isFloat())) {
+  } else if (lhsValueType->isFloat()) {
     SHOW("Float binary operation")
     referenceHandler();
     if (lhsType->isSame(rhsType)) {
@@ -564,10 +458,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
-  } else if ((lhsType->isStringSlice() ||
-              (lhsType->isReference() && lhsType->asReference()->getSubType()->isStringSlice())) &&
-             (rhsType->isStringSlice() ||
-              (rhsType->isReference() && rhsType->asReference()->getSubType()->isStringSlice()))) {
+  } else if (lhsValueType->isStringSlice() && rhsValueType->isStringSlice()) {
     if (op == Op::equalTo || op == Op::notEqualTo) {
       // NOLINTBEGIN(readability-isolate-declaration)
       llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
@@ -586,10 +477,10 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         lhsBuff = ctx->builder.CreateLoad(
             llvm::Type::getInt8PtrTy(ctx->llctx),
-            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 0u));
-        lhsCount = ctx->builder.CreateLoad(
-            Ty64Int,
-            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), lhsEmit->getLLVM(), 1u));
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), lhsEmit->getLLVM(), 0u));
+        lhsCount =
+            ctx->builder.CreateLoad(Ty64Int, ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(),
+                                                                          lhsEmit->getLLVM(), 1u));
       }
       if (rhsEmit->isLLVMConstant()) {
         rhsBuff       = llvm::cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
@@ -603,10 +494,10 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         rhsBuff = ctx->builder.CreateLoad(
             llvm::Type::getInt8PtrTy(ctx->llctx),
-            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 0u));
-        rhsCount = ctx->builder.CreateLoad(
-            Ty64Int,
-            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx->llctx)->getLLVMType(), rhsEmit->getLLVM(), 1u));
+            ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), rhsEmit->getLLVM(), 0u));
+        rhsCount =
+            ctx->builder.CreateLoad(Ty64Int, ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(),
+                                                                          rhsEmit->getLLVM(), 1u));
       }
       if (isConstantLHS && isConstantRHS) {
         SHOW("Both string slices are constant")
@@ -686,36 +577,112 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     } else {
       ctx->Error("String slice does not support the " + ctx->highlightError(OpToString(op)) + " operator", fileRange);
     }
-  } else if ((lhsType->isPointer() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isPointer())) &&
-             (rhsType->isPointer() || (rhsType->isReference() && rhsType->asReference()->getSubType()->isPointer()))) {
+  } else if (lhsValueType->isPointer() && rhsValueType->isPointer()) {
     SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
-    referenceHandler();
-    SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
-    if ((lhsType->isReference() ? lhsType->asReference()->getSubType()->asPointer() : lhsType->asPointer())
-            ->getSubType()
-            ->isSame((rhsType->isReference() ? rhsType->asReference()->getSubType()->asPointer() : rhsType->asPointer())
-                         ->getSubType())) {
+    if (lhsValueType->asPointer()->getSubType()->isSame(rhsValueType->asPointer()->getSubType()) &&
+        (lhsValueType->asPointer()->isMulti() == rhsValueType->asPointer()->isMulti())) {
+      if ((lhsEmit->isReference() ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                                     lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                                  : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) ||
+          (rhsEmit->isReference() ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                                     rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                                  : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti()))) {
+        if (lhsEmit->isReference() ? (lhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                                      lhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                                   : (lhsEmit->getType()->isPointer() && lhsEmit->getType()->asPointer()->isMulti())) {
+          bool isLHSRef = false;
+          SHOW("LHS side")
+          if (lhsEmit->getType()->isReference()) {
+            SHOW("Loading LHS")
+            lhsEmit->loadImplicitPointer(ctx->builder);
+            isLHSRef = true;
+          } else if (lhsEmit->isImplicitPointer()) {
+            isLHSRef = true;
+          }
+          SHOW("LHS: Getting pointer type")
+          auto* ptrType = lhsEmit->getType()->isReference()
+                              ? lhsEmit->getType()->asReference()->getSubType()->asPointer()
+                              : lhsEmit->getType()->asPointer();
+          SHOW("LHS got pointer type")
+          lhsType       = ptrType;
+          auto resPtrTy = IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
+                                               IR::PointerOwner::OfAnonymous(), false, ctx);
+          if (lhsEmit->isLLVMConstant()) {
+            lhsEmit = new IR::PrerunValue(lhsEmit->getLLVMConstant()->getAggregateElement(0u), resPtrTy);
+          } else if (isLHSRef) {
+            lhsEmit = new IR::Value(
+                ctx->builder.CreateLoad(resPtrTy->getLLVMType(),
+                                        ctx->builder.CreateStructGEP(ptrType->getLLVMType(), lhsEmit->getLLVM(), 0u)),
+                resPtrTy, false, IR::Nature::temporary);
+          } else {
+            lhsEmit = new IR::Value(ctx->builder.CreateExtractValue(lhsEmit->getLLVM(), {0u}), resPtrTy, false,
+                                    IR::Nature::temporary);
+          }
+          lhsVal = lhsEmit->getLLVM();
+          SHOW("Set LhsEmit")
+        }
+        if (rhsEmit->getType()->isReference()
+                ? (rhsEmit->getType()->asReference()->getSubType()->isPointer() &&
+                   rhsEmit->getType()->asReference()->getSubType()->asPointer()->isMulti())
+                : (rhsEmit->getType()->isPointer() && rhsEmit->getType()->asPointer()->isMulti())) {
+          bool isRHSRef = false;
+          SHOW("RHS side")
+          if (rhsEmit->getType()->isReference()) {
+            SHOW("Loading RHS")
+            rhsEmit->loadImplicitPointer(ctx->builder);
+            isRHSRef = true;
+          } else if (rhsEmit->isImplicitPointer()) {
+            isRHSRef = true;
+          }
+          SHOW("RHS: Getting pointer type")
+          auto* ptrType = rhsEmit->getType()->isReference()
+                              ? rhsEmit->getType()->asReference()->getSubType()->asPointer()
+                              : rhsEmit->getType()->asPointer();
+          SHOW("RHS got pointer type")
+          rhsType       = ptrType;
+          auto resPtrTy = IR::PointerType::get(false, ptrType->getSubType(), ptrType->isNonNullable(),
+                                               IR::PointerOwner::OfAnonymous(), false, ctx);
+          if (rhsEmit->isLLVMConstant()) {
+            rhsEmit = new IR::PrerunValue(rhsEmit->getLLVMConstant()->getAggregateElement(0u), resPtrTy);
+          } else if (isRHSRef) {
+            rhsEmit = new IR::Value(
+                ctx->builder.CreateLoad(resPtrTy->getLLVMType(),
+                                        ctx->builder.CreateStructGEP(ptrType->getLLVMType(), rhsEmit->getLLVM(), 0u)),
+                resPtrTy, false, IR::Nature::temporary);
+          } else {
+            rhsEmit = new IR::Value(ctx->builder.CreateExtractValue(rhsEmit->getLLVM(), {0u}), resPtrTy, false,
+                                    IR::Nature::temporary);
+          }
+          rhsVal = rhsEmit->getLLVM();
+          SHOW("Set RhsEmit")
+        }
+      }
+      SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
+      auto ptrTy = lhsValueType->asPointer();
       if (op == Op::equalTo) {
+        SHOW("Pointer is normal")
         return new IR::Value(
-            ctx->builder.CreateICmpEQ(
-                ctx->builder.CreatePtrDiff(lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal, rhsVal),
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+            ctx->builder.CreateICmpEQ(ctx->builder.CreatePtrDiff(ptrTy->getSubType()->getLLVMType(), lhsVal, rhsVal),
+                                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
       } else if (op == Op::notEqualTo) {
+        SHOW("Pointer is normal")
         return new IR::Value(
-            ctx->builder.CreateICmpNE(
-                ctx->builder.CreatePtrDiff(lhsType->asPointer()->getSubType()->getLLVMType(), lhsVal, rhsVal),
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
+            ctx->builder.CreateICmpNE(ctx->builder.CreatePtrDiff(ptrTy->getSubType()->getLLVMType(), lhsVal, rhsVal),
+                                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)),
             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      } else if (op == Op::subtract) {
+        return new IR::Value(ctx->builder.CreatePtrDiff(ptrTy->getSubType()->getLLVMType(), lhsVal, rhsVal),
+                             IR::CType::getPtrDiff(ctx), false, IR::Nature::temporary);
       } else {
         ctx->Error("The operands are pointers, and the operation " + ctx->highlightError(OpToString(op)) +
                        " is not supported for pointers",
                    fileRange);
       }
     } else {
-      ctx->Error("The operands are pointers, pointing to different types. LHS "
+      ctx->Error("The operands have different pointer types. The left hand side "
                  "is of type " +
-                     ctx->highlightError(lhsType->toString()) + " and RHS is of type " +
+                     ctx->highlightError(lhsType->toString()) + " and the right hand side is of type " +
                      ctx->highlightError(rhsType->toString()),
                  fileRange);
     }
@@ -769,10 +736,10 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else {
-      // TODO - Implement
-      ctx->Error("Invalid type of LHS for the operator " + ctx->highlightError(OpToString(op)) + ". LHS is " +
-                     ctx->highlightError(lhsType->toString()) + " and RHS is " +
-                     ctx->highlightError(rhsType->toString()),
+      // FIXME - Implement
+      ctx->Error("Invalid type for the left hand side of the operator " + ctx->highlightError(OpToString(op)) +
+                     ". Left hand side is of type " + ctx->highlightError(lhsType->toString()) +
+                     " and the right hand side is of type " + ctx->highlightError(rhsType->toString()),
                  fileRange);
     }
   }

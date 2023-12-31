@@ -9,12 +9,13 @@
 namespace qat::ast {
 class MemberAccess : public Expression {
   Expression* instance;
+  bool        isExpSelf = false;
   bool        isPointerAccess;
   bool        isVariationAccess;
-  String      name;
+  Identifier  name;
 
 public:
-  MemberAccess(Expression* _instance, bool _isPointerAccess, bool _isVariationAccess, String _name,
+  MemberAccess(Expression* _instance, bool isExpSelf, bool _isPointerAccess, bool _isVariationAccess, Identifier _name,
                FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;

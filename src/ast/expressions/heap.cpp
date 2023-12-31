@@ -151,12 +151,10 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
                    ptr->fileRange);
       }
       if (!ptrType->getSubType()->isSame(typ)) {
-        ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
-                   ptr->fileRange);
+        ctx->Error("The first argument should be a pointer to " + ctx->highlightError(typ->toString()), ptr->fileRange);
       }
     } else {
-      ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
-                 ptr->fileRange);
+      ctx->Error("The first argument should be a pointer to " + ctx->highlightError(typ->toString()), ptr->fileRange);
     }
   } else if (ptrVal->isImplicitPointer()) {
     if (ptrVal->getType()->isPointer()) {
@@ -185,18 +183,18 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
   } else {
     ptrType = ptrVal->getType()->asPointer();
     if (!ptrType->getOwner().isHeap()) {
-      ctx->Error("The ownership of this pointer is " + ctx->highlightError("heap") +
-                     " and hence cannot be used in heap'grow",
+      ctx->Error("Expected a multipointer with " + ctx->highlightError("heap") +
+                     " ownership. The ownership of this pointer is " +
+                     ctx->highlightError(ptrType->getOwner().toString()) + " and hence cannot be used.",
                  fileRange);
     }
     if (!ptrType->isMulti()) {
       ctx->Error("The type of the expression is " + ctx->highlightError(ptrVal->getType()->toString()) +
-                     " which is not a multi pointer and hence cannot be grown",
+                     " which is not a multi pointer and hence cannot be used here",
                  ptr->fileRange);
     }
     if (!ptrType->getSubType()->isSame(typ)) {
-      ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->highlightError(typ->toString()),
-                 ptr->fileRange);
+      ctx->Error("The first argument should be a pointer to " + ctx->highlightError(typ->toString()), ptr->fileRange);
     }
     ptrVal->makeImplicitPointer(ctx, None);
   }
@@ -207,8 +205,7 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
         ctx->builder.CreateLoad(countVal->getType()->asReference()->getSubType()->getLLVMType(), countVal->getLLVM()),
         countVal->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
   }
-  if (countVal->getType()->isUnsignedInteger() &&
-      (countVal->getType()->asUnsignedInteger()->getBitwidth() == MALLOC_ARG_BITWIDTH)) {
+  if (countVal->getType()->isCType() && countVal->getType()->asCType()->isUsize()) {
     ctx->getMod()->linkNative(IR::NativeUnit::realloc);
     auto* reallocFn = ctx->getMod()->getLLVMModule()->getFunction("realloc");
     auto* ptrRes    = ctx->builder.CreatePointerCast(
@@ -219,8 +216,10 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
                      llvm::PointerType::get(typ->getLLVMType(), ctx->dataLayout->getProgramAddressSpace()),
                      ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
                  llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-                ctx->builder.CreateMul(countVal->getLLVM(),
-                                       llvm::ConstantExpr::getSizeOf(ptrVal->getType()->getLLVMType()))}),
+                ctx->builder.CreateMul(
+                 countVal->getLLVM(),
+                 llvm::ConstantInt::get(IR::CType::getUsize(ctx)->getLLVMType(),
+                                           ctx->dataLayout.value().getTypeStoreSize(ptrVal->getType()->getLLVMType())))}),
         llvm::PointerType::get(ptrType->asPointer()->getSubType()->getLLVMType(),
                                   ctx->dataLayout->getProgramAddressSpace()));
     auto* resAlloc = IR::Logic::newAlloca(ctx->getActiveFunction(), None, ptrType->getLLVMType());
@@ -230,7 +229,9 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
     ctx->builder.CreateStore(countVal->getLLVM(), ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 1u));
     return new IR::Value(ptrVal->getLLVM(), ptrVal->getType(), false, IR::Nature::temporary);
   } else {
-    ctx->Error("The number of units to reallocate should of u64 type", count->fileRange);
+    ctx->Error("The number of units to reallocate should be of " +
+                   ctx->highlightError(IR::CType::getUsize(ctx)->toString()) + " type",
+               count->fileRange);
   }
 }
 

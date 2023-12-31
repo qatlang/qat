@@ -46,82 +46,67 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
     if (memRes->getType()->isReference()) {
       memRes->loadImplicitPointer(ctx->builder);
     }
-    if (expMemTy
-            ? (expMemTy->isSame(memRes->getType()) ||
-               (memRes->getType()->isReference() && memRes->getType()->asReference()->getSubType()->isSame(expMemTy)))
-            : true) {
-      if (expMemTy ? !expMemTy->isSame(memRes->getType())
-                   : (memRes->getType()->isReference() || memRes->isImplicitPointer())) {
-        auto* refSubTy =
-            memRes->getType()->isReference() ? memRes->getType()->asReference()->getSubType() : memRes->getType();
-        if (refSubTy->isExpanded()) {
-          auto* expSubTy   = refSubTy->asExpanded();
-          bool  preferMove = mem->nodeType() == NodeType::moveExpression;
-          if (!preferMove && expSubTy->hasCopyConstructor()) {
-            if (mem->nodeType() == NodeType::copyExpression) {
-              memRes = new IR::Value(ctx->builder.CreateLoad(expSubTy->getLLVMType(), memRes->getLLVM()), expSubTy,
-                                     false, IR::Nature::temporary);
-            } else {
-              ctx->Warning("This expression is copied here. Please make copy explicit like " +
-                               ctx->highlightWarning("copy(exp)"),
+    if (expMemTy) {
+      if (expMemTy->isSame(memRes->getType())) {
+        if (memRes->isImplicitPointer()) {
+          auto memType = memRes->getType();
+          if (memType->isTriviallyCopyable() || memType->isTriviallyMovable()) {
+            auto* loadRes = ctx->builder.CreateLoad(memType->getLLVMType(), memRes->getLLVM());
+            if (!memType->isTriviallyCopyable()) {
+              if (!memRes->isVariable()) {
+                ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
                            mem->fileRange);
-              auto* newMemInst =
-                  IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), refSubTy->getLLVMType());
-              expSubTy->copyConstructValue(
-                  ctx,
-                  {new IR::Value(newMemInst, IR::ReferenceType::get(true, expSubTy, ctx), false, IR::Nature::temporary),
-                   memRes},
-                  ctx->getActiveFunction());
-              memRes = new IR::Value(ctx->builder.CreateLoad(expSubTy->getLLVMType(), newMemInst), expSubTy, false,
-                                     IR::Nature::temporary);
+              }
+              ctx->builder.CreateStore(llvm::Constant::getNullValue(memType->getLLVMType()), memRes->getLLVM());
             }
-          } else if (expSubTy->hasMoveConstructor()) {
-            if (mem->nodeType() == NodeType::moveExpression) {
-              memRes = new IR::Value(ctx->builder.CreateLoad(expSubTy->getLLVMType(), memRes->getLLVM()), expSubTy,
-                                     false, IR::Nature::temporary);
-            } else {
-              ctx->Warning("This expression is moved here. Please make move explicit like " +
-                               ctx->highlightWarning("move(exp)"),
-                           mem->fileRange);
-              auto* newMemInst =
-                  IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), refSubTy->getLLVMType());
-              expSubTy->moveConstructValue(
-                  ctx,
-                  {new IR::Value(newMemInst, IR::ReferenceType::get(true, expSubTy, ctx), false, IR::Nature::temporary),
-                   memRes},
-                  ctx->getActiveFunction());
-              memRes = new IR::Value(ctx->builder.CreateLoad(expSubTy->getLLVMType(), newMemInst), expSubTy, false,
-                                     IR::Nature::temporary);
-            }
+            tupleMemVals.push_back(new IR::Value(loadRes, memType, false, IR::Nature::temporary));
           } else {
-            if (expSubTy->isTriviallyCopyable()) {
-              memRes = new IR::Value(ctx->builder.CreateLoad(refSubTy->getLLVMType(), memRes->getLLVM()),
-                                     memRes->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
-            } else {
-              ctx->Error("This expression is a reference and could not be converted to a value since the type " +
-                             ctx->highlightError(expSubTy->toString()) +
-                             " does not have a copy or move constructor and is also not trivially copyable",
+            ctx->Error("This expression is of type " + ctx->highlightError(memType->toString()) +
+                           " which is trivially copyable or movable. Please use " + ctx->highlightError("'copy") +
+                           " or " + ctx->highlightError("'move") + " accordingly",
+                       mem->fileRange);
+          }
+        } else {
+          tupleMemVals.push_back(memRes);
+        }
+      } else if ((expMemTy->isReference() && expMemTy->asReference()->isSame(memRes->getType()) &&
+                  (memRes->isImplicitPointer() &&
+                   (expMemTy->asReference()->isSubtypeVariable() ? memRes->isVariable() : true))) ||
+                 (expMemTy->isReference() && memRes->isReference() &&
+                  expMemTy->asReference()->getSubType()->isSame(memRes->getType()->asReference()->getSubType()) &&
+                  (expMemTy->asReference()->isSubtypeVariable() ? memRes->getType()->asReference()->isSubtypeVariable()
+                                                                : true))) {
+        if (memRes->isReference()) {
+          memRes->loadImplicitPointer(ctx->builder);
+        }
+        tupleMemVals.push_back(memRes);
+      } else if (memRes->isReference() && memRes->getType()->asReference()->getSubType()->isSame(expMemTy)) {
+        memRes->loadImplicitPointer(ctx->builder);
+        auto memType = memRes->getType()->asReference()->getSubType();
+        if (memType->isTriviallyCopyable() || memType->isTriviallyMovable()) {
+          auto* loadRes = ctx->builder.CreateLoad(memType->getLLVMType(), memRes->getLLVM());
+          if (!memType->isTriviallyCopyable()) {
+            if (!memRes->getType()->asReference()->isSubtypeVariable()) {
+              ctx->Error("This expression is of type " + ctx->highlightError(memRes->getType()->toString()) +
+                             " which is a reference without variability and hence cannot be trivially moved from",
                          mem->fileRange);
             }
           }
-        } else if (refSubTy->isOpaque()) {
-          ctx->Error("This is a reference to " + ctx->highlightError(refSubTy->toString()) +
-                         " which is an incomplete type with unknown size and structure",
-                     mem->fileRange);
+          tupleMemVals.push_back(new IR::Value(loadRes, memType, false, IR::Nature::temporary));
         } else {
-          memRes = new IR::Value(
-              ctx->builder.CreateLoad(memRes->getType()->asReference()->getSubType()->getLLVMType(), memRes->getLLVM()),
-              memRes->getType()->asReference()->getSubType(), false, IR::Nature::temporary);
+          ctx->Error("This expression is a reference of type " + ctx->highlightError(memType->toString()) +
+                         " which is not trivially copyable or movable. Please use " + ctx->highlightError("'copy") +
+                         " or " + ctx->highlightError("'move") + " accordingly",
+                     mem->fileRange);
         }
+      } else {
+        ctx->Error("Expected expression of type " + ctx->highlightError(expMemTy->toString()) +
+                       ", but the provided expression is of type " + ctx->highlightError(memRes->getType()->toString()),
+                   mem->fileRange);
       }
-    } else if (expMemTy &&
-               !((expMemTy->isReference() && expMemTy->asReference()->getSubType()->isSame(memRes->getType()) &&
-                  memRes->isImplicitPointer()))) {
-      ctx->Error("The type of this expression is " + ctx->highlightError(memRes->getType()->toString()) +
-                     " which is not compatible with the expected type " + ctx->highlightError(expMemTy->toString()),
-                 mem->fileRange);
+    } else {
+      tupleMemVals.push_back(memRes);
     }
-    tupleMemVals.push_back(memRes);
   }
   if (!tupleTy) {
     tupleTy = IR::TupleType::get(tupleMemTys, isPacked, ctx->llctx);

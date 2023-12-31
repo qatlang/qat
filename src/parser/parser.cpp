@@ -863,47 +863,79 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
           auto bCloseRes = getPairEnd(startTy, endTy, i + 1);
           if (bCloseRes.has_value() && (!upto.has_value() || (bCloseRes.value() < upto.value()))) {
             auto bClose = bCloseRes.value();
-            if (isPrimaryWithin(TokenType::child, i + 1, bClose)) {
-              auto childPos   = firstPrimaryPosition(TokenType::child, i + 1).value();
-              auto subTypeRes = parseType(ctx, i + 1, childPos);
-              if (isNext(TokenType::own, childPos)) {
-                if (childPos + 2 != bClose) {
-                  Error("Invalid ownership " + highlightError("'own"), RangeSpan(childPos, bClose));
+            if (isPrimaryWithin(TokenType::separator, i + 1, bClose)) {
+              auto sepPos     = firstPrimaryPosition(TokenType::separator, i + 1).value();
+              auto subTypeRes = parseType(ctx, i + 1, sepPos);
+              if (isNext(TokenType::own, sepPos)) {
+                if (sepPos + 2 != bClose) {
+                  Error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
                 cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::function, isNonNullable,
                                                None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
-              } else if (isNext(TokenType::heap, childPos)) {
-                if (childPos + 2 != bClose) {
-                  Error("Invalid ownership " + highlightError("'heap"), RangeSpan(childPos, bClose));
+              } else if (isNext(TokenType::heap, sepPos)) {
+                if (sepPos + 2 != bClose) {
+                  Error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
                 cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::heap, isNonNullable,
                                                None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
-              } else if (isNext(TokenType::Type, childPos)) {
-                if (isNext(TokenType::parenthesisOpen, childPos + 1)) {
-                  auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, childPos + 2);
+              } else if (isNext(TokenType::Type, sepPos)) {
+                if (isNext(TokenType::parenthesisOpen, sepPos + 1)) {
+                  auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, sepPos + 2);
                   if (pCloseRes.has_value()) {
-                    // FIXME - Less assumptions about end of the type
+                    if (pCloseRes.value() + 1 != bClose) {
+                      Error("Ownership did not span till ]", RangeSpan(pCloseRes.value() + 1, bClose));
+                    }
+                    auto ownTy = parseType(preCtx, sepPos + 2, pCloseRes.value());
+                    if (ownTy.second + 1 != pCloseRes.value()) {
+                      Error("Owner type did not span till )", RangeSpan(ownTy.second + 1, pCloseRes.value()));
+                    }
                     cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::type, isNonNullable,
-                                                   parseType(preCtx, childPos + 2, pCloseRes.value()).first, isMultiPtr,
-                                                   {token.fileRange, RangeAt(bClose)});
+                                                   ownTy.first, isMultiPtr, {token.fileRange, RangeAt(bClose)});
                   } else {
-                    Error("Expected end for (", RangeAt(childPos + 2));
+                    Error("Expected end for (", RangeAt(sepPos + 2));
                   }
                 } else {
                   Error("Expected a type to be provided to be the owner of this pointer type like " +
                             highlightError(String(isMultiPtr ? "multiptr:[" : "ptr:[") + subTypeRes.first->toString() +
-                                           " 'type(OwnerType)]"),
-                        RangeSpan(childPos, bClose));
+                                           ", type(OwnerType)]"),
+                        RangeSpan(sepPos, bClose));
                 }
+              } else if (isNext(TokenType::region, sepPos)) {
+                if (isNext(TokenType::parenthesisOpen, sepPos + 1)) {
+                  auto pCloseRes = getPairEnd(TokenType::parenthesisOpen, TokenType::parenthesisClose, sepPos + 2);
+                  if (pCloseRes.has_value()) {
+                    if (pCloseRes.value() + 1 != bClose) {
+                      Error("Ownership did not span till ]", RangeSpan(pCloseRes.value() + 1, bClose));
+                    }
+                    auto regTy = parseType(preCtx, sepPos + 1, pCloseRes.value());
+                    if (regTy.second + 1 != pCloseRes.value()) {
+                      Error("Owner region specified did not span till )",
+                            RangeSpan(regTy.second + 1, pCloseRes.value()));
+                    }
+                    cacheTy =
+                        new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::region, isNonNullable,
+                                             regTy.first, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                  }
+                } else {
+                  Error("Expected a region to be provided to be the owner of this pointer type like " +
+                            highlightError(String(isMultiPtr ? "multiptr" : "ptr") + (isNonNullable ? "![" : ":[") +
+                                           subTypeRes.first->toString() + ", region(OwnerRegion)]"),
+                        RangeAt(sepPos));
+                }
+              } else if (isNext(TokenType::self, sepPos)) {
+                if (sepPos + 2 != bClose) {
+                  Error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
+                }
+                cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::typeParent,
+                                               isNonNullable, None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
               } else {
-                Error("Invalid ownership of the pointer", {token.fileRange, RangeAt(childPos)});
+                Error("Invalid ownership of the pointer", {token.fileRange, RangeAt(sepPos)});
               }
-            } else if (tokens->at(bClose - 1).type == TokenType::self) {
-              cacheTy = new ast::PointerType(parseType(ctx, i + 1, bClose - 1).first, isSubtypeVar,
-                                             ast::PtrOwnType::typeParent, isNonNullable, None, isMultiPtr,
-                                             {token.fileRange, RangeAt(bClose)});
             } else {
               auto subTypeRes = parseType(ctx, i + 1, bClose);
+              if (subTypeRes.second + 1 != bClose) {
+                Error("Subtype of the pointer did not span till ]", RangeSpan(subTypeRes.second + 1, bClose));
+              }
               cacheTy = new ast::PointerType(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anonymous, isNonNullable,
                                              None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
             }

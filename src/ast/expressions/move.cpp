@@ -121,24 +121,37 @@ IR::Value* Move::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else {
-      if (candTy->isTriviallyMovable()) {
-        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
-                                 createIn->getLLVM());
-        ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
-        if (expEmit->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
+      if (createIn->isImplicitPointer()
+              ? createIn->getType()->isSame(candTy)
+              : (createIn->isReference() && createIn->getType()->asReference()->getSubType()->isSame(candTy))) {
+        if (expEmit->isReference()) {
+          expEmit->loadImplicitPointer(ctx->builder);
         }
-        return createIn;
-      } else if (candTy->isMoveAssignable()) {
-        (void)candTy->moveAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
-        if (expEmit->isLocalToFn()) {
-          ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
+        if (candTy->isTriviallyMovable()) {
+          ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                   createIn->getLLVM());
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
+          if (expEmit->isLocalToFn()) {
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
+          }
+          return createIn;
+        } else if (candTy->isMoveAssignable()) {
+          (void)candTy->moveAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
+          if (expEmit->isLocalToFn()) {
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
+          }
+          return createIn;
+        } else {
+          ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                         ctx->highlightError(candTy->toString()) +
+                         " does not have a move assignment operator and is also not trivially movable",
+                     fileRange);
         }
-        return createIn;
       } else {
-        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
-                       ctx->highlightError(candTy->toString()) +
-                       " does not have a move assignment operator and is also not trivially movable",
+        ctx->Error("Tried to optimise move assignment by in-place moving. The left hand side is of type " +
+                       ctx->highlightError(createIn->getType()->toString()) + " but the right hand side is of type " +
+                       ctx->highlightError(expEmit->getType()->toString()) +
+                       " and hence move assignment cannot be performed",
                    fileRange);
       }
     }

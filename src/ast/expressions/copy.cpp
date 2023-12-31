@@ -116,17 +116,30 @@ IR::Value* Copy::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else {
-      if (candTy->isCopyAssignable()) {
-        (void)candTy->copyAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
-        return createIn;
-      } else if (candTy->isTriviallyCopyable()) {
-        ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
-                                 createIn->getLLVM());
-        return createIn;
+      if (createIn->isImplicitPointer()
+              ? createIn->getType()->isSame(candTy)
+              : (createIn->isReference() && createIn->getType()->asReference()->getSubType()->isSame(candTy))) {
+        if (expEmit->isReference()) {
+          expEmit->loadImplicitPointer(ctx->builder);
+        }
+        if (candTy->isTriviallyCopyable()) {
+          ctx->builder.CreateStore(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()),
+                                   createIn->getLLVM());
+          return createIn;
+        } else if (candTy->isCopyAssignable()) {
+          (void)candTy->copyAssignValue(ctx, createIn, expEmit, ctx->getActiveFunction());
+          return createIn;
+        } else {
+          ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
+                         ctx->highlightError(candTy->toString()) +
+                         " does not have a copy assignment operator and is also not trivially copyable",
+                     fileRange);
+        }
       } else {
-        ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +
-                       ctx->highlightError(candTy->toString()) +
-                       " does not have a copy assignment operator and is also not trivially copyable",
+        ctx->Error("Tried to optimise copy assignment by in-place copying. The left hand side is of type " +
+                       ctx->highlightError(createIn->getType()->toString()) + " but the right hand side is of type " +
+                       ctx->highlightError(expEmit->getType()->toString()) +
+                       " and hence copy assignment cannot be performed",
                    fileRange);
       }
     }

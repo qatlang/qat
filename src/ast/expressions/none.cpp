@@ -41,7 +41,7 @@ IR::Value* NoneExpression::emit(IR::Context* ctx) {
     }
     SHOW("Type for none expression is: " << typ->toString())
     auto* mTy    = IR::MaybeType::get(typ, isPacked.has_value(), ctx);
-    auto* newVal = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), mTy->getLLVMType());
+    auto* newVal = IR::Logic::newAlloca(ctx->getActiveFunction(), None, mTy->getLLVMType());
     ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
                              ctx->builder.CreateStructGEP(mTy->getLLVMType(), newVal, 0u));
     ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),

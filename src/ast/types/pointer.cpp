@@ -113,7 +113,7 @@ String PointerType::toString() const {
   Maybe<String> ownerStr;
   switch (ownTyp) {
     case PtrOwnType::type: {
-      ownerStr = String("'type(") + ownerTyTy.value()->toString() + ")";
+      ownerStr = String("type(") + ownerTyTy.value()->toString() + ")";
       break;
     }
     case PtrOwnType::typeParent: {
@@ -121,21 +121,21 @@ String PointerType::toString() const {
       break;
     }
     case PtrOwnType::heap: {
-      ownerStr = "'heap";
+      ownerStr = "heap";
       break;
     }
     case PtrOwnType::function: {
-      ownerStr = "'own";
+      ownerStr = "own";
       break;
     }
     case PtrOwnType::region: {
-      ownerStr = String("'region(") + ownerTyTy.value()->toString() + ")";
+      ownerStr = String("region(") + ownerTyTy.value()->toString() + ")";
       break;
     }
     default:;
   }
   return (isMultiPtr ? "multiptr:[" : "ptr:[") + String(isSubtypeVar ? "var " : "") + type->toString() +
-         (ownerStr.has_value() ? (" " + ownerStr.value()) : "") + "]";
+         (ownerStr.has_value() ? (", " + ownerStr.value()) : "") + "]";
 }
 
 } // namespace qat::ast

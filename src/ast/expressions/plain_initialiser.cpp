@@ -31,7 +31,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
               localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
               alloca     = localValue->getLLVM();
             } else {
-              alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), cTy->getLLVMType());
+              alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), None, cTy->getLLVMType());
             }
             (void)dFn->call(ctx, {alloca}, None, ctx->getMod());
             if (isLocalDecl()) {
@@ -198,8 +198,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                                      IR::Nature::temporary);
             }
             auto* strSliceTy = IR::StringSliceType::get(ctx);
-            auto* strAlloca =
-                IR::Logic::newAlloca(ctx->getActiveFunction(), utils::unique_id(), strSliceTy->getLLVMType());
+            auto* strAlloca  = IR::Logic::newAlloca(ctx->getActiveFunction(), None, strSliceTy->getLLVMType());
             ctx->builder.CreateStore(strData->getLLVM(),
                                      ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 0));
             ctx->builder.CreateStore(strLen->getLLVM(),

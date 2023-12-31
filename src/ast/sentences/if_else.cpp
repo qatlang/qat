@@ -4,7 +4,8 @@
 
 namespace qat::ast {
 
-IfElse::IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange)
+IfElse::IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
+               Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), chain(std::move(_chain)), elseCase(std::move(_else)) {}
 
 Pair<bool, usize> IfElse::trueKnownValueBefore(usize ind) const {
@@ -43,7 +44,7 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
   restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
   for (usize i = 0; i < chain.size(); i++) {
     const auto& section = chain.at(i);
-    auto*       exp     = section.first->emit(ctx);
+    auto*       exp     = std::get<0>(section)->emit(ctx);
     auto*       expTy   = exp->getType();
     if (expTy->isReference()) {
       expTy = expTy->asReference()->getSubType();
@@ -51,11 +52,11 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
     if (!expTy->isBool()) {
       ctx->Error("Condition in an " + ctx->highlightError("if") + " block should be of " + ctx->highlightError("bool") +
                      " type",
-                 section.first->fileRange);
+                 std::get<0>(section)->fileRange);
     }
     if (exp->isPrerunValue()) {
       SHOW("Is const condition in if-else")
-      auto condConstVal = *(llvm::dyn_cast<llvm::ConstantInt>(exp->asConst()->getLLVM())->getValue().getRawData());
+      auto condConstVal = *(llvm::dyn_cast<llvm::ConstantInt>(exp->asPrerun()->getLLVM())->getValue().getRawData());
       knownVals.push_back(condConstVal == 1u);
     } else {
       knownVals.push_back(None);
@@ -64,15 +65,17 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       if (hasValueAt(i) && isFalseTill(i)) {
         if (getKnownValue(i)) {
           auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+          trueBlock->setFileRange(std::get<2>(section));
           (void)IR::addBranch(ctx->builder, trueBlock->getBB());
           trueBlock->setActive(ctx->builder);
-          emitSentences(section.second, ctx);
+          emitSentences(std::get<1>(section), ctx);
           trueBlock->destroyLocals(ctx);
           (void)IR::addBranch(ctx->builder, restBlock->getBB());
           break;
         }
       } else {
-        auto*      trueBlock  = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+        auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+        trueBlock->setFileRange(std::get<2>(section));
         IR::Block* falseBlock = nullptr;
         if (exp->isImplicitPointer() || exp->isReference()) {
           exp = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), exp->getLLVM()), expTy, false,
@@ -80,12 +83,17 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
         }
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
           falseBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+          if (i == (chain.size() - 1)) {
+            falseBlock->setFileRange(elseCase.value().second);
+          } else {
+            falseBlock->setFileRange(std::get<2>(chain.at(i + 1)));
+          }
           ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(), falseBlock->getBB());
         } else {
           ctx->builder.CreateCondBr(exp->getLLVM(), trueBlock->getBB(), restBlock->getBB());
         }
         trueBlock->setActive(ctx->builder);
-        emitSentences(section.second, ctx);
+        emitSentences(std::get<1>(section), ctx);
         trueBlock->destroyLocals(ctx);
         (void)IR::addBranch(ctx->builder, restBlock->getBB());
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
@@ -100,11 +108,11 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
       auto* elseBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
       (void)IR::addBranch(ctx->builder, elseBlock->getBB());
       elseBlock->setActive(ctx->builder);
-      emitSentences(elseCase.value(), ctx);
+      emitSentences(elseCase.value().first, ctx);
       elseBlock->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !trueKnownValueBefore(knownVals.size()).first)) {
-      emitSentences(elseCase.value(), ctx);
+      emitSentences(elseCase.value().first, ctx);
       ctx->getActiveFunction()->getBlock()->destroyLocals(ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
     }
@@ -112,6 +120,10 @@ IR::Value* IfElse::emit(IR::Context* ctx) {
     (void)IR::addBranch(ctx->builder, restBlock->getBB());
   }
   restBlock->setActive(ctx->builder);
+  if (ctx->getActiveFunction()->hasDefinitionRange()) {
+    restBlock->setFileRange(
+        FileRange(fileRange.file, fileRange.end, ctx->getActiveFunction()->getDefinitionRange().end));
+  }
   return nullptr;
 }
 
@@ -119,22 +131,27 @@ Json IfElse::toJson() const {
   Vec<JsonValue> _chain;
   for (const auto& elem : chain) {
     Vec<JsonValue> snts;
-    for (auto* snt : elem.second) {
+    for (auto* snt : std::get<1>(elem)) {
       snts.push_back(snt->toJson());
     }
-    _chain.push_back(Json()._("expression", elem.first->toJson())._("sentences", snts));
+    _chain.push_back(
+        Json()._("expression", std::get<0>(elem)->toJson())._("sentences", snts)._("fileRange", std::get<2>(elem)));
   }
+  Json           elseJson;
   Vec<JsonValue> elseSnts;
   if (elseCase.has_value()) {
-    for (auto* snt : elseCase.value()) {
+    for (auto* snt : elseCase.value().first) {
       elseSnts.push_back(snt->toJson());
     }
+    elseJson._("sentences", elseSnts);
+    elseJson._("fileRange", elseCase.value().second);
   }
+
   return Json()
       ._("nodeType", "ifElse")
       ._("chain", _chain)
       ._("hasElse", (elseCase.has_value()))
-      ._("else", elseSnts)
+      ._("else", elseJson)
       ._("fileRange", fileRange);
 }
 

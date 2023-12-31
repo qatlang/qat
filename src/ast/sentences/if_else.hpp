@@ -13,12 +13,13 @@ namespace qat::ast {
 // plain if sentence
 class IfElse : public Sentence {
 private:
-  Vec<Pair<Expression*, Vec<Sentence*>>> chain;
-  Maybe<Vec<Sentence*>>                  elseCase;
-  Vec<Maybe<bool>>                       knownVals;
+  Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> chain;
+  Maybe<Pair<Vec<Sentence*>, FileRange>>                  elseCase;
+  Vec<Maybe<bool>>                                        knownVals;
 
 public:
-  IfElse(Vec<Pair<Expression*, Vec<Sentence*>>> _chain, Maybe<Vec<Sentence*>> _else, FileRange _fileRange);
+  IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain, Maybe<Pair<Vec<Sentence*>, FileRange>> _else,
+         FileRange _fileRange);
 
   useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
   useit bool              getKnownValue(usize ind) const;

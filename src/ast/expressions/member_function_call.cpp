@@ -8,7 +8,26 @@ namespace qat::ast {
 
 IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
   SHOW("Member variable emitting")
-  auto* inst     = instance->emit(ctx);
+  if (isExpSelf) {
+    if (ctx->getActiveFunction()->isMemberFunction()) {
+      auto* memFn = (IR::MemberFunction*)ctx->getActiveFunction();
+      if (memFn->isStaticFunction()) {
+        ctx->Error("This is a static member function and hence cannot call member function on the parent instance",
+                   fileRange);
+      }
+    } else {
+      ctx->Error(
+          "The parent function is not a member function of any type and hence cannot call member functions on the parent instance",
+          fileRange);
+    }
+  } else {
+    if (instance->nodeType() == NodeType::self) {
+      ctx->Error("Do not use this syntax for calling member functions. Use " +
+                     ctx->highlightError("''" + memberName.value + "(...)") + " instead",
+                 fileRange);
+    }
+  }
+  auto* inst     = isExpSelf ? ctx->getActiveFunction()->getFirstBlock()->getValue("''") : instance->emit(ctx);
   auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
   if (instType->isReference()) {
@@ -21,32 +40,34 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
                instance->fileRange);
   }
   if (instType->isExpanded()) {
-    if (memberName == "end") {
+    if (memberName.value == "end") {
+      if (isExpSelf) {
+        ctx->Error("Cannot call the destructor on the parent instance. This is not allowed", fileRange);
+      }
       if (!instType->asExpanded()->hasDestructor()) {
         ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->getFullName()) + " does not have a destructor",
                    fileRange);
       }
       auto* desFn = instType->asExpanded()->getDestructor();
-      if (inst->isImplicitPointer() || inst->isReference()) {
-        return desFn->call(ctx, {inst->getLLVM()}, ctx->getMod());
-      } else {
-        ctx->Error("Invalid expression to call the destructor of", fileRange);
+      if (!inst->isImplicitPointer() && !inst->isReference()) {
+        inst->makeImplicitPointer(ctx, None);
+      } else if (inst->isReference()) {
+        inst->loadImplicitPointer(ctx->builder);
       }
+      return desFn->call(ctx, {inst->getLLVM()}, None, ctx->getMod());
     }
-    if (!instType->asExpanded()->hasMemberFunction(memberName)) {
-      ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
-                     " does not have a member function named " + ctx->highlightError(memberName) +
-                     ". Please check the logic",
-                 fileRange);
-    }
-    auto* eTy   = instType->asExpanded();
-    auto* memFn = eTy->getMemberFunction(memberName);
+    auto* eTy = instType->asExpanded();
     if (variation) {
-      if (!memFn->isVariationFunction()) {
-        ctx->Error("Member function " + ctx->highlightError(memberName) + " of type " +
-                       ctx->highlightError(eTy->getFullName()) +
-                       " is not a variation and hence cannot be called as a variation",
-                   fileRange);
+      if (!eTy->hasVariationFn(memberName.value)) {
+        if (eTy->hasNormalMemberFn(memberName.value)) {
+          ctx->Error(ctx->highlightError(memberName.value) + " is not a variation member function of type " +
+                         ctx->highlightError(eTy->getFullName()) + " and hence cannot be called as a variation",
+                     fileRange);
+        } else {
+          ctx->Error("No variation member function named " + ctx->highlightError(memberName.value) + " found in type " +
+                         ctx->highlightError(eTy->getFullName()),
+                     fileRange);
+        }
       }
       if (!isVar) {
         ctx->Error("The expression does not have variability and hence variation "
@@ -54,15 +75,21 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
                    instance->fileRange);
       }
     } else {
-      if (memFn->isVariationFunction()) {
-        ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
-                       ctx->highlightError(eTy->getFullName()) +
-                       " is a variation and hence should be called as a variation",
+      if (eTy->hasVariationFn(memberName.value)) {
+        ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
+                       ctx->highlightError(eTy->getFullName()) + " and hence should be called as a variation like " +
+                       ctx->highlightError(String(isExpSelf ? "''" : "'") + "var:" + memberName.value),
+                   memberName.range);
+      } else if (!eTy->hasNormalMemberFn(memberName.value)) {
+        ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
+                       " does not have a member function named " + ctx->highlightError(memberName.value) +
+                       ". Please check the logic",
                    fileRange);
       }
     }
+    auto* memFn = variation ? eTy->getVariationFn(memberName.value) : eTy->getNormalMemberFn(memberName.value);
     if (!memFn->isAccessible(ctx->getAccessInfo())) {
-      ctx->Error("Member function " + ctx->highlightError(memberName) + " of core type " +
+      ctx->Error("Member function " + ctx->highlightError(memberName.value) + " of core type " +
                      ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
@@ -71,7 +98,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();
-    if ((fnArgsTy.size() - (memFn->hasReturnArgument() ? 2 : 1)) != arguments.size()) {
+    if ((fnArgsTy.size() - 1) != arguments.size()) {
       ctx->Error("Number of arguments provided for the member function call does not "
                  "match the signature",
                  fileRange);
@@ -88,39 +115,81 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }
     SHOW("Argument values generated for member function")
-    for (usize i = 1; i < (fnArgsTy.size() - (memFn->hasReturnArgument() ? 1 : 0)); i++) {
-      if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()) &&
-          (!fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i - 1)->getType())) &&
-          (argsEmit.at(i - 1)->getType()->isReference() &&
-           !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i - 1)->getType()->asReference()->getSubType()) &&
-           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i - 1)->getType()->asReference()->getSubType()))) {
+    for (usize i = 1; i < fnArgsTy.size(); i++) {
+      auto fnArgType = fnArgsTy[i]->getType();
+      auto argType   = argsEmit[i - 1]->getType();
+      if (!(fnArgType->isSame(argType) || fnArgType->isCompatible(argType) ||
+            (fnArgType->isReference() && argsEmit[i - 1]->isImplicitPointer() &&
+             fnArgType->asReference()->getSubType()->isSame(argType)) ||
+            (argType->isReference() && argType->asReference()->getSubType()->isSame(fnArgType)))) {
         ctx->Error("Type of this expression does not match the type of the "
                    "corresponding argument of the function " +
-                       ctx->highlightError(memFn->getName().value),
+                       ctx->highlightError(memFn->getFullName()),
                    arguments.at(i - 1)->fileRange);
       }
     }
     //
     Vec<llvm::Value*> argVals;
+    Maybe<String>     localID = inst->getLocalID();
     argVals.push_back(inst->getLLVM());
-    for (usize i = 1; i < (fnArgsTy.size() - (memFn->hasReturnArgument() ? 1 : 0)); i++) {
-      if (fnArgsTy.at(i)->getType()->isReference() && !argsEmit.at(i - 1)->isReference()) {
-        if (!argsEmit.at(i - 1)->isImplicitPointer()) {
+    for (usize i = 1; i < fnArgsTy.size(); i++) {
+      auto* currArg = argsEmit[i - 1];
+      if (fnArgsTy.at(i)->getType()->isReference()) {
+        auto fnRefTy = fnArgsTy[i]->getType()->asReference();
+        if (currArg->isReference()) {
+          if (fnRefTy->isSubtypeVariable() && !currArg->getType()->asReference()->isSubtypeVariable()) {
+            ctx->Error("The type of the argument is " + ctx->highlightError(fnArgsTy[i]->getType()->toString()) +
+                           " but the expression is of type " + ctx->highlightError(currArg->getType()->toString()),
+                       arguments.at(i - 1)->fileRange);
+          }
+          currArg->loadImplicitPointer(ctx->builder);
+        } else if (!currArg->isImplicitPointer()) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);
+        } else if (fnArgsTy.at(i)->getType()->asReference()->isSubtypeVariable()) {
+          if (!currArg->isVariable()) {
+            ctx->Error("The argument " + ctx->highlightError(fnArgsTy.at(i)->getName()) + " is of type " +
+                           ctx->highlightError(fnArgsTy.at(i)->getType()->toString()) +
+                           " which is a reference with variability, but this expression does not have variability",
+                       arguments.at(i - 1)->fileRange);
+          }
         }
-      } else if (argsEmit.at(i - 1)->isReference()) {
-        SHOW("Loading ref arg at " << i - 1 << " with type " << argsEmit.at(i - 1)->getType()->toString())
-        argsEmit.at(i - 1) = new IR::Value(
-            ctx->builder.CreateLoad(argsEmit.at(i - 1)->getType()->asReference()->getSubType()->getLLVMType(),
-                                    argsEmit.at(i - 1)->getLLVM()),
-            argsEmit.at(i - 1)->getType(), argsEmit.at(i - 1)->getType()->asReference()->isSubtypeVariable(),
-            argsEmit.at(i - 1)->getNature());
-      } else {
-        argsEmit.at(i - 1)->loadImplicitPointer(ctx->builder);
+      } else if (currArg->isReference() || currArg->isImplicitPointer()) {
+        if (currArg->isReference()) {
+          currArg->loadImplicitPointer(ctx->builder);
+        }
+        SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->getType()->toString())
+        auto* argTy    = fnArgsTy[i]->getType();
+        auto* argValTy = currArg->getType();
+        auto  isRefVar =
+            currArg->isReference() ? currArg->getType()->asReference()->isSubtypeVariable() : currArg->isVariable();
+        if (argTy->isTriviallyCopyable() || argTy->isTriviallyMovable()) {
+          auto* argEmitLLVMValue = currArg->getLLVM();
+          argsEmit[i - 1] = new IR::Value(ctx->builder.CreateLoad(argTy->getLLVMType(), currArg->getLLVM()), argTy,
+                                          false, IR::Nature::temporary);
+          if (!argTy->isTriviallyMovable()) {
+            if (!isRefVar) {
+              if (argValTy->isReference()) {
+                ctx->Error("This expression is a reference without variability and hence cannot be trivilly moved from",
+                           arguments[i - 1]->fileRange);
+              } else {
+                ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+                           arguments[i - 1]->fileRange);
+              }
+            }
+            ctx->builder.CreateStore(llvm::Constant::getNullValue(argTy->getLLVMType()), argEmitLLVMValue);
+          }
+        } else {
+          ctx->Error("This expression is not a value and is of type " + ctx->highlightError(argTy->toString()) +
+                         " which is not trivially copyable or trivially movable. Please use " +
+                         ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " instead",
+                     arguments[i - 1]->fileRange);
+        }
       }
-      argVals.push_back(argsEmit.at(i - 1)->getLLVM());
+      SHOW("Argument value at " << i - 1 << " is of type " << argsEmit[i - 1]->getType()->toString()
+                                << " and argtype is " << fnArgsTy.at(i)->getType()->toString())
+      argVals.push_back(argsEmit[i - 1]->getLLVM());
     }
-    return memFn->call(ctx, argVals, ctx->getMod());
+    return memFn->call(ctx, argVals, localID, ctx->getMod());
   } else {
     ctx->Error("Member function call for this type is not supported", fileRange);
   }

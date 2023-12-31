@@ -126,20 +126,28 @@ LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name
         ctx->builder.CreateStore(ctx->builder.CreateLoad(expValTy->getLLVMType(), expVal->getLLVM()),
                                  newValue->getLLVM());
         if (!expValTy->isTriviallyCopyable()) {
+          if (expVal->isReference() && !expVal->getType()->asReference()->isSubtypeVariable()) {
+            ctx->Error("This expression is of type " + ctx->highlightError(expVal->getType()->toString()) +
+                           " which is a reference without variability and hence cannot be trivially moved from",
+                       value.value()->fileRange);
+          } else if (!expVal->isVariable()) {
+            ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+                       value.value()->fileRange);
+          }
           // MOVE WARNING
           ctx->Warning("There is a trivial move occuring here. Do you want to use " + ctx->highlightWarning("'move") +
                            " to make it explicit and clear?",
                        value.value()->fileRange);
           ctx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expValTy->getLLVMType()), expVal->getLLVM());
           if (expVal->isLocalToFn()) {
-            ctx->getActiveFunction()->getBlock()->addMovedValue(expVal->getLocalID());
+            ctx->getActiveFunction()->getBlock()->addMovedValue(expVal->getLocalID().value());
           }
         }
       } else {
         // NON-TRIVIAL COPY & MOVE ERROR
-        ctx->Error("The expression provided is of type " + ctx->highlightError(expValTy->toString()) + ". Type " +
-                       ctx->highlightError(expValTy->toString()) + " cannot be trivially copied or moved. Please do " +
-                       ctx->highlightError("'copy") + " or " + ctx->highlightError("'move"),
+        ctx->Error("The expression provided is of type " + ctx->highlightError(expValTy->toString()) +
+                       " which cannot be trivially copied or moved. Please do " + ctx->highlightError("'copy") +
+                       " or " + ctx->highlightError("'move") + " accordingly",
                    value.value()->fileRange);
       }
     } else {

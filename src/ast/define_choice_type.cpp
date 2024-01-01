@@ -9,8 +9,9 @@ namespace qat::ast {
 DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<PrerunExpression*>>> _fields,
                                    Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned, Maybe<usize> _defaulVal,
                                    Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)), providedIntegerTy(_providedTy),
-      areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec), defaultVal(_defaulVal) {}
+    : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)),
+      areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec), defaultVal(_defaulVal),
+      providedIntegerTy(_providedTy) {}
 
 void DefineChoiceType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
@@ -77,15 +78,14 @@ void DefineChoiceType::createType(IR::Context* ctx) {
       for (usize j = i + 1; j < fieldValues->size(); j++) {
         if (fieldValues->at(i) == fieldValues->at(j)) {
           ctx->Error("Indexing for the field " + ctx->highlightError(fields.at(j).first.value) +
-                         " is repeating. Please check logic and make "
-                         "necessary changes",
+                         " is repeating. Please check logic and make necessary changes",
                      fields.at(j).first.range);
         }
       }
     }
   }
   new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned, None,
-                     ctx->getVisibInfo(visibSpec), ctx, fileRange);
+                     ctx->getVisibInfo(visibSpec), ctx, fileRange, None);
 }
 
 void DefineChoiceType::defineType(IR::Context* ctx) {

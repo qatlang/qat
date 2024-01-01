@@ -55,19 +55,19 @@ bool PointerOwner::isSame(const PointerOwner& other) const {
 String PointerOwner::toString() const {
   switch (ownerTy) {
     case PointerOwnerType::region:
-      return "'region(" + ownerAsRegion()->toString() + ")";
+      return "region(" + ownerAsRegion()->toString() + ")";
     case PointerOwnerType::heap:
-      return "'heap";
+      return "heap";
     case PointerOwnerType::anonymous:
       return "";
     case PointerOwnerType::type:
-      return "'type(" + ownerAsType()->toString() + ")";
+      return "type(" + ownerAsType()->toString() + ")";
     case PointerOwnerType::parentInstance:
       return "''(" + ownerAsParentType()->toString() + ")";
     case PointerOwnerType::parentFunction:
-      return "'own(" + ownerAsParentFunction()->getFullName() + ")";
+      return "own(" + ownerAsParentFunction()->getFullName() + ")";
     case PointerOwnerType::Static:
-      return "'static";
+      return "static";
   }
 }
 
@@ -84,7 +84,7 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
           {llvm::PointerType::get(subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx->llctx)
                                                                      : subType->getLLVMType(),
                                   ctx->dataLayout->getProgramAddressSpace()),
-           llvm::Type::getInt64Ty(ctx->llctx)},
+           llvm::Type::getIntNTy(ctx->llctx, ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType()))},
           linkingName);
     }
   } else {
@@ -97,7 +97,7 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
 
 PointerType* PointerType::get(bool _isSubtypeVariable, QatType* _type, bool _nonNullable, PointerOwner _owner,
                               bool _hasMulti, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isPointer()) {
       if (typ->asPointer()->getSubType()->isSame(_type) &&
           (typ->asPointer()->isSubtypeVariable() == _isSubtypeVariable) &&

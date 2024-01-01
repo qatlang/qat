@@ -202,17 +202,17 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     } else {
       if (rhsType->isInteger()) {
         ctx->Error("Signed integers in this binary operation have different "
-                   "bitwidths. Cast the operand with smaller bitwidth to the bigger "
+                   "bitwidths. Convert the operand with smaller bitwidth to the bigger "
                    "bitwidth to prevent potential loss of data and logical errors",
                    fileRange);
       } else if (rhsType->isUnsignedInteger()) {
         ctx->Error("Left hand side is a signed integer and right hand side is "
-                   "an unsigned integer. Please check logic or cast one side "
+                   "an unsigned integer. Please check logic or convert one side "
                    "to the other type if this was intentional",
                    fileRange);
       } else if (rhsType->isFloat()) {
         ctx->Error("Left hand side is a signed integer and right hand side is "
-                   "a floating point number. Please check logic or cast one "
+                   "a floating point number. Please check logic or convert one "
                    "side to the other type if this was intentional",
                    fileRange);
       } else {
@@ -466,8 +466,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       // NOLINTEND(readability-isolate-declaration)
       auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
       if (lhsEmit->isLLVMConstant()) {
-        lhsBuff       = llvm::cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(0u);
-        lhsCount      = llvm::cast<llvm::Constant>(lhsEmit->getLLVM())->getAggregateElement(1u);
+        lhsBuff       = lhsEmit->getLLVMConstant()->getAggregateElement(0u);
+        lhsCount      = lhsEmit->getLLVMConstant()->getAggregateElement(1u);
         isConstantLHS = true;
       } else {
         if (lhsType->isReference()) {
@@ -483,8 +483,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                                                                           lhsEmit->getLLVM(), 1u));
       }
       if (rhsEmit->isLLVMConstant()) {
-        rhsBuff       = llvm::cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(0u);
-        rhsCount      = llvm::cast<llvm::Constant>(rhsEmit->getLLVM())->getAggregateElement(1u);
+        rhsBuff       = rhsEmit->getLLVMConstant()->getAggregateElement(0u);
+        rhsCount      = rhsEmit->getLLVMConstant()->getAggregateElement(1u);
         isConstantRHS = true;
       } else {
         if (rhsType->isReference()) {
@@ -698,6 +698,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         auto localID = lhsEmit->getLocalID();
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
+        } else if (lhsType->isReference()) {
+          lhsEmit->loadImplicitPointer(ctx->builder);
         }
         auto* opFn = eTy->getBinaryOperator(
             OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType});
@@ -706,6 +708,21 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                          ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
+        }
+        if (opFn->getType()->asFunction()->getArgumentTypeAt(0)->getType()->asReference()->isSubtypeVariable()) {
+          if (lhsEmit->isReference()) {
+            if (!lhsEmit->getType()->asReference()->isSubtypeVariable()) {
+              ctx->Error("This expression is a reference without variability and hence cannot use the " +
+                             ctx->highlightError(OpStr) + " operator, which is a variation",
+                         lhs->fileRange);
+            }
+          } else {
+            if (!lhsEmit->isVariable()) {
+              ctx->Error("This expression does not have variability and hence cannot use the " +
+                             ctx->highlightError(OpStr) + " operator, which is a variation",
+                         lhs->fileRange);
+            }
+          }
         }
         rhsEmit->loadImplicitPointer(ctx->builder);
         return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, localID, ctx->getMod());

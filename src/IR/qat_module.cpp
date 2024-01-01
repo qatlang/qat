@@ -663,19 +663,15 @@ QatModule* QatModule::getBroughtModule(const String& name, const AccessInfo& req
     auto* bMod = brought.get();
     if (!brought.isNamed()) {
       if (bMod->shouldPrefixName() && (bMod->getName() == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        SHOW("Found brought module with name")
         return bMod;
       } else if (!bMod->shouldPrefixName()) {
         if (bMod->hasBroughtModule(name, reqInfo) || bMod->hasAccessibleBroughtModuleInImports(name, reqInfo).first) {
-          SHOW("Found brought module in unnamed module")
           if (bMod->getBroughtModule(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
             return bMod->getBroughtModule(name, reqInfo);
           }
         }
       }
     } else if (brought.getName().value == name) {
-      SHOW("Found named brought module")
-      SHOW("Brought module " << bMod)
       return bMod;
     }
   }
@@ -1852,6 +1848,62 @@ void QatModule::compileToObject(IR::Context* ctx) {
   }
 }
 
+std::set<String> QatModule::getAllObjectPaths() const {
+  std::set<String> result;
+  if (objectFilePath.has_value()) {
+    result.insert(objectFilePath.value());
+  }
+  auto moduleHandler = [&](IR::QatModule* modVal) {
+    auto objList = modVal->getAllObjectPaths();
+    for (auto& path : objList) {
+      result.insert(path);
+    }
+  };
+  for (auto sub : submodules) {
+    moduleHandler(sub);
+  }
+  for (auto& bMod : broughtModules) {
+    moduleHandler(bMod.get());
+  }
+  for (auto& bTy : broughtCoreTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtGenericCoreTypes) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtChoiceTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtOpaqueTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtGenericOpaqueTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtMixTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtTypeDefs) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtFunctions) {
+    moduleHandler(bTy.get()->getParentModule());
+  }
+  for (auto& bTy : broughtGenericFunctions) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtGenericTypeDefinitions) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtGlobalEntities) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtRegions) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  return result;
+}
+
 void QatModule::bundleLibs(IR::Context* ctx) {
   if (!isBundled) {
     for (auto* sub : submodules) {
@@ -2171,32 +2223,12 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       // -Wl,--import-memory
       targetCMD.append("-nostartfiles -Wl,--no-entry -Wl,--export-all ");
     }
-    Vec<String> objectFiles;
-    if (objectFilePath.has_value()) {
-      objectFiles.push_back(objectFilePath.value().string());
+    std::set<String> objectFiles = getAllObjectPaths();
+    String           inputFiles  = "";
+    for (auto& objPath : objectFiles) {
+      inputFiles.append(objPath);
+      inputFiles.append(" ");
     }
-    for (auto* sub : submodules) {
-      if (objectFilePath.has_value()) {
-        objectFiles.push_back(sub->objectFilePath.value().string());
-      }
-    }
-    for (const auto& bMod : broughtModules) {
-      SHOW("Brought module: " << bMod.get())
-      SHOW("Brought module name: " << bMod.get()->name.value)
-      SHOW("Brought module has Object: " << bMod.get()->objectFilePath.has_value())
-
-      if (bMod.get()->objectFilePath.has_value()) {
-        objectFiles.push_back(bMod.get()->objectFilePath.value().string());
-      }
-    }
-    String inputFiles = "";
-    for (usize i = 0; i < objectFiles.size(); i++) {
-      inputFiles.append(objectFiles.at(i));
-      if (i != (objectFiles.size() - 1)) {
-        inputFiles.append(" ");
-      }
-    }
-    inputFiles.append(" ");
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
       auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /

@@ -28,21 +28,32 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
 
 AccessInfo::AccessInfo(IR::QatModule* _module, Maybe<IR::QatType*> _type) : module(_module), type(_type) {}
 
+AccessInfo AccessInfo::GetPrivileged() {
+  AccessInfo result   = AccessInfo(nullptr, None);
+  result.isPrivileged = true;
+  return result;
+}
+
+bool AccessInfo::isPrivilegedAccess() const { return isPrivileged; }
+
 bool AccessInfo::hasType() const { return type.has_value() && (type.value() != nullptr); }
 
 IR::QatModule* AccessInfo::getModule() const { return module; }
 
 IR::QatType* AccessInfo::getType() const { return type.value_or(nullptr); }
 
-bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo& req_info) {
+bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> req_info) {
+  if (req_info.has_value() && req_info->isPrivilegedAccess()) {
+    return true;
+  }
   switch (visibility.kind) {
     case VisibilityKind::box:
     case VisibilityKind::file:
     case VisibilityKind::folder:
     case VisibilityKind::lib: {
       SHOW("VisibilityInfo: Module")
-      return (visibility.moduleVal->getID() == req_info.getModule()->getID()) ||
-             visibility.moduleVal->isParentModuleOf(req_info.getModule());
+      return req_info.has_value() && ((visibility.moduleVal->getID() == req_info->getModule()->getID()) ||
+                                      visibility.moduleVal->isParentModuleOf(req_info->getModule()));
     }
     case VisibilityKind::pub: {
       SHOW("VisibilityInfo: PUB")
@@ -50,25 +61,28 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, const AccessInfo
     }
     case VisibilityKind::type: {
       SHOW("VisibilityInfo: TYPE")
-      if (req_info.hasType()) {
-        return req_info.getType()->isSame(visibility.typePtr);
+      if (req_info.has_value() && req_info->hasType()) {
+        return req_info->getType()->isSame(visibility.typePtr);
       }
       return false;
     }
     case VisibilityKind::parent: {
       SHOW("VisibilityInfo: PARENT")
-      if (visibility.typePtr && req_info.hasType()) {
-        return visibility.typePtr->isSame(req_info.getType());
-      } else if (visibility.moduleVal && req_info.getModule()) {
-        return (visibility.moduleVal->getID() == req_info.getModule()->getID()) ||
-               visibility.moduleVal->isParentModuleOf(req_info.getModule());
+      if (!req_info.has_value()) {
+        return false;
+      }
+      if (visibility.typePtr && req_info->hasType()) {
+        return visibility.typePtr->isSame(req_info->getType());
+      } else if (visibility.moduleVal && req_info->getModule()) {
+        return (visibility.moduleVal->getID() == req_info->getModule()->getID()) ||
+               visibility.moduleVal->isParentModuleOf(req_info->getModule());
       }
       return false;
     }
   }
 }
 
-bool VisibilityInfo::isAccessible(const AccessInfo& reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
+bool VisibilityInfo::isAccessible(Maybe<AccessInfo> reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
 
 bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
   return (kind == other.kind) && (typePtr == other.typePtr) && (moduleVal == other.moduleVal);
@@ -85,7 +99,8 @@ VisibilityInfo::operator Json() const {
 
 VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
 
-VisibilityInfo::VisibilityInfo(const VisibilityInfo& other) = default;
+VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
+    : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 
 const std::map<VisibilityKind, String> Visibility::kind_value_map = {
     {VisibilityKind::pub, "public"},   {VisibilityKind::type, "type"}, {VisibilityKind::lib, "library"},

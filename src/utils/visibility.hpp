@@ -68,7 +68,7 @@ public:
   static VisibilityInfo folder(IR::QatModule* mod) { return {VisibilityKind::folder, mod}; }
   static VisibilityInfo box(IR::QatModule* mod) { return {VisibilityKind::box, mod}; }
 
-  useit bool isAccessible(const AccessInfo& reqInfo) const;
+  useit bool isAccessible(Maybe<AccessInfo> reqInfo) const;
 
   useit bool operator==(const VisibilityInfo& other) const;
   operator Json() const;
@@ -82,10 +82,15 @@ private:
   // Parent type of the entity requesting for access
   Maybe<IR::QatType*> type;
 
+  bool isPrivileged = false;
+
 public:
   AccessInfo(IR::QatModule* _lib, Maybe<IR::QatType*> _type);
 
+  useit static AccessInfo GetPrivileged();
+
   useit bool hasType() const;
+  useit bool isPrivilegedAccess() const;
   useit IR::QatModule* getModule() const;
   useit IR::QatType* getType() const;
 };
@@ -97,7 +102,7 @@ public:
 
   useit static String         getValue(VisibilityKind kind);
   useit static VisibilityKind getKind(const String& value);
-  useit static bool           isAccessible(const VisibilityInfo& visibility, const AccessInfo& reqInfo);
+  useit static bool           isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
 };
 
 } // namespace qat

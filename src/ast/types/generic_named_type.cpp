@@ -24,17 +24,17 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);
-      if (mod->hasLib(split.value)) {
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
         mod = mod->getLib(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", fileRange);
-        }
         mod->addMention(split.range);
-      } else if (mod->hasBox(split.value)) {
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
         mod = mod->getBox(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
-        }
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, reqInfo) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
         mod->addMention(split.range);
       } else {
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
@@ -46,7 +46,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   }
   auto* fun  = ctx->getActiveFunction();
   auto* curr = fun ? fun->getBlock() : nullptr;
-  if (mod->hasGenericCoreType(entityName.value) ||
+  if (mod->hasGenericCoreType(entityName.value, reqInfo) ||
       mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getAccessInfo()).first) {
     auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getAccessInfo());
@@ -106,7 +106,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     (void)ctx->setActiveModule(oldMod);
     return tyRes;
-  } else if (mod->hasGenericTypeDef(entityName.value) ||
+  } else if (mod->hasGenericTypeDef(entityName.value, reqInfo) ||
              mod->hasBroughtGenericTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericTypeDefInImports(entityName.value, ctx->getAccessInfo()).first) {
     auto* genericTypeDef = mod->getGenericTypeDef(entityName.value, ctx->getAccessInfo());

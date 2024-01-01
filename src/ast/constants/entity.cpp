@@ -79,73 +79,93 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
     }
     for (usize i = 0; i < (identifiers.size() - 1); i++) {
       auto section = identifiers.at(i);
-      if (mod->hasLib(section.value) || mod->hasBroughtLib(section.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      if (mod->hasLib(section.value, reqInfo) ||
+          mod->hasBroughtLib(section.value, ctx->getReqInfoIfDifferentModule(mod)) ||
           mod->hasAccessibleLibInImports(section.value, reqInfo).first) {
         mod = mod->getLib(section.value, reqInfo);
-      } else if (mod->hasBox(section.value) ||
+        mod->addMention(section.range);
+      } else if (mod->hasBox(section.value, reqInfo) ||
                  mod->hasBroughtBox(section.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleBoxInImports(section.value, reqInfo).first) {
         mod = mod->getBox(section.value, reqInfo);
+        mod->addMention(section.range);
+      } else if (mod->hasBroughtModule(section.value, reqInfo) ||
+                 mod->hasAccessibleBroughtModuleInImports(section.value, reqInfo).first) {
+        mod = mod->getBroughtModule(section.value, reqInfo);
+        mod->addMention(section.range);
       } else {
-        ctx->Error("No lib or box found inside the module " + ctx->highlightError(mod->getFullName()) +
-                       " inside file " + ctx->highlightError(mod->getParentFile()->getFilePath()),
+        ctx->Error("No module named " + ctx->highlightError(section.value) + " found inside the current module",
                    fileRange);
       }
     }
   }
   auto reqInfo = ctx->getAccessInfo();
-  if (mod->hasTypeDef(name.value) || mod->hasBroughtTypeDef(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+  if (mod->hasTypeDef(name.value, reqInfo) ||
+      mod->hasBroughtTypeDef(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleTypeDefInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getTypeDef(name.value, reqInfo)));
-  } else if (mod->hasCoreType(name.value) ||
+    auto resTypeDef = mod->getTypeDef(name.value, reqInfo);
+    resTypeDef->addMention(name.range);
+    return new IR::PrerunValue(IR::TypedType::get(resTypeDef));
+  } else if (mod->hasCoreType(name.value, reqInfo) ||
              mod->hasBroughtCoreType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleCoreTypeInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getCoreType(name.value, reqInfo)));
-  } else if (mod->hasMixType(name.value) || mod->hasBroughtMixType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+    auto resCoreType = mod->getCoreType(name.value, reqInfo);
+    resCoreType->addMention(name.range);
+    return new IR::PrerunValue(IR::TypedType::get(resCoreType));
+  } else if (mod->hasMixType(name.value, reqInfo) ||
+             mod->hasBroughtMixType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleMixTypeInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getMixType(name.value, reqInfo)));
-  } else if (mod->hasChoiceType(name.value) ||
+    auto resMixType = mod->getMixType(name.value, reqInfo);
+    resMixType->addMention(name.range);
+    return new IR::PrerunValue(IR::TypedType::get(resMixType));
+  } else if (mod->hasChoiceType(name.value, reqInfo) ||
              mod->hasBroughtChoiceType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleChoiceTypeInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getChoiceType(name.value, reqInfo)));
-  } else if (mod->hasRegion(name.value) || mod->hasBroughtRegion(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+    auto resChoiceType = mod->getChoiceType(name.value, reqInfo);
+    resChoiceType->addMention(name.range);
+    return new IR::PrerunValue(IR::TypedType::get(resChoiceType));
+  } else if (mod->hasRegion(name.value, reqInfo) ||
+             mod->hasBroughtRegion(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleRegionInImports(name.value, reqInfo).first) {
-    return new IR::PrerunValue(IR::TypedType::get(mod->getRegion(name.value, reqInfo)));
-  } else if (mod->hasGlobalEntity(name.value) ||
+    auto resRegion = mod->getRegion(name.value, reqInfo);
+    resRegion->addMention(name.range);
+    return new IR::PrerunValue(IR::TypedType::get(resRegion));
+  } else if (mod->hasGlobalEntity(name.value, reqInfo) ||
              mod->hasBroughtGlobalEntity(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGlobalEntityInImports(name.value, reqInfo).first) {
     auto* gEnt = mod->getGlobalEntity(name.value, reqInfo);
+    gEnt->addMention(name.range);
     if ((!gEnt->isVariable()) && gEnt->hasInitialValue()) {
       return new IR::PrerunValue(gEnt->getInitialValue(), gEnt->getType());
     } else {
       if (gEnt->isVariable()) {
         ctx->Error("Global entity " + ctx->highlightError(gEnt->getFullName()) +
-                       " has variability, so it cannot be used in constant expressions",
-                   fileRange);
+                       " has variability, so it cannot be used in prerun expressions",
+                   name.range);
       } else {
         ctx->Error("Global entity " + ctx->highlightError(gEnt->getFullName()) +
-                       " doesn't have an initial value that is a constant expression",
-                   fileRange);
+                       " doesn't have an initial value that is a prerun expressions",
+                   name.range);
       }
     }
     ctx->Error(ctx->highlightError(name.value) + " is a global entity.", name.range);
-  } else if (mod->hasGenericCoreType(name.value) ||
+  } else if (mod->hasGenericCoreType(name.value, reqInfo) ||
              mod->hasBroughtGenericCoreType(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericCoreTypeInImports(name.value, reqInfo).first) {
     ctx->Error(ctx->highlightError(name.value) +
-                   " is a generic core type and cannot be used as a value or type in constant expressions",
-               fileRange);
-  } else if (mod->hasGenericTypeDef(name.value) ||
+                   " is a generic core type and cannot be used as a value or type in prerun expressions",
+               name.range);
+  } else if (mod->hasGenericTypeDef(name.value, reqInfo) ||
              mod->hasBroughtGenericTypeDef(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericTypeDefInImports(name.value, reqInfo).first) {
     ctx->Error(ctx->highlightError(name.value) +
-                   " is a generic type definition and cannot be used as a value or type in constant expressions",
-               fileRange);
-  } else if (mod->hasGenericFunction(name.value) ||
+                   " is a generic type definition and cannot be used as a value or type in prerun expressions",
+               name.range);
+  } else if (mod->hasGenericFunction(name.value, reqInfo) ||
              mod->hasBroughtGenericFunction(name.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleGenericFunctionInImports(name.value, reqInfo).first) {
     ctx->Error(ctx->highlightError(name.value) +
-                   " is a generic function and cannot be used as a value in constant expressions",
+                   " is a generic function and cannot be used as a value or type in prerun expressions",
                fileRange);
   }
   ctx->Error("No constant entity named " + ctx->highlightError(name.value) + " found", name.range);

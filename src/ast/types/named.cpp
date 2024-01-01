@@ -51,17 +51,17 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);
-      if (mod->hasLib(split.value)) {
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
         mod = mod->getLib(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
-        }
         mod->addMention(split.range);
-      } else if (mod->hasBox(split.value)) {
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
         mod = mod->getBox(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", split.range);
-        }
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
         mod->addMention(split.range);
       } else {
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
@@ -70,7 +70,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       }
     }
   }
-  if (mod->hasOpaqueType(entityName.value) ||
+  if (mod->hasOpaqueType(entityName.value, reqInfo) ||
       mod->hasBroughtOpaqueType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
       mod->hasAccessibleOpaqueTypeInImports(entityName.value, reqInfo).first) {
     auto* oTy = mod->getOpaqueType(entityName.value, reqInfo);
@@ -90,7 +90,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     oTy->addMention(entityName.range);
     return oTy;
-  } else if (mod->hasCoreType(entityName.value) ||
+  } else if (mod->hasCoreType(entityName.value, reqInfo) ||
              mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
     auto* cTy = mod->getCoreType(entityName.value, reqInfo);
@@ -101,7 +101,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     cTy->addMention(entityName.range);
     return cTy;
-  } else if (mod->hasTypeDef(entityName.value) ||
+  } else if (mod->hasTypeDef(entityName.value, reqInfo) ||
              mod->hasBroughtTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
     auto* dTy = mod->getTypeDef(entityName.value, reqInfo);
@@ -112,7 +112,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     dTy->addMention(entityName.range);
     return dTy;
-  } else if (mod->hasMixType(entityName.value) ||
+  } else if (mod->hasMixType(entityName.value, reqInfo) ||
              mod->hasBroughtMixType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
     auto* mTy = mod->getMixType(entityName.value, reqInfo);
@@ -123,7 +123,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     mTy->addMention(entityName.range);
     return mTy;
-  } else if (mod->hasChoiceType(entityName.value) ||
+  } else if (mod->hasChoiceType(entityName.value, reqInfo) ||
              mod->hasBroughtChoiceType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
     auto* chTy = mod->getChoiceType(entityName.value, reqInfo);
@@ -134,7 +134,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
     chTy->addMention(entityName.range);
     return chTy;
-  } else if (mod->hasRegion(entityName.value) ||
+  } else if (mod->hasRegion(entityName.value, reqInfo) ||
              mod->hasBroughtRegion(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
              mod->hasAccessibleRegionInImports(entityName.value, reqInfo).first) {
     auto* reg = mod->getRegion(entityName.value, reqInfo);

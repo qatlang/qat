@@ -27,16 +27,18 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);
-      if (mod->hasLib(split.value)) {
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
         mod = mod->getLib(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Lib " + ctx->highlightError(mod->getFullName()) + " is not accessible here", fileRange);
-        }
-      } else if (mod->hasBox(split.value)) {
+        mod->addMention(split.range);
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
         mod = mod->getBox(split.value, reqInfo);
-        if (!mod->getVisibility().isAccessible(reqInfo)) {
-          ctx->Error("Box " + ctx->highlightError(mod->getFullName()) + " is not accessible here", fileRange);
-        }
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, reqInfo) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
+        mod->addMention(split.range);
       } else {
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
                        ctx->highlightError(mod->getFullName()),
@@ -46,10 +48,10 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
   }
   auto* oldFn = ctx->getActiveFunction();
   auto* curr  = ctx->hasActiveFunction() ? ctx->getActiveFunction()->getBlock() : nullptr;
-  if (mod->hasGenericFunction(entityName.value) ||
+  if (mod->hasGenericFunction(entityName.value, reqInfo) ||
       mod->hasBroughtGenericFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
-      mod->hasAccessibleGenericFunctionInImports(entityName.value, ctx->getAccessInfo()).first) {
-    auto* genericFn = mod->getGenericFunction(entityName.value, ctx->getAccessInfo());
+      mod->hasAccessibleGenericFunctionInImports(entityName.value, reqInfo).first) {
+    auto* genericFn = mod->getGenericFunction(entityName.value, reqInfo);
     if (!genericFn->getVisibility().isAccessible(ctx->getAccessInfo())) {
       auto fullName = Identifier::fullName(names);
       ctx->Error("Generic function " + ctx->highlightError(fullName.value) + " is not accessible here", fullName.range);

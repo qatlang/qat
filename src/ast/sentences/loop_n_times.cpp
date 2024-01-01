@@ -29,20 +29,22 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
     }
   }
   auto* limit   = count->emit(ctx);
-  auto* countTy = limit->getType();
+  auto* countTy = limit->getType()->isReference() ? limit->getType()->asReference()->getSubType() : limit->getType();
+  auto* originalLimitTy = countTy;
   limit->loadImplicitPointer(ctx->builder);
-  if (limit->getType()->isUnsignedInteger() ||
-      (limit->getType()->isReference() && limit->getType()->asReference()->getSubType()->isUnsignedInteger()) ||
-      limit->getType()->isInteger() ||
-      (limit->getType()->isReference() && limit->getType()->asReference()->getSubType()->isInteger())) {
+  if (countTy->isUnsignedInteger() || countTy->isInteger() ||
+      (countTy->isCType() &&
+       (countTy->asCType()->getSubType()->isInteger() || countTy->asCType()->getSubType()->isUnsignedInteger()))) {
+    if (countTy->isCType()) {
+      countTy = countTy->asCType()->getSubType();
+    }
     auto* llCount = limit->getLLVM();
     if (limit->getType()->isReference()) {
-      countTy = limit->getType()->asReference()->getSubType();
       llCount = ctx->builder.CreateLoad(countTy->getLLVMType(), llCount);
     }
-    auto  uniq = hasTag() ? tag.value().value : utils::unique_id();
-    auto* loopIndex =
-        ctx->getActiveFunction()->getBlock()->newValue(uniq, countTy, false, tag.has_value() ? tag->range : fileRange);
+    auto  uniq      = hasTag() ? tag.value().value : utils::unique_id();
+    auto* loopIndex = ctx->getActiveFunction()->getBlock()->newValue(uniq, originalLimitTy, false,
+                                                                     tag.has_value() ? tag->range : fileRange);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u), loopIndex->getAlloca());
     auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
     SHOW("loop times true block " << ctx->getActiveFunction()->getFullName() << "." << trueBlock->getName())

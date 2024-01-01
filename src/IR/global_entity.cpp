@@ -11,6 +11,8 @@ GlobalEntity::GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type,
   parent->globalEntities.push_back(this);
 }
 
+IR::QatModule* GlobalEntity::getParent() const { return parent; }
+
 Identifier GlobalEntity::getName() const { return name; }
 
 String GlobalEntity::getFullName() const { return parent->getFullNameWithChild(name.value); }

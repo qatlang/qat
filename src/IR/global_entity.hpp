@@ -30,7 +30,8 @@ public:
 
   useit Identifier getName() const;
   useit String     getFullName() const;
-  useit bool       hasInitialValue() const;
+  useit IR::QatModule* getParent() const;
+  useit bool           hasInitialValue() const;
   useit llvm::Constant*       getInitialValue() const;
   useit const VisibilityInfo& getVisibility() const;
   useit u64                   getLoadCount() const;

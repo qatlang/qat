@@ -5,7 +5,10 @@ namespace qat::ast {
 
 void emitSentences(const Vec<Sentence*>& sentences, IR::Context* ctx) {
   for (auto* snt : sentences) {
-    SHOW("Sentence nodeType is: " << (int)snt->nodeType())
+    if (ctx->getActiveFunction()->getBlock()->fileRange) {
+      ctx->getActiveFunction()->getBlock()->fileRange =
+          ctx->getActiveFunction()->getBlock()->fileRange.value().trimTo(snt->fileRange.start);
+    }
     auto* irVal = snt->emit(ctx);
     if (irVal && irVal->getLLVM() && IR::isTerminatorInstruction(irVal->getLLVM())) {
       break;

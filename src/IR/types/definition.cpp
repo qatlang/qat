@@ -155,9 +155,21 @@ DefinitionType* GenericDefinitionType::fillGenerics(Vec<GenericToFill*>& types, 
     }
   }
   IR::fillGenerics(ctx, generics, types, range);
+  Vec<IR::GenericParameter*> genParams;
+  for (auto genAb : generics) {
+    genParams.push_back(genAb->toIRGenericType());
+  }
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   defineTypeDef->setVariantName(variantName);
-  ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::typeDefinition, range}, true);
+  ctx->addActiveGeneric(
+      IR::GenericEntityMarker{
+          variantName,
+          IR::GenericEntityType::typeDefinition,
+          range,
+          0u,
+          genParams,
+      },
+      true);
   (void)defineTypeDef->define(ctx);
   auto* dTy = defineTypeDef->getDefinition();
   variants.push_back(GenericVariant<DefinitionType>(dTy, types));

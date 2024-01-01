@@ -17,6 +17,7 @@
 #include "lld/Common/Driver.h"
 #include "types/definition.hpp"
 #include "llvm/IR/LLVMContext.h"
+#include <set>
 #include <vector>
 
 LLD_HAS_DRIVER(elf)
@@ -189,6 +190,8 @@ public:
 
   static Vec<QatModule*> allModules;
 
+  static void clearAll();
+
   useit static bool       hasFileModule(const fs::path& fPath);
   useit static bool       hasFolderModule(const fs::path& fPath);
   useit static QatModule* getFileModule(const fs::path& fPath);
@@ -322,6 +325,8 @@ public:
   useit bool hasMainFn() const;
   void       setHasMainFn();
 
+  useit std::set<String> getAllObjectPaths() const;
+
   void addFilesystemBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange);
   Vec<Pair<QatModule*, FileRange>> const& getFilesystemBroughtMentions() const;
 
@@ -333,7 +338,7 @@ public:
 
   // LIB
 
-  useit bool hasLib(const String& name) const;
+  useit bool hasLib(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtLib(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleLibInImports(const String& name, const AccessInfo& reqInfo) const;
   useit QatModule*         getLib(const String& name, const AccessInfo& reqInfo);
@@ -342,7 +347,7 @@ public:
 
   // BOX
 
-  useit bool       hasBox(const String& name) const;
+  useit bool       hasBox(const String& name, AccessInfo reqInfo) const;
   useit bool       hasBroughtBox(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit QatModule* getBox(const String& name, const AccessInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleBoxInImports(const String& name, const AccessInfo& reqInfo) const;
@@ -351,76 +356,76 @@ public:
 
   // FUNCTION
 
-  useit bool      hasFunction(const String& name) const;
+  useit bool      hasFunction(const String& name, AccessInfo reqInfo) const;
   useit bool      hasBroughtFunction(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Function* getFunction(const String& name, const AccessInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleFunctionInImports(const String& name, const AccessInfo& reqInfo) const;
 
   // GENERIC FUNCTIONS
 
-  useit bool             hasGenericFunction(const String& name) const;
+  useit bool             hasGenericFunction(const String& name, AccessInfo reqInfo) const;
   useit bool             hasBroughtGenericFunction(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit GenericFunction* getGenericFunction(const String& name, const AccessInfo& reqInfo);
   useit Pair<bool, String> hasAccessibleGenericFunctionInImports(const String& name, const AccessInfo& reqInfo) const;
 
   // REGION
 
-  useit bool hasRegion(const String& name) const;
+  useit bool hasRegion(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtRegion(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleRegionInImports(const String& name, const AccessInfo& reqInfo) const;
   useit Region*            getRegion(const String& name, const AccessInfo& reqInfo) const;
 
   // OPAQUE TYPES
 
-  useit bool hasOpaqueType(const String& name) const;
+  useit bool hasOpaqueType(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtOpaqueType(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleOpaqueTypeInImports(const String& name, const AccessInfo& reqInfo) const;
   useit OpaqueType*        getOpaqueType(const String& name, const AccessInfo& reqInfo) const;
 
   // CORE TYPE
 
-  useit bool hasCoreType(const String& name) const;
+  useit bool hasCoreType(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtCoreType(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleCoreTypeInImports(const String& name, const AccessInfo& reqInfo) const;
   useit CoreType*          getCoreType(const String& name, const AccessInfo& reqInfo) const;
 
   // MIX TYPE
 
-  useit bool hasMixType(const String& name) const;
+  useit bool hasMixType(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtMixType(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleMixTypeInImports(const String& name, const AccessInfo& reqInfo) const;
   useit MixType*           getMixType(const String& name, const AccessInfo& reqInfo) const;
 
   // CHOICE TYPE
 
-  useit bool hasChoiceType(const String& name) const;
+  useit bool hasChoiceType(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtChoiceType(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleChoiceTypeInImports(const String& name, const AccessInfo& reqInfo) const;
   useit ChoiceType*        getChoiceType(const String& name, const AccessInfo& reqInfo) const;
 
   // GENERIC CORE TYPES
 
-  useit bool hasGenericCoreType(const String& name) const;
+  useit bool hasGenericCoreType(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtGenericCoreType(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleGenericCoreTypeInImports(const String& name, const AccessInfo& reqInfo) const;
   useit GenericCoreType*   getGenericCoreType(const String& name, const AccessInfo& reqInfo);
 
   // GENERIC CORE TYPES
 
-  useit bool hasGenericTypeDef(const String& name) const;
+  useit bool hasGenericTypeDef(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtGenericTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleGenericTypeDefInImports(const String& name, const AccessInfo& reqInfo) const;
   useit GenericDefinitionType* getGenericTypeDef(const String& name, const AccessInfo& reqInfo);
 
   // TYPEDEF
-  useit bool hasTypeDef(const String& name) const;
+  useit bool hasTypeDef(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleTypeDefInImports(const String& name, const AccessInfo& reqInfo) const;
   useit DefinitionType*    getTypeDef(const String& name, const AccessInfo& reqInfo) const;
 
   // GLOBAL ENTITY
 
-  useit bool hasGlobalEntity(const String& name) const;
+  useit bool hasGlobalEntity(const String& name, AccessInfo reqInfo) const;
   useit bool hasBroughtGlobalEntity(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> hasAccessibleGlobalEntityInImports(const String& name, const AccessInfo& reqInfo) const;
   useit GlobalEntity*      getGlobalEntity(const String& name, const AccessInfo& reqInfo) const;

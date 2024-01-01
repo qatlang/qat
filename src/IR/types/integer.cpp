@@ -19,7 +19,7 @@ IntegerType::IntegerType(u64 _bitWidth, IR::Context* _ctx) : bitWidth(_bitWidth)
 }
 
 IntegerType* IntegerType::get(u64 bits, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isInteger()) {
       if (typ->asInteger()->isBitWidth(bits)) {
         return typ->asInteger();

@@ -39,7 +39,7 @@ bool StringSliceType::isPacked() const { return isPack; }
 bool StringSliceType::isTypeSized() const { return true; }
 
 StringSliceType* StringSliceType::get(IR::Context* ctx, bool isPacked) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::stringSlice && (((StringSliceType*)typ)->isPack = isPacked)) {
       return (StringSliceType*)typ;
     }

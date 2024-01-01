@@ -5,6 +5,7 @@
 #include "../ast/type_definition.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
+#include "brought.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
 #include "link_names.hpp"
@@ -451,7 +452,8 @@ void QatModule::closeSubmodule() { active = nullptr; }
 
 bool QatModule::hasLib(const String& name, AccessInfo reqInfo) const {
   for (auto* sub : submodules) {
-    if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name)) {
+    if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name) &&
+        (sub->getVisibility().isAccessible(reqInfo))) {
       return true;
     } else if (!sub->shouldPrefixName()) {
       if (sub->hasLib(name, reqInfo) || sub->hasBroughtLib(name, reqInfo) ||
@@ -467,12 +469,16 @@ bool QatModule::hasBroughtLib(const String& name, Maybe<AccessInfo> reqInfo) con
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::lib) {
-      if (!brought.isNamed()) {
-        if (bMod->shouldPrefixName() && (bMod->getName() == name)) {
-          return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-        }
-      } else if (brought.getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+      auto result = false;
+      if (brought.isNamed()) {
+        result = (brought.name.value().value == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      } else {
+        result = (brought.entity->getName() == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      }
+      if (result) {
+        return true;
       }
     }
   }
@@ -499,7 +505,8 @@ Pair<bool, String> QatModule::hasAccessibleLibInImports( // NOLINT(misc-no-recur
 
 QatModule* QatModule::getLib(const String& name, const AccessInfo& reqInfo) {
   for (auto* sub : submodules) {
-    if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name)) {
+    if ((sub->moduleType == ModuleType::lib) && (sub->getName() == name) &&
+        (sub->getVisibility().isAccessible(reqInfo))) {
       return sub;
     } else {
       if (!sub->shouldPrefixName()) {
@@ -513,12 +520,15 @@ QatModule* QatModule::getLib(const String& name, const AccessInfo& reqInfo) {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::lib) {
-      if (!brought.isNamed()) {
-        if (((bMod->shouldPrefixName() && (bMod->getName() == name)) || (brought.getName().value == name)) &&
-            brought.getVisibility().isAccessible(reqInfo)) {
-          return bMod;
-        }
-      } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+      auto result = false;
+      if (brought.isNamed()) {
+        result = (brought.name.value().value == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      } else {
+        result = (brought.entity->getName() == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      }
+      if (result) {
         return bMod;
       }
     }
@@ -550,7 +560,8 @@ void QatModule::closeLib() { closeSubmodule(); }
 
 bool QatModule::hasBox(const String& name, AccessInfo reqInfo) const {
   for (auto* sub : submodules) {
-    if ((sub->moduleType == ModuleType::box) && (sub->getName() == name)) {
+    if ((sub->moduleType == ModuleType::box) && (sub->getName() == name) &&
+        sub->getVisibility().isAccessible(reqInfo)) {
       return true;
     } else if (!sub->shouldPrefixName()) {
       if (sub->hasBox(name, reqInfo) || sub->hasBroughtBox(name, reqInfo) ||
@@ -566,12 +577,16 @@ bool QatModule::hasBroughtBox(const String& name, Maybe<AccessInfo> reqInfo) con
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::box) {
-      if (!brought.isNamed()) {
-        if ((bMod->shouldPrefixName() && (bMod->getName() == name)) || (brought.getName().value == name)) {
-          return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-        }
-      } else if (brought.getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+      auto result = false;
+      if (brought.isNamed()) {
+        result = (brought.name.value().value == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      } else {
+        result = (brought.entity->getName() == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      }
+      if (result) {
+        return true;
       }
     }
   }
@@ -597,7 +612,8 @@ Pair<bool, String> QatModule::hasAccessibleBoxInImports(const String& name, cons
 
 QatModule* QatModule::getBox(const String& name, const AccessInfo& reqInfo) {
   for (auto* sub : submodules) {
-    if ((sub->moduleType == ModuleType::box) && (sub->getName() == name)) {
+    if ((sub->moduleType == ModuleType::box) && (sub->getName() == name) &&
+        sub->getVisibility().isAccessible(reqInfo)) {
       return sub;
     } else if (!sub->shouldPrefixName()) {
       if (sub->hasBox(name, reqInfo) || sub->hasBroughtBox(name, reqInfo) ||
@@ -609,12 +625,15 @@ QatModule* QatModule::getBox(const String& name, const AccessInfo& reqInfo) {
   for (const auto& brought : broughtModules) {
     auto* bMod = brought.get();
     if (bMod->moduleType == ModuleType::box) {
-      if (!brought.isNamed()) {
-        if (((bMod->shouldPrefixName() && (bMod->getName() == name)) || (brought.getName().value == name)) &&
-            brought.getVisibility().isAccessible(reqInfo)) {
-          return bMod;
-        }
-      } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+      auto result = false;
+      if (brought.isNamed()) {
+        result = (brought.name.value().value == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      } else {
+        result = (brought.entity->getName() == name) && brought.visibility.isAccessible(reqInfo) &&
+                 brought.entity->getVisibility().isAccessible(reqInfo);
+      }
+      if (result) {
         return bMod;
       }
     }
@@ -625,8 +644,9 @@ QatModule* QatModule::getBox(const String& name, const AccessInfo& reqInfo) {
       if (!bMod->shouldPrefixName()) {
         if (bMod->hasBox(name, reqInfo) || bMod->hasBroughtBox(name, reqInfo) ||
             bMod->hasAccessibleBoxInImports(name, reqInfo).first) {
-          if (bMod->getBox(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
-            return bMod->getBox(name, reqInfo);
+          auto resBox = bMod->getBox(name, reqInfo);
+          if (resBox->getVisibility().isAccessible(reqInfo)) {
+            return resBox;
           }
         }
       }
@@ -655,15 +675,15 @@ void QatModule::closeBox() { closeSubmodule(); }
 
 bool QatModule::hasBroughtModule(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtModules) {
-    auto* bMod = brought.get();
-    if (!brought.isNamed()) {
-      if (bMod->shouldPrefixName() && (bMod->getName() == name)) {
-        SHOW("Found brought module with name")
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      SHOW("Found named brought module")
-      SHOW("Brought module " << bMod)
+    auto result = false;
+    if (brought.isNamed()) {
+      result = (brought.name.value().value == name) && brought.visibility.isAccessible(reqInfo) &&
+               brought.entity->getVisibility().isAccessible(reqInfo);
+    } else {
+      result = (brought.entity->getName() == name) && brought.visibility.isAccessible(reqInfo) &&
+               brought.entity->getVisibility().isAccessible(reqInfo);
+    }
+    if (result) {
       return true;
     }
   }
@@ -695,12 +715,13 @@ QatModule* QatModule::getBroughtModule(const String& name, const AccessInfo& req
         return bMod;
       } else if (!bMod->shouldPrefixName()) {
         if (bMod->hasBroughtModule(name, reqInfo) || bMod->hasAccessibleBroughtModuleInImports(name, reqInfo).first) {
-          if (bMod->getBroughtModule(name, reqInfo)->getVisibility().isAccessible(reqInfo)) {
-            return bMod->getBroughtModule(name, reqInfo);
+          auto resMod = bMod->getBroughtModule(name, reqInfo);
+          if (resMod->getVisibility().isAccessible(reqInfo)) {
+            return resMod;
           }
         }
       }
-    } else if (brought.getName().value == name) {
+    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
       return bMod;
     }
   }
@@ -804,12 +825,7 @@ bool QatModule::hasFunction(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtFunction(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtFunctions) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if (bFn->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return true;
     }
   }
@@ -842,12 +858,7 @@ Function* QatModule::getFunction(const String& name, const AccessInfo& reqInfo) 
     }
   }
   for (const auto& brought : broughtFunctions) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if ((bFn->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return bFn;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -889,13 +900,8 @@ bool QatModule::hasGenericFunction(const String& name, AccessInfo reqInfo) const
 
 bool QatModule::hasBroughtGenericFunction(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGenericFunctions) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if (bFn->getName().value == name) {
-        return brought.getVisibility().isAccessible(reqInfo.value());
-      }
-    } else if (brought.getName().value == name) {
-      return brought.getVisibility().isAccessible(reqInfo.value());
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -934,12 +940,7 @@ GenericFunction* QatModule::getGenericFunction(const String& name, const AccessI
     }
   }
   for (const auto& brought : broughtGenericFunctions) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if ((bFn->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return bFn;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -980,13 +981,8 @@ bool QatModule::hasRegion(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtRegion(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtRegions) {
-    if (!brought.isNamed()) {
-      auto* reg = brought.get();
-      if (reg->getName().value == name) {
-        return brought.getVisibility().isAccessible(reqInfo.value());
-      }
-    } else if (brought.getName().value == name) {
-      return brought.getVisibility().isAccessible(reqInfo.value());
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1022,12 +1018,7 @@ Region* QatModule::getRegion(const String& name, const AccessInfo& reqInfo) cons
     }
   }
   for (const auto& brought : broughtRegions) {
-    if (!brought.isNamed()) {
-      auto* reg = brought.get();
-      if ((reg->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return reg;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1069,13 +1060,8 @@ bool QatModule::hasOpaqueType(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtOpaqueType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtOpaqueTypes) {
-    if (!brought.isNamed()) {
-      auto* cType = brought.get();
-      if (cType->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1112,12 +1098,7 @@ OpaqueType* QatModule::getOpaqueType(const String& name, const AccessInfo& reqIn
     }
   }
   for (const auto& brought : broughtOpaqueTypes) {
-    if (!brought.isNamed()) {
-      auto* opaque = brought.get();
-      if (opaque->getName().value == name) {
-        return opaque;
-      }
-    } else if (brought.getName().value == name) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1158,13 +1139,8 @@ bool QatModule::hasCoreType(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtCoreType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtCoreTypes) {
-    if (!brought.isNamed()) {
-      auto* cType = brought.get();
-      if (cType->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1201,12 +1177,7 @@ CoreType* QatModule::getCoreType(const String& name, const AccessInfo& reqInfo) 
     }
   }
   for (const auto& brought : broughtCoreTypes) {
-    if (!brought.isNamed()) {
-      auto* coreType = brought.get();
-      if (coreType->getName().value == name) {
-        return coreType;
-      }
-    } else if (brought.getName().value == name) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1248,13 +1219,8 @@ bool QatModule::hasMixType(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtMixType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtMixTypes) {
-    if (!brought.isNamed()) {
-      auto* uType = brought.get();
-      if (uType->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1290,12 +1256,7 @@ MixType* QatModule::getMixType(const String& name, const AccessInfo& reqInfo) co
     }
   }
   for (const auto& brought : broughtMixTypes) {
-    if (!brought.isNamed()) {
-      auto* mixTy = brought.get();
-      if ((mixTy->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return mixTy;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1337,13 +1298,8 @@ bool QatModule::hasChoiceType(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtChoiceType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtChoiceTypes) {
-    if (!brought.isNamed()) {
-      auto* uType = brought.get();
-      if (uType->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1380,12 +1336,7 @@ ChoiceType* QatModule::getChoiceType(const String& name, const AccessInfo& reqIn
     }
   }
   for (const auto& brought : broughtChoiceTypes) {
-    if (!brought.isNamed()) {
-      auto* choiceTy = brought.get();
-      if ((choiceTy->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return choiceTy;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1429,13 +1380,8 @@ bool QatModule::hasGenericCoreType(const String& name, AccessInfo reqInfo) const
 
 bool QatModule::hasBroughtGenericCoreType(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGenericCoreTypes) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if (bFn->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1473,12 +1419,7 @@ GenericCoreType* QatModule::getGenericCoreType(const String& name, const AccessI
     }
   }
   for (const auto& brought : broughtGenericCoreTypes) {
-    if (!brought.isNamed()) {
-      auto* bCTy = brought.get();
-      if ((bCTy->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return bCTy;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1519,13 +1460,8 @@ bool QatModule::hasTypeDef(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtTypeDefs) {
-    if (!brought.isNamed()) {
-      auto* tDef = brought.get();
-      if (tDef->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1561,12 +1497,7 @@ DefinitionType* QatModule::getTypeDef(const String& name, const AccessInfo& reqI
     }
   }
   for (const auto& brought : broughtTypeDefs) {
-    if (!brought.isNamed()) {
-      auto* tDef = brought.get();
-      if ((tDef->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return tDef;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1607,13 +1538,8 @@ bool QatModule::hasGenericTypeDef(const String& name, AccessInfo reqInfo) const 
 
 bool QatModule::hasBroughtGenericTypeDef(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGenericTypeDefinitions) {
-    if (!brought.isNamed()) {
-      auto* bFn = brought.get();
-      if (bFn->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1652,12 +1578,7 @@ GenericDefinitionType* QatModule::getGenericTypeDef(const String& name, const Ac
     }
   }
   for (const auto& brought : broughtGenericTypeDefinitions) {
-    if (!brought.isNamed()) {
-      auto* bDTy = brought.get();
-      if ((bDTy->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return bDTy;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
       return brought.get();
     }
   }
@@ -1698,13 +1619,8 @@ bool QatModule::hasGlobalEntity(const String& name, AccessInfo reqInfo) const {
 
 bool QatModule::hasBroughtGlobalEntity(const String& name, Maybe<AccessInfo> reqInfo) const {
   for (const auto& brought : broughtGlobalEntities) {
-    if (!brought.isNamed()) {
-      auto* bGlobal = brought.get();
-      if (bGlobal->getName().value == name) {
-        return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
-      }
-    } else if (brought.getName().value == name) {
-      return reqInfo.has_value() ? brought.getVisibility().isAccessible(reqInfo.value()) : true;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
     }
   }
   return false;
@@ -1742,13 +1658,8 @@ GlobalEntity* QatModule::getGlobalEntity(const String&     name, // NOLINT(misc-
     }
   }
   for (const auto& brought : broughtGlobalEntities) {
-    auto* bGlobal = brought.get();
-    if (!brought.isNamed()) {
-      if ((bGlobal->getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-        return bGlobal;
-      }
-    } else if ((brought.getName().value == name) && brought.getVisibility().isAccessible(reqInfo)) {
-      return bGlobal;
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return brought.get();
     }
   }
   for (const auto& brought : broughtModules) {

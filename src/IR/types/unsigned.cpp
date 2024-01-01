@@ -16,7 +16,7 @@ UnsignedType::UnsignedType(u64 _bitWidth, IR::Context* _ctx, bool _isBool)
 }
 
 UnsignedType* UnsignedType::get(u64 bits, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isUnsignedInteger()) {
       if (typ->asUnsignedInteger()->isBitWidth(bits) && !typ->asUnsignedInteger()->isBool) {
         return typ->asUnsignedInteger();
@@ -27,7 +27,7 @@ UnsignedType* UnsignedType::get(u64 bits, IR::Context* ctx) {
 }
 
 UnsignedType* UnsignedType::getBool(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isUnsignedInteger()) {
       if (typ->asUnsignedInteger()->isBool) {
         return typ->asUnsignedInteger();

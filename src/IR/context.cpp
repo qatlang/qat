@@ -76,7 +76,7 @@ Context::Context() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(
 
 void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID) {
   auto reqInfo = getAccessInfo();
-  if (getActiveModule()->hasOpaqueType(name.value)) {
+  if (getActiveModule()->hasOpaqueType(name.value, reqInfo)) {
     auto* opq = getActiveModule()->getOpaqueType(name.value, getAccessInfo());
     if (opq->isGeneric()) {
       if (genericID.has_value()) {
@@ -97,7 +97,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasCoreType(name.value)) {
+  } else if (getActiveModule()->hasCoreType(name.value, reqInfo)) {
     Error("A core type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -112,7 +112,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasGenericCoreType(name.value)) {
+  } else if (getActiveModule()->hasGenericCoreType(name.value, reqInfo)) {
     if (genericID.has_value() &&
         getActiveModule()->getGenericCoreType(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
@@ -136,7 +136,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasMixType(name.value)) {
+  } else if (getActiveModule()->hasMixType(name.value, reqInfo)) {
     Error("A mix type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -151,7 +151,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasChoiceType(name.value)) {
+  } else if (getActiveModule()->hasChoiceType(name.value, reqInfo)) {
     Error("A choice type named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -166,7 +166,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasTypeDef(name.value)) {
+  } else if (getActiveModule()->hasTypeDef(name.value, reqInfo)) {
     Error("A type definition named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -182,7 +182,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasFunction(name.value)) {
+  } else if (getActiveModule()->hasFunction(name.value, reqInfo)) {
     Error("A function named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -197,7 +197,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasGenericFunction(name.value)) {
+  } else if (getActiveModule()->hasGenericFunction(name.value, reqInfo)) {
     if (genericID.has_value() &&
         getActiveModule()->getGenericFunction(name.value, getAccessInfo())->getID() == genericID.value()) {
       return;
@@ -225,7 +225,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasGlobalEntity(name.value)) {
+  } else if (getActiveModule()->hasGlobalEntity(name.value, reqInfo)) {
     Error("A global entity named " + highlightError(name.value) +
               " exists in this module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
@@ -241,7 +241,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasRegion(name.value)) {
+  } else if (getActiveModule()->hasRegion(name.value, reqInfo)) {
     Error("A region named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -255,7 +255,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasBox(name.value)) {
+  } else if (getActiveModule()->hasBox(name.value, reqInfo)) {
     Error("A box named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -269,7 +269,7 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
-  } else if (getActiveModule()->hasLib(name.value)) {
+  } else if (getActiveModule()->hasLib(name.value, reqInfo)) {
     Error("A lib named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
           name.range);
@@ -296,15 +296,23 @@ llvm::GlobalValue::LinkageTypes Context::getGlobalLinkageForVisibility(Visibilit
     case VisibilityKind::file:
     case VisibilityKind::box:
     case VisibilityKind::lib: {
-      if (getMod()->getID() == visibInfo.value) {
-        if (!getMod()->hasSubmodules()) {
+      if (visibInfo.moduleVal) {
+        if (!visibInfo.moduleVal->hasSubmodules()) {
           return llvm::GlobalValue::LinkageTypes::InternalLinkage;
         }
       }
       return llvm::GlobalValue::LinkageTypes::ExternalLinkage;
     }
-    case VisibilityKind::parent:
-      return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+    case VisibilityKind::parent: {
+      if (visibInfo.typePtr) {
+        return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+      } else if (visibInfo.moduleVal) {
+        if (!visibInfo.moduleVal->hasSubmodules()) {
+          return llvm::GlobalValue::LinkageTypes::InternalLinkage;
+        }
+      }
+      return llvm::GlobalValue::LinkageTypes::ExternalLinkage;
+    }
   }
 }
 
@@ -314,23 +322,27 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
     switch (spec->kind) {
       case VisibilityKind::box: {
         if (getMod()->hasClosestParentBox()) {
-          return VisibilityInfo::box(getMod()->getClosestParentBox()->getFullName());
+          return VisibilityInfo::box(getMod()->getClosestParentBox());
         } else {
           Error("The current module does not have a parent box", spec->range);
         }
       }
       case VisibilityKind::lib: {
         if (getMod()->hasClosestParentLib()) {
-          return VisibilityInfo::lib(getMod()->getClosestParentLib()->getFullName());
+          return VisibilityInfo::lib(getMod()->getClosestParentLib());
         } else {
           Error("The current module does not have a parent lib", spec->range);
         }
       }
       case VisibilityKind::file: {
-        return VisibilityInfo::file(getMod()->getFilePath());
+        return VisibilityInfo::file(getMod()->getParentFile());
       }
       case VisibilityKind::folder: {
-        return VisibilityInfo::folder(fs::path(getMod()->getFilePath()).parent_path().string());
+        auto folderPath = fs::canonical(fs::path(getMod()->getFilePath()).parent_path());
+        if (!getMod()->hasFolderModule(folderPath)) {
+          Error("Could not find folder module with path: " + highlightError(folderPath.string()), spec->range);
+        }
+        return VisibilityInfo::folder(getMod()->getFolderModule(folderPath));
       }
       case VisibilityKind::type: {
         if (hasActiveType()) {
@@ -359,16 +371,16 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
       SHOW("No active type")
       switch (getMod()->getModuleType()) {
         case ModuleType::box: {
-          return VisibilityInfo::box(getMod()->getFullName());
+          return VisibilityInfo::box(getMod());
         }
         case ModuleType::file: {
-          return VisibilityInfo::file(getMod()->getFilePath());
+          return VisibilityInfo::file(getMod());
         }
         case ModuleType::lib: {
-          return VisibilityInfo::lib(getMod()->getFullName());
+          return VisibilityInfo::lib(getMod());
         }
         case ModuleType::folder: {
-          return VisibilityInfo::folder(fs::path(getMod()->getParentFile()->getFilePath()).parent_path().string());
+          return VisibilityInfo::folder(getMod());
         }
       }
     }
@@ -378,19 +390,8 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
 
 AccessInfo Context::getAccessInfo() const {
   // TODO - Consider changing string value to pointer of the actual entities
-  Maybe<String>       lib  = None;
-  Maybe<String>       box  = None;
+  IR::QatModule*      mod  = getActiveModule();
   Maybe<IR::QatType*> type = None;
-  String              file;
-  if (getActiveModule()) {
-    file = getActiveModule()->getParentFile()->getFilePath();
-    if (getActiveModule()->hasClosestParentBox()) {
-      box = getActiveModule()->getClosestParentBox()->getFullName();
-    }
-    if (getActiveModule()->hasClosestParentLib()) {
-      lib = getActiveModule()->getClosestParentLib()->getFullName();
-    }
-  }
   if (hasActiveType()) {
     type = getActiveType();
   } else if (hasActiveFunction()) {
@@ -398,7 +399,7 @@ AccessInfo Context::getAccessInfo() const {
       type = ((MemberFunction*)getActiveFunction())->getParentType();
     }
   }
-  return {lib, box, file, type};
+  return {mod, type};
 }
 
 String Context::highlightError(const String& message, const char* color) {
@@ -446,8 +447,12 @@ void Context::writeJsonResult(bool status) const {
       ._("linkingTime", clangTime)
       ._("binarySizes", binarySizesJson)
       ._("hasMain", hasMain);
-  std::fstream output;
-  output.open((cli::Config::get()->getOutputPath() / "QatCompilationResult.json").string().c_str(), std::ios_base::out);
+  std::ofstream output;
+  auto          outPath = cli::Config::get()->getOutputPath() / "QatCompilationResult.json";
+  if (fs::exists(outPath)) {
+    fs::remove(outPath);
+  }
+  output.open(outPath, std::ios_base::out);
   if (output.is_open()) {
     output << result;
     output.close();
@@ -491,7 +496,7 @@ void Context::addError(String const& message, Maybe<FileRange> fileRange) {
     std::cerr << "\n"
               << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan) << " --> "
               << Colored(colors::reset) << getActiveGeneric().fileRange.file.string() << ":"
-              << getActiveGeneric().fileRange.start.line << ":" << getActiveGeneric().fileRange.start.character << "\n"
+              << getActiveGeneric().fileRange.start << "\n"
               << "Errors while creating generic variant: " << highlightError(getActiveGeneric().name) << "\n"
               << "\n";
   }
@@ -500,8 +505,7 @@ void Context::addError(String const& message, Maybe<FileRange> fileRange) {
   std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR ";
   if (fileRange) {
     std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
-              << fileRange.value().start.line << ":" << fileRange.value().start.character << " to "
-              << fileRange.value().end.line << ":" << fileRange.value().end.character;
+              << fileRange.value().start << " to " << fileRange.value().end;
   }
   std::cerr << Colored(colors::bold::white) << "\n"
             << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
@@ -569,7 +573,6 @@ void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   writeJsonResult(false);
   sitter->destroy();
   delete cli::Config::get();
-  ast::Node::clearAll();
   MemoryTracker::report();
   exit(0);
 }
@@ -581,7 +584,6 @@ void Context::Errors(Vec<QatError> errors) {
   writeJsonResult(false);
   sitter->destroy();
   delete cli::Config::get();
-  ast::Node::clearAll();
   MemoryTracker::report();
   exit(0);
 }

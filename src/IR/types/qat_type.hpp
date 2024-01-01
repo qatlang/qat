@@ -44,7 +44,7 @@ class DoSkill;
 class QatType : public Uniq {
 protected:
   String               linkingName;
-  static Vec<QatType*> types;
+  static Vec<QatType*> allQatTypes;
   llvm::Type*          llvmType;
   Vec<DoSkill*>        doneSkills;
 

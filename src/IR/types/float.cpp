@@ -33,7 +33,7 @@ FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& llctx) : kind(_kind
 }
 
 FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isFloat()) {
       if (typ->asFloat()->getKind() == _kind) {
         return typ->asFloat();

@@ -24,7 +24,7 @@ FutureType::FutureType(QatType* _subType, bool _isPacked, IR::Context* ctx) : su
 }
 
 FutureType* FutureType::get(QatType* subType, bool isPacked, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isFuture()) {
       if (typ->asFuture()->getSubType()->isSame(subType)) {
         return typ->asFuture();

@@ -14,7 +14,7 @@ TypedType::TypedType(IR::QatType* _subTy) : subTy(_subTy) {
 }
 
 TypedType* TypedType::get(QatType* _subTy) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isTyped() && typ->asTyped()->getSubType()->getID() == _subTy->getID()) {
       return typ->asTyped();
     }

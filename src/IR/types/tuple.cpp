@@ -172,7 +172,7 @@ void TupleType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function
 }
 
 TupleType* TupleType::get(Vec<QatType*> newSubTypes, bool isPacked, llvm::LLVMContext& llctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isTuple()) {
       auto subTys = typ->asTuple()->getSubTypes();
       bool isSame = true;

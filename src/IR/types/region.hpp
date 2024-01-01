@@ -29,6 +29,7 @@ public:
 
   useit Identifier getName() const;
   useit String     getFullName() const;
+  useit IR::QatModule* getParent() const;
   useit IR::Value* ownData(IR::QatType* _type, Maybe<llvm::Value*> count, IR::Context* ctx);
   void             destroyObjects(IR::Context* ctx);
 

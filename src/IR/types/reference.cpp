@@ -17,7 +17,7 @@ ReferenceType::ReferenceType(bool _isSubtypeVariable, QatType* _type, IR::Contex
 }
 
 ReferenceType* ReferenceType::get(bool _isSubtypeVariable, QatType* _subtype, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isReference()) {
       if (typ->asReference()->getSubType()->isSame(_subtype) &&
           (typ->asReference()->isSubtypeVariable() == _isSubtypeVariable)) {

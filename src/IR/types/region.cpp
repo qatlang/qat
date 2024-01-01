@@ -443,6 +443,8 @@ void Region::destroyObjects(IR::Context* ctx) {
   ctx->builder.CreateCall(destructor->getFunctionType(), destructor, {});
 }
 
+IR::QatModule* Region::getParent() const { return parent; }
+
 void Region::updateOverview() { ovInfo._("typeID", getID())._("fullName", getFullName()); }
 
 String Region::toString() const { return parent->getFullNameWithChild(name.value); }

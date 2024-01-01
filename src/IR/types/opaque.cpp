@@ -15,8 +15,8 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
                                 : (_subtypeKind.value() == OpaqueSubtypeKind::mix ? "mixType" : "opaqueType"))
                          : "opaqueType",
                      Json(), _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), genericID(_genericID),
-      subtypeKind(std::move(_subtypeKind)), parent(_parent), size(_size), visibility(_visibility), metaInfo(_metaInfo) {
+      name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
+      visibility(_visibility), metaInfo(_metaInfo) {
   Maybe<String> foreignID;
   if (metaInfo) {
     if (metaInfo->hasKey("foreign")) {
@@ -56,8 +56,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
 OpaqueType* OpaqueType::get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
                             Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
-  return new OpaqueType(std::move(name), std::move(generics), genericID, subtypeKind, parent, size, visibility, llCtx,
-                        metaInfo);
+  return new OpaqueType(name, generics, genericID, subtypeKind, parent, size, visibility, llCtx, metaInfo);
 }
 
 String OpaqueType::getFullName() const {
@@ -76,6 +75,8 @@ String OpaqueType::getFullName() const {
 }
 
 Identifier OpaqueType::getName() const { return name; }
+
+IR::QatModule* OpaqueType::getParent() const { return parent; }
 
 bool OpaqueType::isGeneric() const { return !generics.empty(); }
 

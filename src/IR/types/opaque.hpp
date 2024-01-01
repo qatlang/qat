@@ -22,7 +22,7 @@ class MemberFunction;
 
 enum class OpaqueSubtypeKind { core, mix, unknown };
 
-class OpaqueType : public EntityOverview, public QatType {
+class OpaqueType : public QatType, public EntityOverview {
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
 
@@ -45,8 +45,9 @@ public:
                                Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
                                VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
-  useit String                getFullName() const;
-  useit Identifier            getName() const;
+  useit String     getFullName() const;
+  useit Identifier getName() const;
+  useit IR::QatModule*        getParent() const;
   useit VisibilityInfo const& getVisibility() const;
   useit bool                  isGeneric() const;
   useit Maybe<String>     getGenericID() const;

@@ -18,7 +18,7 @@ ArrayType::ArrayType(QatType* _element_type, u64 _length, llvm::LLVMContext& llc
 }
 
 ArrayType* ArrayType::get(QatType* elementType, u64 _length, llvm::LLVMContext& llctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isArray()) {
       if (typ->asArray()->getLength() == _length) {
         if (typ->asArray()->getElementType()->isSame(elementType)) {

@@ -20,7 +20,7 @@ MaybeType::MaybeType(QatType* _subType, bool _isPacked, IR::Context* ctx) : subT
 }
 
 MaybeType* MaybeType::get(QatType* subTy, bool isPacked, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->isMaybe()) {
       if (typ->asMaybe()->getSubType()->isSame(subTy)) {
         return typ->asMaybe();

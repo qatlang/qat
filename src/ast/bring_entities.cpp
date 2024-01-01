@@ -54,13 +54,14 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
     }
     for (usize i = 0; i < (ent->entity.size() - 1); i++) {
       auto const& idn = ent->entity.at(i);
-      if (mod->hasLib(idn.value) || mod->hasBroughtLib(idn.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      if (mod->hasLib(idn.value, reqInfo) || mod->hasBroughtLib(idn.value, ctx->getReqInfoIfDifferentModule(mod)) ||
           mod->hasAccessibleLibInImports(idn.value, reqInfo).first) {
         mod = mod->getLib(idn.value, reqInfo);
         if (!mod->getVisibility().isAccessible(reqInfo)) {
           ctx->Error("This lib is not accessible in the current scope", idn.range);
         }
-      } else if (mod->hasBox(idn.value) || mod->hasBroughtBox(idn.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      } else if (mod->hasBox(idn.value, reqInfo) ||
+                 mod->hasBroughtBox(idn.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleBoxInImports(idn.value, reqInfo).first) {
         mod = mod->getBox(idn.value, reqInfo);
         if (!mod->getVisibility().isAccessible(reqInfo)) {
@@ -76,7 +77,8 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
       }
     }
     auto entName = ent->entity.back();
-    if (mod->hasLib(entName.value) || mod->hasBroughtLib(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+    if (mod->hasLib(entName.value, reqInfo) ||
+        mod->hasBroughtLib(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
         mod->hasAccessibleLibInImports(entName.value, reqInfo).first) {
       mod = mod->getLib(entName.value, reqInfo);
       if (!mod->getVisibility().isAccessible(reqInfo)) {
@@ -92,7 +94,8 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
           bringHandler(mem, mod);
         }
       }
-    } else if (mod->hasBox(entName.value) || mod->hasBroughtBox(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+    } else if (mod->hasBox(entName.value, reqInfo) ||
+               mod->hasBroughtBox(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                mod->hasAccessibleBoxInImports(entName.value, reqInfo).first) {
       mod = mod->getBox(entName.value, reqInfo);
       if (!mod->getVisibility().isAccessible(reqInfo)) {
@@ -128,7 +131,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         ctx->Error(ctx->highlightError(entName.value) + " is not a module and hence you cannot bring its members",
                    entName.range);
       }
-      if (mod->hasCoreType(entName.value) ||
+      if (mod->hasCoreType(entName.value, reqInfo) ||
           mod->hasBroughtCoreType(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
           mod->hasAccessibleCoreTypeInImports(entName.value, reqInfo).first) {
         auto* cTy = mod->getCoreType(entName.value, reqInfo);
@@ -139,7 +142,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringCoreType(cTy, ctx->getVisibInfo(visibSpec));
         cTy->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
-      } else if (mod->hasChoiceType(entName.value) ||
+      } else if (mod->hasChoiceType(entName.value, reqInfo) ||
                  mod->hasBroughtChoiceType(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleChoiceTypeInImports(entName.value, reqInfo).first) {
         auto* chTy = mod->getChoiceType(entName.value, reqInfo);
@@ -150,7 +153,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringChoiceType(chTy, ctx->getVisibInfo(visibSpec));
         chTy->addBroughtMention(currentMod, ent->fileRange);
         ent->bring();
-      } else if (mod->hasMixType(entName.value) ||
+      } else if (mod->hasMixType(entName.value, reqInfo) ||
                  mod->hasBroughtMixType(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleMixTypeInImports(entName.value, reqInfo).first) {
         auto* mTy = mod->getMixType(entName.value, reqInfo);
@@ -161,7 +164,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringMixType(mTy, ctx->getVisibInfo(visibSpec));
         mTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasTypeDef(entName.value) ||
+      } else if (mod->hasTypeDef(entName.value, reqInfo) ||
                  mod->hasBroughtTypeDef(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleTypeDefInImports(entName.value, reqInfo).first) {
         auto* dTy = mod->getTypeDef(entName.value, reqInfo);
@@ -173,7 +176,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringTypeDefinition(dTy, ctx->getVisibInfo(visibSpec));
         dTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasRegion(entName.value) ||
+      } else if (mod->hasRegion(entName.value, reqInfo) ||
                  mod->hasBroughtRegion(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleRegionInImports(entName.value, reqInfo).first) {
         auto* rTy = mod->getRegion(entName.value, reqInfo);
@@ -184,7 +187,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringRegion(rTy, ctx->getVisibInfo(visibSpec));
         rTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasFunction(entName.value) ||
+      } else if (mod->hasFunction(entName.value, reqInfo) ||
                  mod->hasBroughtFunction(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleFunctionInImports(entName.value, reqInfo).first) {
         auto* otherFn = mod->getFunction(entName.value, reqInfo);
@@ -195,7 +198,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringFunction(otherFn, ctx->getVisibInfo(visibSpec));
         otherFn->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasGenericFunction(entName.value) ||
+      } else if (mod->hasGenericFunction(entName.value, reqInfo) ||
                  mod->hasBroughtGenericFunction(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleGenericFunctionInImports(entName.value, reqInfo).first) {
         auto* gnFn = mod->getGenericFunction(entName.value, reqInfo);
@@ -207,7 +210,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringGenericFunction(gnFn, ctx->getVisibInfo(visibSpec));
         gnFn->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasGenericCoreType(entName.value) ||
+      } else if (mod->hasGenericCoreType(entName.value, reqInfo) ||
                  mod->hasBroughtGenericCoreType(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleGenericCoreTypeInImports(entName.value, reqInfo).first) {
         auto* gnCTy = mod->getGenericCoreType(entName.value, reqInfo);
@@ -219,7 +222,7 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
         currentMod->bringGenericCoreType(gnCTy, ctx->getVisibInfo(visibSpec));
         gnCTy->addBroughtMention(currentMod, entName.range);
         ent->bring();
-      } else if (mod->hasGlobalEntity(entName.value) ||
+      } else if (mod->hasGlobalEntity(entName.value, reqInfo) ||
                  mod->hasBroughtGlobalEntity(entName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
                  mod->hasAccessibleGlobalEntityInImports(entName.value, reqInfo).first) {
         auto* gEnt = mod->getGlobalEntity(entName.value, reqInfo);

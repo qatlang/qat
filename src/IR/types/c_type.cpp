@@ -267,7 +267,7 @@ CType* CType::getFromCTypeKind(CTypeKind kind, IR::Context* ctx) {
 }
 
 CType* CType::getBool(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Bool) {
@@ -279,7 +279,7 @@ CType* CType::getBool(IR::Context* ctx) {
 }
 
 CType* CType::getInt(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Int) {
@@ -291,7 +291,7 @@ CType* CType::getInt(IR::Context* ctx) {
 }
 
 CType* CType::getUInt(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Uint) {
@@ -303,7 +303,7 @@ CType* CType::getUInt(IR::Context* ctx) {
 }
 
 CType* CType::getChar(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Char) {
@@ -315,7 +315,7 @@ CType* CType::getChar(IR::Context* ctx) {
 }
 
 CType* CType::getCharUnsigned(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::UChar) {
@@ -327,7 +327,7 @@ CType* CType::getCharUnsigned(IR::Context* ctx) {
 }
 
 CType* CType::getWideChar(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::WideChar) {
@@ -339,7 +339,7 @@ CType* CType::getWideChar(IR::Context* ctx) {
 }
 
 CType* CType::getWideCharUnsigned(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::UWideChar) {
@@ -351,7 +351,7 @@ CType* CType::getWideCharUnsigned(IR::Context* ctx) {
 }
 
 CType* CType::getLongInt(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::LongInt) {
@@ -363,7 +363,7 @@ CType* CType::getLongInt(IR::Context* ctx) {
 }
 
 CType* CType::getLongIntUnsigned(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::ULongInt) {
@@ -375,7 +375,7 @@ CType* CType::getLongIntUnsigned(IR::Context* ctx) {
 }
 
 CType* CType::getLongLong(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::LongLong) {
@@ -387,7 +387,7 @@ CType* CType::getLongLong(IR::Context* ctx) {
 }
 
 CType* CType::getLongLongUnsigned(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::ULongLong) {
@@ -399,7 +399,7 @@ CType* CType::getLongLongUnsigned(IR::Context* ctx) {
 }
 
 CType* CType::getIsize(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Isize) {
@@ -413,7 +413,7 @@ CType* CType::getIsize(IR::Context* ctx) {
 }
 
 CType* CType::getUsize(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Usize) {
@@ -426,7 +426,7 @@ CType* CType::getUsize(IR::Context* ctx) {
 }
 
 CType* CType::getFloat(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto* cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Float) {
@@ -461,7 +461,7 @@ CType* CType::getFloat(IR::Context* ctx) {
 }
 
 CType* CType::getDouble(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Double) {
@@ -496,7 +496,7 @@ CType* CType::getDouble(IR::Context* ctx) {
 }
 
 CType* CType::getIntMax(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::IntMax) {
@@ -508,7 +508,7 @@ CType* CType::getIntMax(IR::Context* ctx) {
 }
 
 CType* CType::getUintMax(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::UintMax) {
@@ -520,7 +520,7 @@ CType* CType::getUintMax(IR::Context* ctx) {
 }
 
 CType* CType::getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Pointer &&
@@ -535,7 +535,7 @@ CType* CType::getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Conte
 }
 
 CType* CType::getIntPtr(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::IntPtr) {
@@ -548,7 +548,7 @@ CType* CType::getIntPtr(IR::Context* ctx) {
 }
 
 CType* CType::getUintPtr(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::UintPtr) {
@@ -562,7 +562,7 @@ CType* CType::getUintPtr(IR::Context* ctx) {
 }
 
 CType* CType::getPtrDiff(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::PtrDiff) {
@@ -577,7 +577,7 @@ CType* CType::getPtrDiff(IR::Context* ctx) {
 }
 
 CType* CType::getPtrDiffUnsigned(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::UPtrDiff) {
@@ -593,7 +593,7 @@ CType* CType::getPtrDiffUnsigned(IR::Context* ctx) {
 }
 
 CType* CType::getSigAtomic(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::SigAtomic) {
@@ -607,7 +607,7 @@ CType* CType::getSigAtomic(IR::Context* ctx) {
 }
 
 CType* CType::getProcessID(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::ProcessID) {
@@ -621,7 +621,7 @@ CType* CType::getProcessID(IR::Context* ctx) {
 }
 
 CType* CType::getCString(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::String) {
@@ -637,7 +637,7 @@ CType* CType::getCString(IR::Context* ctx) {
 bool CType::hasHalfFloat(IR::Context* ctx) { return ctx->clangTargetInfo->hasLegalHalfType(); }
 
 CType* CType::getHalfFloat(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::HalfFloat) {
@@ -651,7 +651,7 @@ CType* CType::getHalfFloat(IR::Context* ctx) {
 bool CType::hasBrainFloat(IR::Context* ctx) { return ctx->clangTargetInfo->hasBFloat16Type(); }
 
 CType* CType::getBrainFloat(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::BrainFloat) {
@@ -665,7 +665,7 @@ CType* CType::getBrainFloat(IR::Context* ctx) {
 bool CType::hasFloat128(IR::Context* ctx) { return ctx->clangTargetInfo->hasFloat128Type(); }
 
 CType* CType::getFloat128(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Float128) {
@@ -679,7 +679,7 @@ CType* CType::getFloat128(IR::Context* ctx) {
 bool CType::hasLongDouble(IR::Context* ctx) { return ctx->clangTargetInfo->hasLongDoubleType(); }
 
 CType* CType::getLongDouble(IR::Context* ctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::LongDouble) {

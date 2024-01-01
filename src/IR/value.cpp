@@ -33,7 +33,7 @@ bool Value::isImplicitPointer() const {
 
 void Value::makeImplicitPointer(IR::Context* ctx, Maybe<String> name) {
   if (!isImplicitPointer()) {
-    auto* alloc = IR::Logic::newAlloca(ctx->getActiveFunction(), name.value_or(utils::unique_id()), ll->getType());
+    auto* alloc = IR::Logic::newAlloca(ctx->getActiveFunction(), name, ll->getType());
     ctx->builder.CreateStore(ll, alloc);
     ll = alloc;
   }

@@ -27,7 +27,7 @@ ResultType::ResultType(IR::QatType* _resTy, IR::QatType* _errTy, bool _isPacked,
 }
 
 ResultType* ResultType::get(IR::QatType* validType, IR::QatType* errorType, bool isPacked, IR::Context* ctx) {
-  for (auto typ : types) {
+  for (auto typ : allQatTypes) {
     if (typ->isResult() && typ->asResult()->getValidType()->isSame(validType) &&
         typ->asResult()->getErrorType()->isSame(errorType) && (typ->asResult()->isPacked == isPacked)) {
       return typ->asResult();

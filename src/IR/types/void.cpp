@@ -9,7 +9,7 @@ VoidType::VoidType(llvm::LLVMContext& llctx) {
 }
 
 VoidType* VoidType::get(llvm::LLVMContext& llctx) {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::Void) {
       return (VoidType*)typ;
     }

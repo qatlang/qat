@@ -49,7 +49,9 @@ class TypeInferrable {
 public:
   IR::QatType*      inferredType = nullptr;
   useit inline bool isTypeInferred() const { return inferredType != nullptr; }
-  inline void       setInferenceType(IR::QatType* _type) { inferredType = _type; }
+  inline void       setInferenceType(IR::QatType* _type) {
+    inferredType = _type->isReference() ? _type->asReference()->getSubType() : _type;
+  }
 };
 
 class Expression : public Node {

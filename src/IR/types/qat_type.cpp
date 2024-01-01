@@ -23,7 +23,7 @@
 
 namespace qat::IR {
 
-QatType::QatType() { types.push_back(this); }
+QatType::QatType() { allQatTypes.push_back(this); }
 
 QatType::~QatType() {
   for (auto* skill : doneSkills) {
@@ -31,11 +31,11 @@ QatType::~QatType() {
   }
 }
 
-Vec<QatType*> QatType::types = {};
+Vec<QatType*> QatType::allQatTypes = {};
 
 Vec<Region*> QatType::allRegions() {
   Vec<Region*> result;
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::region) {
       result.push_back(typ->asRegion());
     }
@@ -44,7 +44,7 @@ Vec<Region*> QatType::allRegions() {
 }
 
 void QatType::clearAll() {
-  for (auto* typ : types) {
+  for (auto* typ : allQatTypes) {
     delete typ;
   }
 }
@@ -80,7 +80,7 @@ bool QatType::isTypeSized() const { return false; }
 Maybe<bool> QatType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const { return false; }
 
 bool QatType::checkTypeExists(const String& name) {
-  for (const auto& typ : types) {
+  for (const auto& typ : allQatTypes) {
     if (typ->typeKind() == TypeKind::mixType) {
       if (((MixType*)typ)->getFullName() == name) {
         return true;
@@ -97,7 +97,9 @@ bool QatType::checkTypeExists(const String& name) {
 bool QatType::isCompatible(QatType* other) {
   if (isPointer() && other->isPointer()) {
     if ((asPointer()->getSubType()->isSame(other->asPointer()->getSubType())) &&
-        asPointer()->getOwner().isAnonymous() && (asPointer()->isMulti() == other->asPointer()->isMulti())) {
+        asPointer()->getOwner().isAnonymous() &&
+        (asPointer()->isNonNullable() ? other->asPointer()->isNonNullable() : true) &&
+        (asPointer()->isMulti() == other->asPointer()->isMulti())) {
       return true;
     } else {
       return isSame(other);

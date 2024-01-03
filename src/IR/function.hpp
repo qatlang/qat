@@ -14,6 +14,7 @@
 #include "./value.hpp"
 #include "link_names.hpp"
 #include "meta_info.hpp"
+#include "types/function.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
@@ -29,6 +30,8 @@
 namespace qat::ast {
 class FunctionDefinition;
 class GenericAbstractType;
+class ConstructorDefinition;
+class ConvertorDefinition;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -36,7 +39,7 @@ namespace qat::IR {
 class QatModule;
 class FunctionCall;
 class Context;
-class Function;
+class MemberFunction;
 
 enum class ExternFnType {
   C,
@@ -58,6 +61,8 @@ public:
 };
 
 class Block : public Uniq {
+  friend MemberFunction;
+
 private:
   String                                name;
   llvm::BasicBlock*                     bb;
@@ -76,6 +81,8 @@ private:
   Block* nextBlock = nullptr;
 
 public:
+  Maybe<FileRange> fileRange;
+
   Block(Function* _fn, Block* _parent);
 
   ~Block() = default;
@@ -99,14 +106,17 @@ public:
   useit bool        hasGiveInAllControlPaths() const;
   useit Block*      getActive();
   useit Vec<LocalValue*>& getLocals();
-  void                    setGhost(bool value) const;
-  void                    setHasGive() const;
-  void                    addMovedValue(String locID) const;
-  void                    setActive(llvm::IRBuilder<>& builder);
-  void                    collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const;
-  void                    collectLocalsFrom(Vec<LocalValue*>& vals) const;
-  void                    destroyLocals(IR::Context* ctx);
-  void                    outputLocalOverview(Vec<JsonValue>& jsonVals);
+  useit Maybe<FileRange> getFileRange() const;
+
+  void setFileRange(FileRange _fileRange);
+  void setGhost(bool value) const;
+  void setHasGive() const;
+  void addMovedValue(String locID) const;
+  void setActive(llvm::IRBuilder<>& builder);
+  void collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const;
+  void collectLocalsFrom(Vec<LocalValue*>& vals) const;
+  void destroyLocals(IR::Context* ctx);
+  void outputLocalOverview(Vec<JsonValue>& jsonVals);
 };
 
 // Function represents a normal function in the language
@@ -121,15 +131,16 @@ protected:
   QatModule*             mod;
   Vec<Argument>          arguments;
   VisibilityInfo         visibility_info;
-  FileRange              fileRange;
-  bool                   is_async;
+  Maybe<FileRange>       fileRange;
   bool                   hasVariadicArguments;
   Vec<Block*>            blocks;
   IR::LocalValue*        strComparisonIndex = nullptr;
   Maybe<MetaInfo>        metaInfo;
   IR::Context*           ctx;
 
-  mutable usize activeBlock   = 0;
+  mutable u64   localNameCounter;
+  mutable usize activeBlock = 0;
+
   mutable usize copiedCounter = 0;
   mutable usize movedCounter  = 0;
   mutable u64   calls;
@@ -139,30 +150,25 @@ protected:
   Maybe<llvm::StructType*> asyncArgTy;
 
   Function(QatModule* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
-           QatType* returnType, bool _is_async, Vec<Argument> _args, bool has_variadic_arguments, FileRange fileRange,
+           ReturnType* returnType, Vec<Argument> _args, bool has_variadic_arguments, Maybe<FileRange> fileRange,
            const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn = false,
            Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
 public:
-  static Function*   Create(QatModule* mod, Identifier name, Maybe<LinkNames> _namingInfo,
-                            Vec<GenericParameter*> _generics, QatType* return_type, bool is_async, Vec<Argument> args,
-                            bool has_variadic_args, FileRange fileRange, const VisibilityInfo& visibilityInfo,
-                            IR::Context* ctx, Maybe<llvm::GlobalValue::LinkageTypes> linkage = None,
-                            Maybe<MetaInfo> metaInfo = None);
-  useit Value*       call(IR::Context* ctx, const Vec<llvm::Value*>& args, QatModule* mod) override;
-  useit virtual bool isMemberFunction() const;
-  useit bool         hasVariadicArgs() const;
-  useit bool         isAsyncFunction() const;
-  useit llvm::Function* getAsyncSubFunction() const;
-  useit llvm::StructType*  getAsyncArgType() const;
+  static Function* Create(QatModule* mod, Identifier name, Maybe<LinkNames> _namingInfo,
+                          Vec<GenericParameter*> _generics, ReturnType* return_type, Vec<Argument> args,
+                          bool has_variadic_args, Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo,
+                          IR::Context* ctx, Maybe<llvm::GlobalValue::LinkageTypes> linkage = None,
+                          Maybe<MetaInfo> metaInfo = None);
+  useit Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod) override;
+  useit virtual bool       isMemberFunction() const;
+  useit bool               hasVariadicArgs() const;
   useit Identifier         argumentNameAt(u32 index) const;
   useit virtual Identifier getName() const;
   useit virtual String     getFullName() const;
-  useit bool               hasReturnArgument() const;
-  useit bool               isReturnTypeReference() const;
-  useit bool               isReturnTypePointer() const;
   useit bool               isAccessible(const AccessInfo& req_info) const;
   useit VisibilityInfo     getVisibility() const;
+  useit IR::QatModule* getParentModule() const;
   useit llvm::Function* getLLVMFunction();
   void                  setActiveBlock(usize index) const;
   useit Block*          getBlock() const;
@@ -174,6 +180,9 @@ public:
   useit bool              isGeneric() const;
   useit bool              hasGenericParameter(const String& name) const;
   useit GenericParameter* getGenericParameter(const String& name) const;
+  useit bool              hasDefinitionRange() const;
+  useit FileRange         getDefinitionRange() const;
+  useit String            getRandomAllocaName() const;
 
   void updateOverview() override;
 

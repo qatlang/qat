@@ -13,12 +13,15 @@ IR::PrerunValue* PrerunNegative::emit(IR::Context* ctx) {
     }
   }
   auto* irVal = value->emit(ctx);
-  if (irVal->getType()->isInteger() || irVal->getType()->isFloat() ||
-      (irVal->getType()->isCType() && (irVal->getType()->asCType()->getSubType()->isInteger() ||
-                                       irVal->getType()->asCType()->getSubType()->isFloat()))) {
+  if (irVal->getType()->isInteger() ||
+      (irVal->getType()->isCType() && irVal->getType()->asCType()->getSubType()->isInteger())) {
     return new IR::PrerunValue(
         llvm::ConstantFoldConstant(llvm::ConstantExpr::getNeg(irVal->getLLVMConstant()), ctx->dataLayout.value()),
         irVal->getType());
+  } else if (irVal->getType()->isFloat() ||
+             (irVal->getType()->isCType() && irVal->getType()->asCType()->getSubType()->isFloat())) {
+    return new IR::PrerunValue(llvm::cast<llvm::Constant>(ctx->builder.CreateFNeg(irVal->getLLVMConstant())),
+                               irVal->getType());
   } else if (irVal->getType()->isUnsignedInteger() ||
              (irVal->getType()->isCType() && irVal->getType()->asCType()->getSubType()->isInteger())) {
     ctx->Error("Expression of unsigned integer type " + ctx->highlightError(irVal->getType()->toString()) +

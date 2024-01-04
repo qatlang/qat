@@ -1,4 +1,5 @@
 #include "./negative.hpp"
+#include "llvm/Analysis/ConstantFolding.h"
 
 namespace qat::ast {
 
@@ -7,9 +8,7 @@ Negative::Negative(Expression* _value, FileRange _fileRange) : Expression(std::m
 IR::Value* Negative::emit(IR::Context* ctx) {
   auto irVal = value->emit(ctx);
   auto valTy = irVal->getType()->isReference() ? irVal->getType()->asReference()->getSubType() : irVal->getType();
-  if (valTy->isInteger() || valTy->isFloat() ||
-      (valTy->isCType() &&
-       (valTy->asCType()->getSubType()->isInteger() || valTy->asCType()->getSubType()->isFloat()))) {
+  if (valTy->isInteger() || (valTy->isCType() && valTy->asCType()->getSubType()->isInteger())) {
     if (irVal->isPrerunValue()) {
       return new IR::PrerunValue(llvm::ConstantExpr::getNeg(irVal->getLLVMConstant()), valTy);
     } else {
@@ -19,6 +18,18 @@ IR::Value* Negative::emit(IR::Context* ctx) {
                               IR::Nature::temporary);
       }
       return new IR::Value(ctx->builder.CreateNeg(irVal->getLLVM()), valTy, false, IR::Nature::temporary);
+    }
+  } else if (valTy->isFloat() || (valTy->isCType() && valTy->asCType()->getSubType()->isFloat())) {
+    if (irVal->isPrerunValue()) {
+      return new IR::PrerunValue(llvm::cast<llvm::Constant>(ctx->builder.CreateFNeg(irVal->getLLVMConstant())), valTy);
+    } else {
+      irVal->loadImplicitPointer(ctx->builder);
+      if (irVal->getType()->isReference()) {
+        irVal = new IR::Value(ctx->builder.CreateLoad(valTy->getLLVMType(), irVal->getLLVM()), valTy, false,
+                              IR::Nature::temporary);
+      }
+      return new IR::Value(ctx->builder.CreateFSub(llvm::ConstantFP::getZero(valTy->getLLVMType()), irVal->getLLVM()),
+                           valTy, false, IR::Nature::temporary);
     }
   } else if (valTy->isUnsignedInteger() || (valTy->isCType() && valTy->asCType()->getSubType()->isUnsignedInteger())) {
     ctx->Error("The value of this expression is of the unsigned integer type " +

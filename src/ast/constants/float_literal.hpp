@@ -5,20 +5,19 @@
 
 namespace qat::ast {
 
-class FloatLiteral : public PrerunExpression {
+class FloatLiteral : public PrerunExpression, public TypeInferrable {
 private:
   String value;
 
 public:
   FloatLiteral(String _value, FileRange _fileRange);
 
-  IR::PrerunValue* emit(IR::Context* ctx) override;
+  TYPE_INFERRABLE_FUNCTIONS
 
-  useit Json toJson() const override;
-
-  useit String toString() const override;
-
-  useit NodeType nodeType() const override { return NodeType::floatLiteral; }
+  useit IR::PrerunValue* emit(IR::Context* ctx) override;
+  useit Json             toJson() const override;
+  useit String           toString() const override;
+  useit NodeType         nodeType() const override { return NodeType::floatLiteral; }
 };
 
 } // namespace qat::ast

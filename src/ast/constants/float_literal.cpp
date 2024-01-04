@@ -8,12 +8,20 @@ FloatLiteral::FloatLiteral(String _value, FileRange _fileRange)
     : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 IR::PrerunValue* FloatLiteral::emit(IR::Context* ctx) {
-  if (isExpectedKind(ExpressionKind::assignable)) {
-    ctx->Error("Float literals are not assignable", fileRange);
+  SHOW("Generating float literal for " << value)
+  IR::QatType* floatResTy = nullptr;
+  if (isTypeInferred()) {
+    if (inferredType->isFloat() || (inferredType->isCType() && inferredType->asCType()->getSubType()->isFloat())) {
+      floatResTy = inferredType;
+    } else {
+      ctx->Error("The type inferred from scope is " + ctx->highlightError(inferredType->toString()) +
+                     " but this expression is expected to have a floating point type",
+                 fileRange);
+    }
+  } else {
+    floatResTy = IR::FloatType::get(IR::FloatTypeKind::_64, ctx->llctx);
   }
-  SHOW("Generating float literal")
-  return new IR::PrerunValue(llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx->llctx), std::stof(value)),
-                             IR::FloatType::get(IR::FloatTypeKind::_64, ctx->llctx));
+  return new IR::PrerunValue(llvm::ConstantFP::get(floatResTy->getLLVMType(), value), floatResTy);
 }
 
 String FloatLiteral::toString() const { return value; }

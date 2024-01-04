@@ -108,17 +108,15 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       // FIXME - Support default values
       Vec<IR::Value*> irVals;
       for (usize i = 0; i < fieldValues.size(); i++) {
+        if (fieldValues.at(i)->hasTypeInferrance()) {
+          fieldValues.at(i)->asTypeInferrable()->setInferenceType(cTy->getMemberAt(indices.at(i))->type);
+        }
         auto* fVal  = fieldValues.at(i)->emit(ctx);
         auto* memTy = cTy->getMemberAt(i)->type;
-        if (fVal->getType()->isSame(memTy)) {
-          fVal->loadImplicitPointer(ctx->builder);
-          irVals.push_back(fVal);
-        } else if (memTy->isReference() && memTy->asReference()->getSubType()->isSame(fVal->getType()) &&
-                   fVal->isImplicitPointer() && (memTy->asReference()->isSubtypeVariable() == fVal->isVariable())) {
-          irVals.push_back(fVal);
-        } else if (fVal->getType()->isReference() && fVal->getType()->asReference()->getSubType()->isSame(memTy)) {
-          fVal = new IR::Value(ctx->builder.CreateLoad(memTy->getLLVMType(), fVal->getLLVM()), memTy, false,
-                               IR::Nature::temporary);
+        if (fVal->getType()->isSame(memTy) ||
+            (memTy->isReference() && memTy->asReference()->getSubType()->isSame(fVal->getType()) &&
+             fVal->isImplicitPointer() && (memTy->asReference()->isSubtypeVariable() ? fVal->isVariable() : true)) ||
+            (fVal->getType()->isReference() && fVal->getType()->asReference()->getSubType()->isSame(memTy))) {
           irVals.push_back(fVal);
         } else {
           ctx->Error("This expression does not match the type of the "
@@ -145,7 +143,38 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       }
       for (usize i = 0; i < irVals.size(); i++) {
         auto* memPtr = ctx->builder.CreateStructGEP(cTy->getLLVMType(), alloca, indices.at(i));
-        ctx->builder.CreateStore(irVals.at(i)->getLLVM(), memPtr);
+        auto  irVal  = irVals.at(i);
+        auto  memTy  = cTy->getMemberAt(indices.at(i))->type;
+        if (irVal->isImplicitPointer() || irVal->isReference()) {
+          if (memTy->isTriviallyCopyable() || memTy->isTriviallyMovable()) {
+            if (irVal->isReference()) {
+              irVal->loadImplicitPointer(ctx->builder);
+            }
+            auto* irOrigVal = ctx->builder.CreateLoad(memTy->getLLVMType(), irVal->getLLVM());
+            if (!memTy->isTriviallyCopyable()) {
+              if (irVal->isReference() && !irVal->getType()->asReference()->isSubtypeVariable()) {
+                ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
+                           fieldValues.at(i)->fileRange);
+              } else if (!irVal->isReference() && !irVal->isVariable()) {
+                ctx->Error("This is an expression without variability and hence cannot be trivially moved from",
+                           fieldValues.at(i)->fileRange);
+              }
+              ctx->builder.CreateStore(llvm::Constant::getNullValue(memTy->getLLVMType()), irVal->getLLVM());
+              if (irVal->isLocalToFn()) {
+                ctx->getActiveFunction()->getBlock()->addMovedValue(irVal->getLocalID().value());
+              }
+            }
+            ctx->builder.CreateStore(irOrigVal, memPtr);
+          } else {
+            ctx->Error(
+                "The member field " + ctx->highlightError(cTy->getMemberNameAt(indices.at(i))) +
+                    " expects an expression of type which is not trivially copyable and trivially movable. Please use " +
+                    ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
+                fieldValues.at(i)->fileRange);
+          }
+        } else {
+          ctx->builder.CreateStore(irVal->getLLVM(), memPtr);
+        }
       }
       if (isLocalDecl()) {
         return localValue->toNewIRValue();

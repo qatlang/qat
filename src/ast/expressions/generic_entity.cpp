@@ -82,11 +82,11 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     for (usize i = 0; i < genericTypes.size(); i++) {
       auto* gen = genericTypes.at(i);
       if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
-        SHOW("Generic is const and const generic is default expression")
+        SHOW("Generic is prerun and prerun generic is default expression")
         ((ast::PrerunDefault*)(genericTypes.at(i)->asPrerun()))->setGenericAbstract(genericFn->getGenericAt(i));
       } else if (genericFn->getGenericAt(i)->isPrerun() &&
                  (genericFn->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
-        SHOW("Generic abstract is const and has valid type")
+        SHOW("Generic abstract is prerun and has valid type")
         if (gen->asPrerun()->hasTypeInferrance()) {
           gen->asPrerun()->asTypeInferrable()->setInferenceType(genericFn->getGenericAt(i)->asPrerun()->getType());
         }

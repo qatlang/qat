@@ -93,6 +93,37 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
                      ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
+    if (isExpSelf && instType->isCoreType() && ctx->getActiveFunction()->isMemberFunction()) {
+      auto thisFn = (IR::MemberFunction*)ctx->getActiveFunction();
+      if (thisFn->isConstructor()) {
+        Vec<String> missingMembers;
+        for (usize i = 0; i < instType->asCore()->getMemberCount(); i++) {
+          if (!thisFn->isMemberInitted(i)) {
+            missingMembers.push_back(instType->asCore()->getMemberNameAt(i));
+          }
+        }
+        if (!missingMembers.empty()) {
+          String message;
+          for (usize i = 0; i < missingMembers.size(); i++) {
+            message.append(ctx->highlightError(missingMembers[i]));
+            if (i == missingMembers.size() - 2) {
+              message.append(" and ");
+            } else if (i + 1 < missingMembers.size()) {
+              message.append(", ");
+            }
+          }
+          // NOTE - Maybe consider changing this to deeper call-tree-analysis
+          ctx->Error("Cannot call the " + String(variation ? "variation " : "") + "member function as member field" +
+                         (missingMembers.size() > 1 ? "s " : " ") + message +
+                         " of this type have not been initialised yet. If the field" +
+                         (missingMembers.size() > 1 ? "s or their" : " or its") +
+                         " type have a default value, it will be used for initialisation only"
+                         " at the end of this constructor",
+                     fileRange);
+        }
+      }
+      thisFn->addMemberFunctionCall(memFn);
+    }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
       inst->makeImplicitPointer(ctx, None);
     }

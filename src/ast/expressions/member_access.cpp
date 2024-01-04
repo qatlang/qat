@@ -245,6 +245,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                          fileRange);
             }
           }
+        } else {
+          mFn->addUsedMember(mem->name.value);
         }
       }
       if (!mem->visibility.isAccessible(ctx->getAccessInfo())) {

@@ -6,34 +6,51 @@ IntegerLiteral::IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits,
     : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
 
 IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
-  if (isTypeInferred() && (!inferredType->isInteger() && !inferredType->isUnsignedInteger() &&
-                           (inferredType->isCType() && !(inferredType->asCType()->getSubType()->isUnsignedInteger() ||
-                                                         inferredType->asCType()->getSubType()->isInteger())))) {
-    ctx->Error("The inferred type of this expression is " + inferredType->toString() +
-                   ". The only supported types in type inference for integer literal are signed & unsigned integers",
-               fileRange);
+  if (isTypeInferred() &&
+      (!inferredType->isInteger() && !inferredType->isUnsignedInteger() &&
+       (!bits.has_value() && !inferredType->isFloat()) &&
+       (!bits.has_value() && inferredType->isCType() && !inferredType->asCType()->getSubType()->isFloat()) &&
+       (inferredType->isCType() && !(inferredType->asCType()->getSubType()->isUnsignedInteger() ||
+                                     inferredType->asCType()->getSubType()->isInteger())))) {
+    if (bits.has_value()) {
+      ctx->Error("The inferred type is " + ctx->highlightError(inferredType->toString()) +
+                     ". The only supported types for this literal are signed & unsigned integers",
+                 fileRange);
+    } else {
+      ctx->Error(
+          "This inferred type is " + ctx->highlightError(inferredType->toString()) +
+              ". The only supported types for this literal are signed integers, unsigned integers and floating point types",
+          fileRange);
+    }
   }
+  IR::QatType* resTy = isTypeInferred()
+                           ? (inferredType->isCType() ? inferredType->asCType()->getSubType() : inferredType)
+                           : IR::IntegerType::get(32, ctx);
   if (bits.has_value() && !ctx->getMod()->hasIntegerBitwidth(bits.value().first)) {
     ctx->Error("The custom integer bitwidth " + ctx->highlightError(std::to_string(bits.value().first)) +
                    " is not brought into the current module",
                bits.value().second);
   }
-  String intValue = value;
+  String numValue = value;
   if (value.find('_') != String::npos) {
-    intValue = "";
+    numValue = "";
     for (auto intCh : value) {
       if (intCh != '_') {
-        intValue += intCh;
+        numValue += intCh;
       }
     }
   }
   // NOLINTBEGIN(readability-magic-numbers)
-  return new IR::PrerunValue(
-      llvm::ConstantInt::get(isTypeInferred()
-                                 ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
-                                 : llvm::Type::getIntNTy(ctx->llctx, bits.has_value() ? bits.value().first : 32u),
-                             intValue, 10u),
-      isTypeInferred() ? inferredType : IR::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx));
+  if (resTy->isFloat()) {
+    return new IR::PrerunValue(llvm::ConstantFP::get(inferredType->getLLVMType(), numValue), inferredType);
+  } else {
+    return new IR::PrerunValue(
+        llvm::ConstantInt::get(isTypeInferred()
+                                   ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
+                                   : llvm::Type::getIntNTy(ctx->llctx, bits.has_value() ? bits.value().first : 32u),
+                               numValue, 10u),
+        isTypeInferred() ? inferredType : IR::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx));
+  }
   // NOLINTEND(readability-magic-numbers)
 }
 

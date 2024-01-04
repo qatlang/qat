@@ -9,24 +9,31 @@ FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& llctx) : kind(_kind
   switch (kind) {
     case FloatTypeKind::_brain: {
       llvmType = llvm::Type::getBFloatTy(llctx);
+      break;
     }
     case FloatTypeKind::_16: {
       llvmType = llvm::Type::getHalfTy(llctx);
+      break;
     }
     case FloatTypeKind::_32: {
       llvmType = llvm::Type::getFloatTy(llctx);
+      break;
     }
     case FloatTypeKind::_64: {
       llvmType = llvm::Type::getDoubleTy(llctx);
+      break;
     }
     case FloatTypeKind::_80: {
       llvmType = llvm::Type::getX86_FP80Ty(llctx);
+      break;
     }
     case FloatTypeKind::_128PPC: {
       llvmType = llvm::Type::getPPC_FP128Ty(llctx);
+      break;
     }
     case FloatTypeKind::_128: {
       llvmType = llvm::Type::getFP128Ty(llctx);
+      break;
     }
   }
   linkingName = "qat'" + toString();

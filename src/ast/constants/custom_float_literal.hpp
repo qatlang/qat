@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class CustomFloatLiteral : public PrerunExpression {
+class CustomFloatLiteral : public PrerunExpression, public TypeInferrable {
 private:
   // Numerical value of the float
   String value;
@@ -16,6 +16,8 @@ private:
 
 public:
   CustomFloatLiteral(String _value, String _kind, FileRange _fileRange);
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;

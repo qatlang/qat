@@ -1,12 +1,15 @@
 #include "config.hpp"
 #include "../memory_tracker.hpp"
 #include "../show.hpp"
+#include "../utils/logger.hpp"
 #include "display.hpp"
 #include "error.hpp"
 #include "version.hpp"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <system_error>
 
 namespace qat::cli {
@@ -22,15 +25,226 @@ Config* Config::init(u64          count,
   }
 }
 
-bool Config::isCompile() const { return (compile && !paths.empty()); }
-
 bool Config::hasInstance() { return Config::instance != nullptr; }
 
-bool Config::shouldExit() const { return exitAfter; }
-
-bool Config::keepLLVM() const { return keepLLVMFiles; }
-
 Config* Config::get() { return Config::instance; }
+
+Maybe<std::filesystem::path> Config::getExePathFromEnvPath(String name) {
+  auto hostTriple = llvm::Triple(LLVM_HOST_TRIPLE);
+  auto pathEnv    = std::getenv(hostTriple.isOSWindows() ? "Path" : "PATH");
+  if (pathEnv != nullptr) {
+    auto  sep  = hostTriple.isOSWindows() ? ';' : ':';
+    auto  path = String(pathEnv);
+    usize i    = 0;
+    while (path.find(sep, i) != String::npos) {
+      auto ind       = path.find(sep, i);
+      auto split     = path.substr(i, ind - i);
+      auto splitPath = std::filesystem::path(split);
+      if (std::filesystem::exists(splitPath / name)) {
+        const auto entityPath = splitPath / name;
+        if (std::filesystem::is_regular_file(entityPath)) {
+          return entityPath;
+        } else if (std::filesystem::is_symlink(entityPath)) {
+          std::error_code err;
+          auto            canonicalSplit = std::filesystem::canonical(entityPath, err);
+          if (!err && std::filesystem::is_regular_file(canonicalSplit)) {
+            return canonicalSplit;
+          }
+        }
+      } else if (hostTriple.isOSWindows() && std::filesystem::exists(splitPath / (name + ".exe"))) {
+        const auto entityPath = splitPath / (name + ".exe");
+        if (std::filesystem::is_regular_file(entityPath)) {
+          return entityPath;
+        } else if (std::filesystem::is_symlink(entityPath)) {
+          std::error_code err;
+          auto            canonicalSplit = std::filesystem::canonical(entityPath, err);
+          if (!err && std::filesystem::is_regular_file(canonicalSplit)) {
+            return canonicalSplit;
+          }
+        }
+      }
+      i = ind + 1;
+    }
+  }
+  return None;
+}
+
+Maybe<std::filesystem::path> Config::getExePath(String name) {
+  auto hostTriple  = llvm::Triple(LLVM_HOST_TRIPLE);
+  auto pathFromEnv = getExePathFromEnvPath(name);
+  if (pathFromEnv.has_value()) {
+    return pathFromEnv;
+  }
+  std::error_code err;
+  auto            resolvedPath = std::filesystem::canonical(hostTriple.isOSWindows() ? (name + ".exe") : name, err);
+  if (err) {
+    auto pipe = popen((hostTriple.isOSWindows() ? ("where.exe " + name + ".exe") : ("which " + name)).c_str(), "r");
+    if (!pipe) {
+      return None;
+    }
+    constexpr auto OUTPUT_BUFFER_LENGTH = 128;
+    char           buffer[OUTPUT_BUFFER_LENGTH];
+    String         output = "";
+    while (!feof(pipe)) {
+      if (fgets(buffer, OUTPUT_BUFFER_LENGTH, pipe) != nullptr) {
+        output += buffer;
+      }
+    }
+    pclose(pipe);
+    if (!output.empty()) {
+      String result;
+      if (output.find('\n') != String::npos) {
+        result = output.substr(0, output.find('\n'));
+      } else {
+        result = output;
+      }
+      if (std::filesystem::exists(result)) {
+        return result;
+      }
+    }
+  } else {
+    return resolvedPath;
+  }
+  return None;
+}
+
+void Config::setupEnvForQat() {
+  auto& log        = Logger::get();
+  auto  qatPathEnv = Config::getExePathFromEnvPath("qat");
+  if (!qatPathEnv.has_value()) {
+    log->setPersistent("Configuring environment for qat");
+    log->enableBuffering();
+    // QAT_PATH is not set
+    auto qatPathRes = getExePath("qat");
+    if (qatPathRes.has_value()) {
+      qatDirPath = qatPathRes.value().parent_path();
+    } else {
+#if PlatformIsWindows
+      char selfdir[MAX_PATH] = {0};
+      auto charLen           = GetModuleFileNameA(NULL, selfdir, MAX_PATH);
+      if (charLen > 0) {
+        // PathRemoveFileSpecA(selfdir);
+        qatDirPath = std::filesystem::path(String(selfdir, charLen));
+      } else {
+        log->error("Path to qat could not be found", None);
+      }
+#elif PlatformIsMac
+      char     path[1024] = {0};
+      uint32_t size       = sizeof(path);
+      if (_NSGetExecutablePath(path, &size) == 0) {
+        qatDirPath = std::filesystem::path(String(path, size));
+      } else {
+        log->error("Path to qat could not be found", None);
+      }
+#else
+      std::error_code err;
+      qatDirPath = std::filesystem::canonical("/proc/self/exe", err);
+      if (err) {
+        log->fatalError("Could not retrieve path to the qat executable", None);
+      }
+#endif
+      qatDirPath = qatDirPath.parent_path();
+      if (!std::filesystem::exists(qatDirPath)) {
+        log->fatalError("Could not retrieve path to the qat executable", None);
+      }
+    }
+#if PlatformIsWindows
+    HKEY           hKey;
+    const wchar_t* keyPath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    Vec<wchar_t>   pathBuffer;
+    pathBuffer.reserve(2048);
+    DWORD pathBufferSize = pathBuffer.size();
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+      if (RegQueryValueEx(hKey, L"Path", nullptr, nullptr, reinterpret_cast<LPBYTE>(pathBuffer.data()),
+                          &pathBufferSize) != ERROR_SUCCESS) {
+        log->error(
+            "Path could not be retrieved from the registry. Make sure that this executable is running in the administrator mode",
+            None);
+      }
+      RegCloseKey(hKey);
+      if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+        pathBuffer += L";" + std::wstring(qatPath.string());
+        if (RegSetValueEx(hKey, L"Path", 0, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(newValue),
+                          wcslen(newValue) * sizeof(wchar_t)) != ERROR_SUCCESS) {
+          log->error("Could not set " + colored("Path") +
+                         " in the registry. Make sure that this executable is running in administrator mode",
+                     None);
+        }
+        RegCloseKey(hKey);
+      } else {
+        log->error("Could not update registry key. Make sure that this executable is running in administrator mode",
+                   None);
+      }
+    } else {
+      log->error("Could not open registry key. Make sure that this executable is running in administrator mode", None);
+    }
+    log->say(
+        "Path has been updated in the registry. Please close and reopen this terminal for the changes to take effect",
+        None);
+#else
+    auto homeEnv = std::getenv("HOME");
+    if (homeEnv == nullptr) {
+      log->fatalError("Could not get HOME directory from the program environment", None);
+    }
+    auto           homePath       = fs::path(homeEnv);
+    bool           foundBashFile  = false;
+    bool           foundZshFile   = false;
+    const fs::path bashConfigPath = homePath / ".bashrc";
+    const fs::path zshConfigPath  = homePath / ".zshrc";
+    if (fs::exists(bashConfigPath) && fs::is_regular_file(bashConfigPath)) {
+      foundBashFile = true;
+      std::ofstream outstream(homePath / ".bashrc", std::ios::app);
+      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":PATH\"\n";
+      outstream.close();
+    }
+    if (fs::exists(zshConfigPath) && fs::is_regular_file(zshConfigPath)) {
+      foundZshFile = true;
+      std::ofstream outstream(homePath / ".zshrc", std::ios::app);
+      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":PATH\"\n";
+      outstream.close();
+    }
+    if (!foundBashFile && !foundZshFile) {
+      log->fatalError("Could not find .bashrc or .zshrc or similar configuration file for "
+                      "your terminal session. Please add PATH=\"" +
+                          qatDirPath.parent_path().string() + ":PATH\"" + " to the environment manually",
+                      None);
+    } else {
+      log->say("PATH has been updated in " + String(foundBashFile ? bashConfigPath.string() : "") +
+               (foundZshFile ? ((foundBashFile ? " and " : "") + zshConfigPath.string()) : "") +
+               ". Please close and reopen the terminal "
+               "for the session to retrieve the updated environment");
+    }
+#endif
+    log->disableBuffering();
+    log->resetPersistent(true);
+  } else {
+    qatDirPath = qatPathEnv.value().parent_path();
+  }
+  qatDirPath = fs::canonical(qatDirPath);
+  // FIXME - Update this when nostdlib feature is added
+  auto stdPathCand = qatDirPath / "../std";
+  if (fs::exists(stdPathCand)) {
+    stdLibPath = stdPathCand / "std.lib.qat";
+    if (!fs::exists(stdLibPath.value()) || !fs::is_regular_file(stdLibPath.value())) {
+      if (!isNoStd) {
+        log->fatalError("Found the standard library folder at path " + stdPathCand.string() +
+                            " but could not find the library file in the folder. File " + stdLibPath.value().string() +
+                            " is expected to be present",
+                        None);
+      } else {
+        stdLibPath = None;
+      }
+    } else {
+      stdLibPath = fs::canonical(stdLibPath.value());
+    }
+  } else if (!isNoStd) {
+    log->fatalError("Could not find the standard library. Path to the qat executable was found to be " +
+                        qatDirPath.string() + " but the standard library could not be found in " + stdPathCand.string(),
+                    None);
+  } else {
+    stdLibPath = None;
+  }
+}
 
 Config::Config(u64 count, const char** args)
     : exitAfter(false), verbose(false), saveDocs(false), showReport(false), export_ast(false), compile(false),
@@ -42,11 +256,12 @@ Config::Config(u64 count, const char** args)
                     .c_str()),
       std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
   if (!hasInstance()) {
+    auto& log        = Logger::get();
     Config::instance = this;
     invokePath       = args[0];
     exitAfter        = false;
     if (count <= 1) {
-      cli::Error("Meow!! No commands or arguments provided", None);
+      cli::Error("No commands or arguments provided!", None);
     }
     buildCommit = BUILD_COMMIT_QUOTED;
     if (buildCommit.find('"') != String::npos) {
@@ -65,20 +280,17 @@ Config::Config(u64 count, const char** args)
       analyse = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
-        return;
       }
     } else if (command == "run") {
       compile = true;
       run     = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
-        return;
       }
     } else if (command == "build") {
       compile = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
-        return;
       }
     } else if (command == "help") {
       display::help();
@@ -210,6 +422,9 @@ Config::Config(u64 count, const char** args)
         noColors = true;
       } else if (arg == "--report") {
         showReport = true;
+      } else if (arg == "--nostd") {
+        stdLibPath = None;
+        isNoStd    = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
       } else if (arg == "--release") {
@@ -221,70 +436,28 @@ Config::Config(u64 count, const char** args)
       } else if (arg == "--keep-llvm") {
         keepLLVMFiles = true;
       } else {
-        if (fs::exists(arg)) {
+        if (fs::exists(fs::current_path() / arg)) {
           paths.push_back(fs::path(arg));
         } else {
-          cli::Error("Provided path does not exist! Please provide path to a "
-                     "file or directory",
-                     arg);
+          log->fatalError("Provided path does not exist! Please provide path to a file or directory", arg);
         }
       }
     }
     if (exitAfter && ((count - 1) >= proceed)) {
-      cli::Warning("Ignoring additional arguments provided...", None);
+      String otherArgs;
+      for (usize i = proceed; i < count; i++) {
+        otherArgs += args[proceed];
+        if (i != (count - 1)) {
+          otherArgs += ", ";
+        }
+      }
+      log->warn("Ignoring additional arguments provided: " + otherArgs, None);
     }
     if (!outputPath.has_value()) {
       outputPath = fs::current_path() / ".qatcache";
     }
+    setupEnvForQat();
   }
 }
-
-Vec<fs::path> Config::getPaths() const { return paths; }
-
-bool Config::shouldSaveDocs() const { return saveDocs; }
-
-bool Config::hasOutputPath() const { return outputPath.has_value(); }
-
-fs::path Config::getOutputPath() const { return outputPath.value_or(fs::current_path()); }
-
-bool Config::shouldShowReport() const { return showReport; }
-
-bool Config::shouldExportAST() const { return export_ast; }
-
-bool Config::isVerbose() const { return verbose; }
-
-bool Config::isRun() const { return run; }
-
-bool Config::isAnalyse() const { return analyse; }
-
-bool Config::hasTargetTriple() const { return targetTriple.has_value(); }
-
-String Config::getTargetTriple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
-
-bool Config::noColorMode() const { return noColors; }
-
-bool Config::isDebugMode() const { return !releaseMode; }
-
-bool Config::isReleaseMode() const { return releaseMode; }
-
-bool Config::hasSysroot() const { return sysRoot.has_value(); }
-
-String Config::getSysroot() const { return sysRoot.value(); }
-
-bool Config::hasClangPath() const { return clangPath.has_value(); }
-
-String Config::getClangPath() const { return clangPath.value(); }
-
-bool Config::hasLinkerPath() const { return linkerPath.has_value(); }
-
-String Config::getLinkerPath() const { return linkerPath.value(); }
-
-bool Config::shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.value_or(false) : true; }
-
-bool Config::shouldBuildShared() const { return buildShared.value_or(false); }
-
-bool Config::exportCodeMetadata() const { return exportCodeInfo; }
-
-const llvm::VersionTuple& Config::getVersionTuple() const { return versionTuple; }
 
 } // namespace qat::cli

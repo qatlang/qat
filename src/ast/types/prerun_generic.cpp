@@ -40,8 +40,6 @@ void PrerunGeneric::emit(IR::Context* ctx) const {
     } else {
       ctx->Error("No prerun expression generated from the default expression provided", astVal->fileRange);
     }
-  } else {
-    ctx->Error("No default value could be found", name.range);
   }
 }
 

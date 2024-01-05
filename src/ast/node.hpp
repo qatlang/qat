@@ -31,7 +31,17 @@ struct VisibilitySpec {
   useit Json toJson() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
 };
 
-//  Node is the base class for all AST members of the language, and it
+class Commentable {
+public:
+  Maybe<Pair<String, FileRange>> commentValue;
+  useit inline bool              hasCommentValue() const { return commentValue.has_value(); }
+};
+
+#define COMMENTABLE_FUNCTIONS                                                                                          \
+  useit bool         isCommentable() const final { return true; }                                                      \
+  useit Commentable* asCommentable() final { return (Commentable*)this; }
+
+// Node is the base class for all AST members of the language, and it
 // requires a FileRange instance that indicates its position in the
 // corresponding file
 class Node {
@@ -43,16 +53,18 @@ public:
 
   explicit Node(FileRange _fileRange);
   virtual ~Node() = default;
-  useit virtual bool       isPrerunNode() const { return false; }
-  virtual void             createModule(IR::Context* ctx) const {}
-  virtual void             handleFilesystemBrings(IR::Context* ctx) const {}
-  virtual void             handleBrings(IR::Context* ctx) const {}
-  virtual void             defineType(IR::Context* ctx) {}
-  virtual void             define(IR::Context* ctx) {}
-  useit virtual IR::Value* emit(IR::Context* ctx) = 0;
-  useit virtual Json       toJson() const         = 0;
-  useit virtual NodeType   nodeType() const       = 0;
-  static void              clearAll();
+  useit virtual bool         isCommentable() const { return false; }
+  useit virtual Commentable* asCommentable() { return nullptr; }
+  useit virtual bool         isPrerunNode() const { return false; }
+  virtual void               createModule(IR::Context* ctx) const {}
+  virtual void               handleFilesystemBrings(IR::Context* ctx) const {}
+  virtual void               handleBrings(IR::Context* ctx) const {}
+  virtual void               defineType(IR::Context* ctx) {}
+  virtual void               define(IR::Context* ctx) {}
+  useit virtual IR::Value*   emit(IR::Context* ctx) = 0;
+  useit virtual Json         toJson() const         = 0;
+  useit virtual NodeType     nodeType() const       = 0;
+  static void                clearAll();
 };
 
 class HolderNode : public Node {

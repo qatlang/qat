@@ -1,7 +1,6 @@
 #include "./opaque.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
-#include "./string_slice.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::IR {
@@ -150,9 +149,9 @@ bool OpaqueType::isTriviallyCopyable() const { return subTy && subTy->isTriviall
 
 bool OpaqueType::isTriviallyMovable() const { return subTy && subTy->isTriviallyMovable(); }
 
-Maybe<bool> OpaqueType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> OpaqueType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (subTy) {
-    return subTy->equalityOf(first, second);
+    return subTy->equalityOf(ctx, first, second);
   } else {
     return None;
   }

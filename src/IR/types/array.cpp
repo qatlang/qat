@@ -62,14 +62,14 @@ Maybe<String> ArrayType::toPrerunGenericString(IR::PrerunValue* val) const {
   }
 }
 
-Maybe<bool> ArrayType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> ArrayType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (canBePrerunGeneric()) {
     if (first->getType()->isSame(second->getType())) {
       auto* array1 = llvm::cast<llvm::ConstantArray>(first->getLLVMConstant());
       auto* array2 = llvm::cast<llvm::ConstantArray>(second->getLLVMConstant());
       for (usize i = 0; i < length; i++) {
         if (!(elementType
-                  ->equalityOf(new IR::PrerunValue(array1->getAggregateElement(i), elementType),
+                  ->equalityOf(ctx, new IR::PrerunValue(array1->getAggregateElement(i), elementType),
                                new IR::PrerunValue(array2->getAggregateElement(i), elementType))
                   .value())) {
           return false;

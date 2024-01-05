@@ -77,7 +77,7 @@ Maybe<String> QatType::toPrerunGenericString(IR::PrerunValue* val) const { retur
 
 bool QatType::isTypeSized() const { return false; }
 
-Maybe<bool> QatType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const { return false; }
+Maybe<bool> QatType::equalityOf(IR::Context*, IR::PrerunValue* first, IR::PrerunValue* second) const { return None; }
 
 bool QatType::checkTypeExists(const String& name) {
   for (const auto& typ : allQatTypes) {

@@ -95,11 +95,13 @@ Maybe<String> UnsignedType::toPrerunGenericString(IR::PrerunValue* val) const {
   return resStr;
 }
 
-Maybe<bool> UnsignedType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> UnsignedType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (first->getType()->isSame(second->getType())) {
-    return llvm::cast<llvm::ConstantInt>(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
-                                                                     first->getLLVMConstant(),
-                                                                     second->getLLVMConstant()))
+    return llvm::cast<llvm::ConstantInt>(
+               llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
+                                                                      first->getLLVMConstant(),
+                                                                      second->getLLVMConstant()),
+                                          ctx->dataLayout.value()))
         ->getValue()
         .getBoolValue();
   } else {

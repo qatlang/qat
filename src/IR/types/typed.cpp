@@ -28,8 +28,11 @@ TypeKind TypedType::typeKind() const { return TypeKind::typed; }
 
 String TypedType::toString() const { return subTy->toString(); }
 
-Maybe<bool> TypedType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
-  return first->getType()->asTyped()->getSubType()->isSame(second->getType()->asTyped()->getSubType());
+Maybe<bool> TypedType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (first->getType()->isTyped() && second->getType()->isTyped()) {
+    return first->getType()->asTyped()->getSubType()->isSame(second->getType()->asTyped()->getSubType());
+  }
+  return None;
 }
 
 bool TypedType::canBePrerunGeneric() const { return true; }

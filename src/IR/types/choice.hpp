@@ -60,7 +60,7 @@ public:
   useit bool                  isTriviallyMovable() const final { return true; }
   useit bool                  canBePrerunGeneric() const final;
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };
 
 } // namespace qat::IR

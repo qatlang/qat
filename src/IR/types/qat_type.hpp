@@ -60,7 +60,7 @@ public:
   useit virtual bool          canBePrerunGeneric() const;
   useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;
   useit virtual bool          isTypeSized() const;
-  useit virtual Maybe<bool>   equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const;
+  useit virtual Maybe<bool>   equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const;
   useit String                getNameForLinking() const;
 
   useit static bool         checkTypeExists(const String& name);

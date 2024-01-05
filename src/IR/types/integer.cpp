@@ -1,6 +1,5 @@
 #include "./integer.hpp"
 #include "../../memory_tracker.hpp"
-#include "../../utils/json.hpp"
 #include "../context.hpp"
 #include "../value.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
@@ -94,11 +93,13 @@ Maybe<String> IntegerType::toPrerunGenericString(IR::PrerunValue* val) const {
   return resStr;
 }
 
-Maybe<bool> IntegerType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> IntegerType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (first->getType()->isSame(second->getType())) {
     return (
-        llvm::cast<llvm::ConstantInt>(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
-                                                                  first->getLLVMConstant(), second->getLLVMConstant()))
+        llvm::cast<llvm::ConstantInt>(
+            llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
+                                                                   first->getLLVMConstant(), second->getLLVMConstant()),
+                                       ctx->dataLayout.value()))
             ->getValue()
             .getBoolValue());
   } else {

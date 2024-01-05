@@ -101,9 +101,9 @@ Maybe<String> DefinitionType::toPrerunGenericString(IR::PrerunValue* constant) c
   }
 }
 
-Maybe<bool> DefinitionType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> DefinitionType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (subType->canBePrerunGeneric()) {
-    return subType->equalityOf(first, second);
+    return subType->equalityOf(ctx, first, second);
   } else {
     return None;
   }
@@ -150,7 +150,8 @@ ast::GenericAbstractType* GenericDefinitionType::getGenericAt(usize index) const
 
 DefinitionType* GenericDefinitionType::fillGenerics(Vec<GenericToFill*>& types, IR::Context* ctx, FileRange range) {
   for (auto var : variants) {
-    if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
+    if (var.check(
+            ctx, [&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }

@@ -448,13 +448,15 @@ ast::GenericAbstractType* GenericCoreType::getGenericAt(usize index) const { ret
 QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, IR::Context* ctx, FileRange range) {
   for (auto& oVar : opaqueVariants) {
     SHOW("Opaque variant: " << oVar.get()->getFullName())
-    if (oVar.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, toFillTypes)) {
+    if (oVar.check(
+            ctx, [&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, toFillTypes)) {
       return oVar.get();
     }
   }
   for (auto& var : variants) {
     SHOW("Core type variant: " << var.get()->getFullName())
-    if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, toFillTypes)) {
+    if (var.check(
+            ctx, [&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, toFillTypes)) {
       return var.get();
     }
   }

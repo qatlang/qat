@@ -1,6 +1,5 @@
 #include "./string_slice.hpp"
 #include "../../IR/logic.hpp"
-#include "../../memory_tracker.hpp"
 #include "../../show.hpp"
 #include "../context.hpp"
 #include "llvm/IR/Constants.h"
@@ -66,11 +65,11 @@ Maybe<String> StringSliceType::toPrerunGenericString(IR::PrerunValue* val) const
   }
 }
 
-Maybe<bool> StringSliceType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
-  return IR::Logic::compareConstantStrings(
-      first->getLLVMConstant()->getAggregateElement(0u), first->getLLVMConstant()->getAggregateElement(1u),
-      second->getLLVMConstant()->getAggregateElement(0u), second->getLLVMConstant()->getAggregateElement(1u),
-      first->getLLVMConstant()->getContext());
+Maybe<bool> StringSliceType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
+  return IR::Logic::compareConstantStrings(first->getLLVMConstant()->getAggregateElement(0u),
+                                           first->getLLVMConstant()->getAggregateElement(1u),
+                                           second->getLLVMConstant()->getAggregateElement(0u),
+                                           second->getLLVMConstant()->getAggregateElement(1u), ctx->llctx);
 }
 
 TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }

@@ -214,10 +214,14 @@ Maybe<String> ChoiceType::toPrerunGenericString(IR::PrerunValue* val) const {
 
 bool ChoiceType::isTypeSized() const { return true; }
 
-Maybe<bool> ChoiceType::equalityOf(IR::PrerunValue* first, IR::PrerunValue* second) const {
+Maybe<bool> ChoiceType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (first->getType()->isSame(second->getType())) {
-    return (*llvm::cast<llvm::ConstantInt>(first->getLLVMConstant())->getValue().getRawData()) ==
-           (*llvm::cast<llvm::ConstantInt>(second->getLLVMConstant())->getValue().getRawData());
+    return llvm::cast<llvm::ConstantInt>(
+               llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::ICMP_EQ, first->getLLVMConstant(),
+                                                                      second->getLLVMConstant()),
+                                          ctx->dataLayout.value()))
+        ->getValue()
+        .getBoolValue();
   } else {
     return false;
   }

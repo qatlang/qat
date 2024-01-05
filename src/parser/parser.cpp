@@ -3546,6 +3546,9 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext& preCtx, const usize 
           name.push_back(Identifier(tok.value, tok.fileRange));
           prev = TokenType::identifier;
         } else {
+          if (relative == 0 && name.front().value == "std") {
+            irCtx->stdLibRequired = true;
+          }
           return {CacheSymbol(relative, name, start, RangeAt(start)), i - 1};
         }
       } else if (tok.type == TokenType::colon) {
@@ -3557,6 +3560,9 @@ Pair<CacheSymbol, usize> Parser::parseSymbol(ParserContext& preCtx, const usize 
       } else {
         break;
       }
+    }
+    if ((relative == 0) && (name.front().value == "std")) {
+      irCtx->stdLibRequired = true;
     }
     return {CacheSymbol(relative, name, start, RangeSpan(start, i - 1)), i - 1};
   } else {

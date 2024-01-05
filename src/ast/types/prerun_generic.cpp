@@ -22,7 +22,7 @@ IR::PrerunValue* PrerunGeneric::getDefault() const { return defaultValue; }
 void PrerunGeneric::emit(IR::Context* ctx) const {
   expressionType = expTy->emit(ctx);
   if (!expressionType->canBePrerunGeneric()) {
-    ctx->Error("The provided type is not qualified to be used for a const generic expression", expTy->fileRange);
+    ctx->Error("The provided type is not qualified to be used for a prerun generic expression", expTy->fileRange);
   }
   if (hasDefault()) {
     auto* astVal = defaultValueAST.value();
@@ -32,14 +32,16 @@ void PrerunGeneric::emit(IR::Context* ctx) const {
     defaultValue = astVal->emit(ctx);
     if (defaultValue) {
       if (!defaultValue->getType()->isSame(expressionType)) {
-        ctx->Error("The expected type for the const generic expression is " +
+        ctx->Error("The expected type for the prerun generic expression is " +
                        ctx->highlightError(expressionType->toString()) + " but the provided expression is of type " +
                        ctx->highlightError(defaultValue->getType()->toString()),
                    astVal->fileRange);
       }
     } else {
-      ctx->Error("No const expression generated from the default expression provided", astVal->fileRange);
+      ctx->Error("No prerun expression generated from the default expression provided", astVal->fileRange);
     }
+  } else {
+    ctx->Error("No default value could be found", name.range);
   }
 }
 

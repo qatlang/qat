@@ -1,5 +1,6 @@
 #include "./bring_entities.hpp"
 #include "../IR/types/region.hpp"
+#include "../cli/config.hpp"
 #include <utility>
 #include <vector>
 
@@ -54,6 +55,11 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
     }
     for (usize i = 0; i < (ent->entity.size() - 1); i++) {
       auto const& idn = ent->entity.at(i);
+      if ((ent->relative == 0) && (i == 0) && (idn.value == "std") && IR::QatModule::hasStdLibModule()) {
+        mod = IR::QatModule::getStdLibModule();
+        mod->addMention(idn.range);
+        continue;
+      }
       if (mod->hasLib(idn.value, reqInfo) || mod->hasBroughtLib(idn.value, ctx->getReqInfoIfDifferentModule(mod)) ||
           mod->hasAccessibleLibInImports(idn.value, reqInfo).first) {
         mod = mod->getLib(idn.value, reqInfo);

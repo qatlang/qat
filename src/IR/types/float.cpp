@@ -1,38 +1,43 @@
 #include "./float.hpp"
 #include "../../memory_tracker.hpp"
-#include "iostream"
+#include "../../show.hpp"
+#include "../context.hpp"
+#include "../value.hpp"
+#include "./c_type.hpp"
+#include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace qat::IR {
 
-FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& llctx) : kind(_kind) {
+FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx) : kind(_kind) {
   switch (kind) {
     case FloatTypeKind::_brain: {
-      llvmType = llvm::Type::getBFloatTy(llctx);
+      llvmType = llvm::Type::getBFloatTy(ctx);
       break;
     }
     case FloatTypeKind::_16: {
-      llvmType = llvm::Type::getHalfTy(llctx);
+      llvmType = llvm::Type::getHalfTy(ctx);
       break;
     }
     case FloatTypeKind::_32: {
-      llvmType = llvm::Type::getFloatTy(llctx);
+      llvmType = llvm::Type::getFloatTy(ctx);
       break;
     }
     case FloatTypeKind::_64: {
-      llvmType = llvm::Type::getDoubleTy(llctx);
+      llvmType = llvm::Type::getDoubleTy(ctx);
       break;
     }
     case FloatTypeKind::_80: {
-      llvmType = llvm::Type::getX86_FP80Ty(llctx);
+      llvmType = llvm::Type::getX86_FP80Ty(ctx);
       break;
     }
     case FloatTypeKind::_128PPC: {
-      llvmType = llvm::Type::getPPC_FP128Ty(llctx);
+      llvmType = llvm::Type::getPPC_FP128Ty(ctx);
       break;
     }
     case FloatTypeKind::_128: {
-      llvmType = llvm::Type::getFP128Ty(llctx);
+      llvmType = llvm::Type::getFP128Ty(ctx);
       break;
     }
   }
@@ -79,6 +84,30 @@ String FloatType::toString() const {
     case FloatTypeKind::_128PPC: {
       return "f128ppc";
     }
+  }
+}
+
+Maybe<String> FloatType::toPrerunGenericString(IR::PrerunValue* val) const {
+  if (val->getType()->isFloat()) {
+    String                   strRef;
+    llvm::raw_string_ostream stream(strRef);
+    val->getLLVMConstant()->printAsOperand(stream);
+    return strRef.find(' ') != String::npos ? strRef.substr(strRef.find(' ') + 1) : strRef;
+  } else {
+    return None;
+  }
+}
+
+Maybe<bool> FloatType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (first->getType()->isSame(second->getType()) && first->getType()->isFloat()) {
+    return llvm::cast<llvm::ConstantInt>(
+               llvm::ConstantFoldConstant(llvm::ConstantExpr::getFCmp(llvm::CmpInst::FCMP_OEQ, first->getLLVMConstant(),
+                                                                      second->getLLVMConstant()),
+                                          ctx->dataLayout.value()))
+        ->getValue()
+        .getBoolValue();
+  } else {
+    return None;
   }
 }
 

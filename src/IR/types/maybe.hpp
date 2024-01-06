@@ -35,6 +35,10 @@ public:
   void       moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
+
+  bool          canBePrerunGeneric() const final { return subTy->isTypeSized() && subTy->canBePrerunGeneric(); }
+  Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final;
+  Maybe<bool>   equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };
 
 } // namespace qat::IR

@@ -5,6 +5,7 @@
 #include "../value.hpp"
 #include "./array.hpp"
 #include "reference.hpp"
+#include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 
@@ -270,6 +271,47 @@ void MaybeType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function
     restBlock->setActive(ctx->builder);
   } else {
     ctx->Error("Could not destroy an instance of type " + ctx->highlightError(toString()), None);
+  }
+}
+
+Maybe<String> MaybeType::toPrerunGenericString(IR::PrerunValue* value) const {
+  if (canBePrerunGeneric()) {
+    if (llvm::cast<llvm::ConstantInt>(value->getLLVMConstant()->getAggregateElement(0u))->getValue().getBoolValue()) {
+      return "is(" +
+             subTy->toPrerunGenericString(new IR::PrerunValue(value->getLLVMConstant()->getAggregateElement(0u), subTy))
+                 .value() +
+             ")";
+    } else {
+      return "none";
+    }
+  } else {
+    return None;
+  }
+}
+
+Maybe<bool> MaybeType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (first->getType()->isSame(second->getType())) {
+    const bool firstHasValue =
+        llvm::cast<llvm::ConstantInt>(first->getLLVMConstant()->getAggregateElement(0u))->getValue().getBoolValue();
+    const bool secondHasValue =
+        llvm::cast<llvm::ConstantInt>(second->getLLVMConstant()->getAggregateElement(0u))->getValue().getBoolValue();
+    if (firstHasValue == secondHasValue) {
+      if (firstHasValue) {
+        return subTy->equalityOf(
+            ctx, new IR::PrerunValue(first->getLLVMConstant()->getAggregateElement(1u), subTy),
+            new IR::PrerunValue(llvm::ConstantFoldConstant(
+                                    llvm::ConstantExpr::getBitCast(second->getLLVMConstant()->getAggregateElement(1u),
+                                                                   subTy->getLLVMType()),
+                                    ctx->dataLayout.value()),
+                                subTy));
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  } else {
+    return None;
   }
 }
 

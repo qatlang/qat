@@ -717,6 +717,13 @@ bool CType::isTypeSized() const { return true; }
 
 TypeKind CType::typeKind() const { return TypeKind::cType; }
 
+Maybe<bool> CType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
+  if (subType->canBePrerunGeneric() && first->getType()->isSame(second->getType())) {
+    return subType->equalityOf(ctx, first, second);
+  }
+  return None;
+}
+
 String CType::toString() const {
   return cTypeKindToString(cTypeKind) +
          ((cTypeKind == CTypeKind::Pointer)

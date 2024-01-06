@@ -52,6 +52,14 @@ private:
 public:
   useit CTypeKind get_c_type_kind() const;
   useit IR::QatType* getSubType() const;
+  useit bool         canBePrerunGeneric() const final { return subType->canBePrerunGeneric(); }
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final {
+    if (subType->canBePrerunGeneric()) {
+      return subType->toPrerunGenericString(value);
+    }
+    return None;
+  }
+  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 
   useit bool isInt() const;
   useit bool isUint() const;

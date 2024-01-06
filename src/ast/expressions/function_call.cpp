@@ -1,10 +1,5 @@
 #include "./function_call.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "default.hpp"
 #include "llvm/IR/DerivedTypes.h"
-#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 

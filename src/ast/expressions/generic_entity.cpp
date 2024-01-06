@@ -1,8 +1,5 @@
 #include "./generic_entity.hpp"
-#include "../../utils/split_string.hpp"
-#include "../constants/default.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/unsigned_literal.hpp"
+#include "../prerun/default.hpp"
 #include "../types/prerun_generic.hpp"
 
 namespace qat::ast {

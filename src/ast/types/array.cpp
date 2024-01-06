@@ -1,7 +1,5 @@
 #include "./array.hpp"
 #include "../../IR/types/array.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/unsigned_literal.hpp"
 #include "../expression.hpp"
 #include "llvm/IR/DerivedTypes.h"
 

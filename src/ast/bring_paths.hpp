@@ -1,10 +1,8 @@
 #ifndef QAT_AST_BRING_PATHS_HPP
 #define QAT_AST_BRING_PATHS_HPP
 
-#include "../utils/visibility.hpp"
-#include "./constants/string_literal.hpp"
+#include "./prerun/string_literal.hpp"
 #include "./sentence.hpp"
-#include <filesystem>
 
 namespace qat::ast {
 

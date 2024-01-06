@@ -1,11 +1,4 @@
 #include "./mix_choice_initialiser.hpp"
-#include "../../IR/types/maybe.hpp"
-#include "../../utils/split_string.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "array_literal.hpp"
-#include "default.hpp"
-#include "none.hpp"
 
 namespace qat::ast {
 

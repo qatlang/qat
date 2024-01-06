@@ -1,8 +1,4 @@
 #include "./member_function_call.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "default.hpp"
 
 namespace qat::ast {
 

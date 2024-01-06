@@ -1,16 +1,7 @@
 #include "./assignment.hpp"
-#include "../../IR/control_flow.hpp"
 #include "../../IR/function.hpp"
-#include "../../IR/logic.hpp"
-#include "../../IR/types/maybe.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "../expressions/array_literal.hpp"
 #include "../expressions/copy.hpp"
-#include "../expressions/default.hpp"
 #include "../expressions/move.hpp"
-#include "../expressions/none.hpp"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {

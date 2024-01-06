@@ -1,11 +1,5 @@
 #include "./ternary.hpp"
 #include "../../IR/control_flow.hpp"
-#include "../../IR/types/maybe.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "./default.hpp"
-#include "./none.hpp"
 
 namespace qat::ast {
 

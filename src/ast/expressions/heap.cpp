@@ -1,9 +1,6 @@
 #include "./heap.hpp"
-#include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/void.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/unsigned_literal.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 

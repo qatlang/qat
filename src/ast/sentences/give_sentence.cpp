@@ -1,13 +1,5 @@
 #include "./give_sentence.hpp"
-#include "../../IR/types/future.hpp"
-#include "../../IR/types/maybe.hpp"
 #include "../../IR/types/void.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/null_pointer.hpp"
-#include "../constants/unsigned_literal.hpp"
-#include "../expressions/default.hpp"
-#include "../expressions/none.hpp"
-#include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 

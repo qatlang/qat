@@ -3,7 +3,6 @@
 
 #include "../IR/context.hpp"
 #include "../utils/file_range.hpp"
-#include "./constants/string_literal.hpp"
 #include "./node.hpp"
 #include "./node_type.hpp"
 

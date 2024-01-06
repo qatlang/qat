@@ -1,6 +1,4 @@
 #include "./prerun_generic.hpp"
-#include "../constants/integer_literal.hpp"
-#include "../constants/unsigned_literal.hpp"
 #include "generic_abstract.hpp"
 
 namespace qat::ast {

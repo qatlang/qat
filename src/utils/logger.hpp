@@ -3,13 +3,15 @@
 
 #include "file_range.hpp"
 #include "helpers.hpp"
-#include <atomic>
-#include <mutex>
-#include <thread>
+#include <syncstream>
 #include <variant>
 
 #define EraseLineAndGoToStartOfLine "\33[2K\r"
 namespace qat {
+
+namespace cli {
+class Config;
+}
 
 using ErrorLocation = std::variant<FileRange, fs::path>;
 
@@ -21,35 +23,33 @@ useit inline fs::path getPathFromErrorLocation(ErrorLocation& loc) {
   }
 }
 
+enum class LogLevel { NONE, VERBOSE };
+
 class Logger {
-  static Maybe<Unique<Logger>>  instance;
-  static std::array<String, 10> progressChars;
+  friend cli::Config;
 
-  std::thread      updateThread;
-  std::atomic_bool stopThread = false;
-  std::mutex       updateBusy;
-  std::atomic_bool mustUpdate = false;
+  static Maybe<Unique<Logger>> instance;
 
-  Vec<String>   lines;
-  bool          hadPersistentPreviously = false;
-  Maybe<String> persistent;
-  bool          showBuffer  = false;
-  usize         bufferState = 0u;
+  LogLevel                 logLevel = LogLevel::NONE;
+  mutable std::osyncstream out;
+  mutable std::osyncstream errOut;
 
 public:
   Logger();
-  ~Logger();
-  useit static Unique<Logger>& get();
+  ~Logger() = default;
+  useit static Unique<Logger> const& get();
 
-  void enableBuffering();
-  void disableBuffering();
-  void setPersistent(String pers);
-  void resetPersistent(bool erasePersistent);
+  inline void say(String message) const {
+    if (logLevel == LogLevel::NONE) {
+      return;
+    }
+    out << message.append("\n");
+  }
 
-  void say(String message);
+  void diagnostic(String message) const;
+  void warn(String message, Maybe<ErrorLocation> range) const;
 
-  void        warn(String message, Maybe<ErrorLocation> range);
-  exitFn void fatalError(String message, Maybe<ErrorLocation> range);
+  exitFn void fatalError(String message, Maybe<ErrorLocation> range) const;
 };
 
 } // namespace qat

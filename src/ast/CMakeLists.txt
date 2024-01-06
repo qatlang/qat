@@ -27,7 +27,7 @@ target_include_directories(QAT_AST PUBLIC "${LLVM_ROOT_DIR}/include")
 add_subdirectory(types/)
 add_subdirectory(expressions/)
 add_subdirectory(sentences/)
-add_subdirectory(constants/)
+add_subdirectory(prerun/)
 
 target_link_directories(QAT_AST
 	PUBLIC ../utils

@@ -18,7 +18,7 @@ Config* Config::instance = nullptr;
 Config const* Config::init(u64          count,
                            const char** args) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
-    return std::construct_at(GetFromRegion(Config), count, args);
+    return std::construct_at(OwnTracked(Config), count, args);
   } else {
     return get();
   }
@@ -111,8 +111,6 @@ void Config::setupEnvForQat() {
   auto& log        = Logger::get();
   auto  qatPathEnv = Config::getExePathFromEnvPath("qat");
   if (!qatPathEnv.has_value()) {
-    log->setPersistent("Configuring environment for qat");
-    log->enableBuffering();
     // QAT_PATH is not set
     auto qatPathRes = getExePath("qat");
     if (qatPathRes.has_value()) {
@@ -177,7 +175,7 @@ void Config::setupEnvForQat() {
     } else {
       log->error("Could not open registry key. Make sure that this executable is running in administrator mode", None);
     }
-    log->say(
+    log->warn(
         "Path has been updated in the registry. Please close and reopen this terminal for the changes to take effect",
         None);
 #else
@@ -208,14 +206,13 @@ void Config::setupEnvForQat() {
                           qatDirPath.parent_path().string() + ":PATH\"" + " to the environment manually",
                       None);
     } else {
-      log->say("PATH has been updated in " + String(foundBashFile ? bashConfigPath.string() : "") +
-               (foundZshFile ? ((foundBashFile ? " and " : "") + zshConfigPath.string()) : "") +
-               ". Please close and reopen the terminal "
-               "for the session to retrieve the updated environment");
+      log->warn("PATH has been updated in " + String(foundBashFile ? bashConfigPath.string() : "") +
+                    (foundZshFile ? ((foundBashFile ? " and " : "") + zshConfigPath.string()) : "") +
+                    ". Please close and reopen the terminal "
+                    "for the session to retrieve the updated environment",
+                None);
     }
 #endif
-    log->disableBuffering();
-    log->resetPersistent(true);
   } else {
     qatDirPath = qatPathEnv.value().parent_path();
   }
@@ -320,7 +317,8 @@ Config::Config(u64 count, const char** args)
     for (usize i = proceed; ((i < count) && !exitAfter); i++) {
       String arg = args[i];
       if (arg == "-v" || arg == "--verbose") {
-        verbose = true;
+        verbose                 = true;
+        Logger::get()->logLevel = LogLevel::VERBOSE;
       } else if (String(arg).find("--target=") == 0) {
         if (String(arg).length() > std::string::traits_type::length("--target=")) {
           targetTriple = String(arg).substr(std::string::traits_type::length("--target="));
@@ -388,6 +386,8 @@ Config::Config(u64 count, const char** args)
         }
       } else if (arg == "--export-ast") {
         export_ast = true;
+      } else if (arg == "--stats") {
+        diagnostic = true;
       } else if (arg == "--export-code-info") {
         exportCodeInfo = true;
       } else if (arg == "-o" || arg == "--output") {

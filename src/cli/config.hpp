@@ -41,6 +41,7 @@ private:
   bool keepLLVMFiles  = false;
   bool exportCodeInfo = false;
   bool isNoStd        = false;
+  bool diagnostic     = false;
 
   Maybe<bool> buildShared;
   Maybe<bool> buildStatic;
@@ -82,6 +83,7 @@ public:
   useit inline bool shouldBuildStatic() const { return buildShared.has_value() ? buildStatic.has_value() : true; }
   useit inline bool shouldBuildShared() const { return buildShared.value_or(false); }
   useit inline bool shouldExit() const { return exitAfter; }
+  useit inline bool doDiagnostics() const { return diagnostic; }
 
   useit inline String getTargetTriple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
   useit inline String getSysroot() const { return sysRoot.value(); }

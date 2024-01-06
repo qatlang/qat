@@ -32,8 +32,10 @@ private:
 
 public:
   QatSitter();
+  useit static QatSitter* get();
+  static QatSitter*       instance;
 
-  void                                       init();
+  void                                       initialise();
   void                                       removeEntityWithPath(const fs::path& path);
   void                                       handlePath(const fs::path& path, IR::Context* ctx);
   useit static bool                          checkExecutableExists(const String& name);

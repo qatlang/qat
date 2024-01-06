@@ -6,8 +6,12 @@
 #include "ast/types/qat_type.hpp"
 #include "cli/config.hpp"
 #include "cli/error.hpp"
+#include "lexer/lexer.hpp"
 #include "lexer/token_type.hpp"
+#include "parser/parser.hpp"
 #include "utils/identifier.hpp"
+#include "utils/logger.hpp"
+#include "utils/qat_region.hpp"
 #include "utils/visibility.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/OptTable.h"
@@ -15,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <ios>
 #include <system_error>
 
 #if PlatformIsWindows
@@ -25,14 +30,30 @@
 
 namespace qat {
 
-QatSitter::QatSitter() : ctx(IR::Context::New()), Lexer(new lexer::Lexer(ctx)), Parser(new parser::Parser(ctx)) {
+QatSitter* QatSitter::instance = nullptr;
+
+QatSitter::QatSitter() : ctx(IR::Context::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)) {
   ctx->sitter = this;
 }
 
-void QatSitter::init() {
+QatSitter* QatSitter::get() {
+  if (instance) {
+    return instance;
+  }
+  instance = std::construct_at(OwnTracked(QatSitter));
+  return instance;
+}
+
+void QatSitter::initialise() {
   auto* config = cli::Config::get();
   for (const auto& path : config->getPaths()) {
     handlePath(path, ctx);
+  }
+  if (config->hasStdLibPath() && ctx->stdLibRequired) {
+    handlePath(config->getStdLibPath(), ctx);
+    if (IR::QatModule::hasFileModule(config->getStdLibPath())) {
+      IR::QatModule::stdLibModule = IR::QatModule::getFileModule(config->getStdLibPath());
+    }
   }
   if (config->isCompile() || config->isAnalyse()) {
     ctx->qatStartTime = std::chrono::high_resolution_clock::now();
@@ -77,10 +98,15 @@ void QatSitter::init() {
                                   mixTypesJson, regionJson, choiceJson, defsJson);
       }
       auto            codeStructFilePath = cfg->getOutputPath() / "QatCodeInfo.json";
+      bool            codeInfoExists     = fs::exists(codeStructFilePath);
       std::error_code errorCode;
-      fs::create_directories(codeStructFilePath.parent_path(), errorCode);
-      if (!errorCode) {
-        std::fstream mStream;
+      if (!codeInfoExists) {
+        fs::create_directories(codeStructFilePath.parent_path(), errorCode);
+      } else {
+        fs::remove(codeStructFilePath);
+      }
+      if (!errorCode || codeInfoExists) {
+        std::ofstream mStream;
         mStream.open(codeStructFilePath, std::ios_base::out);
         if (mStream.is_open()) {
           mStream << Json()
@@ -111,6 +137,16 @@ void QatSitter::init() {
     }
     SHOW("Getting link start time")
     ctx->clangLinkStartTime = std::chrono::high_resolution_clock::now();
+    auto clearLLVM          = [&] {
+      if (!cfg->keepLLVM()) {
+        for (const auto& llPath : ctx->llvmOutputPaths) {
+          fs::remove(llPath);
+        }
+        if (cfg->hasOutputPath() && fs::exists(cfg->getOutputPath() / "llvm")) {
+          fs::remove_all(cfg->getOutputPath() / "llvm");
+        }
+      }
+    };
     if (cfg->isCompile()) {
       SHOW("Checking whether clang exists or not")
       if (checkExecutableExists("clang") || checkExecutableExists("clang++")) {
@@ -123,15 +159,8 @@ void QatSitter::init() {
         }
         ctx->clangLinkEndTime = std::chrono::high_resolution_clock::now();
         ctx->writeJsonResult(true);
-        if (!cfg->keepLLVM()) {
-          for (const auto& llPath : ctx->llvmOutputPaths) {
-            fs::remove(llPath);
-          }
-          if (cfg->hasOutputPath()) {
-            fs::remove_all(cfg->getOutputPath() / "llvm");
-          }
-        }
-        if (cfg->isRun()) {
+        clearLLVM();
+        if (cfg->isRun() && !ctx->executablePaths.empty()) {
           bool hasMultiExecutables = ctx->executablePaths.size() > 1;
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.string())
@@ -144,6 +173,7 @@ void QatSitter::init() {
                          None);
             }
           }
+          std::cout << "\n\n";
           SHOW("Ran all compiled executables")
         }
       } else {
@@ -152,6 +182,7 @@ void QatSitter::init() {
                    None);
       }
     } else {
+      clearLLVM();
       ctx->writeJsonResult(true);
     }
   }
@@ -227,13 +258,28 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
               parentMod, fs::absolute(libCheckRes->second), path, Identifier(libCheckRes->first, libCheckRes->second),
               Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
         } else {
-          auto* subfolder = IR::QatModule::CreateSubmodule(
-              parentMod, item.path(), path, Identifier(fs::absolute(item.path().filename()).string(), item.path()),
-              IR::ModuleType::folder, VisibilityInfo::pub(), ctx);
-          fileEntities.push_back(subfolder);
-          recursiveModuleCreator(subfolder, item);
+          auto dirQatChecker = [](const fs::directory_entry& entry) {
+            bool foundQatFile = false;
+            for (auto const& dirItem : fs::directory_iterator(entry)) {
+              if (dirItem.is_regular_file() && dirItem.path().extension() == ".qat") {
+                foundQatFile = true;
+                break;
+              }
+            }
+            return foundQatFile;
+          };
+          if (dirQatChecker(item)) {
+            auto* subfolder = IR::QatModule::CreateSubmodule(
+                parentMod, item.path(), path, Identifier(fs::absolute(item.path().filename()).string(), item.path()),
+                IR::ModuleType::folder, VisibilityInfo::pub(), ctx);
+            fileEntities.push_back(subfolder);
+            recursiveModuleCreator(subfolder, item);
+          } else {
+            recursiveModuleCreator(parentMod, item);
+          }
         }
-      } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item)) {
+      } else if (fs::is_regular_file(item) && !IR::QatModule::hasFileModule(item) &&
+                 (item.path().extension() == ".qat")) {
         auto libCheckRes = detectLibFile(item);
         if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
           ctx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
@@ -361,33 +407,11 @@ bool QatSitter::checkExecutableExists(const String& name) {
 }
 
 void QatSitter::destroy() {
-  SHOW("About to delete filesystem entities")
-  for (auto* mod : fileEntities) {
-    delete mod;
-  }
-  SHOW("Deleted filesystem entities")
-  fileEntities.clear();
-  SHOW("About to delete IR::Context")
-  delete ctx;
-  SHOW("Deleted IR::Context")
-  SHOW("About to delete Parser")
-  delete Parser;
-  SHOW("Deleted Parser")
-  SHOW("About to delete Lexer")
-  delete Lexer;
-  SHOW("Deleted Lexer")
-  SHOW("Clearing nodes")
+  IR::QatModule::clearAll();
   ast::Node::clearAll();
-  SHOW("Nodes cleared")
-  SHOW("Clearing AST types")
   ast::QatType::clearAll();
-  SHOW("AST types cleared")
-  SHOW("Clearing IR values")
   IR::Value::clearAll();
-  SHOW("Values cleared")
-  SHOW("Clearing QatTypes")
   IR::QatType::clearAll();
-  SHOW("QatTypes cleared")
 }
 
 QatSitter::~QatSitter() { destroy(); }

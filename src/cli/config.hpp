@@ -11,7 +11,7 @@ namespace qat::cli {
 
 class Config {
 private:
-  Config(u64 count, const char** args);
+  static Config* instance;
 
   fs::path qatDirPath;
   String   buildCommit;
@@ -46,12 +46,12 @@ private:
   Maybe<bool> buildStatic;
 
 public:
-  static Config* instance;
+  Config(u64 count, const char** args);
 
-  static Config* init(u64          count,
-                      const char** args); // NOLINT(modernize-avoid-c-arrays)
-  static Config* get();
-  static bool    hasInstance();
+  static Config const* init(u64          count,
+                            const char** args); // NOLINT(modernize-avoid-c-arrays)
+  static Config const* get();
+  static bool          hasInstance();
 
   static Maybe<std::filesystem::path> getExePathFromEnvPath(String name);
   static Maybe<std::filesystem::path> getExePath(String name);

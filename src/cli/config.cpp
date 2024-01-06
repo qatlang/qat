@@ -1,7 +1,6 @@
 #include "config.hpp"
-#include "../memory_tracker.hpp"
-#include "../show.hpp"
 #include "../utils/logger.hpp"
+#include "../utils/qat_region.hpp"
 #include "display.hpp"
 #include "error.hpp"
 #include "version.hpp"
@@ -16,10 +15,10 @@ namespace qat::cli {
 
 Config* Config::instance = nullptr;
 
-Config* Config::init(u64          count,
-                     const char** args) { // NOLINT(modernize-avoid-c-arrays)
+Config const* Config::init(u64          count,
+                           const char** args) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
-    return new Config(count, args);
+    return std::construct_at(GetFromRegion(Config), count, args);
   } else {
     return get();
   }
@@ -27,7 +26,7 @@ Config* Config::init(u64          count,
 
 bool Config::hasInstance() { return Config::instance != nullptr; }
 
-Config* Config::get() { return Config::instance; }
+Config const* Config::get() { return Config::instance; }
 
 Maybe<std::filesystem::path> Config::getExePathFromEnvPath(String name) {
   auto hostTriple = llvm::Triple(LLVM_HOST_TRIPLE);

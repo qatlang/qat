@@ -4,8 +4,10 @@ add_library(QAT_UTILS
 	get_parent_names.cpp
 	identifier.cpp
 	is_integer.cpp
+	logger.cpp
 	number_to_position.cpp
 	parse_boxes_identifier.cpp
+	qat_region.cpp
 	random_number.cpp
 	split_string.cpp
 	string_to_callingconv.cpp

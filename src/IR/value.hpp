@@ -2,8 +2,6 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../IR/types/typed.hpp"
-#include "../utils/json.hpp"
-#include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
@@ -69,7 +67,7 @@ public:
 
   useit llvm::Constant* getLLVM() const final;
 
-  bool isEqualTo(PrerunValue* other);
+  bool isEqualTo(IR::Context* ctx, PrerunValue* other);
 
   useit bool isPrerunValue() const final;
 };

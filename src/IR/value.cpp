@@ -1,7 +1,5 @@
 #include "./value.hpp"
-#include "../show.hpp"
 #include "./types/qat_type.hpp"
-#include "./types/reference.hpp"
 #include "context.hpp"
 #include "logic.hpp"
 #include "types/function.hpp"
@@ -102,7 +100,7 @@ llvm::Constant* PrerunValue::getLLVM() const { return (llvm::Constant*)ll; }
 
 bool PrerunValue::isPrerunValue() const { return true; }
 
-bool PrerunValue::isEqualTo(PrerunValue* other) {
+bool PrerunValue::isEqualTo(IR::Context* ctx, PrerunValue* other) {
   if (getType()->isTyped()) {
     if (other->getType()->isTyped()) {
       return getType()->asTyped()->getSubType()->isSame(other->getType()->asTyped()->getSubType());
@@ -119,7 +117,7 @@ bool PrerunValue::isEqualTo(PrerunValue* other) {
     } else if (other->getType()->isTyped()) {
       return false;
     } else {
-      return getType()->equalityOf(this, other).value_or(false);
+      return getType()->equalityOf(ctx, this, other).value_or(false);
     }
   }
 }

@@ -183,6 +183,7 @@ class QatModule final : public Uniq, public EntityOverview {
   friend class GenericFunction;
   friend class GenericCoreType;
   friend class GenericDefinitionType;
+  friend class Function;
 
 public:
   QatModule(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
@@ -190,10 +191,15 @@ public:
 
   static Vec<QatModule*> allModules;
 
+  static QatModule* stdLibModule;
+
   static void clearAll();
 
-  useit static bool       hasFileModule(const fs::path& fPath);
-  useit static bool       hasFolderModule(const fs::path& fPath);
+  useit static bool hasStdLibModule();
+  useit static bool hasFileModule(const fs::path& fPath);
+  useit static bool hasFolderModule(const fs::path& fPath);
+
+  useit static QatModule* getStdLibModule();
   useit static QatModule* getFileModule(const fs::path& fPath);
   useit static QatModule* getFolderModule(const fs::path& fPath);
 

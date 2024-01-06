@@ -5,6 +5,7 @@
 #include "../ast/type_definition.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
+#include "../utils/logger.hpp"
 #include "brought.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
@@ -35,11 +36,17 @@ namespace qat::IR {
 
 Vec<QatModule*> QatModule::allModules{};
 
+QatModule* QatModule::stdLibModule = nullptr;
+
 void QatModule::clearAll() {
   for (auto* mod : allModules) {
     delete mod;
   }
 }
+
+bool QatModule::hasStdLibModule() { return stdLibModule != nullptr; }
+
+QatModule* QatModule::getStdLibModule() { return stdLibModule; }
 
 bool QatModule::hasFileModule(const fs::path& fPath) {
   for (auto* mod : allModules) {
@@ -92,7 +99,7 @@ QatModule::QatModule(Identifier _name, fs::path _filepath, fs::path _basePath, M
   llvmModule = new llvm::Module(getFullName(), ctx->llctx);
   llvmModule->setModuleIdentifier(getFullName());
   llvmModule->setSourceFileName(filePath.string());
-  llvmModule->setCodeModel(llvm::CodeModel::Medium);
+  llvmModule->setCodeModel(llvm::CodeModel::Small);
   llvmModule->setSDKVersion(cli::Config::get()->getVersionTuple());
   llvmModule->setTargetTriple(cli::Config::get()->getTargetTriple());
   if (ctx->dataLayout) {
@@ -102,7 +109,6 @@ QatModule::QatModule(Identifier _name, fs::path _filepath, fs::path _basePath, M
 }
 
 QatModule::~QatModule() {
-  SHOW("Deleting module :: " << name.value << " :: " << filePath)
   delete llvmModule;
   for (auto* tFn : genericFunctions) {
     delete tFn;
@@ -810,7 +816,8 @@ void QatModule::bringGlobalEntity(GlobalEntity* gEnt, const VisibilityInfo& visi
 
 bool QatModule::hasFunction(const String& name, AccessInfo reqInfo) const {
   SHOW("Function to be checked: " << name)
-  SHOW("This pointer: " << this)
+  SHOW("Module name " << getName())
+  SHOW("Module pointer: " << this)
   SHOW("Function count: " << functions.size())
   for (auto* function : functions) {
     SHOW("Function in module: " << function)
@@ -1889,7 +1896,8 @@ void QatModule::emitNodes(IR::Context* ctx) {
 
 void QatModule::compileToObject(IR::Context* ctx) {
   if (!isCompiledToObject) {
-    SHOW("Compiling Module `" << name.value << "` from file " << filePath.string())
+    auto& log = Logger::get();
+    log->say("Compiling module `" + name.value + "` from file " + filePath.string());
     auto*  cfg = cli::Config::get();
     String compileCommand(cfg->hasClangPath() ? (fs::absolute(cfg->getClangPath()).string() + " ") : "clang ");
     if (cfg->shouldBuildShared()) {
@@ -1929,7 +1937,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
     fs::create_directories(objectFilePath.value().parent_path(), errorCode);
     if (!errorCode) {
       compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
-      SHOW("Command is: " << compileCommand)
+      log->say("Compile command is: " + compileCommand);
       if (std::system(compileCommand.c_str())) {
         ctx->Error("Could not compile the LLVM file: " + ctx->highlightError(filePath.string()), None);
       }
@@ -2001,6 +2009,8 @@ std::set<String> QatModule::getAllObjectPaths() const {
 
 void QatModule::bundleLibs(IR::Context* ctx) {
   if (!isBundled) {
+    auto& log = Logger::get();
+    log->say("Bundling library for module `" + name.value + "` in file " + filePath.string());
     for (auto* sub : submodules) {
       sub->bundleLibs(ctx);
     }

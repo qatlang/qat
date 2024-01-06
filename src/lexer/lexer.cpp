@@ -22,6 +22,8 @@
 
 namespace qat::lexer {
 
+Lexer* Lexer::get(IR::Context* ctx) { return std::construct_at(OwnTracked(Lexer), ctx); }
+
 Lexer::~Lexer() {
   SHOW("About to delete remaining tokens")
   delete tokens;
@@ -38,8 +40,9 @@ Lexer::~Lexer() {
 }
 
 u64 Lexer::timeInMicroSeconds = 0;
+u64 Lexer::lineCount          = 0;
 
-Deque<Token>* Lexer::getTokens() {
+Vec<Token>* Lexer::getTokens() {
   auto* res = tokens;
   tokens    = nullptr;
   return res;
@@ -117,16 +120,14 @@ void Lexer::analyse() {
   if (tokens->back().type != TokenType::endOfFile) {
     tokens->push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0)));
   }
-  if (tokens->size() == 2) {
-    throwError("This file is empty");
-  }
   timeInMicroSeconds +=
       std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime)
           .count();
+  lineCount += lineNumber;
 }
 
 void Lexer::changeFile(fs::path newFilePath) {
-  tokens = new Deque<Token>{};
+  tokens = new Vec<Token>();
   content.clear();
   filePath            = std::move(newFilePath);
   prev                = -1;
@@ -228,8 +229,10 @@ Token Lexer::tokeniser() {
       String value = "/";
       read();
       if (current == '*') {
-        bool star = false;
+        bool   star = false;
+        String commentValue;
         read();
+        auto commentPos = this->getPosition(0);
         while ((!star || (current != '/')) && !file.eof()) {
           if (star) {
             star = false;
@@ -238,23 +241,31 @@ Token Lexer::tokeniser() {
             star = true;
           }
           read();
+          if (!star || (current != '/')) {
+            commentValue += current;
+            if (current == '\n') {
+              commentPos.end.line++;
+              commentPos.end.character = 0;
+            } else {
+              commentPos.end.character++;
+            }
+          }
         }
-        if (file.eof()) {
-          return Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0));
-        } else {
-          read();
-          return tokeniser();
-        }
+        commentPos.end.character--;
+        read();
+        return Token::valued(TokenType::comment, commentValue, commentPos);
       } else if (current == '/') {
+        String commentValue;
+        auto   commentPos = this->getPosition(0);
         while ((current != '\n' && prev != '\r') && !file.eof()) {
           read();
+          if (current != '\n' && current != '\r') {
+            commentValue += current;
+            commentPos.end.character++;
+          }
         }
-        if (file.eof()) {
-          return Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0));
-        } else {
-          read();
-          return tokeniser();
-        }
+        SHOW("Single line comment value is " << commentValue)
+        return Token::valued(TokenType::comment, commentValue, this->getPosition(commentValue.length()));
       } else {
         return Token::valued(TokenType::binaryOperator, value, this->getPosition(1));
       }
@@ -438,18 +449,21 @@ Token Lexer::tokeniser() {
       bool         exponentialFloat = false;
       const String alphabets("abcdefghijklmnopqrstuvwxyz");
       const String digits("0123456789");
-      bool         foundRadix = true;
+      bool         foundRadix = false;
       if (current == '0') {
         read();
         if (current == 'b') {
           read();
-          numVal = "0b";
+          numVal     = "0b";
+          foundRadix = true;
         } else if (current == 'c') {
           read();
-          numVal = "0c";
+          numVal     = "0c";
+          foundRadix = true;
         } else if (current == 'x') {
           read();
-          numVal = "0x";
+          numVal     = "0x";
+          foundRadix = true;
         } else if (current == 'r') {
           numVal += "0r";
           read();
@@ -463,26 +477,31 @@ Token Lexer::tokeniser() {
           } else {
             throwError("Invalid custom radix integer literal");
           }
+          foundRadix = true;
         } else {
           numVal += "0";
-          foundRadix = false;
         }
       }
       bool foundSpec = false;
-      while (((digits.find(current) != String::npos) || (foundRadix && (alphabets.find(current) != String::npos)) ||
+      while (((digits.find(current) != String::npos) ||
+              (foundRadix && !foundSpec && (alphabets.find(current) != String::npos)) ||
               (!isFloat && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
               (!foundSpec && (current == '_'))) &&
              !file.eof()) {
-        if (!foundRadix && current == 'e') {
+        if (!foundRadix && !exponentialFloat && current == 'e') {
           isFloat          = true;
           exponentialFloat = true;
-          String expStr;
+          String expStr("e");
           read();
+          if (current == '-') {
+            expStr += current;
+            read();
+          }
           while (digits.find(current) != String::npos) {
             expStr += current;
             read();
           }
-          numVal += "e" + expStr;
+          numVal += expStr;
           continue;
         } else if (current == '.') {
           read();
@@ -501,7 +520,8 @@ Token Lexer::tokeniser() {
             if (fileRange.end.character > 0) {
               fileRange.end.character--;
             }
-            buffer.push_back(Token::valued(TokenType::integerLiteral, numVal, fileRange));
+            buffer.push_back(
+                Token::valued(isFloat ? TokenType::floatLiteral : TokenType::integerLiteral, numVal, fileRange));
             return tokeniser();
           }
         } else if (current == '_') {
@@ -533,8 +553,7 @@ Token Lexer::tokeniser() {
         read();
       }
       return Token::valued(isFloat ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
-                           this->getPosition(numVal.length()) //
-      );
+                           this->getPosition(numVal.length()));
     }
     case -1: {
       return Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0));

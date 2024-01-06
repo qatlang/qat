@@ -3,12 +3,8 @@
 
 #include "../utils/file_range.hpp"
 #include "./token.hpp"
-#include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <string>
-#include <vector>
 
 namespace qat::IR {
 class Context;
@@ -19,11 +15,11 @@ namespace qat::lexer {
 class Lexer {
 private:
   fs::path      filePath;
-  std::fstream  file;
+  std::ifstream file;
   Vec<String>   content;
   char          prev;
   char          current;
-  Deque<Token>* tokens;
+  Vec<Token>*   tokens = nullptr;
   Deque<Token>  buffer;
 
   Vec<TokenType> bracketOccurences;
@@ -33,7 +29,8 @@ private:
   IR::Context* irCtx;
 
 public:
-  Lexer(IR::Context* _irCtx) : irCtx(_irCtx){};
+  explicit Lexer(IR::Context* _irCtx) : irCtx(_irCtx){};
+  useit static Lexer* get(IR::Context* ctx);
 
   ~Lexer();
 
@@ -41,6 +38,7 @@ public:
   u64        characterNumber = 0;
   Maybe<u64> previousLineEnd;
   static u64 timeInMicroSeconds;
+  static u64 lineCount;
 
   void               clearTokens();
   void               throwError(const String& message, Maybe<usize> offset = None);
@@ -48,7 +46,7 @@ public:
   void               read();
   void               changeFile(fs::path newFile);
   useit static Token wordToToken(const String& value, Lexer* lexInst);
-  useit Deque<Token>* getTokens();
+  useit Vec<Token>* getTokens();
   useit Vec<String> getContent() const;
   useit Token       tokeniser();
   useit FileRange   getPosition(u64 length);

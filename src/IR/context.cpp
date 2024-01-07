@@ -5,6 +5,8 @@
 #include "../lexer/lexer.hpp"
 #include "../parser/parser.hpp"
 #include "../qat_sitter.hpp"
+#include "../utils/logger.hpp"
+#include "../utils/qat_region.hpp"
 #include "./value.hpp"
 #include "fstream"
 #include "member_function.hpp"
@@ -13,8 +15,6 @@
 #include "clang/Basic/DiagnosticDriver.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/Target/TargetOptions.h"
-#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -56,6 +56,7 @@ QatError& QatError::add(String value) {
 QatError& QatError::colored(String value, const char* color) {
   auto* cfg = cli::Config::get();
   message.append(ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`"));
+  return *this;
 }
 
 void QatError::setRange(FileRange range) { fileRange = range; }
@@ -420,19 +421,7 @@ void Context::writeJsonResult(bool status) const {
     problems.push_back((Json)prob);
   }
   SHOW("Pushed all code problems")
-  Json               result;
-  unsigned long long qatCompileTime = 0;
-  unsigned long long clangTime      = 0;
-  if (qatStartTime) {
-    qatCompileTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                         qatEndTime.value_or(std::chrono::high_resolution_clock::now()) - qatStartTime.value())
-                         .count();
-  }
-  if (clangLinkStartTime) {
-    clangTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                    clangLinkEndTime.value_or(std::chrono::high_resolution_clock::now()) - clangLinkStartTime.value())
-                    .count();
-  }
+  Json result;
   SHOW("Setting binary sizes in result")
   Vec<JsonValue> binarySizesJson;
   for (auto binSiz : binarySizes) {
@@ -441,10 +430,11 @@ void Context::writeJsonResult(bool status) const {
   SHOW("Creating JSON object for result")
   result._("status", status)
       ._("problems", problems)
+      ._("lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0)
       ._("lexerTime", lexer::Lexer::timeInMicroSeconds)
       ._("parserTime", parser::Parser::timeInMicroSeconds)
-      ._("compilationTime", qatCompileTime)
-      ._("linkingTime", clangTime)
+      ._("compilationTime", qatCompileTimeInMs.has_value() ? qatCompileTimeInMs.value() : JsonValue())
+      ._("linkingTime", clangAndLinkTimeInMs.has_value() ? clangAndLinkTimeInMs.value() : JsonValue())
       ._("binarySizes", binarySizesJson)
       ._("hasMain", hasMain);
   std::ofstream output;
@@ -572,7 +562,7 @@ void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   addError(message, fileRange);
   writeJsonResult(false);
   sitter->destroy();
-  delete cli::Config::get();
+  TrackedRegion::destroyMembers();
   MemoryTracker::report();
   exit(0);
 }
@@ -583,7 +573,7 @@ void Context::Errors(Vec<QatError> errors) {
   }
   writeJsonResult(false);
   sitter->destroy();
-  delete cli::Config::get();
+  TrackedRegion::destroyMembers();
   MemoryTracker::report();
   exit(0);
 }

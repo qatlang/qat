@@ -106,7 +106,7 @@ FileRange GenericParameter::getRange() const { return range; }
 
 bool GenericParameter::isSame(const String& cName) const { return name.value == cName; }
 
-bool GenericParameter::isEqualTo(GenericToFill* fill) const {
+bool GenericParameter::isEqualTo(IR::Context* ctx, GenericToFill* fill) const {
   if (isTyped()) {
     if (fill->isType()) {
       return asTyped()->getType()->isSame(fill->asType());
@@ -125,7 +125,7 @@ bool GenericParameter::isEqualTo(GenericToFill* fill) const {
         return false;
       }
     } else {
-      return fill->asPrerun()->isEqualTo(asPrerun()->getExpression());
+      return fill->asPrerun()->isEqualTo(ctx, asPrerun()->getExpression());
     }
   }
 }

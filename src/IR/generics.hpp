@@ -64,7 +64,7 @@ public:
   useit bool           isPrerun() const;
   useit PrerunGeneric* asPrerun() const;
 
-  useit bool isEqualTo(GenericToFill* fill) const;
+  useit bool isEqualTo(IR::Context* ctx, GenericToFill* fill) const;
 
   useit String       toString() const;
   useit virtual Json toJson() const = 0;

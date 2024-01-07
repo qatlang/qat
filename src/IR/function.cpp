@@ -493,7 +493,8 @@ useit bool GenericFunction::allTypesHaveDefaults() const {
 
 Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Context* ctx, const FileRange& fileRange) {
   for (auto var : variants) {
-    if (var.check([&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
+    if (var.check(
+            ctx, [&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }

@@ -3,9 +3,9 @@
 
 #include "../cli/color.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/qat_region.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
-#include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/TargetInfo.h"
 #include "llvm/IR/ConstantFolder.h"
 #include "llvm/IR/DataLayout.h"
@@ -13,7 +13,6 @@
 #include "llvm/IR/LLVMContext.h"
 #include <chrono>
 #include <string>
-#include <vector>
 
 using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
 
@@ -152,25 +151,21 @@ private:
 
   QatSitter* sitter = nullptr;
 
-  Context();
-
   // NOTE - Single instance for now
   static Context* instance;
 
 public:
+  Context();
+
   static inline Context* New() {
     if (instance) {
       return instance;
-    } else {
-      instance = new Context();
-      return instance;
     }
+    instance = std::construct_at(OwnTracked(Context));
+    return instance;
   }
 
-  useit inline llvm::LLVMContext& getllCtx() {
-    std::cout << "llctx(" << &llctx << ")\n";
-    return (this->llctx);
-  }
+  useit inline llvm::LLVMContext& getllCtx() { return this->llctx; }
 
   llvm::LLVMContext       llctx;
   clang::TargetInfo*      clangTargetInfo;
@@ -185,6 +180,7 @@ public:
 
   // META
   bool                             hasMain;
+  bool                             stdLibRequired = false;
   mutable u64                      stringCount;
   Vec<fs::path>                    llvmOutputPaths;
   Vec<String>                      nativeLibsToLink;
@@ -192,10 +188,8 @@ public:
   mutable Vec<usize>               lastMainActiveGeneric;
   mutable Vec<CodeProblem>         codeProblems;
   mutable Vec<usize>               binarySizes;
-  mutable Maybe<HighResTimePoint>  qatStartTime;
-  mutable Maybe<HighResTimePoint>  qatEndTime;
-  mutable Maybe<HighResTimePoint>  clangLinkStartTime;
-  mutable Maybe<HighResTimePoint>  clangLinkEndTime;
+  mutable Maybe<u64>               qatCompileTimeInMs;
+  mutable Maybe<u64>               clangAndLinkTimeInMs;
 
   useit inline bool          hasActiveFunction() const { return activeFunction != nullptr; }
   useit inline IR::Function* getActiveFunction() const { return activeFunction; }

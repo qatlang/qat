@@ -20,6 +20,8 @@ IR::PrerunValue* PrerunPlainInit::emit(IR::Context* ctx) {
                      " but the type inferred from scope is " + ctx->highlightError(inferredType->toString()),
                  type.value()->fileRange);
     }
+  } else if (!type.has_value() && !isTypeInferred()) {
+    ctx->Error("No type is provided for plain initialisation and no type could be inferred from scope", fileRange);
   }
   if (typeEmit->isCoreType()) {
     auto cTy = typeEmit->asCore();

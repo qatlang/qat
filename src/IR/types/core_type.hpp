@@ -86,6 +86,44 @@ public:
   useit bool isMoveAssignable() const final;
   useit bool isDestructible() const final;
 
+  useit inline bool canBePrerun() const final {
+    for (auto* mem : members) {
+      if (!mem->type->canBePrerun()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  useit inline bool canBePrerunGeneric() const final {
+    for (auto* mem : members) {
+      if (!mem->type->canBePrerunGeneric()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  useit inline Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final {
+    if (canBePrerunGeneric()) {
+      auto   valConst = value->getLLVMConstant();
+      String result(getFullName());
+      result.append("{ ");
+      for (usize i = 0; i < members.size(); i++) {
+        result.append(
+            members[i]
+                ->type->toPrerunGenericString(new IR::PrerunValue(valConst->getAggregateElement(i), members[i]->type))
+                .value());
+        if (i != (members.size() - 1)) {
+          result.append(", ");
+        }
+      }
+      result.append(" }");
+      return result;
+    }
+    return None;
+  }
+
   void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
   void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
   void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;

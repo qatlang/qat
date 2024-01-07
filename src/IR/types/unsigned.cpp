@@ -37,20 +37,6 @@ UnsignedType* UnsignedType::getBool(IR::Context* ctx) {
   return new UnsignedType(1u, ctx, true);
 }
 
-u64 UnsignedType::getBitwidth() const { return bitWidth; }
-
-bool UnsignedType::isBitWidth(u64 width) const { return bitWidth == width; }
-
-bool UnsignedType::isBoolean() const { return isBool; }
-
-TypeKind UnsignedType::typeKind() const { return TypeKind::unsignedInteger; }
-
-bool UnsignedType::isTypeSized() const { return true; }
-
-String UnsignedType::toString() const { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
-
-bool UnsignedType::canBePrerunGeneric() const { return true; }
-
 Maybe<String> UnsignedType::toPrerunGenericString(IR::PrerunValue* val) const {
   llvm::ConstantInt* digit = nullptr;
   auto               len   = llvm::ConstantInt::get(llvm::Type::getInt64Ty(getLLVMType()->getContext()), 1u, false);

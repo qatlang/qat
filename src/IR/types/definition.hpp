@@ -54,7 +54,8 @@ public:
   void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
   void updateOverview() final;
 
-  useit bool canBePrerunGeneric() const final;
+  useit bool canBePrerun() const final { return subType->canBePrerun(); }
+  useit bool canBePrerunGeneric() const final { return subType->canBePrerunGeneric(); }
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* constant) const final;
   useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 

@@ -1,7 +1,5 @@
 #include "./array.hpp"
-#include "../../memory_tracker.hpp"
 #include "../context.hpp"
-#include "../control_flow.hpp"
 #include "../value.hpp"
 #include "./qat_type.hpp"
 #include "reference.hpp"
@@ -37,8 +35,6 @@ u64 ArrayType::getLength() const { return length; }
 TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
 String ArrayType::toString() const { return elementType->toString() + "[" + std::to_string(length) + "]"; }
-
-bool ArrayType::canBePrerunGeneric() const { return elementType->canBePrerunGeneric(); }
 
 Maybe<String> ArrayType::toPrerunGenericString(IR::PrerunValue* val) const {
   if (canBePrerunGeneric()) {

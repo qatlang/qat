@@ -91,8 +91,6 @@ void DefinitionType::updateOverview() {
       ._("moduleID", parent->getID());
 }
 
-bool DefinitionType::canBePrerunGeneric() const { return subType->canBePrerunGeneric(); }
-
 Maybe<String> DefinitionType::toPrerunGenericString(IR::PrerunValue* constant) const {
   if (subType->canBePrerunGeneric()) {
     return subType->toPrerunGenericString(constant);

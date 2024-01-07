@@ -46,8 +46,6 @@ StringSliceType* StringSliceType::get(IR::Context* ctx, bool isPacked) {
   return new StringSliceType(ctx, isPacked);
 }
 
-bool StringSliceType::canBePrerunGeneric() const { return true; }
-
 Maybe<String> StringSliceType::toPrerunGenericString(IR::PrerunValue* val) const {
   auto* initial = llvm::cast<llvm::ConstantDataArray>(val->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u));
   if (initial->getNumElements() == 1u) {

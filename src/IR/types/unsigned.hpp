@@ -18,16 +18,17 @@ private:
 public:
   useit static UnsignedType* get(u64 bits, IR::Context* llctx);
   useit static UnsignedType* getBool(IR::Context* llctx);
-  useit u64                  getBitwidth() const;
-  useit bool                 isBitWidth(u64 width) const;
-  useit bool                 isBoolean() const;
-  useit TypeKind             typeKind() const final;
-  useit String               toString() const final;
+  useit inline u64           getBitwidth() const { return bitWidth; }
+  useit inline bool          isBitWidth(u64 width) const { return bitWidth == width; }
+  useit inline bool          isBoolean() const { return isBool; }
+  useit inline TypeKind      typeKind() const final { return TypeKind::unsignedInteger; }
+  useit inline String        toString() const final { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
-  useit bool isTypeSized() const final;
-  useit bool isTriviallyCopyable() const final { return true; }
-  useit bool isTriviallyMovable() const final { return true; }
-  useit bool canBePrerunGeneric() const final;
+  useit inline bool isTypeSized() const final { return true; }
+  useit inline bool isTriviallyCopyable() const final { return true; }
+  useit inline bool isTriviallyMovable() const final { return true; }
+  useit inline bool canBePrerun() const final { return true; }
+  useit inline bool canBePrerunGeneric() const final { return true; }
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };

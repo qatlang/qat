@@ -73,6 +73,8 @@ String QatType::getNameForLinking() const { return linkingName; }
 
 bool QatType::canBePrerunGeneric() const { return false; }
 
+bool QatType::canBePrerun() const { return false; }
+
 Maybe<String> QatType::toPrerunGenericString(IR::PrerunValue* val) const { return None; }
 
 bool QatType::isTypeSized() const { return false; }

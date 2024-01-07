@@ -191,8 +191,6 @@ void ChoiceType::updateOverview() {
   }
 }
 
-bool ChoiceType::canBePrerunGeneric() const { return true; }
-
 Maybe<String> ChoiceType::toPrerunGenericString(IR::PrerunValue* val) const {
   if (canBePrerunGeneric()) {
     for (auto const& field : fields) {

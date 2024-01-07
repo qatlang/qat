@@ -18,7 +18,8 @@ public:
   useit TypeKind                typeKind() const override;
   useit String                  toString() const override;
 
-  useit bool canBePrerunGeneric() const final;
+  useit bool canBePrerun() const final { return true; }
+  useit bool canBePrerunGeneric() const final { return true; }
   useit bool isTypeSized() const final;
   useit bool isTriviallyCopyable() const final { return true; }
   useit bool isTriviallyMovable() const final { return true; }

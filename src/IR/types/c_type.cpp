@@ -5,68 +5,8 @@
 #include "pointer.hpp"
 #include "type_kind.hpp"
 #include "unsigned.hpp"
-#include "clang/Basic/AddressSpaces.h"
-#include "llvm/IR/DataLayout.h"
 
 namespace qat::IR {
-
-bool CType::isInt() const { return cTypeKind == CTypeKind::Int; }
-
-bool CType::isUint() const { return cTypeKind == CTypeKind::Uint; }
-
-bool CType::isCBool() const { return cTypeKind == CTypeKind::Bool; }
-
-bool CType::isChar() const { return cTypeKind == CTypeKind::Char; }
-
-bool CType::isCharUnsigned() const { return cTypeKind == CTypeKind::UChar; }
-
-bool CType::isWideChar() const { return cTypeKind == CTypeKind::WideChar; }
-
-bool CType::isWideCharUnsigned() const { return cTypeKind == CTypeKind::UWideChar; }
-
-bool CType::isLongInt() const { return cTypeKind == CTypeKind::LongInt; }
-
-bool CType::isLongIntUnsigned() const { return cTypeKind == CTypeKind::ULongInt; }
-
-bool CType::isLongLong() const { return cTypeKind == CTypeKind::LongLong; }
-
-bool CType::isLongLongUnsigned() const { return cTypeKind == CTypeKind::LongLong; }
-
-bool CType::isUsize() const { return cTypeKind == CTypeKind::Usize; }
-
-bool CType::isIsize() const { return cTypeKind == CTypeKind::Isize; }
-
-bool CType::isCFloat() const { return cTypeKind == CTypeKind::Float; }
-
-bool CType::isDouble() const { return cTypeKind == CTypeKind::Double; }
-
-bool CType::isIntMax() const { return cTypeKind == CTypeKind::IntMax; }
-
-bool CType::isIntMaxUnsigned() const { return cTypeKind == CTypeKind::UintMax; }
-
-bool CType::isCPointer() const { return cTypeKind == CTypeKind::Pointer; }
-
-bool CType::isIntPtr() const { return cTypeKind == CTypeKind::IntPtr; }
-
-bool CType::isIntPtrUnsigned() const { return cTypeKind == CTypeKind::UintPtr; }
-
-bool CType::isPtrDiff() const { return cTypeKind == CTypeKind::PtrDiff; }
-
-bool CType::isPtrDiffUnsigned() const { return cTypeKind == CTypeKind::UPtrDiff; }
-
-bool CType::isSigAtomic() const { return cTypeKind == CTypeKind::SigAtomic; }
-
-bool CType::isProcessID() const { return cTypeKind == CTypeKind::ProcessID; }
-
-bool CType::isCString() const { return cTypeKind == CTypeKind::String; }
-
-bool CType::isHalfFloat() const { return cTypeKind == CTypeKind::HalfFloat; }
-
-bool CType::isBrainFloat() const { return cTypeKind == CTypeKind::BrainFloat; }
-
-bool CType::isFloat128() const { return cTypeKind == CTypeKind::Float128; }
-
-bool CType::isLongDouble() const { return cTypeKind == CTypeKind::LongDouble; }
 
 Maybe<CTypeKind> cTypeKindFromString(String const& val) {
   if (val == "cStr") {
@@ -712,10 +652,6 @@ CType* CType::getLongDouble(IR::Context* ctx) {
   }
   return new CType(IR::FloatType::get(floatKind, ctx->llctx), CTypeKind::LongDouble);
 }
-
-bool CType::isTypeSized() const { return true; }
-
-TypeKind CType::typeKind() const { return TypeKind::cType; }
 
 Maybe<bool> CType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const {
   if (subType->canBePrerunGeneric() && first->getType()->isSame(second->getType())) {

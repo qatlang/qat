@@ -24,7 +24,9 @@ public:
   useit FloatTypeKind getKind() const;
   useit TypeKind      typeKind() const final;
   useit String        toString() const final;
-  useit bool          canBePrerunGeneric() const final { return true; }
+
+  useit bool canBePrerun() const final { return true; }
+  useit bool canBePrerunGeneric() const final { return true; }
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };

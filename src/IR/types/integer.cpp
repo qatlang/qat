@@ -38,8 +38,6 @@ bool IntegerType::isTypeSized() const { return true; }
 
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
 
-bool IntegerType::canBePrerunGeneric() const { return true; }
-
 Maybe<String> IntegerType::toPrerunGenericString(IR::PrerunValue* val) const {
   llvm::ConstantInt* digit = nullptr;
   auto               len   = llvm::ConstantInt::get(llvm::Type::getInt64Ty(getLLVMType()->getContext()), 1u, false);

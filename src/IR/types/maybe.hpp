@@ -36,9 +36,10 @@ public:
   useit bool isDestructible() const final;
   void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
 
-  bool          canBePrerunGeneric() const final { return subTy->isTypeSized() && subTy->canBePrerunGeneric(); }
-  Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final;
-  Maybe<bool>   equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit inline bool canBePrerun() const final { return subTy->isTypeSized() && subTy->canBePrerun(); }
+  useit inline bool canBePrerunGeneric() const final { return subTy->isTypeSized() && subTy->canBePrerunGeneric(); }
+  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final;
+  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };
 
 } // namespace qat::IR

@@ -35,8 +35,6 @@ Maybe<bool> TypedType::equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::
   return None;
 }
 
-bool TypedType::canBePrerunGeneric() const { return true; }
-
 Maybe<String> TypedType::toPrerunGenericString(IR::PrerunValue* val) const {
   // FIXME - The following is stupid, if there is confirmation that the constant's type is already checked
   return val->getType()->asTyped()->getSubType()->toString();

@@ -71,6 +71,7 @@ public:
   useit virtual bool  isExpanded() const;
   useit ExpandedType* asExpanded() const;
 
+  useit virtual bool canBePrerun() const;
   useit virtual bool hasDefaultValue() const;
   useit virtual bool isDefaultConstructible() const;
   useit virtual bool isCopyConstructible() const;

@@ -18,7 +18,8 @@ private:
 public:
   GenericVariant(T* _entity, Vec<IR::GenericToFill*> _types) : entity(_entity), genericTypes(std::move(_types)) {}
 
-  useit bool check(std::function<void(const String&, const FileRange&)> errorFn, Vec<GenericToFill*> dest) const {
+  useit bool check(IR::Context* ctx, std::function<void(const String&, const FileRange&)> errorFn,
+                   Vec<GenericToFill*> dest) const {
     if (genericTypes.size() != dest.size()) {
       return false;
     } else {
@@ -53,7 +54,7 @@ public:
               }
             } else {
               if (genExp->getType()->isSame(destExp->getType())) {
-                auto eqRes = genExp->getType()->equalityOf(genExp, destExp);
+                auto eqRes = genExp->getType()->equalityOf(ctx, genExp, destExp);
                 if (eqRes.has_value()) {
                   if (!eqRes.value()) {
                     return false;

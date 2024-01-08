@@ -1,8 +1,7 @@
 #include "./bring_entities.hpp"
+#include "../IR/stdlib.hpp"
 #include "../IR/types/region.hpp"
-#include "../cli/config.hpp"
 #include <utility>
-#include <vector>
 
 namespace qat::ast {
 
@@ -55,8 +54,8 @@ void BringEntities::handleBrings(IR::Context* ctx) const {
     }
     for (usize i = 0; i < (ent->entity.size() - 1); i++) {
       auto const& idn = ent->entity.at(i);
-      if ((ent->relative == 0) && (i == 0) && (idn.value == "std") && IR::QatModule::hasStdLibModule()) {
-        mod = IR::QatModule::getStdLibModule();
+      if ((ent->relative == 0) && (i == 0) && (idn.value == "std") && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
         mod->addMention(idn.range);
         continue;
       }

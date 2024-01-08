@@ -115,7 +115,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
             {IR::StringSliceType::Create(ctx, "The index is "), ind,
              IR::StringSliceType::Create(ctx, " which is not less than the length of the multipointer, which is "),
              new IR::Value(ptrLen, IR::CType::getUsize(ctx), false, IR::Nature::temporary)},
-            index->fileRange, ctx);
+            {}, index->fileRange, ctx);
         (void)IR::addBranch(ctx->builder, restBlock->getBB());
         restBlock->setActive(ctx->builder);
         Vec<llvm::Value*> idxs;
@@ -195,7 +195,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                                  {IR::StringSliceType::Create(ctx, "Index for string slice is "), ind,
                                   IR::StringSliceType::Create(ctx, " which is not less than its length, which is "),
                                   new IR::Value(strLen, IR::UnsignedType::get(64u, ctx), false, IR::Nature::temporary)},
-                                 fileRange, ctx);
+                                 {}, fileRange, ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
       restBlock->setActive(ctx->builder);
       auto* strData = ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), inst->getLLVM(), 0u);
@@ -251,7 +251,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       lenExceedTrueBlock->setActive(ctx->builder);
       IR::Logic::panicInFunction(
           ctx->getActiveFunction(),
-          {IR::StringSliceType::Create(ctx, "Index of string slice is not less than its length")}, fileRange, ctx);
+          {IR::StringSliceType::Create(ctx, "Index of string slice is not less than its length")}, {}, fileRange, ctx);
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
       restBlock->setActive(ctx->builder);
       return new IR::Value(

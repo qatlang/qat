@@ -75,7 +75,7 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
                 {IR::StringSliceType::Create(
                     ctx, "This is a null-pointer and hence cannot be converted to the non-nullable pointer type " +
                              destTy->toString())},
-                fileRange, ctx);
+                {}, fileRange, ctx);
             (void)IR::addBranch(ctx->builder, restBlock->getBB());
             restBlock->setActive(ctx->builder);
           }

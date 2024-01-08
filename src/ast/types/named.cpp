@@ -1,4 +1,5 @@
 #include "./named.hpp"
+#include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
 #include "../../utils/split_string.hpp"
 
@@ -51,6 +52,10 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);
+      if (split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      }
       if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
           mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
         mod = mod->getLib(split.value, reqInfo);

@@ -38,7 +38,7 @@ private:
   bool analyse        = false;
   bool noColors       = false;
   bool releaseMode    = false;
-  bool keepLLVMFiles  = false;
+  bool clearLLVMFiles = false;
   bool exportCodeInfo = false;
   bool isNoStd        = false;
   bool diagnostic     = false;
@@ -69,7 +69,7 @@ public:
   useit inline bool shouldExportAST() const { return export_ast; }
   useit inline bool shouldSaveDocs() const { return saveDocs; }
   useit inline bool hasOutputPath() const { return outputPath.has_value(); }
-  useit inline bool keepLLVM() const { return keepLLVMFiles; }
+  useit inline bool clearLLVM() const { return clearLLVMFiles; }
   useit inline bool hasTargetTriple() const { return targetTriple.has_value(); }
   useit inline bool hasStdLibPath() const { return stdLibPath.has_value(); }
   useit inline bool isNoStdEnabled() const { return isNoStd; }

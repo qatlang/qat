@@ -136,9 +136,9 @@ void QatSitter::initialise() {
       }
     }
     SHOW("Getting link start time")
-    ctx->clangLinkStartTime = std::chrono::high_resolution_clock::now();
-    auto clearLLVM          = [&] {
-      if (!cfg->keepLLVM()) {
+    auto clangStartTime = std::chrono::high_resolution_clock::now();
+    auto clearLLVM      = [&] {
+      if (cfg->clearLLVM()) {
         for (const auto& llPath : ctx->llvmOutputPaths) {
           fs::remove(llPath);
         }

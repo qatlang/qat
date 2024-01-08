@@ -432,8 +432,8 @@ Config::Config(u64 count, const char** args)
         buildStatic = true;
       } else if (arg == "--shared") {
         buildShared = true;
-      } else if (arg == "--keep-llvm") {
-        keepLLVMFiles = true;
+      } else if (arg == "--clear-llvm") {
+        clearLLVMFiles = true;
       } else {
         if (fs::exists(fs::current_path() / arg)) {
           paths.push_back(fs::path(arg));

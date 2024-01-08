@@ -36,17 +36,11 @@ namespace qat::IR {
 
 Vec<QatModule*> QatModule::allModules{};
 
-QatModule* QatModule::stdLibModule = nullptr;
-
 void QatModule::clearAll() {
   for (auto* mod : allModules) {
     delete mod;
   }
 }
-
-bool QatModule::hasStdLibModule() { return stdLibModule != nullptr; }
-
-QatModule* QatModule::getStdLibModule() { return stdLibModule; }
 
 bool QatModule::hasFileModule(const fs::path& fPath) {
   for (auto* mod : allModules) {
@@ -347,6 +341,8 @@ void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& f
 }
 
 String QatModule::getName() const { return name.value; }
+
+void QatModule::addDependency(IR::QatModule* dep) { dependencies.insert(dep); }
 
 Identifier QatModule::getNameIdentifier() const { return name; }
 
@@ -1962,6 +1958,9 @@ std::set<String> QatModule::getAllObjectPaths() const {
       result.insert(path);
     }
   };
+  for (auto dep : dependencies) {
+    moduleHandler(dep);
+  }
   for (auto sub : submodules) {
     moduleHandler(sub);
   }

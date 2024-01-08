@@ -365,6 +365,9 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   auto result = new IR::Value(
       ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType->getType(),
       retType->getType()->isReference() && retType->getType()->asReference()->isSubtypeVariable(), Nature::temporary);
+  if (getParentModule()->getID() != destMod->getID() && !getParentModule()->isParentModuleOf(destMod)) {
+    destMod->addDependency(getParentModule());
+  }
   if (localID && retType->isReturnSelf()) {
     result->setLocalID(localID.value());
   }

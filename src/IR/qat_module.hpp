@@ -191,15 +191,11 @@ public:
 
   static Vec<QatModule*> allModules;
 
-  static QatModule* stdLibModule;
-
   static void clearAll();
 
-  useit static bool hasStdLibModule();
   useit static bool hasFileModule(const fs::path& fPath);
   useit static bool hasFolderModule(const fs::path& fPath);
 
-  useit static QatModule* getStdLibModule();
   useit static QatModule* getFileModule(const fs::path& fPath);
   useit static QatModule* getFolderModule(const fs::path& fPath);
 
@@ -214,6 +210,7 @@ private:
   VisibilityInfo                      visibility;
   QatModule*                          parent = nullptr;
   QatModule*                          active = nullptr;
+  std::set<QatModule*>                dependencies;
   Vec<QatModule*>                     submodules;
   Vec<Brought<QatModule>>             broughtModules;
   Deque<OpaqueType*>                  opaqueTypes;
@@ -321,6 +318,7 @@ public:
                                  Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx);
   useit bool      isSubmodule() const;
   useit bool      hasSubmodules() const;
+  void            addDependency(IR::QatModule* dep);
 
   useit bool hasIntegerBitwidth(u64 bits) const;
   void       addIntegerBitwidth(u64 bits);

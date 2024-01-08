@@ -492,7 +492,7 @@ void Context::addError(String const& message, Maybe<FileRange> fileRange) {
   }
   codeProblems.push_back(CodeProblem(
       true, (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") + message, fileRange));
-  std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR ";
+  std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::reset);
   if (fileRange) {
     std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
               << fileRange.value().start << " to " << fileRange.value().end;
@@ -562,7 +562,6 @@ void Context::Error(const String& message, Maybe<FileRange> fileRange) {
   addError(message, fileRange);
   writeJsonResult(false);
   sitter->destroy();
-  TrackedRegion::destroyMembers();
   MemoryTracker::report();
   exit(0);
 }

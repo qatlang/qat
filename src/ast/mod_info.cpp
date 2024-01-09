@@ -1,5 +1,5 @@
 #include "./mod_info.hpp"
-#include "constants/string_literal.hpp"
+#include "prerun/string_literal.hpp"
 #include <filesystem>
 
 namespace qat::ast {

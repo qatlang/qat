@@ -120,7 +120,7 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
     ctx->builder.CreateStore(tupleMemVals.at(i)->getLLVM(),
                              ctx->builder.CreateStructGEP(tupleTy->getLLVMType(), newLocal->getLLVM(), i));
   }
-  return newLocal;
+  return newLocal->toNewIRValue();
 }
 
 Json TupleValue::toJson() const {

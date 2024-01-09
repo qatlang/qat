@@ -2,8 +2,8 @@
 #define QAT_AST_MOD_INFO_HPP
 
 #include "./node.hpp"
-#include "constants/string_literal.hpp"
 #include "key_value.hpp"
+#include "prerun/string_literal.hpp"
 
 namespace qat::parser {
 class Parser;

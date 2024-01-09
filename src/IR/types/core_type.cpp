@@ -1,10 +1,7 @@
 #include "core_type.hpp"
 #include "../../ast/define_core_type.hpp"
 #include "../../ast/types/generic_abstract.hpp"
-#include "../../ast/types/prerun_generic.hpp"
-#include "../../ast/types/typed_generic.hpp"
 #include "../../show.hpp"
-#include "../../utils/split_string.hpp"
 #include "../generics.hpp"
 #include "../logic.hpp"
 #include "../qat_module.hpp"
@@ -484,7 +481,6 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, IR::Con
   defineCoreType->genericsToFill = toFillTypes;
   (void)defineCoreType->define(ctx);
   auto* cTy = defineCoreType->getCoreType();
-  variants.push_back(GenericVariant<CoreType>(cTy, toFillTypes));
   defineCoreType->setCoreType(cTy);
   (void)defineCoreType->emit(ctx);
   defineCoreType->unsetCoreType();

@@ -11,9 +11,9 @@
 
 namespace qat::ast {
 
-DefineCoreType::Member::Member( //
-    QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : type(_type), name(std::move(_name)), variability(_variability), visibSpec(_visibSpec),
+DefineCoreType::Member::Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
+                               Maybe<Expression*> _expression, FileRange _fileRange)
+    : type(_type), name(std::move(_name)), variability(_variability), visibSpec(_visibSpec), expression(_expression),
       fileRange(std::move(_fileRange)) {}
 
 Json DefineCoreType::Member::toJson() const {
@@ -73,9 +73,6 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                          isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
   bool needsDestructor = false;
   auto cTyName         = name;
-  if (isGeneric()) {
-    cTyName = Identifier(variantName.value(), name.range);
-  }
   SHOW("Creating IR generics")
   Vec<IR::GenericParameter*> genericsIR;
   for (auto* gen : generics) {
@@ -105,14 +102,17 @@ void DefineCoreType::createType(IR::Context* ctx) const {
       allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
     }
   }
-  auto eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+  auto eqStructTy     = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+  auto mainVisibility = ctx->getVisibInfo(visibSpec);
+  SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
+                                         << genericCoreType << "; datalayout: " << ctx->dataLayout.has_value())
   setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
                                 IR::OpaqueSubtypeKind::core, mod,
-                                hasAllMems ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-                                ctx->getVisibInfo(visibSpec), ctx->llctx));
+                                eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+                                mainVisibility, ctx->llctx, None));
+  SHOW("Set opaque")
   if (genericCoreType) {
-    genericCoreType->opaqueVariants.push_back(
-        IR::GenericVariant<IR::OpaqueType>(getOpaque(), std::move(genericsToFill)));
+    genericCoreType->opaqueVariants.push_back(IR::GenericVariant<IR::OpaqueType>(getOpaque(), genericsToFill));
   }
   SHOW("Created opaque for core type")
   ctx->setActiveType(getOpaque());
@@ -122,7 +122,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     auto* memTy = mem->type->emit(ctx);
     if (memTy->isOpaque() && !memTy->asOpaque()->hasSubType()) {
       // NOTE - Support sized opaques?
-      if (hasOpaque() && memTy->isSame(getOpaque())) {
+      if (memTy->isSame(getOpaque())) {
         ctx->Error(
             "Type nesting found. Member field " + ctx->highlightError(mem->name.value) + " is of type " +
                 ctx->highlightError(getOpaque()->toString()) +
@@ -137,13 +137,14 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     if (memTy->isDestructible()) {
       needsDestructor = true;
     }
-    mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability,
-                                            (mem->visibSpec.has_value() && mem->visibSpec->kind == VisibilityKind::type)
-                                                ? VisibilityInfo::type(getOpaque())
-                                                : ctx->getVisibInfo(mem->visibSpec)));
+    mems.push_back(new IR::CoreType::Member(mem->name, memTy, mem->variability, mem->expression,
+                                            ctx->getVisibInfo(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
-  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, ctx->getVisibInfo(visibSpec), ctx->llctx));
+  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, mainVisibility, ctx->llctx, None));
+  if (genericCoreType) {
+    genericCoreType->variants.push_back(IR::GenericVariant<IR::CoreType>(getCoreType(), genericsToFill));
+  }
   SHOW("CoreType ID: " << coreTypes.back()->getID())
   getCoreType()->explicitTrivialCopy = trivialCopy.has_value();
   getCoreType()->explicitTrivialMove = trivialMove.has_value();
@@ -165,66 +166,60 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   if (needsDestructor) {
     getCoreType()->needsImplicitDestructor = true;
   }
-  if (destructorDefinition || needsDestructor) {
-    getCoreType()->createDestructor(fileRange, ctx);
-  }
   for (auto* stm : staticMembers) {
     getCoreType()->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
                                    stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibSpec),
                                    ctx->llctx);
   }
   if (defaultConstructor) {
-    defaultConstructor->setCoreType(getCoreType());
+    defaultConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   if (copyConstructor) {
-    copyConstructor->setCoreType(getCoreType());
     if (!copyAssignment) {
       ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence copy assignment operator is also required to be defined",
                  fileRange);
     }
+    copyConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   if (moveConstructor) {
-    moveConstructor->setCoreType(getCoreType());
     if (!moveAssignment) {
       ctx->Error("Move constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence move assignment operator is also required to be defined",
                  fileRange);
     }
-  }
-  for (auto* conv : convertorDefinitions) {
-    conv->setCoreType(getCoreType());
-  }
-  for (auto* cons : constructorDefinitions) {
-    cons->setCoreType(getCoreType());
-  }
-  for (auto* memDef : memberDefinitions) {
-    memDef->setCoreType(getCoreType());
-  }
-  for (auto* oprDef : operatorDefinitions) {
-    oprDef->setCoreType(getCoreType());
+    moveConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   if (copyAssignment) {
-    copyAssignment->setCoreType(getCoreType());
     if (!copyConstructor) {
       ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence copy constructor is also required to be defined",
                  fileRange);
     }
+    copyAssignment->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   if (moveAssignment) {
-    moveAssignment->setCoreType(getCoreType());
     if (!moveConstructor) {
       ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
                      ", and hence move constructor is also required to be defined",
                  fileRange);
     }
+    moveAssignment->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   if (destructorDefinition) {
-    destructorDefinition->setCoreType(getCoreType());
-  } else {
-    destructorDefinition = new ast::DestructorDefinition(fileRange, {}, {"", {0u, 0u}, {0u, 0u}});
-    destructorDefinition->setCoreType(getCoreType());
+    destructorDefinition->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+  }
+  for (auto* conv : convertorDefinitions) {
+    conv->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+  }
+  for (auto* cons : constructorDefinitions) {
+    cons->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+  }
+  for (auto* memDef : memberDefinitions) {
+    memDef->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+  }
+  for (auto* oprDef : operatorDefinitions) {
+    oprDef->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
   }
   ctx->unsetActiveType();
 }
@@ -242,22 +237,30 @@ void DefineCoreType::defineType(IR::Context* ctx) {
   }
 }
 
-void DefineCoreType::setVariantName(const String& name) const { variantName = name; }
-
-void DefineCoreType::unsetVariantName() const { variantName = None; }
-
 void DefineCoreType::define(IR::Context* ctx) {
   if (isGeneric()) {
     createType(ctx);
+    ctx->setActiveType(getCoreType());
   }
   if (defaultConstructor) {
     defaultConstructor->define(ctx);
   }
   if (copyConstructor) {
+    SHOW("Defining copy constructor for " << getCoreType()->toString())
     copyConstructor->define(ctx);
   }
   if (moveConstructor) {
+    SHOW("Defining move constructor for " << getCoreType()->toString())
     moveConstructor->define(ctx);
+  }
+  if (copyAssignment) {
+    copyAssignment->define(ctx);
+  }
+  if (moveAssignment) {
+    moveAssignment->define(ctx);
+  }
+  if (destructorDefinition) {
+    destructorDefinition->define(ctx);
   }
   for (auto* cons : constructorDefinitions) {
     cons->define(ctx);
@@ -271,14 +274,8 @@ void DefineCoreType::define(IR::Context* ctx) {
   for (auto* oFn : operatorDefinitions) {
     oFn->define(ctx);
   }
-  if (copyAssignment) {
-    copyAssignment->define(ctx);
-  }
-  if (moveAssignment) {
-    moveAssignment->define(ctx);
-  }
-  if (destructorDefinition) {
-    destructorDefinition->define(ctx);
+  if (isGeneric()) {
+    ctx->unsetActiveType();
   }
 }
 
@@ -314,7 +311,7 @@ IR::Value* DefineCoreType::emit(IR::Context* ctx) {
   if (destructorDefinition) {
     (void)destructorDefinition->emit(ctx);
   }
-  unsetCoreType();
+  // TODO - Member function call tree analysis
   ctx->unsetActiveType();
   return nullptr;
 }

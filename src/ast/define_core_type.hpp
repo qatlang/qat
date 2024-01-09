@@ -9,6 +9,7 @@
 #include "./types/qat_type.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
+#include "node.hpp"
 #include "types/generic_abstract.hpp"
 #include <optional>
 #include <string>
@@ -16,18 +17,20 @@
 
 namespace qat::ast {
 
-class DefineCoreType final : public Node {
+class DefineCoreType final : public Node, public Commentable {
   friend class IR::GenericCoreType;
 
 public:
   class Member {
   public:
-    Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
+    Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
+           Maybe<Expression*> _expression, FileRange _fileRange);
 
     QatType*              type;
     Identifier            name;
     bool                  variability;
     Maybe<VisibilitySpec> visibSpec;
+    Maybe<Expression*>    expression;
     FileRange             fileRange;
 
     useit Json toJson() const;
@@ -69,7 +72,6 @@ private:
   Maybe<VisibilitySpec>          visibSpec;
 
   Vec<ast::GenericAbstractType*> generics;
-  mutable Maybe<String>          variantName;
   mutable Vec<IR::CoreType*>     coreTypes;
   void                           setCoreType(IR::CoreType*) const;
   void                           unsetCoreType() const;
@@ -84,6 +86,8 @@ private:
 public:
   DefineCoreType(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
                  Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
+
+  COMMENTABLE_FUNCTIONS
 
   void addMember(Member* mem);
   void addStaticMember(StaticMember* stm);
@@ -100,8 +104,6 @@ public:
   void createType(IR::Context* ctx) const;
   void defineType(IR::Context* ctx) final;
   void define(IR::Context* ctx) final;
-  void setVariantName(const String& name) const;
-  void unsetVariantName() const;
 
   useit inline bool hasTrivialCopy() { return trivialCopy.has_value(); }
   inline void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }

@@ -78,12 +78,11 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
       } else {
         alloca = localValue->getLLVM();
       }
-    } else if (irName) {
-      auto* loc = ctx->getActiveFunction()->getBlock()->newValue(
-          irName->value, IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar, irName->range);
-      alloca = loc->getAlloca();
     } else {
-      alloca = ctx->builder.CreateAlloca(llvm::ArrayType::get(elemTy->getLLVMType(), values.size()));
+      auto* loc = ctx->getActiveFunction()->getBlock()->newValue(
+          irName.has_value() ? irName->value : ctx->getActiveFunction()->getRandomAllocaName(),
+          IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar, irName.has_value() ? irName->range : fileRange);
+      alloca = loc->getAlloca();
     }
     auto* elemPtr =
         ctx->builder.CreateInBoundsGEP(IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx)->getLLVMType(), alloca,

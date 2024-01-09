@@ -201,10 +201,9 @@ void ArrayType::moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* s
 
 void ArrayType::destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
   if (elementType->isDestructible()) {
-    auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
-    auto* instanceIndexing =
-        ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), instance->getLLVM(),
-                                       {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
+    auto* Ty64Int          = llvm::Type::getInt64Ty(ctx->llctx);
+    auto* instanceIndexing = ctx->builder.CreateInBoundsGEP(
+        getLLVMType(), instance->getLLVM(), {llvm::ConstantInt::get(Ty64Int, 0u), llvm::ConstantInt::get(Ty64Int, 0u)});
     for (usize i = 0; i < length; i++) {
       if (i != 0) {
         instanceIndexing = ctx->builder.CreateInBoundsGEP(elementType->getLLVMType(), instanceIndexing,

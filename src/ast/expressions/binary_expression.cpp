@@ -691,9 +691,13 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       SHOW("Expanded type binary operation")
       auto* eTy   = lhsType->isReference() ? lhsType->asReference()->getSubType()->asExpanded() : lhsType->asExpanded();
       auto  OpStr = OpToString(op);
-      // FIXME - Incomplete logic?
-      if (eTy->hasBinaryOperator(OpStr,
-                                 {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType})) {
+      bool  isVarExp = lhsType->isReference() ? lhsType->asReference()->isSubtypeVariable()
+                                              : (lhsEmit->isImplicitPointer() ? lhsEmit->isVariable() : true);
+      if ((isVarExp &&
+           eTy->hasVariationBinaryOperator(
+               OpStr, {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType})) ||
+          eTy->hasNormalBinaryOperator(
+              OpStr, {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType})) {
         SHOW("RHS is matched exactly")
         auto localID = lhsEmit->getLocalID();
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
@@ -701,40 +705,34 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         } else if (lhsType->isReference()) {
           lhsEmit->loadImplicitPointer(ctx->builder);
         }
-        auto* opFn = eTy->getBinaryOperator(
-            OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType});
+        auto* opFn =
+            (isVarExp &&
+             eTy->hasVariationBinaryOperator(
+                 OpStr, {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType}))
+                ? eTy->getVariationBinaryOperator(
+                      OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType})
+                : eTy->getNormalBinaryOperator(
+                      OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
-          ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " of type " +
-                         ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
+          ctx->Error(String(isVarExp ? "Variation b" : "B") + "inary operator " + ctx->highlightError(OpToString(op)) +
+                         " of type " + ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
-        }
-        if (opFn->getType()->asFunction()->getArgumentTypeAt(0)->getType()->asReference()->isSubtypeVariable()) {
-          if (lhsEmit->isReference()) {
-            if (!lhsEmit->getType()->asReference()->isSubtypeVariable()) {
-              ctx->Error("This expression is a reference without variability and hence cannot use the " +
-                             ctx->highlightError(OpStr) + " operator, which is a variation",
-                         lhs->fileRange);
-            }
-          } else {
-            if (!lhsEmit->isVariable()) {
-              ctx->Error("This expression does not have variability and hence cannot use the " +
-                             ctx->highlightError(OpStr) + " operator, which is a variation",
-                         lhs->fileRange);
-            }
-          }
         }
         rhsEmit->loadImplicitPointer(ctx->builder);
         return opFn->call(ctx, {lhsEmit->getLLVM(), rhsEmit->getLLVM()}, localID, ctx->getMod());
       } else if (rhsType->isReference() &&
-                 eTy->hasBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})) {
+                 ((isVarExp && eTy->hasVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})) ||
+                  eTy->hasNormalBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()}))) {
         auto localID = rhsEmit->getLocalID();
         rhsEmit->loadImplicitPointer(ctx->builder);
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
           lhsEmit->makeImplicitPointer(ctx, None);
         }
-        auto* opFn = eTy->getBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()});
+        auto* opFn = (isVarExp && eTy->hasVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()}))
+                         ? eTy->getVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})
+                         : eTy->getNormalBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
           ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of type " +
                          ctx->highlightError(eTy->getFullName()) + " with right hand side type: " +
@@ -747,9 +745,25 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
              ctx->builder.CreateLoad(rhsType->asReference()->getSubType()->getLLVMType(), rhsEmit->getLLVM())},
             localID, ctx->getMod());
       } else {
-        ctx->Error("Binary operator " + ctx->highlightError(OpToString(op)) + " not defined for type: " +
-                       ctx->highlightError(eTy->getFullName() +
-                                           " that has RHS type: " + ctx->highlightError(rhsType->toString())),
+        if (!isVarExp &&
+            eTy->hasVariationBinaryOperator(
+                OpStr, {rhsEmit->isImplicitPointer() ? Maybe<bool>(rhsEmit->isVariable()) : None, rhsType})) {
+          ctx->Error("Binary Operator " + ctx->highlightError(OpStr) + " with right hand side of type " +
+                         ctx->highlightError(rhsType->toString()) + " is a variation of type " +
+                         ctx->highlightError(eTy->getFullName()) +
+                         " but the expression on the left hand side does not have variability",
+                     fileRange);
+        } else if (rhsType->isReference() && !isVarExp &&
+                   eTy->hasVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})) {
+          ctx->Error("Binary Operator " + ctx->highlightError(OpStr) + " with right hand side of type " +
+                         ctx->highlightError(rhsType->asReference()->getSubType()->toString()) +
+                         " is a variation of type " + ctx->highlightError(eTy->getFullName()) +
+                         " but the expression on the left hand side does not have variability",
+                     fileRange);
+        }
+        ctx->Error("Matching binary operator " + ctx->highlightError(OpToString(op)) + " not found for type " +
+                       ctx->highlightError(eTy->getFullName() + " with right hand side of type " +
+                                           ctx->highlightError(rhsType->toString())),
                    fileRange);
       }
     } else {

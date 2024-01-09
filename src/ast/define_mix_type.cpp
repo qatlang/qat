@@ -42,7 +42,7 @@ void DefineMixType::createType(IR::Context* ctx) {
                 {llvm::Type::getIntNTy(ctx->llctx, tagBitwidth), llvm::Type::getIntNTy(ctx->llctx, maxSubtypeSize)},
                 isPacked)))
           : None,
-      ctx->getVisibInfo(visibSpec), ctx->llctx);
+      ctx->getVisibInfo(visibSpec), ctx->llctx, None);
   ctx->setActiveType(opaquedType);
   Vec<Pair<Identifier, Maybe<IR::QatType*>>> subTypesIR;
   bool                                       hasAssociatedType = false;
@@ -91,7 +91,7 @@ void DefineMixType::createType(IR::Context* ctx) {
   }
   ctx->unsetActiveType();
   new IR::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibSpec),
-                  fileRange);
+                  fileRange, None);
 }
 
 void DefineMixType::defineType(IR::Context* ctx) {

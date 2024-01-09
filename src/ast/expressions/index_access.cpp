@@ -274,14 +274,22 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     return new IR::Value(ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->llctx), instVal, {ind->getLLVM()}),
                          IR::ReferenceType::get(isVarExp, IR::CType::getChar(ctx), ctx), false, IR::Nature::temporary);
   } else if (instType->isExpanded()) {
-    auto*               eTy     = instType->asExpanded();
-    IR::MemberFunction* opFn    = nullptr;
-    IR::Value*          operand = nullptr;
-    Maybe<String>       localID = inst->getLocalID();
+    auto*               eTy      = instType->asExpanded();
+    IR::MemberFunction* opFn     = nullptr;
+    IR::Value*          operand  = nullptr;
+    Maybe<String>       localID  = inst->getLocalID();
+    bool                isVarExp = inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable()
+                                                       : (inst->isImplicitPointer() ? inst->isVariable() : true);
     if (!indType->isReference() &&
-        eTy->hasBinaryOperator("[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType})) {
-      if (eTy->hasBinaryOperator("[]", {None, indType})) {
-        opFn = eTy->getBinaryOperator("[]", {None, indType});
+        ((isVarExp && eTy->hasVariationBinaryOperator(
+                          "[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType})) ||
+         eTy->hasNormalBinaryOperator("[]",
+                                      {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType}))) {
+      if ((isVarExp && eTy->hasVariationBinaryOperator("[]", {None, indType})) ||
+          eTy->hasNormalBinaryOperator("[]", {None, indType})) {
+        opFn = (isVarExp && eTy->hasVariationBinaryOperator("[]", {None, indType}))
+                   ? eTy->getVariationBinaryOperator("[]", {None, indType})
+                   : eTy->getNormalBinaryOperator("[]", {None, indType});
         if (ind->isImplicitPointer()) {
           if (indType->isTriviallyCopyable() || indType->isTriviallyMovable()) {
             auto indVal = new IR::Value(ctx->builder.CreateLoad(indType->getLLVMType(), ind->getLLVM()), indType, false,
@@ -302,12 +310,20 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
         }
         operand = ind;
       } else {
-        opFn =
-            eTy->getBinaryOperator("[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType});
+        opFn    = (isVarExp && eTy->hasVariationBinaryOperator(
+                                "[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType}))
+                      ? eTy->getVariationBinaryOperator(
+                         "[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType})
+                      : eTy->getNormalBinaryOperator(
+                         "[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType});
         operand = ind;
       }
-    } else if (indType->isReference() && eTy->hasBinaryOperator("[]", {None, indType->asReference()->getSubType()})) {
-      opFn = eTy->getBinaryOperator("[]", {None, indType->asReference()->getSubType()});
+    } else if (indType->isReference() &&
+               ((isVarExp && eTy->hasVariationBinaryOperator("[]", {None, indType->asReference()->getSubType()})) ||
+                eTy->hasNormalBinaryOperator("[]", {None, indType->asReference()->getSubType()}))) {
+      opFn = (isVarExp && eTy->hasVariationBinaryOperator("[]", {None, indType->asReference()->getSubType()}))
+                 ? eTy->getVariationBinaryOperator("[]", {None, indType->asReference()->getSubType()})
+                 : eTy->getNormalBinaryOperator("[]", {None, indType->asReference()->getSubType()});
       ind->loadImplicitPointer(ctx->builder);
       auto* indSubType = indType->asReference()->getSubType();
       if (indSubType->isTriviallyCopyable() || indSubType->isTriviallyMovable()) {
@@ -329,7 +345,8 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       }
       operand = ind;
     } else {
-      ctx->Error("No [] operator found in type " + eTy->toString() + " for " + ctx->highlightError(indType->toString()),
+      ctx->Error("No matching [] operator found in type " + eTy->toString() + " for index type " +
+                     ctx->highlightError(indType->toString()),
                  index->fileRange);
     }
     inst->loadImplicitPointer(ctx->builder);

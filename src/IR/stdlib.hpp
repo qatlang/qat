@@ -10,9 +10,10 @@ class QatSitter;
 namespace qat::IR {
 
 class StdLib {
-public:
-  static IR::QatModule*      stdLib;
   static IR::DefinitionType* stdStringType;
+
+public:
+  static IR::QatModule* stdLib;
 
   useit static bool isStdLibFound();
 

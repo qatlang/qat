@@ -23,8 +23,10 @@ protected:
   Vec<GenericParameter*> generics;
   QatModule*             parent             = nullptr;
   MemberFunction*        defaultConstructor = nullptr;
-  Vec<MemberFunction*>   memberFunctions; // Normal
-  Vec<MemberFunction*>   binaryOperators; //
+  Vec<MemberFunction*>   memberFunctions;          // Normal
+  Vec<MemberFunction*>   normalBinaryOperators;    // Normal
+  Vec<MemberFunction*>   variationBinaryOperators; // Variation
+
   Vec<MemberFunction*>   unaryOperators;  //
   Vec<MemberFunction*>   constructors;    // Constructors
   Vec<MemberFunction*>   fromConvertors;  // From Convertors
@@ -73,8 +75,11 @@ public:
 
   useit static Maybe<IR::MemberFunction*> checkBinaryOperator(Vec<MemberFunction*> const& binOps, const String& opr,
                                                               Pair<Maybe<bool>, IR::QatType*> argType);
-  useit bool            hasBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
-  useit MemberFunction* getBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit bool            hasNormalBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit MemberFunction* getNormalBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+
+  useit bool            hasVariationBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit MemberFunction* getVariationBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
 
   useit static Maybe<IR::MemberFunction*> checkUnaryOperator(Vec<MemberFunction*> const& unaryOps, String const& opr);
   useit bool                              hasUnaryOperator(const String& opr) const;

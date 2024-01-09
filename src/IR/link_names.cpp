@@ -150,8 +150,12 @@ String LinkNames::toName() const {
           result += "operator_move";
           break;
         }
-        case LinkUnitType::binaryOperator: {
+        case LinkUnitType::normalBinaryOperator: {
           result += "operator_binary(" + unit.getUsableName() + "):[" + unit.subNames.front().toName() + "]";
+          break;
+        }
+        case LinkUnitType::variationBinaryOperator: {
+          result += "operator_binary_variation(" + unit.getUsableName() + "):[" + unit.subNames.front().toName() + "]";
           break;
         }
         case LinkUnitType::unaryOperator: {

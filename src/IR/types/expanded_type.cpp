@@ -121,12 +121,22 @@ Maybe<IR::MemberFunction*> ExpandedType::checkBinaryOperator(Vec<IR::MemberFunct
   return None;
 }
 
-bool ExpandedType::hasBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
-  return checkBinaryOperator(binaryOperators, opr, argType).has_value();
+bool ExpandedType::hasNormalBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(normalBinaryOperators, opr, argType).has_value();
 }
 
-MemberFunction* ExpandedType::getBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
-  return checkBinaryOperator(binaryOperators, opr, argType).value();
+MemberFunction* ExpandedType::getNormalBinaryOperator(const String&                   opr,
+                                                      Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(normalBinaryOperators, opr, argType).value();
+}
+
+bool ExpandedType::hasVariationBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(variationBinaryOperators, opr, argType).has_value();
+}
+
+MemberFunction* ExpandedType::getVariationBinaryOperator(const String&                   opr,
+                                                         Pair<Maybe<bool>, IR::QatType*> argType) const {
+  return checkBinaryOperator(variationBinaryOperators, opr, argType).value();
 }
 
 Maybe<IR::MemberFunction*> ExpandedType::checkUnaryOperator(Vec<IR::MemberFunction*> const& unaryOperators,

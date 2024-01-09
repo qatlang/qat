@@ -15,20 +15,6 @@ Value::Value(llvm::Value* _llvmValue, IR::QatType* _type, bool _isVariable, Natu
 
 Vec<Value*> Value::allValues = {};
 
-QatType* Value::getType() const { return type; }
-
-llvm::Value* Value::getLLVM() const { return ll; }
-
-bool Value::isLocalToFn() const { return localID.has_value(); }
-
-Maybe<String> Value::getLocalID() const { return localID; }
-
-void Value::setLocalID(const String& locID) { localID = locID; }
-
-bool Value::isImplicitPointer() const {
-  return ll && (llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll));
-}
-
 void Value::makeImplicitPointer(IR::Context* ctx, Maybe<String> name) {
   if (!isImplicitPointer()) {
     auto* alloc = IR::Logic::newAlloca(ctx->getActiveFunction(), name, ll->getType());
@@ -63,26 +49,6 @@ Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String
   }
   return result;
 }
-
-bool Value::isPointer() const { return type->isPointer(); }
-
-bool Value::isReference() const { return type->isReference(); }
-
-bool Value::isSelfValue() const { return isSelf; }
-
-void Value::setSelf() { isSelf = true; }
-
-bool Value::isVariable() const { return variable; }
-
-bool Value::isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
-
-llvm::Constant* Value::getLLVMConstant() const { return llvm::cast<llvm::Constant>(ll); }
-
-bool Value::isPrerunValue() const { return false; }
-
-PrerunValue* Value::asPrerun() const { return (PrerunValue*)this; }
-
-Nature Value::getNature() const { return nature; }
 
 void Value::clearAll() {
   for (auto* val : allValues) {

@@ -22,11 +22,11 @@ private:
   static Vec<IR::Value*> allValues;
 
 protected:
-  IR::QatType*  type;     // Type representation of the value
-  Nature        nature;   // The nature of the value
-  bool          variable; // Variability nature
-  llvm::Value*  ll;       // LLVM value
-  Maybe<String> localID;  // ID of the local in a function
+  IR::QatType*  type;
+  Nature        nature;
+  bool          variable;
+  llvm::Value*  ll;
+  Maybe<String> localID;
   bool          isSelf = false;
 
 public:
@@ -34,24 +34,30 @@ public:
 
   virtual ~Value() = default;
 
-  useit QatType*             getType() const; // Type of the value
-  useit virtual llvm::Value* getLLVM() const;
-  useit bool                 isReference() const;
-  useit bool                 isPointer() const;
-  useit bool                 isVariable() const;
-  useit virtual bool         isPrerunValue() const;
-  useit PrerunValue*         asPrerun() const;
-  useit bool                 isLLVMConstant() const;
-  useit bool                 isSelfValue() const;
-  useit llvm::Constant* getLLVMConstant() const;
-  useit bool            isLocalToFn() const;
-  useit Maybe<String>  getLocalID() const;
-  void                 setLocalID(const String& locID);
-  useit Nature         getNature() const;
-  useit bool           isImplicitPointer() const;
+  useit virtual llvm::Value* getLLVM() const { return ll; }
+  useit virtual bool         isPrerunValue() const { return false; }
   useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod);
 
-  void setSelf();
+  useit inline QatType*        getType() const { return type; }
+  useit inline Maybe<String>   getLocalID() const { return localID; }
+  useit inline llvm::Constant* getLLVMConstant() const { return llvm::cast<llvm::Constant>(ll); }
+  useit inline PrerunValue*    asPrerun() const { return (PrerunValue*)this; }
+  useit inline Nature          getNature() const { return nature; }
+
+  useit inline bool isSelfValue() const { return isSelf; }
+  useit inline bool isVariable() const { return variable; }
+  useit inline bool isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+  useit inline bool isValue() const { return !isReference() && !isPrerunValue() && !isImplicitPointer(); }
+  useit inline bool isLocalToFn() const { return localID.has_value(); }
+  useit inline bool isReference() const { return type->isReference(); }
+  useit inline bool isPointer() const { return type->isPointer(); }
+  useit inline bool isImplicitPointer() const {
+    return ll && (llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll));
+  }
+
+  inline void setSelf() { isSelf = true; }
+  inline void setLocalID(const String& locID) { localID = locID; }
+
   void makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
   void loadImplicitPointer(llvm::IRBuilder<>& builder);
 

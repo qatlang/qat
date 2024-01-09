@@ -37,6 +37,7 @@ void TrackedRegion::destroyMembers() {
       candidatePtr = nextBlockPtr;
     }
   }
+  allBlockTails.clear();
   regionMutex.unlock();
 }
 
@@ -111,6 +112,7 @@ void QatRegion::destroyAllBlocks() {
       candidatePtr = nextBlockPtr;
     }
   }
+  allBlockTails.clear();
   regionMutex.unlock();
 }
 

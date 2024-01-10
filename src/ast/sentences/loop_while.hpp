@@ -16,9 +16,11 @@ class LoopWhile : public Sentence {
   Expression*       condition;
   Vec<Sentence*>    sentences;
   Maybe<Identifier> tag;
+  bool              isDoAndLoop = false;
 
 public:
-  LoopWhile(Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange);
+  LoopWhile(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag,
+            FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

@@ -5,7 +5,7 @@
 namespace qat::ast {
 
 ReferenceType::ReferenceType(QatType* _type, bool _isSubtypeVar, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), type(_type) {}
+    : QatType(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar) {}
 
 Maybe<usize> ReferenceType::getTypeSizeInBits(IR::Context* ctx) const {
   return (

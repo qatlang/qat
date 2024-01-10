@@ -3,23 +3,21 @@
 
 namespace qat::ast {
 
-LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, FileRange _fileRange)
+LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange)
     : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
 
 IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   String uniqueName;
   if (tag.has_value()) {
-    uniqueName = tag.value();
+    uniqueName = tag.value().value;
     for (const auto& info : ctx->loopsInfo) {
       if (info.name == uniqueName) {
         ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek.tag.has_value() && (brek.tag.value() == tag.value())) {
-        ctx->Error("The tag provided for the loop is already used by another "
-                   "loop or switch",
-                   fileRange);
+      if (brek.tag.has_value() && (brek.tag.value() == tag.value().value)) {
+        ctx->Error("The tag provided for the loop is already used by another loop or switch", fileRange);
       }
     }
   } else {
@@ -52,7 +50,7 @@ Json LoopInfinite::toJson() const {
       ._("nodeType", "loopNormal")
       ._("sentences", snts)
       ._("hasTag", tag.has_value())
-      ._("tag", tag.value_or(""))
+      ._("tag", tag.has_value() ? tag.value() : JsonValue())
       ._("fileRange", fileRange);
 }
 

@@ -9,11 +9,11 @@
 namespace qat::ast {
 
 class LoopInfinite : public Sentence {
-  Vec<Sentence*> sentences;
-  Maybe<String>  tag;
+  Vec<Sentence*>    sentences;
+  Maybe<Identifier> tag;
 
 public:
-  LoopInfinite(Vec<Sentence*> _sentences, Maybe<String> _tag, FileRange _fileRange);
+  LoopInfinite(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

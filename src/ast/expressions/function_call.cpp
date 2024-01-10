@@ -40,9 +40,13 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
           (argsEmit.at(i)->getType()->isReference() &&
            !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()) &&
            !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()->asReference()->getSubType()))) {
-        ctx->Error("Type of this expression does not match the type of the "
-                   "corresponding argument at " +
-                       ctx->highlightError(std::to_string(i)) + " of the function " +
+        ctx->Error("Type of this expression is " + ctx->highlightError(argsEmit.at(i)->getType()->toString()) +
+                       " which does not match the type of the corresponding argument " +
+                       (fun.has_value()
+                            ? ctx->highlightError(fun.value()->getType()->asFunction()->getArgumentTypeAt(i)->getName())
+                                  .append(" ")
+                            : "") +
+                       "at " + ctx->highlightError(std::to_string(i)) + " of the function " +
                        (fun.has_value() ? ctx->highlightError(fun.value()->getName().value) : ""),
                    values.at(i)->fileRange);
       }

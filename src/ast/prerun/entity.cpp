@@ -11,9 +11,9 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
   auto* mod  = ctx->getMod();
   auto  name = identifiers.back();
   if (identifiers.size() == 1 && relative == 0) {
-    if (ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(identifiers.front().value)) {
+    if (ctx->hasActiveFunction() && ctx->getActiveFunction()->hasGenericParameter(identifiers[0].value)) {
       SHOW("PrerunEntity: Has active function and generic parameter")
-      auto* genVal = ctx->getActiveFunction()->getGenericParameter(identifiers.front().value);
+      auto* genVal = ctx->getActiveFunction()->getGenericParameter(identifiers[0].value);
       if (genVal->isTyped()) {
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
       } else if (genVal->isPrerun()) {

@@ -280,6 +280,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
     Maybe<String>       localID  = inst->getLocalID();
     bool                isVarExp = inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable()
                                                        : (inst->isImplicitPointer() ? inst->isVariable() : true);
+    SHOW("Index access: isVarExp = " << isVarExp)
     if (!indType->isReference() &&
         ((isVarExp && eTy->hasVariationBinaryOperator(
                           "[]", {ind->isImplicitPointer() ? Maybe<bool>(ind->isVariable()) : None, indType})) ||
@@ -349,7 +350,9 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                      ctx->highlightError(indType->toString()),
                  index->fileRange);
     }
-    inst->loadImplicitPointer(ctx->builder);
+    if (inst->isReference()) {
+      inst->loadImplicitPointer(ctx->builder);
+    }
     return opFn->call(ctx, {inst->getLLVM(), operand->getLLVM()}, localID, ctx->getMod());
   } else {
     ctx->Error("The expression of type " + instType->toString() + " cannot be used for index access",

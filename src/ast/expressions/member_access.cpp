@@ -296,7 +296,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       ctx->Error("Invalid member name for pointer datatype " + ctx->highlightError(instType->toString()), fileRange);
     }
   } else {
-    ctx->Error("Member access for this type is not supported", fileRange);
+    ctx->Error("Member access for expression of type " + ctx->highlightError(instType->toString()) +
+                   " is not supported",
+               fileRange);
   }
   return nullptr;
   // NOLINTEND(readability-magic-numbers, clang-analyzer-core.CallAndMessage)

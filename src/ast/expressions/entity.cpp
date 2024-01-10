@@ -1,4 +1,5 @@
 #include "./entity.hpp"
+#include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
 #include <utility>
 
@@ -117,6 +118,10 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         entityName = names.back();
         for (usize i = 0; i < (names.size() - 1); i++) {
           auto split = names.at(i);
+          if (relative == 0 && i == 0 && split.value == "std" && IR::StdLib::isStdLibFound()) {
+            mod = IR::StdLib::stdLib;
+            continue;
+          }
           if (mod->hasLib(split.value, reqInfo)) {
             mod = mod->getLib(split.value, reqInfo);
             mod->addMention(split.range);

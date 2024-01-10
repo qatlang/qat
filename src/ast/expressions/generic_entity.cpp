@@ -1,4 +1,5 @@
 #include "./generic_entity.hpp"
+#include "../../IR/stdlib.hpp"
 #include "../prerun/default.hpp"
 #include "../types/prerun_generic.hpp"
 
@@ -24,6 +25,10 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
   if (names.size() > 1) {
     for (usize i = 0; i < (names.size() - 1); i++) {
       auto split = names.at(i);
+      if (relative == 0 && split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      }
       if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
           mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
         mod = mod->getLib(split.value, reqInfo);

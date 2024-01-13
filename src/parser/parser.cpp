@@ -950,19 +950,18 @@ Pair<ast::QatType*, usize> Parser::parseType(ParserContext& preCtx, usize from, 
         break;
       }
       case TokenType::bracketOpen: {
-        if (!cacheTy.has_value()) {
-          Error("Element type of array not specified", token.fileRange);
+        if (cacheTy.has_value()) {
+          return {cacheTy.value(), i - 1};
         }
         auto bClose = getPairEnd(TokenType::bracketOpen, TokenType::bracketClose, i);
         if (bClose.has_value()) {
           auto lengthExp = parsePrerunExpression(preCtx, i, bClose);
-          cacheTy        = new ast::ArrayType(cacheTy.value(), lengthExp.first,
-                                              {cacheTy.value()->fileRange, RangeAt(bClose.value())});
-          if (lengthExp.second > bClose.value()) {
-            Error("Invalid end for the pre-run expression specifying the length of the array",
-                  RangeSpan(i, lengthExp.second));
+          if (lengthExp.second + 1 > bClose.value()) {
+            Error("Array length did not span till ]", RangeSpan(lengthExp.second + 1, bClose.value()));
           }
-          i = bClose.value();
+          auto arrSubTy = parseType(ctx, i, None);
+          cacheTy       = new ast::ArrayType(arrSubTy.first, lengthExp.first, {RangeAt(i), RangeAt(arrSubTy.second)});
+          i             = arrSubTy.second;
         } else {
           Error("Expected end for [", RangeAt(i));
         }

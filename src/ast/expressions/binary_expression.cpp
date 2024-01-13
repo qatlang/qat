@@ -106,7 +106,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   if (lhsValueType->isInteger()) {
     referenceHandler();
     SHOW("Integer binary operation: " << OpToString(op))
-    if (lhsType->isSame(rhsType)) {
+    if (lhsValueType->isSame(rhsValueType)) {
       llvm::Value* llRes;
       IR::QatType* resType = lhsType;
       // NOLINTNEXTLINE(clang-diagnostic-switch)
@@ -164,11 +164,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
           break;
         }
         case Op::bitwiseAnd: {
-          llRes = ctx->builder.CreateLogicalAnd(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateAnd(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseOr: {
-          llRes = ctx->builder.CreateLogicalOr(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateOr(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseXor: {
@@ -200,17 +200,50 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       }
       return new IR::Value(llRes, resType, false, IR::Nature::temporary);
     } else {
-      if (rhsType->isInteger()) {
-        ctx->Error("Signed integers in this binary operation have different "
-                   "bitwidths. Convert the operand with smaller bitwidth to the bigger "
+      if (rhsValueType->isChoice() && rhsValueType->asChoice()->hasNegativeValues() &&
+          (rhsValueType->asChoice()->getBitwidth() == lhsValueType->asInteger()->getBitwidth())) {
+        if (op == Op::bitwiseAnd) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateAnd(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else if (op == Op::bitwiseOr) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateOr(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else if (op == Op::bitwiseXor) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateXor(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else {
+          ctx->Error(" for left hand side type " + ctx->highlightError(lhsValueType->toString()) + " a", fileRange);
+        }
+      } else if (rhsValueType->isChoice()) {
+        if (rhsValueType->asChoice()->hasNegativeValues()) {
+          ctx->Error("The bitwidth of the operand on the left is " +
+                         ctx->highlightError(std::to_string(lhsValueType->asInteger()->getBitwidth())) +
+                         ", but the operand on the right is of the choice type " +
+                         ctx->highlightError(rhsValueType->toString()) +
+                         " whose underlying type is a signed integer with a bitwidth of " +
+                         ctx->highlightError(std::to_string(rhsValueType->asChoice()->getBitwidth())),
+                     fileRange);
+        } else {
+          ctx->Error(
+              "The operand on the left is a signed integer of type " + ctx->highlightError(lhsValueType->toString()) +
+                  " but the operand on the right is of the choice type " +
+                  ctx->highlightError(rhsValueType->toString()) + " whose underlying type is an unsigned integer type",
+              fileRange);
+        }
+      } else if (rhsValueType->isInteger()) {
+        ctx->Error("Signed integers in this binary operation have different bitwidths."
+                   " It is recommended to convert the operand with smaller bitwidth to the bigger "
                    "bitwidth to prevent potential loss of data and logical errors",
                    fileRange);
-      } else if (rhsType->isUnsignedInteger()) {
+      } else if (rhsValueType->isUnsignedInteger()) {
         ctx->Error("Left hand side is a signed integer and right hand side is "
                    "an unsigned integer. Please check logic or convert one side "
                    "to the other type if this was intentional",
                    fileRange);
-      } else if (rhsType->isFloat()) {
+      } else if (rhsValueType->isFloat()) {
         ctx->Error("Left hand side is a signed integer and right hand side is "
                    "a floating point number. Please check logic or convert one "
                    "side to the other type if this was intentional",
@@ -283,11 +316,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
           break;
         }
         case Op::bitwiseAnd: {
-          llRes = ctx->builder.CreateLogicalAnd(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateAnd(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseOr: {
-          llRes = ctx->builder.CreateLogicalOr(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateOr(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseXor: {
@@ -320,17 +353,51 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       return new IR::Value(llRes, resType, false, IR::Nature::temporary);
     } else {
-      if (rhsType->isUnsignedInteger()) {
+      if (rhsValueType->isChoice() && !rhsValueType->asChoice()->hasNegativeValues() &&
+          (rhsValueType->asChoice()->getBitwidth() == lhsValueType->asInteger()->getBitwidth())) {
+        if (op == Op::bitwiseAnd) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateAnd(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else if (op == Op::bitwiseOr) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateOr(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else if (op == Op::bitwiseXor) {
+          referenceHandler();
+          return new IR::Value(ctx->builder.CreateXor(lhsEmit->getLLVM(), rhsEmit->getLLVM()), lhsValueType, false,
+                               IR::Nature::temporary);
+        } else {
+          ctx->Error(" for left hand side type " + ctx->highlightError(lhsValueType->toString()) + " a", fileRange);
+        }
+      } else if (rhsValueType->isChoice()) {
+        if (!rhsValueType->asChoice()->hasNegativeValues()) {
+          ctx->Error("The bitwidth of the operand on the left is " +
+                         ctx->highlightError(std::to_string(lhsValueType->asUnsignedInteger()->getBitwidth())) +
+                         ", but the operand on the right is of the choice type " +
+                         ctx->highlightError(rhsValueType->toString()) +
+                         " whose underlying type is an unsigned integer with a bitwidth of " +
+                         ctx->highlightError(std::to_string(rhsValueType->asChoice()->getBitwidth())),
+                     fileRange);
+        } else {
+          ctx->Error("The operand on the left is an unsigned integer of type " +
+                         ctx->highlightError(lhsValueType->toString()) +
+                         " but the operand on the right is of the choice type " +
+                         ctx->highlightError(rhsValueType->toString()) +
+                         " whose underlying type is a signed integer type",
+                     fileRange);
+        }
+      } else if (rhsValueType->isUnsignedInteger()) {
         ctx->Error("Unsigned integers in this binary operation have different "
                    "bitwidths. Cast the operand with smaller bitwidth to the bigger "
                    "bitwidth to prevent potential loss of data and logical errors",
                    fileRange);
-      } else if (rhsType->isInteger()) {
+      } else if (rhsValueType->isInteger()) {
         ctx->Error("Left hand side is an unsigned integer and right hand side is "
                    "a signed integer. Please check logic or cast one side to the "
                    "other type if this was intentional",
                    fileRange);
-      } else if (rhsType->isFloat()) {
+      } else if (rhsValueType->isFloat()) {
         ctx->Error("Left hand side is an unsigned integer and right hand side is "
                    "a floating point number. Please check logic or cast one side to "
                    "the other type if this was intentional",
@@ -403,11 +470,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
           break;
         }
         case Op::bitwiseAnd: {
-          llRes = ctx->builder.CreateLogicalAnd(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateAnd(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseOr: {
-          llRes = ctx->builder.CreateLogicalOr(lhsVal, rhsVal);
+          llRes = ctx->builder.CreateOr(lhsVal, rhsVal);
           break;
         }
         case Op::bitwiseXor: {
@@ -438,21 +505,22 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       return new IR::Value(llRes, resType, false, IR::Nature::temporary);
     } else {
       if (rhsType->isFloat()) {
-        ctx->Error("Left hand side of the expression is " + lhsType->toString() + " and right hand side is " +
-                       rhsType->toString() +
-                       ". Please check logic, or cast one of the values if "
-                       "this was intentional",
-                   fileRange);
+        ctx->Error(
+            "Left hand side of the expression is " + lhsType->toString() + " and right hand side is " +
+                rhsType->toString() +
+                ". The floating point types do not match. Convert either value to the type of the other one if this was intentional",
+            fileRange);
       } else if (rhsType->isInteger()) {
         ctx->Error("The right hand side of the expression is a signed integer. "
-                   "Cast that value if this was intentional, or check logic",
+                   "If this was intentional, convert the integer value to " +
+                       ctx->highlightError(lhsType->toString()),
                    fileRange);
       } else if (rhsType->isUnsignedInteger()) {
         ctx->Error("The right hand side of the expression is an unsigned integer. "
-                   "Cast that value if this was intentional, or check logic",
+                   "If this was intentional, convert the unsigned integer value to " +
+                       ctx->highlightError(lhsType->toString()),
                    fileRange);
       } else {
-        // FIXME - Support flipped operator side
         ctx->Error("Left hand side of the expression is of type " + ctx->highlightError(lhsType->toString()) +
                        " and right hand side is of type " + rhsType->toString() + ". Please check the logic.",
                    fileRange);
@@ -473,7 +541,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         if (lhsType->isReference()) {
           lhsEmit->loadImplicitPointer(ctx->builder);
         } else if (!lhsEmit->isImplicitPointer()) {
-          lhsEmit->makeImplicitPointer(ctx, None);
+          lhsEmit = lhsEmit->makeLocal(ctx, None, lhs->fileRange);
         }
         lhsBuff = ctx->builder.CreateLoad(
             llvm::Type::getInt8PtrTy(ctx->llctx),
@@ -490,7 +558,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         if (rhsType->isReference()) {
           rhsEmit->loadImplicitPointer(ctx->builder);
         } else if (!rhsEmit->isImplicitPointer()) {
-          rhsEmit->makeImplicitPointer(ctx, None);
+          rhsEmit = rhsEmit->makeLocal(ctx, None, rhs->fileRange);
         }
         rhsBuff = ctx->builder.CreateLoad(
             llvm::Type::getInt8PtrTy(ctx->llctx),
@@ -686,6 +754,110 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                      ctx->highlightError(rhsType->toString()),
                  fileRange);
     }
+  } else if (lhsType->isChoice() && rhsType->isSame(lhsType)) {
+    referenceHandler();
+    auto chTy = lhsType->asChoice();
+    if (op == Op::equalTo) {
+      return new IR::Value(ctx->builder.CreateICmpEQ(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                           IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+    } else if (op == Op::notEqualTo) {
+      return new IR::Value(ctx->builder.CreateICmpNE(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                           IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+    } else if (op == Op::lessThan) {
+      if (chTy->hasNegativeValues()) {
+        return new IR::Value(ctx->builder.CreateICmpSLT(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      } else {
+        new IR::Value(ctx->builder.CreateICmpULT(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                      IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      }
+    } else if (op == Op::lessThanOrEqualTo) {
+      if (chTy->hasNegativeValues()) {
+        return new IR::Value(ctx->builder.CreateICmpSLE(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      } else {
+        new IR::Value(ctx->builder.CreateICmpULE(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                      IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      }
+    } else if (op == Op::greaterThan) {
+      if (chTy->hasNegativeValues()) {
+        return new IR::Value(ctx->builder.CreateICmpSGT(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      } else {
+        new IR::Value(ctx->builder.CreateICmpUGT(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                      IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      }
+    } else if (op == Op::greaterThanEqualTo) {
+      if (chTy->hasNegativeValues()) {
+        return new IR::Value(ctx->builder.CreateICmpSGE(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      } else {
+        new IR::Value(ctx->builder.CreateICmpUGE(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                      IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
+      }
+    } else {
+      // FIXME - ?? Separate type for bitwise operations
+      if (op == Op::bitwiseAnd) {
+        return new IR::Value(ctx->builder.CreateAnd(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             chTy->hasNegativeValues() ? (IR::QatType*)IR::IntegerType::get(chTy->getBitwidth(), ctx)
+                                                       : IR::UnsignedType::get(chTy->getBitwidth(), ctx),
+                             false, IR::Nature::temporary);
+      } else if (op == Op::bitwiseOr) {
+        return new IR::Value(ctx->builder.CreateOr(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             chTy->hasNegativeValues() ? (IR::QatType*)IR::IntegerType::get(chTy->getBitwidth(), ctx)
+                                                       : IR::UnsignedType::get(chTy->getBitwidth(), ctx),
+                             false, IR::Nature::temporary);
+      } else if (op == Op::bitwiseXor) {
+        return new IR::Value(ctx->builder.CreateXor(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             chTy->hasNegativeValues() ? (IR::QatType*)IR::IntegerType::get(chTy->getBitwidth(), ctx)
+                                                       : IR::UnsignedType::get(chTy->getBitwidth(), ctx),
+                             false, IR::Nature::temporary);
+      } else {
+        ctx->Error("This binary operator is not supported for expressions of type " +
+                       ctx->highlightError(lhsType->toString()),
+                   fileRange);
+      }
+    }
+  } else if (lhsValueType->isChoice() &&
+             (lhsValueType->asChoice()->hasNegativeValues() ? rhsValueType->isInteger()
+                                                            : rhsValueType->isUnsignedInteger())) {
+    auto lhsBits = lhsValueType->asChoice()->getBitwidth();
+    auto rhsBits = rhsValueType->isUnsignedInteger() ? rhsValueType->asUnsignedInteger()->getBitwidth()
+                                                     : rhsValueType->asInteger()->getBitwidth();
+    if (lhsBits != rhsBits) {
+      ctx->Error("The left hand side is of the choice type " + ctx->highlightError(lhsValueType->toString()) +
+                     " whose underlying bitwidth is " + ctx->highlightError(std::to_string(lhsBits)) +
+                     " but the right hand side has an " +
+                     (rhsValueType->isUnsignedInteger() ? "unsigned integer" : "signed integer") +
+                     " type of bitwidth " + ctx->highlightError(std::to_string(rhsBits)),
+                 fileRange);
+    } else {
+      if (op == Op::bitwiseAnd) {
+        return new IR::Value(ctx->builder.CreateAnd(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             lhsValueType->asChoice()->hasNegativeValues()
+                                 ? (IR::QatType*)IR::IntegerType::get(lhsBits, ctx)
+                                 : IR::UnsignedType::get(lhsBits, ctx),
+                             false, IR::Nature::temporary);
+      } else if (op == Op::bitwiseOr) {
+        return new IR::Value(ctx->builder.CreateOr(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             lhsValueType->asChoice()->hasNegativeValues()
+                                 ? (IR::QatType*)IR::IntegerType::get(lhsBits, ctx)
+                                 : IR::UnsignedType::get(lhsBits, ctx),
+                             false, IR::Nature::temporary);
+      } else if (op == Op::bitwiseXor) {
+        return new IR::Value(ctx->builder.CreateXor(lhsEmit->getLLVM(), rhsEmit->getLLVM()),
+                             lhsValueType->asChoice()->hasNegativeValues()
+                                 ? (IR::QatType*)IR::IntegerType::get(lhsBits, ctx)
+                                 : IR::UnsignedType::get(lhsBits, ctx),
+                             false, IR::Nature::temporary);
+      } else {
+        ctx->Error("Left hand side is of choice type " + ctx->highlightError(lhsValueType->toString()) +
+                       " and right hand side is of type " + ctx->highlightError(rhsValueType->toString()) +
+                       ". Binary operator " + ctx->highlightError(OpToString(op)) +
+                       " is not supported for these operands",
+                   fileRange);
+      }
+    }
   } else {
     if (lhsType->isExpanded() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isExpanded())) {
       SHOW("Expanded type binary operation")
@@ -701,7 +873,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         SHOW("RHS is matched exactly")
         auto localID = lhsEmit->getLocalID();
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
-          lhsEmit->makeImplicitPointer(ctx, None);
+          lhsEmit = lhsEmit->makeLocal(ctx, None, lhs->fileRange);
         } else if (lhsType->isReference()) {
           lhsEmit->loadImplicitPointer(ctx->builder);
         }
@@ -728,7 +900,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         rhsEmit->loadImplicitPointer(ctx->builder);
         SHOW("RHS is matched as subtype of reference")
         if (!lhsType->isReference() && !lhsEmit->isImplicitPointer()) {
-          lhsEmit->makeImplicitPointer(ctx, None);
+          lhsEmit = lhsEmit->makeLocal(ctx, None, lhs->fileRange);
         }
         auto* opFn = (isVarExp && eTy->hasVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()}))
                          ? eTy->getVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})

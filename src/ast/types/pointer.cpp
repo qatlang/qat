@@ -34,6 +34,8 @@ String PointerType::pointerOwnerToString() const {
       return "heap";
     case PtrOwnType::region:
       return "region";
+    case PtrOwnType::anyRegion:
+      return "anyRegion";
   }
 }
 
@@ -51,6 +53,8 @@ IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatTyp
       return IR::PointerOwner::OfParentFunction(ctx->getActiveFunction());
     case PtrOwnType::region:
       return IR::PointerOwner::OfRegion(ownerVal.value()->asRegion());
+    case PtrOwnType::anyRegion:
+      return IR::PointerOwner::OfAnyRegion();
   }
 }
 
@@ -79,17 +83,16 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
     }
     ownerVal = typVal;
   } else if (ownTyp == PtrOwnType::region) {
-    if (!ownerTyTy) {
-      ctx->Error("Expected a region to be provided", fileRange);
+    if (ownerTyTy) {
+      auto* regTy = ownerTyTy.value()->emit(ctx);
+      if (!regTy->isRegion()) {
+        ctx->Error("The provided type is not a region type and hence pointer "
+                   "owner cannot be " +
+                       ctx->highlightError("region"),
+                   fileRange);
+      }
+      ownerVal = regTy;
     }
-    auto* regTy = ownerTyTy.value()->emit(ctx);
-    if (!regTy->isRegion()) {
-      ctx->Error("The provided type is not a region type and hence pointer "
-                 "owner cannot be " +
-                     ctx->highlightError("region"),
-                 fileRange);
-    }
-    ownerVal = regTy;
   }
   return IR::PointerType::get(isSubtypeVar, type->emit(ctx), isNonNullable, getPointerOwner(ctx, ownerVal), isMultiPtr,
                               ctx);
@@ -130,6 +133,10 @@ String PointerType::toString() const {
     }
     case PtrOwnType::region: {
       ownerStr = String("region(") + ownerTyTy.value()->toString() + ")";
+      break;
+    }
+    case PtrOwnType::anyRegion: {
+      ownerStr = "region";
       break;
     }
     default:;

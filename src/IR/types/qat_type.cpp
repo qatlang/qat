@@ -99,7 +99,8 @@ bool QatType::checkTypeExists(const String& name) {
 bool QatType::isCompatible(QatType* other) {
   if (isPointer() && other->isPointer()) {
     if ((asPointer()->getSubType()->isSame(other->asPointer()->getSubType())) &&
-        asPointer()->getOwner().isAnonymous() &&
+        (asPointer()->getOwner().isSame(other->asPointer()->getOwner()) || asPointer()->getOwner().isAnonymous() ||
+         (asPointer()->getOwner().isAnyRegion() && other->asPointer()->getOwner().isRegion())) &&
         (asPointer()->isNonNullable() ? other->asPointer()->isNonNullable() : true) &&
         (asPointer()->isMulti() == other->asPointer()->isMulti())) {
       return true;

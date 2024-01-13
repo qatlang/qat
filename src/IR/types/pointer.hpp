@@ -11,6 +11,7 @@ class Function;
 class Region;
 
 enum class PointerOwnerType {
+  anyRegion,
   region,
   heap,
   anonymous,
@@ -31,6 +32,7 @@ public:
   useit static PointerOwner OfParentFunction(Function* fun);
   useit static PointerOwner OfParentInstance(QatType* type);
   useit static PointerOwner OfRegion(Region* region);
+  useit static PointerOwner OfAnyRegion();
 
   useit inline QatType*  ownerAsType() const { return (QatType*)owner; }
   useit inline Region*   ownerAsRegion() const { return ((QatType*)owner)->asRegion(); }
@@ -39,6 +41,7 @@ public:
 
   useit inline bool isType() const { return ownerTy == PointerOwnerType::type; }
   useit inline bool isAnonymous() const { return ownerTy == PointerOwnerType::anonymous; }
+  useit inline bool isAnyRegion() const { return ownerTy == PointerOwnerType::anyRegion; }
   useit inline bool isRegion() const { return ownerTy == PointerOwnerType::region; }
   useit inline bool isHeap() const { return ownerTy == PointerOwnerType::heap; }
   useit inline bool isParentFunction() const { return ownerTy == PointerOwnerType::parentFunction; }

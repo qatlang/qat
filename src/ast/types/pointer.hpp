@@ -15,6 +15,7 @@ enum class PtrOwnType {
   function,
   anonymous,
   region,
+  anyRegion,
 };
 
 class PointerType : public QatType {

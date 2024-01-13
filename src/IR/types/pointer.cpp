@@ -31,12 +31,17 @@ PointerOwner PointerOwner::OfRegion(Region* region) {
   return PointerOwner{.owner = region, .ownerTy = PointerOwnerType::region};
 }
 
+PointerOwner PointerOwner::OfAnyRegion() {
+  return PointerOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anyRegion};
+}
+
 bool PointerOwner::isSame(const PointerOwner& other) const {
   if (ownerTy == other.ownerTy) {
     switch (ownerTy) {
       case PointerOwnerType::anonymous:
       case PointerOwnerType::Static:
       case PointerOwnerType::heap:
+      case PointerOwnerType::anyRegion:
         return true;
       case PointerOwnerType::region:
         return ownerAsRegion()->isSame(other.ownerAsRegion());
@@ -54,6 +59,8 @@ bool PointerOwner::isSame(const PointerOwner& other) const {
 
 String PointerOwner::toString() const {
   switch (ownerTy) {
+    case PointerOwnerType::anyRegion:
+      return "region";
     case PointerOwnerType::region:
       return "region(" + ownerAsRegion()->toString() + ")";
     case PointerOwnerType::heap:

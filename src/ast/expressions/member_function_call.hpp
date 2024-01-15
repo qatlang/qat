@@ -15,13 +15,13 @@ private:
   bool             isExpSelf = false;
   Identifier       memberName;
   Vec<Expression*> arguments;
-  bool             variation;
+  Maybe<bool>      callNature;
 
 public:
   MemberFunctionCall(Expression* _instance, bool _isExpSelf, Identifier _memberName, Vec<Expression*> _arguments,
-                     bool _variation, FileRange _fileRange)
+                     Maybe<bool> _variation, FileRange _fileRange)
       : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
-        memberName(std::move(_memberName)), arguments(std::move(_arguments)), variation(_variation) {}
+        memberName(std::move(_memberName)), arguments(std::move(_arguments)), callNature(_variation) {}
 
   IR::Value* emit(IR::Context* ctx) override;
 

@@ -11,12 +11,12 @@ class MemberAccess : public Expression {
   Expression* instance;
   bool        isExpSelf = false;
   bool        isPointerAccess;
-  bool        isVariationAccess;
+  Maybe<bool> isVariationAccess;
   Identifier  name;
 
 public:
-  MemberAccess(Expression* _instance, bool isExpSelf, bool _isPointerAccess, bool _isVariationAccess, Identifier _name,
-               FileRange _fileRange);
+  MemberAccess(Expression* _instance, bool isExpSelf, bool _isPointerAccess, Maybe<bool> _isVariationAccess,
+               Identifier _name, FileRange _fileRange);
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;

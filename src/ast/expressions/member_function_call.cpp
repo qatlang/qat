@@ -46,46 +46,74 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       }
       auto* desFn = instType->asExpanded()->getDestructor();
       if (!inst->isImplicitPointer() && !inst->isReference()) {
-        inst->makeImplicitPointer(ctx, None);
+        inst = inst->makeLocal(ctx, None, instance->fileRange);
       } else if (inst->isReference()) {
         inst->loadImplicitPointer(ctx->builder);
       }
       return desFn->call(ctx, {inst->getLLVM()}, None, ctx->getMod());
     }
     auto* eTy = instType->asExpanded();
-    if (variation) {
-      if (!eTy->hasVariationFn(memberName.value)) {
-        if (eTy->hasNormalMemberFn(memberName.value)) {
-          ctx->Error(ctx->highlightError(memberName.value) + " is not a variation member function of type " +
-                         ctx->highlightError(eTy->getFullName()) + " and hence cannot be called as a variation",
-                     fileRange);
-        } else {
-          ctx->Error("No variation member function named " + ctx->highlightError(memberName.value) + " found in type " +
-                         ctx->highlightError(eTy->getFullName()),
-                     fileRange);
+    if (callNature.has_value()) {
+      if (callNature.value()) {
+        if (!eTy->hasVariationFn(memberName.value)) {
+          if (eTy->hasNormalMemberFn(memberName.value)) {
+            ctx->Error(ctx->highlightError(memberName.value) + " is not a variation member function of type " +
+                           ctx->highlightError(eTy->getFullName()) + " and hence cannot be called as a variation",
+                       fileRange);
+          } else {
+            ctx->Error("No variation member function named " + ctx->highlightError(memberName.value) +
+                           " found in type " + ctx->highlightError(eTy->getFullName()),
+                       fileRange);
+          }
+        }
+        if (!isVar) {
+          ctx->Error("The expression does not have variability and hence variation "
+                     "member functions cannot be called",
+                     instance->fileRange);
+        }
+      } else {
+        if (!eTy->hasNormalMemberFn(memberName.value)) {
+          if (eTy->hasVariationFn(memberName.value)) {
+            ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
+                           ctx->highlightError(eTy->getFullName()) +
+                           " and hence cannot be called as a normal member function",
+                       fileRange);
+          } else {
+            ctx->Error("No normal member function named " + ctx->highlightError(memberName.value) + " found in type " +
+                           ctx->highlightError(eTy->getFullName()),
+                       fileRange);
+          }
         }
       }
-      if (!isVar) {
-        ctx->Error("The expression does not have variability and hence variation "
-                   "member functions cannot be called",
-                   instance->fileRange);
-      }
     } else {
-      if (eTy->hasVariationFn(memberName.value)) {
-        ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
-                       ctx->highlightError(eTy->getFullName()) + " and hence should be called as a variation like " +
-                       ctx->highlightError(String(isExpSelf ? "''" : "'") + "var:" + memberName.value),
-                   memberName.range);
-      } else if (!eTy->hasNormalMemberFn(memberName.value)) {
-        ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
-                       " does not have a member function named " + ctx->highlightError(memberName.value) +
-                       ". Please check the logic",
-                   fileRange);
+      if (isVar) {
+        if (!eTy->hasNormalMemberFn(memberName.value) && !eTy->hasVariationFn(memberName.value)) {
+          ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
+                         " does not have a member function named " + ctx->highlightError(memberName.value) +
+                         ". Please check the logic",
+                     fileRange);
+        }
+      } else {
+        if (!eTy->hasNormalMemberFn(memberName.value)) {
+          if (eTy->hasVariationFn(memberName.value)) {
+            ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
+                           ctx->highlightError(eTy->getFullName()) + " and cannot be called here as this expression " +
+                           (inst->isReference() ? "is a reference without variability" : "does not have variability"),
+                       memberName.range);
+          } else {
+            ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
+                           " does not have a normal member function named " + ctx->highlightError(memberName.value) +
+                           ". Please check the logic",
+                       fileRange);
+          }
+        }
       }
     }
-    auto* memFn = variation ? eTy->getVariationFn(memberName.value) : eTy->getNormalMemberFn(memberName.value);
+    auto* memFn = (((callNature.has_value() && callNature.value()) || isVar) && eTy->hasVariationFn(memberName.value))
+                      ? eTy->getVariationFn(memberName.value)
+                      : eTy->getNormalMemberFn(memberName.value);
     if (!memFn->isAccessible(ctx->getAccessInfo())) {
-      ctx->Error("Member function " + ctx->highlightError(memberName.value) + " of core type " +
+      ctx->Error("Member function " + ctx->highlightError(memberName.value) + " of type " +
                      ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
@@ -109,7 +137,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
             }
           }
           // NOTE - Maybe consider changing this to deeper call-tree-analysis
-          ctx->Error("Cannot call the " + String(variation ? "variation " : "") + "member function as member field" +
+          ctx->Error("Cannot call the " + String(callNature ? "variation " : "") + "member function as member field" +
                          (missingMembers.size() > 1 ? "s " : " ") + message +
                          " of this type have not been initialised yet. If the field" +
                          (missingMembers.size() > 1 ? "s or their" : " or its") +
@@ -121,7 +149,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       thisFn->addMemberFunctionCall(memFn);
     }
     if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
-      inst->makeImplicitPointer(ctx, None);
+      inst = inst->makeLocal(ctx, None, instance->fileRange);
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();
@@ -149,9 +177,11 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
             (fnArgType->isReference() && argsEmit[i - 1]->isImplicitPointer() &&
              fnArgType->asReference()->getSubType()->isSame(argType)) ||
             (argType->isReference() && argType->asReference()->getSubType()->isSame(fnArgType)))) {
-        ctx->Error("Type of this expression does not match the type of the "
-                   "corresponding argument of the function " +
-                       ctx->highlightError(memFn->getFullName()),
+        ctx->Error("Type of this expression " + ctx->highlightError(argType->toString()) +
+                       " does not match the type of the "
+                       "corresponding argument " +
+                       ctx->highlightError(memFn->getType()->asFunction()->getArgumentTypeAt(i)->getName()) +
+                       " of the function " + ctx->highlightError(memFn->getFullName()),
                    arguments.at(i - 1)->fileRange);
       }
     }
@@ -233,7 +263,8 @@ Json MemberFunctionCall::toJson() const {
       ._("instance", instance->toJson())
       ._("function", memberName)
       ._("arguments", args)
-      ._("isVariation", variation)
+      ._("hasCallNature", callNature.has_value())
+      ._("callNature", callNature.has_value() ? callNature.value() : JsonValue())
       ._("fileRange", fileRange);
 }
 

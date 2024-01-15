@@ -9,8 +9,8 @@
 
 namespace qat::ast {
 
-MemberAccess::MemberAccess(Expression* _instance, bool _isExpSelf, bool _isPointerAccess, bool _isVariationAccess,
-                           Identifier _name, FileRange _fileRange)
+MemberAccess::MemberAccess(Expression* _instance, bool _isExpSelf, bool _isPointerAccess,
+                           Maybe<bool> _isVariationAccess, Identifier _name, FileRange _fileRange)
     : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf), isPointerAccess(_isPointerAccess),
       isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
 
@@ -32,7 +32,10 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     if (instance->nodeType() == NodeType::self) {
       ctx->Error("Do not use this syntax for accessing members of the parent instance. Use " +
                      ctx->highlightError(String("''") + (isPointerAccess ? "->" : "") +
-                                         (isVariationAccess ? "var:" : "") + name.value) +
+                                         (isVariationAccess.has_value() && isVariationAccess.value()
+                                              ? "var:"
+                                              : (isVariationAccess.has_value() ? "const:" : "")) +
+                                         name.value) +
                      " instead",
                  fileRange);
     }
@@ -129,7 +132,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isFuture()) {
     if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
-      inst->makeImplicitPointer(ctx, None);
+      inst = inst->makeLocal(ctx, None, instance->fileRange);
     }
     if (name.value == "isDone") {
       return new IR::Value(
@@ -171,7 +174,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isMaybe()) {
     if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
-      inst->makeImplicitPointer(ctx, None);
+      inst = inst->makeLocal(ctx, None, instance->fileRange);
     }
     if (name.value == "hasValue") {
       if (inst->isLLVMConstant()) {
@@ -209,8 +212,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isExpanded()) {
     if ((instType->isCoreType() && !instType->asCore()->hasMember(name.value)) &&
-        (isVariationAccess ? !instType->asExpanded()->hasVariationFn(name.value)
-                           : !instType->asExpanded()->hasNormalMemberFn(name.value))) {
+        ((isVariationAccess.has_value() && isVariationAccess.value())
+             ? !instType->asExpanded()->hasVariationFn(name.value)
+             : !instType->asExpanded()->hasNormalMemberFn(name.value))) {
       ctx->Error("Core type " + ctx->highlightError(instType->asCore()->toString()) +
                      " does not have a member field, member function or variation function named " +
                      ctx->highlightError(name.value) + ". Please check the logic",
@@ -218,7 +222,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
     auto* eTy = instType->asExpanded();
     if (eTy->isCoreType() && eTy->asCore()->hasMember(name.value)) {
-      if (isVariationAccess) {
+      if (isVariationAccess.has_value() && isVariationAccess.value()) {
         ctx->Error(ctx->highlightError(name.value) + " is a member field of type " +
                        ctx->highlightError(eTy->getFullName()) +
                        " and hence variation access cannot be used. Please change " +
@@ -256,7 +260,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
       }
       if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->isLLVMConstant() &&
           !isPointerAccess) {
-        inst->makeImplicitPointer(ctx, None);
+        inst = inst->makeLocal(ctx, None, instance->fileRange);
       }
       if (inst->isLLVMConstant() && !isPointerAccess) {
         return new IR::PrerunValue(
@@ -272,17 +276,17 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
         }
         return new IR::Value(llVal, IR::ReferenceType::get(isVar, memValTy, ctx), false, IR::Nature::temporary);
       }
-    } else if (!isVariationAccess && eTy->hasNormalMemberFn(name.value)) {
+    } else if (!(isVariationAccess.has_value() && isVariationAccess.value()) && eTy->hasNormalMemberFn(name.value)) {
       // FIXME - Implement
       ctx->Error("Referencing member function is not supported", fileRange);
-    } else if (isVariationAccess && eTy->hasVariationFn(name.value)) {
+    } else if ((isVariationAccess.has_value() && isVariationAccess.value()) && eTy->hasVariationFn(name.value)) {
       // FIXME - Implement
       ctx->Error("Referencing variation function is not supported", fileRange);
     }
   } else if (instType->isPointer() && instType->asPointer()->isMulti()) {
     if (name.value == "length") {
       if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
-        inst->makeImplicitPointer(ctx, None);
+        inst = inst->makeLocal(ctx, None, instance->fileRange);
       }
       if (inst->isLLVMConstant() && !isPointerAccess) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::CType::getUsize(ctx));

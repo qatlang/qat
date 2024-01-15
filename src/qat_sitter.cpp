@@ -310,16 +310,16 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
           }
           Lexer->changeFile(fs::absolute(libCheckRes->second));
           Lexer->analyse();
-          Parser->setTokens(Lexer->getTokens());
+          Parser->set_tokens(Lexer->getTokens());
           auto parseRes(Parser->parse());
-          for (const auto& bPath : Parser->getBroughtPaths()) {
+          for (const auto& bPath : Parser->get_brought_paths()) {
             broughtPaths.push_back(bPath);
           }
-          for (const auto& mPath : Parser->getMemberPaths()) {
+          for (const auto& mPath : Parser->get_member_paths()) {
             memberPaths.push_back(mPath);
           }
-          Parser->clearBroughtPaths();
-          Parser->clearMemberPaths();
+          Parser->clear_brought_paths();
+          Parser->clear_member_paths();
           fileEntities.push_back(IR::QatModule::CreateRootLib(
               parentMod, fs::absolute(libCheckRes->second), path, Identifier(libCheckRes->first, libCheckRes->second),
               Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
@@ -354,16 +354,16 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
         }
         Lexer->changeFile(item.path().string());
         Lexer->analyse();
-        Parser->setTokens(Lexer->getTokens());
+        Parser->set_tokens(Lexer->getTokens());
         auto parseRes(Parser->parse());
-        for (const auto& bPath : Parser->getBroughtPaths()) {
+        for (const auto& bPath : Parser->get_brought_paths()) {
           broughtPaths.push_back(bPath);
         }
-        for (const auto& mPath : Parser->getMemberPaths()) {
+        for (const auto& mPath : Parser->get_member_paths()) {
           memberPaths.push_back(mPath);
         }
-        Parser->clearBroughtPaths();
-        Parser->clearMemberPaths();
+        Parser->clear_brought_paths();
+        Parser->clear_member_paths();
         if (libCheckRes.has_value()) {
           fileEntities.push_back(IR::QatModule::CreateRootLib(
               parentMod, fs::absolute(item), path, Identifier(libCheckRes->first, libCheckRes->second),
@@ -390,16 +390,16 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
       }
       Lexer->changeFile(libCheckRes->second);
       Lexer->analyse();
-      Parser->setTokens(Lexer->getTokens());
+      Parser->set_tokens(Lexer->getTokens());
       auto parseRes(Parser->parse());
-      for (const auto& bPath : Parser->getBroughtPaths()) {
+      for (const auto& bPath : Parser->get_brought_paths()) {
         broughtPaths.push_back(bPath);
       }
-      for (const auto& mPath : Parser->getMemberPaths()) {
+      for (const auto& mPath : Parser->get_member_paths()) {
         memberPaths.push_back(mPath);
       }
-      Parser->clearBroughtPaths();
-      Parser->clearMemberPaths();
+      Parser->clear_brought_paths();
+      Parser->clear_member_paths();
       fileEntities.push_back(IR::QatModule::CreateFileMod(
           nullptr, libCheckRes->second, mainPath, Identifier(libCheckRes->first, libCheckRes->second),
           Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
@@ -420,16 +420,16 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     SHOW("Is regular file")
     Lexer->changeFile(mainPath);
     Lexer->analyse();
-    Parser->setTokens(Lexer->getTokens());
+    Parser->set_tokens(Lexer->getTokens());
     auto parseRes(Parser->parse());
-    for (const auto& bPath : Parser->getBroughtPaths()) {
+    for (const auto& bPath : Parser->get_brought_paths()) {
       broughtPaths.push_back(bPath);
     }
-    for (const auto& mPath : Parser->getMemberPaths()) {
+    for (const auto& mPath : Parser->get_member_paths()) {
       memberPaths.push_back(mPath);
     }
-    Parser->clearBroughtPaths();
-    Parser->clearMemberPaths();
+    Parser->clear_brought_paths();
+    Parser->clear_member_paths();
     if (libCheckRes.has_value()) {
       fileEntities.push_back(IR::QatModule::CreateRootLib(
           nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(libCheckRes->first, libCheckRes->second),

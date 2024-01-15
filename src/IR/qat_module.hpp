@@ -15,7 +15,9 @@
 #include "entity_overview.hpp"
 #include "link_names.hpp"
 #include "lld/Common/Driver.h"
+#include "meta_info.hpp"
 #include "types/definition.hpp"
+#include "value.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <set>
 #include <vector>
@@ -32,6 +34,8 @@ class Lib;
 class Box;
 class ModInfo;
 class BringPaths;
+class BinaryExpression;
+class BringBitwidths;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -129,45 +133,6 @@ public:
   }
 };
 
-class ModuleInfo {
-  friend class ast::ModInfo;
-  friend class QatModule;
-
-private:
-  Maybe<String>    outputName;
-  Deque<LibToLink> nativeLibsToLink;
-  bool             linkPthread = false;
-  Maybe<String>    foreignID;
-  Maybe<String>    alternativeName;
-
-  void addLibToLink(LibToLink libVal) {
-    for (const auto& lib : nativeLibsToLink) {
-      if (lib == libVal) {
-        return;
-      }
-    }
-    nativeLibsToLink.push_back(libVal);
-  }
-  useit bool   isForeign() const { return foreignID.has_value(); }
-  useit bool   isForeignC() const { return foreignID.has_value() && (foreignID.value() == "C"); }
-  useit bool   isForeignCPP() const { return foreignID.has_value() && (foreignID.value() == "C++"); }
-  useit String foreignIdentity() const { return foreignID.value_or(""); }
-  useit bool   hasAlternativeName() const { return alternativeName.has_value(); }
-  useit String getAlternativeName() const { return alternativeName.value_or(""); }
-
-public:
-  ModuleInfo() = default;
-
-  operator JsonValue() {
-    return Json()
-        ._("linksPThread", linkPthread)
-        ._("hasForeignID", foreignID.has_value())
-        ._("hasOutputName", outputName.has_value())
-        ._("outputName", outputName.has_value() ? outputName.value() : JsonValue())
-        ._("foreignID", foreignID.has_value() ? foreignID.value() : JsonValue());
-  }
-};
-
 class QatModule final : public Uniq, public EntityOverview {
   friend class Region;
   friend class OpaqueType;
@@ -184,6 +149,8 @@ class QatModule final : public Uniq, public EntityOverview {
   friend class GenericCoreType;
   friend class GenericDefinitionType;
   friend class Function;
+  friend class ast::BinaryExpression;
+  friend class ast::BringBitwidths;
 
 public:
   QatModule(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
@@ -203,8 +170,9 @@ private:
   Identifier                          name;
   ModuleType                          moduleType;
   bool                                rootLib = false;
-  ModuleInfo                          moduleInfo;
-  bool                                isModuleInfoProvided = false;
+  Maybe<MetaInfo>                     metaInfo;
+  bool                                linkPthread = false;
+  Deque<LibToLink>                    nativeLibsToLink;
   fs::path                            filePath;
   fs::path                            basePath;
   VisibilityInfo                      visibility;
@@ -249,6 +217,7 @@ private:
   Vec<String>           content;
   Vec<ast::Node*>       nodes;
   mutable llvm::Module* llvmModule;
+  mutable Maybe<String> moduleForeignID;
   bool                  hasMain = false;
   fs::path              llPath;
   Maybe<fs::path>       objectFilePath;
@@ -308,9 +277,14 @@ public:
   useit QatModule* getClosestParentLib();
   useit bool       hasClosestParentBox() const;
   useit QatModule* getClosestParentBox();
-  useit bool       isInForeignModuleOfType(String id) const;
-  useit bool       hasNthParent(u32 n) const;
-  useit QatModule* getNthParent(u32 n);
+  useit bool       hasMetaInfoOfKey(String key) const;
+  useit bool       hasMetaInfoInAnyParent(String key) const;
+  useit Maybe<IR::PrerunValue*> getMetaInfoOfKey(String key) const;
+  useit Maybe<IR::PrerunValue*> getMetaInfoFromAnyParent(String key) const;
+  useit Maybe<String> getRelevantForeignID() const;
+  useit bool          isInForeignModuleOfType(String id) const;
+  useit bool          hasNthParent(u32 n) const;
+  useit QatModule*    getNthParent(u32 n);
 
   useit const VisibilityInfo& getVisibility() const;
   useit Function* createFunction(const Identifier& name, QatType* returnType, Vec<Argument> args, bool isVariadic,
@@ -330,6 +304,7 @@ public:
   void       setHasMainFn();
 
   useit std::set<String> getAllObjectPaths() const;
+  useit std::set<String> getAllLinkableLibs() const;
 
   void addFilesystemBroughtMention(IR::QatModule* otherMod, const FileRange& fileRange);
   Vec<Pair<QatModule*, FileRange>> const& getFilesystemBroughtMentions() const;
@@ -464,6 +439,7 @@ public:
   void defineNodes(IR::Context* ctx);
   void emitNodes(IR::Context* ctx);
   void compileToObject(IR::Context* ctx);
+  void handleNativeLibs(IR::Context* ctx);
   void bundleLibs(IR::Context* ctx);
   void exportJsonFromAST(IR::Context* ctx);
   void linkNative(NativeUnit nval);

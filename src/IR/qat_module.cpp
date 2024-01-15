@@ -6,6 +6,7 @@
 #include "../cli/config.hpp"
 #include "../show.hpp"
 #include "../utils/logger.hpp"
+#include "../utils/pstream/pstream.h"
 #include "brought.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
@@ -15,10 +16,12 @@
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
 #include "types/region.hpp"
+#include "types/string_slice.hpp"
 #include "types/void.hpp"
 #include "value.hpp"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/LLVMContext.h"
@@ -153,9 +156,51 @@ QatModule* QatModule::getParentFile() { // NOLINT(misc-no-recursion)
   return this;
 }
 
-bool QatModule::isInForeignModuleOfType(String id) const {
-  return (isModuleInfoProvided && moduleInfo.foreignID.has_value() && moduleInfo.foreignID.value() == id) ||
-         (parent && parent->isInForeignModuleOfType(id));
+bool QatModule::hasMetaInfoOfKey(String key) const { return metaInfo.has_value() && metaInfo.value().hasKey(key); }
+
+bool QatModule::hasMetaInfoInAnyParent(String key) const {
+  if (metaInfo.has_value() && metaInfo.value().hasKey(key)) {
+    return true;
+  }
+  if (parent) {
+    return parent->hasMetaInfoInAnyParent(key);
+  }
+  return false;
+}
+
+Maybe<IR::PrerunValue*> QatModule::getMetaInfoOfKey(String key) const {
+  if (metaInfo.has_value() && metaInfo.value().hasKey(key)) {
+    return metaInfo.value().getValueFor(key);
+  }
+  return None;
+}
+
+Maybe<IR::PrerunValue*> QatModule::getMetaInfoFromAnyParent(String key) const {
+  if (metaInfo.has_value() && metaInfo.value().hasKey(key)) {
+    return metaInfo.value().getValueFor(key);
+  }
+  if (parent) {
+    return parent->getMetaInfoFromAnyParent(key);
+  }
+  return None;
+}
+
+Maybe<String> QatModule::getRelevantForeignID() const {
+  if (moduleForeignID.has_value()) {
+    return moduleForeignID;
+  } else {
+    auto keyVal = getMetaInfoFromAnyParent("foreign");
+    if (keyVal.has_value()) {
+      auto value = keyVal.value();
+      if (value->getType()->isStringSlice()) {
+        moduleForeignID = value->getType()->toPrerunGenericString(value).value();
+        return moduleForeignID;
+      } else {
+        return None;
+      }
+    }
+    return None;
+  }
 }
 
 bool QatModule::hasNthParent(u32 n) const {
@@ -297,9 +342,6 @@ void QatModule::updateOverview() {
       ._("integerBitwidths", integerBitsVal)
       ._("unsignedBitwidths", unsignedBitsVal)
       ._("filesystemBroughtMentions", fsBroughtMentionsJson);
-  if (isModuleInfoProvided) {
-    ovInfo._("moduleInfo", moduleInfo);
-  }
 }
 
 void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
@@ -403,22 +445,29 @@ String QatModule::getFullNameWithChild(const String& child) const {
   }
 }
 
+bool QatModule::isInForeignModuleOfType(String id) const {
+  if (getRelevantForeignID().has_value() && getRelevantForeignID().value() == id) {
+    return true;
+  }
+  return false;
+}
+
 LinkNames QatModule::getLinkNames() const {
   if (parent) {
     auto parentVal = parent->getLinkNames();
     if (shouldPrefixName()) {
-      parentVal.addUnit(LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib,
-                                     moduleInfo.alternativeName, {}),
-                        moduleInfo.foreignID);
+      parentVal.addUnit(
+          LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, None, {}),
+          getRelevantForeignID());
     }
     return parentVal;
   } else {
     if (shouldPrefixName()) {
-      return LinkNames({LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib,
-                                     moduleInfo.alternativeName, {})},
-                       moduleInfo.foreignID, nullptr);
+      return LinkNames(
+          {LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, None, {})},
+          getRelevantForeignID(), nullptr);
     } else {
-      return LinkNames({}, moduleInfo.foreignID, nullptr);
+      return LinkNames({}, getRelevantForeignID(), nullptr);
     }
   }
 }
@@ -822,6 +871,14 @@ bool QatModule::hasFunction(const String& name, AccessInfo reqInfo) const {
       return true;
     }
   }
+  for (auto sub : submodules) {
+    if (!sub->shouldPrefixName()) {
+      if (sub->hasFunction(name, reqInfo) || sub->hasBroughtFunction(name, reqInfo) ||
+          sub->hasAccessibleFunctionInImports(name, reqInfo).first) {
+        return true;
+      }
+    }
+  }
   SHOW("No functions named " + name + " found")
   return false;
 }
@@ -858,6 +915,14 @@ Function* QatModule::getFunction(const String& name, const AccessInfo& reqInfo) 
   for (auto* function : functions) {
     if ((function->getName().value == name) && function->getVisibility().isAccessible(reqInfo)) {
       return function;
+    }
+  }
+  for (auto sub : submodules) {
+    if (!sub->shouldPrefixName()) {
+      if (sub->hasFunction(name, reqInfo) || sub->hasBroughtFunction(name, reqInfo) ||
+          sub->hasAccessibleFunctionInImports(name, reqInfo).first) {
+        return sub->getFunction(name, reqInfo);
+      }
     }
   }
   for (const auto& brought : broughtFunctions) {
@@ -1901,7 +1966,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
     } else {
       compileCommand.append("-c ");
     }
-    if (moduleInfo.linkPthread) {
+    if (linkPthread) {
       compileCommand += "-pthread ";
     }
     compileCommand.append("--target=").append(ctx->clangTargetInfo->getTriple().getTriple()).append(" ");
@@ -1915,35 +1980,38 @@ void QatModule::compileToObject(IR::Context* ctx) {
     for (auto* sub : submodules) {
       sub->compileToObject(ctx);
     }
-    // FIXME - Also link modules of other brought entities
     objectFilePath = fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "object" /
                                   filePath.lexically_relative(basePath).replace_filename(getWritableName().append(
                                       ctx->clangTargetInfo->getTriple().isOSWindows()
                                           ? ".obj"
                                           : (ctx->clangTargetInfo->getTriple().isWasm() ? ".wasm" : ".o"))))
                          .lexically_normal();
-    auto currTime   = std::chrono::system_clock::now();
-    auto currTime_t = std::chrono::system_clock::to_time_t(currTime);
-
-    struct std::tm*   currTime_ctime = std::localtime(&currTime_t);
-    std::stringstream dateTimeBuff;
-    dateTimeBuff << std::put_time(currTime_ctime, "%Y%m%d%H%M%S");
-    std::error_code errorCode;
-    SHOW("Creating all folders in object file output path: " << objectFilePath.value())
-    fs::create_directories(objectFilePath.value().parent_path(), errorCode);
-    if (!errorCode) {
-      compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
-      log->say("Compile command is: " + compileCommand);
-      if (std::system(compileCommand.c_str())) {
-        ctx->Error("Could not compile the LLVM file: " + ctx->highlightError(filePath.string()), None);
+    if (!fs::exists(objectFilePath.value().parent_path())) {
+      std::error_code errorCode;
+      SHOW("Creating all folders in object file output path: " << objectFilePath.value())
+      fs::create_directories(objectFilePath.value().parent_path(), errorCode);
+      if (errorCode) {
+        ctx->Error("Could not create parent directory for the object file. Parent directory path is: " +
+                       ctx->highlightError(objectFilePath.value().parent_path().string()) +
+                       " with error: " + errorCode.message(),
+                   None);
       }
-      isCompiledToObject = true;
-    } else {
-      ctx->Error("Could not create parent directory for the object file. Parent directory path is: " +
-                     ctx->highlightError(objectFilePath.value().parent_path().string()) +
-                     " with error: " + errorCode.message(),
+    }
+    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
+    log->say("Compile command is: " + compileCommand);
+    redi::ipstream proc(compileCommand, redi::pstreams::pstderr);
+    String         errMessage;
+    String         line;
+    while (std::getline(proc.err(), line)) {
+      errMessage += line += "\n";
+    }
+    while (!proc.rdbuf()->exited()) {
+    }
+    if (proc.rdbuf()->status()) {
+      ctx->Error("Could not compile the LLVM file: " + ctx->highlightError(filePath.string()) + "\n" + errMessage,
                  None);
     }
+    isCompiledToObject = true;
   }
 }
 
@@ -2006,6 +2074,139 @@ std::set<String> QatModule::getAllObjectPaths() const {
   return result;
 }
 
+std::set<String> QatModule::getAllLinkableLibs() const {
+  SHOW("Linkable lib for " << name.value << " in " << filePath)
+  std::set<String> result;
+  if (!nativeLibsToLink.empty()) {
+    for (auto& lib : nativeLibsToLink) {
+      if (lib.type == LibToLinkType::namedLib) {
+        result.insert("-l" + lib.name->value);
+      } else if (lib.type == LibToLinkType::libPath) {
+        result.insert("-l" + lib.path->first);
+      }
+    }
+  }
+  auto moduleHandler = [&](IR::QatModule* modVal) {
+    auto libList = modVal->getAllLinkableLibs();
+    for (auto& lib : libList) {
+      result.insert(lib);
+    }
+  };
+  for (auto dep : dependencies) {
+    moduleHandler(dep);
+  }
+  for (auto sub : submodules) {
+    moduleHandler(sub);
+  }
+  for (auto& bMod : broughtModules) {
+    moduleHandler(bMod.get());
+  }
+  for (auto& bTy : broughtCoreTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtGenericCoreTypes) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtChoiceTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtOpaqueTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtGenericOpaqueTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtMixTypes) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtTypeDefs) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtFunctions) {
+    moduleHandler(bTy.get()->getParentModule());
+  }
+  for (auto& bTy : broughtGenericFunctions) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtGenericTypeDefinitions) {
+    moduleHandler(bTy.get()->getModule());
+  }
+  for (auto& bTy : broughtGlobalEntities) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  for (auto& bTy : broughtRegions) {
+    moduleHandler(bTy.get()->getParent());
+  }
+  return result;
+}
+
+#define LINK_LIB_KEY               "linkLibs"
+#define LINK_LIBS_FROM_PATH_KEY    "linkLibsFromPath"
+#define LINK_FILE_KEY              "linkFiles"
+#define LINK_STATIC_AND_SHARED_KEY "linkStaticAndShared"
+
+void QatModule::handleNativeLibs(IR::Context* ctx) {
+  SHOW("Module " << name.value << " has meta info: " << metaInfo.has_value())
+  if (metaInfo.has_value()) {
+    SHOW("MetaInfo has value")
+    if (metaInfo.value().hasKey(LINK_LIB_KEY)) {
+      SHOW("Found linkLibs key")
+      auto linkLibPre = metaInfo.value().getValueFor(LINK_LIB_KEY);
+      if (linkLibPre->getType()->isArray() && linkLibPre->getType()->asArray()->getElementType()->isStringSlice()) {
+        auto             dataArr = llvm::cast<llvm::ConstantArray>(linkLibPre->getLLVMConstant());
+        std::set<String> libs;
+        for (usize i = 0; i < linkLibPre->getType()->asArray()->getLength(); i++) {
+          auto itemLib = IR::StringSliceType::get(ctx)
+                             ->toPrerunGenericString(
+                                 new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)))
+                             .value();
+          itemLib = itemLib.substr(1, itemLib.size() - 2);
+          if (!libs.contains(itemLib)) {
+            nativeLibsToLink.push_back(LibToLink::fromName({itemLib, metaInfo.value().getValueRangeFor(LINK_LIB_KEY)},
+                                                           metaInfo.value().getValueRangeFor(LINK_LIB_KEY)));
+            libs.insert(itemLib);
+          }
+        }
+      } else {
+        ctx->Error("The field " + ctx->highlightError(LINK_LIB_KEY) +
+                       " is expected to be an array of string slices. The provided value is of type " +
+                       ctx->highlightError(linkLibPre->getType()->toString()),
+                   metaInfo.value().getValueRangeFor(LINK_LIB_KEY));
+      }
+    } else if (metaInfo.value().hasKey(LINK_LIBS_FROM_PATH_KEY)) {
+      ctx->Error("This is not supported for now", metaInfo->getValueRangeFor(LINK_LIBS_FROM_PATH_KEY));
+    } else if (metaInfo.value().hasKey(LINK_FILE_KEY)) {
+      auto linkFilePre = metaInfo.value().getValueFor(LINK_FILE_KEY);
+      if (linkFilePre->getType()->isArray() && linkFilePre->getType()->asArray()->getElementType()->isStringSlice()) {
+        auto             dataArr = llvm::cast<llvm::ConstantArray>(linkFilePre->getLLVMConstant());
+        std::set<String> libs;
+        for (usize i = 0; i < linkFilePre->getType()->asArray()->getLength(); i++) {
+          auto itemLib = IR::StringSliceType::get(ctx)
+                             ->toPrerunGenericString(
+                                 new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)))
+                             .value();
+          itemLib = itemLib.substr(1, itemLib.size() - 2);
+          if (!libs.contains(itemLib)) {
+            nativeLibsToLink.push_back(LibToLink::fromPath({itemLib, metaInfo.value().getValueRangeFor(LINK_FILE_KEY)},
+                                                           metaInfo.value().getValueRangeFor(LINK_FILE_KEY)));
+            libs.insert(itemLib);
+          }
+        }
+      } else {
+        ctx->Error("The field " + ctx->highlightError(LINK_FILE_KEY) +
+                       " is expected to be an array of string slices. The provided value is of type " +
+                       ctx->highlightError(linkFilePre->getType()->toString()),
+                   metaInfo.value().getValueRangeFor(LINK_FILE_KEY));
+      }
+    } else if (metaInfo.value().hasKey(LINK_STATIC_AND_SHARED_KEY)) {
+      ctx->Error("This is not supported for now", metaInfo->getValueRangeFor(LINK_STATIC_AND_SHARED_KEY));
+    }
+  }
+  for (auto* sub : submodules) {
+    sub->handleNativeLibs(ctx);
+  }
+}
+
 void QatModule::bundleLibs(IR::Context* ctx) {
   if (!isBundled) {
     auto& log = Logger::get();
@@ -2013,291 +2214,309 @@ void QatModule::bundleLibs(IR::Context* ctx) {
     for (auto* sub : submodules) {
       sub->bundleLibs(ctx);
     }
-    auto*       cfg = cli::Config::get();
-    String      cmdOne;
-    String      targetCMD;
-    Vec<String> libsToLink;
-    Vec<String> staticLibsToLink;
-    Vec<String> sharedLibsToLink;
-    if (moduleInfo.linkPthread) {
+    auto linkableLibs = getAllLinkableLibs();
+    SHOW("Linkable lib count for module " << name.value << " is " << linkableLibs.size())
+    auto*  cfg = cli::Config::get();
+    String cmdOne;
+    String targetCMD;
+    if (linkPthread) {
       cmdOne.append("-pthread ");
     }
     auto hostTriplet = llvm::Triple(LLVM_HOST_TRIPLE);
-    if (!moduleInfo.nativeLibsToLink.empty()) {
-      for (auto& nLib : moduleInfo.nativeLibsToLink) {
-        if (nLib.isName() || nLib.isLibPath()) {
-          bool foundLib        = false;
-          auto tripletToString = [&]() {
-            Vec<String> result;
-            auto        triplet = cfg->hasTargetTriple() ? ctx->clangTargetInfo->getTriple() : hostTriplet;
-            result.push_back(
-                (triplet.getArchName() + "-" + triplet.getOSName() + "-" + triplet.getEnvironmentName()).str());
-            const bool isArchKnown = triplet.getArch() != llvm::Triple::ArchType::UnknownArch;
-            const bool isOSKnown   = triplet.getOS() != llvm::Triple::OSType::UnknownOS;
-            const bool isEnvKnown  = triplet.getEnvironment() != llvm::Triple::EnvironmentType::UnknownEnvironment;
-            result.push_back(((isArchKnown ? triplet.getArchName() + "-" : "") +
-                              (isOSKnown ? triplet.getOSName() + (isEnvKnown ? "-" : "") : "") +
-                              (isEnvKnown ? triplet.getEnvironmentName() : ""))
-                                 .str());
-            result.push_back(triplet.getTriple());
-            return result;
-          };
-          if (cfg->hasTargetTriple() ? !ctx->clangTargetInfo->getTriple().isOSWindows() : !hostTriplet.isOSWindows()) {
-            if (nLib.isName()) {
-              Vec<String> searchPaths = {"/usr/local/lib", "/usr/local/lib32", "/usr/local/lib64",
-                                         "/usr/lib",       "/usr/lib32",       "/usr/lib64",
-                                         "/lib",           "/lib32",           "/lib64"};
-              for (auto const& triplet : tripletToString()) {
-                searchPaths.push_back("/usr/lib/" + triplet);
-                searchPaths.push_back("/usr/lib32/" + triplet);
-                searchPaths.push_back("/usr/lib64/" + triplet);
-                searchPaths.push_back("/lib/" + triplet);
-                searchPaths.push_back("/lib32/" + triplet);
-                searchPaths.push_back("/lib64/" + triplet);
-              }
-              for (auto& sPath : searchPaths) {
-                if (fs::exists(sPath)) {
-                  auto libPathStatic1 =
-                      (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                      ("lib" + nLib.name.value().value +
-                       ((nLib.name.value().value.find_last_of(".a") == nLib.name.value().value.length() - 2) ? ""
-                                                                                                             : ".a"));
-                  auto libPathStatic2 =
-                      (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                      (nLib.name.value().value +
-                       (nLib.name.value().value.find_last_of(".a") == (nLib.name.value().value.length() - 2) ? ""
-                                                                                                             : ".a"));
-                  auto libPathShared1 =
-                      (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                      ("lib" + nLib.name.value().value +
-                       ((nLib.name.value().value.find_last_of(".so") == nLib.name.value().value.length() - 3) ? ""
-                                                                                                              : ".so"));
-                  auto libPathShared2 =
-                      (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                      (nLib.name.value().value +
-                       (nLib.name.value().value.find_last_of(".so") == (nLib.name.value().value.length() - 3) ? ""
-                                                                                                              : ".so"));
-                  auto libPathShared3 =
-                      (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                      ("lib" + nLib.name.value().value +
-                       ((nLib.name.value().value.find_last_of(".dylib") == nLib.name.value().value.length() - 6)
-                            ? ""
-                            : ".dylib"));
-                  auto libPathShared4 = (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
-                                        (nLib.name.value().value + (nLib.name.value().value.find_last_of(".dylib") ==
-                                                                            (nLib.name.value().value.length() - 6)
-                                                                        ? ""
-                                                                        : ".dylib"));
-                  if (cfg->shouldBuildStatic()) {
-                    if (fs::exists(libPathStatic1)) {
-                      libsToLink.push_back(libPathStatic1.string());
-                      foundLib = true;
-                      break;
-                    } else if (fs::exists(libPathStatic2)) {
-                      libsToLink.push_back(libPathStatic2.string());
-                      foundLib = true;
-                      break;
-                    } else {
-                      if (cfg->hasSysroot() && fs::is_directory(cfg->getSysroot())) {
-                        for (auto const& child : fs::recursive_directory_iterator(cfg->getSysroot())) {
-                          if (child.is_regular_file()) {
-                            if (child.path().has_filename()) {
-                              auto fileName = child.path().filename().string();
-                              auto libName  = nLib.name.value().value;
-                              if ((fileName ==
-                                   "lib" + libName + ((libName.find(".a") == (libName.length() - 2)) ? "" : ".a")) ||
-                                  (fileName ==
-                                   (libName + ((libName.find(".a") == (libName.length() - 2)) ? "" : ".a")))) {
-                                libsToLink.push_back(child.path().string());
-                                foundLib = true;
-                                break;
-                              }
-                            }
-                          }
-                        }
-                      }
-                      if (!foundLib) {
-                        ctx->Warning(
-                            "Could not find static library named " + ctx->highlightWarning(nLib.name->value) +
-                                " in the default search paths. Please make sure that the static library is installed. Shared version of the library will be used instead if present",
-                            nLib.name.value().range);
-                      }
-                    }
-                  }
-                  if (cfg->shouldBuildShared() || !foundLib) {
-                    if (fs::exists(libPathShared1)) {
-                      if (foundLib) {
-                        staticLibsToLink.push_back(libsToLink.back());
-                        libsToLink.pop_back();
-                        sharedLibsToLink.push_back(libPathShared1.string());
-                      } else {
-                        libsToLink.push_back(libPathShared1.string());
-                        foundLib = true;
-                      }
-                      break;
-                    } else if (fs::exists(libPathShared2)) {
-                      if (foundLib) {
-                        staticLibsToLink.push_back(libsToLink.back());
-                        libsToLink.pop_back();
-                        sharedLibsToLink.push_back(libPathShared2.string());
-                      } else {
-                        libsToLink.push_back(libPathShared2.string());
-                        foundLib = true;
-                      }
-                      break;
-                    } else if (hostTriplet.isMacOSX() && fs::exists(libPathShared3)) {
-                      if (foundLib) {
-                        staticLibsToLink.push_back(libsToLink.back());
-                        libsToLink.pop_back();
-                        sharedLibsToLink.push_back(libPathShared3.string());
-                      } else {
-                        libsToLink.push_back(libPathShared3.string());
-                        foundLib = true;
-                      }
-                      break;
-                    } else if (hostTriplet.isMacOSX() && fs::exists(libPathShared4)) {
-                      if (foundLib) {
-                        staticLibsToLink.push_back(libsToLink.back());
-                        libsToLink.pop_back();
-                        sharedLibsToLink.push_back(libPathShared4.string());
-                      } else {
-                        libsToLink.push_back(libPathShared4.string());
-                        foundLib = true;
-                      }
-                      break;
-                    } else {
-                      ctx->Warning(
-                          "Could not find shared library named " + ctx->highlightWarning(nLib.name->value) +
-                              " in the default search paths. Please make sure that the shared library is installed",
-                          nLib.name->range);
-                    }
-                  }
-                }
-              }
-              if (!foundLib) {
-                if (cfg->shouldBuildStatic()) {
-                  ctx->Error(
-                      "Could not find the static library named " + ctx->highlightError(nLib.name->value) +
-                          " in the default search paths. Tried to find the shared library with the same name, but that file could also not be found."
-                          " Please make sure that the static library is installed, or provide path to the library file",
-                      nLib.name->range);
-                } else {
-                  ctx->Error(
-                      "Could not find the shared library named " + ctx->highlightError(nLib.name->value) +
-                          " in the default search paths. Please make sure that the shared library is installed, or provide path to the library file",
-                      nLib.name->range);
-                }
-              }
-            } else {
-              auto libName = nLib.name.value();
-              auto libPath = nLib.path.value();
-              for (const auto& child : fs::recursive_directory_iterator(libPath.first)) {
-                if (child.is_regular_file()) {
-                  if (child.path().has_filename()) {
-                    auto fileName = child.path().filename().string();
-                    if (cfg->shouldBuildStatic()) {
-                      if ((fileName == "lib" + libName.value +
-                                           ((libName.value.find(".a") == (libName.value.length() - 2)) ? "" : ".a")) ||
-                          (fileName == (libName.value +
-                                        ((libName.value.find(".a") == (libName.value.length() - 2)) ? "" : ".a")))) {
-                        libsToLink.push_back(child.path().string());
-                        foundLib = true;
-                        break;
-                      }
-                    }
-                    if (cfg->shouldBuildShared() || !foundLib) {
-                      if ((fileName ==
-                           "lib" + libName.value +
-                               ((libName.value.find(".so") == (libName.value.length() - 3)) ? "" : ".so")) ||
-                          (fileName == (libName.value +
-                                        ((libName.value.find(".so") == (libName.value.length() - 3)) ? "" : ".so")))) {
-                        if (foundLib) {
-                          staticLibsToLink.push_back(libsToLink.back());
-                          libsToLink.pop_back();
-                          sharedLibsToLink.push_back(child.path().string());
-                        } else {
-                          libsToLink.push_back(child.path().string());
-                          foundLib = true;
-                        }
-                        break;
-                      } else if (hostTriplet.isMacOSX() &&
-                                 ((fileName == "lib" + libName.value +
-                                                   ((libName.value.find(".dylib") == (libName.value.length() - 6))
-                                                        ? ""
-                                                        : ".dylib")) ||
-                                  (fileName ==
-                                   (libName.value + ((libName.value.find(".dylib") == (libName.value.length() - 6))
-                                                         ? ""
-                                                         : ".dylib"))))) {
-                        if (foundLib) {
-                          staticLibsToLink.push_back(libsToLink.back());
-                          libsToLink.pop_back();
-                          sharedLibsToLink.push_back(child.path().string());
-                        } else {
-                          libsToLink.push_back(child.path().string());
-                          foundLib = true;
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              if (!foundLib) {
-                if (cfg->shouldBuildStatic()) {
-                  ctx->Error(
-                      "Could not find the static library named " + ctx->highlightError(nLib.name->value) +
-                          " in the provided path " + ctx->highlightError(nLib.path->first) +
-                          ". Tried to find the shared library with the same name, but that file could also not be found."
-                          " Please make sure that the shared library is installed, or provide path to the library file",
-                      nLib.fileRange);
-                } else {
-                  ctx->Error(
-                      "Could not find the shared library named " + ctx->highlightError(nLib.name->value) +
-                          " in the provided path " + ctx->highlightError(nLib.path->first) +
-                          ". Please make sure that the shared library is installed, or provide path to the library file",
-                      nLib.fileRange);
-                }
-              }
-            }
-          }
-        } else if (nLib.isLibPath()) {
-          if (fs::path(nLib.path->first).is_absolute() ? fs::exists(nLib.path->first)
-                                                       : fs::exists(nLib.fileRange.file / nLib.path->first)) {
-            if (!fs::is_regular_file(nLib.path->first)) {
-              ctx->Error("The path provided here is not a file, and hence cannot be linked as a library",
-                         nLib.path->second);
-            }
-            libsToLink.push_back(nLib.path->first);
-          } else {
-            ctx->Error("The library path provided here does not exist", nLib.path->second);
-          }
-        } else if (nLib.isStaticAndSharedPaths()) {
-          if (fs::path(nLib.path->first).is_absolute() ? fs::exists(nLib.path->first)
-                                                       : fs::exists(nLib.fileRange.file / nLib.path->first)) {
-            if (!fs::is_regular_file(nLib.path->first)) {
-              ctx->Error("The path provided here is not a file, and hence cannot be linked as a static library",
-                         nLib.path->second);
-            }
-            staticLibsToLink.push_back(nLib.path->first);
-          } else {
-            ctx->Error("The static library path provided here does not exist", nLib.path->second);
-          }
-          if (fs::path(nLib.sharedPath->first).is_absolute()
-                  ? fs::exists(nLib.sharedPath->first)
-                  : fs::exists(nLib.fileRange.file / nLib.sharedPath->first)) {
-            if (!fs::is_regular_file(nLib.sharedPath->first)) {
-              ctx->Error("The path provided here is not a file, and hence cannot be linked as a shared library",
-                         nLib.sharedPath->second);
-            }
-            sharedLibsToLink.push_back(nLib.sharedPath->first);
-          } else {
-            ctx->Error("The shared library path provided here does not exist", nLib.path->second);
-          }
-        }
-      }
-      for (auto const& libToLink : libsToLink) {
-        cmdOne.append("-l").append(libToLink).append(" ");
-      }
+    // Vec<String> libsToLink;
+    // Vec<String> staticLibsToLink;
+    // Vec<String> sharedLibsToLink;
+    // if (!nativeLibsToLink.empty()) {
+    //   for (auto& nLib : nativeLibsToLink) {
+    //     if (nLib.isName() || nLib.isNameWithLookupPath()) {
+    //       bool foundLib        = false;
+    //       auto tripletToString = [&]() {
+    //         Vec<String> result;
+    //         auto        triplet = cfg->hasTargetTriple() ? ctx->clangTargetInfo->getTriple() : hostTriplet;
+    //         result.push_back(
+    //             (triplet.getArchName() + "-" + triplet.getOSName() + "-" + triplet.getEnvironmentName()).str());
+    //         const bool isArchKnown = triplet.getArch() != llvm::Triple::ArchType::UnknownArch;
+    //         const bool isOSKnown   = triplet.getOS() != llvm::Triple::OSType::UnknownOS;
+    //         const bool isEnvKnown  = triplet.getEnvironment() != llvm::Triple::EnvironmentType::UnknownEnvironment;
+    //         result.push_back(((isArchKnown ? triplet.getArchName() + "-" : "") +
+    //                           (isOSKnown ? triplet.getOSName() + (isEnvKnown ? "-" : "") : "") +
+    //                           (isEnvKnown ? triplet.getEnvironmentName() : ""))
+    //                              .str());
+    //         result.push_back(triplet.getTriple());
+    //         return result;
+    //       };
+    //       if (cfg->hasTargetTriple() ? !ctx->clangTargetInfo->getTriple().isOSWindows() : !hostTriplet.isOSWindows())
+    //       {
+    //         if (nLib.isName()) {
+    //           Vec<String> searchPaths = {"/usr/local/lib", "/usr/local/lib32", "/usr/local/lib64",
+    //                                      "/usr/lib",       "/usr/lib32",       "/usr/lib64",
+    //                                      "/lib",           "/lib32",           "/lib64"};
+    //           for (auto const& triplet : tripletToString()) {
+    //             searchPaths.push_back("/usr/lib/" + triplet);
+    //             searchPaths.push_back("/usr/lib32/" + triplet);
+    //             searchPaths.push_back("/usr/lib64/" + triplet);
+    //             searchPaths.push_back("/lib/" + triplet);
+    //             searchPaths.push_back("/lib32/" + triplet);
+    //             searchPaths.push_back("/lib64/" + triplet);
+    //           }
+    //           for (auto& sPath : searchPaths) {
+    //             if (fs::exists(sPath)) {
+    //               auto libPathStatic1 =
+    //                   (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
+    //                   ("lib" + nLib.name.value().value +
+    //                    ((nLib.name.value().value.find_last_of(".a") == nLib.name.value().value.length() - 2) ? ""
+    //                                                                                                          :
+    //                                                                                                          ".a"));
+    //               auto libPathStatic2 =
+    //                   (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
+    //                   (nLib.name.value().value +
+    //                    (nLib.name.value().value.find_last_of(".a") == (nLib.name.value().value.length() - 2) ? ""
+    //                                                                                                          :
+    //                                                                                                          ".a"));
+    //               auto libPathShared1 =
+    //                   (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
+    //                   ("lib" + nLib.name.value().value +
+    //                    ((nLib.name.value().value.find_last_of(".so") == nLib.name.value().value.length() - 3) ? ""
+    //                                                                                                           :
+    //                                                                                                           ".so"));
+    //               auto libPathShared2 =
+    //                   (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
+    //                   (nLib.name.value().value +
+    //                    (nLib.name.value().value.find_last_of(".so") == (nLib.name.value().value.length() - 3) ? ""
+    //                                                                                                           :
+    //                                                                                                           ".so"));
+    //               auto libPathShared3 =
+    //                   (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath)) /
+    //                   ("lib" + nLib.name.value().value +
+    //                    ((nLib.name.value().value.find_last_of(".dylib") == nLib.name.value().value.length() - 6)
+    //                         ? ""
+    //                         : ".dylib"));
+    //               auto libPathShared4 = (cfg->hasSysroot() ? (fs::path(cfg->getSysroot()) / sPath) : fs::path(sPath))
+    //               /
+    //                                     (nLib.name.value().value + (nLib.name.value().value.find_last_of(".dylib") ==
+    //                                                                         (nLib.name.value().value.length() - 6)
+    //                                                                     ? ""
+    //                                                                     : ".dylib"));
+    //               if (cfg->shouldBuildStatic()) {
+    //                 if (fs::exists(libPathStatic1)) {
+    //                   libsToLink.push_back(libPathStatic1.string());
+    //                   foundLib = true;
+    //                   break;
+    //                 } else if (fs::exists(libPathStatic2)) {
+    //                   libsToLink.push_back(libPathStatic2.string());
+    //                   foundLib = true;
+    //                   break;
+    //                 } else {
+    //                   if (cfg->hasSysroot() && fs::is_directory(cfg->getSysroot())) {
+    //                     for (auto const& child : fs::recursive_directory_iterator(cfg->getSysroot())) {
+    //                       if (child.is_regular_file()) {
+    //                         if (child.path().has_filename()) {
+    //                           auto fileName = child.path().filename().string();
+    //                           auto libName  = nLib.name.value().value;
+    //                           if ((fileName ==
+    //                                "lib" + libName + ((libName.find(".a") == (libName.length() - 2)) ? "" : ".a")) ||
+    //                               (fileName ==
+    //                                (libName + ((libName.find(".a") == (libName.length() - 2)) ? "" : ".a")))) {
+    //                             libsToLink.push_back(child.path().string());
+    //                             foundLib = true;
+    //                             break;
+    //                           }
+    //                         }
+    //                       }
+    //                     }
+    //                   }
+    //                   if (!foundLib) {
+    //                     ctx->Warning(
+    //                         "Could not find static library named " + ctx->highlightWarning(nLib.name->value) +
+    //                             " in the default search paths. Please make sure that the static library is installed.
+    //                             Shared version of the library will be used instead if present",
+    //                         nLib.name.value().range);
+    //                   }
+    //                 }
+    //               }
+    //               if (cfg->shouldBuildShared() || !foundLib) {
+    //                 if (fs::exists(libPathShared1)) {
+    //                   if (foundLib) {
+    //                     staticLibsToLink.push_back(libsToLink.back());
+    //                     libsToLink.pop_back();
+    //                     sharedLibsToLink.push_back(libPathShared1.string());
+    //                   } else {
+    //                     libsToLink.push_back(libPathShared1.string());
+    //                     foundLib = true;
+    //                   }
+    //                   break;
+    //                 } else if (fs::exists(libPathShared2)) {
+    //                   if (foundLib) {
+    //                     staticLibsToLink.push_back(libsToLink.back());
+    //                     libsToLink.pop_back();
+    //                     sharedLibsToLink.push_back(libPathShared2.string());
+    //                   } else {
+    //                     libsToLink.push_back(libPathShared2.string());
+    //                     foundLib = true;
+    //                   }
+    //                   break;
+    //                 } else if (hostTriplet.isMacOSX() && fs::exists(libPathShared3)) {
+    //                   if (foundLib) {
+    //                     staticLibsToLink.push_back(libsToLink.back());
+    //                     libsToLink.pop_back();
+    //                     sharedLibsToLink.push_back(libPathShared3.string());
+    //                   } else {
+    //                     libsToLink.push_back(libPathShared3.string());
+    //                     foundLib = true;
+    //                   }
+    //                   break;
+    //                 } else if (hostTriplet.isMacOSX() && fs::exists(libPathShared4)) {
+    //                   if (foundLib) {
+    //                     staticLibsToLink.push_back(libsToLink.back());
+    //                     libsToLink.pop_back();
+    //                     sharedLibsToLink.push_back(libPathShared4.string());
+    //                   } else {
+    //                     libsToLink.push_back(libPathShared4.string());
+    //                     foundLib = true;
+    //                   }
+    //                   break;
+    //                 } else {
+    //                   ctx->Warning(
+    //                       "Could not find shared library named " + ctx->highlightWarning(nLib.name->value) +
+    //                           " in the default search paths. Please make sure that the shared library is installed",
+    //                       nLib.name->range);
+    //                 }
+    //               }
+    //             }
+    //           }
+    //           if (!foundLib) {
+    //             if (cfg->shouldBuildStatic()) {
+    //               ctx->Error(
+    //                   "Could not find the static library named " + ctx->highlightError(nLib.name->value) +
+    //                       " in the default search paths. Tried to find the shared library with the same name, but
+    //                       that file could also not be found." " Please make sure that the static library is
+    //                       installed, or provide path to the library file",
+    //                   nLib.name->range);
+    //             } else {
+    //               ctx->Error(
+    //                   "Could not find the shared library named " + ctx->highlightError(nLib.name->value) +
+    //                       " in the default search paths. Please make sure that the shared library is installed, or
+    //                       provide path to the library file",
+    //                   nLib.name->range);
+    //             }
+    //           }
+    //         } else {
+    //           auto libName = nLib.name.value();
+    //           auto libPath = nLib.path.value();
+    //           for (const auto& child : fs::recursive_directory_iterator(libPath.first)) {
+    //             if (child.is_regular_file()) {
+    //               if (child.path().has_filename()) {
+    //                 auto fileName = child.path().filename().string();
+    //                 if (cfg->shouldBuildStatic()) {
+    //                   if ((fileName == "lib" + libName.value +
+    //                                        ((libName.value.find(".a") == (libName.value.length() - 2)) ? "" : ".a"))
+    //                                        ||
+    //                       (fileName == (libName.value +
+    //                                     ((libName.value.find(".a") == (libName.value.length() - 2)) ? "" : ".a")))) {
+    //                     libsToLink.push_back(child.path().string());
+    //                     foundLib = true;
+    //                     break;
+    //                   }
+    //                 }
+    //                 if (cfg->shouldBuildShared() || !foundLib) {
+    //                   if ((fileName ==
+    //                        "lib" + libName.value +
+    //                            ((libName.value.find(".so") == (libName.value.length() - 3)) ? "" : ".so")) ||
+    //                       (fileName == (libName.value +
+    //                                     ((libName.value.find(".so") == (libName.value.length() - 3)) ? "" : ".so"))))
+    //                                     {
+    //                     if (foundLib) {
+    //                       staticLibsToLink.push_back(libsToLink.back());
+    //                       libsToLink.pop_back();
+    //                       sharedLibsToLink.push_back(child.path().string());
+    //                     } else {
+    //                       libsToLink.push_back(child.path().string());
+    //                       foundLib = true;
+    //                     }
+    //                     break;
+    //                   } else if (hostTriplet.isMacOSX() &&
+    //                              ((fileName == "lib" + libName.value +
+    //                                                ((libName.value.find(".dylib") == (libName.value.length() - 6))
+    //                                                     ? ""
+    //                                                     : ".dylib")) ||
+    //                               (fileName ==
+    //                                (libName.value + ((libName.value.find(".dylib") == (libName.value.length() - 6))
+    //                                                      ? ""
+    //                                                      : ".dylib"))))) {
+    //                     if (foundLib) {
+    //                       staticLibsToLink.push_back(libsToLink.back());
+    //                       libsToLink.pop_back();
+    //                       sharedLibsToLink.push_back(child.path().string());
+    //                     } else {
+    //                       libsToLink.push_back(child.path().string());
+    //                       foundLib = true;
+    //                     }
+    //                   }
+    //                 }
+    //               }
+    //             }
+    //           }
+    //           if (!foundLib) {
+    //             if (cfg->shouldBuildStatic()) {
+    //               ctx->Error(
+    //                   "Could not find the static library named " + ctx->highlightError(nLib.name->value) +
+    //                       " in the provided path " + ctx->highlightError(nLib.path->first) +
+    //                       ". Tried to find the shared library with the same name, but that file could also not be
+    //                       found." " Please make sure that the shared library is installed, or provide path to the
+    //                       library file",
+    //                   nLib.fileRange);
+    //             } else {
+    //               ctx->Error(
+    //                   "Could not find the shared library named " + ctx->highlightError(nLib.name->value) +
+    //                       " in the provided path " + ctx->highlightError(nLib.path->first) +
+    //                       ". Please make sure that the shared library is installed, or provide path to the library
+    //                       file",
+    //                   nLib.fileRange);
+    //             }
+    //           }
+    //         }
+    //       }
+    //     } else if (nLib.isLibPath()) {
+    //       if (fs::path(nLib.path->first).is_absolute() ? fs::exists(nLib.path->first)
+    //                                                    : fs::exists(nLib.fileRange.file / nLib.path->first)) {
+    //         if (!fs::is_regular_file(nLib.path->first)) {
+    //           ctx->Error("The path provided here is not a file, and hence cannot be linked as a library",
+    //                      nLib.path->second);
+    //         }
+    //         libsToLink.push_back(nLib.path->first);
+    //       } else {
+    //         ctx->Error("The library path provided here does not exist", nLib.path->second);
+    //       }
+    //     } else if (nLib.isStaticAndSharedPaths()) {
+    //       if (fs::path(nLib.path->first).is_absolute() ? fs::exists(nLib.path->first)
+    //                                                    : fs::exists(nLib.fileRange.file / nLib.path->first)) {
+    //         if (!fs::is_regular_file(nLib.path->first)) {
+    //           ctx->Error("The path provided here is not a file, and hence cannot be linked as a static library",
+    //                      nLib.path->second);
+    //         }
+    //         staticLibsToLink.push_back(nLib.path->first);
+    //       } else {
+    //         ctx->Error("The static library path provided here does not exist", nLib.path->second);
+    //       }
+    //       if (fs::path(nLib.sharedPath->first).is_absolute()
+    //               ? fs::exists(nLib.sharedPath->first)
+    //               : fs::exists(nLib.fileRange.file / nLib.sharedPath->first)) {
+    //         if (!fs::is_regular_file(nLib.sharedPath->first)) {
+    //           ctx->Error("The path provided here is not a file, and hence cannot be linked as a shared library",
+    //                      nLib.sharedPath->second);
+    //         }
+    //         sharedLibsToLink.push_back(nLib.sharedPath->first);
+    //       } else {
+    //         ctx->Error("The shared library path provided here does not exist", nLib.path->second);
+    //       }
+    //     }
+    //   }
+    //   for (auto const& libToLink : libsToLink) {
+    //     cmdOne.append("-l").append(libToLink).append(" ");
+    //   }
+    // }
+    for (auto& lib : linkableLibs) {
+      cmdOne.append(" ").append(lib).append(" ");
     }
     targetCMD.append("--target=").append(cfg->getTargetTriple()).append(" ");
 
@@ -2333,30 +2552,37 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       inputFiles.append(objPath);
       inputFiles.append(" ");
     }
+    auto          outNameVal = getMetaInfoOfKey("outputName");
+    Maybe<String> outputNameValue;
+    if (outNameVal.has_value() && outNameVal.value()->getType()->isStringSlice()) {
+      outputNameValue = outNameVal.value()->getType()->toPrerunGenericString(outNameVal.value()).value();
+    }
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
       auto outPath = ((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                       filePath.lexically_relative(basePath)
-                          .replace_filename(moduleInfo.outputName.value_or(name.value))
+                          .replace_filename(outputNameValue.value_or(name.value))
                           .replace_extension(ctx->clangTargetInfo->getTriple().isOSWindows()
                                                  ? "exe"
                                                  : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
                          .string();
-      ctx->executablePaths.push_back(fs::absolute(outPath).lexically_normal());
-      String staticLibStr;
-      String sharedLibStr;
-      for (auto const& statLib : staticLibsToLink) {
-        staticLibStr.append("-l").append(statLib).append(" ");
-      }
-      for (auto const& sharedLib : sharedLibsToLink) {
-        sharedLibStr.append("-l").append(sharedLib).append(" ");
-      }
+      ctx->add_exe_path(fs::absolute(outPath).lexically_normal());
+      // FIXME - LIB_LINKING
+      //   String staticLibStr;
+      //   String sharedLibStr;
+      //   for (auto const& statLib : staticLibsToLink) {
+      //     staticLibStr.append("-l").append(statLib).append(" ");
+      //   }
+      //   for (auto const& sharedLib : sharedLibsToLink) {
+      //     sharedLibStr.append("-l").append(sharedLib).append(" ");
+      //   }
       auto staticCommand = String(cfg->hasClangPath() ? cfg->getClangPath() : "clang")
                                .append(" -o ")
                                .append(outPath)
                                .append(" ")
                                .append(cmdOne)
-                               .append(staticLibStr)
+                               // FIXME - LIB_LINKING
+                               //    .append(staticLibStr)
                                .append(targetCMD)
                                .append(inputFiles);
       auto sharedCommand = String(cfg->hasClangPath() ? cfg->getClangPath() : "clang")
@@ -2364,26 +2590,47 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                                .append(outPath)
                                .append(" ")
                                .append(cmdOne)
-                               .append(sharedLibStr)
+                               // FIXME - LIB_LINKING
+                               //    .append(sharedLibStr)
                                .append(targetCMD)
                                .append(inputFiles);
       if (cfg->shouldBuildStatic()) {
         SHOW("Static Build Command :: " << staticCommand)
-        if (std::system(staticCommand.c_str())) {
-          ctx->Error("Statically linking & compiling executable failed: " + filePath.string(), None);
+        redi::ipstream proc(staticCommand, redi::pstreams::pstderr);
+        String         errMessage;
+        String         line;
+        while (std::getline(proc.err(), line)) {
+          errMessage += line += "\n";
+        }
+        while (!proc.rdbuf()->exited()) {
+        }
+        if (proc.rdbuf()->status()) {
+          ctx->Error("Statically linking & compiling executable failed: " + filePath.string() + "\n" + errMessage,
+                     None);
         }
       } else if (cfg->shouldBuildShared()) {
         SHOW("Dynamic Build Command :: " << sharedCommand)
-        if (std::system(sharedCommand.c_str())) {
-          ctx->Error("Dynamically linking & compiling executable failed: " + filePath.string(), None);
+        redi::ipstream proc(sharedCommand, redi::pstreams::pstderr);
+        String         errMessage;
+        String         line;
+        while (std::getline(proc.err(), line)) {
+          errMessage += line += "\n";
+        }
+        while (!proc.rdbuf()->exited()) {
+        }
+        if (proc.rdbuf()->status()) {
+          ctx->Error("Dynamically linking & compiling executable failed: " + filePath.string() + "\n" + errMessage,
+                     None);
         }
       }
-      std::ifstream file(filePath, std::ios::binary);
-      auto          fsize = file.tellg();
-      file.seekg(0, std::ios::end);
-      fsize = file.tellg() - fsize;
-      ctx->binarySizes.push_back(fsize);
-      file.close();
+      if (cfg->exportCodeMetadata()) {
+        std::ifstream file(filePath, std::ios::binary);
+        auto          fsize = file.tellg();
+        file.seekg(0, std::ios::end);
+        fsize = file.tellg() - fsize;
+        ctx->add_binary_size(fsize);
+        file.close();
+      }
     } else {
       auto windowsTripleToMachine = [](llvm::Triple const& triple) -> String {
         if (triple.isWindowsArm64EC()) {
@@ -2424,13 +2671,12 @@ void QatModule::bundleLibs(IR::Context* ctx) {
       };
       auto outPath = fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
                                   filePath.lexically_relative(basePath).replace_filename(
-                                      moduleInfo.outputName.value_or(getWritableName()).append(getExtension())))
+                                      outputNameValue.value_or(getWritableName()).append(getExtension())))
                          .string();
-      auto outPathShared =
-          fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
-                       filePath.lexically_relative(basePath).replace_filename(
-                           moduleInfo.outputName.value_or(getWritableName()).append(getExtensionShared())))
-              .string();
+      auto outPathShared = fs::absolute((cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) /
+                                        filePath.lexically_relative(basePath).replace_filename(
+                                            outputNameValue.value_or(getWritableName()).append(getExtensionShared())))
+                               .string();
       String                   stdOutStr;
       String                   stdErrStr;
       llvm::raw_string_ostream linkerStdOut(stdOutStr);
@@ -2443,14 +2689,15 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         Vec<const char*> allArgsShared{"lld.lld", "-flavor", "gnu MinGW", "-r", "-o", outPathShared.c_str()};
         Vec<String>      staticCmdList;
         Vec<String>      sharedCmdList;
-        for (auto& statLib : staticLibsToLink) {
-          staticCmdList.push_back("-l" + statLib);
-          allArgs.push_back(staticCmdList.back().c_str());
-        }
-        for (auto& sharedLib : sharedLibsToLink) {
-          sharedCmdList.push_back("-l" + sharedLib);
-          allArgsShared.push_back(sharedCmdList.back().c_str());
-        }
+        // FIXME - LIB_LINKING
+        // for (auto& statLib : staticLibsToLink) {
+        //   staticCmdList.push_back("-l" + statLib);
+        //   allArgs.push_back(staticCmdList.back().c_str());
+        // }
+        // for (auto& sharedLib : sharedLibsToLink) {
+        //   sharedCmdList.push_back("-l" + sharedLib);
+        //   allArgsShared.push_back(sharedCmdList.back().c_str());
+        // }
         if (cfg->isReleaseMode()) {
           allArgs.push_back("--strip-debug");
           allArgsShared.push_back("--strip-debug");
@@ -2472,7 +2719,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           allArgsShared.push_back(obj.c_str());
         }
         if (cfg->shouldBuildStatic()) {
-          SHOW("Linking Static Library")
+          SHOW("Linking Static Library MingW")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::MinGW, &lld::mingw::link}});
           if (result.retCode != 0) {
@@ -2530,14 +2777,15 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           allArgs.push_back(obj.c_str());
           allArgsShared.push_back(obj.c_str());
         }
-        for (auto& statLib : staticLibsToLink) {
-          allArgs.push_back(statLib.c_str());
-        }
-        for (auto& sharedLib : sharedLibsToLink) {
-          allArgsShared.push_back(sharedLib.c_str());
-        }
+        // FIXME - LIB_LINKING
+        // for (auto& statLib : staticLibsToLink) {
+        //   allArgs.push_back(statLib.c_str());
+        // }
+        // for (auto& sharedLib : sharedLibsToLink) {
+        //   allArgsShared.push_back(sharedLib.c_str());
+        // }
         if (cfg->shouldBuildStatic()) {
-          SHOW("Linking Static Library")
+          SHOW("Linking Static Library Windows")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::WinLink, &lld::coff::link}});
           if (result.retCode != 0) {
@@ -2567,14 +2815,15 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         Vec<const char*> allArgsShared{"ld.lld", "-flavor", "gnu", "-r", "-o", outPathShared.c_str()};
         Vec<String>      staticCmdList;
         Vec<String>      sharedCmdList;
-        for (auto& statLib : staticLibsToLink) {
-          staticCmdList.push_back("-l" + statLib);
-          allArgs.push_back(staticCmdList.back().c_str());
-        }
-        for (auto& sharedLib : sharedLibsToLink) {
-          sharedCmdList.push_back("-l" + sharedLib);
-          allArgsShared.push_back(sharedCmdList.back().c_str());
-        }
+        // FIXME - LIB_LINKING
+        // for (auto& statLib : staticLibsToLink) {
+        //   staticCmdList.push_back("-l" + statLib);
+        //   allArgs.push_back(staticCmdList.back().c_str());
+        // }
+        // for (auto& sharedLib : sharedLibsToLink) {
+        //   sharedCmdList.push_back("-l" + sharedLib);
+        //   allArgsShared.push_back(sharedCmdList.back().c_str());
+        // }
         if (cfg->isReleaseMode()) {
           allArgs.push_back("--strip-debug");
           allArgsShared.push_back("--strip-debug");
@@ -2596,14 +2845,16 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           allArgsShared.push_back(obj.c_str());
         }
         if (cfg->shouldBuildStatic()) {
-          SHOW("Linking Static Library")
+          SHOW("Linking Static Library ELF")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Gnu, &lld::elf::link}});
-          if (result.retCode != 0) {
+          if (result.retCode != 0 || !linkerStdErr.str().empty()) {
+            SHOW("Linker failed")
             ctx->Error("Building static library for module " + ctx->highlightError(filePath.string()) +
                            " failed. The linker's error output is: " + stdErrStr,
                        None);
           }
+          SHOW("Linker done for " << name.value)
         }
         if (cfg->shouldBuildShared()) {
           linkerStdOut.flush();
@@ -2630,15 +2881,16 @@ void QatModule::bundleLibs(IR::Context* ctx) {
                      None);
         }
         Vec<String> staticCmdList;
-        for (auto& statLib : staticLibsToLink) {
-          staticCmdList.push_back("-l" + statLib);
-          allArgs.push_back(staticCmdList.back().c_str());
-        }
+        // FIXME - LIB_LINKING
+        // for (auto& statLib : staticLibsToLink) {
+        //   staticCmdList.push_back("-l" + statLib);
+        //   allArgs.push_back(staticCmdList.back().c_str());
+        // }
         for (auto& obj : objectFiles) {
           allArgs.push_back(obj.c_str());
         }
         if (cfg->shouldBuildStatic()) {
-          SHOW("Linking Static Library")
+          SHOW("Linking Static Library WASM")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Wasm, &lld::wasm::link}});
           if (result.retCode != 0) {
@@ -2649,7 +2901,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         }
         if (cfg->shouldBuildShared()) {
           ctx->Error(
-              "Cannot build shared libraries for WASM. Please see link: " +
+              "Cannot build shared libraries for WASM for now. Please see link: " +
                   ctx->highlightError("https://github.com/WebAssembly/tool-conventions/blob/main/DynamicLinking.md"),
               None);
         }
@@ -2661,14 +2913,15 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         Vec<const char*> allArgsShared{"ld64.lld", "-flavor", "darwin", "-o", outPathShared.c_str()};
         Vec<String>      staticCmdList;
         Vec<String>      sharedCmdList;
-        for (auto& statLib : staticLibsToLink) {
-          staticCmdList.push_back("-l" + statLib);
-          allArgs.push_back(staticCmdList.back().c_str());
-        }
-        for (auto& sharedLib : sharedLibsToLink) {
-          sharedCmdList.push_back("-l" + sharedLib);
-          allArgsShared.push_back(sharedCmdList.back().c_str());
-        }
+        // FIXME - LIB_LINKING
+        // for (auto& statLib : staticLibsToLink) {
+        //   staticCmdList.push_back("-l" + statLib);
+        //   allArgs.push_back(staticCmdList.back().c_str());
+        // }
+        // for (auto& sharedLib : sharedLibsToLink) {
+        //   sharedCmdList.push_back("-l" + sharedLib);
+        //   allArgsShared.push_back(sharedCmdList.back().c_str());
+        // }
         allArgsShared.push_back("-dynamic");
         if (cfg->hasTargetTriple()) {
           allArgs.push_back(("-arch=" + ctx->clangTargetInfo->getTriple().getArchName().str()).c_str());
@@ -2699,7 +2952,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           allArgs.push_back(obj.c_str());
         }
         if (cfg->shouldBuildStatic()) {
-          SHOW("Linking Static Library")
+          SHOW("Linking Static Library Mac")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Darwin, &lld::macho::link}});
           if (result.retCode != 0) {
@@ -2712,7 +2965,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         if (cfg->shouldBuildShared()) {
           linkerStdOut.flush();
           linkerStdErr.flush();
-          SHOW("Linking Shared Library")
+          SHOW("Linking Shared Library Mac")
           auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut, linkerStdErr,
                                            {{lld::Darwin, &lld::macho::link}});
           if (resultShared.retCode != 0) {
@@ -2728,8 +2981,18 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           for (auto& obj : objectFiles) {
             cmd.append(obj).append(" ");
           }
-          if (std::system(cmd.c_str())) {
-            ctx->Error("Building library for module " + ctx->highlightError(filePath.string()) + " failed.", None);
+          redi::ipstream proc(cmd, redi::pstreams::pstderr);
+          String         errMessage;
+          String         line;
+          while (std::getline(proc.err(), line)) {
+            errMessage += line += "\n";
+          }
+          while (!proc.rdbuf()->exited()) {
+          }
+          if (proc.rdbuf()->status()) {
+            ctx->Error("Building library for module " + ctx->highlightError(name.value) + "" +
+                           ctx->highlightError(filePath.string()) + " failed\n" + errMessage,
+                       None);
           }
         } else {
           ctx->Error("Could not find the linker to be used for the target " +
@@ -2882,7 +3145,7 @@ void QatModule::linkNative(NativeUnit nval) {
                                      pthreadFnTy->getPointerTo(), voidPtrTy},
                                     false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_create", llvmModule);
-        moduleInfo.linkPthread = true;
+        linkPthread = true;
       }
       break;
     }
@@ -2893,7 +3156,7 @@ void QatModule::linkNative(NativeUnit nval) {
         llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx), {pthreadTy, voidPtrTy->getPointerTo()}, false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_join", llvmModule);
-        moduleInfo.linkPthread = true;
+        linkPthread = true;
       }
       break;
     }
@@ -2902,7 +3165,7 @@ void QatModule::linkNative(NativeUnit nval) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
                                llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_exit", llvmModule);
-        moduleInfo.linkPthread = true;
+        linkPthread = true;
       }
       break;
     }
@@ -2917,7 +3180,7 @@ void QatModule::linkNative(NativeUnit nval) {
             llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
                                     {llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()}, false),
             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_attr_init", llvmModule);
-        moduleInfo.linkPthread = true;
+        linkPthread = true;
       }
       break;
     }

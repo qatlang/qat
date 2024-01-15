@@ -199,16 +199,15 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
             // FIXME - Change when `check` is added
             // FIXME - Add length confirmation if pointer is multi, compare with
             // the provided length of the string
-            if (!strData->isImplicitPointer() && !strData->isReference()) {
-              strData->makeImplicitPointer(ctx, None);
-            }
             if (strData->isReference()) {
               strData->loadImplicitPointer(ctx->builder);
             }
             strData = new IR::Value(
-                ctx->builder.CreateLoad(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx),
-                                                               ctx->dataLayout->getProgramAddressSpace()),
-                                        ctx->builder.CreateStructGEP(dataType->getLLVMType(), strData->getLLVM(), 0u)),
+                strData->isValue() ? ctx->builder.CreateExtractValue(strData->getLLVM(), {0u})
+                                   : ctx->builder.CreateLoad(
+                                         llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx),
+                                                                ctx->dataLayout->getProgramAddressSpace()),
+                                         ctx->builder.CreateStructGEP(dataType->getLLVMType(), strData->getLLVM(), 0u)),
                 IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false, IR::PointerOwner::OfAnonymous(),
                                      false, ctx),
                 false, IR::Nature::temporary);

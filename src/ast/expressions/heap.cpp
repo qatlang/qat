@@ -193,7 +193,7 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
     if (!ptrType->getSubType()->isSame(typ)) {
       ctx->Error("The first argument should be a pointer to " + ctx->highlightError(typ->toString()), ptr->fileRange);
     }
-    ptrVal->makeImplicitPointer(ctx, None);
+    ptrVal = ptrVal->makeLocal(ctx, None, ptr->fileRange);
   }
   auto* countVal = count->emit(ctx);
   countVal->loadImplicitPointer(ctx->builder);

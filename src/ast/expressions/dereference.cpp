@@ -24,7 +24,7 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
       }
     } else {
       if (expTy->asPointer()->isMulti()) {
-        expEmit->makeImplicitPointer(ctx, None);
+        expEmit = expEmit->makeLocal(ctx, None, exp->fileRange);
       }
     }
     return new IR::Value(
@@ -39,7 +39,7 @@ IR::Value* Dereference::emit(IR::Context* ctx) {
     if (expTy->asExpanded()->hasUnaryOperator("@")) {
       auto localID = expEmit->getLocalID();
       if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
-        expEmit->makeImplicitPointer(ctx, None);
+        expEmit = expEmit->makeLocal(ctx, None, exp->fileRange);
       } else if (expEmit->isReference()) {
         expEmit->loadImplicitPointer(ctx->builder);
       }

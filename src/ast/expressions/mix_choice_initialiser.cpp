@@ -139,6 +139,10 @@ IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
               fileRange);
         }
         ctx->builder.CreateStore(chTy->getValueFor(subName.value), createIn->getLLVM());
+      } else if (irName.has_value()) {
+        auto locVal = ctx->getActiveFunction()->getBlock()->newValue(irName->value, chTy, isVar, irName->range);
+        ctx->builder.CreateStore(chTy->getValueFor(subName.value), locVal->getLLVM());
+        return nullptr;
       } else {
         return new IR::PrerunValue(chTy->getValueFor(subName.value), chTy);
       }

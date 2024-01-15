@@ -2,6 +2,7 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../IR/types/typed.hpp"
+#include "../utils/file_range.hpp"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
@@ -58,8 +59,9 @@ public:
   inline void setSelf() { isSelf = true; }
   inline void setLocalID(const String& locID) { localID = locID; }
 
-  void makeImplicitPointer(IR::Context* ctx, Maybe<String> name);
   void loadImplicitPointer(llvm::IRBuilder<>& builder);
+
+  useit Value* makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRange);
 
   static void clearAll();
 };

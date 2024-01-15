@@ -156,7 +156,7 @@ IR::Value* ConstructorCall::emit(IR::Context* ctx) {
       if (argTys.at(i)->getType()->isReference()) {
         if (!valsType.at(i - 1).second->isReference()) {
           if (!valsType.at(i - 1).first.has_value()) {
-            valsIR.at(i - 1)->makeImplicitPointer(ctx, None);
+            valsIR[i = 1] = valsIR[i - 1]->makeLocal(ctx, None, args[i - 1]->fileRange);
           }
           if (argTys.at(i)->getType()->asReference()->isSubtypeVariable() && !valsIR.at(i - 1)->isVariable()) {
             ctx->Error("The expected argument type is " + ctx->highlightError(argTys.at(i)->getType()->toString()) +

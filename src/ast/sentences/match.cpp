@@ -59,10 +59,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
   restBlock->linkPrevBlock(curr);
   bool elseNotRequired = false;
   if (expTy->isMix()) {
-    auto* mTy = expTy->asMix();
-    if (!expEmit->isReference() && !expEmit->isImplicitPointer()) {
-      expEmit->makeImplicitPointer(ctx, None);
-    }
+    auto*           mTy = expTy->asMix();
     Vec<Identifier> mentionedFields;
     IR::Block*      falseBlock = nullptr;
     for (usize i = 0; i < chain.size(); i++) {
@@ -120,8 +117,10 @@ IR::Value* Match::emit(IR::Context* ctx) {
         }
         mentionedFields.push_back(uMatch->getName());
         conditions.push_back(ctx->builder.CreateICmpEQ(
-            ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
-                                    ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 0)),
+            expEmit->isValue()
+                ? ctx->builder.CreateExtractValue(expEmit->getLLVM(), 0u)
+                : ctx->builder.CreateLoad(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
+                                          ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 0)),
             llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->llctx, mTy->getTagBitwidth()),
                                    mTy->getIndexOfName(uMatch->getName().value))));
       }
@@ -155,13 +154,17 @@ IR::Value* Match::emit(IR::Context* ctx) {
           SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
           auto* loc = trueBlock->newValue(
               uMatch->getValueName().value,
-              IR::ReferenceType::get(uMatch->isVariable(), mTy->getSubTypeWithName(uMatch->getName().value), ctx),
+              expEmit->isValue()
+                  ? mTy->getSubTypeWithName(uMatch->getName().value)
+                  : IR::ReferenceType::get(uMatch->isVariable(), mTy->getSubTypeWithName(uMatch->getName().value), ctx),
               false, uMatch->getValueName().range);
           SHOW("Local Entity for match case created")
-          ctx->builder.CreateStore(ctx->builder.CreatePointerCast(
+          ctx->builder.CreateStore(
+              expEmit->isValue() ? ctx->builder.CreateExtractValue(expEmit->getLLVM(), {1u})
+                                 : ctx->builder.CreatePointerCast(
                                        ctx->builder.CreateStructGEP(mTy->getLLVMType(), expEmit->getLLVM(), 1),
                                        mTy->getSubTypeWithName(uMatch->getName().value)->getLLVMType()->getPointerTo()),
-                                   loc->getAlloca());
+              loc->getAlloca());
         }
       }
       emitSentences(section.second, ctx);
@@ -311,13 +314,17 @@ IR::Value* Match::emit(IR::Context* ctx) {
         if (expEmit->isReference()) {
           expEmit->loadImplicitPointer(ctx->builder);
         }
-      } else {
-        expEmit->makeImplicitPointer(ctx, None);
       }
-      strBuff  = ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
-                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 0u));
-      strCount = ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 1u));
+      strBuff =
+          expEmit->isValue()
+              ? ctx->builder.CreateExtractValue(expEmit->getLLVM(), {0u})
+              : ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 0u));
+      strCount =
+          expEmit->isValue()
+              ? ctx->builder.CreateExtractValue(expEmit->getLLVM(), {1u})
+              : ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
+                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), expEmit->getLLVM(), 1u));
     }
     for (auto& section : chain) {
       SHOW("Number of match values for this case: " << section.first.size())
@@ -398,15 +405,15 @@ IR::Value* Match::emit(IR::Context* ctx) {
           } else {
             if (caseIR->isReference()) {
               caseIR->loadImplicitPointer(ctx->builder);
-            } else if (!caseIR->isImplicitPointer()) {
-              caseIR->makeImplicitPointer(ctx, None);
             }
-            caseStrBuff =
-                ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
-                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 0u));
-            caseStrCount =
-                ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                        ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 1u));
+            caseStrBuff  = caseIR->isValue() ? ctx->builder.CreateExtractValue(caseIR->getLLVM(), {0u})
+                                             : ctx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->llctx),
+                                                                       ctx->builder.CreateStructGEP(
+                                                                          strTy->getLLVMType(), caseIR->getLLVM(), 0u));
+            caseStrCount = ctx->builder.CreateLoad(
+                llvm::Type::getInt64Ty(ctx->llctx),
+                caseIR->isValue() ? ctx->builder.CreateExtractValue(caseIR->getLLVM(), {1u})
+                                  : ctx->builder.CreateStructGEP(strTy->getLLVMType(), caseIR->getLLVM(), 1u));
           }
           auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);
           SHOW("Creating lenCheckTrueBlock")

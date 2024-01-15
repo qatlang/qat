@@ -70,7 +70,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
         }
         (void)candTy->copyConstructValue(ctx, createIn, expEmit, ctx->getActiveFunction());
         if (shouldLoadValue) {
-          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, true,
                                IR::Nature::temporary);
         } else {
           return createIn;
@@ -106,7 +106,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
                                    createIn->getLLVM());
           return createIn;
         } else {
-          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()), candTy, false,
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM()), candTy, true,
                                IR::Nature::temporary);
         }
       } else {

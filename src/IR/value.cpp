@@ -15,11 +15,14 @@ Value::Value(llvm::Value* _llvmValue, IR::QatType* _type, bool _isVariable, Natu
 
 Vec<Value*> Value::allValues = {};
 
-void Value::makeImplicitPointer(IR::Context* ctx, Maybe<String> name) {
+Value* Value::makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRange) {
   if (!isImplicitPointer()) {
-    auto* alloc = IR::Logic::newAlloca(ctx->getActiveFunction(), name, ll->getType());
-    ctx->builder.CreateStore(ll, alloc);
-    ll = alloc;
+    auto result = ctx->getActiveFunction()->getBlock()->newValue(
+        name.value_or(ctx->getActiveFunction()->getRandomAllocaName()), type, true, fileRange);
+    ctx->builder.CreateStore(getLLVM(), result->getLLVM());
+    return result;
+  } else {
+    return this;
   }
 }
 

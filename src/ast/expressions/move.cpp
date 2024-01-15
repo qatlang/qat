@@ -73,7 +73,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
           ctx->getActiveFunction()->getBlock()->addMovedValue(expEmit->getLocalID().value());
         }
         if (shouldLoadValue) {
-          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, false,
+          return new IR::Value(ctx->builder.CreateLoad(candTy->getLLVMType(), createIn->getLLVM()), candTy, true,
                                IR::Nature::temporary);
         } else {
           return createIn;
@@ -112,7 +112,7 @@ IR::Value* Move::emit(IR::Context* ctx) {
         } else {
           auto* loadRes = ctx->builder.CreateLoad(candTy->getLLVMType(), expEmit->getLLVM());
           ctx->builder.CreateStore(llvm::Constant::getNullValue(candTy->getLLVMType()), expEmit->getLLVM());
-          return new IR::Value(loadRes, candTy, false, IR::Nature::temporary);
+          return new IR::Value(loadRes, candTy, true, IR::Nature::temporary);
         }
       } else {
         ctx->Error((candTy->isCoreType() ? "Core type " : (candTy->isMix() ? "Mix type " : "Type ")) +

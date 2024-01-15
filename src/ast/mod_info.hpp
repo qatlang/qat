@@ -3,6 +3,7 @@
 
 #include "./node.hpp"
 #include "key_value.hpp"
+#include "meta_info.hpp"
 #include "prerun/string_literal.hpp"
 
 namespace qat::parser {
@@ -15,15 +16,12 @@ class ModInfo : public Node {
   friend class parser::Parser;
 
 private:
-  Maybe<KeyValue<String>> foreignID;
-  Maybe<StringLiteral*>   outputName;
-  Vec<PrerunExpression*>  linkLibs;
+  ast::MetaInfo metaInfo;
 
 public:
-  ModInfo(Maybe<StringLiteral*> _outputName, Maybe<KeyValue<String>> _foreignID, Vec<PrerunExpression*> _linkLibs,
-          FileRange _fileRange);
+  ModInfo(MetaInfo metaInfo, FileRange _fileRange);
 
-  void  createModule(IR::Context* ctx) const final;
+  void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::modInfo; }
   useit Json       toJson() const final;

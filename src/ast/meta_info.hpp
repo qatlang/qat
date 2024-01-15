@@ -13,11 +13,17 @@ struct MetaInfo {
       : keyValues(_keyValues), fileRange(_fileRange) {}
 
   useit IR::MetaInfo toIR(IR::Context* ctx) const {
+    std::set<String>                        keys;
     Vec<Pair<Identifier, IR::PrerunValue*>> resultVec;
+    Vec<FileRange>                          valuesRange;
     for (auto& kv : keyValues) {
+      if (keys.contains(kv.first.value)) {
+        ctx->Error("The key " + ctx->highlightError(kv.first.value) + " is repeating here", kv.first.range);
+      }
       resultVec.push_back({kv.first, kv.second->emit(ctx)});
+      valuesRange.push_back(kv.second->fileRange);
     }
-    return IR::MetaInfo(resultVec, fileRange);
+    return IR::MetaInfo(resultVec, valuesRange, fileRange);
   }
 
   useit Json toJson() const {

@@ -56,11 +56,11 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   } else if ((lhs->nodeType() == NodeType::integerLiteral || lhs->nodeType() == NodeType::unsignedLiteral ||
               lhs->nodeType() == NodeType::floatLiteral || lhs->nodeType() == NodeType::customFloatLiteral ||
               lhs->nodeType() == NodeType::customIntegerLiteral) &&
-             expectSymmetricOperandType(op)) {
+             expectSameOperandType(op)) {
     rhsEmit = rhs->emit(ctx);
     lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->hasTypeInferrance() && expectSymmetricOperandType(op)) {
+  } else if (rhs->hasTypeInferrance() && expectSameOperandType(op)) {
     lhsEmit = lhs->emit(ctx);
     auto lhsTy =
         lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType() : lhsEmit->getType();

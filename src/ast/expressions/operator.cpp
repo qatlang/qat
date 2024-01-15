@@ -2,17 +2,6 @@
 
 namespace qat::ast {
 
-bool isUnaryOp(Op opr) {
-  switch (opr) {
-    case Op::minus:
-    case Op::Not:
-    case Op::dereference:
-      return true;
-    default:
-      return false;
-  }
-}
-
 Op OpFromString(const String& str) {
   if (str == "+") {
     return Op::add;

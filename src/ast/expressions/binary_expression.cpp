@@ -53,13 +53,23 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  "null pointer and so RHS is expected to be of pointer type",
                  fileRange);
     }
-  } else if (lhs->nodeType() == NodeType::integerLiteral || lhs->nodeType() == NodeType::unsignedLiteral) {
+  } else if ((lhs->nodeType() == NodeType::integerLiteral || lhs->nodeType() == NodeType::unsignedLiteral ||
+              lhs->nodeType() == NodeType::floatLiteral || lhs->nodeType() == NodeType::customFloatLiteral ||
+              lhs->nodeType() == NodeType::customIntegerLiteral) &&
+             expectSymmetricOperandType(op)) {
     rhsEmit = rhs->emit(ctx);
     lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->nodeType() == NodeType::integerLiteral || rhs->nodeType() == NodeType::unsignedLiteral) {
+  } else if (rhs->hasTypeInferrance() && expectSymmetricOperandType(op)) {
     lhsEmit = lhs->emit(ctx);
-    rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType());
+    auto lhsTy =
+        lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType() : lhsEmit->getType();
+    if (lhsTy->isCType()) {
+      lhsTy = lhsTy->asCType()->getSubType();
+    }
+    if (lhsTy->isInteger() || lhsTy->isUnsignedInteger() || lhsTy->isFloat()) {
+      rhs->asTypeInferrable()->setInferenceType(lhsEmit->getType());
+    }
     rhsEmit = rhs->emit(ctx);
   } else {
     lhsEmit = lhs->emit(ctx);

@@ -9,7 +9,9 @@ add_library(QAT_IR
 	member_function.cpp
 	control_flow.cpp
 	qat_module.cpp
+	skill.cpp
 	static_member.cpp
+	stdlib.cpp
 	use.cpp
 	value.cpp)
 

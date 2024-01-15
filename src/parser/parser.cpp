@@ -7,6 +7,7 @@
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
+#include "../ast/expressions/cast.hpp"
 #include "../ast/expressions/constructor_call.hpp"
 #include "../ast/expressions/copy.hpp"
 #include "../ast/expressions/default.hpp"
@@ -3072,6 +3073,20 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         auto typeRes = do_type(preCtx, i - 1, None);
         setCachedType(typeRes.first);
         i = typeRes.second;
+        break;
+      }
+      case TokenType::as: {
+        if (hasCachedSymbol()) {
+          auto symbol = consumeCachedSymbol();
+          setCachedExpr(new ast::Entity(symbol.relative, symbol.name, symbol.fileRange), symbol.tokenIndex);
+        } else if (!hasCachedExpr()) {
+          add_error("Could not find an expression for casting before this", RangeAt(i));
+        }
+        auto typRes = do_type(preCtx, i, None);
+        auto expRes = consumeCachedExpr();
+        setCachedExpr(ast::Cast::Create(expRes, typRes.first, {expRes->fileRange, RangeAt(typRes.second)}),
+                      typRes.second);
+        i = typRes.second;
         break;
       }
       case TokenType::from: {

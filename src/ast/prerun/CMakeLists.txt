@@ -8,6 +8,7 @@ add_library(QAT_AST_CONSTANTS
 	float_literal.cpp
 	integer_literal.cpp
 	member_access.cpp
+	member_function_call.cpp
 	negative.cpp
 	null_pointer.cpp
 	plain_initialiser.cpp

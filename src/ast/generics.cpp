@@ -1,6 +1,8 @@
 #include "./generics.hpp"
 #include "expression.hpp"
 #include "node.hpp"
+#include "types/integer.hpp"
+#include "types/unsigned.hpp"
 
 namespace qat::ast {
 
@@ -25,6 +27,11 @@ FileRange const& FillGeneric::getRange() const { return asType()->fileRange; }
 IR::GenericToFill* FillGeneric::toFill(IR::Context* ctx) const {
   SHOW("ToFill called")
   if (isType()) {
+    if (asType()->typeKind() == TypeKind::integer) {
+      ((IntegerType*)asType())->isPartOfGeneric = true;
+    } else if (asType()->typeKind() == TypeKind::unsignedInteger) {
+      ((UnsignedType*)asType())->isPartOfGeneric = true;
+    }
     return IR::GenericToFill::GetType(asType()->emit(ctx), asType()->fileRange);
   } else {
     return IR::GenericToFill::GetPrerun(asPrerun()->emit(ctx), asPrerun()->fileRange);

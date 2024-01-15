@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <thread>
 
 namespace qat::IR {
 
@@ -437,6 +438,7 @@ void Context::writeJsonResult(bool status) const {
       ._("linkingTime", clangAndLinkTimeInMs.has_value() ? clangAndLinkTimeInMs.value() : JsonValue())
       ._("binarySizes", binarySizesJson)
       ._("hasMain", hasMain);
+  SHOW("Creating compilation result file")
   std::ofstream output;
   auto          outPath = cli::Config::get()->getOutputPath() / "QatCompilationResult.json";
   if (fs::exists(outPath)) {
@@ -447,6 +449,7 @@ void Context::writeJsonResult(bool status) const {
     output << result;
     output.close();
   }
+  SHOW("compilation result file done")
 }
 
 bool Context::hasGenericParameterFromLastMain(String const& name) const {
@@ -477,34 +480,46 @@ GenericParameter* Context::getGenericParameterFromLastMain(String const& name) c
   return nullptr;
 }
 
-void Context::addError(String const& message, Maybe<FileRange> fileRange) {
+void Context::addError(String const& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
+  while (!ctxMut.try_lock()) {
+  }
+  threadsWithErrors.insert(std::this_thread::get_id());
   auto* cfg = cli::Config::get();
   if (hasActiveGeneric()) {
     codeProblems.push_back(CodeProblem(true,
                                        "Errors generated while creating generic variant: " + getActiveGeneric().name,
                                        getActiveGeneric().fileRange));
-    std::cerr << "\n"
-              << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan) << " --> "
-              << Colored(colors::reset) << getActiveGeneric().fileRange.file.string() << ":"
-              << getActiveGeneric().fileRange.start << "\n"
-              << "Errors while creating generic variant: " << highlightError(getActiveGeneric().name) << "\n"
-              << "\n";
+    Logger::get()->errOut << "\n"
+                          << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan)
+                          << " --> " << Colored(colors::reset) << getActiveGeneric().fileRange.file.string() << ":"
+                          << getActiveGeneric().fileRange.start << "\n"
+                          << "Errors while creating generic variant: " << highlightError(getActiveGeneric().name)
+                          << "\n"
+                          << "\n";
   }
   codeProblems.push_back(CodeProblem(
       true, (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") + message, fileRange));
-  std::cerr << "\n" << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::reset);
+  Logger::get()->errOut << "\n"
+                        << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::reset) << " ";
+  Logger::get()->errOut << Colored(colors::bold::white)
+                        << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
+                        << Colored(colors::reset) << "\n";
   if (fileRange) {
-    std::cerr << Colored(colors::cyan) << " --> " << Colored(colors::reset) << fileRange.value().file.string() << ":"
-              << fileRange.value().start << " to " << fileRange.value().end;
+    Logger::get()->errOut << Colored(colors::cyan) << " --> " << Colored(colors::reset)
+                          << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
+                          << fileRange.value().end;
+    print_range_content(fileRange.value(), true, true);
   }
-  std::cerr << Colored(colors::bold::white) << "\n"
-            << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
-            << Colored(colors::reset) << "\n";
-  if (fileRange) {
-    printRelevantFileContent(fileRange.value(), true);
+  if (pointTo.has_value()) {
+    Logger::get()->errOut << (fileRange.has_value() ? "" : "\n") << Colored(colors::bold::white)
+                          << pointTo.value().first << Colored(colors::reset) << "\n"
+                          << Colored(colors::cyan) << " --> " << Colored(colors::reset)
+                          << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
+                          << pointTo.value().second.end;
+    print_range_content(pointTo.value().second, true, false);
   }
-  std::cerr << "\n";
-  if (hasActiveModule() && !moduleAlreadyHasErrors(getActiveModule())) {
+  Logger::get()->errOut << "\n";
+  if (hasActiveModule() && !module_has_errors(getActiveModule())) {
     if (hasActiveGeneric()) {
       removeActiveGeneric();
     }
@@ -515,27 +530,29 @@ void Context::addError(String const& message, Maybe<FileRange> fileRange) {
       (void)setActiveModule(oldMod);
     }
   }
+  Logger::get()->finishOutput();
+  ctxMut.unlock();
 }
 
-void Context::printRelevantFileContent(FileRange const& fileRange, bool isError) const {
+void Context::print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const {
   auto cfg = cli::Config::get();
   if (!fs::is_regular_file(fileRange.file)) {
     return;
   }
-  auto  lines       = getContentForDiagnostics(fileRange);
+  auto  lines       = get_range_content(fileRange);
   auto  endLine     = lines.first + lines.second.size();
   usize lineNumSize = std::to_string(lines.first).size();
   if (lineNumSize < std::to_string(endLine).size()) {
     lineNumSize = std::to_string(endLine).size();
   }
   usize lineIndex = 0;
-  std::cerr << "\n";
+  (isError ? Logger::get()->errOut : Logger::get()->out) << "\n";
   for (auto& lineInfo : lines.second) {
     String lineNum = std::to_string(lines.first + lineIndex);
     while (lineNum.size() < lineNumSize) {
       lineNum += " ";
     }
-    std::cerr << lineNum << " | " << std::get<0>(lineInfo) << "\n";
+    (isError ? Logger::get()->errOut : Logger::get()->out) << lineNum << " | " << std::get<0>(lineInfo) << "\n";
     if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
       String spacing;
       if (std::get<1>(lineInfo) > 0) {
@@ -550,34 +567,61 @@ void Context::printRelevantFileContent(FileRange const& fileRange, bool isError)
       }
       auto   indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
       String indicator(indicatorCount, '^');
-      std::cerr << String(lineNumSize, ' ') << " | " << spacing
-                << (isError ? Colored(colors::bold::red) : Colored(colors::bold::purple)) << indicator
-                << Colored(colors::reset) << "\n";
+      (isError ? Logger::get()->errOut : Logger::get()->out)
+          << String(lineNumSize, ' ') << " | " << spacing
+          << (isContentError ? Colored(colors::bold::red) : Colored(colors::bold::purple)) << indicator
+          << Colored(colors::reset) << "\n";
     }
     lineIndex++;
   }
 }
 
-void Context::Error(const String& message, Maybe<FileRange> fileRange) {
-  addError(message, fileRange);
-  writeJsonResult(false);
-  sitter->destroy();
-  MemoryTracker::report();
-  exit(0);
+void Context::add_exe_path(fs::path path) {
+  while (!ctxMut.try_lock()) {
+  }
+  executablePaths.push_back(path);
+  ctxMut.unlock();
+}
+
+void Context::add_binary_size(usize size) {
+  while (!ctxMut.try_lock()) {
+  }
+  binarySizes.push_back(size);
+  ctxMut.unlock();
+}
+
+void Context::finalise_errors() {
+  while (!ctxMut.try_lock()) {
+  }
+  if (!threadsWithErrors.empty() && (sitter->mainThread == std::this_thread::get_id())) {
+    Logger::get()->out.emit();
+    Logger::get()->errOut.emit();
+    writeJsonResult(false);
+    sitter->destroy();
+    QatRegion::destroyAllBlocks();
+    MemoryTracker::report();
+    ctxMut.unlock();
+    std::exit(0);
+  } else if (!threadsWithErrors.empty()) {
+    ctxMut.unlock();
+    pthread_exit(nullptr);
+  }
+  ctxMut.unlock();
+}
+
+void Context::Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
+  addError(message, fileRange, pointTo);
+  finalise_errors();
 }
 
 void Context::Errors(Vec<QatError> errors) {
   for (auto& err : errors) {
     addError(err.message, err.fileRange);
   }
-  writeJsonResult(false);
-  sitter->destroy();
-  TrackedRegion::destroyMembers();
-  MemoryTracker::report();
-  exit(0);
+  finalise_errors();
 }
 
-Pair<usize, Vec<std::tuple<String, u64, u64>>> Context::getContentForDiagnostics(FileRange const& _range) const {
+Pair<usize, Vec<std::tuple<String, u64, u64>>> Context::get_range_content(FileRange const& _range) const {
   Vec<std::tuple<String, u64, u64>> result;
 
   std::ifstream file(_range.file);
@@ -622,20 +666,23 @@ Pair<usize, Vec<std::tuple<String, u64, u64>>> Context::getContentForDiagnostics
   return {firstLine, result};
 }
 
-void Context::Warning(const String& message, const FileRange& fileRange) const {
+void Context::Warning(const String& message, const FileRange& fileRange) {
+  while (!ctxMut.try_lock()) {
+  }
   if (hasActiveGeneric()) {
     getActiveGeneric().warningCount++;
   }
   codeProblems.push_back(CodeProblem(
       false, (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message, fileRange));
   auto* cfg = cli::Config::get();
-  std::cout << "\n"
-            << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan) << " --> "
-            << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line << ":"
-            << fileRange.start.character << Colored(colors::bold::white) << "\n"
-            << (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
-            << Colored(colors::reset) << "\n";
-  printRelevantFileContent(fileRange, false);
+  Logger::get()->out << "\n"
+                     << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan)
+                     << " --> " << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line
+                     << ":" << fileRange.start.character << Colored(colors::bold::white) << "\n"
+                     << (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+                     << Colored(colors::reset) << "\n";
+  print_range_content(fileRange, false, false);
+  ctxMut.unlock();
 }
 
 } // namespace qat::IR

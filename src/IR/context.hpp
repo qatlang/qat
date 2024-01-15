@@ -12,7 +12,9 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include <chrono>
+#include <mutex>
 #include <string>
+#include <thread>
 
 using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
 
@@ -31,6 +33,7 @@ namespace qat::IR {
 enum class LoopType {
   nTimes,
   While,
+  doWhile,
   over,
   infinite,
 };
@@ -132,9 +135,11 @@ class Context {
 private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
 
-  Vec<IR::QatModule*> modulesWithErrors;
+  Vec<IR::QatModule*>       modulesWithErrors;
+  std::set<std::thread::id> threadsWithErrors;
+  std::recursive_mutex      ctxMut;
 
-  useit inline bool moduleAlreadyHasErrors(IR::QatModule* cand) {
+  useit inline bool module_has_errors(IR::QatModule* cand) {
     for (auto* module : modulesWithErrors) {
       if (module->getID() == cand->getID()) {
         return true;
@@ -143,11 +148,9 @@ private:
     return false;
   }
 
-  void addError(const String& message, Maybe<FileRange> fileRange);
+  Pair<usize, Vec<std::tuple<String, u64, u64>>> get_range_content(FileRange const& _range) const;
 
-  Pair<usize, Vec<std::tuple<String, u64, u64>>> getContentForDiagnostics(FileRange const& _range) const;
-
-  void printRelevantFileContent(FileRange const& fileRange, bool isError) const;
+  void print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const;
 
   QatSitter* sitter = nullptr;
 
@@ -286,11 +289,15 @@ public:
   useit VisibilityInfo getVisibInfo(Maybe<ast::VisibilitySpec> spec);
   useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
+  void add_exe_path(fs::path path);
+  void add_binary_size(usize size);
   void writeJsonResult(bool status) const;
 
-  exitFn void   Error(const String& message, Maybe<FileRange> fileRange);
-  exitFn void   Errors(Vec<QatError> errors);
-  void          Warning(const String& message, const FileRange& fileRange) const;
+  void finalise_errors();
+  void addError(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+  void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+  void Errors(Vec<QatError> errors);
+  void Warning(const String& message, const FileRange& fileRange);
   static String highlightError(const String& message, const char* color = colors::bold::yellow);
   static String highlightWarning(const String& message, const char* color = colors::bold::yellow);
   ~Context() = default;

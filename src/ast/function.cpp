@@ -1,12 +1,9 @@
 #include "./function.hpp"
-#include "../IR/logic.hpp"
-#include "../IR/types/future.hpp"
+#include "../IR/types/void.hpp"
 #include "../show.hpp"
 #include "sentence.hpp"
 #include "types/generic_abstract.hpp"
 #include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 
@@ -15,12 +12,13 @@
 namespace qat::ast {
 
 FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                     QatType* _returnType, bool _is_async, String _callingConv,
+                                     Maybe<QatType*> _returnType, Maybe<PrerunExpression*> _checker,
+                                     Maybe<PrerunExpression*> _genericConstraint, Maybe<MetaInfo> _metaInfo,
                                      Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                                      Vec<ast::GenericAbstractType*> _generics)
-    : Node(_fileRange), name(std::move(_name)), isAsync(_is_async), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), callingConv(std::move(_callingConv)), visibSpec(_visibSpec),
-      generics(std::move(_generics)) {}
+    : Node(_fileRange), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
+      returnType(_returnType), metaInfo(std::move(_metaInfo)), visibSpec(_visibSpec), checker(_checker),
+      genericConstraint(_genericConstraint), generics(std::move(_generics)) {}
 
 FunctionPrototype::~FunctionPrototype() {
   for (auto* arg : arguments) {
@@ -37,6 +35,18 @@ Vec<GenericAbstractType*> FunctionPrototype::getGenerics() const { return generi
 
 IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
+  if (checker.has_value()) {
+    auto cond = checker.value()->emit(ctx);
+    if (cond->getType()->isBool()) {
+      if (!llvm::cast<llvm::ConstantInt>(cond->getLLVMConstant())->getValue().getBoolValue()) {
+        checkResult = false;
+        return nullptr;
+      }
+    } else {
+      ctx->Error("The condition for defining a function should be of " + ctx->highlightError("bool") + " type",
+                 checker.value()->fileRange);
+    }
+  }
   SHOW("Creating function " << name.value << " with generic count: " << generics.size())
   ctx->nameCheckInModule(name, isGeneric() ? "generic function" : "function",
                          isGeneric() ? Maybe<String>(genericFn->getID()) : None);
@@ -110,10 +120,11 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
           // NOLINTNEXTLINE(readability-magic-numbers)
           IR::Argument::Create(
               Identifier(arguments.at(0)->getName().value + "'count", arguments.at(0)->getName().range),
-              IR::UnsignedType::get(32u, ctx->llctx), 0u));
+              IR::UnsignedType::get(32u, ctx), 0u));
       args.push_back(IR::Argument::Create(
           Identifier(arguments.at(0)->getName().value + "'data", arguments.at(0)->getName().range),
-          IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), false, ctx), 1u));
+          IR::PointerType::get(false, IR::CType::getCString(ctx), true, IR::PointerOwner::OfAnonymous(), false, ctx),
+          1u));
     }
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
@@ -124,11 +135,17 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     }
   }
   SHOW("Variability setting complete")
-  auto* retTy = returnType->emit(ctx);
-  if (isAsync) {
-    if (!retTy->isFuture()) {
-      ctx->Error("An async function should always return a " + ctx->highlightError("future"), fileRange);
+  auto* retTy = returnType.has_value() ? returnType.value()->emit(ctx) : IR::VoidType::get(ctx->llctx);
+  if (isMainFn) {
+    if (!(retTy->isInteger() && (retTy->asInteger()->getBitwidth() == 32u))) {
+      ctx->Error(ctx->highlightError("main") + " function expects to have a given type of " +
+                     ctx->highlightError("i32"),
+                 fileRange);
     }
+  }
+  Maybe<IR::MetaInfo> irMetaInfo;
+  if (metaInfo.has_value()) {
+    irMetaInfo = metaInfo.value().toIR(ctx);
   }
   if (isGeneric()) {
     Vec<IR::GenericParameter*> genericTypes;
@@ -136,15 +153,22 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
       genericTypes.push_back(gen->toIRGenericType());
     }
     SHOW("About to create generic function")
-    auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), std::move(genericTypes), retTy, isAsync, args,
-                                     isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx);
+    auto* fun = IR::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes),
+                                     IR::ReturnType::get(retTy), args, isVariadic, fileRange,
+                                     ctx->getVisibInfo(visibSpec), ctx, None, irMetaInfo);
     SHOW("Created IR function")
     return fun;
   } else {
     SHOW("About to create function")
-    auto* fun = mod->createFunction(
-        Identifier((ctx->clangTargetInfo->getTriple().isWasm() && isMainFn) ? "_start" : fnName, name.range), retTy,
-        isAsync, args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), linkageType, ctx);
+    auto* fun = IR::Function::Create(
+        mod, Identifier(fnName, name.range),
+        isMainFn
+            ? Maybe<LinkNames>(LinkNames({LinkNameUnit(ctx->clangTargetInfo->getTriple().isWasm() ? "_start" : "main",
+                                                       LinkUnitType::function)},
+                                         "C", nullptr))
+            : None,
+        {}, IR::ReturnType::get(retTy), args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx, None,
+        irMetaInfo);
     SHOW("Created IR function")
     return fun;
   }
@@ -179,13 +203,14 @@ Json FunctionPrototype::toJson() const {
   return Json()
       ._("nodeType", "functionPrototype")
       ._("name", name)
-      ._("isAsync", isAsync)
-      ._("returnType", returnType->toJson())
+      ._("hasReturnType", returnType.has_value())
+      ._("returnType", returnType.has_value() ? returnType.value()->toJson() : JsonValue())
       ._("arguments", args)
       ._("isVariadic", isVariadic)
       ._("hasVisibility", visibSpec.has_value())
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
-      ._("callingConvention", callingConv);
+      ._("hasMetaInfo", metaInfo.has_value())
+      ._("metaInfo", metaInfo.has_value() ? metaInfo.value().toJson() : JsonValue());
 }
 
 FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
@@ -193,10 +218,23 @@ FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Senten
 
 void FunctionDefinition::define(IR::Context* ctx) {
   if (!prototype->isGeneric()) {
+    prototype->hasDefinition = true;
     prototype->define(ctx);
   } else {
-    auto* tempFn = new IR::GenericFunction(prototype->name, prototype->generics, this, ctx->getMod(),
-                                           ctx->getVisibInfo(prototype->visibSpec));
+    if (prototype->checker.has_value()) {
+      auto condRes = prototype->checker.value()->emit(ctx);
+      if (condRes->getType()->isBool()) {
+        prototype->checkResult = llvm::cast<llvm::ConstantInt>(condRes->getLLVMConstant())->getValue().getBoolValue();
+        if (!prototype->checkResult.value()) {
+          return;
+        }
+      } else {
+        ctx->Error("The condition for defining this function should be of " + ctx->highlightError("bool") + " type",
+                   prototype->checker.value()->fileRange);
+      }
+    }
+    auto* tempFn = new IR::GenericFunction(prototype->name, prototype->generics, prototype->genericConstraint, this,
+                                           ctx->getMod(), ctx->getVisibInfo(prototype->visibSpec));
     for (auto* gen : prototype->generics) {
       gen->emit(ctx);
     }
@@ -208,152 +246,61 @@ bool FunctionDefinition::isGeneric() const { return prototype->isGeneric(); }
 
 IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
   if (prototype->isGeneric()) {
+    prototype->hasDefinition = true;
     SHOW("Function is generic")
     (void)prototype->emit(ctx);
+    prototype->hasDefinition = false;
+  }
+  if (prototype->checkResult.has_value() && !prototype->checkResult.value()) {
+    return nullptr;
   }
   SHOW("Getting IR function from prototype")
   auto* fnEmit = prototype->function;
-  ctx->setActiveFunction(fnEmit);
+  auto* oldFn  = ctx->setActiveFunction(fnEmit);
   SHOW("Set active function: " << fnEmit->getFullName())
-  if (prototype->isAsync) {
-    auto* fun        = fnEmit->getAsyncSubFunction();
-    auto* entryBlock = llvm::BasicBlock::Create(ctx->llctx, "entry", fnEmit->getLLVMFunction());
-    ctx->builder.SetInsertPoint(entryBlock);
-    SHOW("Getting void pointer")
-    auto* voidPtrTy = llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo();
-    ctx->getMod()->linkNative(IR::NativeUnit::pthreadCreate);
-    ctx->getMod()->linkNative(IR::NativeUnit::pthreadAttrInit);
-    SHOW("Linked pthread_create & pthread_attr_init functions to current module")
-    auto* pthreadCreate     = ctx->getMod()->getLLVMModule()->getFunction("pthread_create");
-    auto* pthreadAttrInitFn = ctx->getMod()->getLLVMModule()->getFunction("pthread_attr_init");
-    auto* argAlloca         = ctx->builder.CreateAlloca(fnEmit->getAsyncArgType());
-    auto* pthreadAttrAlloca = ctx->builder.CreateAlloca(llvm::StructType::getTypeByName(ctx->llctx, "pthread_attr_t"));
-    SHOW("Create allocas for async arg and pthread_attr_t")
-    const auto& fnOrigArgs = fnEmit->getType()->asFunction()->getArgumentTypes();
-    for (usize i = 0; i < fnOrigArgs.size(); i++) {
-      auto* argSubGEP = ctx->builder.CreateStructGEP(argAlloca->getAllocatedType(), argAlloca, i);
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argSubGEP);
+  auto* block = new IR::Block(fnEmit, nullptr);
+  SHOW("Created entry block")
+  block->setActive(ctx->builder);
+  SHOW("Set new block as the active block")
+  if (prototype->isMainFn) {
+    SHOW("Calling module initialisers")
+    auto modInits = IR::QatModule::collectModuleInitialisers();
+    for (auto* modFn : modInits) {
+      (void)modFn->call(ctx, {}, None, ctx->getMod());
     }
-    ctx->builder.CreateCall(pthreadAttrInitFn->getFunctionType(), pthreadAttrInitFn, {pthreadAttrAlloca});
-    auto* futureTy = fnEmit->getType()->asFunction()->getReturnArgType()->asReference()->getSubType()->asFuture();
-    SHOW("Getting pthread pointer")
-    auto* futureRefRef = ctx->builder.CreateStructGEP(argAlloca->getAllocatedType(), argAlloca, fnOrigArgs.size() - 1);
-    auto* pthreadPtr   = ctx->builder.CreateStructGEP(
-        futureTy->getLLVMType(), ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(), futureRefRef), 0);
-    SHOW("Calling pthread_create")
-    ctx->builder.CreateCall(pthreadCreate->getFunctionType(), pthreadCreate,
-                            {pthreadPtr, pthreadAttrAlloca, fun, ctx->builder.CreatePointerCast(argAlloca, voidPtrTy)});
-    {
-      SHOW("Loading future from async arg")
-      auto* futureRef = ctx->builder.CreateLoad(futureTy->getLLVMType()->getPointerTo(), futureRefRef);
-      SHOW("Future loaded from async arg")
-      ctx->getMod()->linkNative(IR::NativeUnit::malloc);
-      auto* mallocFn = ctx->getMod()->getLLVMModule()->getFunction("malloc");
+    SHOW("Storing args for main function")
+    if (fnEmit->getType()->asFunction()->getArgumentCount() == 2u) {
+      auto* cmdArgsVal = block->newValue(
+          fnEmit->argumentNameAt(0).value.substr(0, fnEmit->argumentNameAt(0).value.find('\'')),
+          IR::PointerType::get(false, IR::CType::getCString(ctx), false, IR::PointerOwner::OfAnonymous(), true, ctx),
+          false, fnEmit->argumentNameAt(0).range);
+      SHOW("Storing argument pointer")
       ctx->builder.CreateStore(
-          ctx->builder.CreatePointerCast(
-              ctx->builder.CreateCall(
-                  mallocFn->getFunctionType(), mallocFn,
-                  {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
-                                          ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(
-                                              llvm::Type::getInt1Ty(ctx->llctx)))}),
-              llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo()),
-          ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 2u));
+          fnEmit->getLLVMFunction()->getArg(1u),
+          ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 0u));
+      SHOW("Storing argument count")
       ctx->builder.CreateStore(
-          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
-          ctx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->llctx)->getPointerTo(),
-                                  ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 2u)));
-      SHOW("Future: Stored tag")
-      if (!futureTy->getSubType()->isVoid()) {
-        ctx->builder.CreateStore(
-            ctx->builder.CreatePointerCast(
-                ctx->builder.CreateCall(
-                    mallocFn->getFunctionType(), mallocFn,
-                    {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx),
-                                            ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSize(
-                                                futureTy->getSubType()->getLLVMType()))}),
-                futureTy->getSubType()->getLLVMType()->getPointerTo()),
-            ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 3u));
-        ctx->builder.CreateStore(
-            llvm::Constant::getNullValue(futureTy->getSubType()->getLLVMType()),
-            ctx->builder.CreateLoad(futureTy->getSubType()->getLLVMType()->getPointerTo(),
-                                    ctx->builder.CreateStructGEP(futureTy->getLLVMType(), futureRef, 3u)));
-        SHOW("Future: Stored null value")
-      }
-    }
-    ctx->builder.CreateRetVoid();
-    SHOW("Switching to the internal async function")
-    auto* block = new IR::Block(fnEmit, nullptr);
-    SHOW("Created entry block for async fn")
-    block->setActive(ctx->builder);
-    SHOW("Async fn block set active")
-    auto* asyncArgTy     = fnEmit->getAsyncArgType();
-    auto* asyncArgAlloca = IR::Logic::newAlloca(fnEmit, "qat'asyncArgPtr", asyncArgTy->getPointerTo());
-    ctx->builder.CreateStore(
-        ctx->builder.CreatePointerCast(fnEmit->getAsyncSubFunction()->getArg(0), asyncArgTy->getPointerTo()),
-        asyncArgAlloca);
-    auto* asyncArg = ctx->builder.CreateLoad(asyncArgTy->getPointerTo(), asyncArgAlloca);
-    for (usize i = 0; i < fnOrigArgs.size(); i++) {
-      IR::LocalValue* localArg = nullptr;
-      SHOW("Creating arg at " << i << " for async fn")
-      if (i == (fnOrigArgs.size() - 1)) {
-        localArg = block->newValue("qat'future", fnOrigArgs.at(i)->getType(), fnOrigArgs.at(i)->isVariable(),
-                                   prototype->name.range);
-      } else {
-        localArg = block->newValue(fnOrigArgs.at(i)->getName(), fnOrigArgs.at(i)->getType(),
-                                   fnOrigArgs.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
-      };
-      SHOW("Storing arg for async fn")
-      SHOW("Arg alloca for future is: " << localArg->getType()->asReference()->toString())
-      auto* argValLoad = ctx->builder.CreateLoad(fnOrigArgs.at(i)->getType()->getLLVMType(),
-                                                 ctx->builder.CreateStructGEP(fnEmit->getAsyncArgType(), asyncArg, i));
-      SHOW("Arg val loaded")
-      ctx->builder.CreateStore(argValLoad, localArg->getAlloca());
-      SHOW("Arg val stored")
+          ctx->builder.CreateIntCast(fnEmit->getLLVMFunction()->getArg(0u), llvm::Type::getInt64Ty(ctx->llctx), false),
+          ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 1u));
     }
   } else {
-    auto* block = new IR::Block(fnEmit, nullptr);
-    SHOW("Created entry block")
-    block->setActive(ctx->builder);
-    SHOW("Set new block as the active block")
-    if (prototype->isMainFn) {
-      SHOW("Calling module initialisers")
-      auto modInits = IR::QatModule::collectModuleInitialisers();
-      for (auto* modFn : modInits) {
-        (void)modFn->call(ctx, {}, ctx->getMod());
-      }
-      SHOW("Storing args for main function")
-      if (fnEmit->getType()->asFunction()->getArgumentCount() == 2u) {
-        auto* cmdArgsVal = block->newValue(
-            fnEmit->argumentNameAt(0).value.substr(0, fnEmit->argumentNameAt(0).value.find('\'')),
-            IR::PointerType::get(false, IR::CType::getCString(ctx), IR::PointerOwner::OfAnonymous(), true, ctx), false,
-            fnEmit->argumentNameAt(0).range);
-        SHOW("Storing argument pointer")
-        ctx->builder.CreateStore(
-            fnEmit->getLLVMFunction()->getArg(1u),
-            ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 0u));
-        SHOW("Storing argument count")
-        ctx->builder.CreateStore(
-            ctx->builder.CreateIntCast(fnEmit->getLLVMFunction()->getArg(0u), llvm::Type::getInt64Ty(ctx->llctx), true),
-            ctx->builder.CreateStructGEP(cmdArgsVal->getType()->getLLVMType(), cmdArgsVal->getLLVM(), 1u));
-      }
-    } else {
-      SHOW("About to allocate necessary arguments")
-      auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-      SHOW("Iteration run for function is: " << fnEmit->getName().value)
-      for (usize i = 0; i < argIRTypes.size(); i++) {
-        SHOW("Argument name is " << argIRTypes.at(i)->getName())
-        SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-        auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
-                                       argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
-        SHOW("Created local value for the argument")
-        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
-      }
+    SHOW("About to allocate necessary arguments")
+    auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+    SHOW("Iteration run for function is: " << fnEmit->getName().value)
+    for (usize i = 0; i < argIRTypes.size(); i++) {
+      SHOW("Argument name is " << argIRTypes.at(i)->getName())
+      SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
+      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
+                                     argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
+      SHOW("Created local value for the argument")
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
     }
   }
   SHOW("Emitting sentences")
   emitSentences(sentences, ctx);
   SHOW("Sentences emitted")
   IR::functionReturnHandler(ctx, fnEmit, fileRange);
+  (void)ctx->setActiveFunction(oldFn);
   return fnEmit;
 }
 

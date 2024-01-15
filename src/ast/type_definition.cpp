@@ -4,10 +4,11 @@
 
 namespace qat::ast {
 
-TypeDefinition::TypeDefinition(Identifier _name, Vec<ast::GenericAbstractType*> _generics, QatType* _subType,
-                               FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec)
-    : Node(std::move(_fileRange)), name(std::move(_name)), subType(_subType), visibSpec(_visibSpec),
-      generics(_generics) {}
+TypeDefinition::TypeDefinition(Identifier _name, Maybe<PrerunExpression*> _checker,
+                               Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
+                               QatType* _subType, FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec)
+    : Node(std::move(_fileRange)), name(std::move(_name)), checker(_checker), subType(_subType),
+      constraint(_constraint), visibSpec(_visibSpec), generics(_generics) {}
 
 bool TypeDefinition::isGeneric() const { return !generics.empty(); }
 
@@ -16,6 +17,20 @@ void TypeDefinition::setVariantName(const String& name) const { variantName = na
 void TypeDefinition::unsetVariantName() const { variantName = None; }
 
 void TypeDefinition::createType(IR::Context* ctx) const {
+  if (checker.has_value()) {
+    auto* checkRes = checker.value()->emit(ctx);
+    if (checkRes->getType()->isBool()) {
+      checkResult = llvm::cast<llvm::ConstantInt>(checkRes->getLLVMConstant())->getValue().getBoolValue();
+      if (!checkResult.value()) {
+        // TODO - ADD THIS AS DEAD CODE IN CODE INFO
+        return;
+      }
+    } else {
+      ctx->Error("The condition for this type definition should be of " + ctx->highlightError("bool") +
+                     " type. Got an expression of type " + ctx->highlightError(checkRes->getType()->toString()),
+                 checker.value()->fileRange);
+    }
+  }
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, isGeneric() ? "generic type definition" : "type definition",
                          isGeneric() ? Maybe<String>(genericTypeDefinition->getID()) : None);
@@ -47,15 +62,21 @@ void TypeDefinition::createType(IR::Context* ctx) const {
 }
 
 void TypeDefinition::defineType(IR::Context* ctx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  }
   if (isGeneric()) {
     genericTypeDefinition =
-        new IR::GenericDefinitionType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
+        new IR::GenericDefinitionType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
   } else {
     createType(ctx);
   }
 }
 
 void TypeDefinition::define(IR::Context* ctx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  }
   if (isGeneric()) {
     createType(ctx);
   }

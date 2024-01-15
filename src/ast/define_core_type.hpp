@@ -54,6 +54,7 @@ public:
 
 private:
   Identifier                     name;
+  Maybe<PrerunExpression*>       checker;
   bool                           isPacked;
   Vec<Member*>                   members;
   Vec<StaticMember*>             staticMembers;
@@ -72,6 +73,7 @@ private:
   Maybe<VisibilitySpec>          visibSpec;
 
   Vec<ast::GenericAbstractType*> generics;
+  Maybe<PrerunExpression*>       constraint;
   mutable Vec<IR::CoreType*>     coreTypes;
   void                           setCoreType(IR::CoreType*) const;
   void                           unsetCoreType() const;
@@ -82,10 +84,12 @@ private:
   void                            unsetOpaque() const;
   mutable IR::GenericCoreType*    genericCoreType = nullptr;
   mutable Vec<IR::GenericToFill*> genericsToFill;
+  mutable Maybe<bool>             checkResult;
 
 public:
-  DefineCoreType(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
-                 Vec<ast::GenericAbstractType*> _generics, bool _isPacked = false);
+  DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
+                 FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
+                 bool _isPacked = false);
 
   COMMENTABLE_FUNCTIONS
 

@@ -5,6 +5,7 @@
 #include "./argument.hpp"
 #include "./node.hpp"
 #include "./sentence.hpp"
+#include "meta_info.hpp"
 #include "types/generic_abstract.hpp"
 #include <iostream>
 #include <string>
@@ -14,13 +15,14 @@ namespace qat::ast {
 class FunctionPrototype final : public Node {
 private:
   friend class FunctionDefinition;
-  Identifier            name;
-  bool                  isAsync;
-  Vec<Argument*>        arguments;
-  bool                  isVariadic;
-  QatType*              returnType;
-  String                callingConv;
-  Maybe<VisibilitySpec> visibSpec;
+  Identifier               name;
+  Vec<Argument*>           arguments;
+  bool                     isVariadic;
+  Maybe<QatType*>          returnType;
+  Maybe<MetaInfo>          metaInfo;
+  Maybe<VisibilitySpec>    visibSpec;
+  Maybe<PrerunExpression*> checker;
+  Maybe<PrerunExpression*> genericConstraint;
 
   Vec<GenericAbstractType*> generics;
   IR::GenericFunction*      genericFn = nullptr;
@@ -30,10 +32,14 @@ private:
   mutable Maybe<String> variantName;
   mutable IR::Function* function = nullptr;
   mutable bool          isMainFn = false;
+  mutable Maybe<bool>   checkResult;
+
+  bool hasDefinition = false;
 
 public:
-  FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, QatType* _returnType, bool _is_async,
-                    String _callingConv, Maybe<VisibilitySpec> _visibility, const FileRange& _fileRange,
+  FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                    Maybe<PrerunExpression*> checker, Maybe<PrerunExpression*> genericConstraint,
+                    Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibility, const FileRange& _fileRange,
                     Vec<GenericAbstractType*> _generics = {});
 
   useit bool isGeneric() const;

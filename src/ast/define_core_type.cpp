@@ -43,10 +43,11 @@ Json DefineCoreType::StaticMember::toJson() const {
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::DefineCoreType(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
-                               Vec<ast::GenericAbstractType*> _generics, bool _isPacked)
-    : Node(std::move(_fileRange)), name(std::move(_name)), isPacked(_isPacked), visibSpec(_visibSpec),
-      generics(std::move(_generics)) {
+DefineCoreType::DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
+                               FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics,
+                               Maybe<PrerunExpression*> _constraint, bool _isPacked)
+    : Node(std::move(_fileRange)), name(std::move(_name)), checker(_checker), isPacked(_isPacked),
+      visibSpec(_visibSpec), generics(std::move(_generics)), constraint(_constraint) {
   SHOW("Created define core type " + name.value)
 }
 
@@ -227,17 +228,35 @@ void DefineCoreType::createType(IR::Context* ctx) const {
 IR::CoreType* DefineCoreType::getCoreType() const { return coreTypes.back(); }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
+  if (checker.has_value()) {
+    auto* checkRes = checker.value()->emit(ctx);
+    if (checkRes->getType()->isBool()) {
+      checkResult = llvm::cast<llvm::ConstantInt>(checkRes->getLLVMConstant())->getValue().getBoolValue();
+      if (!checkResult.value()) {
+        // TODO - ADD THIS AS DEAD CODE IN CODE INFO
+        return;
+      }
+    } else {
+      ctx->Error("The condition for defining this struct type should be of " + ctx->highlightError("bool") +
+                     " type. Got an expression of type " + ctx->highlightError(checkRes->getType()->toString()),
+                 checker.value()->fileRange);
+    }
+  }
   for (auto* gen : generics) {
     gen->emit(ctx);
   }
   if (!isGeneric()) {
     createType(ctx);
   } else {
-    genericCoreType = new IR::GenericCoreType(name, generics, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
+    genericCoreType =
+        new IR::GenericCoreType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
   }
 }
 
 void DefineCoreType::define(IR::Context* ctx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  }
   if (isGeneric()) {
     createType(ctx);
     ctx->setActiveType(getCoreType());
@@ -280,6 +299,9 @@ void DefineCoreType::define(IR::Context* ctx) {
 }
 
 IR::Value* DefineCoreType::emit(IR::Context* ctx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return nullptr;
+  }
   ctx->setActiveType(getCoreType());
   if (defaultConstructor) {
     (void)defaultConstructor->emit(ctx);

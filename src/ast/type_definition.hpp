@@ -2,23 +2,28 @@
 #define QAT_AST_TYPE_DEFINITION_HPP
 
 #include "./node.hpp"
+#include "expression.hpp"
 #include "types/qat_type.hpp"
 
 namespace qat::ast {
 
 class TypeDefinition : public Node {
 private:
-  Identifier            name;
-  QatType*              subType;
-  Maybe<VisibilitySpec> visibSpec;
+  Identifier               name;
+  Maybe<PrerunExpression*> checker;
+  QatType*                 subType;
+  Maybe<PrerunExpression*> constraint;
+  Maybe<VisibilitySpec>    visibSpec;
 
   Vec<ast::GenericAbstractType*>     generics;
   mutable Maybe<String>              variantName;
   mutable IR::DefinitionType*        typeDefinition        = nullptr;
   mutable IR::GenericDefinitionType* genericTypeDefinition = nullptr;
+  mutable Maybe<bool>                checkResult;
 
 public:
-  TypeDefinition(Identifier _name, Vec<ast::GenericAbstractType*> _generics, QatType* _subType, FileRange _fileRange,
+  TypeDefinition(Identifier _name, Maybe<PrerunExpression*> _checker, Vec<ast::GenericAbstractType*> _generics,
+                 Maybe<PrerunExpression*> _constraint, QatType* _subType, FileRange _fileRange,
                  Maybe<VisibilitySpec> _visibSpec);
 
   void setVariantName(const String& name) const;

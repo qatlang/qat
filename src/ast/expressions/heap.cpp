@@ -138,7 +138,7 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
       ptrVal->loadImplicitPointer(ctx->builder);
       if (!ptrType->getOwner().isHeap()) {
         ctx->Error("The ownership of this pointer is not " + ctx->highlightError("heap") +
-                       " and hence cannot be used in heap'grow",
+                       " and hence cannot be used in heap:grow",
                    fileRange);
       }
       if (!ptrType->isMulti()) {
@@ -160,8 +160,8 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
       }
       ptrType = ptrVal->getType()->asPointer();
       if (!ptrType->getOwner().isHeap()) {
-        ctx->Error("The ownership of this pointer is " + ctx->highlightError("heap") +
-                       " and hence cannot be used in heap'grow",
+        ctx->Error("The ownership of this pointer is not " + ctx->highlightError("heap") +
+                       " and hence cannot be used in heap:grow",
                    fileRange);
       }
       if (!ptrType->isMulti()) {
@@ -193,7 +193,6 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
     if (!ptrType->getSubType()->isSame(typ)) {
       ctx->Error("The first argument should be a pointer to " + ctx->highlightError(typ->toString()), ptr->fileRange);
     }
-    ptrVal = ptrVal->makeLocal(ctx, None, ptr->fileRange);
   }
   auto* countVal = count->emit(ctx);
   countVal->loadImplicitPointer(ctx->builder);
@@ -210,13 +209,15 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
             reallocFn->getFunctionType(), reallocFn,
             {ctx->builder.CreatePointerCast(
                  ctx->builder.CreateLoad(
-                     llvm::PointerType::get(typ->getLLVMType(), ctx->dataLayout->getProgramAddressSpace()),
-                     ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
+                     llvm::PointerType::get(ptrType->getSubType()->getLLVMType(),
+                                               ctx->dataLayout->getProgramAddressSpace()),
+                     ptrVal->isValue() ? ctx->builder.CreateExtractValue(ptrVal->getLLVM(), {0u})
+                                          : ctx->builder.CreateStructGEP(ptrType->getLLVMType(), ptrVal->getLLVM(), 0u)),
                  llvm::Type::getInt8Ty(ctx->llctx)->getPointerTo()),
-                ctx->builder.CreateMul(
-                 countVal->getLLVM(),
-                 llvm::ConstantInt::get(IR::CType::getUsize(ctx)->getLLVMType(),
-                                           ctx->dataLayout.value().getTypeStoreSize(ptrVal->getType()->getLLVMType())))}),
+                ctx->builder.CreateMul(countVal->getLLVM(),
+                                       llvm::ConstantInt::get(IR::CType::getUsize(ctx)->getLLVMType(),
+                                                              ctx->dataLayout.value().getTypeStoreSize(
+                                                               ptrType->getSubType()->getLLVMType())))}),
         llvm::PointerType::get(ptrType->asPointer()->getSubType()->getLLVMType(),
                                   ctx->dataLayout->getProgramAddressSpace()));
     auto* resAlloc = IR::Logic::newAlloca(ctx->getActiveFunction(), None, ptrType->getLLVMType());
@@ -224,7 +225,7 @@ IR::Value* HeapGrow::emit(IR::Context* ctx) {
     ctx->builder.CreateStore(ptrRes, ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 0u));
     SHOW("Storing count into multipointer")
     ctx->builder.CreateStore(countVal->getLLVM(), ctx->builder.CreateStructGEP(ptrType->getLLVMType(), resAlloc, 1u));
-    return new IR::Value(ptrVal->getLLVM(), ptrVal->getType(), false, IR::Nature::temporary);
+    return new IR::Value(resAlloc, ptrType, false, IR::Nature::temporary);
   } else {
     ctx->Error("The number of units to reallocate should be of " +
                    ctx->highlightError(IR::CType::getUsize(ctx)->toString()) + " type",

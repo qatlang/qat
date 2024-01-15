@@ -8,15 +8,15 @@ namespace qat::ast {
 
 class PrerunPlainInit : public PrerunExpression, public TypeInferrable {
 private:
-  Maybe<QatType*>              type;
-  Vec<Pair<String, FileRange>> fields;
-  Vec<PrerunExpression*>       fieldValues;
+  Maybe<PrerunExpression*> type;
+  Maybe<Vec<Identifier>>   fields;
+  Vec<PrerunExpression*>   fieldValues;
 
 public:
-  PrerunPlainInit(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields, Vec<PrerunExpression*> _fieldValues,
+  PrerunPlainInit(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields, Vec<PrerunExpression*> _fieldValues,
                   FileRange _fileRange);
 
-  useit static PrerunPlainInit* Create(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields,
+  useit static PrerunPlainInit* Create(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
                                        Vec<PrerunExpression*> _fieldValues, FileRange _fileRange);
 
   TYPE_INFERRABLE_FUNCTIONS

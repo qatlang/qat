@@ -106,6 +106,8 @@ enum class TokenType {
   any,
   ok,
   selfWord,
+  where,
+  Do,
 };
 
 } // namespace qat::lexer

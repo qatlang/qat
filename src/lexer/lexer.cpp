@@ -627,6 +627,8 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("not", Not);
   else Check_Normal_Keyword("any", any);
   else Check_Normal_Keyword("else", Else);
+  else Check_Normal_Keyword("where", where);
+  else Check_Normal_Keyword("do", Do);
   else Check_Normal_Keyword("break", Break);
   else Check_Normal_Keyword("continue", Continue);
   else Check_Normal_Keyword("own", own);

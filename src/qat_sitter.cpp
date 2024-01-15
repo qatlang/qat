@@ -1,26 +1,24 @@
 #include "./qat_sitter.hpp"
-#include "./memory_tracker.hpp"
+#include "./IR/stdlib.hpp"
 #include "./show.hpp"
 #include "IR/qat_module.hpp"
 #include "IR/value.hpp"
 #include "ast/types/qat_type.hpp"
 #include "cli/config.hpp"
-#include "cli/error.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token_type.hpp"
 #include "parser/parser.hpp"
 #include "utils/identifier.hpp"
 #include "utils/logger.hpp"
+#include "utils/pstream/pstream.h"
 #include "utils/qat_region.hpp"
 #include "utils/visibility.hpp"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/Option/OptTable.h"
-#include "llvm/Support/HashBuilder.h"
-#include <algorithm>
+#include "utils/workgroup.hpp"
 #include <chrono>
 #include <filesystem>
 #include <ios>
 #include <system_error>
+#include <thread>
 
 #if PlatformIsWindows
 #include "windows.h"
@@ -32,7 +30,9 @@ namespace qat {
 
 QatSitter* QatSitter::instance = nullptr;
 
-QatSitter::QatSitter() : ctx(IR::Context::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)) {
+QatSitter::QatSitter()
+    : ctx(IR::Context::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)),
+      mainThread(std::this_thread::get_id()) {
   ctx->sitter = this;
 }
 
@@ -44,19 +44,56 @@ QatSitter* QatSitter::get() {
   return instance;
 }
 
+void QatSitter::doDiagnostics() {
+  auto& log = Logger::get();
+  log->diagnostic(
+      "Lexer speed   -> " +
+      std::to_string(
+          (u64)((((double)lexer::Lexer::lineCount) / ((double)lexer::Lexer::timeInMicroSeconds)) * 1000000.0)) +
+      " lines/s");
+  log->diagnostic(
+      "Parser speed  -> " +
+      std::to_string(
+          (u64)((((double)lexer::Lexer::lineCount) / ((double)parser::Parser::timeInMicroSeconds)) * 1000000.0)) +
+      " lines/s");
+  if (ctx->clangAndLinkTimeInMs.has_value()) {
+    log->diagnostic(
+        "Compile speed -> " +
+        std::to_string(
+            (u64)((((double)lexer::Lexer::lineCount) / ((double)ctx->qatCompileTimeInMs.value())) * 1000000.0)) +
+        " lines/s");
+  }
+  auto timeToString = [](u64 timeInMs) {
+    if (timeInMs > 1000000) {
+      return std::to_string(((double)timeInMs) / 1000000) + " s";
+    } else if (timeInMs > 1000) {
+      return std::to_string((double)timeInMs / 1000) + " ms";
+    } else {
+      return std::to_string(timeInMs) + " μs";
+    }
+  };
+  log->diagnostic("Lexer time    -> " + timeToString(lexer::Lexer::timeInMicroSeconds));
+  log->diagnostic("Parser time   -> " + timeToString(parser::Parser::timeInMicroSeconds));
+  if (ctx->qatCompileTimeInMs.has_value() && ctx->clangAndLinkTimeInMs.has_value()) {
+    log->diagnostic("Compile time  -> " + timeToString(ctx->qatCompileTimeInMs.value()));
+    log->diagnostic("clang & lld   -> " + timeToString(ctx->clangAndLinkTimeInMs.value()));
+  }
+}
+
 void QatSitter::initialise() {
   auto* config = cli::Config::get();
+  auto& log    = Logger::get();
   for (const auto& path : config->getPaths()) {
     handlePath(path, ctx);
   }
   if (config->hasStdLibPath() && ctx->stdLibRequired) {
     handlePath(config->getStdLibPath(), ctx);
     if (IR::QatModule::hasFileModule(config->getStdLibPath())) {
-      IR::QatModule::stdLibModule = IR::QatModule::getFileModule(config->getStdLibPath());
+      IR::StdLib::stdLib = IR::QatModule::getFileModule(config->getStdLibPath());
     }
   }
   if (config->isCompile() || config->isAnalyse()) {
-    ctx->qatStartTime = std::chrono::high_resolution_clock::now();
+    auto qatStartTime = std::chrono::high_resolution_clock::now();
     for (auto* entity : fileEntities) {
       entity->createModules(ctx);
     }
@@ -85,10 +122,14 @@ void QatSitter::initialise() {
       (void)ctx->setActiveModule(oldMod);
     }
     SHOW("Emitted nodes")
-    ctx->qatEndTime = std::chrono::high_resolution_clock::now();
+    auto qatCompileTime =
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - qatStartTime)
+            .count();
+    ctx->qatCompileTimeInMs = qatCompileTime;
     //
     //
     if (cfg->exportCodeMetadata()) {
+      log->say("Exporting code metadata");
       SHOW("About to export code metadata")
       // NOLINTNEXTLINE(readability-isolate-declaration)
       Vec<JsonValue> modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
@@ -136,8 +177,7 @@ void QatSitter::initialise() {
       }
     }
     SHOW("Getting link start time")
-    auto clangStartTime = std::chrono::high_resolution_clock::now();
-    auto clearLLVM      = [&] {
+    auto clearLLVM = [&] {
       if (cfg->clearLLVM()) {
         for (const auto& llPath : ctx->llvmOutputPaths) {
           fs::remove(llPath);
@@ -147,33 +187,57 @@ void QatSitter::initialise() {
         }
       }
     };
+    auto clangStartTime = std::chrono::high_resolution_clock::now();
     if (cfg->isCompile()) {
       SHOW("Checking whether clang exists or not")
       if (checkExecutableExists("clang") || checkExecutableExists("clang++")) {
+        Workgroup workers;
         for (auto* entity : fileEntities) {
-          entity->compileToObject(ctx);
+          workers.add(std::thread([&](IR::QatModule* mod) { mod->compileToObject(ctx); }, entity));
         }
+        workers.wait();
+        ctx->finalise_errors();
         SHOW("Modules compiled to object format")
         for (auto* entity : fileEntities) {
-          entity->bundleLibs(ctx);
+          workers.add(std::thread([&](IR::QatModule* mod) { mod->handleNativeLibs(ctx); }, entity));
         }
-        ctx->clangLinkEndTime = std::chrono::high_resolution_clock::now();
+        workers.wait();
+        ctx->finalise_errors();
+        for (auto* entity : fileEntities) {
+          workers.add(std::thread([&](IR::QatModule* mod) { mod->bundleLibs(ctx); }, entity));
+        }
+        workers.wait();
+        ctx->finalise_errors();
+        ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
+                                        std::chrono::high_resolution_clock::now() - clangStartTime)
+                                        .count();
+        doDiagnostics();
         ctx->writeJsonResult(true);
         clearLLVM();
         if (cfg->isRun() && !ctx->executablePaths.empty()) {
-          bool hasMultiExecutables = ctx->executablePaths.size() > 1;
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.string())
-            if (hasMultiExecutables) {
-              std::cout << "\nExecuting built executable at: " << exePath.string() << "\n";
+            redi::ipstream proc(exePath.string(), redi::pstreams::pstdout);
+            String         output;
+            String         errOut;
+            String         line;
+            while (std::getline(proc.out(), line)) {
+              output += line + "\n";
             }
-            if (std::system(exePath.string().c_str())) {
-              ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) +
-                             " exited with an error!",
+            while (std::getline(proc.err(), line)) {
+              errOut += line + "\n";
+            }
+            while (!proc.rdbuf()->exited()) {
+            }
+            log->out << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
+                            output + "===== Status Code: " + std::to_string(proc.rdbuf()->status()) + "\n";
+            if (proc.rdbuf()->status()) {
+              ctx->Error("\nThe built executable at " + ctx->highlightError(exePath.string()) + " exited with error\n" +
+                             errOut,
                          None);
             }
+            proc.close();
           }
-          std::cout << "\n\n";
           SHOW("Ran all compiled executables")
         }
       } else {
@@ -182,7 +246,9 @@ void QatSitter::initialise() {
                    None);
       }
     } else {
+      doDiagnostics();
       clearLLVM();
+      SHOW("clearLLVM called")
       ctx->writeJsonResult(true);
     }
   }

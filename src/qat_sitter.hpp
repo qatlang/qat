@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <system_error>
+#include <thread>
 #include <vector>
 
 namespace qat {
@@ -27,20 +28,23 @@ private:
   IR::Context*          ctx    = nullptr;
   lexer::Lexer*         Lexer  = nullptr;
   parser::Parser*       Parser = nullptr;
-
-  void destroy();
+  std::thread::id       mainThread;
 
 public:
   QatSitter();
   useit static QatSitter* get();
   static QatSitter*       instance;
 
-  void                                       initialise();
-  void                                       removeEntityWithPath(const fs::path& path);
-  void                                       handlePath(const fs::path& path, IR::Context* ctx);
-  useit static bool                          checkExecutableExists(const String& name);
+  void initialise();
+  void destroy();
+  void removeEntityWithPath(const fs::path& path);
+  void handlePath(const fs::path& path, IR::Context* ctx);
+  void doDiagnostics();
+
+  useit static bool checkExecutableExists(const String& name);
+  useit static bool isNameValid(const String& name);
+
   useit static Maybe<Pair<String, fs::path>> detectLibFile(const fs::path& path);
-  useit static bool                          isNameValid(const String& name);
 
   ~QatSitter();
 };

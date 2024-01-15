@@ -291,6 +291,8 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
     Maybe<String> foreignID;
     if (metaInfo) {
       foreignID = metaInfo->getForeignID();
+    } else {
+      foreignID = getParentModule()->getRelevantForeignID();
     }
     namingInfo = mod->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
     if (isGeneric()) {
@@ -361,10 +363,11 @@ IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, 
   SHOW("Getting function type")
   auto* fnTy = (llvm::FunctionType*)getType()->asFunction()->getLLVMType();
   SHOW("Got function type")
-  SHOW("Creating LLVM call: " << getFullName())
-  auto result = new IR::Value(
-      ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType->getType(),
-      retType->getType()->isReference() && retType->getType()->asReference()->isSubtypeVariable(), Nature::temporary);
+  SHOW("Creating LLVM call: " << linkingName << " with ID " << getID())
+  SHOW("Number of args: " << argValues.size())
+  SHOW("Return type is " << retType->getType()->toString())
+  auto result = new IR::Value(ctx->builder.CreateCall(fnTy, llvmFunction, argValues), retType->getType(), false,
+                              Nature::temporary);
   if (getParentModule()->getID() != destMod->getID() && !getParentModule()->isParentModuleOf(destMod)) {
     destMod->addDependency(getParentModule());
   }
@@ -460,16 +463,16 @@ usize& Function::getCopiedCounter() { return copiedCounter; }
 usize& Function::getMovedCounter() { return movedCounter; }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                 ast::FunctionDefinition* _functionDef, QatModule* _parent,
-                                 const VisibilityInfo& _visibInfo)
+                                 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionDefinition* _functionDef,
+                                 QatModule* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
                          ._("fullName", _parent->getFullNameWithChild(_name.value))
                          ._("moduleID", _parent->getID())
                          ._("visibility", _visibInfo),
                      _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), parent(_parent),
-      visibInfo(_visibInfo) {
+      name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
+      parent(_parent), visibInfo(_visibInfo) {
   parent->genericFunctions.push_back(this);
 }
 
@@ -495,6 +498,7 @@ useit bool GenericFunction::allTypesHaveDefaults() const {
 }
 
 Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Context* ctx, const FileRange& fileRange) {
+  auto oldFn = ctx->setActiveFunction(nullptr);
   for (auto var : variants) {
     if (var.check(
             ctx, [&](const String& msg, const FileRange& rng) { ctx->Error(msg, rng); }, types)) {
@@ -502,6 +506,19 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
     }
   }
   IR::fillGenerics(ctx, generics, types, fileRange);
+  if (constraint.has_value()) {
+    auto checkVal = constraint.value()->emit(ctx);
+    if (checkVal->getType()->isBool()) {
+      if (!llvm::cast<llvm::ConstantInt>(checkVal->getLLVMConstant())->getValue().getBoolValue()) {
+        ctx->Error("The provided generic parameters for the generic function do not satisfy the constraints", fileRange,
+                   Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+      }
+    } else {
+      ctx->Error("The constraints for generic parameters should be of " + ctx->highlightError("bool") +
+                     " type. Got an expression of " + ctx->highlightError(checkVal->getType()->toString()),
+                 constraint.value()->fileRange);
+    }
+  }
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
   auto prevTemp = ctx->allActiveGenerics;
@@ -521,6 +538,7 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
   } else {
     ctx->removeActiveGeneric();
   }
+  (void)ctx->setActiveFunction(oldFn);
   return fun;
 }
 

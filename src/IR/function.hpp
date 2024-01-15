@@ -32,6 +32,7 @@ class FunctionDefinition;
 class GenericAbstractType;
 class ConstructorDefinition;
 class ConvertorDefinition;
+class PrerunExpression;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -194,14 +195,15 @@ private:
   Identifier                     name;
   Vec<ast::GenericAbstractType*> generics;
   ast::FunctionDefinition*       functionDefinition;
+  Maybe<ast::PrerunExpression*>  constraint;
   QatModule*                     parent;
   VisibilityInfo                 visibInfo;
 
   mutable Vec<GenericVariant<Function>> variants;
 
 public:
-  GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, ast::FunctionDefinition* functionDef,
-                  QatModule* parent, const VisibilityInfo& _visibInfo);
+  GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
+                  ast::FunctionDefinition* functionDef, QatModule* parent, const VisibilityInfo& _visibInfo);
 
   ~GenericFunction() = default;
 

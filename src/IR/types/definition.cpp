@@ -1,4 +1,5 @@
 #include "./definition.hpp"
+#include "../../ast/expression.hpp"
 #include "../../ast/type_definition.hpp"
 #include "../../ast/types/generic_abstract.hpp"
 #include "../logic.hpp"
@@ -112,6 +113,7 @@ TypeKind DefinitionType::typeKind() const { return TypeKind::definition; }
 String DefinitionType::toString() const { return getFullName(); }
 
 GenericDefinitionType::GenericDefinitionType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
+                                             Maybe<ast::PrerunExpression*> _constraint,
                                              ast::TypeDefinition* _defineTypeDef, QatModule* _parent,
                                              const VisibilityInfo& _visibInfo)
     : EntityOverview("genericTypeDefinition",
@@ -121,7 +123,8 @@ GenericDefinitionType::GenericDefinitionType(Identifier _name, Vec<ast::GenericA
                          ._("visibility", _visibInfo)
                          ._("moduleID", _parent->getID()),
                      _name.range),
-      name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo) {
+      name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo),
+      constraint(_constraint) {
   parent->genericTypeDefinitions.push_back(this);
 }
 
@@ -154,6 +157,19 @@ DefinitionType* GenericDefinitionType::fillGenerics(Vec<GenericToFill*>& types, 
     }
   }
   IR::fillGenerics(ctx, generics, types, range);
+  if (constraint.has_value()) {
+    auto checkVal = constraint.value()->emit(ctx);
+    if (checkVal->getType()->isBool()) {
+      if (!llvm::cast<llvm::ConstantInt>(checkVal->getLLVMConstant())->getValue().getBoolValue()) {
+        ctx->Error("The provided generic parameters for the generic function do not satisfy the constraints", range,
+                   Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+      }
+    } else {
+      ctx->Error("The constraints for generic parameters should be of " + ctx->highlightError("bool") +
+                     " type. Got an expression of " + ctx->highlightError(checkVal->getType()->toString()),
+                 constraint.value()->fileRange);
+    }
+  }
   Vec<IR::GenericParameter*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());

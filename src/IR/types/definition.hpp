@@ -70,10 +70,13 @@ private:
   QatModule*                     parent;
   VisibilityInfo                 visibility;
 
+  Maybe<ast::PrerunExpression*> constraint;
+
   mutable Vec<GenericVariant<DefinitionType>> variants;
 
 public:
-  GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::TypeDefinition* defineCoreType,
+  GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics,
+                        Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType,
                         QatModule* parent, const VisibilityInfo& visibInfo);
 
   ~GenericDefinitionType() = default;

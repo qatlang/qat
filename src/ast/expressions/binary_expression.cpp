@@ -433,10 +433,12 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         }
         case Op::divide: {
           llRes = ctx->builder.CreateFDiv(lhsVal, rhsVal);
+          ctx->getMod()->nativeLibsToLink.push_back(IR::LibToLink::fromName({"m", fileRange}, fileRange));
           break;
         }
         case Op::remainder: {
           llRes = ctx->builder.CreateFRem(lhsVal, rhsVal);
+          ctx->getMod()->nativeLibsToLink.push_back(IR::LibToLink::fromName({"m", fileRange}, fileRange));
           break;
         }
         case Op::equalTo: {

@@ -4,16 +4,15 @@
 namespace qat::ast {
 
 DestructorDefinition::DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), nameRange(std::move(_nameRange)) {}
+    : Node(std::move(_fileRange)), nameRange(std::move(_nameRange)), sentences(std::move(_sentences)) {}
 
-void DestructorDefinition::setCoreType(IR::ExpandedType* _expType) const { expType = _expType; }
+void DestructorDefinition::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 void DestructorDefinition::define(IR::Context* ctx) {
-  if (!expType) {
+  if (!memberParent) {
     ctx->Error("No parent type found for this member function", fileRange);
   }
-  expType->createDestructor(nameRange, ctx);
-  memberFn = expType->getDestructor();
+  memberFn = IR::MemberFunction::CreateDestructor(memberParent, nameRange, fileRange, ctx);
 }
 
 IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
@@ -24,15 +23,16 @@ IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
-  auto  argIRTypes = memberFn->getType()->asFunction()->getArgumentTypes();
-  auto* coreRefTy  = argIRTypes.at(0)->getType()->asReference();
-  auto* self       = block->newValue("''", coreRefTy, true, coreRefTy->getSubType()->asCore()->getName().range);
+  auto  argIRTypes  = memberFn->getType()->asFunction()->getArgumentTypes();
+  auto* parentRefTy = argIRTypes.at(0)->getType()->asReference();
+  auto* self        = block->newValue("''", parentRefTy, true, memberParent->getTypeRange());
   ctx->builder.CreateStore(memberFn->getLLVMFunction()->getArg(0u), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   emitSentences(sentences, ctx);
   IR::functionReturnHandler(ctx, memberFn, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   (void)ctx->setActiveFunction(oldFn);
+  SHOW("Destructor definition complete for " << memberParent->getParentType()->toString())
   return nullptr;
 }
 

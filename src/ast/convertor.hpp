@@ -23,11 +23,12 @@ private:
   Maybe<VisibilitySpec> visibSpec;
   bool                  isFrom;
   FileRange             nameRange;
+  Maybe<FileRange>      definitionRange;
 
-  mutable IR::CoreType*       coreType;
-  mutable IR::MemberFunction* memberFn;
+  mutable IR::MemberParent*   memberParent = nullptr;
+  mutable IR::MemberFunction* memberFn     = nullptr;
 
-  void setCoreType(IR::CoreType* _coreType) const;
+  void setMemberParent(IR::MemberParent* _memberParent) const;
 
   ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
                      bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
@@ -52,7 +53,7 @@ private:
   Vec<Sentence*>      sentences;
   ConvertorPrototype* prototype;
 
-  void setCoreType(IR::CoreType* coreType) const;
+  void setMemberParent(IR::MemberParent* memParent) const;
 
 public:
   ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);

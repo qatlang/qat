@@ -17,29 +17,27 @@ class MemberPrototype : public Node {
 private:
   bool                  isVariationFn;
   Identifier            name;
-  bool                  isAsync;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
   QatType*              returnType;
   Maybe<VisibilitySpec> visibSpec;
   bool                  isStatic;
 
-  mutable IR::CoreType*       coreType;
-  mutable IR::MemberFunction* memberFn = nullptr;
+  mutable IR::MemberParent*   memberParent = nullptr;
+  mutable IR::MemberFunction* memberFn     = nullptr;
 
   MemberPrototype(bool isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                  QatType* _returnType, bool _is_async, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
+                  QatType* _returnType, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
 public:
   static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
-                                 bool _isVariadic, QatType* _returnType, bool _is_async,
-                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
-
-  static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                 QatType* _returnType, bool _is_async, Maybe<VisibilitySpec> _visibSpec,
+                                 bool _isVariadic, QatType* _returnType, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
-  void setCoreType(IR::CoreType* _coreType) const;
+  static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
+                                 QatType* _returnType, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+
+  void setMemberParent(IR::MemberParent* _memPar) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
@@ -56,7 +54,7 @@ private:
 public:
   MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::CoreType* coreType) const;
+  void setMemberParent(IR::MemberParent* coreType) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

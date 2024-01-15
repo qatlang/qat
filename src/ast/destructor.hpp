@@ -16,13 +16,13 @@ private:
   FileRange      nameRange;
   Vec<Sentence*> sentences;
 
-  mutable IR::MemberFunction* memberFn = nullptr;
-  mutable IR::ExpandedType*   expType  = nullptr;
+  mutable IR::MemberFunction* memberFn     = nullptr;
+  mutable IR::MemberParent*   memberParent = nullptr;
 
 public:
   DestructorDefinition(FileRange nameRange, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::ExpandedType* coreType) const;
+  void setMemberParent(IR::MemberParent* memberParent) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

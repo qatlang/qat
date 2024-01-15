@@ -24,12 +24,17 @@ class ConstructorPrototype : public Node {
   friend class DefineCoreType;
 
 private:
-  IR::CoreType*         coreType;
   Vec<Argument*>        arguments;
   Maybe<VisibilitySpec> visibSpec;
   ConstructorType       type;
   Maybe<Identifier>     argName;
   FileRange             nameRange;
+
+  mutable IR::MemberParent*          memberParent   = nullptr;
+  mutable IR::MemberFunction*        memberFunction = nullptr;
+  mutable Vec<IR::CoreType::Member*> presentMembers;
+  mutable Vec<IR::CoreType::Member*> absentMembersWithDefault;
+  mutable Vec<IR::CoreType::Member*> absentMembersWithoutDefault;
 
   ConstructorPrototype(ConstructorType constrType, FileRange nameRange, Vec<Argument*> _arguments,
                        Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange, Maybe<Identifier> argName = None);
@@ -43,8 +48,9 @@ public:
   static ConstructorPrototype* Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
                                     Identifier argName);
 
-  void setCoreType(IR::CoreType* _coreType);
+  void setMemberParent(IR::MemberParent* _memberParent) const;
 
+  void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::convertorPrototype; }
@@ -57,10 +63,12 @@ private:
   Vec<Sentence*>        sentences;
   ConstructorPrototype* prototype;
 
+  mutable Vec<IR::MemberFunction*> functions;
+
 public:
   ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::CoreType* coreType) const;
+  void setMemberParent(IR::MemberParent* memberParent) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

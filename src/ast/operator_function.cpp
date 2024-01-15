@@ -1,6 +1,7 @@
 #include "./operator_function.hpp"
 #include "../show.hpp"
 #include "expressions/operator.hpp"
+#include "types/self_type.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <vector>
 
@@ -19,24 +20,32 @@ OperatorPrototype::~OperatorPrototype() {
 }
 
 void OperatorPrototype::define(IR::Context* ctx) {
-  if (!coreType) {
-    ctx->Error("No core type found for this member function", fileRange);
+  if (!memberParent) {
+    ctx->Error("No parent type found for this member function", fileRange);
   }
   if (opr == Op::copyAssignment) {
-    if (coreType->hasCopyAssignment()) {
-      ctx->Error("Copy assignment operator already exists for core type " +
-                     ctx->highlightError(coreType->getFullName()),
+    if (memberParent->isDoneSkill() && memberParent->asDoneSkill()->hasCopyAssignment()) {
+      ctx->Error("Copy assignment operator already exists in this implementation " +
+                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
+                 fileRange);
+    } else if (memberParent->isExpanded() && memberParent->asExpanded()->hasCopyAssignment()) {
+      ctx->Error("Copy assignment operator already exists for the parent type " +
+                     ctx->highlightError(memberParent->asExpanded()->toString()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::CopyAssignment(coreType, nameRange, argName.value(), fileRange, ctx);
+    memberFn = IR::MemberFunction::CopyAssignment(memberParent, nameRange, argName.value(), fileRange, ctx);
     return;
   } else if (opr == Op::moveAssignment) {
-    if (coreType->hasMoveAssignment()) {
-      ctx->Error("Move assignment operator already exists for core type " +
-                     ctx->highlightError(coreType->getFullName()),
+    if (memberParent->isExpanded() && memberParent->asExpanded()->hasMoveAssignment()) {
+      ctx->Error("Move assignment operator already exists for the parent type " +
+                     ctx->highlightError(memberParent->asExpanded()->getFullName()),
+                 fileRange);
+    } else if (memberParent->isDoneSkill() && memberParent->asDoneSkill()->hasMoveAssignment()) {
+      ctx->Error("Move assignment operator already exists in this implementation " +
+                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::MoveAssignment(coreType, nameRange, argName.value(), fileRange, ctx);
+    memberFn = IR::MemberFunction::MoveAssignment(memberParent, nameRange, argName.value(), fileRange, ctx);
     return;
   }
   if (opr == Op::subtract) {
@@ -62,34 +71,39 @@ void OperatorPrototype::define(IR::Context* ctx) {
   SHOW("Generating types")
   for (auto* arg : arguments) {
     if (arg->isTypeMember()) {
-      if (coreType->hasMember(arg->getName().value)) {
-        if (isVariationFn) {
-          generatedTypes.push_back(coreType->getTypeOfMember(arg->getName().value));
-        } else {
-          ctx->Error("This operator is not marked as a variation. It "
-                     "cannot use the member argument syntax",
-                     fileRange);
-        }
-      } else {
-        ctx->Error("No non-static member named " + arg->getName().value + " in the core type " +
-                       coreType->getFullName(),
-                   arg->getName().range);
-      }
+      ctx->Error("Member arguments cannot be used in operators", arg->getName().range);
     } else {
       generatedTypes.push_back(arg->getType()->emit(ctx));
     }
   }
   if (isUnaryOp(opr)) {
-    if (coreType->hasUnaryOperator(OpToString(opr))) {
-      ctx->Error("Unary operator " + ctx->highlightError(OpToString(opr)) + " already exists for core type " +
-                     ctx->highlightError(coreType->getFullName()),
+    if (memberParent->isExpanded() && memberParent->asExpanded()->hasUnaryOperator(OpToString(opr))) {
+      ctx->Error("Unary operator " + ctx->highlightError(OpToString(opr)) + " already exists for the parent type " +
+                     ctx->highlightError(memberParent->asExpanded()->getFullName()),
+                 fileRange);
+    } else if (memberParent->isDoneSkill() && memberParent->asExpanded()->hasUnaryOperator(OpToString(opr))) {
+      ctx->Error("Unary operator " + ctx->highlightError(OpToString(opr)) + " already exists in the implementation " +
+                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
                  fileRange);
     }
   } else {
-    if (coreType->hasBinaryOperator(OpToString(opr), generatedTypes[0])) {
-      ctx->Error("Binary operator " + ctx->highlightError(OpToString(opr)) + " already exists for core type " +
-                     ctx->highlightError(coreType->getFullName()) + " with rhs type " +
-                     ctx->highlightError(generatedTypes.front()->toString()),
+    if (memberParent->isExpanded() &&
+        (isVariationFn
+             ? memberParent->asExpanded()->hasVariationBinaryOperator(OpToString(opr), {None, generatedTypes[0]})
+             : memberParent->asExpanded()->hasNormalBinaryOperator(OpToString(opr), {None, generatedTypes[0]}))) {
+      ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
+                     ctx->highlightError(OpToString(opr)) + " already exists for parent type " +
+                     ctx->highlightError(memberParent->asExpanded()->getFullName()) +
+                     " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
+                 fileRange);
+    } else if (memberParent->isDoneSkill() && (isVariationFn ? memberParent->asDoneSkill()->hasVariationBinaryOperator(
+                                                                   OpToString(opr), {None, generatedTypes[0]})
+                                                             : memberParent->asDoneSkill()->hasNormalBinaryOperator(
+                                                                   OpToString(opr), {None, generatedTypes[0]}))) {
+      ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
+                     ctx->highlightError(OpToString(opr)) + " already exists in the implementation " +
+                     ctx->highlightError(memberParent->asDoneSkill()->toString()) +
+                     " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
                  fileRange);
     }
   }
@@ -108,14 +122,25 @@ void OperatorPrototype::define(IR::Context* ctx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create operator function")
-  memberFn =
-      IR::MemberFunction::CreateOperator(coreType, nameRange, !isUnaryOp(opr), isVariationFn, OpToString(opr),
-                                         returnType->emit(ctx), args, fileRange, ctx->getVisibInfo(visibSpec), ctx);
+  bool isSelfReturn = false;
+  if (returnType->typeKind() == TypeKind::selfType) {
+    auto* selfRet = ((SelfType*)returnType);
+    if (!selfRet->isJustType) {
+      selfRet->isVarRef          = isVariationFn;
+      selfRet->canBeSelfInstance = true;
+      isSelfReturn               = true;
+    }
+  }
+  auto retTy = returnType->emit(ctx);
+  SHOW("Operator " + OpToString(opr) + " isVar: " << isVariationFn << " return type is " << retTy->toString())
+  memberFn = IR::MemberFunction::CreateOperator(memberParent, nameRange, !isUnaryOp(opr), isVariationFn,
+                                                OpToString(opr), IR::ReturnType::get(retTy, isSelfReturn), args,
+                                                fileRange, ctx->getVisibInfo(visibSpec), ctx);
 }
 
 IR::Value* OperatorPrototype::emit(IR::Context* ctx) { return memberFn; }
 
-void OperatorPrototype::setCoreType(IR::CoreType* _coreType) const { coreType = _coreType; }
+void OperatorPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 Json OperatorPrototype::toJson() const {
   Vec<JsonValue> args;
@@ -166,19 +191,12 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
       SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-      if (argIRTypes.at(i)->isMemberArgument()) {
-        auto* memPtr = ctx->builder.CreateStructGEP(
-            coreRefTy->getSubType()->getLLVMType(), self->getLLVM(),
-            coreRefTy->getSubType()->asCore()->getIndexOf(argIRTypes.at(i)->getName()).value());
-        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), memPtr, false);
-      } else {
-        SHOW("Argument is variable")
-        auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
-                                       prototype->arguments.at(i - 1)->getName().range);
-        SHOW("Created local value for the argument")
-        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
-      }
+      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(), true,
+                                     prototype->arguments.at(i - 1)->getName().range);
+      SHOW("Created local value for the argument")
+      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
     }
+    SHOW("Operator Return type is " << fnEmit->getType()->asFunction()->getReturnType()->toString())
   }
   emitSentences(sentences, ctx);
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
@@ -187,7 +205,9 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-void OperatorDefinition::setCoreType(IR::CoreType* coreType) const { prototype->setCoreType(coreType); }
+void OperatorDefinition::setMemberParent(IR::MemberParent* memberParent) const {
+  prototype->setMemberParent(memberParent);
+}
 
 Json OperatorDefinition::toJson() const {
   Vec<JsonValue> sntcs;

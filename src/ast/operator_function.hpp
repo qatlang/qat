@@ -24,14 +24,14 @@ private:
   Maybe<Identifier>     argName;
   FileRange             nameRange;
 
-  mutable IR::CoreType*       coreType = nullptr;
-  mutable IR::MemberFunction* memberFn = nullptr;
+  mutable IR::MemberParent*   memberParent = nullptr;
+  mutable IR::MemberFunction* memberFn     = nullptr;
 
 public:
   OperatorPrototype(bool _isVariationFn, Op _op, FileRange nameRange, Vec<Argument*> _arguments, QatType* _returnType,
                     Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName);
 
-  void setCoreType(IR::CoreType* _coreType) const;
+  void setMemberParent(IR::MemberParent* _memberParent) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
@@ -48,7 +48,7 @@ private:
 public:
   OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
 
-  void setCoreType(IR::CoreType* coreType) const;
+  void setMemberParent(IR::MemberParent* coreType) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;

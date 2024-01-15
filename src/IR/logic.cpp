@@ -22,6 +22,41 @@
 
 namespace qat::IR {
 
+IR::Value* Logic::int_to_std_string(bool isSigned, IR::Context* ctx, IR::Value* value, FileRange fileRange) {
+  if (IR::StdLib::isStdLibFound() &&
+      IR::StdLib::stdLib->hasGenericFunction(isSigned ? "signed_to_string" : "unsigned_to_string",
+                                             AccessInfo::GetPrivileged())) {
+    auto stringTy      = IR::StdLib::getStringType();
+    auto convGenericFn = IR::StdLib::stdLib->getGenericFunction(isSigned ? "signed_to_string" : "unsigned_to_string",
+                                                                AccessInfo::GetPrivileged());
+    auto intTy  = value->isReference() ? value->getType()->asReference()->getSubType() : value->getType();
+    auto convFn = convGenericFn->fillGenerics({IR::GenericToFill::GetType(intTy, fileRange)}, ctx, fileRange);
+    if (value->isReference() || value->isImplicitPointer()) {
+      value->loadImplicitPointer(ctx->builder);
+      if (value->isReference()) {
+        value = new IR::Value(ctx->builder.CreateLoad(intTy->getLLVMType(), value->getLLVM()), intTy, false,
+                              IR::Nature::temporary);
+      }
+    }
+    auto strRes = convFn->call(ctx, {value->getLLVM()}, None, ctx->getMod());
+    ctx->builder.CreateStore(strRes->getLLVM(),
+                             ctx->getActiveFunction()
+                                 ->getBlock()
+                                 ->newValue(ctx->getActiveFunction()->getRandomAllocaName(), stringTy, true, fileRange)
+                                 ->getLLVM());
+    return strRes;
+  } else {
+    ctx->Error("Cannot convert integer of type " +
+                   ctx->highlightError(value->isReference() ? value->getType()->asReference()->getSubType()->toString()
+                                                            : value->getType()->toString()) +
+                   " to " + ctx->highlightError("std:String") + " as the standard library function " +
+                   ctx->highlightError(isSigned ? "signed_to_string:[T]" : "unsigned_to_string:[T]") +
+                   " could not be found",
+               fileRange);
+  }
+  return nullptr;
+}
+
 Pair<String, Vec<llvm::Value*>> Logic::formatValues(IR::Context* ctx, Vec<IR::Value*> values, Vec<FileRange> ranges,
                                                     FileRange fileRange) {
   Vec<llvm::Value*> printVals;
@@ -64,7 +99,13 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(IR::Context* ctx, Vec<IR::Va
         auto valStr = valTy->toPrerunGenericString(val->asPrerun()).value();
         formatString += valStr;
       } else {
-        auto         intTy  = valTy->isInteger() ? valTy->asInteger() : valTy->asCType()->getSubType()->asInteger();
+        auto intTy = valTy->isInteger() ? valTy->asInteger() : valTy->asCType()->getSubType()->asInteger();
+        // auto strVal =
+        //     int_to_std_string(true, ctx, new IR::Value(val->getLLVM(), intTy, false, IR::Nature::temporary),
+        //     valRange);
+        // formatString += "%.*s";
+        // printVals.push_back(ctx->builder.CreateExtractValue(strVal->getLLVM(), {1u}));
+        // printVals.push_back(ctx->builder.CreateExtractValue(strVal->getLLVM(), {0u, 0u}));
         llvm::Value* intVal = nullptr;
         if (val->isImplicitPointer() || val->isReference()) {
           if (val->isReference()) {
@@ -86,8 +127,14 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(IR::Context* ctx, Vec<IR::Va
         auto valStr = valTy->toPrerunGenericString(val->asPrerun()).value();
         formatString += valStr;
       } else {
-        auto         uintTy = valTy->isUnsignedInteger() ? valTy->asUnsignedInteger()
-                                                         : valTy->asCType()->getSubType()->asUnsignedInteger();
+        auto uintTy = valTy->isUnsignedInteger() ? valTy->asUnsignedInteger()
+                                                 : valTy->asCType()->getSubType()->asUnsignedInteger();
+        // auto strVal =
+        //     int_to_std_string(false, ctx, new IR::Value(val->getLLVM(), uintTy, false, IR::Nature::temporary),
+        //     valRange);
+        // formatString += "%.*s";
+        // printVals.push_back(ctx->builder.CreateExtractValue(strVal->getLLVM(), {1u}));
+        // printVals.push_back(ctx->builder.CreateExtractValue(strVal->getLLVM(), {0u, 0u}));
         llvm::Value* intVal = nullptr;
         if (val->isImplicitPointer() || val->isReference()) {
           if (val->isReference()) {
@@ -136,12 +183,17 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(IR::Context* ctx, Vec<IR::Va
               val->loadImplicitPointer(ctx->builder);
             }
             val = new IR::Value(
-                ctx->builder.CreateLoad(usizeTy->getLLVMType(),
-                                        ctx->builder.CreateStructGEP(valTy->getLLVMType(), val->getLLVM(), 1u)),
-                usizeTy, false, IR::Nature::temporary);
+                ctx->builder.CreateLoad(valTy->asPointer()->getSubType()->getLLVMType()->getPointerTo(
+                                            ctx->dataLayout.value().getProgramAddressSpace()),
+                                        ctx->builder.CreateStructGEP(valTy->getLLVMType(), val->getLLVM(), 0u)),
+                IR::PointerType::get(false, valTy->asPointer()->getSubType(), false, PointerOwner::OfAnonymous(), false,
+                                     ctx),
+                false, IR::Nature::temporary);
           } else {
-            val = new IR::Value(ctx->builder.CreateExtractValue(val->getLLVM(), {1u}), usizeTy, false,
-                                IR::Nature::temporary);
+            val = new IR::Value(ctx->builder.CreateExtractValue(val->getLLVM(), {0u}),
+                                IR::PointerType::get(false, valTy->asPointer()->getSubType(), false,
+                                                     PointerOwner::OfAnonymous(), false, ctx),
+                                false, IR::Nature::temporary);
           }
         } else {
           if (val->isReference() || val->isImplicitPointer()) {

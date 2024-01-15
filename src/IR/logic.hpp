@@ -17,6 +17,8 @@ public:
                                                       FileRange fileRange);
   static void panicInFunction(IR::Function* fun, Vec<IR::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
                               IR::Context* ctx);
+
+  static IR::Value* int_to_std_string(bool isSigned, IR::Context* ctx, IR::Value* value, FileRange fileRange);
 };
 
 } // namespace qat::IR

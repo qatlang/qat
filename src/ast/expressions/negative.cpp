@@ -6,9 +6,22 @@ namespace qat::ast {
 Negative::Negative(Expression* _value, FileRange _fileRange) : Expression(std::move(_fileRange)), value(_value) {}
 
 IR::Value* Negative::emit(IR::Context* ctx) {
-  auto irVal = value->emit(ctx);
-  auto valTy = irVal->getType()->isReference() ? irVal->getType()->asReference()->getSubType() : irVal->getType();
+  if (isTypeInferred() && value->hasTypeInferrance()) {
+    value->asTypeInferrable()->setInferenceType(inferredType);
+  }
+  auto irVal     = value->emit(ctx);
+  auto valTy     = irVal->getType()->isReference() ? irVal->getType()->asReference()->getSubType() : irVal->getType();
+  auto typeCheck = [&](IR::QatType* candTy) {
+    if (isTypeInferred()) {
+      if (!candTy->isSame(inferredType)) {
+        ctx->Error("The expression is of type " + ctx->highlightError(candTy->toString()) +
+                       ", but the type inferred from scope is " + ctx->highlightError(inferredType->toString()),
+                   value->fileRange);
+      }
+    }
+  };
   if (valTy->isInteger() || (valTy->isCType() && valTy->asCType()->getSubType()->isInteger())) {
+    typeCheck(valTy);
     if (irVal->isPrerunValue()) {
       return new IR::PrerunValue(llvm::ConstantExpr::getNeg(irVal->getLLVMConstant()), valTy);
     } else {
@@ -20,6 +33,7 @@ IR::Value* Negative::emit(IR::Context* ctx) {
       return new IR::Value(ctx->builder.CreateNeg(irVal->getLLVM()), valTy, false, IR::Nature::temporary);
     }
   } else if (valTy->isFloat() || (valTy->isCType() && valTy->asCType()->getSubType()->isFloat())) {
+    typeCheck(valTy);
     if (irVal->isPrerunValue()) {
       return new IR::PrerunValue(llvm::cast<llvm::Constant>(ctx->builder.CreateFNeg(irVal->getLLVMConstant())), valTy);
     } else {
@@ -49,8 +63,10 @@ IR::Value* Negative::emit(IR::Context* ctx) {
         ctx->builder.CreateStore(irVal->getLLVM(), loc->getLLVM());
         irVal = loc;
       }
-      auto opFn = valTy->asExpanded()->getUnaryOperator("-");
-      return opFn->call(ctx, {irVal->getLLVM()}, localID, ctx->getMod());
+      auto opFn   = valTy->asExpanded()->getUnaryOperator("-");
+      auto result = opFn->call(ctx, {irVal->getLLVM()}, localID, ctx->getMod());
+      typeCheck(result->getType());
+      return result;
     } else {
       ctx->Error("Type " + ctx->highlightError(valTy->toString()) + " does not have the " +
                      ctx->highlightError("unary -") + " operator",

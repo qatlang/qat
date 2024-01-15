@@ -13,6 +13,13 @@ IR::PrerunValue* PrerunNegative::emit(IR::Context* ctx) {
     }
   }
   auto* irVal = value->emit(ctx);
+  if (isTypeInferred()) {
+    if (!irVal->getType()->isSame(inferredType)) {
+      ctx->Error("The expression is of type " + ctx->highlightError(irVal->getType()->toString()) +
+                     ", but the type inferred from scope is " + ctx->highlightError(inferredType->toString()),
+                 value->fileRange);
+    }
+  }
   if (irVal->getType()->isInteger() ||
       (irVal->getType()->isCType() && irVal->getType()->asCType()->getSubType()->isInteger())) {
     return new IR::PrerunValue(

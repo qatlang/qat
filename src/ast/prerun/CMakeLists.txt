@@ -1,4 +1,5 @@
 add_library(QAT_AST_CONSTANTS
+	array_literal.cpp
 	boolean_literal.cpp
 	custom_float_literal.cpp
 	custom_integer_literal.cpp

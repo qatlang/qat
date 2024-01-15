@@ -34,7 +34,7 @@ u64 ArrayType::getLength() const { return length; }
 
 TypeKind ArrayType::typeKind() const { return TypeKind::array; }
 
-String ArrayType::toString() const { return elementType->toString() + "[" + std::to_string(length) + "]"; }
+String ArrayType::toString() const { return "[" + std::to_string(length) + "]" + elementType->toString(); }
 
 Maybe<String> ArrayType::toPrerunGenericString(IR::PrerunValue* val) const {
   if (canBePrerunGeneric()) {

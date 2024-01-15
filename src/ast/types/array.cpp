@@ -65,6 +65,6 @@ Json ArrayType::toJson() const {
       ._("fileRange", fileRange);
 }
 
-String ArrayType::toString() const { return elementType->toString() + "[" + lengthExp->toString() + "]"; }
+String ArrayType::toString() const { return "[" + lengthExp->toString() + "]" + elementType->toString(); }
 
 } // namespace qat::ast

@@ -8,7 +8,9 @@
 
 #define EraseLineAndGoToStartOfLine "\33[2K\r"
 namespace qat {
-
+namespace IR {
+class Context;
+}
 namespace cli {
 class Config;
 }
@@ -27,17 +29,24 @@ enum class LogLevel { NONE, VERBOSE };
 
 class Logger {
   friend cli::Config;
+  friend IR::Context;
 
   static Maybe<Unique<Logger>> instance;
 
-  LogLevel                 logLevel = LogLevel::NONE;
+  LogLevel logLevel = LogLevel::NONE;
+
+public:
   mutable std::osyncstream out;
   mutable std::osyncstream errOut;
 
-public:
   Logger();
   ~Logger() = default;
   useit static Unique<Logger> const& get();
+
+  inline void finishOutput() const {
+    out.emit();
+    errOut.emit();
+  }
 
   inline void say(String message) const {
     if (logLevel == LogLevel::NONE) {

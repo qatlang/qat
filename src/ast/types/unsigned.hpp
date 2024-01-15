@@ -7,9 +7,14 @@
 namespace qat::ast {
 
 class UnsignedType : public QatType {
+  friend class BringBitwidths;
+  friend class FillGeneric;
+
 private:
   u32  bitWidth;
   bool isBool;
+
+  mutable bool isPartOfGeneric = false;
 
 public:
   UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange);

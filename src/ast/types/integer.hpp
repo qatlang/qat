@@ -7,8 +7,13 @@
 namespace qat::ast {
 
 class IntegerType : public QatType {
+  friend class BringBitwidths;
+  friend class FillGeneric;
+
 private:
   const u32 bitWidth;
+
+  mutable bool isPartOfGeneric = false;
 
 public:
   IntegerType(u32 _bitWidth, FileRange _fileRange);

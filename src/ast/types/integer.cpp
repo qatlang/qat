@@ -12,10 +12,15 @@ Maybe<usize> IntegerType::getTypeSizeInBits(IR::Context* ctx) const {
 }
 
 IR::QatType* IntegerType::emit(IR::Context* ctx) {
-  if (ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
+  if (bitWidth > 128) {
+    ctx->Error("Arbitrary integer bitwidths above 128 are not allowed at the moment", fileRange);
+  }
+  if (isPartOfGeneric || ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
     return IR::IntegerType::get(bitWidth, ctx);
   } else {
-    ctx->Error("This signed integer bitwidth is not allowed to be used since it is not brought into the module scope",
+    ctx->Error("The signed integer bitwidth " + ctx->highlightError(std::to_string(bitWidth)) +
+                   " is not allowed to be used since it is not brought into into the module " +
+                   ctx->highlightError(ctx->getMod()->getName()) + " in file " + ctx->getMod()->getFilePath(),
                fileRange);
   }
   return nullptr;

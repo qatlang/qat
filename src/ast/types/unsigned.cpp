@@ -12,14 +12,17 @@ Maybe<usize> UnsignedType::getTypeSizeInBits(IR::Context* ctx) const {
 }
 
 IR::QatType* UnsignedType::emit(IR::Context* ctx) {
-  if (ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
-    if (isBool) {
-      return IR::UnsignedType::getBool(ctx);
-    } else {
-      return IR::UnsignedType::get(bitWidth, ctx);
-    }
+  if (bitWidth > 128) {
+    ctx->Error("Arbitrary unsigned integer bitwidths above 128 are not allowed at the moment", fileRange);
+  }
+  if (isBool) {
+    return IR::UnsignedType::getBool(ctx);
+  } else if (isPartOfGeneric || ctx->getMod()->hasUnsignedBitwidth(bitWidth)) {
+    return IR::UnsignedType::get(bitWidth, ctx);
   } else {
-    ctx->Error("This unsigned integer bitwidth is not allowed to be used since it is not brought into the module scope",
+    ctx->Error("The unsigned integer bitwidth " + ctx->highlightError(std::to_string(bitWidth)) +
+                   " is not allowed to be used since it is not brought into the module " +
+                   ctx->highlightError(ctx->getMod()->getName()) + " in file " + ctx->getMod()->getFilePath(),
                fileRange);
   }
   return nullptr;

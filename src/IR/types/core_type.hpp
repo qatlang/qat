@@ -147,6 +147,7 @@ private:
   ast::DefineCoreType*           defineCoreType;
   QatModule*                     parent;
   VisibilityInfo                 visibility;
+  Maybe<ast::PrerunExpression*>  constraint;
 
   Vec<String> variantNames;
 
@@ -154,8 +155,8 @@ private:
   mutable Deque<GenericVariant<OpaqueType>> opaqueVariants;
 
 public:
-  GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::DefineCoreType* defineCoreType,
-                  QatModule* parent, const VisibilityInfo& visibInfo);
+  GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, Maybe<ast::PrerunExpression*> _constraint,
+                  ast::DefineCoreType* defineCoreType, QatModule* parent, const VisibilityInfo& visibInfo);
 
   ~GenericCoreType() = default;
 

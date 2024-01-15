@@ -407,8 +407,8 @@ TypeKind CoreType::typeKind() const { return TypeKind::core; }
 String CoreType::toString() const { return getFullName(); }
 
 GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                 ast::DefineCoreType* _defineCoreType, QatModule* _parent,
-                                 const VisibilityInfo& _visibInfo)
+                                 Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* _defineCoreType,
+                                 QatModule* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
                          ._("name", _name.value)
@@ -417,7 +417,7 @@ GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*
                          ._("moduleID", _parent->getID()),
                      _name.range),
       name(std::move(_name)), generics(_generics), defineCoreType(_defineCoreType), parent(_parent),
-      visibility(_visibInfo) {
+      visibility(_visibInfo), constraint(_constraint) {
   parent->genericCoreTypes.push_back(this);
 }
 
@@ -458,6 +458,19 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, IR::Con
     }
   }
   IR::fillGenerics(ctx, generics, toFillTypes, range);
+  if (constraint.has_value()) {
+    auto checkVal = constraint.value()->emit(ctx);
+    if (checkVal->getType()->isBool()) {
+      if (!llvm::cast<llvm::ConstantInt>(checkVal->getLLVMConstant())->getValue().getBoolValue()) {
+        ctx->Error("The provided parameters for the generic struct type do not satisfy the constraints", range,
+                   Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+      }
+    } else {
+      ctx->Error("The constraints for generic parameters should be of " + ctx->highlightError("bool") +
+                     " type. Got an expression of " + ctx->highlightError(checkVal->getType()->toString()),
+                 constraint.value()->fileRange);
+    }
+  }
   Vec<IR::GenericParameter*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());

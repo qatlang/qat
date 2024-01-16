@@ -22,7 +22,7 @@ StringSliceType::StringSliceType(IR::Context* ctx, bool _isPacked) : isPack(_isP
   }
 }
 
-IR::PrerunValue* StringSliceType::Create(IR::Context* ctx, String value) {
+IR::PrerunValue* StringSliceType::create_value(IR::Context* ctx, String value) {
   auto strTy = IR::StringSliceType::get(ctx);
   return new IR::PrerunValue(
       llvm::ConstantStruct::get(
@@ -46,20 +46,30 @@ StringSliceType* StringSliceType::get(IR::Context* ctx, bool isPacked) {
   return new StringSliceType(ctx, isPacked);
 }
 
+String StringSliceType::value_to_string(IR::PrerunValue* value) {
+  auto* initial =
+      llvm::cast<llvm::ConstantDataArray>(value->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u));
+  if (initial->getNumElements() == 1u) {
+    return "";
+  } else {
+    auto tempStr = initial->getRawDataValues().str();
+    if (tempStr[tempStr.size() - 1] == '\0') {
+      return tempStr.substr(0, tempStr.size() - 1);
+    }
+    return tempStr;
+  }
+}
+
 Maybe<String> StringSliceType::toPrerunGenericString(IR::PrerunValue* val) const {
   auto* initial = llvm::cast<llvm::ConstantDataArray>(val->getLLVMConstant()->getAggregateElement(0u)->getOperand(0u));
   if (initial->getNumElements() == 1u) {
     return "\"\"";
   } else {
-    String value;
-    for (usize i = 0; i < initial->getRawDataValues().size(); i++) {
-      if (initial->getRawDataValues().str().at(i) == '\0') {
-        SHOW("Null character found at: " << i << " with total size: " << initial->getRawDataValues().size())
-      } else {
-        value += initial->getRawDataValues().str().at(i);
-      }
+    auto tempStr = initial->getRawDataValues().str();
+    if (tempStr[tempStr.size() - 1] == '\0') {
+      return '"' + tempStr.substr(0, tempStr.size() - 1) + '"';
     }
-    return '"' + value + '"';
+    return '"' + tempStr + '"';
   }
 }
 

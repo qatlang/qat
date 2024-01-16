@@ -71,7 +71,7 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
             nullTrueBlock->setActive(ctx->builder);
             IR::Logic::panicInFunction(
                 fun,
-                {IR::StringSliceType::Create(
+                {IR::StringSliceType::create_value(
                     ctx, "This is a null-pointer and hence cannot be converted to the non-nullable pointer type " +
                              destTy->toString())},
                 {}, fileRange, ctx);

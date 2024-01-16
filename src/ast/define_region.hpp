@@ -3,6 +3,7 @@
 
 #include "node.hpp"
 #include "node_type.hpp"
+
 namespace qat::ast {
 
 class DefineRegion : public Node {
@@ -11,13 +12,18 @@ private:
   Maybe<VisibilitySpec> visibSpec;
 
 public:
-  DefineRegion(Identifier name, Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
+  DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+      : Node(_fileRange), name(_name), visibSpec(_visibSpec) {}
+
+  useit static inline DefineRegion* create(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DefineRegion), _name, _visibSpec, _fileRange);
+  }
 
   void  defineType(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
 
   useit Json     toJson() const final;
-  useit NodeType nodeType() const final { return NodeType::defineRegion; }
+  useit NodeType nodeType() const final { return NodeType::DEFINE_REGION; }
 };
 
 } // namespace qat::ast

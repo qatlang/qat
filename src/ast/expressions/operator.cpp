@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-Op OpFromString(const String& str) {
+Op operator_from_string(const String& str) {
   if (str == "+") {
     return Op::add;
   } else if (str == "-") {
@@ -50,7 +50,7 @@ Op OpFromString(const String& str) {
   }
 } // NOLINT(clang-diagnostic-return-type)
 
-String OpToString(Op opr) {
+String operator_to_string(Op opr) {
   switch (opr) {
     case Op::add:
       return "+";

@@ -3,8 +3,6 @@
 
 #include "../../IR/types/pointer.hpp"
 #include "./qat_type.hpp"
-#include "./void.hpp"
-#include <string>
 
 namespace qat::ast {
 
@@ -19,7 +17,6 @@ enum class PtrOwnType {
 };
 
 class PointerType : public QatType {
-private:
   QatType*             type;
   PtrOwnType           ownTyp;
   Maybe<ast::QatType*> ownerTyTy;
@@ -31,13 +28,21 @@ private:
   useit String           pointerOwnerToString() const;
 
 public:
-  PointerType(QatType* _type, bool isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<QatType*> _ownerTyTy,
-              bool _isMultiPtr, FileRange _fileRange);
+  PointerType(QatType* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<QatType*> _ownerTyTy,
+              bool _isMultiPtr, FileRange _fileRange)
+      : QatType(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isMultiPtr(_isMultiPtr),
+        isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNullable) {}
+
+  useit static inline PointerType* create(QatType* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable,
+                                          Maybe<QatType*> _ownerTyTy, bool _isMultiPtr, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(PointerType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy,
+                             _isMultiPtr, _fileRange);
+  }
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final;
+  useit AstTypeKind  typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

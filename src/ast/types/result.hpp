@@ -9,11 +9,17 @@ class ResultType : public QatType {
   bool          isPacked;
 
 public:
-  ResultType(ast::QatType* validType, ast::QatType* errorType, bool isPacked, FileRange fileRange);
+  ResultType(ast::QatType* _validType, ast::QatType* _errorType, bool _isPacked, FileRange _fileRange)
+      : QatType(_fileRange), validType(_validType), errorType(_errorType), isPacked(_isPacked) {}
+
+  useit static inline ResultType* create(ast::QatType* _validType, ast::QatType* _errorType, bool _isPacked,
+                                         FileRange _fileRange) {
+    return std::construct_at(OwnNormal(ResultType), _validType, _errorType, _isPacked, _fileRange);
+  }
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit Json         toJson() const final;
-  useit TypeKind     typeKind() const final;
+  useit AstTypeKind  typeKind() const final;
   useit String       toString() const final;
 };
 } // namespace qat::ast

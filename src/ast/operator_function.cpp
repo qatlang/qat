@@ -7,15 +7,9 @@
 
 namespace qat::ast {
 
-OperatorPrototype::OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
-                                     QatType* _returnType, Maybe<VisibilitySpec> _visibSpec,
-                                     const FileRange& _fileRange, Maybe<Identifier> _argName)
-    : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op), arguments(std::move(_arguments)),
-      returnType(_returnType), visibSpec(_visibSpec), argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
-
 OperatorPrototype::~OperatorPrototype() {
   for (auto* arg : arguments) {
-    delete arg;
+    std::destroy_at(arg);
   }
 }
 
@@ -53,16 +47,16 @@ void OperatorPrototype::define(IR::Context* ctx) {
       opr = Op::minus;
     }
   }
-  if (isUnaryOp(opr)) {
+  if (is_unary_operator(opr)) {
     if (!arguments.empty()) {
       ctx->Error("Unary operators should have no arguments. Invalid definition "
                  "of unary operator " +
-                     ctx->highlightError(OpToString(opr)),
+                     ctx->highlightError(operator_to_string(opr)),
                  fileRange);
     }
   } else {
     if (arguments.size() != 1) {
-      ctx->Error("Invalid number of arguments for Binary operator " + ctx->highlightError(OpToString(opr)) +
+      ctx->Error("Invalid number of arguments for Binary operator " + ctx->highlightError(operator_to_string(opr)) +
                      ". Binary operators should have only 1 argument",
                  fileRange);
     }
@@ -76,32 +70,35 @@ void OperatorPrototype::define(IR::Context* ctx) {
       generatedTypes.push_back(arg->getType()->emit(ctx));
     }
   }
-  if (isUnaryOp(opr)) {
-    if (memberParent->isExpanded() && memberParent->asExpanded()->hasUnaryOperator(OpToString(opr))) {
-      ctx->Error("Unary operator " + ctx->highlightError(OpToString(opr)) + " already exists for the parent type " +
+  if (is_unary_operator(opr)) {
+    if (memberParent->isExpanded() && memberParent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
+      ctx->Error("Unary operator " + ctx->highlightError(operator_to_string(opr)) +
+                     " already exists for the parent type " +
                      ctx->highlightError(memberParent->asExpanded()->getFullName()),
                  fileRange);
-    } else if (memberParent->isDoneSkill() && memberParent->asExpanded()->hasUnaryOperator(OpToString(opr))) {
-      ctx->Error("Unary operator " + ctx->highlightError(OpToString(opr)) + " already exists in the implementation " +
+    } else if (memberParent->isDoneSkill() && memberParent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
+      ctx->Error("Unary operator " + ctx->highlightError(operator_to_string(opr)) +
+                     " already exists in the implementation " +
                      ctx->highlightError(memberParent->asDoneSkill()->toString()),
                  fileRange);
     }
   } else {
-    if (memberParent->isExpanded() &&
-        (isVariationFn
-             ? memberParent->asExpanded()->hasVariationBinaryOperator(OpToString(opr), {None, generatedTypes[0]})
-             : memberParent->asExpanded()->hasNormalBinaryOperator(OpToString(opr), {None, generatedTypes[0]}))) {
+    if (memberParent->isExpanded() && (isVariationFn ? memberParent->asExpanded()->hasVariationBinaryOperator(
+                                                           operator_to_string(opr), {None, generatedTypes[0]})
+                                                     : memberParent->asExpanded()->hasNormalBinaryOperator(
+                                                           operator_to_string(opr), {None, generatedTypes[0]}))) {
       ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
-                     ctx->highlightError(OpToString(opr)) + " already exists for parent type " +
+                     ctx->highlightError(operator_to_string(opr)) + " already exists for parent type " +
                      ctx->highlightError(memberParent->asExpanded()->getFullName()) +
                      " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
                  fileRange);
-    } else if (memberParent->isDoneSkill() && (isVariationFn ? memberParent->asDoneSkill()->hasVariationBinaryOperator(
-                                                                   OpToString(opr), {None, generatedTypes[0]})
-                                                             : memberParent->asDoneSkill()->hasNormalBinaryOperator(
-                                                                   OpToString(opr), {None, generatedTypes[0]}))) {
+    } else if (memberParent->isDoneSkill() &&
+               (isVariationFn ? memberParent->asDoneSkill()->hasVariationBinaryOperator(operator_to_string(opr),
+                                                                                        {None, generatedTypes[0]})
+                              : memberParent->asDoneSkill()->hasNormalBinaryOperator(operator_to_string(opr),
+                                                                                     {None, generatedTypes[0]}))) {
       ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
-                     ctx->highlightError(OpToString(opr)) + " already exists in the implementation " +
+                     ctx->highlightError(operator_to_string(opr)) + " already exists in the implementation " +
                      ctx->highlightError(memberParent->asDoneSkill()->toString()) +
                      " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
                  fileRange);
@@ -123,7 +120,7 @@ void OperatorPrototype::define(IR::Context* ctx) {
   SHOW("Variability setting complete")
   SHOW("About to create operator function")
   bool isSelfReturn = false;
-  if (returnType->typeKind() == TypeKind::selfType) {
+  if (returnType->typeKind() == AstTypeKind::SELF_TYPE) {
     auto* selfRet = ((SelfType*)returnType);
     if (!selfRet->isJustType) {
       selfRet->isVarRef          = isVariationFn;
@@ -132,9 +129,9 @@ void OperatorPrototype::define(IR::Context* ctx) {
     }
   }
   auto retTy = returnType->emit(ctx);
-  SHOW("Operator " + OpToString(opr) + " isVar: " << isVariationFn << " return type is " << retTy->toString())
-  memberFn = IR::MemberFunction::CreateOperator(memberParent, nameRange, !isUnaryOp(opr), isVariationFn,
-                                                OpToString(opr), IR::ReturnType::get(retTy, isSelfReturn), args,
+  SHOW("Operator " + operator_to_string(opr) + " isVar: " << isVariationFn << " return type is " << retTy->toString())
+  memberFn = IR::MemberFunction::CreateOperator(memberParent, nameRange, !is_unary_operator(opr), isVariationFn,
+                                                operator_to_string(opr), IR::ReturnType::get(retTy, isSelfReturn), args,
                                                 fileRange, ctx->getVisibInfo(visibSpec), ctx);
 }
 
@@ -154,16 +151,13 @@ Json OperatorPrototype::toJson() const {
   return Json()
       ._("nodeType", "operatorPrototype")
       ._("isVariation", isVariationFn)
-      ._("operator", OpToString(opr))
+      ._("operator", operator_to_string(opr))
       ._("returnType", returnType->toJson())
       ._("arguments", args)
       ._("hasVisibility", visibSpec.has_value())
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
 }
-
-OperatorDefinition::OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void OperatorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
 

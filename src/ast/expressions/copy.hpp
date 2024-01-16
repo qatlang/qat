@@ -16,13 +16,18 @@ private:
   bool isAssignment = false;
 
 public:
-  Copy(Expression* exp, bool _isExpSelf, FileRange fileRange);
+  Copy(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
+      : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
+
+  useit static inline Copy* create(Expression* exp, bool _isExpSelf, FileRange fileRange) {
+    return std::construct_at(OwnNormal(Copy), exp, _isExpSelf, fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::copyExpression; }
+  useit NodeType   nodeType() const final { return NodeType::COPY; }
   useit Json       toJson() const final;
 };
 

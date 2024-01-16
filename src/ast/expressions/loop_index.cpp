@@ -2,15 +2,9 @@
 
 namespace qat::ast {
 
-LoopIndex::LoopIndex(String _indexName, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), indexName(std::move(_indexName)) {}
+bool TagOfLoop::hasName() const { return !indexName.empty(); }
 
-bool LoopIndex::hasName() const { return !indexName.empty(); }
-
-IR::Value* LoopIndex::emit(IR::Context* ctx) {
-  if (getExpectedKind() == ExpressionKind::assignable) {
-    ctx->Error("loop'index is not assignable", fileRange);
-  }
+IR::Value* TagOfLoop::emit(IR::Context* ctx) {
   if (!ctx->loopsInfo.empty()) {
     if (hasName()) {
       for (const auto& info : ctx->loopsInfo) {
@@ -39,6 +33,6 @@ IR::Value* LoopIndex::emit(IR::Context* ctx) {
   }
 }
 
-Json LoopIndex::toJson() const { return Json()._("nodeType", "loopIndex"); }
+Json TagOfLoop::toJson() const { return Json()._("nodeType", "tagOfLoop"); }
 
 } // namespace qat::ast

@@ -15,11 +15,16 @@ private:
 
 public:
   BinaryExpression(Expression* _lhs, const String& _binaryOperator, Expression* _rhs, FileRange _fileRange)
-      : Expression(std::move(_fileRange)), op(OpFromString(_binaryOperator)), lhs(_lhs), rhs(_rhs) {}
+      : Expression(std::move(_fileRange)), op(operator_from_string(_binaryOperator)), lhs(_lhs), rhs(_rhs) {}
+
+  useit static inline BinaryExpression* create(Expression* _lhs, const String& _binaryOperator, Expression* _rhs,
+                                               FileRange _fileRange) {
+    return std::construct_at(OwnNormal(BinaryExpression), _lhs, _binaryOperator, _rhs, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
-  useit NodeType   nodeType() const override { return NodeType::binaryExpression; }
+  useit NodeType   nodeType() const override { return NodeType::BINARY_EXPRESSION; }
 };
 
 } // namespace qat::ast

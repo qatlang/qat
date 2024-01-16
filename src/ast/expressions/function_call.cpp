@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-FunctionCall::FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(std::move(_arguments)) {}
-
 IR::Value* FunctionCall::emit(IR::Context* ctx) {
   auto* mod   = ctx->getMod();
   auto* fnVal = fnExpr->emit(ctx);

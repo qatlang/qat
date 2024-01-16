@@ -6,13 +6,6 @@
 
 namespace qat::ast {
 
-DefineChoiceType::DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<PrerunExpression*>>> _fields,
-                                   Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned, Maybe<usize> _defaulVal,
-                                   Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), fields(std::move(_fields)),
-      areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec), defaultVal(_defaulVal),
-      providedIntegerTy(_providedTy) {}
-
 void DefineChoiceType::createType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "choice type", None);

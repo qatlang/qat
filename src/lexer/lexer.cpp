@@ -3,7 +3,7 @@
 #include "../cli/color.hpp"
 #include "../memory_tracker.hpp"
 #include "../show.hpp"
-#include "../utils/is_integer.hpp"
+#include "../utils/utils.hpp"
 #include "token_type.hpp"
 #include <chrono>
 #include <string>
@@ -331,7 +331,7 @@ Token Lexer::tokeniser() {
           return Token::normal(TokenType::isNotNullPointer, this->getPosition(2));
         }
       } else {
-        return Token::normal(TokenType::ternary, this->getPosition(1));
+        return Token::normal(TokenType::questionMark, this->getPosition(1));
       }
     }
     case '+':
@@ -677,12 +677,12 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_VALUED_Keyword("cBool", cType);
   else Check_VALUED_Keyword("cPtr", cType);
   else if (wordValue.substr(0, 1) == "u" &&
-           ((wordValue.length() > 1) ? utils::isInteger(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+           ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
     return Token::valued(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
                          getPos(wordValue.length()));
   }
   else if (wordValue.substr(0, 1) == "i" &&
-           ((wordValue.length() > 1) ? utils::isInteger(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+           ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
     return Token::valued(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1),
                          getPos(wordValue.length()));
   }

@@ -1,14 +1,11 @@
 #include "./linked_generic.hpp"
-#include "../../utils/number_to_position.hpp"
+#include "../../utils/utils.hpp"
 #include "generic_abstract.hpp"
 #include "prerun_generic.hpp"
 #include "type_kind.hpp"
 #include "typed_generic.hpp"
 
 namespace qat::ast {
-
-LinkedGeneric::LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange range)
-    : QatType(std::move(range)), genAbs(_genAbs) {}
 
 IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
   if (genAbs->isTyped() || (genAbs->isPrerun() && genAbs->asPrerun()->getType()->isTyped())) {
@@ -22,11 +19,11 @@ IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
       }
     } else {
       if (genAbs->isTyped()) {
-        ctx->Error("No type set for the " + utils::numberToPosition(genAbs->getIndex()) + " Generic Parameter " +
+        ctx->Error("No type set for the " + utils::number_to_position(genAbs->getIndex()) + " Generic Parameter " +
                        ctx->highlightError(genAbs->getName().value),
                    fileRange);
       } else if (genAbs->isPrerun()) {
-        ctx->Error("No prerun expression set for the " + utils::numberToPosition(genAbs->getIndex()) +
+        ctx->Error("No prerun expression set for the " + utils::number_to_position(genAbs->getIndex()) +
                        " Generic Parameter " + ctx->highlightError(genAbs->getName().value),
                    fileRange);
       } else {
@@ -34,7 +31,7 @@ IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
       }
     }
   } else if (genAbs->isPrerun()) {
-    ctx->Error(utils::numberToPosition(genAbs->getIndex()) + " Generic Parameter " +
+    ctx->Error(utils::number_to_position(genAbs->getIndex()) + " Generic Parameter " +
                    ctx->highlightError(genAbs->getName().value) + " is a normal prerun expression with type " +
                    genAbs->asPrerun()->getType()->toString() + " and hence cannot be used as a type",
                fileRange);
@@ -43,7 +40,7 @@ IR::QatType* LinkedGeneric::emit(IR::Context* ctx) {
   }
 }
 
-TypeKind LinkedGeneric::typeKind() const { return TypeKind::linkedGeneric; }
+AstTypeKind LinkedGeneric::typeKind() const { return AstTypeKind::LINKED_GENERIC; }
 
 String LinkedGeneric::toString() const { return genAbs->getName().value; }
 

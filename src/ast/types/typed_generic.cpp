@@ -3,16 +3,6 @@
 
 namespace qat::ast {
 
-TypedGeneric::TypedGeneric(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange)
-    : GenericAbstractType(_index, std::move(_name), GenericKind::typedGeneric, std::move(_fileRange)),
-      defaultTypeAST(_defaultTy){SHOW("Typed Generic") SHOW("   name: " << name.value)
-                                     SHOW("   hasDefault: " << defaultTypeAST.has_value())}
-
-          TypedGeneric
-          * TypedGeneric::get(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange) {
-  return new TypedGeneric(_index, std::move(_name), _defaultTy, std::move(_fileRange));
-}
-
 bool TypedGeneric::hasDefault() const { return defaultTypeAST.has_value(); }
 
 IR::QatType* TypedGeneric::getDefault() const { return defaultType; }

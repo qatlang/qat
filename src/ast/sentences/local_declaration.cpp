@@ -5,13 +5,7 @@
 
 namespace qat::ast {
 
-LocalDeclaration::LocalDeclaration(QatType* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
-                                   bool _variability, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), type(_type), name(std::move(_name)), value(_value), variability(_variability),
-      isRef(_isRef){SHOW("Name for local declaration is " << name.value)}
-
-          IR::Value
-          * LocalDeclaration::emit(IR::Context * ctx) {
+IR::Value* LocalDeclaration::emit(IR::Context* ctx) {
   auto* block = ctx->getActiveFunction()->getBlock();
   if (block->hasValue(name.value)) {
     ctx->Error("A local value named " + ctx->highlightError(name.value) +

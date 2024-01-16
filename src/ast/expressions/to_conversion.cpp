@@ -9,8 +9,7 @@
 namespace qat::ast {
 
 IR::Value* ToConversion::emit(IR::Context* ctx) {
-  auto* val = source->emit(ctx);
-  // FIXME - Support references
+  auto* val    = source->emit(ctx);
   auto* destTy = destinationType->emit(ctx);
   if (val->getType()->isSame(destTy)) {
     if (val->getType()->isDefinition() || destTy->isDefinition()) {

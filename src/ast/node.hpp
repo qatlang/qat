@@ -77,7 +77,7 @@ public:
   // NOLINTNEXTLINE(misc-unused-parameters)
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit Json       toJson() const final { return node->toJson(); }
-  useit NodeType   nodeType() const final { return NodeType::holder; }
+  useit NodeType   nodeType() const final { return NodeType::HOLDER; }
 };
 
 } // namespace qat::ast

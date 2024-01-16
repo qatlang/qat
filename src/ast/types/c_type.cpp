@@ -2,12 +2,6 @@
 
 namespace qat::ast {
 
-CType::CType(IR::CTypeKind _cTypeKind, FileRange _fileRange) : QatType(std::move(_fileRange)), cTypeKind(_cTypeKind) {}
-
-CType::CType(QatType* _pointerSubTy, bool _isSubTyVar, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), cTypeKind(IR::CTypeKind::Pointer), subType(_pointerSubTy),
-      isPointerSubTypeVariable(_isSubTyVar) {}
-
 IR::QatType* CType::emit(IR::Context* ctx) {
   switch (cTypeKind) {
     case IR::CTypeKind::String:

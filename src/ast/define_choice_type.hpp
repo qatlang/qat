@@ -19,16 +19,27 @@ private:
   Maybe<ast::QatType*>                            providedIntegerTy;
 
 public:
-  DefineChoiceType(Identifier name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> fields,
-                   Maybe<ast::QatType*> providedIntegerTy, bool areValuesUnsigned, Maybe<usize> defaultVal,
-                   Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
+  DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
+                   Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned, Maybe<usize> _defaultVal,
+                   Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+      : Node(_fileRange), name(_name), fields(_fields), areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec),
+        defaultVal(_defaultVal), providedIntegerTy(_providedTy) {}
+
+  useit static inline DefineChoiceType* create(Identifier                                           _name,
+                                               Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
+                                               Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned,
+                                               Maybe<usize> _defaultVal, Maybe<VisibilitySpec> _visibSpec,
+                                               FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DefineChoiceType), _name, _fields, _providedTy, _areValuesUnsigned, _defaultVal,
+                             _visibSpec, _fileRange);
+  }
 
   void  createType(IR::Context* ctx);
   void  defineType(IR::Context* ctx) final;
   void  define(IR::Context* ctx) final {}
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::defineChoiceType; }
+  useit NodeType   nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
 };
 
 } // namespace qat::ast

@@ -34,7 +34,7 @@ enum class Op {
   dereference,
 };
 
-useit inline bool isUnaryOp(Op opr) {
+useit inline bool is_unary_operator(Op opr) {
   switch (opr) {
     case Op::minus:
     case Op::Not:
@@ -45,7 +45,7 @@ useit inline bool isUnaryOp(Op opr) {
   }
 }
 
-useit inline bool expectSameOperandType(Op opr) {
+useit inline bool expect_same_operand_types(Op opr) {
   switch (opr) {
     case Op::add:
     case Op::subtract:
@@ -77,9 +77,9 @@ useit inline bool expectSameOperandType(Op opr) {
   }
 }
 
-useit String OpToString(Op opr);
+useit String operator_to_string(Op opr);
 
-useit Op OpFromString(const String& str);
+useit Op operator_from_string(const String& str);
 
 } // namespace qat::ast
 

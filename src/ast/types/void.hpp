@@ -3,18 +3,20 @@
 
 #include "./qat_type.hpp"
 
-#include <string>
-
 namespace qat::ast {
 
 class VoidType : public QatType {
 public:
-  explicit VoidType(FileRange _fileRange);
+  explicit VoidType(FileRange _fileRange) : QatType(_fileRange) {}
+
+  useit static inline VoidType* create(FileRange _fileRange) {
+    return std::construct_at(OwnNormal(VoidType), _fileRange);
+  }
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 
   useit IR::QatType* emit(IR::Context* ctx);
-  useit TypeKind     typeKind() const;
+  useit AstTypeKind  typeKind() const;
   useit Json         toJson() const;
   useit String       toString() const;
 };

@@ -5,9 +5,6 @@
 
 namespace qat::ast {
 
-NullPointer::NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), providedType(_providedType) {}
-
 IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
   if (!providedType.has_value() && !isTypeInferred()) {
     ctx->Error("No type provided for null pointer and no type inferred from scope", fileRange);

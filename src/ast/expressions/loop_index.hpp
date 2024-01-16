@@ -5,17 +5,20 @@
 
 namespace qat::ast {
 
-class LoopIndex : public Expression {
-private:
+class TagOfLoop : public Expression {
   String indexName;
 
 public:
-  LoopIndex(String indexName, FileRange _fileRange);
+  TagOfLoop(String _indexName, FileRange _fileRange) : Expression(_fileRange), indexName(_indexName) {}
+
+  useit static inline TagOfLoop* create(String _indexName, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(TagOfLoop), _indexName, _fileRange);
+  }
 
   useit bool hasName() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::loopIndex; }
+  useit NodeType   nodeType() const final { return NodeType::TAG_OF_LOOP; }
 };
 
 } // namespace qat::ast

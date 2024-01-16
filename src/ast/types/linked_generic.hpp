@@ -9,11 +9,16 @@ class LinkedGeneric : public QatType {
   ast::GenericAbstractType* genAbs;
 
 public:
-  LinkedGeneric(ast::GenericAbstractType* genAbs, FileRange range);
-  IR::QatType*   emit(IR::Context* ctx) final;
-  useit TypeKind typeKind() const final;
-  useit Json     toJson() const final;
-  useit String   toString() const final;
+  LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange _range) : QatType(_range), genAbs(_genAbs) {}
+
+  useit static inline LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRange _range) {
+    return std::construct_at(OwnNormal(LinkedGeneric), _genAbs, _range);
+  }
+
+  useit IR::QatType* emit(IR::Context* ctx) final;
+  useit AstTypeKind  typeKind() const final;
+  useit Json         toJson() const final;
+  useit String       toString() const final;
 };
 
 } // namespace qat::ast

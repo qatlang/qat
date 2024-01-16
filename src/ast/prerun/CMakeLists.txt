@@ -13,7 +13,6 @@ add_library(QAT_AST_CONSTANTS
 	null_pointer.cpp
 	plain_initialiser.cpp
 	string_literal.cpp
-	type_checker.cpp
 	type_wrap.cpp
 	unsigned_literal.cpp)
 

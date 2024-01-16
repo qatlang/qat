@@ -3,11 +3,6 @@
 
 namespace qat::ast {
 
-LoopWhile::LoopWhile(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag,
-                     FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), condition(_condition), sentences(std::move(_sentences)), tag(std::move(_tag)),
-      isDoAndLoop(_isDoAndLoop) {}
-
 IR::Value* LoopWhile::emit(IR::Context* ctx) {
   String uniq;
   if (tag.has_value()) {

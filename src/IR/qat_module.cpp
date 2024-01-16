@@ -1866,8 +1866,8 @@ void QatModule::defineTypes(IR::Context* ctx) {
     auto* oldMod = ctx->setActiveModule(this);
     for (auto& node : nodes) {
       node->defineType(ctx);
-      if (((node->nodeType() == ast::NodeType::defineCoreType) && ((ast::DefineCoreType*)node)->isGeneric()) ||
-          ((node->nodeType() == ast::NodeType::typeDefinition) && ((ast::TypeDefinition*)node)->isGeneric())) {
+      if (((node->nodeType() == ast::NodeType::DEFINE_CORE_TYPE) && ((ast::DefineCoreType*)node)->isGeneric()) ||
+          ((node->nodeType() == ast::NodeType::TYPE_DEFINITION) && ((ast::TypeDefinition*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       }
     }
@@ -1885,9 +1885,9 @@ void QatModule::defineNodes(IR::Context* ctx) {
     auto* oldMod = ctx->setActiveModule(this);
     for (auto& node : nodes) {
       node->define(ctx);
-      if ((node->nodeType() == ast::NodeType::functionDefinition) && (((ast::FunctionDefinition*)node)->isGeneric())) {
+      if ((node->nodeType() == ast::NodeType::FUNCTION_DEFINITION) && (((ast::FunctionDefinition*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
-      } else if ((node->nodeType() == ast::NodeType::functionPrototype) &&
+      } else if ((node->nodeType() == ast::NodeType::FUNCTION_PROTOTYPE) &&
                  (((ast::FunctionPrototype*)node)->isGeneric())) {
         node = new ast::HolderNode(node);
       }

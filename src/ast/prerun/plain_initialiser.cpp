@@ -2,15 +2,6 @@
 
 namespace qat::ast {
 
-PrerunPlainInit::PrerunPlainInit(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
-                                 Vec<PrerunExpression*> _fieldValues, FileRange _fileRange)
-    : PrerunExpression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
-
-PrerunPlainInit* PrerunPlainInit::Create(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
-                                         Vec<PrerunExpression*> _fieldValues, FileRange _fileRange) {
-  return new PrerunPlainInit(_type, _fields, _fieldValues, _fileRange);
-}
-
 IR::PrerunValue* PrerunPlainInit::emit(IR::Context* ctx) {
   auto  reqInfo = ctx->getAccessInfo();
   auto* typePreEmit =

@@ -2,8 +2,6 @@
 
 namespace qat::ast {
 
-ExpressionSentence::ExpressionSentence(Expression* _exp, FileRange _fileRange) : Sentence(_fileRange), expr(_exp) {}
-
 IR::Value* ExpressionSentence::emit(IR::Context* ctx) { return expr->emit(ctx); }
 
 Json ExpressionSentence::toJson() const {

@@ -16,13 +16,18 @@ private:
   bool isAssignment = false;
 
 public:
-  Move(Expression* exp, bool _isExpSelf, FileRange fileRange);
+  Move(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
+      : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
+
+  useit static inline Move* create(Expression* _exp, bool _isExpSelf, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(Move), _exp, _isExpSelf, _fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::moveExpression; }
+  useit NodeType   nodeType() const final { return NodeType::MOVE_EXPRESSION; }
   useit Json       toJson() const final;
 };
 

@@ -3,8 +3,6 @@
 
 namespace qat::ast {
 
-TypeWrap::TypeWrap(ast::QatType* _theType, FileRange _fileRange) : PrerunExpression(_fileRange), theType(_theType) {}
-
 IR::PrerunValue* TypeWrap::emit(IR::Context* ctx) {
   return new IR::PrerunValue(IR::TypedType::get(theType->emit(ctx)));
 }

@@ -5,11 +5,6 @@
 
 namespace qat::ast {
 
-PlainInitialiser::PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
-                                   FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), fields(std::move(_fields)), fieldValues(std::move(_fieldValues)) {
-}
-
 IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
   if (type) {
     auto  reqInfo  = ctx->getAccessInfo();

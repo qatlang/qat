@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-DestructorDefinition::DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
-    : Node(std::move(_fileRange)), nameRange(std::move(_nameRange)), sentences(std::move(_sentences)) {}
-
 void DestructorDefinition::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 void DestructorDefinition::define(IR::Context* ctx) {

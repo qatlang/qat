@@ -4,8 +4,6 @@
 
 namespace qat::ast {
 
-Break::Break(Maybe<Identifier> _tag, FileRange _fileRange) : Sentence(std::move(_fileRange)), tag(std::move(_tag)) {}
-
 IR::Value* Break::emit(IR::Context* ctx) {
   if (ctx->breakables.empty()) {
     ctx->Error("Break sentence is not present inside any loop or switch blocks", fileRange);

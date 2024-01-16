@@ -14,13 +14,17 @@ class IsExpression : public Expression, public LocalDeclCompatible, public TypeI
   bool        isRefVar     = false;
 
 public:
-  IsExpression(Expression* subExpr, FileRange fileRange);
+  IsExpression(Expression* _subExpr, FileRange _fileRange) : Expression(_fileRange), subExpr(_subExpr) {}
+
+  useit static inline IsExpression* create(Expression* subExpr, FileRange fileRange) {
+    return std::construct_at(OwnNormal(IsExpression), subExpr, fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::isExpression; }
+  useit NodeType   nodeType() const final { return NodeType::IS; }
   useit Json       toJson() const final;
 };
 

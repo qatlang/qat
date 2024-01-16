@@ -2,9 +2,6 @@
 
 namespace qat::ast {
 
-IntegerLiteral::IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
-
 IR::PrerunValue* IntegerLiteral::emit(IR::Context* ctx) {
   if (isTypeInferred() &&
       (!inferredType->isInteger() && !inferredType->isUnsignedInteger() &&

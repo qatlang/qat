@@ -9,9 +9,6 @@
 
 namespace qat::ast {
 
-IndexAccess::IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), instance(_instance), index(_index) {}
-
 IR::Value* IndexAccess::emit(IR::Context* ctx) {
   auto* inst     = instance->emit(ctx);
   auto* instType = inst->getType();

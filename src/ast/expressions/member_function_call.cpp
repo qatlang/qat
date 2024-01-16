@@ -17,7 +17,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
           fileRange);
     }
   } else {
-    if (instance->nodeType() == NodeType::self) {
+    if (instance->nodeType() == NodeType::SELF) {
       ctx->Error("Do not use this syntax for calling member functions. Use " +
                      ctx->highlightError("''" + memberName.value + "(...)") + " instead",
                  fileRange);

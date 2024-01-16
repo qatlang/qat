@@ -3,9 +3,7 @@
 
 namespace qat::ast {
 
-Ok::Ok(Expression* _subExpr, FileRange _range) : Expression(std::move(_range)), subExpr(_subExpr){};
-
-IR::Value* Ok::emit(IR::Context* ctx) {
+IR::Value* OkExpression::emit(IR::Context* ctx) {
   if (isTypeInferred()) {
     if (!inferredType->isResult()) {
       ctx->Error("Inferred type is " + ctx->highlightError(inferredType->toString()) + " cannot be the type of " +
@@ -120,7 +118,7 @@ IR::Value* Ok::emit(IR::Context* ctx) {
   return createIn;
 }
 
-Json Ok::toJson() const {
+Json OkExpression::toJson() const {
   return Json()._("nodeType", "ok")._("hasSubExpression", subExpr != nullptr)._("fileRange", fileRange);
 }
 

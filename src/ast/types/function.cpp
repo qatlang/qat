@@ -2,10 +2,6 @@
 
 namespace qat::ast {
 
-ArgumentType::ArgumentType(QatType* _type) : type(_type) {}
-
-ArgumentType::ArgumentType(String _name, QatType* _type) : name(_name), type(_type) {}
-
 bool ArgumentType::hasName() const { return name.has_value(); }
 
 String ArgumentType::getName() const { return name.value_or(""); }
@@ -16,16 +12,13 @@ Json ArgumentType::toJson() const {
   return Json()._("type", type->toJson())._("hasName", name.has_value())._("name", name.value_or(""));
 }
 
-FunctionType::FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange)
-    : QatType(_fileRange), returnType(_retType), argTypes(_argTypes) {}
-
 FunctionType::~FunctionType() {
   for (auto* argTy : argTypes) {
-    delete argTy;
+    std::destroy_at(argTy);
   }
 }
 
-TypeKind FunctionType::typeKind() const { return TypeKind::function; }
+AstTypeKind FunctionType::typeKind() const { return AstTypeKind::FUNCTION; }
 
 Json FunctionType::toJson() const {
   Vec<JsonValue> args;

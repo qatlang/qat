@@ -2,11 +2,6 @@
 
 namespace qat::ast {
 
-Cast* Cast::Create(Expression* exp, QatType* dest, FileRange range) { return new Cast(exp, dest, range); }
-
-Cast::Cast(Expression* _exp, QatType* _dest, FileRange _range)
-    : Expression(_range), instance(_exp), destination(_dest) {}
-
 IR::Value* Cast::emit(IR::Context* ctx) {
   auto inst   = instance->emit(ctx);
   auto srcTy  = inst->getType()->isReference() ? inst->getType()->asReference()->getSubType() : inst->getType();

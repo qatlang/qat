@@ -6,11 +6,6 @@
 
 namespace qat::ast {
 
-GlobalDeclaration::GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
-                                     Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value), isVariable(_isVariable),
-      visibSpec(_visibSpec) {}
-
 void GlobalDeclaration::define(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "global value", None);

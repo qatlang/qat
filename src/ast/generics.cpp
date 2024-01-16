@@ -6,14 +6,6 @@
 
 namespace qat::ast {
 
-FillGeneric::FillGeneric(QatType* type)
-    : data(type), kind(FillGenericKind::typed){SHOW("FillGeneric created for type " << type->toString())}
-
-      FillGeneric::FillGeneric(PrerunExpression * constant)
-    : data(constant), kind(FillGenericKind::prerun) {
-  SHOW("FillGeneric created for const" << constant->toString())
-}
-
 bool FillGeneric::isType() const { return kind == FillGenericKind::typed; }
 
 bool FillGeneric::isPrerun() const { return kind == FillGenericKind::prerun; }
@@ -27,9 +19,9 @@ FileRange const& FillGeneric::getRange() const { return asType()->fileRange; }
 IR::GenericToFill* FillGeneric::toFill(IR::Context* ctx) const {
   SHOW("ToFill called")
   if (isType()) {
-    if (asType()->typeKind() == TypeKind::integer) {
+    if (asType()->typeKind() == AstTypeKind::INTEGER) {
       ((IntegerType*)asType())->isPartOfGeneric = true;
-    } else if (asType()->typeKind() == TypeKind::unsignedInteger) {
+    } else if (asType()->typeKind() == AstTypeKind::UNSIGNED_INTEGER) {
       ((UnsignedType*)asType())->isPartOfGeneric = true;
     }
     return IR::GenericToFill::GetType(asType()->emit(ctx), asType()->fileRange);

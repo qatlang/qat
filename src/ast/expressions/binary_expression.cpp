@@ -16,17 +16,17 @@ namespace qat::ast {
 IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   IR::Value* lhsEmit = nullptr;
   IR::Value* rhsEmit = nullptr;
-  if (lhs->nodeType() == NodeType::Default) {
+  if (lhs->nodeType() == NodeType::DEFAULT) {
     rhsEmit = rhs->emit(ctx);
     lhs->asTypeInferrable()->setInferenceType(rhsEmit->isReference() ? rhsEmit->getType()->asReference()->getSubType()
                                                                      : rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->nodeType() == NodeType::Default) {
+  } else if (rhs->nodeType() == NodeType::DEFAULT) {
     lhsEmit = lhs->emit(ctx);
     rhs->asTypeInferrable()->setInferenceType(lhsEmit->isReference() ? lhsEmit->getType()->asReference()->getSubType()
                                                                      : lhsEmit->getType());
     rhsEmit = rhs->emit(ctx);
-  } else if (lhs->nodeType() == NodeType::nullPointer) {
+  } else if (lhs->nodeType() == NodeType::NULL_POINTER) {
     rhsEmit = rhs->emit(ctx);
     if (rhsEmit->getType()->isPointer() ||
         (rhsEmit->getType()->isReference() && rhsEmit->getType()->asReference()->getSubType()->isPointer())) {
@@ -39,7 +39,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  "null pointer and so RHS is expected to be of pointer type",
                  fileRange);
     }
-  } else if (rhs->nodeType() == NodeType::nullPointer) {
+  } else if (rhs->nodeType() == NodeType::NULL_POINTER) {
     lhsEmit = lhs->emit(ctx);
     if (lhsEmit->getType()->isPointer() ||
         (lhsEmit->getType()->isReference() && lhsEmit->getType()->asReference()->getSubType()->isPointer())) {
@@ -53,14 +53,14 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                  "null pointer and so RHS is expected to be of pointer type",
                  fileRange);
     }
-  } else if ((lhs->nodeType() == NodeType::integerLiteral || lhs->nodeType() == NodeType::unsignedLiteral ||
-              lhs->nodeType() == NodeType::floatLiteral || lhs->nodeType() == NodeType::customFloatLiteral ||
-              lhs->nodeType() == NodeType::customIntegerLiteral) &&
-             expectSameOperandType(op)) {
+  } else if ((lhs->nodeType() == NodeType::INTEGER_LITERAL || lhs->nodeType() == NodeType::UNSIGNED_LITERAL ||
+              lhs->nodeType() == NodeType::FLOAT_LITERAL || lhs->nodeType() == NodeType::CUSTOM_FLOAT_LITERAL ||
+              lhs->nodeType() == NodeType::CUSTOM_INTEGER_LITERAL) &&
+             expect_same_operand_types(op)) {
     rhsEmit = rhs->emit(ctx);
     lhs->asTypeInferrable()->setInferenceType(rhsEmit->getType());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->hasTypeInferrance() && expectSameOperandType(op)) {
+  } else if (rhs->hasTypeInferrance() && expect_same_operand_types(op)) {
     lhsEmit = lhs->emit(ctx);
     auto lhsTy =
         lhsEmit->getType()->isReference() ? lhsEmit->getType()->asReference()->getSubType() : lhsEmit->getType();
@@ -76,7 +76,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     rhsEmit = rhs->emit(ctx);
   }
 
-  SHOW("Operator is: " << OpToString(op))
+  SHOW("Operator is: " << operator_to_string(op))
 
   IR::QatType* lhsType          = lhsEmit->getType();
   IR::QatType* rhsType          = rhsEmit->getType();
@@ -115,7 +115,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
   }
   if (lhsValueType->isInteger()) {
     referenceHandler();
-    SHOW("Integer binary operation: " << OpToString(op))
+    SHOW("Integer binary operation: " << operator_to_string(op))
     if (lhsValueType->isSame(rhsValueType)) {
       llvm::Value* llRes;
       IR::QatType* resType = lhsType;
@@ -655,7 +655,8 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 0u : 1u), strCmpFalseBlock->getBB());
       return new IR::Value(strCmpRes, IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
     } else {
-      ctx->Error("String slice does not support the " + ctx->highlightError(OpToString(op)) + " operator", fileRange);
+      ctx->Error("String slice does not support the " + ctx->highlightError(operator_to_string(op)) + " operator",
+                 fileRange);
     }
   } else if (lhsValueType->isPointer() && rhsValueType->isPointer()) {
     SHOW("LHS type is: " << lhsType->toString() << " and RHS type is: " << rhsType->toString())
@@ -755,7 +756,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
         return new IR::Value(ctx->builder.CreatePtrDiff(ptrTy->getSubType()->getLLVMType(), lhsVal, rhsVal),
                              IR::CType::getPtrDiff(ctx), false, IR::Nature::temporary);
       } else {
-        ctx->Error("The operands are pointers, and the operation " + ctx->highlightError(OpToString(op)) +
+        ctx->Error("The operands are pointers, and the operation " + ctx->highlightError(operator_to_string(op)) +
                        " is not supported for pointers",
                    fileRange);
       }
@@ -865,7 +866,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Left hand side is of choice type " + ctx->highlightError(lhsValueType->toString()) +
                        " and right hand side is of type " + ctx->highlightError(rhsValueType->toString()) +
-                       ". Binary operator " + ctx->highlightError(OpToString(op)) +
+                       ". Binary operator " + ctx->highlightError(operator_to_string(op)) +
                        " is not supported for these operands",
                    fileRange);
       }
@@ -874,7 +875,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
     if (lhsType->isExpanded() || (lhsType->isReference() && lhsType->asReference()->getSubType()->isExpanded())) {
       SHOW("Expanded type binary operation")
       auto* eTy   = lhsType->isReference() ? lhsType->asReference()->getSubType()->asExpanded() : lhsType->asExpanded();
-      auto  OpStr = OpToString(op);
+      auto  OpStr = operator_to_string(op);
       bool  isVarExp = lhsType->isReference() ? lhsType->asReference()->isSubtypeVariable()
                                               : (lhsEmit->isImplicitPointer() ? lhsEmit->isVariable() : true);
       if ((isVarExp &&
@@ -898,8 +899,9 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                 : eTy->getNormalBinaryOperator(
                       OpStr, {lhsEmit->isImplicitPointer() ? Maybe<bool>(lhsEmit->isVariable()) : None, rhsType});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
-          ctx->Error(String(isVarExp ? "Variation b" : "B") + "inary operator " + ctx->highlightError(OpToString(op)) +
-                         " of type " + ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
+          ctx->Error(String(isVarExp ? "Variation b" : "B") + "inary operator " +
+                         ctx->highlightError(operator_to_string(op)) + " of type " +
+                         ctx->highlightError(eTy->getFullName()) + " with right hand side type " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
         }
@@ -918,7 +920,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                          ? eTy->getVariationBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()})
                          : eTy->getNormalBinaryOperator(OpStr, {None, rhsType->asReference()->getSubType()});
         if (!opFn->isAccessible(ctx->getAccessInfo())) {
-          ctx->Error("Operator " + ctx->highlightError(OpToString(op)) + " of type " +
+          ctx->Error("Operator " + ctx->highlightError(operator_to_string(op)) + " of type " +
                          ctx->highlightError(eTy->getFullName()) + " with right hand side type: " +
                          ctx->highlightError(rhsType->toString()) + " is not accessible here",
                      fileRange);
@@ -945,14 +947,14 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
                          " but the expression on the left hand side does not have variability",
                      fileRange);
         }
-        ctx->Error("Matching binary operator " + ctx->highlightError(OpToString(op)) + " not found for type " +
+        ctx->Error("Matching binary operator " + ctx->highlightError(operator_to_string(op)) + " not found for type " +
                        ctx->highlightError(eTy->getFullName() + " with right hand side of type " +
                                            ctx->highlightError(rhsType->toString())),
                    fileRange);
       }
     } else {
       // FIXME - Implement
-      ctx->Error("Invalid type for the left hand side of the operator " + ctx->highlightError(OpToString(op)) +
+      ctx->Error("Invalid type for the left hand side of the operator " + ctx->highlightError(operator_to_string(op)) +
                      ". Left hand side is of type " + ctx->highlightError(lhsType->toString()) +
                      " and the right hand side is of type " + ctx->highlightError(rhsType->toString()),
                  fileRange);
@@ -963,7 +965,7 @@ IR::Value* BinaryExpression::emit(IR::Context* ctx) {
 Json BinaryExpression::toJson() const {
   return Json()
       ._("nodeType", "binaryExpression")
-      ._("operator", OpToString(op))
+      ._("operator", operator_to_string(op))
       ._("lhs", lhs->toJson())
       ._("rhs", rhs->toJson())
       ._("fileRange", fileRange);

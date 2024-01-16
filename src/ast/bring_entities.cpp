@@ -5,12 +5,6 @@
 
 namespace qat::ast {
 
-BroughtGroup::BroughtGroup(u32 _relative, Vec<Identifier> _entity, FileRange _fileRange)
-    : relative(_relative), entity(std::move(_entity)), fileRange(std::move(_fileRange)) {}
-
-BroughtGroup::BroughtGroup(u32 _relative, Vec<Identifier> _entity, Vec<BroughtGroup*> _members, FileRange _fileRange)
-    : relative(_relative), entity(std::move(_entity)), members(std::move(_members)), fileRange(std::move(_fileRange)) {}
-
 void BroughtGroup::addMember(BroughtGroup* mem) { members.push_back(mem); }
 
 void BroughtGroup::extendFileRange(FileRange end) { fileRange = FileRange(fileRange, end); }
@@ -32,9 +26,6 @@ Json BroughtGroup::toJson() const {
   }
   return Json()._("relative", relative)._("entity", entityName)._("members", membersJson)._("fileRange", fileRange);
 }
-
-BringEntities::BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), entities(std::move(_entities)), visibSpec(_visibSpec) {}
 
 void BringEntities::handleBrings(IR::Context* ctx) const {
   auto* currentMod = ctx->getMod();
@@ -271,7 +262,7 @@ Json BringEntities::toJson() const {
 
 BringEntities::~BringEntities() {
   for (auto* ent : entities) {
-    delete ent;
+    std::destroy_at(ent);
   }
 }
 

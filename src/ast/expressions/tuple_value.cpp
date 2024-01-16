@@ -4,8 +4,6 @@
 
 namespace qat::ast {
 
-TupleValue::TupleValue(Vec<Expression*> _members, FileRange _fileRange) : Expression(_fileRange), members(_members) {}
-
 IR::Value* TupleValue::emit(IR::Context* ctx) {
   IR::TupleType* tupleTy = nullptr;
   if (isTypeInferred() || isLocalDecl()) {

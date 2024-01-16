@@ -10,11 +10,16 @@ private:
   bool     isPacked;
 
 public:
-  MaybeType(bool isPacled, QatType* subty, FileRange range);
+  MaybeType(bool _isPacked, QatType* _subType, FileRange _fileRange)
+      : QatType(_fileRange), subTyp(_subType), isPacked(_isPacked) {}
+
+  useit static inline MaybeType* create(bool _isPacked, QatType* _subType, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(MaybeType), _isPacked, _subType, _fileRange);
+  }
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final { return TypeKind::maybe; }
+  useit AstTypeKind  typeKind() const final { return AstTypeKind::MAYBE; }
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

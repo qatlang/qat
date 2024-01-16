@@ -13,12 +13,23 @@ class CType : public QatType {
   bool     isPointerSubTypeVariable = false;
 
 public:
-  CType(IR::CTypeKind _cTypeKind, FileRange _fileRange);
-  CType(QatType* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange);
+  CType(IR::CTypeKind _cTypeKind, FileRange _fileRange) : QatType(_fileRange), cTypeKind(_cTypeKind) {}
+
+  CType(QatType* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange)
+      : QatType(_fileRange), cTypeKind(IR::CTypeKind::Pointer), subType(_pointerSubTy),
+        isPointerSubTypeVariable(_isPtrSubTyVar) {}
+
+  useit static inline CType* create(IR::CTypeKind _cTypeKind, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(CType), _cTypeKind, _fileRange);
+  }
+
+  useit static inline CType* create(QatType* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(CType), _pointerSubTy, _isPtrSubTyVar, _fileRange);
+  }
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final { return TypeKind::cType; }
+  useit AstTypeKind  typeKind() const final { return AstTypeKind::C_TYPE; }
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

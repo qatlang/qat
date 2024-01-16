@@ -12,11 +12,13 @@ namespace qat::ast {
  */
 class Self : public Expression {
 public:
-  explicit Self(FileRange _fileRange);
+  explicit Self(FileRange _fileRange) : Expression(_fileRange) {}
+
+  useit static inline Self* create(FileRange _fileRange) { return std::construct_at(OwnNormal(Self), _fileRange); }
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
-  useit NodeType   nodeType() const override { return NodeType::self; }
+  useit NodeType   nodeType() const override { return NodeType::SELF; }
 };
 
 } // namespace qat::ast

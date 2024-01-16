@@ -9,15 +9,18 @@ class PrerunArrayLiteral : public PrerunExpression, public TypeInferrable {
   Vec<PrerunExpression*> valuesExp;
 
 public:
-  useit static PrerunArrayLiteral* Create(Vec<PrerunExpression*> elements, FileRange fileRange);
+  PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRange _fileRange)
+      : PrerunExpression(_fileRange), valuesExp(_elements) {}
 
-  PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRange _fileRange);
+  useit static inline PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRange fileRange) {
+    return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, fileRange);
+  }
 
   TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;
-  useit NodeType         nodeType() const final { return NodeType::prerunArrayLiteral; }
+  useit NodeType         nodeType() const final { return NodeType::PRERUN_ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

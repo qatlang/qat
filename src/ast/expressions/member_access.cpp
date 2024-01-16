@@ -9,11 +9,6 @@
 
 namespace qat::ast {
 
-MemberAccess::MemberAccess(Expression* _instance, bool _isExpSelf, bool _isPointerAccess,
-                           Maybe<bool> _isVariationAccess, Identifier _name, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf), isPointerAccess(_isPointerAccess),
-      isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
-
 IR::Value* MemberAccess::emit(IR::Context* ctx) {
   // NOLINTBEGIN(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
   if (isExpSelf) {
@@ -29,7 +24,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
           fileRange);
     }
   } else {
-    if (instance->nodeType() == NodeType::self) {
+    if (instance->nodeType() == NodeType::SELF) {
       ctx->Error("Do not use this syntax for accessing members of the parent instance. Use " +
                      ctx->highlightError(String("''") + (isPointerAccess ? "->" : "") +
                                          (isVariationAccess.has_value() && isVariationAccess.value()

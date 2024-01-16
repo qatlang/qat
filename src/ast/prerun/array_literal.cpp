@@ -3,13 +3,6 @@
 
 namespace qat::ast {
 
-PrerunArrayLiteral::PrerunArrayLiteral(Vec<PrerunExpression*> _values, FileRange _fileRange)
-    : PrerunExpression(_fileRange), valuesExp(_values) {}
-
-PrerunArrayLiteral* PrerunArrayLiteral::Create(Vec<PrerunExpression*> elements, FileRange fileRange) {
-  return new PrerunArrayLiteral(elements, fileRange);
-}
-
 IR::PrerunValue* PrerunArrayLiteral::emit(IR::Context* ctx) {
   if (isTypeInferred()) {
     if (!inferredType->isArray()) {

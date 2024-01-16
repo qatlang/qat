@@ -9,24 +9,6 @@
 
 namespace qat::ast {
 
-ConvertorPrototype::ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName,
-                                       QatType* _candidateType, bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec,
-                                       const FileRange& _fileRange)
-    : Node(_fileRange), argName(std::move(_argName)), candidateType(_candidateType), isMemberArgument(_isMemberArg),
-      visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)) {}
-
-ConvertorPrototype* ConvertorPrototype::From(FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
-                                             bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec,
-                                             const FileRange& _fileRange) {
-  return new ConvertorPrototype(true, std::move(_nameRange), _argName, _candidateType, _isMemberArg, _visibSpec,
-                                _fileRange);
-}
-
-ConvertorPrototype* ConvertorPrototype::To(FileRange _nameRange, QatType* _candidateType,
-                                           Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange) {
-  return new ConvertorPrototype(false, std::move(_nameRange), None, _candidateType, false, _visibSpec, _fileRange);
-}
-
 void ConvertorPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 void ConvertorPrototype::define(IR::Context* ctx) {
@@ -94,12 +76,6 @@ Json ConvertorPrototype::toJson() const {
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue());
 }
 
-ConvertorDefinition::ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                         FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {
-  prototype->definitionRange = fileRange;
-}
-
 void ConvertorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
 
 IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
@@ -150,7 +126,7 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
     }
   }
   for (auto sent : sentences) {
-    if (sent->nodeType() == NodeType::memberInit) {
+    if (sent->nodeType() == NodeType::MEMBER_INIT) {
       ((ast::MemberInit*)sent)->isAllowed = true;
     }
   }

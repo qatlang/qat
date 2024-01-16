@@ -42,7 +42,7 @@ public:
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::memberPrototype; }
+  useit NodeType   nodeType() const final { return NodeType::MEMBER_PROTOTYPE; }
   ~MemberPrototype();
 };
 
@@ -52,14 +52,20 @@ private:
   MemberPrototype* prototype;
 
 public:
-  MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
+  MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+      : Node(_fileRange), sentences(_sentences), prototype(_prototype) {}
+
+  useit static inline MemberDefinition* create(MemberPrototype* _prototype, Vec<Sentence*> _sentences,
+                                               FileRange _fileRange) {
+    return std::construct_at(OwnNormal(MemberDefinition), _prototype, _sentences, _fileRange);
+  }
 
   void setMemberParent(IR::MemberParent* coreType) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::memberDefinition; }
+  useit NodeType   nodeType() const final { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

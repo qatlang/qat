@@ -7,9 +7,6 @@
 
 namespace qat::ast {
 
-PrerunMemberAccess::PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), expr(_expr), memberName(_member) {}
-
 IR::PrerunValue* PrerunMemberAccess::emit(IR::Context* ctx) {
   auto* irExp = expr->emit(ctx);
   if (irExp->getType()->isMaybe()) {

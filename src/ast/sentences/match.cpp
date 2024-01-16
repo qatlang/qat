@@ -27,8 +27,6 @@ Json MixOrChoiceMatchValue::toJson() const {
       ._("valueName", valueName.has_value() ? valueName.value() : JsonValue());
 }
 
-ExpressionMatchValue::ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
-
 Expression* ExpressionMatchValue::getExpression() const { return exp; }
 
 Json ExpressionMatchValue::toJson() const {
@@ -37,11 +35,6 @@ Json ExpressionMatchValue::toJson() const {
 }
 
 CaseResult::CaseResult(Maybe<bool> _result, bool _areAllConst) : result(_result), areAllConstant(_areAllConst) {}
-
-Match::Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-             Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(std::move(_chain)),
-      elseCase(std::move(_elseCase)) {}
 
 IR::Value* Match::emit(IR::Context* ctx) {
   auto* expEmit       = candidate->emit(ctx);

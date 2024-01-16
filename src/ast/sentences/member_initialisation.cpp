@@ -2,10 +2,6 @@
 
 namespace qat::ast {
 
-MemberInit::MemberInit(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
-                       FileRange _fileRange)
-    : Sentence(_fileRange), memName(_memName), value(_value) {}
-
 IR::Value* MemberInit::emit(IR::Context* ctx) {
   if (ctx->getActiveFunction()->isMemberFunction()) {
     auto* memFn = (IR::MemberFunction*)ctx->getActiveFunction();

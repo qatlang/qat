@@ -4,8 +4,6 @@
 
 namespace qat::ast {
 
-IntegerType::IntegerType(u32 _bitWidth, FileRange _fileRange) : QatType(std::move(_fileRange)), bitWidth(_bitWidth) {}
-
 Maybe<usize> IntegerType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
       llvm::Type::getIntNTy(ctx->llctx, bitWidth)));
@@ -28,7 +26,7 @@ IR::QatType* IntegerType::emit(IR::Context* ctx) {
 
 bool IntegerType::isBitWidth(const u32 width) const { return bitWidth == width; }
 
-TypeKind IntegerType::typeKind() const { return TypeKind::integer; }
+AstTypeKind IntegerType::typeKind() const { return AstTypeKind::INTEGER; }
 
 Json IntegerType::toJson() const {
   return Json()._("typeKind", "integer")._("bitWidth", bitWidth)._("fileRange", fileRange);

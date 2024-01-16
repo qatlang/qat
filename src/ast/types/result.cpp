@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-ResultType::ResultType(ast::QatType* _validType, ast::QatType* _errorType, bool _isPacked, FileRange _fileRange)
-    : QatType(_fileRange), validType(_validType), errorType(_errorType), isPacked(_isPacked) {}
-
 IR::QatType* ResultType::emit(IR::Context* ctx) {
   auto* validRes = validType->emit(ctx);
   if (validRes->isOpaque() && !validRes->asOpaque()->hasSubType() && !validRes->asOpaque()->hasDeducedSize()) {
@@ -29,7 +26,7 @@ IR::QatType* ResultType::emit(IR::Context* ctx) {
   return IR::ResultType::get(validRes, errorRes, isPacked, ctx);
 }
 
-TypeKind ResultType::typeKind() const { return TypeKind::result; }
+AstTypeKind ResultType::typeKind() const { return AstTypeKind::RESULT; }
 
 String ResultType::toString() const {
   return "result:[" + String(isPacked ? "pack, " : "") + validType->toString() + ", " + errorType->toString() + "]";

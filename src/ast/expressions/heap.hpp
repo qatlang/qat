@@ -12,10 +12,15 @@ private:
   Expression* count = nullptr;
 
 public:
-  HeapGet(QatType* _type, Expression* _count, FileRange _fileRange);
+  HeapGet(QatType* _type, Expression* _count, FileRange _fileRange)
+      : Expression(std::move(_fileRange)), type(_type), count(_count) {}
+
+  useit static inline HeapGet* create(QatType* _type, Expression* _count, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::heapGet; }
+  useit NodeType   nodeType() const final { return NodeType::HEAP_GET; }
   useit Json       toJson() const final;
 };
 
@@ -24,10 +29,14 @@ private:
   Expression* ptr;
 
 public:
-  HeapPut(Expression* pointer, FileRange fileRange);
+  HeapPut(Expression* pointer, FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
+
+  useit static inline HeapPut* create(Expression* _pointer, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(HeapPut), _pointer, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::heapPut; }
+  useit NodeType   nodeType() const final { return NodeType::HEAP_PUT; }
   useit Json       toJson() const final;
 };
 
@@ -39,10 +48,15 @@ private:
   Expression* count;
 
 public:
-  HeapGrow(QatType* type, Expression* ptr, Expression* count, FileRange fileRange);
+  HeapGrow(QatType* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
+      : Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
+
+  useit static inline HeapGrow* create(QatType* type, Expression* ptr, Expression* count, FileRange fileRange) {
+    return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::heapGrow; }
+  useit NodeType   nodeType() const final { return NodeType::HEAP_GROW; }
   useit Json       toJson() const final;
 };
 

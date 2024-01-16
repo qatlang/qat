@@ -6,11 +6,6 @@
 
 namespace qat::ast {
 
-ConstructorCall::ConstructorCall(Maybe<QatType*> _type, Vec<Expression*> _exps, Maybe<OwnType> _ownTy,
-                                 Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), args(std::move(_exps)), ownTy(_ownTy), ownerType(_ownerType),
-      ownCount(_ownCount) {}
-
 IR::PointerOwner ConstructorCall::getIRPtrOwnerTy(IR::Context* ctx) const {
   switch (ownTy.value_or(OwnType::parent)) {
     case OwnType::type: {

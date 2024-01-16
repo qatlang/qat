@@ -21,10 +21,17 @@ class DefineCoreType final : public Node, public Commentable {
   friend class IR::GenericCoreType;
 
 public:
-  class Member {
-  public:
+  struct Member {
     Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
-           Maybe<Expression*> _expression, FileRange _fileRange);
+           Maybe<Expression*> _expression, FileRange _fileRange)
+        : type(_type), name(_name), variability(_variability), visibSpec(_visibSpec), expression(_expression),
+          fileRange(_fileRange) {}
+
+    useit static inline Member* create(QatType* _type, Identifier _name, bool _variability,
+                                       Maybe<VisibilitySpec> _visibSpec, Maybe<Expression*> _expression,
+                                       FileRange _fileRange) {
+      return std::construct_at(OwnNormal(Member), _type, _name, _variability, _visibSpec, _expression, _fileRange);
+    }
 
     QatType*              type;
     Identifier            name;
@@ -37,10 +44,16 @@ public:
   };
 
   // Static member representation in the AST
-  class StaticMember {
-  public:
+  struct StaticMember {
     StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
-                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
+                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+        : type(_type), name(_name), variability(_variability), value(_value), visibSpec(_visibSpec),
+          fileRange(_fileRange) {}
+
+    useit static inline StaticMember* create(QatType* _type, Identifier _name, bool _variability, Expression* _value,
+                                             Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+      return std::construct_at(OwnNormal(StaticMember), _type, _name, _variability, _value, _visibSpec, _fileRange);
+    }
 
     QatType*              type;
     Identifier            name;
@@ -89,7 +102,17 @@ private:
 public:
   DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
                  FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
-                 bool _isPacked = false);
+                 bool _isPacked = false)
+      : Node(_fileRange), name(_name), checker(_checker), isPacked(_isPacked), visibSpec(_visibSpec),
+        generics(_generics), constraint(_constraint) {}
+
+  useit static inline DefineCoreType* create(Identifier _name, Maybe<PrerunExpression*> _checker,
+                                             Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
+                                             Vec<ast::GenericAbstractType*> _generics,
+                                             Maybe<PrerunExpression*> _constraint, bool _isPacked) {
+    return std::construct_at(OwnNormal(DefineCoreType), _name, _checker, _visibSpec, _fileRange, _generics, _constraint,
+                             _isPacked);
+  }
 
   COMMENTABLE_FUNCTIONS
 
@@ -124,7 +147,7 @@ public:
   useit IR::CoreType* getCoreType() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::defineCoreType; }
+  useit NodeType   nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
   ~DefineCoreType() final;
 };
 

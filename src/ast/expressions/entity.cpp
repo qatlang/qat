@@ -5,9 +5,6 @@
 
 namespace qat::ast {
 
-Entity::Entity(u32 _relative, Vec<Identifier> _name, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), names(std::move(_name)), relative(_relative) {}
-
 IR::Value* Entity::emit(IR::Context* ctx) {
   auto* fun     = ctx->getActiveFunction();
   auto  reqInfo = ctx->getAccessInfo();

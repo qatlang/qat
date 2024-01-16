@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-StringLiteral::StringLiteral(String _value, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
-
 String StringLiteral::get_value() const { return value; }
 
 void StringLiteral::addValue(const String& val, const FileRange& fRange) {

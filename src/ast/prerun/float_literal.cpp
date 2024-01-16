@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-FloatLiteral::FloatLiteral(String _value, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
-
 IR::PrerunValue* FloatLiteral::emit(IR::Context* ctx) {
   SHOW("Generating float literal for " << value)
   IR::QatType* floatResTy = nullptr;

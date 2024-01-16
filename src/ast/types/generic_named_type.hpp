@@ -15,12 +15,18 @@ private:
   Vec<FillGeneric*> genericTypes;
 
 public:
-  GenericNamedType(u32 _relative, Vec<Identifier> names, Vec<FillGeneric*> _genericTypes, FileRange _fileRange);
+  GenericNamedType(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes, FileRange _fileRange)
+      : QatType(_fileRange), relative(_relative), names(_names), genericTypes(_genericTypes) {}
+
+  useit static inline GenericNamedType* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
+                                               FileRange _fileRange) {
+    return std::construct_at(OwnNormal(GenericNamedType), _relative, _names, _genericTypes, _fileRange);
+  }
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit Json         toJson() const final;
   useit String       toString() const final;
-  useit TypeKind     typeKind() const final { return TypeKind::genericNamed; }
+  useit AstTypeKind  typeKind() const final { return AstTypeKind::GENERIC_NAMED; }
 };
 
 } // namespace qat::ast

@@ -12,11 +12,16 @@ private:
   bool     isSubtypeVar;
 
 public:
-  ReferenceType(QatType* _type, bool _variable, FileRange _fileRange);
+  ReferenceType(QatType* _type, bool _isSubtypeVar, FileRange _fileRange)
+      : QatType(_fileRange), type(_type), isSubtypeVar(_isSubtypeVar) {}
+
+  useit static inline ReferenceType* create(QatType* _type, bool _isSubtypeVar, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(ReferenceType), _type, _isSubtypeVar, _fileRange);
+  }
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final;
+  useit AstTypeKind  typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

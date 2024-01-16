@@ -2,8 +2,6 @@
 
 namespace qat::ast {
 
-Self::Self(FileRange _fileRange) : Expression(std::move(_fileRange)) {}
-
 IR::Value* Self::emit(IR::Context* ctx) {
   if (getExpectedKind() == ExpressionKind::assignable) {
     ctx->Error("Self is not assignable", fileRange);

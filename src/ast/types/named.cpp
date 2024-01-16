@@ -1,12 +1,9 @@
 #include "./named.hpp"
 #include "../../IR/stdlib.hpp"
+#include "../../IR/types/choice.hpp"
 #include "../../IR/types/region.hpp"
-#include "../../utils/split_string.hpp"
 
 namespace qat::ast {
-
-NamedType::NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), relative(_relative), names(std::move(_names)) {}
 
 IR::QatType* NamedType::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
@@ -160,7 +157,7 @@ String NamedType::getName() const { return Identifier::fullName(names).value; }
 
 u32 NamedType::getRelative() const { return relative; }
 
-TypeKind NamedType::typeKind() const { return TypeKind::Float; }
+AstTypeKind NamedType::typeKind() const { return AstTypeKind::FLOAT; }
 
 Json NamedType::toJson() const {
   Vec<JsonValue> nameJs;

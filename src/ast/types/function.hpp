@@ -2,22 +2,22 @@
 #define QAT_AST_TYPES_FUNCTION_TYPE_HPP
 
 #include "./qat_type.hpp"
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace qat::ast {
 
 class ArgumentType {
 private:
   Maybe<String> name;
-
-  QatType* type;
+  QatType*      type;
 
 public:
-  ArgumentType(QatType* type);
+  explicit ArgumentType(QatType* _type) : type(_type) {}
+  ArgumentType(String _name, QatType* _type) : name(_name), type(_type) {}
 
-  ArgumentType(String name, QatType* type);
+  useit static inline ArgumentType* create(QatType* type) { return std::construct_at(OwnNormal(ArgumentType), type); }
+  useit static inline ArgumentType* create(String _name, QatType* _type) {
+    return std::construct_at(OwnNormal(ArgumentType), _name, _type);
+  }
 
   useit bool     hasName() const;
   useit String   getName() const;
@@ -32,12 +32,17 @@ private:
   Vec<ArgumentType*> argTypes;
 
 public:
-  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange);
+  FunctionType(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange)
+      : QatType(_fileRange), returnType(_retType), argTypes(_argTypes) {}
 
-  ~FunctionType() override;
+  useit static inline FunctionType* create(QatType* _retType, Vec<ArgumentType*> _argTypes, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _fileRange);
+  }
+
+  ~FunctionType() final;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final;
+  useit AstTypeKind  typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

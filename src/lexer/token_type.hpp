@@ -73,7 +73,6 @@ enum class TokenType {
   genericTypeEnd,
   Await,
   semiColon,
-  ternary,
   isNullPointer,
   isNotNullPointer,
   assignToNullPointer,
@@ -108,6 +107,7 @@ enum class TokenType {
   selfWord,
   where,
   Do,
+  questionMark
 };
 
 } // namespace qat::lexer

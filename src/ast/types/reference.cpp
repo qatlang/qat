@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-ReferenceType::ReferenceType(QatType* _type, bool _isSubtypeVar, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar) {}
-
 Maybe<usize> ReferenceType::getTypeSizeInBits(IR::Context* ctx) const {
   return (
       usize)(ctx->dataLayout->getTypeAllocSizeInBits(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u)));
@@ -22,7 +19,7 @@ IR::QatType* ReferenceType::emit(IR::Context* ctx) {
   return IR::ReferenceType::get(isSubtypeVar, typEmit, ctx);
 }
 
-TypeKind ReferenceType::typeKind() const { return TypeKind::reference; }
+AstTypeKind ReferenceType::typeKind() const { return AstTypeKind::REFERENCE; }
 
 Json ReferenceType::toJson() const {
   return Json()

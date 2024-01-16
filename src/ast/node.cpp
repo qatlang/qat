@@ -8,7 +8,7 @@ Vec<Node*> Node::allNodes = {};
 
 void Node::clearAll() {
   for (auto* node : allNodes) {
-    delete node;
+    std::destroy_at(node);
   }
   allNodes.clear();
 }

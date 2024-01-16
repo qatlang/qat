@@ -14,15 +14,18 @@ private:
 
 public:
   PrerunPlainInit(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields, Vec<PrerunExpression*> _fieldValues,
-                  FileRange _fileRange);
+                  FileRange _fileRange)
+      : PrerunExpression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-  useit static PrerunPlainInit* Create(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
-                                       Vec<PrerunExpression*> _fieldValues, FileRange _fileRange);
+  useit static inline PrerunPlainInit* create(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
+                                              Vec<PrerunExpression*> _fieldValues, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(PrerunPlainInit), _type, _fields, _fieldValues, _fileRange);
+  }
 
   TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
-  useit NodeType         nodeType() const final { return NodeType::prerunPlainInitialiser; }
+  useit NodeType         nodeType() const final { return NodeType::PRERUN_PLAIN_INITIALISER; }
   useit Json             toJson() const final;
 };
 

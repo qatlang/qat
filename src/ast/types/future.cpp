@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-FutureType::FutureType(bool _isPacked, ast::QatType* _subType, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), subType(_subType), isPacked(_isPacked) {}
-
 Maybe<usize> FutureType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
       {llvm::Type::getInt64Ty(ctx->llctx), llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),
@@ -15,7 +12,7 @@ Maybe<usize> FutureType::getTypeSizeInBits(IR::Context* ctx) const {
 
 IR::QatType* FutureType::emit(IR::Context* ctx) { return IR::FutureType::get(subType->emit(ctx), isPacked, ctx); }
 
-TypeKind FutureType::typeKind() const { return TypeKind::future; }
+AstTypeKind FutureType::typeKind() const { return AstTypeKind::FUTURE; }
 
 Json FutureType::toJson() const {
   return Json()

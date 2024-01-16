@@ -5,9 +5,6 @@
 
 namespace qat::ast {
 
-DefineRegion::DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), visibSpec(_visibSpec) {}
-
 void DefineRegion::defineType(IR::Context* ctx) {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "region", None);

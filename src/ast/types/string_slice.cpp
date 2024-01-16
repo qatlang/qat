@@ -6,8 +6,6 @@
 
 namespace qat::ast {
 
-StringSliceType::StringSliceType(FileRange _fileRange) : QatType(std::move(_fileRange)) {}
-
 Maybe<usize> StringSliceType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
       {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), ctx->dataLayout->getProgramAddressSpace()),
@@ -16,7 +14,7 @@ Maybe<usize> StringSliceType::getTypeSizeInBits(IR::Context* ctx) const {
 
 IR::QatType* StringSliceType::emit(IR::Context* ctx) { return IR::StringSliceType::get(ctx); }
 
-TypeKind StringSliceType::typeKind() const { return TypeKind::stringSlice; }
+AstTypeKind StringSliceType::typeKind() const { return AstTypeKind::STRING_SLICE; }
 
 Json StringSliceType::toJson() const { return Json()._("typeKind", "stringSlice")._("fileRange", fileRange); }
 

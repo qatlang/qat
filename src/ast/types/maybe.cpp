@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-MaybeType::MaybeType(bool _isPacked, QatType* _subType, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), subTyp(_subType), isPacked(_isPacked) {}
-
 Maybe<usize> MaybeType::getTypeSizeInBits(IR::Context* ctx) const {
   auto subTySize = subTyp->getTypeSizeInBits(ctx);
   if (subTySize.has_value()) {

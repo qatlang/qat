@@ -4,12 +4,6 @@
 
 namespace qat::ast {
 
-TypeDefinition::TypeDefinition(Identifier _name, Maybe<PrerunExpression*> _checker,
-                               Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
-                               QatType* _subType, FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec)
-    : Node(std::move(_fileRange)), name(std::move(_name)), checker(_checker), subType(_subType),
-      constraint(_constraint), visibSpec(_visibSpec), generics(_generics) {}
-
 bool TypeDefinition::isGeneric() const { return !generics.empty(); }
 
 void TypeDefinition::setVariantName(const String& name) const { variantName = name; }

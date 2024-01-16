@@ -2,16 +2,7 @@
 
 namespace qat::ast {
 
-PreMemberFnCall::PreMemberFnCall(PrerunExpression* _instance, Identifier _memberName, Vec<PrerunExpression*> _arguments,
-                                 FileRange _fileRange)
-    : PrerunExpression(_fileRange), instance(_instance), memberName(_memberName), arguments(_arguments) {}
-
-PreMemberFnCall* PreMemberFnCall::Create(PrerunExpression* instance, Identifier memberName,
-                                         Vec<PrerunExpression*> arguments, FileRange fileRange) {
-  return new PreMemberFnCall(instance, memberName, arguments, fileRange);
-}
-
-IR::PrerunValue* PreMemberFnCall::emit(IR::Context* ctx) {
+IR::PrerunValue* PrerunMemberFnCall::emit(IR::Context* ctx) {
   auto inst = instance->emit(ctx);
   if (inst->getType()->isTyped()) {
     auto typed        = inst->getType()->asTyped();
@@ -252,7 +243,7 @@ IR::PrerunValue* PreMemberFnCall::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-Json PreMemberFnCall::toJson() const {
+Json PrerunMemberFnCall::toJson() const {
   Vec<JsonValue> argJson;
   for (auto arg : arguments) {
     argJson.push_back(arg->toJson());

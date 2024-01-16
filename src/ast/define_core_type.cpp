@@ -11,11 +11,6 @@
 
 namespace qat::ast {
 
-DefineCoreType::Member::Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
-                               Maybe<Expression*> _expression, FileRange _fileRange)
-    : type(_type), name(std::move(_name)), variability(_variability), visibSpec(_visibSpec), expression(_expression),
-      fileRange(std::move(_fileRange)) {}
-
 Json DefineCoreType::Member::toJson() const {
   return Json()
       ._("nodeType", "coreTypeMember")
@@ -27,11 +22,6 @@ Json DefineCoreType::Member::toJson() const {
       ._("fileRange", fileRange);
 }
 
-DefineCoreType::StaticMember::StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
-                                           Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : type(_type), name(std::move(_name)), variability(_variability), value(_value), visibSpec(_visibSpec),
-      fileRange(std::move(_fileRange)) {}
-
 Json DefineCoreType::StaticMember::toJson() const {
   return Json()
       ._("nodeType", "coreTypeMember")
@@ -41,14 +31,6 @@ Json DefineCoreType::StaticMember::toJson() const {
       ._("hasVisibility", visibSpec.has_value())
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);
-}
-
-DefineCoreType::DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
-                               FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics,
-                               Maybe<PrerunExpression*> _constraint, bool _isPacked)
-    : Node(std::move(_fileRange)), name(std::move(_name)), checker(_checker), isPacked(_isPacked),
-      visibSpec(_visibSpec), generics(std::move(_generics)), constraint(_constraint) {
-  SHOW("Created define core type " + name.value)
 }
 
 bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
@@ -394,8 +376,11 @@ Json DefineCoreType::toJson() const {
 }
 
 DefineCoreType::~DefineCoreType() {
-  for (auto* gen : generics) {
-    delete gen;
+  for (auto* mem : members) {
+    std::destroy_at(mem);
+  }
+  for (auto* stat : staticMembers) {
+    std::destroy_at(stat);
   }
 }
 

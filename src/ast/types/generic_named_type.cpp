@@ -6,9 +6,6 @@
 
 namespace qat::ast {
 
-GenericNamedType::GenericNamedType(u32 _relative, Vec<Identifier> _name, Vec<FillGeneric*> _types, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), relative(_relative), names(std::move(_name)), genericTypes(std::move(_types)) {}
-
 IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   SHOW("Generic named type START")
   auto* mod     = ctx->getMod();
@@ -83,7 +80,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
       for (usize i = 0; i < genericTypes.size(); i++) {
         if (genericTypes.at(i)->isPrerun()) {
           auto* gen = genericTypes.at(i);
-          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
+          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
             ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
           } else if (genericCoreTy->getGenericAt(i)->isPrerun() &&
                      (genericCoreTy->getGenericAt(i)->asPrerun()->getType() != nullptr)) {
@@ -142,7 +139,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
       for (usize i = 0; i < genericTypes.size(); i++) {
         if (genericTypes.at(i)->isPrerun()) {
           auto* gen = genericTypes.at(i);
-          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
+          if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
             ((ast::PrerunDefault*)(gen->asPrerun()))->setGenericAbstract(genericTypeDef->getGenericAt(i));
           } else if (genericTypeDef->getGenericAt(i)->isPrerun() &&
                      (genericTypeDef->getGenericAt(i)->asPrerun()->getType() != nullptr)) {

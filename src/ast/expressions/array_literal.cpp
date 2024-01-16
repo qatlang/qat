@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-ArrayLiteral::ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), values(std::move(_values)) {}
-
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
   IR::ArrayType* arrTyOfLocal = nullptr;
   if (isLocalDecl()) {

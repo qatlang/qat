@@ -10,12 +10,17 @@ class PrerunMemberAccess : public PrerunExpression {
   Identifier        memberName;
 
 public:
-  PrerunMemberAccess(PrerunExpression* _expr, Identifier _memberName, FileRange _fileRange);
+  PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRange _fileRange)
+      : PrerunExpression(std::move(_fileRange)), expr(_expr), memberName(_member) {}
+
+  useit static inline PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
+  }
 
   useit IR::PrerunValue* emit(IR::Context* ctx);
   useit Json             toJson() const;
   useit String           toString() const;
-  useit NodeType         nodeType() const { return NodeType::prerunMemberAccess; }
+  useit NodeType         nodeType() const { return NodeType::PRERUN_MEMBER_ACCESS; }
 };
 
 } // namespace qat::ast

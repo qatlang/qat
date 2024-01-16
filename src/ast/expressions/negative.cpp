@@ -3,8 +3,6 @@
 
 namespace qat::ast {
 
-Negative::Negative(Expression* _value, FileRange _fileRange) : Expression(std::move(_fileRange)), value(_value) {}
-
 IR::Value* Negative::emit(IR::Context* ctx) {
   if (isTypeInferred() && value->hasTypeInferrance()) {
     value->asTypeInferrable()->setInferenceType(inferredType);

@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-Copy::Copy(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
-
 IR::Value* Copy::emit(IR::Context* ctx) {
   if (isExpSelf) {
     if (!ctx->getActiveFunction()->isMemberFunction()) {
@@ -21,7 +18,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
       }
     }
   } else {
-    if (exp->nodeType() == NodeType::self) {
+    if (exp->nodeType() == NodeType::SELF) {
       ctx->Error("Do not use this syntax for copying the parent instance. Use " + ctx->highlightError("''copy") +
                      " instead",
                  fileRange);

@@ -22,10 +22,8 @@ add_library(QAT_AST_EXPRESSIONS
 	ok.cpp
 	operator.cpp
 	plain_initialiser.cpp
-	radix_literal.cpp
 	self.cpp
 	generic_entity.cpp
-	ternary.cpp
 	to_conversion.cpp
 	tuple_value.cpp
 	mix_choice_initialiser.cpp)

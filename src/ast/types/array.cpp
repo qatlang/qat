@@ -7,9 +7,6 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
-ArrayType::ArrayType(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), elementType(_element_type), lengthExp(_length) {}
-
 void ArrayType::typeInferenceForLength(IR::Context* ctx) const {
   if (lengthExp->hasTypeInferrance()) {
     lengthExp->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, ctx));
@@ -55,7 +52,7 @@ IR::QatType* ArrayType::emit(IR::Context* ctx) {
   }
 }
 
-TypeKind ArrayType::typeKind() const { return TypeKind::array; }
+AstTypeKind ArrayType::typeKind() const { return AstTypeKind::ARRAY; }
 
 Json ArrayType::toJson() const {
   return Json()

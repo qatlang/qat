@@ -13,10 +13,14 @@ class TypedGeneric final : public GenericAbstractType {
   mutable IR::QatType* defaultType = nullptr;
   mutable IR::QatType* typeValue   = nullptr;
 
-  TypedGeneric(usize _index, Identifier name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange);
-
 public:
-  static TypedGeneric* get(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange);
+  TypedGeneric(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange)
+      : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
+
+  useit static inline TypedGeneric* create(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy,
+                                           FileRange _fileRange) {
+    return std::construct_at(OwnNormal(TypedGeneric), _index, std::move(_name), _defaultTy, std::move(_fileRange));
+  }
 
   useit bool hasDefault() const final;
   useit IR::QatType* getDefault() const;

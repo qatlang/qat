@@ -3,16 +3,6 @@
 
 namespace qat::ast {
 
-PrerunGeneric::PrerunGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                             FileRange _range)
-    : GenericAbstractType(_index, std::move(_name), GenericKind::prerunGeneric, std::move(_range)), expTy(_expTy),
-      defaultValueAST(_defaultVal) {}
-
-PrerunGeneric* PrerunGeneric::get(usize _index, Identifier _name, QatType* _expTy,
-                                  Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
-  return new PrerunGeneric(_index, std::move(_name), _expTy, _defaultVal, std::move(_range));
-}
-
 bool PrerunGeneric::hasDefault() const { return defaultValueAST.has_value(); }
 
 IR::PrerunValue* PrerunGeneric::getDefault() const { return defaultValue; }

@@ -12,11 +12,16 @@ private:
   Maybe<Expression*> give_expr;
 
 public:
-  GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange);
+  GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
+      : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
+
+  useit static inline GiveSentence* create(Maybe<Expression*> _given_expr, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(GiveSentence), _given_expr, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) override;
   useit Json       toJson() const override;
-  useit NodeType   nodeType() const override { return NodeType::giveSentence; }
+  useit NodeType   nodeType() const override { return NodeType::GIVE_SENTENCE; }
 };
 
 } // namespace qat::ast

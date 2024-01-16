@@ -18,7 +18,14 @@ private:
   Maybe<Expression*> expression;
 
 public:
-  MixOrChoiceInitialiser(Maybe<QatType*> type, Identifier subName, Maybe<Expression*> expression, FileRange fileRange);
+  MixOrChoiceInitialiser(Maybe<QatType*> _type, Identifier _subName, Maybe<Expression*> _expression,
+                         FileRange _fileRange)
+      : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
+
+  useit static inline MixOrChoiceInitialiser* create(Maybe<QatType*> type, Identifier subName,
+                                                     Maybe<Expression*> expression, FileRange fileRange) {
+    return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
@@ -26,7 +33,7 @@ public:
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::mixTypeInitialiser; }
+  useit NodeType   nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 
 } // namespace qat::ast

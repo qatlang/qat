@@ -13,14 +13,17 @@ private:
 
 public:
   ToConversion(Expression* _source, QatType* _destinationType, FileRange _fileRange)
-      : Expression(_fileRange), source(_source), destinationType(_destinationType){SHOW("Creating ToConversion")}
+      : Expression(_fileRange), source(_source), destinationType(_destinationType) {}
 
-                                                     useit IR::Value
-                                                     * emit(IR::Context * ctx) override;
+  useit static inline ToConversion* create(Expression* _source, QatType* _destinationType, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
+  }
+
+  useit IR::Value* emit(IR::Context* ctx) override;
 
   useit Json toJson() const override;
 
-  useit NodeType nodeType() const override { return NodeType::toConversion; };
+  useit NodeType nodeType() const override { return NodeType::TO_CONVERSION; };
 };
 
 } // namespace qat::ast

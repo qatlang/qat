@@ -1,6 +1,5 @@
 add_library(QAT_AST_SENTENCES
 	assignment.cpp
-	block.cpp
 	break.cpp
 	continue.cpp
 	expression_sentence.cpp
@@ -12,8 +11,6 @@ add_library(QAT_AST_SENTENCES
 	loop_while.cpp
 	match.cpp
 	member_initialisation.cpp
-	multithread_give.cpp
-	multithread.cpp
 	say_sentence.cpp)
 
 target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")

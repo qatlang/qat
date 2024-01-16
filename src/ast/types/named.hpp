@@ -2,12 +2,7 @@
 #define QAT_AST_TYPES_NAMED_HPP
 
 #include "../../IR/context.hpp"
-#include "../box.hpp"
-#include "../function.hpp"
 #include "./qat_type.hpp"
-
-#include <string>
-#include <vector>
 
 namespace qat::ast {
 
@@ -18,12 +13,17 @@ private:
   Vec<Identifier> names;
 
 public:
-  NamedType(u32 relative, Vec<Identifier> names, FileRange fileRange);
+  NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
+      : QatType(_fileRange), relative(_relative), names(_names) {}
+
+  useit static inline NamedType* create(u32 _relative, Vec<Identifier> _names, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(NamedType), _relative, _names, _fileRange);
+  }
 
   useit String getName() const;
   useit u32    getRelative() const;
   useit IR::QatType* emit(IR::Context* ctx) final;
-  useit TypeKind     typeKind() const final;
+  useit AstTypeKind  typeKind() const final;
   useit Json         toJson() const final;
   useit String       toString() const final;
 };

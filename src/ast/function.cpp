@@ -11,21 +11,9 @@
 
 namespace qat::ast {
 
-FunctionPrototype::FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                     Maybe<QatType*> _returnType, Maybe<PrerunExpression*> _checker,
-                                     Maybe<PrerunExpression*> _genericConstraint, Maybe<MetaInfo> _metaInfo,
-                                     Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-                                     Vec<ast::GenericAbstractType*> _generics)
-    : Node(_fileRange), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
-      returnType(_returnType), metaInfo(std::move(_metaInfo)), visibSpec(_visibSpec), checker(_checker),
-      genericConstraint(_genericConstraint), generics(std::move(_generics)) {}
-
 FunctionPrototype::~FunctionPrototype() {
   for (auto* arg : arguments) {
-    delete arg;
-  }
-  for (auto* gen : generics) {
-    delete gen;
+    std::destroy_at(arg);
   }
 }
 
@@ -212,9 +200,6 @@ Json FunctionPrototype::toJson() const {
       ._("hasMetaInfo", metaInfo.has_value())
       ._("metaInfo", metaInfo.has_value() ? metaInfo.value().toJson() : JsonValue());
 }
-
-FunctionDefinition::FunctionDefinition(FunctionPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void FunctionDefinition::define(IR::Context* ctx) {
   if (!prototype->isGeneric()) {

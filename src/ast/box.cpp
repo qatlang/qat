@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-Box::Box(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), name(std::move(_name)), members(std::move(_members)), visibSpec(_visibSpec) {}
-
 void Box::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, "box", None);

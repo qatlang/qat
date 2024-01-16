@@ -15,7 +15,7 @@ MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, Identifier
 
 MemberPrototype::~MemberPrototype() {
   for (auto* arg : arguments) {
-    delete arg;
+    std::destroy_at(arg);
   }
 }
 
@@ -93,7 +93,7 @@ void MemberPrototype::define(IR::Context* ctx) {
     }
   }
   bool isSelfReturn = false;
-  if (returnType->typeKind() == TypeKind::selfType) {
+  if (returnType->typeKind() == AstTypeKind::SELF_TYPE) {
     auto* selfRet = (SelfType*)returnType;
     if (!selfRet->isJustType) {
       selfRet->isVarRef          = isVariationFn;
@@ -203,9 +203,6 @@ Json MemberPrototype::toJson() const {
       ._("arguments", args)
       ._("isVariadic", isVariadic);
 }
-
-MemberDefinition::MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
 
 void MemberDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
 

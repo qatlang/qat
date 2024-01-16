@@ -14,7 +14,12 @@ private:
   Vec<Expression*> values;
 
 public:
-  ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange);
+  ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
+      : Expression(std::move(_fileRange)), values(std::move(_values)) {}
+
+  useit static inline ArrayLiteral* create(Vec<Expression*> values, FileRange fileRange) {
+    return std::construct_at(OwnNormal(ArrayLiteral), values, fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
@@ -22,7 +27,7 @@ public:
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::arrayLiteral; }
+  useit NodeType   nodeType() const final { return NodeType::ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

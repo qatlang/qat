@@ -1,13 +1,10 @@
 #include "./default.hpp"
-#include "../../utils/number_to_position.hpp"
+#include "../../utils/utils.hpp"
 #include "../types/generic_abstract.hpp"
 #include "../types/prerun_generic.hpp"
 #include "../types/typed_generic.hpp"
 
 namespace qat::ast {
-
-PrerunDefault::PrerunDefault(Maybe<ast::QatType*> _type, FileRange range)
-    : PrerunExpression(std::move(range)), theType(_type) {}
 
 void PrerunDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
 
@@ -34,7 +31,7 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
         }
         return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getDefault()));
       } else {
-        ctx->Error(utils::numberToPosition(genVal->getIndex()) + " Generic Type Parameter " +
+        ctx->Error(utils::number_to_position(genVal->getIndex()) + " Generic Type Parameter " +
                        ctx->highlightError(genVal->getName().value) + " doesn't have a default type associated with it",
                    fileRange);
       }
@@ -47,7 +44,7 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
         }
         return genVal->asPrerun()->getDefault();
       } else {
-        ctx->Error(utils::numberToPosition(genVal->getIndex()) + " Prerun Generic Parameter " +
+        ctx->Error(utils::number_to_position(genVal->getIndex()) + " Prerun Generic Parameter " +
                        ctx->highlightError(genVal->getName().value) +
                        " doesn't have a default prerun expression associated with it",
                    fileRange);

@@ -7,11 +7,6 @@ namespace qat::ast {
 String CustomIntegerLiteral::radixDigits      = "0123456789abcdefghijklmnopqrstuvwxyz";
 String CustomIntegerLiteral::radixDigitsUpper = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-CustomIntegerLiteral::CustomIntegerLiteral(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth,
-                                           Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), radix(_radix),
-      isUnsigned(_isUnsigned), suffix(_suffix) {}
-
 #define DEFAULT_RADIX_VALUE      10u
 #define DEFAULT_INTEGER_BITWIDTH 32u
 

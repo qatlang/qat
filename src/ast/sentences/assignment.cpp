@@ -8,9 +8,6 @@ namespace qat::ast {
 
 #define MAX_RESPONSIVE_BITWIDTH 64u
 
-Assignment::Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), lhs(_lhs), value(_value) {}
-
 IR::Value* Assignment::emit(IR::Context* ctx) {
   auto* lhsVal = lhs->emit(ctx);
   if (value->hasTypeInferrance()) {
@@ -24,13 +21,13 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
       if (lhsVal->isReference()) {
         lhsVal->loadImplicitPointer(ctx->builder);
       }
-      if (value->nodeType() == NodeType::copyExpression) {
+      if (value->nodeType() == NodeType::COPY) {
         auto copyExp          = (ast::Copy*)value;
         copyExp->isAssignment = true;
         copyExp->setCreateIn(lhsVal);
         (void)value->emit(ctx);
         return nullptr;
-      } else if (value->nodeType() == NodeType::moveExpression) {
+      } else if (value->nodeType() == NodeType::MOVE_EXPRESSION) {
         auto moveExp          = (ast::Move*)value;
         moveExp->isAssignment = true;
         moveExp->setCreateIn(lhsVal);

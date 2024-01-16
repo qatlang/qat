@@ -20,14 +20,20 @@ private:
   mutable IR::MemberParent*   memberParent = nullptr;
 
 public:
-  DestructorDefinition(FileRange nameRange, Vec<Sentence*> _sentences, FileRange _fileRange);
+  DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
+      : Node(_fileRange), nameRange(_nameRange), sentences(_sentences) {}
+
+  useit static inline DestructorDefinition* create(FileRange _nameRange, Vec<Sentence*> _sentences,
+                                                   FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _sentences, _fileRange);
+  }
 
   void setMemberParent(IR::MemberParent* memberParent) const;
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::memberDefinition; }
+  useit NodeType   nodeType() const final { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-Default::Default(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), providedType(_providedType) {}
-
 IR::Value* Default::emit(IR::Context* ctx) {
   auto theType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType;
   if (theType) {

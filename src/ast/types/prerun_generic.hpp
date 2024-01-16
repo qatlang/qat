@@ -16,12 +16,17 @@ class PrerunGeneric final : public GenericAbstractType {
   mutable IR::PrerunValue* defaultValue    = nullptr;
   mutable IR::PrerunValue* expressionValue = nullptr;
 
-  PrerunGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                FileRange _range);
-
 public:
-  static PrerunGeneric* get(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                            FileRange _range);
+  PrerunGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+                FileRange _range)
+      : GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
+        defaultValueAST(_defaultVal) {}
+
+  useit static inline PrerunGeneric* get(usize _index, Identifier _name, QatType* _expTy,
+                                         Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
+    return std::construct_at(OwnNormal(PrerunGeneric), _index, std::move(_name), _expTy, _defaultVal,
+                             std::move(_range));
+  }
 
   useit bool hasDefault() const final;
   useit IR::PrerunValue* getDefault() const;

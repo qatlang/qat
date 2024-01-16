@@ -5,10 +5,6 @@
 
 namespace qat::ast {
 
-GenericEntity::GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _types, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), relative(_relative), names(std::move(_names)),
-      genericTypes(std::move(_types)) {}
-
 IR::Value* GenericEntity::emit(IR::Context* ctx) {
   auto* mod     = ctx->getMod();
   auto  reqInfo = ctx->getAccessInfo();
@@ -83,7 +79,7 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     Vec<IR::GenericToFill*> types;
     for (usize i = 0; i < genericTypes.size(); i++) {
       auto* gen = genericTypes.at(i);
-      if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::prerunDefault)) {
+      if (gen->isPrerun() && (gen->asPrerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
         SHOW("Generic is prerun and prerun generic is default expression")
         ((ast::PrerunDefault*)(genericTypes.at(i)->asPrerun()))->setGenericAbstract(genericFn->getGenericAt(i));
       } else if (genericFn->getGenericAt(i)->isPrerun() &&

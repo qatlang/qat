@@ -27,7 +27,7 @@ public:
   virtual ~QatType() = default;
   useit virtual Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const;
   useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
-  useit virtual TypeKind     typeKind() const       = 0;
+  useit virtual AstTypeKind  typeKind() const       = 0;
   useit virtual Json         toJson() const         = 0;
   useit virtual String       toString() const       = 0;
   virtual void               destroy() {}

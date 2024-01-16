@@ -9,26 +9,26 @@ namespace qat::ast {
  * I almost named this TypeType
  *
  */
-enum class TypeKind {
-  Void,  // Void type
-  array, // Array of elements of QatType type
-  named, // Struct type
-  genericNamed,
-  Float,           // Floating point number
-  integer,         // Signed integer
-  unsignedInteger, // Unsigned integer
-  stringSlice,     // String slice
-  cType,           // C type
-  tuple,           // Tuple is a product type of multiple types
-  pointer,         // Pointer to another QatType type
-  reference,       // Reference to another QatType type
-  function,
-  future,
-  genericAbstract, // Generic abstract type
-  maybe,
-  linkedGeneric,
-  result,
-  selfType,
+enum class AstTypeKind {
+  VOID,
+  ARRAY,
+  NAMED,
+  GENERIC_NAMED,
+  FLOAT,
+  INTEGER,
+  UNSIGNED_INTEGER,
+  STRING_SLICE,
+  C_TYPE,
+  TUPLE,
+  POINTER,
+  REFERENCE,
+  FUNCTION,
+  FUTURE,
+  GENERIC_ABSTRACT,
+  MAYBE,
+  LINKED_GENERIC,
+  RESULT,
+  SELF_TYPE,
 };
 
 } // namespace qat::ast

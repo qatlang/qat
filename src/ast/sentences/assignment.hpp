@@ -16,11 +16,16 @@ private:
   Expression* value;
 
 public:
-  Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange);
+  Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange)
+      : Sentence(_fileRange), lhs(_lhs), value(_value) {}
+
+  useit static inline Assignment* create(Expression* _lhs, Expression* _value, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(Assignment), _lhs, _value, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx);
   useit Json       toJson() const;
-  useit NodeType   nodeType() const { return NodeType::reassignment; }
+  useit NodeType   nodeType() const { return NodeType::ASSIGNMENT; }
 };
 
 } // namespace qat::ast

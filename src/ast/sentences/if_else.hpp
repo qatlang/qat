@@ -3,7 +3,6 @@
 
 #include "../expression.hpp"
 #include "../sentence.hpp"
-#include "./block.hpp"
 #include <optional>
 
 namespace qat::ast {
@@ -12,14 +11,19 @@ namespace qat::ast {
 // and If-Else. The Else block is optional and if omitted, IfElse becomes a
 // plain if sentence
 class IfElse : public Sentence {
-private:
   Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> chain;
   Maybe<Pair<Vec<Sentence*>, FileRange>>                  elseCase;
   Vec<Maybe<bool>>                                        knownVals;
 
 public:
   IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain, Maybe<Pair<Vec<Sentence*>, FileRange>> _else,
-         FileRange _fileRange);
+         FileRange _fileRange)
+      : Sentence(_fileRange), chain(_chain), elseCase(_else) {}
+
+  useit static inline IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
+                                     Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
+  }
 
   useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
   useit bool              getKnownValue(usize ind) const;
@@ -35,7 +39,7 @@ public:
   };
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::ifElse; }
+  useit NodeType   nodeType() const final { return NodeType::IF_ELSE_IF; }
 };
 
 } // namespace qat::ast

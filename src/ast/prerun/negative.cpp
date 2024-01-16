@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-PrerunNegative::PrerunNegative(PrerunExpression* _value, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(_value) {}
-
 IR::PrerunValue* PrerunNegative::emit(IR::Context* ctx) {
   if (isTypeInferred()) {
     if (value->hasTypeInferrance()) {

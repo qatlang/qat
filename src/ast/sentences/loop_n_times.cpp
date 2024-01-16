@@ -1,12 +1,8 @@
 #include "./loop_n_times.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../utils/unique_id.hpp"
-#include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
-
-LoopNTimes::LoopNTimes(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), sentences(std::move(_snts)), count(_count), tag(std::move(_tag)) {}
 
 bool LoopNTimes::hasTag() const { return tag.has_value(); }
 

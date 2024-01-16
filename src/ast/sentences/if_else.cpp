@@ -4,10 +4,6 @@
 
 namespace qat::ast {
 
-IfElse::IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
-               Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), chain(std::move(_chain)), elseCase(std::move(_else)) {}
-
 Pair<bool, usize> IfElse::trueKnownValueBefore(usize ind) const {
   for (usize i = 0; i < ind; i++) {
     if (knownVals.at(i).has_value() && knownVals.at(i).value()) {

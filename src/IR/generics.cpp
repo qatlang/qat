@@ -2,7 +2,7 @@
 #include "../ast/types/generic_abstract.hpp"
 #include "../ast/types/prerun_generic.hpp"
 #include "../ast/types/typed_generic.hpp"
-#include "../utils/number_to_position.hpp"
+#include "../utils/utils.hpp"
 #include "./types/typed.hpp"
 #include "./value.hpp"
 
@@ -20,7 +20,7 @@ void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& generics, Ve
             generics.at(i)->asTyped()->setType(types.at(i)->asPrerun()->getType()->asTyped()->getSubType());
           } else {
             ctx->Error(
-                utils::numberToPosition(i + 1) + " Generic Parameter " +
+                utils::number_to_position(i + 1) + " Generic Parameter " +
                     ctx->highlightError(generics.at(i)->getName().value) +
                     " expects a type or a constant expression that gives a type, but a normal constant expression was provided",
                 fileRange);
@@ -30,7 +30,7 @@ void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& generics, Ve
         if (generics.at(i)->isSet()) {
           types.push_back(IR::GenericToFill::GetType(generics.at(i)->asTyped()->getType(), generics.at(i)->getRange()));
         } else {
-          ctx->Error("No type set for " + utils::numberToPosition(i + 1) + " Generic Parameter " +
+          ctx->Error("No type set for " + utils::number_to_position(i + 1) + " Generic Parameter " +
                          ctx->highlightError(generics.at(i)->getName().value) +
                          " and it doesn't have a default type associated with it",
                      generics.at(i)->getRange());
@@ -45,7 +45,7 @@ void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& generics, Ve
             generics.at(i)->asPrerun()->setExpression(new IR::PrerunValue(IR::TypedType::get(types.at(i)->asType())));
           }
         } else {
-          ctx->Error(utils::numberToPosition(i + 1) + " Generic Parameter " +
+          ctx->Error(utils::number_to_position(i + 1) + " Generic Parameter " +
                          ctx->highlightError(generics.at(i)->getName().value) +
                          " expects a constant expression, not a type",
                      fileRange);
@@ -55,7 +55,7 @@ void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& generics, Ve
           types.push_back(
               IR::GenericToFill::GetPrerun(generics.at(i)->asPrerun()->getPrerun(), generics.at(i)->getRange()));
         } else {
-          ctx->Error("No const expression set for " + utils::numberToPosition(i + 1) + " Generic Parameter " +
+          ctx->Error("No const expression set for " + utils::number_to_position(i + 1) + " Generic Parameter " +
                          ctx->highlightError(generics.at(i)->getName().value) +
                          " and it doesn't have a default const expression associated with it",
                      generics.at(i)->getRange());

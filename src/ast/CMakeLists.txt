@@ -1,5 +1,4 @@
 add_library(QAT_AST
-	argument.cpp
 	box.cpp
 	bring_bitwidths.cpp
 	bring_paths.cpp

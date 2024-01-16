@@ -18,10 +18,15 @@ private:
   SayType          sayType;
 
 public:
-  SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange);
+  SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange)
+      : Sentence(_fileRange), expressions(_expressions), sayType(_sayTy) {}
+
+  useit static inline SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::saySentence; }
+  useit NodeType   nodeType() const final { return NodeType::SAY_LIKE; }
   useit Json       toJson() const final;
 };
 

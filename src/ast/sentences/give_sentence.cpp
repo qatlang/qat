@@ -3,14 +3,11 @@
 
 namespace qat::ast {
 
-GiveSentence::GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
-
 IR::Value* GiveSentence::emit(IR::Context* ctx) {
   auto* fun = ctx->getActiveFunction();
   if (give_expr.has_value()) {
     if (fun->getType()->asFunction()->getReturnType()->isReturnSelf()) {
-      if (give_expr.value()->nodeType() != NodeType::self) {
+      if (give_expr.value()->nodeType() != NodeType::SELF) {
         ctx->Error("This function is marked to return '' and cannot return anything else", fileRange);
       }
     }

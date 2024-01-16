@@ -4,11 +4,6 @@
 
 namespace qat::ast {
 
-NoneExpression::NoneExpression(Maybe<FileRange> _isPacked, QatType* _type, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
-
-bool NoneExpression::hasTypeSet() const { return type != nullptr; }
-
 IR::Value* NoneExpression::emit(IR::Context* ctx) {
   if (type || isTypeInferred()) {
     if (isTypeInferred()) {

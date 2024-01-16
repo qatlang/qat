@@ -2,9 +2,6 @@
 
 namespace qat::ast {
 
-UnsignedLiteral::UnsignedLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
-
 IR::PrerunValue* UnsignedLiteral::emit(IR::Context* ctx) {
   if (isTypeInferred() && !inferredType->isUnsignedInteger() &&
       (inferredType->isCType() && !inferredType->asCType()->getSubType()->isUnsignedInteger())) {

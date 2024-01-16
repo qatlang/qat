@@ -3,6 +3,7 @@
 
 #include "../../IR/context.hpp"
 #include "../../utils/identifier.hpp"
+#include "./qat_type.hpp"
 
 namespace qat::ast {
 
@@ -21,7 +22,10 @@ protected:
   GenericKind kind;
   FileRange   range;
 
-  GenericAbstractType(usize index, Identifier name, GenericKind kind, FileRange range);
+  GenericAbstractType(usize _index, Identifier _name, GenericKind _kind, FileRange _range)
+      : index(_index), name(std::move(_name)), kind(_kind), range(std::move(_range)) {
+    ast::QatType::generics.push_back(this);
+  }
 
 public:
   useit usize      getIndex() const;

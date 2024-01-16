@@ -17,8 +17,13 @@ class FillGeneric {
   FillGenericKind kind;
 
 public:
-  explicit FillGeneric(QatType* type);
-  explicit FillGeneric(PrerunExpression* expression);
+  explicit FillGeneric(QatType* type) : data(type), kind(FillGenericKind::typed) {}
+  explicit FillGeneric(PrerunExpression* expression) : data(expression), kind(FillGenericKind::prerun) {}
+
+  useit static inline FillGeneric* create(QatType* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
+  useit static inline FillGeneric* create(PrerunExpression* _exp) {
+    return std::construct_at(OwnNormal(FillGeneric), _exp);
+  }
 
   useit bool isType() const;
   useit bool isPrerun() const;

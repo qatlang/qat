@@ -6,37 +6,10 @@
 
 namespace qat::ast {
 
-ConstructorPrototype::ConstructorPrototype(ConstructorType _type, FileRange _nameRange, Vec<Argument*> _arguments,
-                                           Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
-                                           Maybe<Identifier> _argName)
-    : Node(std::move(_fileRange)), arguments(std::move(_arguments)), visibSpec(_visibSpec), type(_type),
-      argName(std::move(_argName)), nameRange(std::move(_nameRange)) {}
-
 ConstructorPrototype::~ConstructorPrototype() {
   for (auto* arg : arguments) {
-    delete arg;
+    std::destroy_at(arg);
   }
-}
-
-ConstructorPrototype* ConstructorPrototype::Normal(FileRange nameRange, Vec<Argument*> args,
-                                                   Maybe<VisibilitySpec> visibSpec, FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::normal, nameRange, std::move(args), visibSpec,
-                                       std::move(fileRange));
-}
-
-ConstructorPrototype* ConstructorPrototype::Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
-                                                    FileRange fileRange) {
-  return new ast::ConstructorPrototype(ConstructorType::Default, nameRange, {}, visibSpec, std::move(fileRange));
-}
-
-ConstructorPrototype* ConstructorPrototype::Copy(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
-                                                 FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::copy, nameRange, {}, visibSpec, std::move(fileRange), _argName);
-}
-
-ConstructorPrototype* ConstructorPrototype::Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange,
-                                                 FileRange fileRange, Identifier _argName) {
-  return new ast::ConstructorPrototype(ConstructorType::move, nameRange, {}, visibSpec, std::move(fileRange), _argName);
 }
 
 IR::Value* ConstructorPrototype::emit(IR::Context* ctx) { return nullptr; }
@@ -185,10 +158,6 @@ Json ConstructorPrototype::toJson() const {
       ._("fileRange", fileRange);
 }
 
-ConstructorDefinition::ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                             FileRange _fileRange)
-    : Node(std::move(_fileRange)), sentences(std::move(_sentences)), prototype(_prototype) {}
-
 void ConstructorDefinition::define(IR::Context* ctx) {
   prototype->define(ctx);
   functions.push_back(prototype->memberFunction);
@@ -258,7 +227,7 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
     }
   }
   for (auto sent : sentences) {
-    if (sent->nodeType() == NodeType::memberInit) {
+    if (sent->nodeType() == NodeType::MEMBER_INIT) {
       ((ast::MemberInit*)sent)->isAllowed = true;
     }
   }

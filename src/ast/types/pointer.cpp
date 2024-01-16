@@ -5,11 +5,6 @@
 
 namespace qat::ast {
 
-PointerType::PointerType(QatType* _type, bool _isSubtypeVar, PtrOwnType ownTy, bool _isNonNull,
-                         Maybe<QatType*> _ownTyTy, bool _isMultiPtr, FileRange _fileRange)
-    : QatType(std::move(_fileRange)), type(_type), ownTyp(ownTy), ownerTyTy(_ownTyTy), isMultiPtr(_isMultiPtr),
-      isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNull) {}
-
 Maybe<usize> PointerType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
       isMultiPtr
@@ -98,7 +93,7 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
                               ctx);
 }
 
-TypeKind PointerType::typeKind() const { return TypeKind::pointer; }
+AstTypeKind PointerType::typeKind() const { return AstTypeKind::POINTER; }
 
 Json PointerType::toJson() const {
   return Json()

@@ -14,12 +14,16 @@ class SelfType : public QatType {
   bool isVarRef          = false;
 
 public:
-  SelfType(bool isJustType, FileRange _fileRange);
+  SelfType(bool _isJustType, FileRange _fileRange) : QatType(_fileRange), isJustType(_isJustType) {}
+
+  useit static inline SelfType* create(bool _isJustType, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
+  }
 
   useit IR::QatType* emit(IR::Context* ctx);
   useit Json         toJson() const;
   useit String       toString() const;
-  useit TypeKind     typeKind() const { return TypeKind::selfType; }
+  useit AstTypeKind  typeKind() const { return AstTypeKind::SELF_TYPE; }
 };
 
 } // namespace qat::ast

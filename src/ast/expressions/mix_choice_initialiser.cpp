@@ -2,10 +2,6 @@
 
 namespace qat::ast {
 
-MixOrChoiceInitialiser::MixOrChoiceInitialiser(Maybe<QatType*> _type, Identifier _subName,
-                                               Maybe<Expression*> _expression, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
-
 IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
   // FIXME - Support heaped value
   SHOW("Mix/Choice type initialiser")

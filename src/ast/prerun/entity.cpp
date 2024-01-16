@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-PrerunEntity::PrerunEntity(u32 _relative, Vec<Identifier> _ids, FileRange _range)
-    : PrerunExpression(std::move(_range)), relative(_relative), identifiers(std::move(_ids)) {}
-
 IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
   SHOW("PrerunEntity")
   auto* mod  = ctx->getMod();

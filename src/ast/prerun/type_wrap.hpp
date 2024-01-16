@@ -10,12 +10,16 @@ class TypeWrap : public PrerunExpression {
   ast::QatType* theType;
 
 public:
-  TypeWrap(ast::QatType* theType, FileRange fileRange);
+  TypeWrap(ast::QatType* _theType, FileRange _fileRange) : PrerunExpression(_fileRange), theType(_theType) {}
+
+  useit static inline TypeWrap* create(ast::QatType* _theType, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(TypeWrap), _theType, _fileRange);
+  }
 
   IR::PrerunValue* emit(IR::Context* ctx);
   Json             toJson() const;
   String           toString() const;
-  NodeType         nodeType() const { return NodeType::typeWrap; }
+  NodeType         nodeType() const { return NodeType::TYPE_WRAP; }
 };
 
 } // namespace qat::ast

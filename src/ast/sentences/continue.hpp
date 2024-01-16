@@ -9,10 +9,14 @@ class Continue : public Sentence {
   Maybe<Identifier> tag;
 
 public:
-  Continue(Maybe<Identifier> _tag, FileRange _fileRange);
+  Continue(Maybe<Identifier> _tag, FileRange _fileRange) : Sentence(_fileRange), tag(_tag) {}
+
+  useit static inline Continue* create(Maybe<Identifier> _tag, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(Continue), _tag, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::Continue; }
+  useit NodeType   nodeType() const final { return NodeType::CONTINUE; }
   useit Json       toJson() const final;
 };
 

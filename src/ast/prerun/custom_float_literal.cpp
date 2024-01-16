@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-CustomFloatLiteral::CustomFloatLiteral(String _value, String _kind, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), kind(std::move(_kind)) {}
-
 IR::PrerunValue* CustomFloatLiteral::emit(IR::Context* ctx) {
   IR::QatType* floatResTy = nullptr;
   if (isTypeInferred()) {

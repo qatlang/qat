@@ -410,6 +410,7 @@ Config::Config(u64 count, const char** args)
                       errorCode.message(),
                   out);
             }
+            outputPath = out;
           }
           i++;
         } else {

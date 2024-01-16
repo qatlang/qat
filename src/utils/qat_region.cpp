@@ -42,7 +42,7 @@ void TrackedRegion::destroyMembers() {
 }
 
 void* TrackedRegion::getMemory(DestructorFnPtrTy dstrFn, usize typeSize) {
-  constexpr auto defaultBlockSize = 8192;
+  constexpr auto defaultBlockSize = 4096;
   constexpr auto usizeSize        = sizeof(usize);
   constexpr auto u8PtrSize        = sizeof(u8*);
   constexpr auto fnPtrSize        = sizeof(DestructorFnPtrTy);
@@ -117,7 +117,7 @@ void QatRegion::destroyAllBlocks() {
 }
 
 void* QatRegion::getMemory(usize typeSize) {
-  constexpr auto defaultBlockSize = 8192;
+  constexpr auto defaultBlockSize = 16384;
   constexpr auto usizeSize        = sizeof(usize);
   constexpr auto u8PtrSize        = sizeof(u8*);
   void**         nextBlockPtr     = nullptr;

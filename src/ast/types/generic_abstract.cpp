@@ -5,11 +5,6 @@
 
 namespace qat::ast {
 
-GenericAbstractType::GenericAbstractType(usize _index, Identifier _name, GenericKind _kind, FileRange _range)
-    : index(_index), name(std::move(_name)), kind(_kind), range(std::move(_range)) {
-  ast::QatType::generics.push_back(this);
-}
-
 usize GenericAbstractType::getIndex() const { return index; }
 
 Identifier GenericAbstractType::getName() const { return name; }

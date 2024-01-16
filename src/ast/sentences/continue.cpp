@@ -4,9 +4,6 @@
 
 namespace qat::ast {
 
-Continue::Continue(Maybe<Identifier> _tag, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), tag(std::move(_tag)) {}
-
 IR::Value* Continue::emit(IR::Context* ctx) {
   if (ctx->loopsInfo.empty()) {
     ctx->Error("Continue sentence is not present inside any loop block", fileRange);

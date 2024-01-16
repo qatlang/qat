@@ -4,10 +4,6 @@
 
 namespace qat::ast {
 
-ModInfo::ModInfo(MetaInfo _metaInfo, FileRange _fileRange) : Node(std::move(_fileRange)), metaInfo(_metaInfo) {
-  SHOW("Created module info")
-}
-
 void ModInfo::define(IR::Context* ctx) {
   SHOW("ModInfo - Create Module")
   auto* mod = ctx->getMod();

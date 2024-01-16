@@ -9,22 +9,24 @@
 
 namespace qat::ast {
 
-// Box is a container for objects in the
-// QAT language. It is not a structural container,
-// but exists merely to avoid conflict between
-// libraries
 class Box : public Node {
   Identifier            name;
   Vec<Node*>            members;
   Maybe<VisibilitySpec> visibSpec;
 
 public:
-  Box(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange);
+  Box(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+      : Node(_fileRange), name(_name), members(_members), visibSpec(_visibSpec) {}
+
+  useit static inline Box* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
+                                  FileRange _fileRange) {
+    return std::construct_at(OwnNormal(Box), _name, _members, _visibSpec, _fileRange);
+  }
 
   void  createModule(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::box; }
+  useit NodeType   nodeType() const final { return NodeType::BOX; }
 };
 
 } // namespace qat::ast

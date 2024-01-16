@@ -19,11 +19,16 @@ private:
   u32             relative;
 
 public:
-  Entity(u32 relative, Vec<Identifier> _name, FileRange _fileRange);
+  Entity(u32 _relative, Vec<Identifier> _name, FileRange _fileRange)
+      : Expression(std::move(_fileRange)), names(std::move(_name)), relative(_relative) {}
+
+  static inline Entity* create(u32 relative, Vec<Identifier> _name, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(Entity), relative, _name, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx);
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::entity; }
+  useit NodeType   nodeType() const final { return NodeType::ENTITY; }
 };
 
 } // namespace qat::ast

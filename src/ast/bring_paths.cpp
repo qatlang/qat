@@ -3,11 +3,6 @@
 
 namespace qat::ast {
 
-BringPaths::BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-                       Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), isMember(_isMember), paths(std::move(_paths)), visibSpec(_visibSpec),
-      names(std::move(_names)) {}
-
 void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   if (visibSpec.has_value()) {

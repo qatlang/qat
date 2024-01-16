@@ -29,7 +29,14 @@ private:
 
 public:
   ConstructorCall(Maybe<QatType*> _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy, Maybe<QatType*> _ownerType,
-                  Maybe<Expression*> _ownCount, FileRange _fileRange);
+                  Maybe<Expression*> _ownCount, FileRange _fileRange)
+      : Expression(_fileRange), type(_type), args(_args), ownTy(_ownTy), ownerType(_ownerType), ownCount(_ownCount) {}
+
+  useit static inline ConstructorCall* create(Maybe<QatType*> _type, Vec<Expression*> _args, Maybe<OwnType> _ownTy,
+                                              Maybe<QatType*> _ownerType, Maybe<Expression*> _ownCount,
+                                              FileRange _fileRange) {
+    return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _ownTy, _ownerType, _ownCount, _fileRange);
+  }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
@@ -37,7 +44,7 @@ public:
   useit bool isOwning() const;
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::constructorCall; }
+  useit NodeType   nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
   useit Json       toJson() const final;
 };
 

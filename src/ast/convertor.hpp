@@ -30,20 +30,29 @@ private:
 
   void setMemberParent(IR::MemberParent* _memberParent) const;
 
-  ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
-                     bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
-
 public:
-  static ConvertorPrototype* From(FileRange nameRange, Maybe<Identifier> argName, QatType* _candidateType,
-                                  bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+  ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
+                     bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange)
+      : Node(_fileRange), argName(std::move(_argName)), candidateType(_candidateType), isMemberArgument(_isMemberArg),
+        visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)) {}
 
-  static ConvertorPrototype* To(FileRange nameRange, QatType* _candidateType, Maybe<VisibilitySpec> visibSpec,
-                                const FileRange& fileRange);
+  static ConvertorPrototype* create_from(FileRange _nameRange, Maybe<Identifier> _argName, QatType* _candidateType,
+                                         bool _isMemberArg, Maybe<VisibilitySpec> _visibSpec,
+                                         const FileRange& _fileRange) {
+    return std::construct_at(OwnNormal(ConvertorPrototype), true, _nameRange, _argName, _candidateType, _isMemberArg,
+                             _visibSpec, _fileRange);
+  }
+
+  static ConvertorPrototype* create_to(FileRange _nameRange, QatType* _candidateType, Maybe<VisibilitySpec> _visibSpec,
+                                       const FileRange& _fileRange) {
+    return std::construct_at(OwnNormal(ConvertorPrototype), false, _nameRange, None, _candidateType, false, _visibSpec,
+                             _fileRange);
+  }
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::convertorPrototype; }
+  useit NodeType   nodeType() const final { return NodeType::CONVERTOR_PROTOTYPE; }
 };
 
 class ConvertorDefinition : public Node {
@@ -56,12 +65,20 @@ private:
   void setMemberParent(IR::MemberParent* memParent) const;
 
 public:
-  ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange);
+  ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+      : Node(_fileRange), sentences(_sentences), prototype(_prototype) {
+    prototype->definitionRange = fileRange;
+  }
+
+  useit static inline ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
+                                                  FileRange _fileRange) {
+    return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
+  }
 
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::functionDefinition; }
+  useit NodeType   nodeType() const final { return NodeType::FUNCTION_DEFINITION; }
 };
 
 } // namespace qat::ast

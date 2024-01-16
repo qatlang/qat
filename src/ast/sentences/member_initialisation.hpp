@@ -17,10 +17,17 @@ class MemberInit : public Sentence {
   bool isAllowed = false;
 
 public:
-  MemberInit(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue, FileRange _fileRange);
+  MemberInit(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue, FileRange _fileRange)
+      : Sentence(_fileRange), memName(_memName), value(_value),
+        isInitOfMixVariantWithoutValue(_isInitOfMixVariantWithoutValue) {}
+
+  useit static inline MemberInit* create(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
+                                         FileRange _fileRange) {
+    return std::construct_at(OwnNormal(MemberInit), _memName, _value, _isInitOfMixVariantWithoutValue, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::memberInit; }
+  useit NodeType   nodeType() const final { return NodeType::MEMBER_INIT; }
   useit Json       toJson() const final;
 };
 

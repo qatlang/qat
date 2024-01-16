@@ -2,9 +2,6 @@
 
 namespace qat::ast {
 
-BooleanLiteral::BooleanLiteral(bool _value, FileRange _fileRange)
-    : PrerunExpression(std::move(_fileRange)), value(_value) {}
-
 IR::PrerunValue* BooleanLiteral::emit(IR::Context* ctx) {
   return new IR::PrerunValue(llvm::ConstantInt::getBool(ctx->llctx, value), IR::UnsignedType::getBool(ctx));
 }

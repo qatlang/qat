@@ -6,9 +6,6 @@
 
 namespace qat::ast {
 
-IsExpression::IsExpression(Expression* _subExpr, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), subExpr(_subExpr) {}
-
 IR::Value* IsExpression::emit(IR::Context* ctx) {
   if (subExpr) {
     SHOW("Found sub expression")

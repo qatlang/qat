@@ -8,14 +8,11 @@ namespace qat::ast {
 
 #define MALLOC_ARG_BITWIDTH 64
 
-HeapGet::HeapGet(ast::QatType* _type, ast::Expression* _count, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), count(_count) {}
-
 IR::Value* HeapGet::emit(IR::Context* ctx) {
   auto*      mod      = ctx->getMod();
   IR::Value* countRes = nullptr;
   if (count) {
-    if (count->nodeType() == NodeType::Default) {
+    if (count->nodeType() == NodeType::DEFAULT) {
       ctx->Error("Default value for usize is 0, which is an invalid value for the number of instances to allocate",
                  count->fileRange);
     } else if (count->hasTypeInferrance()) {
@@ -77,10 +74,8 @@ Json HeapGet::toJson() const {
       ._("fileRange", fileRange);
 }
 
-HeapPut::HeapPut(Expression* pointer, FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
-
 IR::Value* HeapPut::emit(IR::Context* ctx) {
-  if (ptr->nodeType() == NodeType::nullPointer) {
+  if (ptr->nodeType() == NodeType::NULL_POINTER) {
     ctx->Error("Null pointer cannot be freed", ptr->fileRange);
   }
   auto* exp   = ptr->emit(ctx);
@@ -119,9 +114,6 @@ IR::Value* HeapPut::emit(IR::Context* ctx) {
 Json HeapPut::toJson() const {
   return Json()._("nodeType", "heapPut")._("pointer", ptr->toJson())._("fileRange", fileRange);
 }
-
-HeapGrow::HeapGrow(QatType* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
-    : Expression(std::move(_fileRange)), type(_type), ptr(_ptr), count(_count) {}
 
 IR::Value* HeapGrow::emit(IR::Context* ctx) {
   auto* typ    = type->emit(ctx);

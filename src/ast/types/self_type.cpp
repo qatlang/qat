@@ -3,8 +3,6 @@
 
 namespace qat::ast {
 
-SelfType::SelfType(bool _isJustType, FileRange _fileRange) : QatType(_fileRange), isJustType(_isJustType) {}
-
 IR::QatType* SelfType::emit(IR::Context* ctx) {
   if (ctx->hasActiveFunction() && ctx->getActiveFunction()->isMemberFunction()) {
     if (isJustType) {

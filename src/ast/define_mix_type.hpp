@@ -8,7 +8,6 @@
 namespace qat::ast {
 
 class DefineMixType : public Node {
-private:
   Identifier                             name;
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
   bool                                   isPacked;
@@ -20,8 +19,17 @@ private:
   IR::OpaqueType* opaquedType = nullptr;
 
 public:
-  DefineMixType(Identifier name, Vec<Pair<Identifier, Maybe<QatType*>>> subTypes, Vec<FileRange> ranges,
-                Maybe<usize> defaultVal, bool isPacked, Maybe<VisibilitySpec> visibSpec, FileRange fileRange);
+  DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes, Vec<FileRange> _ranges,
+                Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+      : Node(_fileRange), name(_name), subtypes(_subTypes), isPacked(_isPacked), visibSpec(_visibSpec),
+        fRanges(_ranges), defaultVal(_defaultVal) {}
+
+  useit static inline DefineMixType* create(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes,
+                                            Vec<FileRange> _ranges, Maybe<usize> _defaultVal, bool _isPacked,
+                                            Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DefineMixType), _name, _subTypes, _ranges, _defaultVal, _isPacked, _visibSpec,
+                             _fileRange);
+  }
 
   void       createType(IR::Context* ctx);
   void       defineType(IR::Context* ctx) final;
@@ -29,7 +37,7 @@ public:
   useit bool isGeneric() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::defineMixType; }
+  useit NodeType   nodeType() const final { return NodeType::DEFINE_MIX_TYPE; }
 };
 
 } // namespace qat::ast

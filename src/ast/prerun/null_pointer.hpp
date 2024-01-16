@@ -14,14 +14,19 @@ class NullPointer : public PrerunExpression, public TypeInferrable {
   Maybe<ast::QatType*> providedType;
 
 public:
-  explicit NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange);
+  NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
+      : PrerunExpression(_fileRange), providedType(_providedType) {}
+
+  useit static inline NullPointer* create(Maybe<ast::QatType*> _providedType, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
+  }
 
   TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;
   useit String           toString() const final;
-  useit NodeType         nodeType() const override { return NodeType::nullPointer; }
+  useit NodeType         nodeType() const override { return NodeType::NULL_POINTER; }
 };
 
 } // namespace qat::ast

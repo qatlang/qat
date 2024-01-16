@@ -3,9 +3,6 @@
 
 namespace qat::ast {
 
-LoopInfinite::LoopInfinite(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange)
-    : Sentence(std::move(_fileRange)), sentences(std::move(_sentences)), tag(std::move(_tag)) {}
-
 IR::Value* LoopInfinite::emit(IR::Context* ctx) {
   String uniqueName;
   if (tag.has_value()) {

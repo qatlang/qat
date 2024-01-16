@@ -3,7 +3,6 @@
 
 #include "../expression.hpp"
 #include "../sentence.hpp"
-#include "./block.hpp"
 
 namespace qat::ast {
 
@@ -18,11 +17,17 @@ class LoopNTimes : public Sentence {
   Maybe<Identifier> tag;
 
 public:
-  LoopNTimes(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange);
+  LoopNTimes(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange)
+      : Sentence(_fileRange), sentences(_snts), count(_count), tag(_tag) {}
+
+  useit static inline LoopNTimes* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag,
+                                         FileRange _fileRange) {
+    return std::construct_at(OwnNormal(LoopNTimes), _count, _snts, _tag, _fileRange);
+  }
 
   useit bool hasTag() const;
   useit IR::Value* emit(IR::Context* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::loopTimes; }
+  useit NodeType   nodeType() const final { return NodeType::LOOP_N_TIMES; }
   useit Json       toJson() const final;
 };
 

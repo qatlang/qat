@@ -4,7 +4,6 @@
 #include "../expression.hpp"
 #include "../node_type.hpp"
 #include "../sentence.hpp"
-#include "./block.hpp"
 
 namespace qat::ast {
 
@@ -20,11 +19,17 @@ class LoopWhile : public Sentence {
 
 public:
   LoopWhile(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag,
-            FileRange _fileRange);
+            FileRange _fileRange)
+      : Sentence(_fileRange), condition(_condition), sentences(_sentences), tag(_tag), isDoAndLoop(_isDoAndLoop) {}
+
+  useit static inline LoopWhile* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
+                                        Maybe<Identifier> _tag, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(LoopWhile), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::loopWhile; }
+  useit NodeType   nodeType() const final { return NodeType::LOOP_WHILE; }
 };
 
 } // namespace qat::ast

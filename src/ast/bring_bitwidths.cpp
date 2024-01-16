@@ -4,13 +4,10 @@
 
 namespace qat::ast {
 
-BringBitwidths::BringBitwidths(Vec<ast::QatType*> _broughtTypes, FileRange _fileRange)
-    : Node(_fileRange), broughtTypes(_broughtTypes) {}
-
 void BringBitwidths::handleBrings(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   for (auto typ : broughtTypes) {
-    if (typ->typeKind() == TypeKind::integer) {
+    if (typ->typeKind() == AstTypeKind::INTEGER) {
       auto intAst = (IntegerType*)typ;
       // FIXME
       if (intAst->bitWidth > 128) {
@@ -21,7 +18,7 @@ void BringBitwidths::handleBrings(IR::Context* ctx) const {
       } else {
         mod->addIntegerBitwidth(intAst->bitWidth);
       }
-    } else if (typ->typeKind() == TypeKind::unsignedInteger) {
+    } else if (typ->typeKind() == AstTypeKind::UNSIGNED_INTEGER) {
       auto uintAst = (UnsignedType*)typ;
       // FIXME
       if (uintAst->bitWidth > 128) {

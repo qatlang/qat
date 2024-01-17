@@ -8,6 +8,8 @@ LinkNames::LinkNames() : units(), foreignID(), parentMod(nullptr) {}
 LinkNames::LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, IR::QatModule* _mod)
     : units(_units), foreignID(_foreignID), parentMod(_mod) {}
 
+void LinkNames::setLinkAlias(Maybe<String> _linkAlias) { linkAlias = _linkAlias; }
+
 void LinkNames::addUnit(LinkNameUnit unit, Maybe<String> entityForeignID) {
   units.push_back(unit);
   if (entityForeignID) {
@@ -17,20 +19,25 @@ void LinkNames::addUnit(LinkNameUnit unit, Maybe<String> entityForeignID) {
 
 LinkNames LinkNames::newWith(LinkNameUnit unit, Maybe<String> entityForeignID) {
   auto result = *this;
+  SHOW("Entity foreign ID has value: " << entityForeignID.has_value())
   result.addUnit(unit, entityForeignID);
   return result;
 }
 
 String LinkNames::toName() const {
+  if (linkAlias.has_value()) {
+    return linkAlias.value();
+  }
   auto isForeign = [&](String const& id) {
     if (foreignID.has_value()) {
+      SHOW("Foreign ID has value: " << foreignID.value() << " and id to check is " << id)
       return (foreignID.value() == id);
     } else {
       return parentMod && parentMod->isInForeignModuleOfType(id);
     }
   };
   if (isForeign("C")) {
-    return units.back().getUsableName();
+    return units.back().name;
   } else if (isForeign("C++")) {
     String result("");
     // FIXME - Implement C++ name mangling
@@ -49,37 +56,37 @@ String LinkNames::toName() const {
       switch (unit.unitType) {
         case LinkUnitType::box: {
           result += "box_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::lib: {
           result += "lib_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::type: {
           result += "type_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::choice: {
           result += "type_choice_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::mix: {
           result += "type_mix_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::staticField: {
           result += "static_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::region: {
           result += "region_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::doType: {
@@ -88,27 +95,27 @@ String LinkNames::toName() const {
         }
         case LinkUnitType::skill: {
           result += "skill_";
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
         case LinkUnitType::doSkill: {
-          result += "do_skill:[" + unit.getUsableName() + "]:for_type:[" + unit.subNames.front().toName() + "]";
+          result += "do_skill:[" + unit.name + "]:for_type:[" + unit.subNames.front().toName() + "]";
           break;
         }
         case LinkUnitType::function: {
-          result += "fn_" + unit.getUsableName();
+          result += "fn_" + unit.name;
           break;
         }
         case LinkUnitType::staticFunction: {
-          result += "staticfn_" + unit.getUsableName();
+          result += "staticfn_" + unit.name;
           break;
         }
         case LinkUnitType::variationMethod: {
-          result += "variation_" + unit.getUsableName();
+          result += "variation_" + unit.name;
           break;
         }
         case LinkUnitType::method: {
-          result += "method_" + unit.getUsableName();
+          result += "method_" + unit.name;
           break;
         }
         case LinkUnitType::defaultConstructor: {
@@ -116,11 +123,11 @@ String LinkNames::toName() const {
           break;
         }
         case LinkUnitType::fromConvertor: {
-          result += "convertor_from:[" + unit.getUsableName() + "]";
+          result += "convertor_from:[" + unit.name + "]";
           break;
         }
         case LinkUnitType::toConvertor: {
-          result += "convertor_to:[" + unit.getUsableName() + "]";
+          result += "convertor_to:[" + unit.name + "]";
           break;
         }
         case LinkUnitType::constructor: {
@@ -151,22 +158,22 @@ String LinkNames::toName() const {
           break;
         }
         case LinkUnitType::normalBinaryOperator: {
-          result += "operator_binary(" + unit.getUsableName() + "):[" + unit.subNames.front().toName() + "]";
+          result += "operator_binary(" + unit.name + "):[" + unit.subNames.front().toName() + "]";
           break;
         }
         case LinkUnitType::variationBinaryOperator: {
-          result += "operator_binary_variation(" + unit.getUsableName() + "):[" + unit.subNames.front().toName() + "]";
+          result += "operator_binary_variation(" + unit.name + "):[" + unit.subNames.front().toName() + "]";
           break;
         }
         case LinkUnitType::unaryOperator: {
-          result += "operator_unary(" + unit.getUsableName() + ")";
+          result += "operator_unary(" + unit.name + ")";
         }
         case LinkUnitType::destructor: {
           result += "destructor";
           break;
         }
         case LinkUnitType::global: {
-          result += "global_" + unit.getUsableName();
+          result += "global_" + unit.name;
           break;
         }
         case LinkUnitType::genericList: {
@@ -184,7 +191,7 @@ String LinkNames::toName() const {
         case LinkUnitType::typeName:
         case LinkUnitType::genericPrerunValue:
         case LinkUnitType::genericTypeValue: {
-          result += unit.getUsableName();
+          result += unit.name;
           break;
         }
       }
@@ -193,9 +200,7 @@ String LinkNames::toName() const {
   }
 }
 
-LinkNameUnit::LinkNameUnit(String _name, LinkUnitType _namingType, Maybe<String> _alias, Vec<LinkNames> _subNames)
-    : name(_name), unitType(_namingType), alias(_alias), subNames(_subNames) {}
-
-String LinkNameUnit::getUsableName() const { return alias.value_or(name); }
+LinkNameUnit::LinkNameUnit(String _name, LinkUnitType _namingType, Vec<LinkNames> _subNames)
+    : name(_name), unitType(_namingType), subNames(_subNames) {}
 
 } // namespace qat

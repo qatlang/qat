@@ -50,12 +50,14 @@ class LinkNameUnit;
 class LinkNames {
 public:
   Vec<LinkNameUnit> units;
+  Maybe<String>     linkAlias;
   Maybe<String>     foreignID;
   IR::QatModule*    parentMod;
 
   LinkNames();
   LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, IR::QatModule* _mod);
 
+  void            setLinkAlias(Maybe<String> _linkAlias);
   void            addUnit(LinkNameUnit unit, Maybe<String> foreignID);
   useit LinkNames newWith(LinkNameUnit unit, Maybe<String> foreignID);
   useit String    toName() const;
@@ -65,12 +67,9 @@ class LinkNameUnit {
 public:
   String         name;
   LinkUnitType   unitType;
-  Maybe<String>  alias;
   Vec<LinkNames> subNames;
 
-  LinkNameUnit(String _name, LinkUnitType _namingType, Maybe<String> _alias = None, Vec<LinkNames> subNames = {});
-
-  useit String getUsableName() const;
+  LinkNameUnit(String _name, LinkUnitType _namingType, Vec<LinkNames> subNames = {});
 };
 
 } // namespace qat

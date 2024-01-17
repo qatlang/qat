@@ -8,6 +8,7 @@ add_library(QAT_AST
 	define_choice_type.cpp
 	define_core_type.cpp
 	define_mix_type.cpp
+	define_opaque_type.cpp
 	define_region.cpp
 	destructor.cpp
 	expression.cpp

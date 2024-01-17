@@ -789,16 +789,16 @@ Pair<ast::QatType*, usize> Parser::do_type(ParserContext& preCtx, usize from, Ma
         break;
       }
       case TokenType::cType: {
-        if (ValueAt(i) == "cptr") {
+        if (ValueAt(i) == "cPtr") {
           auto start = i;
           if (is_next(TokenType::genericTypeStart, i)) {
-            bool isPtrSubtyVar = false;
-            if (is_next(TokenType::var, i + 1)) {
-              isPtrSubtyVar = true;
-              i++;
-            }
-            auto gEnd = first_primary_position(TokenType::genericTypeEnd, i);
+            auto gEnd = first_primary_position(TokenType::genericTypeEnd, i + 1);
             if (gEnd.has_value()) {
+              bool isPtrSubtyVar = false;
+              if (is_next(TokenType::var, i + 1)) {
+                isPtrSubtyVar = true;
+                i++;
+              }
               auto* subTy = do_type(preCtx, i + 1, gEnd).first;
               cacheTy     = ast::CType::create(subTy, isPtrSubtyVar, RangeSpan(start, gEnd.value()));
               i           = gEnd.value();

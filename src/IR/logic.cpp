@@ -336,8 +336,8 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(IR::Context* ctx, Vec<IR::Va
 void Logic::panicInFunction(IR::Function* fun, Vec<IR::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
                             IR::Context* ctx) {
   fileRange.file     = fs::canonical(fileRange.file);
-  auto  startMessage = IR::StringSliceType::Create(ctx, "\nFunction " + fun->getFullName() + " panicked at " +
-                                                            fileRange.startToString() + " => ");
+  auto  startMessage = IR::StringSliceType::create_value(ctx, "\nFunction " + fun->getFullName() + " panicked at " +
+                                                                  fileRange.startToString() + " => ");
   auto* mod          = ctx->getMod();
   mod->linkNative(NativeUnit::printf);
   auto              printFn   = mod->getLLVMModule()->getFunction("printf");

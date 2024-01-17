@@ -289,9 +289,12 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
 {
   if (!_namingInfo.has_value()) {
     Maybe<String> foreignID;
+    Maybe<String> linkAlias;
     if (metaInfo) {
       foreignID = metaInfo->getForeignID();
-    } else {
+      linkAlias = metaInfo->getValueAsStringFor("linkName");
+    }
+    if (!foreignID.has_value()) {
       foreignID = getParentModule()->getRelevantForeignID();
     }
     namingInfo = mod->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
@@ -309,11 +312,11 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
                                                None, nullptr));
         }
       }
-      namingInfo.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericLinkNames), None);
+      namingInfo.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericLinkNames), None);
     }
+    namingInfo.setLinkAlias(linkAlias);
   }
   linkingName = namingInfo.toName();
-  SHOW("Function name :: " << name.value)
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
     argTypes.push_back(new ArgumentType(arg.getName().value, arg.getType(), arg.isMemberArg(), arg.get_variability()));

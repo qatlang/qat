@@ -237,7 +237,7 @@ Function* QatModule::createFunction(const Identifier& name, QatType* returnType,
                                     Maybe<llvm::GlobalValue::LinkageTypes> linkage, IR::Context* ctx) {
   SHOW("Creating IR function")
   auto nmUnits = getLinkNames();
-  nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, None, {}), None);
+  nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, {}), None);
   auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, IR::ReturnType::get(returnType), std::move(args),
                                isVariadic, fileRange, visibility, ctx, linkage);
   SHOW("Created function")
@@ -457,14 +457,14 @@ LinkNames QatModule::getLinkNames() const {
     auto parentVal = parent->getLinkNames();
     if (shouldPrefixName()) {
       parentVal.addUnit(
-          LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, None, {}),
+          LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, {}),
           getRelevantForeignID());
     }
     return parentVal;
   } else {
     if (shouldPrefixName()) {
       return LinkNames(
-          {LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, None, {})},
+          {LinkNameUnit(name.value, moduleType == ModuleType::box ? LinkUnitType::box : LinkUnitType::lib, {})},
           getRelevantForeignID(), nullptr);
     } else {
       return LinkNames({}, getRelevantForeignID(), nullptr);
@@ -2156,11 +2156,8 @@ void QatModule::handleNativeLibs(IR::Context* ctx) {
         auto             dataArr = llvm::cast<llvm::ConstantArray>(linkLibPre->getLLVMConstant());
         std::set<String> libs;
         for (usize i = 0; i < linkLibPre->getType()->asArray()->getLength(); i++) {
-          auto itemLib = IR::StringSliceType::get(ctx)
-                             ->toPrerunGenericString(
-                                 new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)))
-                             .value();
-          itemLib = itemLib.substr(1, itemLib.size() - 2);
+          auto itemLib = IR::StringSliceType::value_to_string(
+              new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)));
           if (!libs.contains(itemLib)) {
             nativeLibsToLink.push_back(LibToLink::fromName({itemLib, metaInfo.value().getValueRangeFor(LINK_LIB_KEY)},
                                                            metaInfo.value().getValueRangeFor(LINK_LIB_KEY)));
@@ -2181,11 +2178,8 @@ void QatModule::handleNativeLibs(IR::Context* ctx) {
         auto             dataArr = llvm::cast<llvm::ConstantArray>(linkFilePre->getLLVMConstant());
         std::set<String> libs;
         for (usize i = 0; i < linkFilePre->getType()->asArray()->getLength(); i++) {
-          auto itemLib = IR::StringSliceType::get(ctx)
-                             ->toPrerunGenericString(
-                                 new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)))
-                             .value();
-          itemLib = itemLib.substr(1, itemLib.size() - 2);
+          auto itemLib = IR::StringSliceType::value_to_string(
+              new IR::PrerunValue(dataArr->getAggregateElement(i), IR::StringSliceType::get(ctx)));
           if (!libs.contains(itemLib)) {
             nativeLibsToLink.push_back(LibToLink::fromPath({itemLib, metaInfo.value().getValueRangeFor(LINK_FILE_KEY)},
                                                            metaInfo.value().getValueRangeFor(LINK_FILE_KEY)));

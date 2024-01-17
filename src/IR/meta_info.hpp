@@ -52,8 +52,15 @@ struct MetaInfo {
 
   useit Maybe<String> getForeignID() const {
     if (hasKey("foreign")) {
-      auto* val = getValueFor("foreign");
-      return val->getType()->asStringSlice()->toPrerunGenericString(val);
+      return IR::StringSliceType::value_to_string(getValueFor("foreign"));
+    } else {
+      return None;
+    }
+  }
+
+  useit Maybe<String> getValueAsStringFor(String key) const {
+    if (hasKey(key)) {
+      return IR::StringSliceType::value_to_string(getValueFor(key));
     } else {
       return None;
     }

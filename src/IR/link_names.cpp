@@ -19,7 +19,6 @@ void LinkNames::addUnit(LinkNameUnit unit, Maybe<String> entityForeignID) {
 
 LinkNames LinkNames::newWith(LinkNameUnit unit, Maybe<String> entityForeignID) {
   auto result = *this;
-  SHOW("Entity foreign ID has value: " << entityForeignID.has_value())
   result.addUnit(unit, entityForeignID);
   return result;
 }
@@ -30,7 +29,6 @@ String LinkNames::toName() const {
   }
   auto isForeign = [&](String const& id) {
     if (foreignID.has_value()) {
-      SHOW("Foreign ID has value: " << foreignID.value() << " and id to check is " << id)
       return (foreignID.value() == id);
     } else {
       return parentMod && parentMod->isInForeignModuleOfType(id);

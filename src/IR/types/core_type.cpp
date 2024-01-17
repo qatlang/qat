@@ -66,7 +66,7 @@ LinkNames CoreType::getLinkNames() const {
                       None, nullptr));
       }
     }
-    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericlinkNames), None);
+    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericlinkNames), None);
   }
   return linkNames;
 }

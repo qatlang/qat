@@ -17,10 +17,13 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
       name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
       visibility(_visibility), metaInfo(_metaInfo) {
   Maybe<String> foreignID;
-  if (metaInfo) {
-    if (metaInfo->hasKey("foreign")) {
-      foreignID = metaInfo->getForeignID();
-    }
+  Maybe<String> linkAlias;
+  if (metaInfo.has_value()) {
+    foreignID = metaInfo->getForeignID();
+    linkAlias = metaInfo->getValueAsStringFor("linkName");
+  }
+  if (!foreignID.has_value()) {
+    foreignID = parent->getRelevantForeignID();
   }
   auto linkNames = parent->getLinkNames().newWith(
       LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
@@ -42,8 +45,9 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
                       None, nullptr));
       }
     }
-    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, None, genericLinkNames), None);
+    linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericLinkNames), None);
   }
+  linkNames.setLinkAlias(linkAlias);
   linkingName = linkNames.toName();
   SHOW("Linking name is " << linkingName)
   llvmType = llvm::StructType::create(llctx, linkingName);

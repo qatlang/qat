@@ -197,7 +197,7 @@ IR::MemberFunction* DoSkill::getDestructor() const { return destructor.value(); 
 LinkNames DoSkill::getLinkNames() const {
   return parent->getLinkNames().newWith(
       LinkNameUnit(isDefaultForType() ? "" : skill.value()->getLinkNames().toName(),
-                   isDefaultForType() ? LinkUnitType::doType : LinkUnitType::doSkill, None,
+                   isDefaultForType() ? LinkUnitType::doType : LinkUnitType::doSkill,
                    {LinkNames({LinkNameUnit(candidateType->getNameForLinking(), LinkUnitType::name)}, None, nullptr)}),
       None);
 }

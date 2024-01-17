@@ -66,7 +66,7 @@ LinkNames MemberFunction::getNameInfoFrom(MemberParent* parent, bool isStatic, I
         argLinkNames.push_back(LinkNames(
             {LinkNameUnit(args.at(i).getType()->getNameForLinking(), LinkUnitType::typeName)}, None, nullptr));
       }
-      linkNames.addUnit(LinkNameUnit("", LinkUnitType::constructor, None, argLinkNames), None);
+      linkNames.addUnit(LinkNameUnit("", LinkUnitType::constructor, argLinkNames), None);
       break;
     }
     case MemberFnType::copyConstructor: {
@@ -92,7 +92,6 @@ LinkNames MemberFunction::getNameInfoFrom(MemberParent* parent, bool isStatic, I
     case MemberFnType::binaryOperator: {
       linkNames.addUnit(
           LinkNameUnit(name.value, isVar ? LinkUnitType::variationBinaryOperator : LinkUnitType::normalBinaryOperator,
-                       None,
                        {LinkNames({LinkNameUnit(args.at(1).getType()->getNameForLinking(), LinkUnitType::typeName)},
                                   None, nullptr)}),
           None);

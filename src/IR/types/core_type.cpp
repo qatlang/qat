@@ -20,15 +20,10 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _gen
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
   SHOW("Generating LLVM Type for core type members")
-  Maybe<String> foreignID;
-  if (metaInfo) {
-    foreignID = metaInfo->getForeignID();
-  }
   Vec<llvm::Type*> subtypes;
   for (auto* mem : members) {
     subtypes.push_back(mem->type->getLLVMType());
   }
-  SHOW("Opaqued type is: " << opaquedType)
   SHOW("All members' LLVM types obtained")
   llvmType    = opaquedType->getLLVMType();
   linkingName = opaquedType->getNameForLinking();
@@ -36,19 +31,22 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _gen
   if (!isGeneric()) {
     mod->coreTypes.push_back(this);
   }
-  if (opaquedType) {
-    opaquedType->setSubType(this);
-    ovInfo            = opaquedType->ovInfo;
-    ovMentions        = opaquedType->ovMentions;
-    ovBroughtMentions = opaquedType->ovBroughtMentions;
-    ovRange           = opaquedType->ovRange;
-  }
+  opaquedType->setSubType(this);
+  ovInfo            = opaquedType->ovInfo;
+  ovMentions        = opaquedType->ovMentions;
+  ovBroughtMentions = opaquedType->ovBroughtMentions;
+  ovRange           = opaquedType->ovRange;
 }
 
 LinkNames CoreType::getLinkNames() const {
   Maybe<String> foreignID;
+  Maybe<String> linkAlias;
   if (metaInfo) {
     foreignID = metaInfo->getForeignID();
+    linkAlias = metaInfo->getValueAsStringFor("linkName");
+  }
+  if (!foreignID.has_value()) {
+    foreignID = parent->getRelevantForeignID();
   }
   auto linkNames = parent->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::type), foreignID);
   if (isGeneric()) {
@@ -68,6 +66,7 @@ LinkNames CoreType::getLinkNames() const {
     }
     linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericlinkNames), None);
   }
+  linkNames.setLinkAlias(linkAlias);
   return linkNames;
 }
 

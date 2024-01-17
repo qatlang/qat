@@ -25,10 +25,6 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
       defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), opaquedType(_opaquedTy) {
-  Maybe<String> foreignID;
-  if (metaInfo) {
-    foreignID = metaInfo->getForeignID();
-  }
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
@@ -63,8 +59,13 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
 
 LinkNames MixType::getLinkNames() const {
   Maybe<String> foreignID;
+  Maybe<String> linkAlias;
   if (metaInfo) {
     foreignID = metaInfo->getForeignID();
+    linkAlias = metaInfo->getValueAsStringFor("linkName");
+  }
+  if (!foreignID.has_value()) {
+    foreignID = parent->getRelevantForeignID();
   }
   auto linkNames = parent->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::mix), foreignID);
   if (isGeneric()) {
@@ -84,6 +85,7 @@ LinkNames MixType::getLinkNames() const {
     }
     linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericlinkNames), None);
   }
+  linkNames.setLinkAlias(linkAlias);
   return linkNames;
 }
 

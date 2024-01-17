@@ -2,6 +2,7 @@
 #include "../ast/bring_bitwidths.hpp"
 #include "../ast/constructor.hpp"
 #include "../ast/define_mix_type.hpp"
+#include "../ast/define_opaque_type.hpp"
 #include "../ast/define_region.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/expressions/array_literal.hpp"
@@ -1679,6 +1680,57 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
+      case TokenType::opaque: {
+        auto start = i;
+        if (is_next(TokenType::identifier, i)) {
+          auto                          visibility = getVisibility();
+          auto                          typeName   = IdentifierAt(i + 1);
+          Maybe<ast::PrerunExpression*> condition;
+          Maybe<ast::MetaInfo>          metaInfo;
+
+          if (is_next(TokenType::If, i + 1)) {
+            auto expRes = do_prerun_expression(thisCtx, i + 2, None);
+            condition   = expRes.first;
+            i           = expRes.second;
+            if (is_next(TokenType::separator, i)) {
+              if (is_next(TokenType::meta, i + 1)) {
+                i++;
+              } else {
+                add_error(
+                    "Expected " + color_error("meta") +
+                        " after , to specify the meta information about this opaque type. Remove the , if you don't want to specify the meta info",
+                    RangeAt(i + 1));
+              }
+            }
+          } else {
+            i++;
+          }
+          if (is_next(TokenType::meta, i)) {
+            if (is_next(TokenType::curlybraceOpen, i + 1)) {
+              auto cEnd = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
+              if (cEnd.has_value()) {
+                metaInfo = do_meta_info(i + 2, cEnd.value(), RangeSpan(i + 1, cEnd.value()));
+                i        = cEnd.value();
+              } else {
+                add_error("Expected end for {", RangeAt(i + 2));
+              }
+            } else {
+              add_error("Expected { after this to start the meta information", RangeAt(i + 1));
+            }
+          }
+          if (is_next(TokenType::stop, i)) {
+            addNode(
+                ast::DefineOpaqueType::create(typeName, condition, getVisibility(), metaInfo, RangeSpan(start, i + 1)));
+            i++;
+            break;
+          } else {
+            add_error("Expected . to end the declaration of the opaque type", RangeSpan(start, i));
+          }
+        } else {
+          add_error("Expected an identifier for the name of the opaque type", RangeAt(i));
+        }
+        break;
+      }
       case TokenType::lib: {
         if (is_next(TokenType::identifier, i)) {
           if (is_next(TokenType::curlybraceOpen, i + 1)) {
@@ -2927,9 +2979,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
   }
   SHOW("	FROM : " << from << " range: " << RangeAt(from))
   SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
-                   << (upto.has_value() ? "\n		" + std::to_string(upto.value()) +
-                                              " range: " + RangeAt(upto.value()).startToString()
-                                        : ""))
+                   << (upto.has_value()
+                           ? "\n		" + std::to_string(upto.value()) + " range: " + RangeAt(upto.value()).startToString()
+                           : ""))
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
 

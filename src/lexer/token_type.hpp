@@ -107,7 +107,8 @@ enum class TokenType {
   selfWord,
   where,
   Do,
-  questionMark
+  questionMark,
+  opaque,
 };
 
 } // namespace qat::lexer

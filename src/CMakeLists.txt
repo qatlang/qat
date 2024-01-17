@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 PROJECT(qat
-	VERSION "0.7.5"
+	VERSION "0.8.0"
 	DESCRIPTION "Qat Programming Language"
 	HOMEPAGE_URL "https://qat.dev")
 
@@ -70,15 +70,15 @@ message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 
 if(IS_LINUX)
 	if(IS_RELEASE)
-		set(CMAKE_CXX_FLAGS "-O0 -std=c++20 -fuse-ld=lld -w -s")
+		set(CMAKE_CXX_FLAGS "-O2 -std=c++20 -fuse-ld=lld -flto -w -s -I${LLVM_ROOT_DIR}/include -fno-exceptions -funwind-tables -fno-rtti -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 	else()
-		set(CMAKE_CXX_FLAGS "-g -O0 -std=c++20 -fuse-ld=lld -Wall -Wunused")
+		set(CMAKE_CXX_FLAGS "-g -O0 -std=c++20 -fuse-ld=lld -Wall -Wunused -I${LLVM_ROOT_DIR}/include -fno-exceptions -funwind-tables -fno-rtti -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 	endif()
 elseif(IS_WINDOWS)
 	if(IS_RELEASE)
-		set(CMAKE_CXX_FLAGS "/DEBUG:NONE /STATIC /OPT:REF /w /EHa /GR /EHsc")
+		set(CMAKE_CXX_FLAGS "/DEBUG:NONE /SUBSYSTEM:CONSOLE /STATIC /OPT:REF /w /EHa /GR /EHsc")
 	else()
-		set(CMAKE_CXX_FLAGS "/DEBUG:FULL /STATIC /OPT:REF /w /EHa /GR /EHsc")
+		set(CMAKE_CXX_FLAGS "/DEBUG:FULL /SUBSYSTEM:CONSOLE /STATIC /OPT:REF /w /EHa /GR /EHsc")
 	endif()
 elseif(IS_MAC)
 	if(IS_RELEASE)
@@ -109,14 +109,14 @@ add_subdirectory(IR/)
 target_include_directories(${PROJECT_NAME} PUBLIC "${LLVM_ROOT_DIR}/include")
 target_link_directories(${PROJECT_NAME}
 	PUBLIC ast/ lexer/ parser/ utils/ cli/ IR/
-	PRIVATE ${LLVM_ROOT_DIR}/lib ${LINK_DIRS})
+	PRIVATE ${LLVM_ROOT_DIR}/lib ${LINK_DIRS} "${CMAKE_SOURCE_DIR}/../${SHARED_LIBPATH}")
 
 set(LLD_LIBRARIES lldCOFF lldCommon lldELF lldMachO lldMinGW lldWasm)
 
 if(IS_LINUX)
 	message(STATUS "Linking libraries ${LLVM_LIBRARIES}")
 	target_link_libraries(
-		${PROJECT_NAME} ${LLVM_LIBRARIES} ${LLD_LIBRARIES} clangBasic stdc++ stdc++fs rt pthread m z tinfo xml2
+		${PROJECT_NAME} ${LLVM_LIBRARIES} ${LLD_LIBRARIES} clangBasic stdc++ rt pthread m z tinfo xml2 icuuc icudata lzma
 		QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
 	)
 elseif(IS_MAC)
@@ -150,4 +150,11 @@ endif()
 
 message(STATUS "CMake install prefix is: ${CMAKE_INSTALL_PREFIX}")
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
+if(IS_LINUX)
+	include(GNUInstallDirs)
+endif()
+
+install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
+	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/std/" DESTINATION "${CMAKE_INSTALL_PREFIX}/std")

@@ -20,7 +20,16 @@ struct MetaInfo {
       if (keys.contains(kv.first.value)) {
         ctx->Error("The key " + ctx->highlightError(kv.first.value) + " is repeating here", kv.first.range);
       }
-      resultVec.push_back({kv.first, kv.second->emit(ctx)});
+      auto irVal = kv.second->emit(ctx);
+      if (kv.first.value == "foreign" || kv.first.value == "linkName") {
+        if (!irVal->getType()->isStringSlice()) {
+          ctx->Error("The " + ctx->highlightError(kv.first.value) + " field is expected to be of type " +
+                         ctx->highlightError("str") + ". Got an expression of type " +
+                         ctx->highlightError(irVal->getType()->toString()),
+                     kv.second->fileRange);
+        }
+      }
+      resultVec.push_back({kv.first, irVal});
       valuesRange.push_back(kv.second->fileRange);
     }
     return IR::MetaInfo(resultVec, valuesRange, fileRange);

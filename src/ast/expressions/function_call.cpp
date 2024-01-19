@@ -61,7 +61,8 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
         argsEmit.at(i) =
             new IR::Value(ctx->builder.CreateLoad(argsEmit.at(i)->getType()->asReference()->getSubType()->getLLVMType(),
                                                   argsEmit.at(i)->getLLVM()),
-                          argsEmit.at(i)->getType(), argsEmit.at(i)->isVariable(), argsEmit.at(i)->getNature());
+                          argsEmit.at(i)->getType(), argsEmit.at(i)->getType()->asReference()->isSubtypeVariable(),
+                          argsEmit.at(i)->getNature());
       } else {
         argsEmit.at(i)->loadImplicitPointer(ctx->builder);
       }

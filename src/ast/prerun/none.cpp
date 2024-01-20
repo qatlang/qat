@@ -1,10 +1,9 @@
 #include "./none.hpp"
-#include "../../IR/logic.hpp"
 #include "../../IR/types/maybe.hpp"
 
 namespace qat::ast {
 
-IR::Value* NoneExpression::emit(IR::Context* ctx) {
+IR::PrerunValue* NoneExpression::emit(IR::Context* ctx) {
   if (type || isTypeInferred()) {
     if (isTypeInferred()) {
       if (!inferredType->isMaybe()) {
@@ -35,13 +34,12 @@ IR::Value* NoneExpression::emit(IR::Context* ctx) {
       }
     }
     SHOW("Type for none expression is: " << typ->toString())
-    auto* mTy    = IR::MaybeType::get(typ, isPacked.has_value(), ctx);
-    auto* newVal = IR::Logic::newAlloca(ctx->getActiveFunction(), None, mTy->getLLVMType());
-    ctx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
-                             ctx->builder.CreateStructGEP(mTy->getLLVMType(), newVal, 0u));
-    ctx->builder.CreateStore(llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType()),
-                             ctx->builder.CreateStructGEP(mTy->getLLVMType(), newVal, 1u));
-    return new IR::Value(newVal, mTy, false, IR::Nature::temporary);
+    auto* mTy = IR::MaybeType::get(typ, isPacked.has_value(), ctx);
+    return new IR::PrerunValue(
+        llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(mTy->getLLVMType()),
+                                  {llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u),
+                                   llvm::Constant::getNullValue(mTy->getSubType()->getLLVMType())}),
+        mTy);
   } else {
     ctx->Error("No type found for the none expression. A type is required to be able to create the none value",
                fileRange);

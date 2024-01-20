@@ -10,6 +10,7 @@ add_library(QAT_AST_CONSTANTS
 	member_access.cpp
 	member_function_call.cpp
 	negative.cpp
+	none.cpp
 	null_pointer.cpp
 	plain_initialiser.cpp
 	string_literal.cpp

@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class NoneExpression : public Expression, public TypeInferrable {
+class NoneExpression : public PrerunExpression, public TypeInferrable {
   friend class Assignment;
   friend class LocalDeclaration;
   QatType*         type = nullptr;
@@ -14,7 +14,7 @@ class NoneExpression : public Expression, public TypeInferrable {
 
 public:
   NoneExpression(Maybe<FileRange> _isPacked, QatType* _type, FileRange _fileRange)
-      : Expression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
+      : PrerunExpression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
 
   useit static inline NoneExpression* create(Maybe<FileRange> isPacked, QatType* _type, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NoneExpression), isPacked, _type, _fileRange);
@@ -24,9 +24,9 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::NONE; }
+  useit IR::PrerunValue* emit(IR::Context* ctx) final;
+  useit Json             toJson() const final;
+  useit NodeType         nodeType() const final { return NodeType::NONE; }
 };
 
 } // namespace qat::ast

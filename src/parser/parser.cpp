@@ -5,6 +5,7 @@
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_region.hpp"
 #include "../ast/destructor.hpp"
+#include "../ast/expressions/address_of.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
@@ -25,7 +26,6 @@
 #include "../ast/expressions/mix_choice_initialiser.hpp"
 #include "../ast/expressions/move.hpp"
 #include "../ast/expressions/negative.hpp"
-#include "../ast/expressions/none.hpp"
 #include "../ast/expressions/not.hpp"
 #include "../ast/expressions/ok.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
@@ -49,6 +49,7 @@
 #include "../ast/prerun/member_access.hpp"
 #include "../ast/prerun/member_function_call.hpp"
 #include "../ast/prerun/negative.hpp"
+#include "../ast/prerun/none.hpp"
 #include "../ast/prerun/null_pointer.hpp"
 #include "../ast/prerun/plain_initialiser.hpp"
 #include "../ast/prerun/type_wrap.hpp"
@@ -142,7 +143,7 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
       switch (token.type) { // NOLINT(clang-diagnostic-switch)
         case TokenType::super: {
           if (parent.has_value()) {
-            add_error(".. is not allowed for children of brought entities", RangeAt(i));
+            add_error(color_error("up") + " is not allowed for children of brought entities", RangeAt(i));
           }
         }
         case TokenType::identifier: {
@@ -1429,7 +1430,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           } else {
             add_error("Expected end of bring sentence", token.fileRange);
           }
-        } else if (is_next(TokenType::identifier, i)) {
+        } else if (is_next(TokenType::identifier, i) || is_next(TokenType::super, i)) {
           if (ValueAt(i + 1) == "std") {
             SHOW("Stdlib request found in parser")
             irCtx->stdLibRequired = true;
@@ -1719,8 +1720,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             }
           }
           if (is_next(TokenType::stop, i)) {
-            addNode(
-                ast::DefineOpaqueType::create(typeName, condition, getVisibility(), metaInfo, RangeSpan(start, i + 1)));
+            addNode(ast::DefineOpaqueType::create(typeName, condition, visibility, metaInfo, RangeSpan(start, i + 1)));
             i++;
             break;
           } else {
@@ -1802,123 +1802,120 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           }
         }
         if (is_next(TokenType::parenthesisOpen, i) || is_next(TokenType::givenTypeSeparator, i)) {
-          ast::QatType* retType = nullptr;
+          Maybe<ast::QatType*> retType;
           if (is_next(TokenType::givenTypeSeparator, i)) {
             auto typRes = do_type(fnCtx, i + 1, None);
             retType     = typRes.first;
             i           = typRes.second;
-          } else {
-            retType = ast::VoidType::create(RangeAt(start));
           }
-          if (!is_next(TokenType::parenthesisOpen, i)) {
-            add_error("Expected ( for arguments in function declaration", RangeSpan(start, i));
+          Pair<Vec<ast::Argument*>, bool> argResult = {{}, false};
+          if (is_next(TokenType::parenthesisOpen, i)) {
+            auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+            if (pCloseRes.has_value()) {
+              auto pClose = pCloseRes.value();
+              argResult   = do_function_parameters(fnCtx, i + 1, pClose);
+              SHOW("Parsed arguments")
+              i = pClose;
+            } else {
+              add_error("Expected end for (", RangeAt(i + 1));
+            }
           }
-          SHOW("Function with void return type")
-          auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
-          if (pCloseRes.has_value()) {
-            auto pClose    = pCloseRes.value();
-            auto argResult = do_function_parameters(fnCtx, i + 1, pClose);
-            SHOW("Parsed arguments")
-            i = pClose;
-            Maybe<usize>                  altPos;
-            Maybe<ast::PrerunExpression*> checkExp;
-            if (is_next(TokenType::If, i)) {
+          auto                          protoEnd = i;
+          Maybe<usize>                  altPos;
+          Maybe<ast::PrerunExpression*> checkExp;
+          if (is_next(TokenType::If, i)) {
+            altPos = first_primary_position(TokenType::altArrow, i + 1);
+            if (!altPos.has_value()) {
+              add_error("Expected => after " + color_error("if"), RangeAt(i));
+            }
+            bool isSep   = false;
+            auto uptoPos = altPos.value();
+            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
+              isSep   = true;
+              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
+            }
+            auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
+            if (expRes.second + 1 != uptoPos) {
+              add_error("Condition did not span till " + String(isSep ? "," : "=>"),
+                        RangeSpan(expRes.second + 1, uptoPos));
+            }
+            checkExp = expRes.first;
+            i        = expRes.second;
+            if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
+                !is_next(TokenType::meta, i + 1)) {
+              add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after ,", RangeAt(i + 1));
+            } else if (is_next(TokenType::separator, i)) {
+              i++;
+            }
+          }
+          Maybe<ast::PrerunExpression*> constraint;
+          if (is_next(TokenType::where, i)) {
+            if (genericList.empty()) {
+              add_error("Cannot use generic constraint for a function without generic parameters", RangeAt(i + 1));
+            }
+            if (!altPos.has_value()) {
               altPos = first_primary_position(TokenType::altArrow, i + 1);
               if (!altPos.has_value()) {
                 add_error("Expected => after " + color_error("if"), RangeAt(i));
               }
-              bool isSep   = false;
-              auto uptoPos = altPos.value();
-              if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-                isSep   = true;
-                uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-              }
-              auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
-              if (expRes.second + 1 != uptoPos) {
-                add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                          RangeSpan(expRes.second + 1, uptoPos));
-              }
-              checkExp = expRes.first;
-              i        = expRes.second;
-              if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                  !is_next(TokenType::meta, i + 1)) {
-                add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after ,",
-                          RangeAt(i + 1));
-              } else if (is_next(TokenType::separator, i)) {
-                i++;
-              }
             }
-            Maybe<ast::PrerunExpression*> constraint;
-            if (is_next(TokenType::where, i)) {
-              if (genericList.empty()) {
-                add_error("Cannot use generic constraint for a function without generic parameters", RangeAt(i + 1));
-              }
-              if (!altPos.has_value()) {
-                altPos = first_primary_position(TokenType::altArrow, i + 1);
-                if (!altPos.has_value()) {
-                  add_error("Expected => after " + color_error("if"), RangeAt(i));
-                }
-              }
-              auto uptoPos = altPos.value();
-              if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-                uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-              }
-              auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
-              constraint  = expRes.first;
-              i           = expRes.second;
-              if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
-                add_error("Expected " + color_error("meta") + " after , for the metadata for the type", RangeAt(i + 1));
-              } else if (is_next(TokenType::separator, i)) {
-                i++;
-              }
+            auto uptoPos = altPos.value();
+            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
+              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
             }
-            Maybe<ast::MetaInfo> metaInfo;
-            if (is_next(TokenType::meta, i)) {
-              if (is_next(TokenType::curlybraceOpen, i + 1)) {
-                auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-                if (cRes.has_value()) {
-                  metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
-                  i        = cRes.value();
-                } else {
-                  add_error("Expected } to end the meta information", RangeAt(i + 2));
-                }
-              } else {
-                add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
-              }
-            }
-            if (altPos.has_value()) {
-              if (i + 1 == altPos.value()) {
-                i++;
-              } else {
-                add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
-              }
-            }
-            auto* prototype = ast::FunctionPrototype::create(
-                IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
-                getVisibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), pClose),
-                genericList);
-            if (is_next(TokenType::bracketOpen, i)) {
-              auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
-              if (bCloseRes.has_value()) {
-                auto bClose    = bCloseRes.value();
-                auto sentences = do_sentences(fnCtx, i + 1, bClose);
-                addNode(ast::FunctionDefinition::create(prototype, sentences, RangeSpan(i + 1, bClose)));
-                i = bClose;
-                break;
-              } else {
-                // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
-                add_error("Expected end for [", RangeAt(i + 1));
-              }
-            } else if (is_next(TokenType::stop, i)) {
-              addNode(prototype);
+            auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
+            constraint  = expRes.first;
+            i           = expRes.second;
+            if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
+              add_error("Expected " + color_error("meta") + " after , for the metadata for the type", RangeAt(i + 1));
+            } else if (is_next(TokenType::separator, i)) {
               i++;
+            }
+          }
+          Maybe<ast::MetaInfo> metaInfo;
+          if (is_next(TokenType::meta, i)) {
+            if (is_next(TokenType::curlybraceOpen, i + 1)) {
+              auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
+              if (cRes.has_value()) {
+                metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
+                i        = cRes.value();
+              } else {
+                add_error("Expected } to end the meta information", RangeAt(i + 2));
+              }
+            } else {
+              add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
+            }
+          }
+          if (altPos.has_value()) {
+            if (i + 1 == altPos.value()) {
+              i++;
+            } else {
+              add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
+            }
+          }
+          auto* prototype = ast::FunctionPrototype::create(
+              IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
+              getVisibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
+              genericList);
+          if (is_next(TokenType::bracketOpen, i)) {
+            auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+            if (bCloseRes.has_value()) {
+              auto bClose    = bCloseRes.value();
+              auto sentences = do_sentences(fnCtx, i + 1, bClose);
+              addNode(ast::FunctionDefinition::create(prototype, sentences, RangeSpan(i + 1, bClose)));
+              i = bClose;
               break;
             } else {
-              add_error("Expected either [ to start the definition of the function or . to end the declaration",
-                        RangeAt(i));
+              // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+              add_error("Expected end for [", RangeAt(i + 1));
             }
+          } else if (is_next(TokenType::stop, i)) {
+            addNode(prototype);
+            i++;
+            break;
           } else {
-            add_error("Expected end for (", RangeAt(i + 1));
+            add_error("Expected either [ to start the definition of the function or . to end the declaration",
+                      RangeAt(i));
           }
         } else {
           setCachedSymbol(sym_res.first);
@@ -2144,38 +2141,42 @@ void Parser::parse_struct_type(ParserContext& preCtx, usize from, usize upto, as
         auto start = i;
         if (is_next(TokenType::givenTypeSeparator, i) || is_next(TokenType::parenthesisOpen, i)) {
           SHOW("Member function start")
-          ast::QatType* retTy = is_next(TokenType::parenthesisOpen, i) ? ast::VoidType::create(RangeAt(i)) : nullptr;
-          if (!retTy) {
+          Maybe<ast::QatType*> retTy;
+          if (is_next(TokenType::givenTypeSeparator, i)) {
             auto typeRes = do_type(preCtx, i + 1, None);
             retTy        = typeRes.first;
             i            = typeRes.second;
           }
+          Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
           if (is_next(TokenType::parenthesisOpen, i)) {
             auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
             if (pCloseRes.has_value()) {
-              auto pClose  = pCloseRes.value();
-              auto argsRes = do_function_parameters(preCtx, i + 1, pClose);
-              if (is_next(TokenType::bracketOpen, pClose)) {
-                auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
-                if (bCloseRes.has_value()) {
-                  auto bClose = bCloseRes.value();
-                  auto snts   = do_sentences(preCtx, pClose + 1, bClose);
-                  SHOW("Creating member function prototype")
-                  coreTy->addMemberDefinition(ast::MemberDefinition::create(
-                      getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), argsRes.first, argsRes.second,
-                                                                 retTy, getVisibility(), RangeSpan(start, pClose + 1))
-                                  : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), argsRes.first,
-                                                                 argsRes.second, retTy, getVisibility(),
-                                                                 RangeSpan(start, pClose + 1)),
-                      snts, RangeSpan(start, bClose)));
-                  i = bClose;
-                }
-              }
+              auto pClose = pCloseRes.value();
+              argsRes     = do_function_parameters(preCtx, i + 1, pClose);
+              i           = pClose;
             } else {
               add_error("Expected end for (", RangeAt(i + 1));
             }
+          }
+          if (is_next(TokenType::bracketOpen, i)) {
+            auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+            if (bCloseRes.has_value()) {
+              auto bClose = bCloseRes.value();
+              auto snts   = do_sentences(preCtx, i + 1, bClose);
+              SHOW("Creating member function prototype")
+              coreTy->addMemberDefinition(ast::MemberDefinition::create(
+                  getStatic()
+                      ? ast::MemberPrototype::Static(IdentifierAt(start), argsRes.first, argsRes.second, retTy,
+                                                     getVisibility(), RangeSpan(start, i))
+                      : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), argsRes.first, argsRes.second,
+                                                     retTy, getVisibility(), RangeSpan(start, i)),
+                  snts, RangeSpan(start, bClose)));
+              i = bClose;
+            } else {
+              add_error("Expected ] to end the function body", RangeAt(i + 1));
+            }
           } else {
-            add_error("Expected ( for the arguments of the member function", RangeSpan(start, i));
+            add_error("Expected [ to start the function body", RangeSpan(start, i));
           }
         } else if (is_next(TokenType::typeSeparator, i)) {
           auto stop = first_primary_position(TokenType::stop, i + 1);
@@ -2706,6 +2707,10 @@ void Parser::parse_choice_type(usize from, usize upto, Vec<Pair<Identifier, Mayb
                       RangeAt(start));
           }
         }
+        break;
+      }
+      case TokenType::comment: {
+        // FIXME - Support comment association with fields
         break;
       }
       default: {
@@ -3796,7 +3801,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             auto symbol = consumeCachedSymbol();
             setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange), symbol.tokenIndex);
           } else if (hasCachedExpr() && hasCachedSymbol()) {
-            add_error("Cached expressions are not empty and also found symbol", consumeCachedExpr()->fileRange);
+            add_error("Internal error - Cached expressions are not empty and also found symbol",
+                      consumeCachedExpr()->fileRange);
           }
           auto* exp = consumeCachedExpr();
           if (is_next(TokenType::Not, i)) {
@@ -3857,6 +3863,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             } else {
               add_error("Expected ( to start the destructor call", RangeAt(i));
             }
+          } else if (is_next(TokenType::pointerType, i)) {
+            setCachedExpr(ast::AddressOf::create(exp, {exp->fileRange, RangeAt(i + 1)}), i + 1);
+            i += 1;
           } else {
             add_error("Expected an identifier for member access", RangeAt(i));
           }

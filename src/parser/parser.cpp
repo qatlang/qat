@@ -2041,7 +2041,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 
 Pair<ast::VisibilitySpec, usize> Parser::do_visibility_kind(usize from) {
   using lexer::TokenType;
-  if (is_next(TokenType::child, from)) {
+  if (is_next(TokenType::colon, from)) {
     if (is_next(TokenType::Type, from + 1)) {
       return {{VisibilityKind::type, RangeSpan(from, from + 2)}, from + 2};
     } else if (is_next(TokenType::lib, from + 1)) {
@@ -2055,10 +2055,12 @@ Pair<ast::VisibilitySpec, usize> Parser::do_visibility_kind(usize from) {
       } else if (val == "folder") {
         return {{VisibilityKind::folder, RangeSpan(from, from + 2)}, from + 2};
       } else {
-        add_error("Invalid identifier found after pub' for visibility", RangeAt(from + 2));
+        add_error("Invalid identifier found after " + color_error("pub:") + " for visibility. Expected either " +
+                      color_error("pub:file") + " or " + color_error("pub:folder"),
+                  RangeAt(from + 2));
       }
     } else {
-      add_error("Invalid token found after pub' for visibility", RangeSpan(from, from + 1));
+      add_error("Invalid token found after " + color_error("pub:") + " for visibility", RangeSpan(from, from + 1));
     }
   } else {
     return {{VisibilityKind::pub, RangeAt(from)}, from};

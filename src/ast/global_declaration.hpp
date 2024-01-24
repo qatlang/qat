@@ -6,36 +6,30 @@
 #include "./node.hpp"
 #include "./node_type.hpp"
 #include "./types/qat_type.hpp"
-#include <deque>
-#include <optional>
+#include "meta_info.hpp"
 
 namespace qat::ast {
 
-/**
- *  This AST element handles declaring Global variables in the language
- *
- * Currently initialisation is handled by `dyn_cast`ing the value to a constant
- * as that seems to be the proper way to do it.
- *
- */
 class GlobalDeclaration : public Node {
 private:
   Identifier            name;
   QatType*              type;
-  Expression*           value;
+  Maybe<Expression*>    value;
   bool                  isVariable;
   Maybe<VisibilitySpec> visibSpec;
-
-  mutable IR::GlobalEntity* globalEntity = nullptr;
+  Maybe<MetaInfo>       metaInfo;
 
 public:
-  GlobalDeclaration(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
-                    Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), name(_name), type(_type), value(_value), isVariable(_isVariable), visibSpec(_visibSpec) {}
+  GlobalDeclaration(Identifier _name, QatType* _type, Maybe<Expression*> _value, bool _isVariable,
+                    Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
+      : Node(_fileRange), name(_name), type(_type), value(_value), isVariable(_isVariable), visibSpec(_visibSpec),
+        metaInfo(_metaInfo) {}
 
-  useit static inline GlobalDeclaration* create(Identifier _name, QatType* _type, Expression* _value, bool _isVariable,
-                                                Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _fileRange);
+  useit static inline GlobalDeclaration* create(Identifier _name, QatType* _type, Maybe<Expression*> _value,
+                                                bool _isVariable, Maybe<VisibilitySpec> _visibSpec,
+                                                Maybe<MetaInfo> _metaInfo, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _metaInfo,
+                             _fileRange);
   }
 
   void  define(IR::Context* ctx) final;

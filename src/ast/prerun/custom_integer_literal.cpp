@@ -59,7 +59,7 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
     }
   }
   if (isUnsigned.has_value() && isUnsigned.value()) {
-    numberIsUnsigned = isUnsigned.value();
+    numberIsUnsigned = true;
     if (bitWidth && !ctx->getMod()->hasUnsignedBitwidth(bitWidth.value())) {
       ctx->Error("The unsigned integer bitwidth " + ctx->highlightError("u" + std::to_string(bitWidth.value())) +
                      " is not brought into this module. Please bring it using " +
@@ -86,13 +86,40 @@ IR::PrerunValue* CustomIntegerLiteral::emit(IR::Context* ctx) {
                  suffix.value().range);
     }
   }
+  if (isTypeInferred()) {
+    if (suffixType.has_value() && !suffixType.value()->isSame(inferredType)) {
+      ctx->Error("The type inferred from scope for this custom integer literal is " +
+                     ctx->highlightError(inferredType->toString()) + " but the type from the provided suffix is " +
+                     ctx->highlightError(suffixType.value()->toString()),
+                 fileRange);
+    } else {
+      if (isUnsigned.has_value()) {
+        if (isUnsigned.value() && (inferredType->isInteger() ||
+                                   (inferredType->isCType() && inferredType->asCType()->getSubType()->isInteger()))) {
+          ctx->Error("The inferred type is " + ctx->highlightError(inferredType->toString()) +
+                         " which is not an unsigned integer type",
+                     fileRange);
+        } else if (!isUnsigned.value() &&
+                   (inferredType->isUnsignedInteger() ||
+                    (inferredType->isCType() && inferredType->asCType()->getSubType()->isUnsignedInteger()))) {
+          ctx->Error("The inferred type is " + ctx->highlightError(inferredType->toString()) +
+                         " which is not a signed integer type",
+                     fileRange);
+        }
+      }
+    }
+  }
   return new IR::PrerunValue(
-      llvm::ConstantInt::get(suffixType.has_value() ? llvm::cast<llvm::IntegerType>(suffixType.value()->getLLVMType())
-                                                    : llvm::Type::getIntNTy(ctx->llctx, usableBitwidth),
+      llvm::ConstantInt::get(suffixType.has_value()
+                                 ? llvm::cast<llvm::IntegerType>(suffixType.value()->getLLVMType())
+                                 : (isTypeInferred() ? llvm::cast<llvm::IntegerType>(inferredType->getLLVMType())
+                                                     : llvm::Type::getIntNTy(ctx->llctx, usableBitwidth)),
                              numberValue, radix.value_or(DEFAULT_RADIX_VALUE)),
-      suffixType.has_value() ? suffixType.value()
-                             : (numberIsUnsigned ? (IR::QatType*)IR::UnsignedType::get(usableBitwidth, ctx)
-                                                 : (IR::QatType*)IR::IntegerType::get(usableBitwidth, ctx)));
+      suffixType.has_value()
+          ? suffixType.value()
+          : (isTypeInferred() ? inferredType
+                              : (numberIsUnsigned ? (IR::QatType*)IR::UnsignedType::get(usableBitwidth, ctx)
+                                                  : (IR::QatType*)IR::IntegerType::get(usableBitwidth, ctx))));
 }
 
 String CustomIntegerLiteral::radixToString(u8 val) {

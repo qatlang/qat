@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class CustomIntegerLiteral : public PrerunExpression {
+class CustomIntegerLiteral : public PrerunExpression, public TypeInferrable {
 private:
   String      value;
   Maybe<u32>  bitWidth;
@@ -30,6 +30,8 @@ public:
     return std::construct_at(OwnNormal(CustomIntegerLiteral), _value, _isUnsigned, _bitWidth, _radix, _suffix,
                              _fileRange);
   }
+
+  TYPE_INFERRABLE_FUNCTIONS
 
   IR::PrerunValue* emit(IR::Context* ctx) override;
 

@@ -76,7 +76,8 @@ Context::Context() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(
   dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
 }
 
-void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID) {
+void Context::nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID,
+                                Maybe<String> opaqueID) {
   auto reqInfo = getAccessInfo();
   if (getActiveModule()->hasOpaqueType(name.value, reqInfo)) {
     auto* opq = getActiveModule()->getOpaqueType(name.value, getAccessInfo());
@@ -85,6 +86,10 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
         if (opq->getGenericID().value() == genericID.value()) {
           return;
         }
+      }
+    } else if (opaqueID.has_value()) {
+      if (opq->getID() == opaqueID.value()) {
+        return;
       }
     }
     String tyDesc;
@@ -243,6 +248,22 @@ void Context::nameCheckInModule(const Identifier& name, const String& entityType
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
+  } else if (getActiveModule()->hasPrerunGlobal(name.value, reqInfo)) {
+    Error("A prerun global entity named " + highlightError(name.value) +
+              " exists in this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (getActiveModule()->hasBroughtPrerunGlobal(name.value, None)) {
+    Error("A prerun global entity named " + highlightError(name.value) +
+              " is brought into this module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
+  } else if (getActiveModule()->hasAccessiblePrerunGlobalInImports(name.value, reqInfo).first) {
+    Error("A prerun global entity named " + highlightError(name.value) + " is present inside the module " +
+              highlightError(getActiveModule()->hasAccessibleGlobalEntityInImports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
   } else if (getActiveModule()->hasRegion(name.value, reqInfo)) {
     Error("A region named " + highlightError(name.value) + " exists in this module. Please change name of this " +
               entityType + " or check the codebase for inconsistencies",
@@ -391,7 +412,6 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
 } // NOLINT(clang-diagnostic-return-type)
 
 AccessInfo Context::getAccessInfo() const {
-  // TODO - Consider changing string value to pointer of the actual entities
   IR::QatModule*      mod  = getActiveModule();
   Maybe<IR::QatType*> type = None;
   if (hasActiveType()) {
@@ -530,7 +550,7 @@ void Context::addError(String const& message, Maybe<FileRange> fileRange, Maybe<
       (void)setActiveModule(oldMod);
     }
   }
-  Logger::get()->finishOutput();
+  Logger::get()->finish_output();
   ctxMut.unlock();
 }
 
@@ -599,7 +619,6 @@ void Context::finalise_errors() {
     writeJsonResult(false);
     sitter->destroy();
     QatRegion::destroyAllBlocks();
-    MemoryTracker::report();
     ctxMut.unlock();
     std::exit(0);
   } else if (!threadsWithErrors.empty()) {

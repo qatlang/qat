@@ -254,7 +254,8 @@ public:
     }
   }
 
-  void nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID);
+  void nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID,
+                         Maybe<String> opaqueID = None);
 
   inline void genericNameCheck(const String& name, const FileRange& range) {
     if (hasActiveFunction() && getActiveFunction()->hasGenericParameter(name)) {
@@ -277,14 +278,6 @@ public:
   }
 
   useit AccessInfo getAccessInfo() const;
-
-  useit inline Maybe<AccessInfo> getReqInfoIfDifferentModule(IR::QatModule* otherMod) const {
-    if ((getMod()->getID() == otherMod->getID()) || getMod()->isParentModuleOf(otherMod)) {
-      return None;
-    } else {
-      return getAccessInfo();
-    }
-  }
 
   useit VisibilityInfo getVisibInfo(Maybe<ast::VisibilitySpec> spec);
   useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;

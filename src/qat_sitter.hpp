@@ -39,7 +39,7 @@ public:
   void destroy();
   void removeEntityWithPath(const fs::path& path);
   void handlePath(const fs::path& path, IR::Context* ctx);
-  void doDiagnostics();
+  void display_stats();
 
   useit static bool checkExecutableExists(const String& name);
   useit static bool isNameValid(const String& name);

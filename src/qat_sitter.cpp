@@ -44,7 +44,7 @@ QatSitter* QatSitter::get() {
   return instance;
 }
 
-void QatSitter::doDiagnostics() {
+void QatSitter::display_stats() {
   auto& log = Logger::get();
   log->diagnostic(
       "Lexer speed   -> " +
@@ -78,12 +78,14 @@ void QatSitter::doDiagnostics() {
     log->diagnostic("Compile time  -> " + timeToString(ctx->qatCompileTimeInMs.value()));
     log->diagnostic("clang & lld   -> " + timeToString(ctx->clangAndLinkTimeInMs.value()));
   }
+  log->finish_output();
 }
 
 void QatSitter::initialise() {
   auto* config = cli::Config::get();
   auto& log    = Logger::get();
   for (const auto& path : config->getPaths()) {
+    SHOW("Handling path for " << path)
     handlePath(path, ctx);
   }
   if (config->hasStdLibPath() && ctx->stdLibRequired) {
@@ -177,7 +179,7 @@ void QatSitter::initialise() {
       }
     }
     SHOW("Getting link start time")
-    auto clearLLVM = [&] {
+    auto clear_llvm_files = [&] {
       if (cfg->clearLLVM()) {
         for (const auto& llPath : ctx->llvmOutputPaths) {
           fs::remove(llPath);
@@ -202,18 +204,22 @@ void QatSitter::initialise() {
           workers.add(std::thread([&](IR::QatModule* mod) { mod->handleNativeLibs(ctx); }, entity));
         }
         workers.wait();
+        SHOW("All native libs handled")
         ctx->finalise_errors();
         for (auto* entity : fileEntities) {
           workers.add(std::thread([&](IR::QatModule* mod) { mod->bundleLibs(ctx); }, entity));
         }
         workers.wait();
-        ctx->finalise_errors();
         ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
                                         std::chrono::high_resolution_clock::now() - clangStartTime)
                                         .count();
-        doDiagnostics();
+        ctx->finalise_errors();
+        SHOW("Replacing uses")
+        IR::Value::replace_uses_for_all();
+        SHOW("Replaced uses")
+        display_stats();
         ctx->writeJsonResult(true);
-        clearLLVM();
+        clear_llvm_files();
         if (cfg->isRun() && !ctx->executablePaths.empty()) {
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.string())
@@ -246,8 +252,8 @@ void QatSitter::initialise() {
                    None);
       }
     } else {
-      doDiagnostics();
-      clearLLVM();
+      display_stats();
+      clear_llvm_files();
       SHOW("clearLLVM called")
       ctx->writeJsonResult(true);
     }
@@ -320,9 +326,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
           }
           Parser->clear_brought_paths();
           Parser->clear_member_paths();
-          fileEntities.push_back(IR::QatModule::CreateRootLib(
-              parentMod, fs::absolute(libCheckRes->second), path, Identifier(libCheckRes->first, libCheckRes->second),
-              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+          fileEntities.push_back(IR::QatModule::CreateRootLib(parentMod, fs::absolute(libCheckRes->second), path,
+                                                              Identifier(libCheckRes->first, libCheckRes->second),
+                                                              std::move(parseRes), VisibilityInfo::pub(), ctx));
         } else {
           auto dirQatChecker = [](const fs::directory_entry& entry) {
             bool foundQatFile = false;
@@ -365,13 +371,13 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
         Parser->clear_brought_paths();
         Parser->clear_member_paths();
         if (libCheckRes.has_value()) {
-          fileEntities.push_back(IR::QatModule::CreateRootLib(
-              parentMod, fs::absolute(item), path, Identifier(libCheckRes->first, libCheckRes->second),
-              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+          fileEntities.push_back(IR::QatModule::CreateRootLib(parentMod, fs::absolute(item), path,
+                                                              Identifier(libCheckRes->first, libCheckRes->second),
+                                                              std::move(parseRes), VisibilityInfo::pub(), ctx));
         } else {
-          fileEntities.push_back(IR::QatModule::CreateFileMod(
-              parentMod, fs::absolute(item), path, Identifier(item.path().filename().string(), item.path()),
-              Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+          fileEntities.push_back(IR::QatModule::CreateFileMod(parentMod, fs::absolute(item), path,
+                                                              Identifier(item.path().filename().string(), item.path()),
+                                                              std::move(parseRes), VisibilityInfo::pub(), ctx));
         }
       }
     }
@@ -400,9 +406,9 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
       }
       Parser->clear_brought_paths();
       Parser->clear_member_paths();
-      fileEntities.push_back(IR::QatModule::CreateFileMod(
-          nullptr, libCheckRes->second, mainPath, Identifier(libCheckRes->first, libCheckRes->second),
-          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+      fileEntities.push_back(IR::QatModule::CreateFileMod(nullptr, libCheckRes->second, mainPath,
+                                                          Identifier(libCheckRes->first, libCheckRes->second),
+                                                          std::move(parseRes), VisibilityInfo::pub(), ctx));
     } else {
       auto* subfolder =
           IR::QatModule::Create(Identifier(mainPath.filename().string(), mainPath), mainPath, mainPath.parent_path(),
@@ -431,13 +437,13 @@ void QatSitter::handlePath(const fs::path& mainPath, IR::Context* ctx) {
     Parser->clear_brought_paths();
     Parser->clear_member_paths();
     if (libCheckRes.has_value()) {
-      fileEntities.push_back(IR::QatModule::CreateRootLib(
-          nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(libCheckRes->first, libCheckRes->second),
-          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+      fileEntities.push_back(IR::QatModule::CreateRootLib(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
+                                                          Identifier(libCheckRes->first, libCheckRes->second),
+                                                          std::move(parseRes), VisibilityInfo::pub(), ctx));
     } else {
-      fileEntities.push_back(IR::QatModule::CreateFileMod(
-          nullptr, fs::absolute(mainPath), mainPath.parent_path(), Identifier(mainPath.filename().string(), mainPath),
-          Lexer->getContent(), std::move(parseRes), VisibilityInfo::pub(), ctx));
+      fileEntities.push_back(IR::QatModule::CreateFileMod(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
+                                                          Identifier(mainPath.filename().string(), mainPath),
+                                                          std::move(parseRes), VisibilityInfo::pub(), ctx));
     }
   }
   for (const auto& bPath : broughtPaths) {
@@ -473,6 +479,7 @@ bool QatSitter::checkExecutableExists(const String& name) {
 }
 
 void QatSitter::destroy() {
+  IR::Value::replace_uses_for_all();
   IR::QatModule::clearAll();
   ast::Node::clearAll();
   ast::QatType::clearAll();

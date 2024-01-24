@@ -52,6 +52,8 @@
 #include "../ast/prerun/none.hpp"
 #include "../ast/prerun/null_pointer.hpp"
 #include "../ast/prerun/plain_initialiser.hpp"
+#include "../ast/prerun/prerun_global.hpp"
+#include "../ast/prerun/tuple_value.hpp"
 #include "../ast/prerun/type_wrap.hpp"
 #include "../ast/prerun/unsigned_literal.hpp"
 #include "../ast/sentences/assignment.hpp"
@@ -70,6 +72,7 @@
 #include "../ast/types/array.hpp"
 #include "../ast/types/c_type.hpp"
 #include "../ast/types/float.hpp"
+#include "../ast/types/function.hpp"
 #include "../ast/types/future.hpp"
 #include "../ast/types/generic_named_type.hpp"
 #include "../ast/types/integer.hpp"
@@ -616,6 +619,37 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
         }
         break;
       }
+      case TokenType::parenthesisOpen: {
+        if (hasCachedExp()) {
+          // Function call
+          add_error("Prerun function calls are not supported yet", RangeAt(i));
+        } else {
+          const auto start  = i;
+          auto       expRes = do_prerun_expression(preCtx, i, None);
+          if (is_next(TokenType::semiColon, expRes.second)) {
+            // Prerun Tuple Value
+            Vec<ast::PrerunExpression*> members{expRes.first};
+            i = expRes.second;
+            while (is_next(TokenType::semiColon, i)) {
+              expRes = do_prerun_expression(preCtx, i + 1, None);
+              members.push_back(expRes.first);
+              i = expRes.second;
+            }
+            if (is_next(TokenType::parenthesisClose, i)) {
+              i++;
+              setCachedPreExp(ast::PrerunTupleValue::create(members, RangeSpan(start, expRes.second + 2)), i);
+            } else {
+              add_error("Expected ) to end the tuple value", RangeSpan(start, i));
+            }
+          } else if (is_next(TokenType::parenthesisClose, expRes.second)) {
+            i = expRes.second + 1;
+            setCachedPreExp(expRes.first, expRes.second + 1);
+          } else {
+            add_error("Expected ) to end the enclosed expression", RangeAt(i));
+          }
+        }
+        break;
+      }
       case TokenType::bracketOpen: {
         auto cEndRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
         if (cEndRes.has_value()) {
@@ -911,6 +945,7 @@ Pair<ast::QatType*, usize> Parser::do_type(ParserContext& preCtx, usize from, Ma
         break;
       }
       case TokenType::parenthesisOpen: {
+        auto start = i;
         if (cacheTy.has_value()) {
           auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
           if (pCloseRes.has_value()) {
@@ -931,24 +966,41 @@ Pair<ast::QatType*, usize> Parser::do_type(ParserContext& preCtx, usize from, Ma
         if (upto.has_value() && (pCloseResult.value() > upto.value())) {
           add_error("Invalid position for )", RangeAt(pCloseResult.value()));
         }
-        auto               pClose = pCloseResult.value();
-        Vec<ast::QatType*> subTypes;
-        for (usize j = i; j < pClose; j++) {
-          if (is_primary_within(TokenType::semiColon, j, pClose)) {
-            auto semiPosResult = first_primary_position(TokenType::semiColon, j);
-            if (!semiPosResult.has_value()) {
-              add_error("Invalid position of ; separator", token.fileRange);
+        auto pClose = pCloseResult.value();
+        if (is_next(TokenType::givenTypeSeparator, pClose)) {
+          auto argTypes = do_separated_types(preCtx, i, pClose);
+          auto retTyRes = do_type(preCtx, pClose + 1, None);
+          cacheTy       = ast::FunctionType::create(retTyRes.first, argTypes, RangeSpan(start, retTyRes.second));
+          i             = retTyRes.second;
+        } else {
+          if (is_primary_within(TokenType::separator, start, pClose)) {
+            add_error("Expected a type here. Expected ; to separate member types of a tuple type, but found , instead",
+                      RangeSpan(start, pClose));
+          } else if (is_primary_within(TokenType::semiColon, start, pClose)) {
+            Vec<ast::QatType*> subTypes;
+            for (usize j = i; j < pClose; j++) {
+              if (is_primary_within(TokenType::semiColon, j, pClose)) {
+                auto semiPosResult = first_primary_position(TokenType::semiColon, j);
+                if (!semiPosResult.has_value()) {
+                  add_error("Invalid position of ; separator", token.fileRange);
+                }
+                auto semiPos = semiPosResult.value();
+                subTypes.push_back(do_type(ctx, j, semiPos).first);
+                j = semiPos - 1;
+              } else if (j != (pClose - 1)) {
+                subTypes.push_back(do_type(ctx, j, pClose).first);
+                j = pClose;
+              }
             }
-            auto semiPos = semiPosResult.value();
-            subTypes.push_back(do_type(ctx, j, semiPos).first);
-            j = semiPos - 1;
-          } else if (j != (pClose - 1)) {
-            subTypes.push_back(do_type(ctx, j, pClose).first);
-            j = pClose;
+            cacheTy = ast::TupleType::create(subTypes, false, RangeSpan(start, pClose));
+            i       = pClose;
+          } else {
+            add_error(
+                "This is not a valid type, could not find ; inside to indicate a tuple type. If you meant to provide a function type, please provide the return type as well like " +
+                    color_error("(argTypes...) -> returnType"),
+                RangeSpan(start, pClose));
           }
         }
-        i       = pClose;
-        cacheTy = ast::TupleType::create(subTypes, false, token.fileRange);
         break;
       }
       case TokenType::voidType: {
@@ -1393,9 +1445,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           i++;
         }
         if (is_next(TokenType::identifier, i)) {
-          ast::Expression* exp    = nullptr;
-          ast::QatType*    typ    = nullptr;
-          auto             endRes = first_primary_position(TokenType::stop, i + 1);
+          Maybe<ast::Expression*> exp;
+          ast::QatType*           typ    = nullptr;
+          auto                    endRes = first_primary_position(TokenType::stop, i + 1);
           if (!endRes.has_value()) {
             add_error("Expected end for the global declaration", RangeSpan(start, i + 1));
           }
@@ -1410,7 +1462,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           } else {
             add_error("Expected :: and the type of the global declaration here", RangeSpan(start, i + 1));
           }
-          addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, getVisibility(),
+          // FIXME - Support meta info for globals as well
+          addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, getVisibility(), None,
                                                  RangeSpan(start, endRes.value())));
           i = endRes.value();
         } else {
@@ -1477,6 +1530,38 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           } else {
             add_error("Expected . to end the bring sentence", token.fileRange);
           }
+        }
+        break;
+      }
+      case TokenType::pre: {
+        auto start = i;
+        if (is_next(TokenType::identifier, i)) {
+          auto                 name       = IdentifierAt(i + 1);
+          auto                 visibility = getVisibility();
+          Maybe<ast::QatType*> provType;
+          if (is_next(TokenType::typeSeparator, i + 1)) {
+            auto typeRes = do_type(thisCtx, i + 2, None);
+            provType     = typeRes.first;
+            i            = typeRes.second;
+          } else {
+            i++;
+          }
+          if (is_next(TokenType::assignment, i)) {
+            auto preVal = do_prerun_expression(thisCtx, i + 1, None);
+            if (is_next(TokenType::stop, preVal.second)) {
+              addNode(ast::PrerunGlobal::create(name, provType, preVal.first, visibility,
+                                                RangeSpan(start, preVal.second + 1)));
+              i = preVal.second + 1;
+            } else {
+              add_error("Expected a . after the expression to end the value for the prerun global entity",
+                        preVal.first->fileRange);
+            }
+          } else {
+            // FIXME - Support prerun functions
+            add_error("Expected = to start the value of the prerun global entity", RangeSpan(start, i));
+          }
+        } else {
+          add_error("Invalid token found here", RangeAt(i));
         }
         break;
       }

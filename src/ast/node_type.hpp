@@ -89,6 +89,9 @@ enum class NodeType {
   CAST,
   SPAWN,
   DEFINE_OPAQUE_TYPE,
+  ADDRESS_OF,
+  PRERUN_GLOBAL,
+  PRERUN_TUPLE_VALUE,
 };
 
 } // namespace qat::ast

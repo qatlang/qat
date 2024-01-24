@@ -50,10 +50,34 @@ IR::OpaqueType* DefineCoreType::getOpaque() const { return opaquedTypes.back(); 
 
 void DefineCoreType::unsetOpaque() const { opaquedTypes.pop_back(); }
 
+void DefineCoreType::createModule(IR::Context* ctx) const {
+  if (!isGeneric()) {
+    auto* mod = ctx->getMod();
+    ctx->nameCheckInModule(name, "core type", None);
+    bool             hasAllMems = true;
+    Vec<llvm::Type*> allMemEqTys;
+    for (auto* mem : members) {
+      auto memSize = mem->type->getTypeSizeInBits(ctx);
+      if (!memSize.has_value()) {
+        hasAllMems = false;
+        break;
+      } else {
+        allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
+      }
+    }
+    auto eqStructTy     = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+    auto mainVisibility = ctx->getVisibInfo(visibSpec);
+    setOpaque(IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, mod,
+                                  eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+                                  mainVisibility, ctx->llctx, None));
+  }
+}
+
 void DefineCoreType::createType(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
-                         isGeneric() ? Maybe<String>(genericCoreType->getID()) : None);
+                         isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
+                         isGeneric() ? None : Maybe<String>(getOpaque()->getID()));
   bool needsDestructor = false;
   auto cTyName         = name;
   SHOW("Creating IR generics")
@@ -74,25 +98,27 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
     genericsIR.push_back(gen->toIRGenericType());
   }
-  bool             hasAllMems = true;
-  Vec<llvm::Type*> allMemEqTys;
-  for (auto* mem : members) {
-    auto memSize = mem->type->getTypeSizeInBits(ctx);
-    if (!memSize.has_value()) {
-      hasAllMems = false;
-      break;
-    } else {
-      allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
-    }
-  }
-  auto eqStructTy     = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
   auto mainVisibility = ctx->getVisibInfo(visibSpec);
-  SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
-                                         << genericCoreType << "; datalayout: " << ctx->dataLayout.has_value())
-  setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
-                                IR::OpaqueSubtypeKind::core, mod,
-                                eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-                                mainVisibility, ctx->llctx, None));
+  if (isGeneric()) {
+    bool             hasAllMems = true;
+    Vec<llvm::Type*> allMemEqTys;
+    for (auto* mem : members) {
+      auto memSize = mem->type->getTypeSizeInBits(ctx);
+      if (!memSize.has_value()) {
+        hasAllMems = false;
+        break;
+      } else {
+        allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
+      }
+    }
+    auto eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+    SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
+                                           << genericCoreType << "; datalayout: " << ctx->dataLayout.has_value())
+    setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
+                                  IR::OpaqueSubtypeKind::core, mod,
+                                  eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+                                  mainVisibility, ctx->llctx, None));
+  }
   SHOW("Set opaque")
   if (genericCoreType) {
     genericCoreType->opaqueVariants.push_back(IR::GenericVariant<IR::OpaqueType>(getOpaque(), genericsToFill));

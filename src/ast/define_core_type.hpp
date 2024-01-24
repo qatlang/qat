@@ -128,6 +128,8 @@ public:
   void setMoveConstructor(ConstructorDefinition* cDef);
   void setCopyAssignment(OperatorDefinition* mDef);
   void setMoveAssignment(OperatorDefinition* mDef);
+
+  void createModule(IR::Context* ctx) const final;
   void createType(IR::Context* ctx) const;
   void defineType(IR::Context* ctx) final;
   void define(IR::Context* ctx) final;

@@ -1,7 +1,6 @@
 #include "lexer.hpp"
 #include "../IR/context.hpp"
 #include "../cli/color.hpp"
-#include "../memory_tracker.hpp"
 #include "../show.hpp"
 #include "../utils/utils.hpp"
 #include "token_type.hpp"
@@ -33,7 +32,6 @@ Lexer::~Lexer() {
     file.close();
     SHOW("Closed file that was open in the lexer")
   }
-  content.clear();
   SHOW("Cleared file content")
   buffer.clear();
   SHOW("Cleared token buffer")
@@ -48,8 +46,6 @@ Vec<Token>* Lexer::getTokens() {
   return res;
 }
 
-Vec<String> Lexer::getContent() const { return content; }
-
 void Lexer::read() {
   //   try {
   if (file.eof()) {
@@ -58,22 +54,12 @@ void Lexer::read() {
   } else {
     prev = current;
     file.get(current);
-    if (current != -1) {
-      if (content.empty()) {
-        content.push_back("");
-      }
-      if (current != '\n' || current != '\r') {
-        content.back() += current;
-      }
-    }
     characterNumber++;
-    totalCharacterCount++;
   }
   if (current == '\n') {
     previousLineEnd = characterNumber - 1;
     lineNumber++;
     characterNumber = 0;
-    content.push_back("");
   } else if (current == '\r') {
     prev = current;
     file.get(current);
@@ -82,15 +68,10 @@ void Lexer::read() {
         previousLineEnd = characterNumber - 2;
         lineNumber++;
         characterNumber = 0;
-        totalCharacterCount++;
-        content.push_back("");
       } else {
         characterNumber++;
-        totalCharacterCount++;
-        (content.back() += "\r") += current;
       }
     }
-    totalCharacterCount++;
     characterNumber = (current == '\n') ? 0 : 1;
   }
   //   } catch (std::exception& err) {
@@ -127,15 +108,25 @@ void Lexer::analyse() {
 }
 
 void Lexer::changeFile(fs::path newFilePath) {
-  tokens = new Vec<Token>();
-  content.clear();
-  filePath            = std::move(newFilePath);
-  prev                = -1;
-  current             = -1;
-  lineNumber          = 1;
-  characterNumber     = 0;
-  totalCharacterCount = 0;
+  tokens          = new Vec<Token>();
+  filePath        = std::move(newFilePath);
+  prev            = -1;
+  current         = -1;
+  lineNumber      = 1;
+  characterNumber = 0;
 }
+
+#define LOWER_LETTER_FIRST 'a'
+#define LOWER_LETTER_LAST  'z'
+#define UPPER_LETTER_FIRST 'A'
+#define UPPER_LETTER_LAST  'Z'
+#define DIGIT_FIRST        '0'
+#define DIGIT_LAST         '9'
+#define CURRENT_IS_ALPHABET                                                                                            \
+  ((current >= LOWER_LETTER_FIRST && current <= LOWER_LETTER_LAST) ||                                                  \
+   (current >= UPPER_LETTER_FIRST && current <= UPPER_LETTER_LAST))
+
+#define CURRENT_IS_DIGIT (current >= DIGIT_FIRST && current <= DIGIT_LAST)
 
 Token Lexer::tokeniser() {
   if (!buffer.empty()) {
@@ -444,12 +435,10 @@ Token Lexer::tokeniser() {
     case '7':
     case '8':
     case '9': {
-      String       numVal;
-      bool         isFloat          = false;
-      bool         exponentialFloat = false;
-      const String alphabets("abcdefghijklmnopqrstuvwxyz");
-      const String digits("0123456789");
-      bool         foundRadix = false;
+      String numVal;
+      bool   isFloat          = false;
+      bool   exponentialFloat = false;
+      bool   foundRadix       = false;
       if (current == '0') {
         read();
         if (current == 'b') {
@@ -467,7 +456,7 @@ Token Lexer::tokeniser() {
         } else if (current == 'r') {
           numVal += "0r";
           read();
-          while (digits.find(current) != String::npos) {
+          while (CURRENT_IS_DIGIT) {
             numVal += current;
             read();
           }
@@ -483,10 +472,8 @@ Token Lexer::tokeniser() {
         }
       }
       bool foundSpec = false;
-      while (((digits.find(current) != String::npos) ||
-              (foundRadix && !foundSpec && (alphabets.find(current) != String::npos)) ||
-              (!isFloat && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
-              (!foundSpec && (current == '_'))) &&
+      while ((CURRENT_IS_DIGIT || (foundRadix && !foundSpec && CURRENT_IS_ALPHABET) || (!isFloat && (current == '.')) ||
+              (!foundRadix && !exponentialFloat && (current == 'e')) || (!foundSpec && (current == '_'))) &&
              !file.eof()) {
         if (!foundRadix && !exponentialFloat && current == 'e') {
           isFloat          = true;
@@ -497,7 +484,7 @@ Token Lexer::tokeniser() {
             expStr += current;
             read();
           }
-          while (digits.find(current) != String::npos) {
+          while (CURRENT_IS_DIGIT) {
             expStr += current;
             read();
           }
@@ -505,7 +492,7 @@ Token Lexer::tokeniser() {
           continue;
         } else if (current == '.') {
           read();
-          if (digits.find(current) != String::npos) {
+          if (CURRENT_IS_DIGIT) {
             if (foundRadix) {
               throwError("This literal is in custom radix format and hence cannot contain decimal point ",
                          numVal.length() + 1);
@@ -527,20 +514,19 @@ Token Lexer::tokeniser() {
         } else if (current == '_') {
           String specString;
           read();
-          if (digits.find(current) != String::npos) {
+          if (CURRENT_IS_DIGIT) {
             numVal += "_";
-          } else if (alphabets.find(current) != String::npos) {
+          } else if (CURRENT_IS_ALPHABET) {
             foundSpec  = true;
             specString = "_";
-            while ((alphabets.find(current) != String::npos) || (digits.find(current) != String::npos)) {
+            while (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT) {
               specString += current;
               read();
             }
             numVal += specString;
             if (specString == "_f32" || specString == "_f64" || specString == "_f128" || specString == "_f128ppc" ||
                 specString == "_f16" || specString == "_fbrain" || specString == "_float" || specString == "_double" ||
-                specString == "_longdouble" || specString == "_cFloat128" || specString == "_cFloatHalf" ||
-                specString == "_cFloatBrain") {
+                specString == "_longdouble") {
               isFloat = true;
             }
             return Token::valued(isFloat ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
@@ -559,13 +545,9 @@ Token Lexer::tokeniser() {
       return Token::valued(TokenType::endOfFile, filePath.string(), this->getPosition(0));
     }
     default: {
-      const String alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      if ((alphabets.find(current, 0) != String::npos) || current == '_') {
-        const String digits = "0123456789";
-        String       value;
-        while (((alphabets.find(current, 0) != String::npos) || (digits.find(current, 0) != String::npos) ||
-                (current == '_')) &&
-               !file.eof()) {
+      if (CURRENT_IS_ALPHABET || current == '_') {
+        String value;
+        while ((CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_')) && !file.eof()) {
           value += current;
           read();
         }
@@ -652,6 +634,8 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_VALUED_Keyword("uint", cType);
   else Check_VALUED_Keyword("char", cType);
   else Check_VALUED_Keyword("uchar", cType);
+  else Check_VALUED_Keyword("shortint", cType);
+  else Check_VALUED_Keyword("ushortint", cType);
   else Check_VALUED_Keyword("widechar", cType);
   else Check_VALUED_Keyword("uwidechar", cType);
   else Check_VALUED_Keyword("longint", cType);
@@ -671,9 +655,6 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_VALUED_Keyword("uptrdiff", cType);
   else Check_VALUED_Keyword("cSigAtomic", cType);
   else Check_VALUED_Keyword("cProcessID", cType);
-  else Check_VALUED_Keyword("cFloatHalf", cType);
-  else Check_VALUED_Keyword("cFloatBrain", cType);
-  else Check_VALUED_Keyword("cFloat128", cType);
   else Check_VALUED_Keyword("cStr", cType);
   else Check_VALUED_Keyword("cBool", cType);
   else Check_VALUED_Keyword("cPtr", cType);

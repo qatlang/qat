@@ -16,15 +16,12 @@ class Lexer {
 private:
   fs::path      filePath;
   std::ifstream file;
-  Vec<String>   content;
   char          prev;
   char          current;
   Vec<Token>*   tokens = nullptr;
   Deque<Token>  buffer;
 
   Vec<TokenType> bracketOccurences;
-
-  u64 totalCharacterCount = 0;
 
   IR::Context* irCtx;
 
@@ -47,7 +44,6 @@ public:
   void               changeFile(fs::path newFile);
   useit static Token wordToToken(const String& value, Lexer* lexInst);
   useit Vec<Token>* getTokens();
-  useit Vec<String> getContent() const;
   useit Token       tokeniser();
   useit FileRange   getPosition(u64 length);
 };

@@ -98,7 +98,7 @@ endif()
 
 string(STRIP "${LLVM_LIBRARIES}" LLVM_LIBRARIES)
 
-add_executable(${PROJECT_NAME} qat.cpp qat_sitter.cpp memory_tracker.cpp)
+add_executable(${PROJECT_NAME} qat.cpp qat_sitter.cpp)
 add_subdirectory(cli/)
 add_subdirectory(utils/)
 add_subdirectory(ast/)

@@ -1474,7 +1474,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       }
       case TokenType::bring: {
         if (is_next(TokenType::StringLiteral, i) ||
-            (is_next(TokenType::child, i) && is_next(TokenType::identifier, i + 1) && (ValueAt(i + 2) == "member"))) {
+            (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1) && (ValueAt(i + 2) == "member"))) {
           bool isMember = !is_next(TokenType::StringLiteral, i);
           auto endRes   = first_primary_position(TokenType::stop, i);
           if (endRes.has_value()) {

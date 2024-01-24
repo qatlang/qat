@@ -1,5 +1,4 @@
 #include "./qat_region.hpp"
-#include "../memory_tracker.hpp"
 #include "../show.hpp"
 #include "helpers.hpp"
 #include <type_traits>
@@ -53,7 +52,6 @@ void* TrackedRegion::getMemory(DestructorFnPtrTy dstrFn, usize typeSize) {
   if (blockTail == nullptr) {
     auto blockSize = (unitSize < (defaultBlockSize - (2 * usizeSize) - u8PtrSize)) ? defaultBlockSize : (2 * unitSize);
     blockTail      = malloc(blockSize);
-    MemoryTracker::incrementSize(blockSize);
     if (blockTail == nullptr) {
       exit(1);
     } else {
@@ -78,7 +76,6 @@ void* TrackedRegion::getMemory(DestructorFnPtrTy dstrFn, usize typeSize) {
   if ((*blockSizePtr - (2 * usizeSize) - u8PtrSize - *blockOffsetPtr) < unitSize) {
     auto blockSize = (unitSize < (defaultBlockSize - (2 * usizeSize) - u8PtrSize)) ? defaultBlockSize : (2 * unitSize);
     auto newBlockTail = malloc(blockSize);
-    MemoryTracker::incrementSize(blockSize);
     if (newBlockTail == nullptr) {
       exit(1);
     } else {
@@ -130,7 +127,6 @@ void* QatRegion::getMemory(usize typeSize) {
     if (blockTail == nullptr) {
       exit(1);
     } else {
-      MemoryTracker::incrementSize(blockSize);
       // Updating blockTails for each new thread requesting for memory
       while (!regionMutex.try_lock()) {
       }
@@ -155,7 +151,6 @@ void* QatRegion::getMemory(usize typeSize) {
     if (newBlockTail == nullptr) {
       exit(1);
     } else {
-      MemoryTracker::incrementSize(blockSize);
       *nextBlockPtr   = (void*)newBlockTail;
       nextBlockPtr    = (void**)newBlockTail;
       blockSizePtr    = (usize*)(nextBlockPtr + 1);

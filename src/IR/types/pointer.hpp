@@ -75,6 +75,7 @@ public:
   useit bool isMulti() const;
   useit bool isNullable() const;
   useit bool isNonNullable() const;
+  useit bool canBePrerun() const final { return subType->isFunction(); }
   useit bool isTypeSized() const final;
   useit bool hasDefaultValue() const final;
   useit bool isTriviallyCopyable() const final;

@@ -1,5 +1,4 @@
 #include "./error.hpp"
-#include "../memory_tracker.hpp"
 #include "../utils/logger.hpp"
 #include "color.hpp"
 #include "config.hpp"

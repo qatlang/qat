@@ -1,6 +1,5 @@
 #include "./qat_sitter.hpp"
 #include "cli/config.hpp"
-#include "memory_tracker.hpp"
 #include "utils/logger.hpp"
 #include "utils/qat_region.hpp"
 
@@ -38,6 +37,5 @@ int main(int count, const char** args) {
   sitter->initialise();
   TrackedRegion::destroyMembers();
   QatRegion::destroyAllBlocks();
-  MemoryTracker::report();
   return 0;
 }

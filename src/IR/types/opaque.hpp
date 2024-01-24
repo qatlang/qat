@@ -1,7 +1,6 @@
 #ifndef QAT_IR_TYPES_OPAQUE_HPP
 #define QAT_IR_TYPES_OPAQUE_HPP
 
-#include "../../memory_tracker.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"

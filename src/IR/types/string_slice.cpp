@@ -5,6 +5,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
+#include <errno.h>
 
 namespace qat::IR {
 
@@ -52,7 +53,7 @@ String StringSliceType::value_to_string(IR::PrerunValue* value) {
   if (initial->getNumElements() == 1u) {
     return "";
   } else {
-    auto tempStr = initial->getRawDataValues().str();
+    auto tempStr = String(initial->getRawDataValues().data(), initial->getRawDataValues().size());
     if (tempStr[tempStr.size() - 1] == '\0') {
       return tempStr.substr(0, tempStr.size() - 1);
     }

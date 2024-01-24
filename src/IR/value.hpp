@@ -3,6 +3,7 @@
 
 #include "../IR/types/typed.hpp"
 #include "../utils/file_range.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
@@ -53,7 +54,8 @@ public:
   useit inline bool isReference() const { return type->isReference(); }
   useit inline bool isPointer() const { return type->isPointer(); }
   useit inline bool isImplicitPointer() const {
-    return ll && (llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll));
+    return ll &&
+           ((llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll)) && !llvm::isa<llvm::Constant>(ll));
   }
 
   inline void setSelf() { isSelf = true; }
@@ -63,6 +65,13 @@ public:
 
   useit Value* makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRange);
 
+  static inline void replace_uses_for_all() {
+    for (auto itVal : allValues) {
+      if (itVal && itVal->getLLVM()) {
+        itVal->getLLVM()->replaceAllUsesWith(llvm::UndefValue::get(itVal->getLLVM()->getType()));
+      }
+    }
+  }
   static void clearAll();
 };
 

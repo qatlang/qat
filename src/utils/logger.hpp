@@ -43,7 +43,7 @@ public:
   ~Logger() = default;
   useit static Unique<Logger> const& get();
 
-  inline void finishOutput() const {
+  inline void finish_output() const {
     out.emit();
     errOut.emit();
   }

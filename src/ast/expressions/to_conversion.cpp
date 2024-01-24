@@ -119,11 +119,10 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
       }
     } else if (valType->isStringSlice()) {
       if (destTy->isCType() && destTy->asCType()->isCString()) {
-        loadRef();
-        if (val->isLLVMConstant()) {
-          return new IR::PrerunValue(
-              llvm::dyn_cast<llvm::ConstantStruct>(val->getLLVMConstant())->getAggregateElement(0u), destTy->asCType());
+        if (val->isPrerunValue()) {
+          return new IR::PrerunValue(val->getLLVMConstant()->getAggregateElement(0u), destTy);
         } else {
+          loadRef();
           return new IR::Value(ctx->builder.CreateExtractValue(val->getLLVM(), {0u}), destTy, false,
                                IR::Nature::temporary);
         }

@@ -1,5 +1,4 @@
 #include "./use.hpp"
-#include "../memory_tracker.hpp"
 #include <algorithm>
 
 namespace qat::IR {

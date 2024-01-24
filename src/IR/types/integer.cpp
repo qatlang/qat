@@ -1,5 +1,4 @@
 #include "./integer.hpp"
-#include "../../memory_tracker.hpp"
 #include "../context.hpp"
 #include "../value.hpp"
 #include "llvm/Analysis/ConstantFolding.h"

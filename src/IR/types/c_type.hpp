@@ -34,9 +34,6 @@ enum class CTypeKind {
   Pointer,
   SigAtomic,
   ProcessID,
-  HalfFloat,
-  BrainFloat,
-  Float128,
   LongDouble,
 };
 
@@ -92,9 +89,6 @@ public:
   useit inline bool isSigAtomic() const { return cTypeKind == CTypeKind::SigAtomic; }
   useit inline bool isProcessID() const { return cTypeKind == CTypeKind::ProcessID; }
   useit inline bool isCString() const { return cTypeKind == CTypeKind::String; }
-  useit inline bool isHalfFloat() const { return cTypeKind == CTypeKind::HalfFloat; }
-  useit inline bool isBrainFloat() const { return cTypeKind == CTypeKind::BrainFloat; }
-  useit inline bool isFloat128() const { return cTypeKind == CTypeKind::Float128; }
   useit inline bool isLongDouble() const { return cTypeKind == CTypeKind::LongDouble; }
 
   useit static CType* getFromCTypeKind(CTypeKind kind, IR::Context* ctx);
@@ -126,15 +120,6 @@ public:
   useit static CType* getSigAtomic(IR::Context* ctx);
   useit static CType* getProcessID(IR::Context* ctx);
   useit static CType* getCString(IR::Context* ctx);
-
-  useit static bool   hasHalfFloat(IR::Context* ctx);
-  useit static CType* getHalfFloat(IR::Context* ctx);
-
-  useit static bool   hasBrainFloat(IR::Context* ctx);
-  useit static CType* getBrainFloat(IR::Context* ctx);
-
-  useit static bool   hasFloat128(IR::Context* ctx);
-  useit static CType* getFloat128(IR::Context* ctx);
 
   useit static bool   hasLongDouble(IR::Context* ctx);
   useit static CType* getLongDouble(IR::Context* ctx);

@@ -65,12 +65,6 @@ Maybe<CTypeKind> cTypeKindFromString(String const& val) {
     return CTypeKind::Bool;
   } else if (val == "cPtr") {
     return CTypeKind::Pointer;
-  } else if (val == "cFloat128") {
-    return CTypeKind::Float128;
-  } else if (val == "cFloatHalf") {
-    return CTypeKind::HalfFloat;
-  } else if (val == "cFloatBrain") {
-    return CTypeKind::BrainFloat;
   }
   return None;
 }
@@ -127,12 +121,6 @@ String cTypeKindToString(CTypeKind kind) {
       return "cSigAtomic";
     case CTypeKind::ProcessID:
       return "cProcessID";
-    case CTypeKind::HalfFloat:
-      return "cFloatHalf";
-    case CTypeKind::BrainFloat:
-      return "cFloatBrain";
-    case CTypeKind::Float128:
-      return "cFloat128";
     case CTypeKind::String:
       return "cStr";
     case CTypeKind::Bool:
@@ -207,12 +195,6 @@ CType* CType::getFromCTypeKind(CTypeKind kind, IR::Context* ctx) {
       return getSigAtomic(ctx);
     case CTypeKind::ProcessID:
       return getProcessID(ctx);
-    case CTypeKind::HalfFloat:
-      return getHalfFloat(ctx);
-    case CTypeKind::BrainFloat:
-      return getBrainFloat(ctx);
-    case CTypeKind::Float128:
-      return getFloat128(ctx);
     case CTypeKind::LongDouble:
       return getLongDouble(ctx);
   }
@@ -608,48 +590,6 @@ CType* CType::getCString(IR::Context* ctx) {
   return new CType(
       IR::PointerType::get(false, IR::IntegerType::get(8, ctx), false, PointerOwner::OfAnonymous(), false, ctx),
       CTypeKind::String);
-}
-
-bool CType::hasHalfFloat(IR::Context* ctx) { return ctx->clangTargetInfo->hasLegalHalfType(); }
-
-CType* CType::getHalfFloat(IR::Context* ctx) {
-  for (auto* typ : allQatTypes) {
-    if (typ->typeKind() == TypeKind::cType) {
-      auto cTyp = (CType*)typ;
-      if (cTyp->cTypeKind == CTypeKind::HalfFloat) {
-        return cTyp;
-      }
-    }
-  }
-  return new CType(IR::FloatType::get(FloatTypeKind::_16, ctx->llctx), CTypeKind::HalfFloat);
-}
-
-bool CType::hasBrainFloat(IR::Context* ctx) { return ctx->clangTargetInfo->hasBFloat16Type(); }
-
-CType* CType::getBrainFloat(IR::Context* ctx) {
-  for (auto* typ : allQatTypes) {
-    if (typ->typeKind() == TypeKind::cType) {
-      auto cTyp = (CType*)typ;
-      if (cTyp->cTypeKind == CTypeKind::BrainFloat) {
-        return cTyp;
-      }
-    }
-  }
-  return new CType(IR::FloatType::get(FloatTypeKind::_brain, ctx->llctx), CTypeKind::BrainFloat);
-}
-
-bool CType::hasFloat128(IR::Context* ctx) { return ctx->clangTargetInfo->hasFloat128Type(); }
-
-CType* CType::getFloat128(IR::Context* ctx) {
-  for (auto* typ : allQatTypes) {
-    if (typ->typeKind() == TypeKind::cType) {
-      auto cTyp = (CType*)typ;
-      if (cTyp->cTypeKind == CTypeKind::Float128) {
-        return cTyp;
-      }
-    }
-  }
-  return new CType(IR::FloatType::get(FloatTypeKind::_128, ctx->llctx), CTypeKind::Float128);
 }
 
 bool CType::hasLongDouble(IR::Context* ctx) { return ctx->clangTargetInfo->hasLongDoubleType(); }

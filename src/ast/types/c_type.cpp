@@ -61,27 +61,6 @@ IR::QatType* CType::emit(IR::Context* ctx) {
       return IR::CType::getSigAtomic(ctx);
     case IR::CTypeKind::ProcessID:
       return IR::CType::getProcessID(ctx);
-    case IR::CTypeKind::HalfFloat: {
-      if (IR::CType::hasHalfFloat(ctx)) {
-        return IR::CType::getHalfFloat(ctx);
-      } else {
-        ctx->Error("The target system for compilation does not support " + ctx->highlightError(toString()), fileRange);
-      }
-    }
-    case IR::CTypeKind::BrainFloat: {
-      if (IR::CType::hasBrainFloat(ctx)) {
-        return IR::CType::getBrainFloat(ctx);
-      } else {
-        ctx->Error("The target system for compilation does not support " + ctx->highlightError(toString()), fileRange);
-      }
-    }
-    case IR::CTypeKind::Float128: {
-      if (IR::CType::hasFloat128(ctx)) {
-        return IR::CType::getFloat128(ctx);
-      } else {
-        ctx->Error("The target system for compilation does not support " + ctx->highlightError(toString()), fileRange);
-      }
-    }
     case IR::CTypeKind::LongDouble: {
       if (IR::CType::hasLongDouble(ctx)) {
         return IR::CType::getLongDouble(ctx);
@@ -143,24 +122,6 @@ Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {
       return ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSigAtomicType());
     case IR::CTypeKind::ProcessID:
       return ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getProcessIDType());
-    case IR::CTypeKind::HalfFloat: {
-      if (ctx->clangTargetInfo->hasLegalHalfType()) {
-        return ctx->clangTargetInfo->getHalfWidth();
-      }
-      return None;
-    }
-    case IR::CTypeKind::BrainFloat: {
-      if (ctx->clangTargetInfo->hasBFloat16Type()) {
-        return ctx->clangTargetInfo->getBFloat16Width();
-      }
-      return None;
-    }
-    case IR::CTypeKind::Float128: {
-      if (ctx->clangTargetInfo->hasFloat128Type()) {
-        return ctx->clangTargetInfo->getFloat128Width();
-      }
-      return None;
-    }
     case IR::CTypeKind::LongDouble: {
       if (ctx->clangTargetInfo->hasLongDoubleType()) {
         return ctx->clangTargetInfo->getLongDoubleWidth();

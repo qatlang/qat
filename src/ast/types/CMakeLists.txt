@@ -2,6 +2,7 @@ add_library(QAT_AST_TYPES
 	array.cpp
 	c_type.cpp
 	float.cpp
+	function.cpp
 	future.cpp
 	generic_named_type.cpp
 	generic_abstract.cpp

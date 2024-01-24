@@ -46,7 +46,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
   auto* fun  = ctx->getActiveFunction();
   auto* curr = fun ? fun->getBlock() : nullptr;
   if (mod->hasGenericCoreType(entityName.value, reqInfo) ||
-      mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      mod->hasBroughtGenericCoreType(entityName.value, ctx->getAccessInfo()) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getAccessInfo()).first) {
     auto* genericCoreTy = mod->getGenericCoreType(entityName.value, ctx->getAccessInfo());
     if (!genericCoreTy->getVisibility().isAccessible(ctx->getAccessInfo())) {
@@ -106,7 +106,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     (void)ctx->setActiveModule(oldMod);
     return tyRes;
   } else if (mod->hasGenericTypeDef(entityName.value, reqInfo) ||
-             mod->hasBroughtGenericTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtGenericTypeDef(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleGenericTypeDefInImports(entityName.value, ctx->getAccessInfo()).first) {
     auto* genericTypeDef = mod->getGenericTypeDef(entityName.value, ctx->getAccessInfo());
     if (!genericTypeDef->getVisibility().isAccessible(ctx->getAccessInfo())) {

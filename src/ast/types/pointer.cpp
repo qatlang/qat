@@ -89,8 +89,14 @@ IR::QatType* PointerType::emit(IR::Context* ctx) {
       ownerVal = regTy;
     }
   }
-  return IR::PointerType::get(isSubtypeVar, type->emit(ctx), isNonNullable, getPointerOwner(ctx, ownerVal), isMultiPtr,
-                              ctx);
+  auto subTy = type->emit(ctx);
+  if (isSubtypeVar && subTy->isFunction()) {
+    ctx->Error(
+        "The subtype of this pointer type is a function type, and hence variability cannot be specified here. Please remove " +
+            ctx->highlightError("var"),
+        fileRange);
+  }
+  return IR::PointerType::get(isSubtypeVar, subTy, isNonNullable, getPointerOwner(ctx, ownerVal), isMultiPtr, ctx);
 }
 
 AstTypeKind PointerType::typeKind() const { return AstTypeKind::POINTER; }

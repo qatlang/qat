@@ -6,8 +6,9 @@
 namespace qat::ast {
 
 IR::QatType* NamedType::emit(IR::Context* ctx) {
-  auto* mod     = ctx->getMod();
-  auto  reqInfo = ctx->getAccessInfo();
+  auto* mod        = ctx->getMod();
+  auto* currentMod = mod;
+  auto  reqInfo    = ctx->getAccessInfo();
   if (relative != 0) {
     if (ctx->getMod()->hasNthParent(relative)) {
       mod = ctx->getMod()->getNthParent(relative);
@@ -61,7 +62,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
                  mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
         mod = mod->getBox(split.value, reqInfo);
         mod->addMention(split.range);
-      } else if (mod->hasBroughtModule(split.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      } else if (mod->hasBroughtModule(split.value, ctx->getAccessInfo()) ||
                  mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
         mod = mod->getBroughtModule(split.value, reqInfo);
         mod->addMention(split.range);
@@ -73,7 +74,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     }
   }
   if (mod->hasOpaqueType(entityName.value, reqInfo) ||
-      mod->hasBroughtOpaqueType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+      mod->hasBroughtOpaqueType(entityName.value, ctx->getAccessInfo()) ||
       mod->hasAccessibleOpaqueTypeInImports(entityName.value, reqInfo).first) {
     auto* oTy = mod->getOpaqueType(entityName.value, reqInfo);
     if (oTy->isGeneric()) {
@@ -93,7 +94,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     oTy->addMention(entityName.range);
     return oTy;
   } else if (mod->hasCoreType(entityName.value, reqInfo) ||
-             mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtCoreType(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
     auto* cTy = mod->getCoreType(entityName.value, reqInfo);
     if (!cTy->getVisibility().isAccessible(reqInfo)) {
@@ -104,7 +105,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     cTy->addMention(entityName.range);
     return cTy;
   } else if (mod->hasTypeDef(entityName.value, reqInfo) ||
-             mod->hasBroughtTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtTypeDef(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
     auto* dTy = mod->getTypeDef(entityName.value, reqInfo);
     if (!dTy->getVisibility().isAccessible(reqInfo)) {
@@ -115,7 +116,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     dTy->addMention(entityName.range);
     return dTy;
   } else if (mod->hasMixType(entityName.value, reqInfo) ||
-             mod->hasBroughtMixType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtMixType(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
     auto* mTy = mod->getMixType(entityName.value, reqInfo);
     if (!mTy->getVisibility().isAccessible(reqInfo)) {
@@ -126,7 +127,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     mTy->addMention(entityName.range);
     return mTy;
   } else if (mod->hasChoiceType(entityName.value, reqInfo) ||
-             mod->hasBroughtChoiceType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtChoiceType(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
     auto* chTy = mod->getChoiceType(entityName.value, reqInfo);
     if (!chTy->getVisibility().isAccessible(reqInfo)) {
@@ -137,7 +138,7 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
     chTy->addMention(entityName.range);
     return chTy;
   } else if (mod->hasRegion(entityName.value, reqInfo) ||
-             mod->hasBroughtRegion(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+             mod->hasBroughtRegion(entityName.value, ctx->getAccessInfo()) ||
              mod->hasAccessibleRegionInImports(entityName.value, reqInfo).first) {
     auto* reg = mod->getRegion(entityName.value, reqInfo);
     if (!reg->getVisibility().isAccessible(reqInfo)) {

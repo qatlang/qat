@@ -276,7 +276,7 @@ Token Lexer::tokeniser() {
         read();
         return Token::valued(TokenType::assignedBinaryOperator, "~=", this->getPosition(2));
       } else {
-        return Token::valued(TokenType::binaryOperator, "~", this->getPosition(1));
+        return Token::valued(TokenType::unaryOperator, "~", this->getPosition(1));
       }
     }
     case '&': {

@@ -5,7 +5,9 @@
 #include "types/generic_abstract.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
+#include <climits>
 
 #define MainFirstArgBitwidth 32u
 
@@ -155,7 +157,9 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
                                                        LinkUnitType::function)},
                                          "C", nullptr))
             : None,
-        {}, IR::ReturnType::get(retTy), args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx, None,
+        {}, IR::ReturnType::get(retTy), args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx,
+        hasDefinition ? None
+                      : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage),
         irMetaInfo);
     SHOW("Created IR function")
     return fun;
@@ -273,12 +277,15 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
     auto argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
     SHOW("Iteration run for function is: " << fnEmit->getName().value)
     for (usize i = 0; i < argIRTypes.size(); i++) {
-      SHOW("Argument name is " << argIRTypes.at(i)->getName())
-      SHOW("Argument type is " << argIRTypes.at(i)->getType()->toString())
-      auto* argVal = block->newValue(argIRTypes.at(i)->getName(), argIRTypes.at(i)->getType(),
-                                     argIRTypes.at(i)->isVariable(), prototype->arguments.at(i)->getName().range);
-      SHOW("Created local value for the argument")
-      ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+      auto argType = argIRTypes[i]->getType();
+      if (!argType->isTriviallyCopyable() || argIRTypes[i]->isVariable()) {
+        SHOW("Argument name is " << argIRTypes[i]->getName())
+        SHOW("Argument type is " << argType->toString())
+        auto* argVal = block->newValue(argIRTypes[i]->getName(), argType, argIRTypes[i]->isVariable(),
+                                       prototype->arguments[i]->getName().range);
+        SHOW("Created local value for the argument")
+        ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
+      }
     }
   }
   SHOW("Emitting sentences")

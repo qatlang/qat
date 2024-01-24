@@ -287,16 +287,16 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
       fileRange(std::move(_fileRange)), hasVariadicArguments(_isVariadicArguments), metaInfo(_metaInfo), ctx(_ctx),
       localNameCounter(0) //
 {
+  Maybe<String> foreignID;
+  Maybe<String> linkAlias;
+  if (metaInfo) {
+    foreignID = metaInfo->getForeignID();
+    linkAlias = metaInfo->getValueAsStringFor("linkName");
+  }
+  if (!foreignID.has_value()) {
+    foreignID = getParentModule()->getRelevantForeignID();
+  }
   if (!_namingInfo.has_value()) {
-    Maybe<String> foreignID;
-    Maybe<String> linkAlias;
-    if (metaInfo) {
-      foreignID = metaInfo->getForeignID();
-      linkAlias = metaInfo->getValueAsStringFor("linkName");
-    }
-    if (!foreignID.has_value()) {
-      foreignID = getParentModule()->getRelevantForeignID();
-    }
     namingInfo = mod->getLinkNames().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
     if (isGeneric()) {
       Vec<LinkNames> genericLinkNames;
@@ -314,8 +314,8 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
       }
       namingInfo.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericLinkNames), None);
     }
-    namingInfo.setLinkAlias(linkAlias);
   }
+  namingInfo.setLinkAlias(linkAlias);
   linkingName = namingInfo.toName();
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
@@ -352,12 +352,12 @@ FileRange Function::getDefinitionRange() const { return fileRange.value(); }
 IR::Value* Function::call(IR::Context* ctx, const Vec<llvm::Value*>& argValues, Maybe<String> localID,
                           QatModule* destMod) {
   SHOW("Linking function if it is external")
-  auto* llvmFunction = llvm::dyn_cast<llvm::Function>(ll);
+  auto* llvmFunction = llvm::cast<llvm::Function>(ll);
   if (destMod->getID() != mod->getID()) {
     // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
     if (!destMod->getLLVMModule()->getFunction(llvmFunction->getName())) {
       llvm::Function::Create((llvm::FunctionType*)getType()->getLLVMType(),
-                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
+                             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, llvmFunction->getAddressSpace(),
                              llvmFunction->getName(), destMod->getLLVMModule());
     }
   }

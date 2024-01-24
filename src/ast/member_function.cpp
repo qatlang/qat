@@ -1,5 +1,6 @@
 #include "./member_function.hpp"
 #include "../IR/types/core_type.hpp"
+#include "../IR/types/void.hpp"
 #include "../show.hpp"
 #include "types/self_type.hpp"
 #include <vector>
@@ -7,7 +8,7 @@
 namespace qat::ast {
 
 MemberPrototype::MemberPrototype(bool _isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments,
-                                 bool _isVariadic, QatType* _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                 bool _isVariadic, Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec,
                                  FileRange _fileRange)
     : Node(std::move(_fileRange)), isVariationFn(_isVariationFn), name(std::move(_name)),
       arguments(std::move(_arguments)), isVariadic(_isVariadic), returnType(_returnType), visibSpec(_visibSpec),
@@ -20,13 +21,13 @@ MemberPrototype::~MemberPrototype() {
 }
 
 MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
-                                         bool _isVariadic, QatType* _returnType, Maybe<VisibilitySpec> visibSpec,
+                                         bool _isVariadic, Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
   return new MemberPrototype(false, _isVariationFn, _name, _arguments, _isVariadic, _returnType, visibSpec, _fileRange);
 }
 
 MemberPrototype* MemberPrototype::Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                         QatType* _returnType, Maybe<VisibilitySpec> visibSpec,
+                                         Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
   return new MemberPrototype(true, false, _name, _arguments, _isVariadic, _returnType, visibSpec, _fileRange);
 }
@@ -93,15 +94,15 @@ void MemberPrototype::define(IR::Context* ctx) {
     }
   }
   bool isSelfReturn = false;
-  if (returnType->typeKind() == AstTypeKind::SELF_TYPE) {
-    auto* selfRet = (SelfType*)returnType;
+  if (returnType.has_value() && returnType.value()->typeKind() == AstTypeKind::SELF_TYPE) {
+    auto* selfRet = (SelfType*)returnType.value();
     if (!selfRet->isJustType) {
       selfRet->isVarRef          = isVariationFn;
       selfRet->canBeSelfInstance = true;
       isSelfReturn               = true;
     }
   }
-  auto*             retTy = returnType->emit(ctx);
+  auto*             retTy = returnType.has_value() ? returnType.value()->emit(ctx) : IR::VoidType::get(ctx->llctx);
   Vec<IR::QatType*> generatedTypes;
   // TODO - Check existing member functions
   SHOW("Generating types")
@@ -199,7 +200,8 @@ Json MemberPrototype::toJson() const {
       ._("isVariation", isVariationFn)
       ._("isStatic", isStatic)
       ._("name", name)
-      ._("returnType", returnType->toJson())
+      ._("hasReturnType", returnType.has_value())
+      ._("returnType", returnType.has_value() ? returnType.value()->toJson() : JsonValue())
       ._("arguments", args)
       ._("isVariadic", isVariadic);
 }
@@ -215,11 +217,15 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
-  auto  argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
-  auto* coreRefTy  = argIRTypes.at(0)->getType()->asReference();
-  auto* self       = block->newValue("''", coreRefTy, false, coreRefTy->getSubType()->asCore()->getName().range);
-  ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
-  self->loadImplicitPointer(ctx->builder);
+  auto               argIRTypes = fnEmit->getType()->asFunction()->getArgumentTypes();
+  IR::ReferenceType* coreRefTy  = nullptr;
+  IR::LocalValue*    self       = nullptr;
+  if (!prototype->isStatic) {
+    coreRefTy = argIRTypes.at(0)->getType()->asReference();
+    self      = block->newValue("''", coreRefTy, false, coreRefTy->getSubType()->asCore()->getName().range);
+    ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0u), self->getLLVM());
+    self->loadImplicitPointer(ctx->builder);
+  }
   SHOW("Arguments size is " << argIRTypes.size())
   for (usize i = 1; i < argIRTypes.size(); i++) {
     SHOW("Argument name in member function is " << argIRTypes.at(i)->getName())

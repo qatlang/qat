@@ -19,7 +19,7 @@ private:
   Identifier            name;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
-  QatType*              returnType;
+  Maybe<QatType*>       returnType;
   Maybe<VisibilitySpec> visibSpec;
   bool                  isStatic;
 
@@ -27,15 +27,16 @@ private:
   mutable IR::MemberFunction* memberFn     = nullptr;
 
   MemberPrototype(bool isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                  QatType* _returnType, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
+                  Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
 public:
   static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
-                                 bool _isVariadic, QatType* _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                 bool _isVariadic, Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
   static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                 QatType* _returnType, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+                                 Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                 const FileRange& _fileRange);
 
   void setMemberParent(IR::MemberParent* _memPar) const;
 

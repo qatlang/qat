@@ -15,7 +15,6 @@
 #include "../IR/types/string_slice.hpp"
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
-#include "../memory_tracker.hpp"
 #include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
@@ -28,6 +27,24 @@ struct VisibilitySpec {
   VisibilityKind kind;
   FileRange      range;
 
+  useit String toString() const {
+    switch (kind) {
+      case VisibilityKind::type:
+        return "pub:type";
+      case VisibilityKind::pub:
+        return "pub";
+      case VisibilityKind::lib:
+        return "pub:lib";
+      case VisibilityKind::file:
+        return "pub:file";
+      case VisibilityKind::folder:
+        return "pub:folder";
+      case VisibilityKind::box:
+        return "pub:box";
+      case VisibilityKind::parent:
+        return "pub:parent";
+    }
+  }
   useit Json toJson() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
 };
 

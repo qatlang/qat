@@ -48,6 +48,7 @@ struct MetaInfo {
       }
       ind++;
     }
+    return fileRange;
   }
 
   useit Maybe<String> getForeignID() const {

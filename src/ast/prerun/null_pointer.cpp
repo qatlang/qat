@@ -17,11 +17,16 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
                  fileRange);
     }
   }
-  if (theType->isPointer()) {
-    if (!theType->asPointer()->isNullable()) {
+  IR::QatType* finalTy = theType;
+  if (theType->isPointer() || (theType->isCType() && theType->asCType()->getSubType()->isPointer())) {
+    if (theType->isCType() ? theType->asCType()->getSubType()->asPointer()->isNonNullable()
+                           : theType->asPointer()->isNonNullable()) {
       ctx->Error("The inferred type is " + ctx->highlightError(theType->toString()) +
                      " which is not a nullable pointer type",
                  fileRange);
+    }
+    if (theType->isCType()) {
+      finalTy = theType->asCType()->getSubType();
     }
   } else {
     ctx->Error("The inferred type for null is " + ctx->highlightError(theType->toString()) +
@@ -29,15 +34,14 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
                fileRange);
   }
   return new IR::PrerunValue(
-      theType->asPointer()->isMulti()
+      finalTy->asPointer()->isMulti()
           ? llvm::ConstantStruct::get(
-                llvm::dyn_cast<llvm::StructType>(theType->getLLVMType()),
-                {llvm::ConstantPointerNull::get(theType->asPointer()->getSubType()->getLLVMType()->getPointerTo(
+                llvm::dyn_cast<llvm::StructType>(finalTy->getLLVMType()),
+                {llvm::ConstantPointerNull::get(finalTy->asPointer()->getSubType()->getLLVMType()->getPointerTo(
                      ctx->dataLayout->getProgramAddressSpace())),
                  llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
-          : llvm::ConstantPointerNull::get(theType->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
-      IR::PointerType::get(theType->asPointer()->isSubtypeVariable(), theType->asPointer()->getSubType(), false,
-                           theType->asPointer()->getOwner(), theType->asPointer()->isMulti(), ctx));
+          : llvm::ConstantPointerNull::get(finalTy->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
+      theType);
 }
 
 String NullPointer::toString() const { return "null"; }

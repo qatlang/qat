@@ -82,16 +82,16 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         }
         // Checking functions
         if (mod->hasFunction(singleName.value, reqInfo) ||
-            mod->hasBroughtFunction(singleName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+            mod->hasBroughtFunction(singleName.value, ctx->getAccessInfo()) ||
             mod->hasAccessibleFunctionInImports(singleName.value, reqInfo).first) {
           return mod->getFunction(singleName.value, reqInfo);
         } else if (mod->hasGlobalEntity(singleName.value, reqInfo) ||
-                   mod->hasBroughtGlobalEntity(singleName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtGlobalEntity(singleName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleGlobalEntityInImports(singleName.value, reqInfo).first) {
           auto* gEnt = mod->getGlobalEntity(singleName.value, reqInfo);
           return new IR::Value(gEnt->getLLVM(), gEnt->getType(), gEnt->isVariable(), gEnt->getNature());
         } else if (mod->hasChoiceType(singleName.value, reqInfo) ||
-                   mod->hasBroughtChoiceType(singleName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtChoiceType(singleName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleChoiceTypeInImports(singleName.value, reqInfo).first) {
           ctx->Error(ctx->highlightError(singleName.value) + " is a choice type and cannnot be used as a value",
                      singleName.range);
@@ -125,7 +125,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
           } else if (mod->hasBox(split.value, reqInfo)) {
             mod = mod->getBox(split.value, reqInfo);
             mod->addMention(split.range);
-          } else if (mod->hasBroughtModule(split.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+          } else if (mod->hasBroughtModule(split.value, ctx->getAccessInfo()) ||
                      mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
             mod = mod->getBroughtModule(split.value, reqInfo);
             mod->addMention(split.range);
@@ -135,7 +135,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         }
       }
       if (mod->hasFunction(entityName.value, reqInfo) ||
-          mod->hasBroughtFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+          mod->hasBroughtFunction(entityName.value, ctx->getAccessInfo()) ||
           mod->hasAccessibleFunctionInImports(entityName.value, reqInfo).first) {
         auto* fun = mod->getFunction(entityName.value, reqInfo);
         if (!fun->isAccessible(reqInfo)) {
@@ -144,7 +144,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         fun->addMention(entityName.range);
         return fun;
       } else if (mod->hasGlobalEntity(entityName.value, reqInfo) ||
-                 mod->hasBroughtGlobalEntity(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                 mod->hasBroughtGlobalEntity(entityName.value, ctx->getAccessInfo()) ||
                  mod->hasAccessibleGlobalEntityInImports(entityName.value, reqInfo).first) {
         auto* gEnt = mod->getGlobalEntity(entityName.value, reqInfo);
         if (!gEnt->getVisibility().isAccessible(reqInfo)) {
@@ -154,63 +154,68 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         gEnt->addMention(entityName.range);
         return new IR::Value(gEnt->getLLVM(), gEnt->getType(), gEnt->isVariable(), gEnt->getNature());
       } else {
-        if (mod->hasLib(entityName.value, reqInfo) ||
-            mod->hasBroughtLib(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+        if (mod->hasLib(entityName.value, reqInfo) || mod->hasBroughtLib(entityName.value, ctx->getAccessInfo()) ||
             mod->hasAccessibleLibInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getLib(entityName.value, reqInfo)->getFullName() +
                          " is a lib and cannot be used as a value in an expression",
                      entityName.range);
         } else if (mod->hasBox(entityName.value, reqInfo) ||
-                   mod->hasBroughtBox(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtBox(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleBoxInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getBox(entityName.value, reqInfo)->getFullName() +
                          " is a box and cannot be used as a value in an expression",
                      entityName.range);
         } else if (mod->hasCoreType(entityName.value, reqInfo) ||
-                   mod->hasBroughtCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtCoreType(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleCoreTypeInImports(entityName.value, reqInfo).first) {
           auto resCoreType = mod->getCoreType(entityName.value, reqInfo);
           resCoreType->addMention(entityName.range);
           return new IR::PrerunValue(IR::TypedType::get(resCoreType));
         } else if (mod->hasMixType(entityName.value, reqInfo) ||
-                   mod->hasBroughtMixType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtMixType(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleMixTypeInImports(entityName.value, reqInfo).first) {
           auto resMixType = mod->getMixType(entityName.value, reqInfo);
           resMixType->addMention(entityName.range);
           return new IR::PrerunValue(IR::TypedType::get(resMixType));
         } else if (mod->hasChoiceType(entityName.value, reqInfo) ||
-                   mod->hasBroughtChoiceType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtChoiceType(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleChoiceTypeInImports(entityName.value, reqInfo).first) {
           auto* resChoiceTy = mod->getChoiceType(entityName.value, reqInfo);
           resChoiceTy->addMention(entityName.range);
           return new IR::PrerunValue(IR::TypedType::get(resChoiceTy));
         } else if (mod->hasRegion(entityName.value, reqInfo) ||
-                   mod->hasBroughtRegion(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtRegion(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleRegionInImports(entityName.value, reqInfo).first) {
           auto* resRegion = mod->getRegion(entityName.value, reqInfo);
           resRegion->addMention(entityName.range);
           return new IR::PrerunValue(IR::TypedType::get(resRegion));
+        } else if (mod->hasPrerunGlobal(entityName.value, reqInfo) ||
+                   mod->hasBroughtPrerunGlobal(entityName.value, ctx->getAccessInfo()) ||
+                   mod->hasAccessiblePrerunGlobalInImports(entityName.value, reqInfo).first) {
+          auto* resPre = mod->getPrerunGlobal(entityName.value, reqInfo);
+          resPre->addMention(entityName.range);
+          return resPre;
         } else if (mod->hasTypeDef(entityName.value, reqInfo) ||
-                   mod->hasBroughtTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtTypeDef(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleTypeDefInImports(entityName.value, reqInfo).first) {
           ctx->Error(mod->getTypeDef(entityName.value, reqInfo)->getFullName() +
                          " is a type definition and cannot be used as a "
                          "value in an expression",
                      fileRange);
         } else if (mod->hasGenericCoreType(entityName.value, reqInfo) ||
-                   mod->hasBroughtGenericCoreType(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtGenericCoreType(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleGenericCoreTypeInImports(entityName.value, reqInfo).first) {
           ctx->Error(ctx->highlightError(entityName.value) +
                          " is a generic core type and cannot be used as a value or type",
                      entityName.range);
         } else if (mod->hasGenericTypeDef(entityName.value, reqInfo) ||
-                   mod->hasBroughtGenericTypeDef(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtGenericTypeDef(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleGenericTypeDefInImports(entityName.value, reqInfo).first) {
           ctx->Error(ctx->highlightError(entityName.value) +
                          " is a generic type definition and cannot be used as a value or type",
                      entityName.range);
         } else if (mod->hasGenericFunction(entityName.value, reqInfo) ||
-                   mod->hasBroughtGenericFunction(entityName.value, ctx->getReqInfoIfDifferentModule(mod)) ||
+                   mod->hasBroughtGenericFunction(entityName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleGenericFunctionInImports(entityName.value, reqInfo).first) {
           ctx->Error(ctx->highlightError(entityName.value) +
                          " is a generic function and cannot be used as a value or type",

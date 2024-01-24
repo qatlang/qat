@@ -13,7 +13,9 @@ add_library(QAT_AST_CONSTANTS
 	none.cpp
 	null_pointer.cpp
 	plain_initialiser.cpp
+	prerun_global.cpp
 	string_literal.cpp
+	tuple_value.cpp
 	type_wrap.cpp
 	unsigned_literal.cpp)
 

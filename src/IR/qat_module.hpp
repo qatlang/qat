@@ -1,7 +1,6 @@
 #ifndef QAT_IR_QAT_MODULE_HPP
 #define QAT_IR_QAT_MODULE_HPP
 
-#include "../memory_tracker.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
@@ -141,6 +140,7 @@ class QatModule final : public Uniq, public EntityOverview {
   friend class ChoiceType;
   friend class DefinitionType;
   friend class GlobalEntity;
+  friend class PrerunGlobal;
   friend class ast::Lib;
   friend class ast::Box;
   friend class ast::ModInfo;
@@ -202,6 +202,8 @@ private:
   Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
   Vec<GlobalEntity*>                  globalEntities;
   Vec<Brought<GlobalEntity>>          broughtGlobalEntities;
+  Vec<PrerunGlobal*>                  prerunGlobals;
+  Vec<Brought<PrerunGlobal>>          broughtPrerunGlobals;
   Vec<Region*>                        regions;
   Vec<Brought<Region>>                broughtRegions;
   Function*                           moduleInitialiser   = nullptr;
@@ -214,7 +216,6 @@ private:
 
   Vec<Pair<QatModule*, FileRange>> fsBroughtMentions;
 
-  Vec<String>           content;
   Vec<ast::Node*>       nodes;
   mutable llvm::Module* llvmModule;
   mutable Maybe<String> moduleForeignID;
@@ -246,11 +247,9 @@ public:
   useit static QatModule* CreateSubmodule(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
                                           ModuleType type, const VisibilityInfo& visibilityInfo, IR::Context* ctx);
   useit static QatModule* CreateFileMod(QatModule* parent, fs::path _filepath, fs::path basePath, Identifier name,
-                                        Vec<String> content, Vec<ast::Node*>, VisibilityInfo visibilityInfo,
-                                        IR::Context* ctx);
+                                        Vec<ast::Node*>, VisibilityInfo visibilityInfo, IR::Context* ctx);
   useit static QatModule* CreateRootLib(QatModule* parent, fs::path _filePath, fs::path basePath, Identifier name,
-                                        Vec<String> content, Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo,
-                                        IR::Context* ctx);
+                                        Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, IR::Context* ctx);
 
   static bool           tripleIsEquivalent(llvm::Triple const& first, llvm::Triple const& second);
   static Vec<Function*> collectModuleInitialisers();
@@ -409,6 +408,13 @@ public:
   useit Pair<bool, String> hasAccessibleGlobalEntityInImports(const String& name, const AccessInfo& reqInfo) const;
   useit GlobalEntity*      getGlobalEntity(const String& name, const AccessInfo& reqInfo) const;
 
+  // PRERUN GLOBAL
+
+  useit bool hasPrerunGlobal(const String& name, AccessInfo reqInfo) const;
+  useit bool hasBroughtPrerunGlobal(const String& name, Maybe<AccessInfo> reqInfo) const;
+  useit Pair<bool, String> hasAccessiblePrerunGlobalInImports(const String& name, const AccessInfo& reqInfo) const;
+  useit PrerunGlobal*      getPrerunGlobal(const String& name, const AccessInfo& reqInfo) const;
+
   // IMPORT
 
   useit bool       hasBroughtModule(const String& name, Maybe<AccessInfo> reqInfo) const;
@@ -419,6 +425,7 @@ public:
 
   void bringModule(QatModule* other, const VisibilityInfo& _visib, Maybe<Identifier> bName = None);
   void bringCoreType(CoreType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringOpaqueType(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringGenericCoreType(GenericCoreType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringMixType(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringChoiceType(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
@@ -427,6 +434,7 @@ public:
   void bringGenericFunction(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringRegion(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bringGlobalEntity(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bringPrerunGlobal(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 
   useit fs::path getResolvedOutputPath(const String& extension, IR::Context* ctx);
   useit llvm::Module* getLLVMModule() const;

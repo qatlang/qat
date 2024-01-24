@@ -1,10 +1,13 @@
 #include "./define_opaque_type.hpp"
 #include "../IR/types/opaque.hpp"
 #include "node.hpp"
+#include <cstring>
 
 namespace qat::ast {
 
-void DefineOpaqueType::define(IR::Context* ctx) {
+void DefineOpaqueType::createModule(IR::Context* ctx) const {
+  SHOW("Defining opaque type " << name.value << " with visibility "
+                               << (visibSpec.has_value() ? visibSpec.value().toString() : ""))
   if (condition.has_value()) {
     auto cond = condition.value()->emit(ctx);
     if (cond->getType()->isBool()) {
@@ -23,8 +26,8 @@ void DefineOpaqueType::define(IR::Context* ctx) {
   if (metaInfo.has_value()) {
     irMeta = metaInfo.value().toIR(ctx);
   }
-  IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, mod, None, ctx->getVisibInfo(visibSpec), ctx->llctx,
-                      irMeta);
+  (void)IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, mod, None, ctx->getVisibInfo(visibSpec),
+                            ctx->llctx, irMeta);
 }
 
 Json DefineOpaqueType::toJson() const {

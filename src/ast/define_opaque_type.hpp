@@ -24,7 +24,7 @@ public:
     return std::construct_at(OwnNormal(DefineOpaqueType), _name, _condition, _visibSpec, _metaInfo, _fileRange);
   }
 
-  void  define(IR::Context* ctx) final;
+  void  createModule(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::DEFINE_OPAQUE_TYPE; }

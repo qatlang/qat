@@ -4,12 +4,16 @@
 namespace qat::ast {
 
 IR::Value* FunctionCall::emit(IR::Context* ctx) {
-  auto* mod   = ctx->getMod();
-  auto* fnVal = fnExpr->emit(ctx);
+  auto* mod       = ctx->getMod();
+  auto* fnVal     = fnExpr->emit(ctx);
+  auto  fnValType = fnVal->isReference() ? fnVal->getType()->asReference()->getSubType() : fnVal->getType();
+  if (fnValType->isCType()) {
+    fnValType = fnValType->asCType()->getSubType();
+  }
   if (fnVal && (fnVal->getType()->isFunction() ||
-                (fnVal->getType()->isPointer() && fnVal->getType()->asPointer()->getSubType()->isFunction()))) {
+                (fnValType->isPointer() && fnValType->asPointer()->getSubType()->isFunction()))) {
     auto*                fnTy = fnVal->getType()->isFunction() ? fnVal->getType()->asFunction()
-                                                               : fnVal->getType()->asPointer()->getSubType()->asFunction();
+                                                               : fnValType->asPointer()->getSubType()->asFunction();
     Maybe<IR::Function*> fun;
     if (fnVal->getType()->isFunction()) {
       fun = (IR::Function*)fnVal;
@@ -72,6 +76,9 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
       return fun.value()->call(ctx, argValues, None, mod);
     } else {
       fnVal->loadImplicitPointer(ctx->builder);
+      if (fnVal->isReference()) {
+        ctx->builder.CreateLoad(fnValType->getLLVMType(), fnVal->getLLVM());
+      }
       return fnVal->call(ctx, argValues, None, mod);
     }
   } else {

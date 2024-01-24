@@ -13,6 +13,8 @@ enum class CTypeKind {
   Uint,
   Char,
   UChar,
+  Short,
+  UShort,
   WideChar,
   UWideChar,
   LongInt,
@@ -68,6 +70,8 @@ public:
   useit inline bool isCBool() const { return cTypeKind == CTypeKind::Bool; }
   useit inline bool isChar() const { return cTypeKind == CTypeKind::Char; }
   useit inline bool isCharUnsigned() const { return cTypeKind == CTypeKind::UChar; }
+  useit inline bool isShort() const { return cTypeKind == CTypeKind::Short; }
+  useit inline bool isShortUnsigned() const { return cTypeKind == CTypeKind::Short; }
   useit inline bool isWideChar() const { return cTypeKind == CTypeKind::WideChar; }
   useit inline bool isWideCharUnsigned() const { return cTypeKind == CTypeKind::UWideChar; }
   useit inline bool isLongInt() const { return cTypeKind == CTypeKind::LongInt; }
@@ -99,6 +103,8 @@ public:
   useit static CType* getBool(IR::Context* ctx);
   useit static CType* getChar(IR::Context* ctx);
   useit static CType* getCharUnsigned(IR::Context* ctx);
+  useit static CType* getShort(IR::Context* ctx);
+  useit static CType* getShortUnsigned(IR::Context* ctx);
   useit static CType* getWideChar(IR::Context* ctx);
   useit static CType* getWideCharUnsigned(IR::Context* ctx);
   useit static CType* getLongInt(IR::Context* ctx);
@@ -116,7 +122,7 @@ public:
   useit static CType* getUintPtr(IR::Context* ctx);
   useit static CType* getPtrDiff(IR::Context* ctx);
   useit static CType* getPtrDiffUnsigned(IR::Context* ctx);
-  // TOOD - Check if there is more to SigAtomic than just an integer type
+  // TODO - Check if there is more to SigAtomic than just an integer type
   useit static CType* getSigAtomic(IR::Context* ctx);
   useit static CType* getProcessID(IR::Context* ctx);
   useit static CType* getCString(IR::Context* ctx);
@@ -134,24 +140,8 @@ public:
   useit static CType* getLongDouble(IR::Context* ctx);
 
   useit bool isTypeSized() const final { return true; }
-  useit bool isTriviallyCopyable() const final {
-    switch (cTypeKind) {
-      case CTypeKind::String:
-      case CTypeKind::Pointer:
-        return false;
-      default:
-        return true;
-    }
-  }
-  useit bool isTriviallyMovable() const final {
-    switch (cTypeKind) {
-      case CTypeKind::String:
-      case CTypeKind::Pointer:
-        return false;
-      default:
-        return true;
-    }
-  }
+  useit bool isTriviallyCopyable() const final { return true; }
+  useit bool isTriviallyMovable() const final { return true; }
 
   TypeKind typeKind() const final { return TypeKind::cType; }
   String   toString() const final;

@@ -19,6 +19,10 @@ Maybe<CTypeKind> cTypeKindFromString(String const& val) {
     return CTypeKind::Char;
   } else if (val == "uchar") {
     return CTypeKind::UChar;
+  } else if (val == "shortint") {
+    return CTypeKind::Short;
+  } else if (val == "ushortint") {
+    return CTypeKind::UShort;
   } else if (val == "widechar") {
     return CTypeKind::WideChar;
   } else if (val == "uwidechar") {
@@ -81,6 +85,10 @@ String cTypeKindToString(CTypeKind kind) {
       return "char";
     case CTypeKind::UChar:
       return "uchar";
+    case CTypeKind::Short:
+      return "shortint";
+    case CTypeKind::UShort:
+      return "ushortint";
     case CTypeKind::WideChar:
       return "widechar";
     case CTypeKind::UWideChar:
@@ -157,6 +165,10 @@ CType* CType::getFromCTypeKind(CTypeKind kind, IR::Context* ctx) {
       return getChar(ctx);
     case CTypeKind::UChar:
       return getCharUnsigned(ctx);
+    case CTypeKind::Short:
+      return getShort(ctx);
+    case CTypeKind::UShort:
+      return getShortUnsigned(ctx);
     case CTypeKind::WideChar:
       return getWideChar(ctx);
     case CTypeKind::UWideChar:
@@ -264,6 +276,30 @@ CType* CType::getCharUnsigned(IR::Context* ctx) {
     }
   }
   return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getCharWidth(), ctx), CTypeKind::UChar);
+}
+
+CType* CType::getShort(IR::Context* ctx) {
+  for (auto* typ : allQatTypes) {
+    if (typ->typeKind() == TypeKind::cType) {
+      auto* cTyp = (CType*)typ;
+      if (cTyp->cTypeKind == CTypeKind::Short) {
+        return cTyp;
+      }
+    }
+  }
+  return new CType(IR::IntegerType::get(ctx->clangTargetInfo->getShortWidth(), ctx), CTypeKind::Char);
+}
+
+CType* CType::getShortUnsigned(IR::Context* ctx) {
+  for (auto* typ : allQatTypes) {
+    if (typ->typeKind() == TypeKind::cType) {
+      auto* cTyp = (CType*)typ;
+      if (cTyp->cTypeKind == CTypeKind::UShort) {
+        return cTyp;
+      }
+    }
+  }
+  return new CType(IR::UnsignedType::get(ctx->clangTargetInfo->getShortWidth(), ctx), CTypeKind::UChar);
 }
 
 CType* CType::getWideChar(IR::Context* ctx) {

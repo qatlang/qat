@@ -16,6 +16,10 @@ IR::QatType* CType::emit(IR::Context* ctx) {
       return IR::CType::getChar(ctx);
     case IR::CTypeKind::UChar:
       return IR::CType::getCharUnsigned(ctx);
+    case IR::CTypeKind::Short:
+      return IR::CType::getShort(ctx);
+    case IR::CTypeKind::UShort:
+      return IR::CType::getShortUnsigned(ctx);
     case IR::CTypeKind::WideChar:
       return IR::CType::getWideChar(ctx);
     case IR::CTypeKind::UWideChar:
@@ -100,6 +104,9 @@ Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {
     case IR::CTypeKind::Char:
     case IR::CTypeKind::UChar:
       return ctx->clangTargetInfo->getCharWidth();
+    case IR::CTypeKind::Short:
+    case IR::CTypeKind::UShort:
+      return ctx->clangTargetInfo->getShortWidth();
     case IR::CTypeKind::WideChar:
     case IR::CTypeKind::UWideChar:
       return ctx->clangTargetInfo->getWCharWidth();

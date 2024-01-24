@@ -13,16 +13,26 @@ namespace qat::IR {
 
 class QatModule;
 
+class PrerunGlobal : public PrerunValue, public EntityOverview {
+  Identifier     name;
+  VisibilityInfo visibility;
+  QatModule*     parent;
+
+public:
+  PrerunGlobal(QatModule* _parent, Identifier _name, QatType* _type, llvm::Constant* _constant,
+               VisibilityInfo _visibility, FileRange _fileRange);
+
+  useit inline Identifier getName() const { return name; }
+  useit String            getFullName() const;
+  useit IR::QatModule*        getParent() const { return parent; }
+  useit VisibilityInfo const& getVisibility() const { return visibility; }
+};
+
 class GlobalEntity : public Value, public EntityOverview {
-private:
   Identifier             name;
   VisibilityInfo         visibility;
   QatModule*             parent;
   Maybe<llvm::Constant*> initialValue;
-
-  u64 loads;
-  u64 stores;
-  u64 refers;
 
 public:
   GlobalEntity(QatModule* _parent, Identifier _name, QatType* _type, bool _is_variable,
@@ -34,9 +44,6 @@ public:
   useit bool           hasInitialValue() const;
   useit llvm::Constant*       getInitialValue() const;
   useit const VisibilityInfo& getVisibility() const;
-  useit u64                   getLoadCount() const;
-  useit u64                   getStoreCount() const;
-  useit u64                   getReferCount() const;
 };
 
 } // namespace qat::IR

@@ -15,8 +15,11 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
     }
   }
   for (usize i = 0; i < paths.size(); i++) {
-    auto path = fileRange.file.parent_path() / paths.at(i)->get_value();
+    auto path = fs::path(paths.at(i)->get_value()).is_relative()
+                    ? fileRange.file.parent_path() / paths.at(i)->get_value()
+                    : fs::path(paths.at(i)->get_value());
     if (fs::exists(path)) {
+      path = fs::canonical(path);
       if (fs::is_directory(path)) {
         if (IR::QatModule::hasFolderModule(path)) {
           if (names.at(i).has_value()) {
@@ -31,6 +34,10 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             mod->bringModule(folderModule, ctx->getVisibInfo(visibSpec), name);
           } else {
             if (isMember) {
+              if (IR::QatModule::getFolderModule(path)->parent) {
+                ctx->Error("Module at " + ctx->highlightError(path.string()) + " already has a parent module",
+                           paths.at(i)->fileRange);
+              }
               auto* folderModule = IR::QatModule::getFolderModule(path);
               folderModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->addMember(folderModule);
@@ -58,6 +65,10 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             mod->bringModule(fileModule, ctx->getVisibInfo(visibSpec), name);
           } else {
             if (isMember) {
+              if (IR::QatModule::getFileModule(path)->parent) {
+                ctx->Error("Module at " + ctx->highlightError(path.string()) + " already has a parent module",
+                           paths.at(i)->fileRange);
+              }
               auto* fileModule = IR::QatModule::getFileModule(path);
               fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
               mod->addMember(fileModule);

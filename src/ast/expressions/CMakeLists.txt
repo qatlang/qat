@@ -1,4 +1,5 @@
 add_library(QAT_AST_EXPRESSIONS
+	address_of.cpp
 	array_literal.cpp
 	await.cpp
 	binary_expression.cpp
@@ -17,7 +18,6 @@ add_library(QAT_AST_EXPRESSIONS
 	member_access.cpp
 	move.cpp
 	negative.cpp
-	none.cpp
 	not.cpp
 	ok.cpp
 	operator.cpp

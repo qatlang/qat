@@ -10,8 +10,11 @@ IR::Value* Not::emit(IR::Context* ctx) {
   }
   if (expTy->isBool()) {
     if (expEmit->isImplicitPointer() || expEmit->isReference()) {
-      expEmit = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expEmit->getLLVM()), expTy, false,
-                              IR::Nature::temporary);
+      expEmit->loadImplicitPointer(ctx->builder);
+      if (expEmit->isReference()) {
+        expEmit = new IR::Value(ctx->builder.CreateLoad(expTy->getLLVMType(), expEmit->getLLVM()), expTy, false,
+                                IR::Nature::temporary);
+      }
     }
     return new IR::Value(ctx->builder.CreateNot(expEmit->getLLVM()), expTy, false, IR::Nature::temporary);
   } else {

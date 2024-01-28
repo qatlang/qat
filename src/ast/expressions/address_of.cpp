@@ -1,4 +1,5 @@
 #include "./address_of.hpp"
+#include "llvm/Support/raw_ostream.h"
 
 namespace qat::ast {
 
@@ -14,7 +15,7 @@ IR::Value* AddressOf::emit(IR::Context* ctx) {
                          IR::PointerType::get(isPtrVar, subTy, true, IR::PointerOwner::OfAnonymous(), false, ctx),
                          false, IR::Nature::temporary);
   } else {
-    ctx->Error("The expression provided if of type " + ctx->highlightError(inst->getType()->toString()) +
+    ctx->Error("The expression provided is of type " + ctx->highlightError(inst->getType()->toString()) +
                    ". It is not a reference, local or global value, so its address cannot be retrieved",
                fileRange);
   }

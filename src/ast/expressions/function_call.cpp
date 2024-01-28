@@ -1,4 +1,5 @@
 #include "./function_call.hpp"
+#include "../../utils/utils.hpp"
 #include "llvm/IR/DerivedTypes.h"
 
 namespace qat::ast {
@@ -36,19 +37,23 @@ IR::Value* FunctionCall::emit(IR::Context* ctx) {
     SHOW("Argument values generated")
     auto fnArgsTy = fnTy->getArgumentTypes();
     for (usize i = 0; i < fnArgsTy.size(); i++) {
+      SHOW("FnArg type is " << fnArgsTy.at(i)->toString() << " and arg emit type is "
+                            << argsEmit.at(i)->getType()->toString())
       if (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()) &&
           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()) &&
-          (argsEmit.at(i)->getType()->isReference() &&
-           !fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()) &&
-           !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()->asReference()->getSubType()))) {
+          (argsEmit.at(i)->getType()->isReference()
+               ? (!fnArgsTy.at(i)->getType()->isSame(argsEmit.at(i)->getType()->asReference()->getSubType()) &&
+                  !fnArgsTy.at(i)->getType()->isCompatible(argsEmit.at(i)->getType()->asReference()->getSubType()))
+               : true)) {
         ctx->Error("Type of this expression is " + ctx->highlightError(argsEmit.at(i)->getType()->toString()) +
-                       " which does not match the type of the corresponding argument " +
+                       " which is not compatible with the type " +
+                       ctx->highlightError(fnArgsTy.at(i)->getType()->toString()) + " of the " +
+                       utils::number_to_position(i) + " argument " +
                        (fun.has_value()
                             ? ctx->highlightError(fun.value()->getType()->asFunction()->getArgumentTypeAt(i)->getName())
                                   .append(" ")
                             : "") +
-                       "at " + ctx->highlightError(std::to_string(i)) + " of the function " +
-                       (fun.has_value() ? ctx->highlightError(fun.value()->getName().value) : ""),
+                       "of the function " + (fun.has_value() ? ctx->highlightError(fun.value()->getName().value) : ""),
                    values.at(i)->fileRange);
       }
     }

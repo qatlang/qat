@@ -48,7 +48,7 @@ IR::Value* Match::emit(IR::Context* ctx) {
     isExpVariable = expEmit->isVariable();
   }
   auto* curr      = ctx->getActiveFunction()->getBlock();
-  auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
+  auto* restBlock = new IR::Block(ctx->getActiveFunction(), curr->getParent());
   restBlock->linkPrevBlock(curr);
   bool elseNotRequired = false;
   if (expTy->isMix()) {
@@ -190,7 +190,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
       }
     }
   } else if (expTy->isChoice()) {
-    auto*        chTy = expTy->asChoice();
+    auto* chTy = expTy->asChoice();
+    SHOW("Got choice type")
     llvm::Value* choiceVal;
     if (expEmit->isReference() || expEmit->isImplicitPointer()) {
       choiceVal = ctx->builder.CreateLoad(chTy->getLLVMType(), expEmit->getLLVM());
@@ -214,7 +215,11 @@ IR::Value* Match::emit(IR::Context* ctx) {
               ctx->Error("The variant " + ctx->highlightError(cMatch->getName().value) + " of choice type " +
                              ctx->highlightError(chTy->getFullName()) +
                              " is repeating here. Please check logic and make necessary changes",
-                         cMatch->getMainRange());
+                         cMatch->getMainRange(),
+                         Pair<String, FileRange>{"The previous occurrence of " +
+                                                     ctx->highlightError(cMatch->getName().value) +
+                                                     " can be found here",
+                                                 cMatch->getMainRange()});
             }
           }
           mentionedFields.push_back(cMatch->getName());
@@ -225,9 +230,6 @@ IR::Value* Match::emit(IR::Context* ctx) {
                            ctx->highlightError(chTy->getFullName()),
                        cMatch->getName().range);
           }
-          ctx->Error("Expected the name of a variant of the choice type " +
-                         ctx->highlightError(expTy->asMix()->getFullName()),
-                     caseValElem->getMainRange());
         } else if (caseValElem->getType() == MatchType::Exp) {
           auto* eMatch  = caseValElem->asExp();
           auto* caseExp = eMatch->getExpression()->emit(ctx);
@@ -248,7 +250,8 @@ IR::Value* Match::emit(IR::Context* ctx) {
                        eMatch->getMainRange());
           }
         } else {
-          ctx->Error("Unexpected match value type here", caseValElem->getMainRange());
+          ctx->Error("Unexpected kind of match value found here, it should either be a choice match or an expression",
+                     caseValElem->getMainRange());
         }
       }
       auto* trueBlock = new IR::Block(ctx->getActiveFunction(), curr);

@@ -334,11 +334,7 @@ Token Lexer::tokeniser() {
       String operatorValue;
       operatorValue += current;
       read();
-      if ((current == '+' && operatorValue == "+") || (current == '-' && operatorValue == "-")) {
-        operatorValue += current;
-        read();
-        return Token::valued(TokenType::unaryOperator, operatorValue, this->getPosition(2));
-      } else if (current == '=' && operatorValue != "<" && operatorValue != ">") {
+      if (current == '=' && operatorValue != "<" && operatorValue != ">") {
         operatorValue += current;
         read();
         return Token::valued(TokenType::assignedBinaryOperator, operatorValue, this->getPosition(2));

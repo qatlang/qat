@@ -19,11 +19,12 @@ namespace qat::IR {
 class QatModule;
 class MemberFunction;
 
-enum class OpaqueSubtypeKind { core, mix, unknown };
+enum class OpaqueSubtypeKind { core, mix, Union, unknown };
 
 class OpaqueType : public QatType, public EntityOverview {
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
+  friend class IR::CoreType;
 
   Identifier               name;
   Vec<GenericParameter*>   generics;

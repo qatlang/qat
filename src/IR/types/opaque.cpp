@@ -8,19 +8,22 @@ namespace qat::IR {
 OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
                        Maybe<OpaqueSubtypeKind> _subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
                        VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
-    : EntityOverview(_subtypeKind.has_value()
-                         ? (_subtypeKind.value() == OpaqueSubtypeKind::core
-                                ? "coreType"
-                                : (_subtypeKind.value() == OpaqueSubtypeKind::mix ? "mixType" : "opaqueType"))
-                         : "opaqueType",
-                     Json(), _name.range),
+    : EntityOverview(
+          _subtypeKind.has_value()
+              ? (_subtypeKind.value() == OpaqueSubtypeKind::core
+                     ? "coreType"
+                     : (_subtypeKind.value() == OpaqueSubtypeKind::mix
+                            ? "mixType"
+                            : (_subtypeKind.value() == OpaqueSubtypeKind::Union ? "unionType" : "opaqueType")))
+              : "opaqueType",
+          Json(), _name.range),
       name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
       visibility(_visibility), metaInfo(_metaInfo) {
   Maybe<String> foreignID;
   Maybe<String> linkAlias;
   if (metaInfo.has_value()) {
     foreignID = metaInfo->getForeignID();
-    linkAlias = metaInfo->getValueAsStringFor("linkName");
+    linkAlias = metaInfo->getValueAsStringFor(IR::MetaInfo::linkAsKey);
   }
   if (!foreignID.has_value()) {
     foreignID = parent->getRelevantForeignID();
@@ -28,7 +31,9 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
   auto linkNames = parent->getLinkNames().newWith(
       LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
                                    ? LinkUnitType::mix
-                                   : LinkUnitType::type),
+                                   : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::Union
+                                          ? LinkUnitType::Union
+                                          : LinkUnitType::type)),
       foreignID);
   if (isGeneric()) {
     Vec<LinkNames> genericLinkNames;

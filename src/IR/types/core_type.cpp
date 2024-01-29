@@ -24,6 +24,7 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _gen
   for (auto* mem : members) {
     subtypes.push_back(mem->type->getLLVMType());
   }
+  metaInfo = opaquedType->metaInfo;
   SHOW("All members' LLVM types obtained")
   llvmType    = opaquedType->getLLVMType();
   linkingName = opaquedType->getNameForLinking();
@@ -43,7 +44,7 @@ LinkNames CoreType::getLinkNames() const {
   Maybe<String> linkAlias;
   if (metaInfo) {
     foreignID = metaInfo->getForeignID();
-    linkAlias = metaInfo->getValueAsStringFor("linkName");
+    linkAlias = metaInfo->getValueAsStringFor(IR::MetaInfo::linkAsKey);
   }
   if (!foreignID.has_value()) {
     foreignID = parent->getRelevantForeignID();

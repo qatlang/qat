@@ -1,6 +1,9 @@
 #include "./choice.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
+#include "c_type.hpp"
+#include "integer.hpp"
+#include "unsigned.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Constants.h"
 #include <cmath>
@@ -52,13 +55,24 @@ bool ChoiceType::hasProvidedType() const { return providedType.has_value(); }
 
 IR::QatType* ChoiceType::getProvidedType() const { return providedType.value(); }
 
+IR::QatType* ChoiceType::getUnderlyingType() const {
+  return providedType.has_value() ? providedType.value()
+                                  : (hasNegativeValues() ? (IR::QatType*)IR::IntegerType::get(bitwidth, ctx)
+                                                         : IR::UnsignedType::get(bitwidth, ctx));
+}
+
 Identifier ChoiceType::getName() const { return name; }
 
 String ChoiceType::getFullName() const { return parent->getFullNameWithChild(name.value); }
 
 QatModule* ChoiceType::getParent() const { return parent; }
 
-bool ChoiceType::hasNegativeValues() const { return !areValuesUnsigned; }
+bool ChoiceType::hasNegativeValues() const {
+  return (!areValuesUnsigned) ||
+         (providedType.has_value() &&
+          (providedType.value()->isInteger() ||
+           (providedType.value()->isCType() && providedType.value()->asCType()->getSubType()->isInteger())));
+}
 
 bool ChoiceType::hasCustomValue() const { return values.has_value(); }
 
@@ -94,8 +108,6 @@ llvm::ConstantInt* ChoiceType::getValueFor(const String& name) const {
     return llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth), index, false);
   }
 }
-
-u64 ChoiceType::getBitwidth() const { return bitwidth; }
 
 void ChoiceType::findBitwidthNormal() const {
   auto calc = 1;

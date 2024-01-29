@@ -46,8 +46,8 @@ public:
   useit bool       hasField(const String& name) const;
   useit llvm::ConstantInt* getValueFor(const String& name) const;
   useit llvm::ConstantInt* getDefault() const;
-  useit u64                getBitwidth() const;
-  useit IR::QatType*          getProvidedType() const;
+  useit IR::QatType* getProvidedType() const;
+  useit IR::QatType*          getUnderlyingType() const;
   useit TypeKind              typeKind() const final { return TypeKind::choice; }
   useit String                toString() const final;
   useit const VisibilityInfo& getVisibility() const;

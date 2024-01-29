@@ -69,6 +69,7 @@ IR::QatType* CType::emit(IR::Context* ctx) {
       }
     }
   }
+  ctx->Error("Compiler Internal Error - Cannot retrieve CType for kind " + std::to_string((int)cTypeKind), fileRange);
 }
 
 Maybe<usize> CType::getTypeSizeInBits(IR::Context* ctx) const {

@@ -50,6 +50,15 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
     SHOW("Is main function")
     linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
     isMainFn    = true;
+    if (!returnType.has_value()) {
+      ctx->Error(
+          "The " + ctx->highlightError("main") + " function is required to always give a value of type " +
+              ctx->highlightError("i32") +
+              " to indicate the resultant status of the program to the underlying operating system. Give a " +
+              ctx->highlightError("0") +
+              " value at the end of the main function to indicate success, if you don't care much about the status",
+          fileRange);
+    }
   } else if (fnName == "main") {
     ctx->Error("Main function cannot be inside a named module", name.range);
   }
@@ -60,8 +69,10 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
                  "use member argument syntax",
                  arg->getName().range);
     }
-    auto* genType = arg->getType()->emit(ctx);
-    generatedTypes.push_back(genType);
+    if (arg->getType()) {
+      auto* genType = arg->getType()->emit(ctx);
+      generatedTypes.push_back(genType);
+    }
   }
   SHOW("Types generated")
   if (isMainFn) {

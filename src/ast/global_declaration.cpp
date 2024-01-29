@@ -23,7 +23,7 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   if (metaInfo.has_value()) {
     irMetaInfo = metaInfo.value().toIR(ctx);
     foreignID  = irMetaInfo.value().getValueAsStringFor("foreign");
-    linkAlias  = irMetaInfo.value().getValueAsStringFor("linkName");
+    linkAlias  = irMetaInfo.value().getValueAsStringFor(IR::MetaInfo::linkAsKey);
   }
   if (!foreignID.has_value()) {
     foreignID = mod->getRelevantForeignID();

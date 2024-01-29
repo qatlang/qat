@@ -15,6 +15,7 @@ enum class Op {
   bitwiseOr,
   bitwiseAnd,
   bitwiseXor,
+  bitwiseNot,
   logicalLeftShift,
   logicalRightShift,
   arithmeticRightShift,
@@ -34,9 +35,12 @@ enum class Op {
   dereference,
 };
 
+useit usize get_precedence_of(Op Operator);
+
 useit inline bool is_unary_operator(Op opr) {
   switch (opr) {
     case Op::minus:
+    case Op::bitwiseNot:
     case Op::Not:
     case Op::dereference:
       return true;

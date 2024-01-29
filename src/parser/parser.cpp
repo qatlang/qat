@@ -386,6 +386,16 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
         setCachedPreExp(ast::BooleanLiteral::create(token.type == TokenType::TRUE, RangeAt(i)), i);
         break;
       }
+      case TokenType::unaryOperator: {
+        const auto start = i;
+        if (ValueAt(i) != "~") {
+          add_error("An unexpected unary operator found here", RangeAt(i));
+        }
+        auto expRes = do_prerun_expression(preCtx, i, upto, true);
+        i           = expRes.second;
+        setCachedPreExp(ast::PrerunBitwiseNot::create(expRes.first, {RangeAt(start), expRes.first->fileRange}), i);
+        break;
+      }
       case TokenType::binaryOperator: {
         if (!hasCachedExp() && token.value == "-") {
           SHOW("Parser: Found unary -")
@@ -394,9 +404,46 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
           setCachedPreExp(ast::PrerunNegative::create(expRes.first, RangeSpan(i, expRes.second)), expRes.second);
           i = expRes.second;
         } else if (hasCachedExp()) {
+          auto opr    = ast::operator_from_string(ValueAt(i));
           auto rhsRes = do_prerun_expression(preCtx, i, upto, true);
-          // FIXME - Support binary operators
-
+          if (is_next(TokenType::binaryOperator, rhsRes.second) && !returnOnFirstExp) {
+            Deque<ast::Op>                operators{opr};
+            Deque<ast::PrerunExpression*> expressions{consumeCachedExp(), rhsRes.first};
+            i = rhsRes.second;
+            while (is_next(TokenType::binaryOperator, i)) {
+              auto newOp  = ast::operator_from_string(ValueAt(i + 1));
+              auto newRhs = do_prerun_expression(preCtx, i + 1, upto, true);
+              operators.push_back(newOp);
+              expressions.push_back(newRhs.first);
+              i = newRhs.second;
+            }
+            auto findLowestPrecedence = [&]() {
+              usize lowestPrec = 1000;
+              usize result     = 0;
+              for (usize j = 0; j < operators.size(); j++) {
+                if (ast::get_precedence_of(operators[j]) < lowestPrec) {
+                  lowestPrec = ast::get_precedence_of(operators[j]);
+                  result     = j;
+                }
+              }
+              return result;
+            };
+            while (operators.size() > 0) {
+              auto index = findLowestPrecedence();
+              auto newExp =
+                  ast::PrerunBinaryOp::create(expressions[index], operators[index], expressions[index + 1],
+                                              {expressions[index]->fileRange, expressions[index + 1]->fileRange});
+              operators.erase(operators.begin() + index);
+              expressions.erase(expressions.begin() + index + 1);
+              expressions.at(index) = newExp;
+            }
+            setCachedPreExp(expressions.front(), i);
+          } else {
+            auto lhs = consumeCachedExp();
+            i        = rhsRes.second;
+            setCachedPreExp(
+                ast::PrerunBinaryOp::create(lhs, opr, rhsRes.first, {lhs->fileRange, rhsRes.first->fileRange}), i);
+          }
         } else {
           add_error("No expression found on the left hand side of the binary operator " + color_error(token.value),
                     RangeAt(i));
@@ -3779,10 +3826,44 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             lhs = consumeCachedExpr();
           }
           auto rhsRes = do_expression(preCtx, None, i, upto, None, true);
-          setCachedExpr(ast::BinaryExpression::create(lhs, token.value, rhsRes.first,
-                                                      lhs->fileRange.spanTo(rhsRes.first->fileRange)),
-                        rhsRes.second);
-          i = rhsRes.second;
+          if (is_next(TokenType::binaryOperator, rhsRes.second) && !returnAtFirstExp) {
+            Deque<ast::Op>          operators{ast::operator_from_string(token.value)};
+            Deque<ast::Expression*> expressions{lhs, rhsRes.first};
+            i = rhsRes.second;
+            while (is_next(TokenType::binaryOperator, i)) {
+              auto newOp  = ast::operator_from_string(ValueAt(i + 1));
+              auto newRhs = do_expression(preCtx, None, i + 1, upto, None, true);
+              operators.push_back(newOp);
+              expressions.push_back(newRhs.first);
+              i = newRhs.second;
+            }
+            auto findLowestPrecedence = [&]() {
+              usize lowestPrec = 1000;
+              usize result     = 0;
+              for (usize j = 0; j < operators.size(); j++) {
+                if (ast::get_precedence_of(operators[j]) < lowestPrec) {
+                  lowestPrec = ast::get_precedence_of(operators[j]);
+                  result     = j;
+                }
+              }
+              return result;
+            };
+            while (operators.size() > 0) {
+              auto index  = findLowestPrecedence();
+              auto newExp = ast::BinaryExpression::create(
+                  expressions[index], ast::operator_to_string(operators[index]), expressions[index + 1],
+                  {expressions[index]->fileRange, expressions[index + 1]->fileRange});
+              operators.erase(operators.begin() + index);
+              expressions.erase(expressions.begin() + index + 1);
+              expressions.at(index) = newExp;
+            }
+            setCachedExpr(expressions.front(), i);
+          } else {
+            i = rhsRes.second;
+            setCachedExpr(ast::BinaryExpression::create(lhs, token.value, rhsRes.first,
+                                                        {lhs->fileRange, rhsRes.first->fileRange}),
+                          i);
+          }
         }
         break;
       }

@@ -2,6 +2,46 @@
 
 namespace qat::ast {
 
+usize get_precedence_of(Op Operator) {
+  switch (Operator) {
+    case Op::multiply:
+    case Op::divide:
+    case Op::remainder: {
+      return 10;
+    }
+    case Op::add:
+    case Op::subtract: {
+      return 20;
+    }
+    case Op::logicalLeftShift:
+    case Op::logicalRightShift:
+    case Op::arithmeticRightShift: {
+      return 30;
+    }
+    case Op::greaterThan:
+    case Op::greaterThanEqualTo:
+    case Op::lessThan:
+    case Op::lessThanOrEqualTo: {
+      return 40;
+    }
+    case Op::equalTo:
+    case Op::notEqualTo:
+      return 50;
+    case Op::bitwiseAnd:
+      return 50;
+    case Op::bitwiseXor:
+      return 60;
+    case Op::bitwiseOr:
+      return 70;
+    case Op::And:
+      return 80;
+    case Op::Or:
+      return 90;
+    default:
+      return 500;
+  }
+}
+
 Op operator_from_string(const String& str) {
   if (str == "+") {
     return Op::add;
@@ -47,6 +87,8 @@ Op operator_from_string(const String& str) {
     return Op::Not;
   } else if (str == "@") {
     return Op::dereference;
+  } else if (str == "~") {
+    return Op::bitwiseNot;
   }
 } // NOLINT(clang-diagnostic-return-type)
 
@@ -101,6 +143,8 @@ String operator_to_string(Op opr) {
       return "move =";
     case Op::dereference:
       return "@";
+    case Op::bitwiseNot:
+      return "~";
   }
 }
 

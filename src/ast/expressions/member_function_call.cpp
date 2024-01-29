@@ -1,4 +1,5 @@
 #include "./member_function_call.hpp"
+#include "../prerun/member_function_call.hpp"
 
 namespace qat::ast {
 
@@ -247,8 +248,12 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       argVals.push_back(argsEmit[i - 1]->getLLVM());
     }
     return memFn->call(ctx, argVals, localID, ctx->getMod());
+  } else if (instType->isTyped()) {
+    return handle_type_wrap_functions(instType->asTyped(), arguments, memberName, ctx, fileRange);
   } else {
-    ctx->Error("Member function call for this type is not supported", fileRange);
+    ctx->Error("Member function call for expression of type " + ctx->highlightError(instType->toString()) +
+                   " is not supported",
+               fileRange);
   }
   return nullptr;
 }

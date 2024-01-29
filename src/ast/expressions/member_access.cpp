@@ -99,7 +99,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             ctx->builder.CreateStructGEP(IR::StringSliceType::get(ctx)->getLLVMType(), inst->getLLVM(), 1u),
             IR::ReferenceType::get(false, IR::CType::getUsize(ctx), ctx), false, IR::Nature::temporary);
       }
-    } else if (name.value == "buffer") {
+    } else if (name.value == "data") {
       if (inst->isLLVMConstant() && !isPointerAccess) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(0u),
                                    IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false,

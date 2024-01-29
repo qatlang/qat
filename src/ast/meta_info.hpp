@@ -21,7 +21,7 @@ struct MetaInfo {
         ctx->Error("The key " + ctx->highlightError(kv.first.value) + " is repeating here", kv.first.range);
       }
       auto irVal = kv.second->emit(ctx);
-      if (kv.first.value == "foreign" || kv.first.value == "linkName") {
+      if (kv.first.value == "foreign" || kv.first.value == IR::MetaInfo::linkAsKey) {
         if (!irVal->getType()->isStringSlice()) {
           ctx->Error("The " + ctx->highlightError(kv.first.value) + " field is expected to be of type " +
                          ctx->highlightError("str") + ". Got an expression of type " +

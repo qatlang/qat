@@ -8,6 +8,7 @@
 namespace qat::ast {
 
 class DefineOpaqueType : public Node {
+  friend class IR::QatModule;
   Identifier               name;
   Maybe<PrerunExpression*> condition;
   Maybe<VisibilitySpec>    visibSpec;

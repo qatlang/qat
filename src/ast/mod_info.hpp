@@ -23,7 +23,7 @@ public:
     return std::construct_at(OwnNormal(ModInfo), _metaInfo, _fileRange);
   }
 
-  void  define(IR::Context* ctx) final;
+  void  createModule(IR::Context* ctx) const final;
   useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
   useit NodeType   nodeType() const final { return NodeType::MODULE_INFO; }
   useit Json       toJson() const final;

@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-void ModInfo::define(IR::Context* ctx) {
+void ModInfo::createModule(IR::Context* ctx) const {
   SHOW("ModInfo - Create Module")
   auto* mod = ctx->getMod();
   if (mod->metaInfo.has_value()) {

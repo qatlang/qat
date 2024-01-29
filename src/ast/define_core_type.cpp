@@ -65,11 +65,32 @@ void DefineCoreType::createModule(IR::Context* ctx) const {
         allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
       }
     }
-    auto eqStructTy     = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
-    auto mainVisibility = ctx->getVisibInfo(visibSpec);
-    setOpaque(IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, mod,
+    auto                eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+    auto                mainVisibility = ctx->getVisibInfo(visibSpec);
+    Maybe<IR::MetaInfo> irMeta;
+    bool                isTypeNatureUnion = false;
+    if (metaInfo.has_value()) {
+      irMeta = metaInfo.value().toIR(ctx);
+      if (irMeta->hasKey(IR::MetaInfo::unionKey)) {
+        if (!irMeta->hasKey("foreign") && !mod->getRelevantForeignID().has_value()) {
+          ctx->Error(
+              "This type is not a foreign entity and is not part of any foreign module, and hence cannot be considered as a " +
+                  ctx->highlightError(IR::MetaInfo::unionKey),
+              metaInfo.value().fileRange);
+        }
+        auto typeNatVal = irMeta->getValueFor(IR::MetaInfo::unionKey);
+        if (!typeNatVal->getType()->isBool()) {
+          ctx->Error("The key " + ctx->highlightError(IR::MetaInfo::unionKey) + " expects a value of type " +
+                         ctx->highlightError("bool"),
+                     metaInfo.value().fileRange);
+        }
+        isTypeNatureUnion = llvm::cast<llvm::ConstantInt>(typeNatVal->getLLVMConstant())->getValue().getBoolValue();
+      }
+    }
+    setOpaque(IR::OpaqueType::get(name, {}, None,
+                                  isTypeNatureUnion ? IR::OpaqueSubtypeKind::Union : IR::OpaqueSubtypeKind::core, mod,
                                   eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-                                  mainVisibility, ctx->llctx, None));
+                                  mainVisibility, ctx->llctx, irMeta));
   }
 }
 
@@ -111,13 +132,17 @@ void DefineCoreType::createType(IR::Context* ctx) const {
         allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
       }
     }
+    Maybe<IR::MetaInfo> irMeta;
+    if (metaInfo.has_value()) {
+      irMeta = metaInfo.value().toIR(ctx);
+    }
     auto eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
     SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
                                            << genericCoreType << "; datalayout: " << ctx->dataLayout.has_value())
     setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
                                   IR::OpaqueSubtypeKind::core, mod,
                                   eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-                                  mainVisibility, ctx->llctx, None));
+                                  mainVisibility, ctx->llctx, irMeta));
   }
   SHOW("Set opaque")
   if (genericCoreType) {

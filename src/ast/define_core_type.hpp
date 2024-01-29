@@ -9,6 +9,7 @@
 #include "./types/qat_type.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
+#include "meta_info.hpp"
 #include "node.hpp"
 #include "types/generic_abstract.hpp"
 #include <optional>
@@ -84,6 +85,7 @@ private:
   mutable OperatorDefinition*    moveAssignment       = nullptr;
   mutable DestructorDefinition*  destructorDefinition = nullptr;
   Maybe<VisibilitySpec>          visibSpec;
+  Maybe<MetaInfo>                metaInfo;
 
   Vec<ast::GenericAbstractType*> generics;
   Maybe<PrerunExpression*>       constraint;
@@ -102,16 +104,17 @@ private:
 public:
   DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
                  FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
-                 bool _isPacked = false)
+                 Maybe<MetaInfo> _metaInfo, bool _isPacked = false)
       : Node(_fileRange), name(_name), checker(_checker), isPacked(_isPacked), visibSpec(_visibSpec),
-        generics(_generics), constraint(_constraint) {}
+        metaInfo(_metaInfo), generics(_generics), constraint(_constraint) {}
 
   useit static inline DefineCoreType* create(Identifier _name, Maybe<PrerunExpression*> _checker,
                                              Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
                                              Vec<ast::GenericAbstractType*> _generics,
-                                             Maybe<PrerunExpression*> _constraint, bool _isPacked) {
+                                             Maybe<PrerunExpression*> _constraint, Maybe<MetaInfo> _metaInfo,
+                                             bool _isPacked) {
     return std::construct_at(OwnNormal(DefineCoreType), _name, _checker, _visibSpec, _fileRange, _generics, _constraint,
-                             _isPacked);
+                             _metaInfo, _isPacked);
   }
 
   COMMENTABLE_FUNCTIONS

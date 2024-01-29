@@ -118,6 +118,7 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else if (valType->isStringSlice()) {
+      auto destValTy = destTy->isCType() ? destTy->asCType()->getSubType() : destTy;
       if (destTy->isCType() && destTy->asCType()->isCString()) {
         if (val->isPrerunValue()) {
           return new IR::PrerunValue(val->getLLVMConstant()->getAggregateElement(0u), destTy);
@@ -126,11 +127,22 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
           return new IR::Value(ctx->builder.CreateExtractValue(val->getLLVM(), {0u}), destTy, false,
                                IR::Nature::temporary);
         }
-      } else if (destTy->isPointer() && destTy->asPointer()->getSubType()->isUnsignedInteger() &&
-                 destTy->asPointer()->isNullable() && destTy->asPointer()->getOwner().isAnonymous() &&
-                 (destTy->asPointer()->getSubType()->asUnsignedInteger()->getBitwidth() == 8u)) {
+      } else if (destValTy->isPointer() &&
+                 (destValTy->asPointer()->getSubType()->isUnsignedInteger() ||
+                  (destValTy->asPointer()->getSubType()->isCType() &&
+                   destValTy->asPointer()->getSubType()->asCType()->getSubType()->isUnsignedInteger())) &&
+                 destValTy->asPointer()->getOwner().isAnonymous() &&
+                 (destValTy->asPointer()->getSubType()->isUnsignedInteger()
+                      ? (destValTy->asPointer()->getSubType()->asUnsignedInteger()->getBitwidth() == 8u)
+                      : (destValTy->asPointer()
+                             ->getSubType()
+                             ->asCType()
+                             ->getSubType()
+                             ->asUnsignedInteger()
+                             ->getBitwidth() == 8u)) &&
+                 !destValTy->asPointer()->isSubtypeVariable()) {
         loadRef();
-        if (destTy->asPointer()->isMulti()) {
+        if (destValTy->asPointer()->isMulti()) {
           val->getLLVM()->mutateType(destTy->getLLVMType());
           return new IR::Value(val->getLLVM(), destTy, false, IR::Nature::temporary);
         } else {

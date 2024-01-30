@@ -27,6 +27,7 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
   }
   Vec<IR::QatType*> tupleMemTys;
   Vec<IR::Value*>   tupleMemVals;
+  bool              isAllMemsPre = true;
   for (usize i = 0; i < members.size(); i++) {
     auto* expMemTy = tupleTy ? tupleTy->getSubtypeAt(i) : nullptr;
     auto* mem      = members.at(i);
@@ -57,6 +58,7 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
               }
               ctx->builder.CreateStore(llvm::Constant::getNullValue(memType->getLLVMType()), memRes->getLLVM());
             }
+            isAllMemsPre = false;
             tupleMemVals.push_back(new IR::Value(loadRes, memType, false, IR::Nature::temporary));
           } else {
             ctx->Error("This expression is of type " + ctx->highlightError(memType->toString()) +
@@ -65,6 +67,9 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
                        mem->fileRange);
           }
         } else {
+          if (!memRes->isPrerunValue()) {
+            isAllMemsPre = false;
+          }
           tupleMemVals.push_back(memRes);
         }
       } else if ((expMemTy->isReference() && expMemTy->asReference()->isSame(memRes->getType()) &&
@@ -77,6 +82,7 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
         if (memRes->isReference()) {
           memRes->loadImplicitPointer(ctx->builder);
         }
+        isAllMemsPre = false;
         tupleMemVals.push_back(memRes);
       } else if (memRes->isReference() && memRes->getType()->asReference()->getSubType()->isSame(expMemTy)) {
         memRes->loadImplicitPointer(ctx->builder);
@@ -90,6 +96,7 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
                          mem->fileRange);
             }
           }
+          isAllMemsPre = false;
           tupleMemVals.push_back(new IR::Value(loadRes, memType, false, IR::Nature::temporary));
         } else {
           ctx->Error("This expression is a reference of type " + ctx->highlightError(memType->toString()) +
@@ -103,6 +110,9 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
                    mem->fileRange);
       }
     } else {
+      if (!memRes->isPrerunValue()) {
+        isAllMemsPre = false;
+      }
       tupleMemVals.push_back(memRes);
     }
   }
@@ -114,9 +124,18 @@ IR::Value* TupleValue::emit(IR::Context* ctx) {
                        : ctx->getActiveFunction()->getBlock()->newValue(
                              irName.has_value() ? irName.value().value : utils::unique_id(), tupleTy,
                              irName.has_value() ? isVar : true, irName.has_value() ? irName.value().range : fileRange);
-  for (usize i = 0; i < tupleMemTys.size(); i++) {
-    ctx->builder.CreateStore(tupleMemVals.at(i)->getLLVM(),
-                             ctx->builder.CreateStructGEP(tupleTy->getLLVMType(), newLocal->getLLVM(), i));
+  if (isAllMemsPre) {
+    Vec<llvm::Constant*> memConst;
+    for (auto it : tupleMemVals) {
+      memConst.push_back(it->getLLVMConstant());
+    }
+    ctx->builder.CreateStore(llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(tupleTy->getLLVMType()), memConst),
+                             newLocal->getLLVM());
+  } else {
+    for (usize i = 0; i < tupleMemVals.size(); i++) {
+      ctx->builder.CreateStore(tupleMemVals.at(i)->getLLVM(),
+                               ctx->builder.CreateStructGEP(tupleTy->getLLVMType(), newLocal->getLLVM(), i));
+    }
   }
   return newLocal->toNewIRValue();
 }

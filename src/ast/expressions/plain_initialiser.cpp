@@ -102,6 +102,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       }
       // FIXME - Support default values
       Vec<IR::Value*> irVals;
+      bool            areAllValsPrerun = true;
       for (usize i = 0; i < fieldValues.size(); i++) {
         if (fieldValues.at(i)->hasTypeInferrance()) {
           fieldValues.at(i)->asTypeInferrable()->setInferenceType(cTy->getMemberAt(indices.at(i))->type);
@@ -112,6 +113,9 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
             (memTy->isReference() && memTy->asReference()->getSubType()->isSame(fVal->getType()) &&
              fVal->isImplicitPointer() && (memTy->asReference()->isSubtypeVariable() ? fVal->isVariable() : true)) ||
             (fVal->getType()->isReference() && fVal->getType()->asReference()->getSubType()->isSame(memTy))) {
+          if (!fVal->isPrerunValue()) {
+            areAllValsPrerun = false;
+          }
           irVals.push_back(fVal);
         } else {
           ctx->Error("This expression does not match the type of the "
@@ -125,54 +129,60 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       }
       llvm::Value* alloca = nullptr;
       if (isLocalDecl()) {
-        if (localValue->getType()->isMaybe()) {
-          alloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getLLVM(), 1u);
-        } else {
-          alloca = localValue->getLLVM();
-        }
-      } else if (irName) {
-        localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-        alloca     = localValue->getLLVM();
+        alloca = localValue->getLLVM();
       } else {
-        alloca = ctx->builder.CreateAlloca(cTy->getLLVMType(), ctx->dataLayout->getAllocaAddrSpace());
+        auto newAlloca = ctx->getActiveFunction()->getBlock()->newValue(
+            irName.has_value() ? irName->value : ctx->getActiveFunction()->getRandomAllocaName(), cTy, isVar,
+            irName.has_value() ? irName->range : fileRange);
+        alloca = newAlloca->getLLVM();
       }
-      for (usize i = 0; i < irVals.size(); i++) {
-        auto* memPtr = ctx->builder.CreateStructGEP(cTy->getLLVMType(), alloca, indices.at(i));
-        auto  irVal  = irVals.at(i);
-        auto  memTy  = cTy->getMemberAt(indices.at(i))->type;
-        if (irVal->isImplicitPointer() || irVal->isReference()) {
-          if (memTy->isTriviallyCopyable() || memTy->isTriviallyMovable()) {
-            if (irVal->isReference()) {
-              irVal->loadImplicitPointer(ctx->builder);
-            }
-            auto* irOrigVal = ctx->builder.CreateLoad(memTy->getLLVMType(), irVal->getLLVM());
-            if (!memTy->isTriviallyCopyable()) {
-              if (irVal->isReference() && !irVal->getType()->asReference()->isSubtypeVariable()) {
-                ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
-                           fieldValues.at(i)->fileRange);
-              } else if (!irVal->isReference() && !irVal->isVariable()) {
-                ctx->Error("This is an expression without variability and hence cannot be trivially moved from",
-                           fieldValues.at(i)->fileRange);
+      if (areAllValsPrerun) {
+        SHOW("PlainInit Type " << cTy->toString() << " all values prerun. Count " << indices.size())
+        Vec<llvm::Constant*> memVals(indices.size());
+        for (usize i = 0; i < indices.size(); i++) {
+          memVals[indices[i]] = irVals[i]->getLLVMConstant();
+        }
+        ctx->builder.CreateStore(llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(cTy->getLLVMType()), memVals),
+                                 alloca);
+      } else {
+        for (usize i = 0; i < irVals.size(); i++) {
+          auto* memPtr = ctx->builder.CreateStructGEP(cTy->getLLVMType(), alloca, indices.at(i));
+          auto  irVal  = irVals.at(i);
+          auto  memTy  = cTy->getMemberAt(indices.at(i))->type;
+          if (irVal->isImplicitPointer() || irVal->isReference()) {
+            if (memTy->isTriviallyCopyable() || memTy->isTriviallyMovable()) {
+              if (irVal->isReference()) {
+                irVal->loadImplicitPointer(ctx->builder);
               }
-              ctx->builder.CreateStore(llvm::Constant::getNullValue(memTy->getLLVMType()), irVal->getLLVM());
-              if (irVal->isLocalToFn()) {
-                ctx->getActiveFunction()->getBlock()->addMovedValue(irVal->getLocalID().value());
+              auto* irOrigVal = ctx->builder.CreateLoad(memTy->getLLVMType(), irVal->getLLVM());
+              if (!memTy->isTriviallyCopyable()) {
+                if (irVal->isReference() && !irVal->getType()->asReference()->isSubtypeVariable()) {
+                  ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
+                             fieldValues.at(i)->fileRange);
+                } else if (!irVal->isReference() && !irVal->isVariable()) {
+                  ctx->Error("This is an expression without variability and hence cannot be trivially moved from",
+                             fieldValues.at(i)->fileRange);
+                }
+                ctx->builder.CreateStore(llvm::Constant::getNullValue(memTy->getLLVMType()), irVal->getLLVM());
+                if (irVal->isLocalToFn()) {
+                  ctx->getActiveFunction()->getBlock()->addMovedValue(irVal->getLocalID().value());
+                }
               }
+              ctx->builder.CreateStore(irOrigVal, memPtr);
+            } else {
+              ctx->Error(
+                  "The member field " + ctx->highlightError(cTy->getMemberNameAt(indices.at(i))) +
+                      " expects an expression of type which is not trivially copyable and trivially movable. Please use " +
+                      ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
+                  fieldValues.at(i)->fileRange);
             }
-            ctx->builder.CreateStore(irOrigVal, memPtr);
           } else {
-            ctx->Error(
-                "The member field " + ctx->highlightError(cTy->getMemberNameAt(indices.at(i))) +
-                    " expects an expression of type which is not trivially copyable and trivially movable. Please use " +
-                    ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
-                fieldValues.at(i)->fileRange);
+            ctx->builder.CreateStore(irVal->getLLVM(), memPtr);
           }
-        } else {
-          ctx->builder.CreateStore(irVal->getLLVM(), memPtr);
         }
       }
       if (isLocalDecl()) {
-        return localValue->toNewIRValue();
+        return localValue;
       } else {
         return new IR::Value(alloca, cTy, true, IR::Nature::pure);
       }

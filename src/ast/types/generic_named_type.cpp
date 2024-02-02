@@ -6,45 +6,10 @@
 
 namespace qat::ast {
 
-IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
-  SHOW("Generic named type START")
-  auto* mod     = ctx->getMod();
-  auto  reqInfo = ctx->getAccessInfo();
-  if (relative != 0) {
-    if (mod->hasNthParent(relative)) {
-      mod = mod->getNthParent(relative);
-    }
-  }
-  auto entityName = names.back();
-  if (names.size() > 1) {
-    for (usize i = 0; i < (names.size() - 1); i++) {
-      auto split = names.at(i);
-      if (split.value == "std" && IR::StdLib::isStdLibFound()) {
-        mod = IR::StdLib::stdLib;
-        continue;
-      }
-      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
-          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
-        mod = mod->getLib(split.value, reqInfo);
-        mod->addMention(split.range);
-      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
-                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
-        mod = mod->getBox(split.value, reqInfo);
-        mod->addMention(split.range);
-      } else if (mod->hasBroughtModule(split.value, reqInfo) ||
-                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
-        mod = mod->getBroughtModule(split.value, reqInfo);
-        mod->addMention(split.range);
-      } else {
-        ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
-                       ctx->highlightError(mod->getFullName()) + " or any of its submodules",
-                   fileRange);
-      }
-    }
-    entityName = names.back();
-  }
-  auto* fun  = ctx->getActiveFunction();
-  auto* curr = fun ? fun->getBlock() : nullptr;
+Maybe<IR::QatType*> handle_generic_named_type(IR::QatModule* mod, IR::Function* fun, IR::Block* curr,
+                                              Identifier entityName, Vec<Identifier> names,
+                                              Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRange fileRange,
+                                              IR::Context* ctx) {
   if (mod->hasGenericCoreType(entityName.value, reqInfo) ||
       mod->hasBroughtGenericCoreType(entityName.value, ctx->getAccessInfo()) ||
       mod->hasAccessibleGenericCoreTypeInImports(entityName.value, ctx->getAccessInfo()).first) {
@@ -104,6 +69,7 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
       curr->setActive(ctx->builder);
     }
     (void)ctx->setActiveModule(oldMod);
+    SHOW("Set old mod")
     return tyRes;
   } else if (mod->hasGenericTypeDef(entityName.value, reqInfo) ||
              mod->hasBroughtGenericTypeDef(entityName.value, ctx->getAccessInfo()) ||
@@ -159,6 +125,57 @@ IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
     }
     (void)ctx->setActiveModule(oldMod);
     return tyRes;
+  }
+  return None;
+}
+
+IR::QatType* GenericNamedType::emit(IR::Context* ctx) {
+  SHOW("Generic named type START")
+  auto* mod     = ctx->getMod();
+  auto  reqInfo = ctx->getAccessInfo();
+  if (relative != 0) {
+    if (mod->hasNthParent(relative)) {
+      mod = mod->getNthParent(relative);
+    }
+  }
+  auto entityName = names.back();
+  if (names.size() > 1) {
+    for (usize i = 0; i < (names.size() - 1); i++) {
+      auto split = names.at(i);
+      if (split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      }
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
+        mod = mod->getLib(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
+        mod = mod->getBox(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, reqInfo) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else {
+        ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
+                       ctx->highlightError(mod->getFullName()) + " or any of its submodules",
+                   fileRange);
+      }
+    }
+    entityName = names.back();
+  }
+  auto* fun       = ctx->getActiveFunction();
+  auto* curr      = fun ? fun->getBlock() : nullptr;
+  auto  handleRes = handle_generic_named_type(mod, fun, curr, entityName, names, genericTypes, reqInfo, fileRange, ctx);
+  if (handleRes.has_value()) {
+    return handleRes.value();
+  } else if (mod->hasGenericFunction(entityName.value, reqInfo) ||
+             mod->hasBroughtGenericFunction(entityName.value, reqInfo) ||
+             mod->hasAccessibleGenericFunctionInImports(entityName.value, reqInfo).first) {
+    ctx->Error(ctx->highlightError(entityName.value) + " is a generic function and hence cannot be used as a type",
+               fileRange);
   } else {
     // FIXME - Support static members of generic types
     ctx->Error("No generic type named " + ctx->highlightError(Identifier::fullName(names).value) +

@@ -1,6 +1,7 @@
 #include "./generic_entity.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../prerun/default.hpp"
+#include "../types/generic_named_type.hpp"
 #include "../types/prerun_generic.hpp"
 
 namespace qat::ast {
@@ -101,10 +102,17 @@ IR::Value* GenericEntity::emit(IR::Context* ctx) {
     (void)ctx->setActiveModule(oldMod);
     return fnRes;
   } else {
-    // FIXME - Support static members of generic types
-    auto fullName = Identifier::fullName(names);
-    ctx->Error("No generic function named " + ctx->highlightError(fullName.value) + " found in the current scope",
-               fullName.range);
+    auto handleRes = handle_generic_named_type(mod, ctx->getActiveFunction(), curr, entityName, names, genericTypes,
+                                               reqInfo, fileRange, ctx);
+    if (handleRes.has_value()) {
+      return new IR::PrerunValue(IR::TypedType::get(handleRes.value()));
+    } else {
+      // FIXME - Support static members of generic types
+      auto fullName = Identifier::fullName(names);
+      ctx->Error("No generic function or type named " + ctx->highlightError(fullName.value) +
+                     " found in the current scope",
+                 fullName.range);
+    }
   }
   return nullptr;
 }

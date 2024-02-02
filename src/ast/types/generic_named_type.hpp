@@ -29,6 +29,11 @@ public:
   useit AstTypeKind  typeKind() const final { return AstTypeKind::GENERIC_NAMED; }
 };
 
+Maybe<IR::QatType*> handle_generic_named_type(IR::QatModule* mod, IR::Function* fun, IR::Block* curr,
+                                              Identifier entityName, Vec<Identifier> names,
+                                              Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRange fileRange,
+                                              IR::Context* ctx);
+
 } // namespace qat::ast
 
 #endif

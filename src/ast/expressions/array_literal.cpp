@@ -7,10 +7,12 @@ namespace qat::ast {
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
   IR::ArrayType* arrTyOfLocal = nullptr;
   if (isLocalDecl()) {
-    if (localValue->getType()->isMaybe()) {
-      arrTyOfLocal = localValue->getType()->asMaybe()->getSubType()->asArray();
-    } else {
+    if (localValue->getType()->isArray()) {
       arrTyOfLocal = localValue->getType()->asArray();
+    } else {
+      ctx->Error("The type for the local declaration is " + ctx->highlightError(localValue->getType()->toString()) +
+                     ". This expression expects to be of array type",
+                 fileRange);
     }
   }
   if (isLocalDecl() && (arrTyOfLocal->getLength() != values.size())) {
@@ -24,18 +26,20 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
                    " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
                fileRange);
   } else if (isTypeInferred() && !inferredType->isArray()) {
-    ctx->Error("Inferred type is " + ctx->highlightError(inferredType->toString()) + ", but found an array", fileRange);
+    ctx->Error("Type inferred from scope for this expression is " + ctx->highlightError(inferredType->toString()) +
+                   ". This expression expects to be of array type",
+               fileRange);
   }
   Vec<IR::Value*> valsIR;
+  auto*           elemInferredTy = arrTyOfLocal ? arrTyOfLocal->getElementType()
+                                                : (inferredType ? inferredType->asArray()->getElementType() : nullptr);
   for (auto* val : values) {
-    if (arrTyOfLocal || isTypeInferred()) {
-      auto* elemTy = arrTyOfLocal ? arrTyOfLocal->getElementType() : inferredType->asArray()->getElementType();
-      if (val->hasTypeInferrance()) {
-        val->asTypeInferrable()->setInferenceType(elemTy);
-      }
+    if ((arrTyOfLocal || isTypeInferred()) && val->hasTypeInferrance() && elemInferredTy) {
+      val->asTypeInferrable()->setInferenceType(elemInferredTy);
     }
     valsIR.push_back(val->emit(ctx));
   }
+  SHOW("Getting element type")
   IR::QatType* elemTy = nullptr;
   if (!values.empty()) {
     if (valsIR.front()->isReference()) {
@@ -55,14 +59,9 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
               IR::Nature::temporary);
         }
       } else {
-        SHOW("Array element type is: " << val->getType()->toString())
-        if (val->getType()->isReference()) {
-          SHOW("Array element is a reference to: " << val->getType()->asReference()->getSubType()->toString());
-        }
-        ctx->Error("The type of this element do not match expected type. The "
-                   "expected type is " +
-                       ctx->highlightError(elemTy->toString()) + " and the provided type of this element is " +
-                       ctx->highlightError(val->getType()->toString()),
+        ctx->Error("The expected type is " + ctx->highlightError(elemTy->toString()) +
+                       " but the provided expression is of type " + ctx->highlightError(val->getType()->toString()) +
+                       ". These do not match",
                    values.at(i)->fileRange);
       }
     }

@@ -22,7 +22,7 @@ add_library(QAT_AST_EXPRESSIONS
 	ok.cpp
 	operator.cpp
 	plain_initialiser.cpp
-	self.cpp
+	self_instance.cpp
 	generic_entity.cpp
 	to_conversion.cpp
 	tuple_value.cpp

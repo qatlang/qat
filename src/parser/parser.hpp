@@ -59,12 +59,12 @@ public:
 
   void clear_brought_paths();
   void set_tokens(Vec<lexer::Token>* tokens);
-  void parse_struct_type(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
+  void do_struct_type(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
   void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto,
                       Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef, Vec<FileRange>& fileRanges,
                       Maybe<usize>& defaultVal);
-  void parse_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
-                         bool& areValuesNegative, Maybe<usize>& defaultVal);
+  void do_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
+                      Maybe<usize>& defaultVal);
   void parse_match_contents(ParserContext& prev_ctx, usize from, usize upto,
                             Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
                             Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
@@ -107,7 +107,8 @@ public:
   useit Vec<usize> primary_positions_within(lexer::TokenType candidate, usize from, usize upto);
   useit Vec<ast::GenericAbstractType*> do_generic_abstracts(ParserContext& preCtx, usize from, usize upto);
   useit Vec<ast::QatType*> do_separated_types(ParserContext& prev_ctx, usize from, usize upto);
-  useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& ctx, ast::QatType* type, usize from, usize upto);
+  useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& ctx, Maybe<ast::QatType*> type, usize from,
+                                                    usize upto);
 };
 
 } // namespace qat::parser

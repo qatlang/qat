@@ -20,6 +20,7 @@ add_library(QAT_AST_TYPES
 	tuple.cpp
 	typed_generic.cpp
 	unsigned.cpp
+	vector.cpp
 	void.cpp)
 
 target_include_directories(QAT_AST_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")

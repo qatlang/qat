@@ -29,6 +29,7 @@ enum class AstTypeKind {
   LINKED_GENERIC,
   RESULT,
   SELF_TYPE,
+  VECTOR,
 };
 
 } // namespace qat::ast

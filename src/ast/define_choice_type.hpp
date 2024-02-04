@@ -9,29 +9,28 @@ namespace qat::ast {
 class QatType;
 
 class DefineChoiceType : public Node {
-public:
 private:
   Identifier                                      name;
   Vec<Pair<Identifier, Maybe<PrerunExpression*>>> fields;
-  bool                                            areValuesUnsigned;
   Maybe<VisibilitySpec>                           visibSpec;
   Maybe<usize>                                    defaultVal;
   Maybe<ast::QatType*>                            providedIntegerTy;
 
+  mutable bool areValuesUnsigned;
+
 public:
   DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
-                   Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned, Maybe<usize> _defaultVal,
-                   Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), name(_name), fields(_fields), areValuesUnsigned(_areValuesUnsigned), visibSpec(_visibSpec),
-        defaultVal(_defaultVal), providedIntegerTy(_providedTy) {}
+                   Maybe<ast::QatType*> _providedTy, Maybe<usize> _defaultVal, Maybe<VisibilitySpec> _visibSpec,
+                   FileRange _fileRange)
+      : Node(_fileRange), name(_name), fields(_fields), visibSpec(_visibSpec), defaultVal(_defaultVal),
+        providedIntegerTy(_providedTy) {}
 
   useit static inline DefineChoiceType* create(Identifier                                           _name,
                                                Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
-                                               Maybe<ast::QatType*> _providedTy, bool _areValuesUnsigned,
-                                               Maybe<usize> _defaultVal, Maybe<VisibilitySpec> _visibSpec,
-                                               FileRange _fileRange) {
-    return std::construct_at(OwnNormal(DefineChoiceType), _name, _fields, _providedTy, _areValuesUnsigned, _defaultVal,
-                             _visibSpec, _fileRange);
+                                               Maybe<ast::QatType*> _providedTy, Maybe<usize> _defaultVal,
+                                               Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DefineChoiceType), _name, _fields, _providedTy, _defaultVal, _visibSpec,
+                             _fileRange);
   }
 
   void  createType(IR::Context* ctx);

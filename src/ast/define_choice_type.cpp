@@ -82,6 +82,9 @@ void DefineChoiceType::createType(IR::Context* ctx) {
               llvm::ConstantExpr::getSub(fieldResult,
                                          llvm::ConstantInt::get(fieldResult->getType(), 1u, iValTy->isInteger())),
               ctx->dataLayout.value())));
+          if (prevVals.back()->isNegative()) {
+            areValuesUnsigned = false;
+          }
         }
         fieldValues = Vec<llvm::ConstantInt*>{};
         fieldValues.value().insert(fieldValues.value().end(), prevVals.end(), prevVals.begin());
@@ -92,6 +95,9 @@ void DefineChoiceType::createType(IR::Context* ctx) {
         fieldValues = Vec<llvm::ConstantInt*>{};
       }
       SHOW("Pushing field value")
+      if (lastVal.value()->isNegative()) {
+        areValuesUnsigned = false;
+      }
       fieldValues->push_back(lastVal.value());
     } else if (lastVal.has_value()) {
       if (lastVal.value()->isMaxValue(variantValueType->isInteger())) {
@@ -109,6 +115,9 @@ void DefineChoiceType::createType(IR::Context* ctx) {
               lastVal.value(), llvm::ConstantInt::get(lastVal.value()->getType(), 1u, variantValueType->isInteger())),
           ctx->dataLayout.value()));
       SHOW("Index for field " << fields.at(i).first.value << " is " << newVal)
+      if (newVal->isNegative()) {
+        areValuesUnsigned = false;
+      }
       fieldValues->push_back(newVal);
       lastVal = newVal;
     }

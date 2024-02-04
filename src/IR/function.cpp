@@ -284,14 +284,13 @@ Function::Function(QatModule* _mod, Identifier _name, Maybe<LinkNames> _namingIn
     : Value(nullptr, nullptr, false, Nature::pure), EntityOverview("function", Json(), _name.range),
       name(std::move(_name)), namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))),
       generics(std::move(_generics)), mod(_mod), arguments(std::move(_args)), visibility_info(_visibility_info),
-      fileRange(std::move(_fileRange)), hasVariadicArguments(_isVariadicArguments), metaInfo(_metaInfo), ctx(_ctx),
-      localNameCounter(0) //
+      fileRange(std::move(_fileRange)), hasVariadicArguments(_isVariadicArguments), metaInfo(_metaInfo), ctx(_ctx) //
 {
   Maybe<String> foreignID;
   Maybe<String> linkAlias;
   if (metaInfo) {
     foreignID = metaInfo->getForeignID();
-    linkAlias = metaInfo->getValueAsStringFor("linkName");
+    linkAlias = metaInfo->getValueAsStringFor(IR::MetaInfo::linkAsKey);
   }
   if (!foreignID.has_value()) {
     foreignID = getParentModule()->getRelevantForeignID();

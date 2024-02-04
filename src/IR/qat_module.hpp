@@ -157,6 +157,7 @@ public:
             const VisibilityInfo& _visibility, IR::Context* ctx);
 
   static Vec<QatModule*> allModules;
+  static Vec<fs::path>   usableNativeLibPaths;
 
   static void clearAll();
 
@@ -438,6 +439,9 @@ public:
 
   useit fs::path getResolvedOutputPath(const String& extension, IR::Context* ctx);
   useit llvm::Module* getLLVMModule() const;
+  useit Maybe<fs::path> findStaticLibraryPath(String libName) const;
+
+  static void find_native_library_paths();
 
   bool areNodesEmitted() const;
   void createModules(IR::Context* ctx);

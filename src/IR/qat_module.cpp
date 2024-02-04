@@ -13,6 +13,7 @@
 #include "link_names.hpp"
 #include "lld/Common/Driver.h"
 #include "types/core_type.hpp"
+#include "types/definition.hpp"
 #include "types/float.hpp"
 #include "types/qat_type.hpp"
 #include "types/region.hpp"
@@ -38,6 +39,7 @@
 namespace qat::IR {
 
 Vec<QatModule*> QatModule::allModules{};
+Vec<fs::path>   QatModule::usableNativeLibPaths{};
 
 void QatModule::clearAll() {
   for (auto* mod : allModules) {
@@ -190,6 +192,12 @@ Maybe<String> QatModule::getRelevantForeignID() const {
   if (moduleForeignID.has_value()) {
     return moduleForeignID;
   } else {
+    if (metaInfo.has_value()) {
+      if (metaInfo->hasKey("foreign")) {
+        moduleForeignID = metaInfo->getForeignID();
+        return moduleForeignID;
+      }
+    }
     auto keyVal = getMetaInfoFromAnyParent("foreign");
     if (keyVal.has_value()) {
       auto value = keyVal.value();
@@ -348,18 +356,23 @@ void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& f
   if (!isOverviewOutputted) {
     isOverviewOutputted = true;
     modulesJson.push_back(overviewToJson());
+    SHOW("Overview functions")
     for (auto* fun : functions) {
       functionsJson.push_back(fun->overviewToJson());
     }
+    SHOW("Overview generic functions")
     for (auto* fun : genericFunctions) {
       genericFunctionsJson.push_back(fun->overviewToJson());
     }
+    SHOW("Overview core types")
     for (auto* cTy : coreTypes) {
       coreTypesJson.push_back(cTy->overviewToJson());
     }
+    SHOW("Overview Generic core types")
     for (auto* cTy : genericCoreTypes) {
       genericCoreTypesJson.push_back(cTy->overviewToJson());
     }
+    SHOW("Overview mix types")
     for (auto* mTy : mixTypes) {
       mixTypesJson.push_back(mTy->overviewToJson());
     }
@@ -370,6 +383,9 @@ void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& f
       choiceJson.push_back(chTy->overviewToJson());
     }
     for (auto* tDef : typeDefs) {
+      defsJson.push_back(tDef->overviewToJson());
+    }
+    for (auto* tDef : genericTypeDefinitions) {
       defsJson.push_back(tDef->overviewToJson());
     }
     for (auto* sub : submodules) {
@@ -1919,7 +1935,6 @@ void QatModule::createModules(IR::Context* ctx) {
     auto* oldMod = ctx->setActiveModule(this);
     SHOW("Submodule count before creating modules via nodes: " << submodules.size())
     for (auto* node : nodes) {
-      SHOW("Node for createModule is of type " << (usize)node->nodeType())
       node->createModule(ctx);
     }
     SHOW("Submodule count after creating modules via nodes: " << submodules.size())
@@ -2240,6 +2255,66 @@ std::set<String> QatModule::getAllLinkableLibs() const {
     moduleHandler(bTy.get()->getParent());
   }
   return result;
+}
+
+void QatModule::find_native_library_paths() {
+  Vec<fs::path> unixPaths    = {"/lib", "/usr/lib", "/usr/local/lib"};
+  auto          cfg          = cli::Config::get();
+  const auto    hostTriple   = llvm::Triple(LLVM_HOST_TRIPLE);
+  const auto    targetTriple = llvm::Triple(cfg->getTargetTriple());
+  if (hostTriple.getArch() == llvm::Triple::ArchType::x86_64) {
+    unixPaths.push_back("/lib64");
+    unixPaths.push_back("/usr/lib64");
+    unixPaths.push_back("/usr/local/lib64");
+  } else if (hostTriple.getArch() == llvm::Triple::ArchType::x86) {
+    unixPaths.push_back("/lib32");
+    unixPaths.push_back("/usr/lib32");
+    unixPaths.push_back("/usr/local/lib32");
+  }
+  if (hostTriple.isOSLinux() || hostTriple.isOSDarwin()) {
+    for (auto& item : unixPaths) {
+      if (fs::exists(item)) {
+        usableNativeLibPaths.push_back(item);
+        auto targetStr =
+            ((targetTriple.getArch() == llvm::Triple::ArchType::UnknownArch
+                  ? ""
+                  : (targetTriple.getArchName().str() + "-")) +
+             (targetTriple.isOSUnknown()
+                  ? ""
+                  : (targetTriple.getOSName().str() +
+                     (targetTriple.getEnvironment() == llvm::Triple::EnvironmentType::UnknownEnvironment ? "" : "-"))) +
+             targetTriple.getEnvironmentName().str());
+        if (fs::exists(item / targetStr)) {
+          usableNativeLibPaths.push_back(item / targetStr);
+        }
+      }
+    }
+  } else if (hostTriple.isOSWindows()) {
+#define WINDOWS_SYS32 "C:/Windows/System32"
+    if (fs::exists(WINDOWS_SYS32)) {
+      usableNativeLibPaths.push_back(WINDOWS_SYS32);
+    }
+  } else if (hostTriple.isOSCygMing()) {
+#define MSYS_CLANG64 "C:/msys64/clang64/lib"
+    if (fs::exists(MSYS_CLANG64)) {
+      usableNativeLibPaths.push_back(MSYS_CLANG64);
+    }
+  }
+  if (cfg->hasSysroot()) {
+    if (fs::exists(fs::path(cfg->getSysroot()) / "lib")) {
+      usableNativeLibPaths.push_back(fs::path(cfg->getSysroot()) / "lib");
+    }
+  }
+}
+
+Maybe<fs::path> QatModule::findStaticLibraryPath(String libName) const {
+  SHOW("Finding static library path for " << libName)
+  for (auto folder : usableNativeLibPaths) {
+    if (fs::exists(fs::path(folder) / ("lib" + libName + ".a"))) {
+      return fs::path(folder) / ("lib" + libName + ".a");
+    }
+  }
+  return None;
 }
 
 #define LINK_LIB_KEY               "linkLibs"
@@ -2625,10 +2700,14 @@ void QatModule::bundleLibs(IR::Context* ctx) {
         /**
          *  ELF Linker
          */
+        SHOW("Outpath is " << outPath)
         Vec<const char*> allArgs{"ld.lld", "-flavor", "gnu", "-r", "-o", outPath.c_str()};
         Vec<const char*> allArgsShared{"ld.lld", "-flavor", "gnu", "-r", "-o", outPathShared.c_str()};
-        Vec<String>      staticCmdList;
-        Vec<String>      sharedCmdList;
+        // Vec<String>      staticCmdList;
+        // Vec<String>      sharedCmdList;
+
+        Vec<String> folderPaths;
+        Vec<String> staticPaths;
         // FIXME - LIB_LINKING
         // for (auto& statLib : staticLibsToLink) {
         //   staticCmdList.push_back("-l" + statLib);
@@ -2642,6 +2721,21 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           allArgs.push_back("--strip-debug");
           allArgsShared.push_back("--strip-debug");
         }
+        // for (auto folder : usableNativeLibPaths) {
+        //   folderPaths.push_back("-L" + folder.string());
+        //   allArgs.push_back(folderPaths.back().c_str());
+        //   allArgsShared.push_back(folderPaths.back().c_str());
+        // }
+        // for (auto linkLib : linkableLibs) {
+        //   auto staticPath = findStaticLibraryPath(linkLib.substr(2));
+        //   if (staticPath.has_value()) {
+        //     staticPaths.push_back("-l" + staticPath.value().string());
+        //     allArgs.push_back(staticPaths.back().c_str());
+        //   } else {
+        //     allArgs.push_back(linkLib.c_str());
+        //   }
+        //   allArgsShared.push_back(linkLib.c_str());
+        // }
         allArgsShared.push_back("-Bdynamic");
         String libPathStr = String("--library-path=\"").append(cfg->hasSysroot() ? cfg->getSysroot() : "").append("\"");
         if (cfg->hasSysroot()) {
@@ -2662,7 +2756,7 @@ void QatModule::bundleLibs(IR::Context* ctx) {
           SHOW("Linking Static Library ELF")
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Gnu, &lld::elf::link}});
-          if (result.retCode != 0 || !linkerStdErr.str().empty()) {
+          if (result.retCode != 0 || !stdErrStr.empty()) {
             SHOW("Linker failed")
             ctx->Error("Building static library for module " + ctx->highlightError(filePath.string()) +
                            " failed. The linker's error output is: " + stdErrStr,

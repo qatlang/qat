@@ -139,8 +139,8 @@ protected:
   Maybe<MetaInfo>        metaInfo;
   IR::Context*           ctx;
 
-  mutable u64   localNameCounter;
-  mutable usize activeBlock = 0;
+  mutable u64   localNameCounter = 0;
+  mutable usize activeBlock      = 0;
 
   mutable usize copiedCounter = 0;
   mutable usize movedCounter  = 0;

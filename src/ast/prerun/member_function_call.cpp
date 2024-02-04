@@ -1,4 +1,5 @@
 #include "./member_function_call.hpp"
+#include "../../IR/types/vector.hpp"
 
 namespace qat::ast {
 
@@ -136,6 +137,11 @@ IR::PrerunValue* handle_type_wrap_functions(IR::TypedType* typed, Vec<Expression
     return new IR::PrerunValue(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), typed->getSubType()->isCoreType() ? 1u : 0u),
         IR::UnsignedType::getBool(ctx));
+  } else if (memberName.value == "is_vector_type") {
+    zeroArgCheck();
+    return new IR::PrerunValue(
+        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), typed->getSubType()->is_vector() ? 1u : 0u),
+        IR::UnsignedType::getBool(ctx));
   } else if (memberName.value == "is_underlying_struct_type") {
     zeroArgCheck();
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
@@ -251,10 +257,30 @@ IR::PrerunValue* handle_type_wrap_functions(IR::TypedType* typed, Vec<Expression
     return new IR::PrerunValue(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), typed->getSubType()->canBePrerun() ? 1u : 0u),
         IR::UnsignedType::getBool(ctx));
+  } else if (memberName.value == "get_element_count") {
+    zeroArgCheck();
+    if (typed->getSubType()->isArray()) {
+      return new IR::PrerunValue(
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), typed->getSubType()->asArray()->getLength()),
+          IR::UnsignedType::get(64u, ctx));
+    } else if (typed->getSubType()->isTuple()) {
+      return new IR::PrerunValue(
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), typed->getSubType()->asTuple()->getSubTypeCount()),
+          IR::UnsignedType::get(64u, ctx));
+    } else if (typed->getSubType()->is_vector() && typed->getSubType()->as_vector()->is_fixed()) {
+      return new IR::PrerunValue(
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), typed->getSubType()->as_vector()->get_count()),
+          IR::UnsignedType::get(64u, ctx));
+    } else {
+      ctx->Error(
+          "This attribute can only be used for array, fixed vector or tuple types, make sure that the type is appropriate before querying this attribute",
+          fileRange);
+    }
   } else {
     ctx->Error(ctx->highlightError(memberName.value) + " is not a recognised attribute for the wrapped type",
                memberName.range);
   }
+  return nullptr;
 }
 
 Json PrerunMemberFnCall::toJson() const {

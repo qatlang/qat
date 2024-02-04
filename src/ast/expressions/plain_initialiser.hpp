@@ -6,26 +6,27 @@
 
 namespace qat::ast {
 
-class PlainInitialiser : public Expression, public LocalDeclCompatible {
+class PlainInitialiser : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class LocalDeclaration;
 
 private:
-  QatType*                     type;
+  Maybe<QatType*>              type;
   Vec<Pair<String, FileRange>> fields;
   Vec<u64>                     indices;
   Vec<Expression*>             fieldValues;
 
 public:
-  PlainInitialiser(QatType* _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
+  PlainInitialiser(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
                    FileRange _fileRange)
       : Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-  useit static inline PlainInitialiser* create(QatType* _type, Vec<Pair<String, FileRange>> _fields,
+  useit static inline PlainInitialiser* create(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields,
                                                Vec<Expression*> _fieldValues, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PlainInitialiser), _type, _fields, _fieldValues, _fileRange);
   }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
+  TYPE_INFERRABLE_FUNCTIONS
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::PLAIN_INITIALISER; }

@@ -1,14 +1,24 @@
 #include "./plain_initialiser.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/vector.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
 
 IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
-  if (type) {
+  if (type.has_value() || isTypeInferred()) {
     auto  reqInfo  = ctx->getAccessInfo();
-    auto* typeEmit = type->emit(ctx);
+    auto* typeEmit = type.has_value() ? type.value()->emit(ctx) : inferredType;
+    if (type.has_value() && isTypeInferred()) {
+      if (!typeEmit->isSame(inferredType)) {
+        ctx->Error("The type provided is " + ctx->highlightError(typeEmit->toString()) +
+                       " which does not match with the type inferred from scope, which is " +
+                       ctx->highlightError(inferredType->toString()),
+                   type.value()->fileRange);
+      }
+    }
     if (typeEmit->isCoreType()) {
       auto* cTy = typeEmit->asCore();
       if (fieldValues.empty()) {
@@ -17,14 +27,11 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           if (dFn->isAccessible(ctx->getAccessInfo())) {
             llvm::Value* alloca = nullptr;
             if (isLocalDecl()) {
-              if (localValue->getType()->isMaybe()) {
-                alloca = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), localValue->getLLVM(), 1u);
-              } else {
-                alloca = localValue->getLLVM();
-              }
+              type_check_local(cTy, ctx, fileRange);
+              alloca = localValue->getLLVM();
             } else if (irName) {
-              localValue = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
-              alloca     = localValue->getLLVM();
+              auto newAlloca = ctx->getActiveFunction()->getBlock()->newValue(irName->value, cTy, isVar, irName->range);
+              alloca         = newAlloca->getLLVM();
             } else {
               alloca = IR::Logic::newAlloca(ctx->getActiveFunction(), None, cTy->getLLVMType());
             }
@@ -129,6 +136,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
       }
       llvm::Value* alloca = nullptr;
       if (isLocalDecl()) {
+        type_check_local(cTy, ctx, fileRange);
         alloca = localValue->getLLVM();
       } else {
         auto newAlloca = ctx->getActiveFunction()->getBlock()->newValue(
@@ -238,8 +246,7 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
                                      ctx->builder.CreateStructGEP(strSliceTy->getLLVMType(), strAlloca, 1));
             return new IR::Value(strAlloca, strSliceTy, false, IR::Nature::pure);
           } else {
-            ctx->Error("The second argument for creating a string slice is not "
-                       "a 64-bit unsigned integer",
+            ctx->Error("The second argument for creating a string slice is not a 64-bit unsigned integer",
                        fieldValues.at(1)->fileRange);
           }
         } else {
@@ -278,41 +285,126 @@ IR::Value* PlainInitialiser::emit(IR::Context* ctx) {
           }
         } else {
           ctx->Error("While creating a " + ctx->highlightError("str") +
-                         " value with one argument, the argument is expected "
-                         "to be of type " +
-                         ctx->highlightError("multiptr:[u8 ?]"),
+                         " value with one argument, the argument is expected to be of type " +
+                         ctx->highlightError("multiptr:[u8]"),
                      fieldValues.at(0)->fileRange);
         }
       } else {
         ctx->Error("There are two ways to create a " + ctx->highlightError("str") +
-                       " value using a plain initialiser. The first way "
-                       "requires one argument of type " +
-                       ctx->highlightError("multiptr:[u8 ?]") +
-                       ". The second way requires 2 arguments. In two possible "
-                       "ways:\n1) " +
-                       ctx->highlightError("ptr:[u8 ?]") + " and " + ctx->highlightError("u64") + "\n2) " +
-                       ctx->highlightError("multiptr:[u8 ?]") + " and " + ctx->highlightError("u64") +
-                       "\nIn case you are providing two arguments, the first "
-                       "argument is supposed to be a pointer" +
-                       " to a start of the data and the second argument is "
-                       "supposed to be the number of characters," +
-                       " EXCLUDING the null character (if there is any)",
+                       " value using a plain initialiser. The first way requires one argument of type " +
+                       ctx->highlightError("multiptr:[u8]") +
+                       ". The second way requires 2 arguments. In two possible ways:\n1) " +
+                       ctx->highlightError("ptr:[u8]") + " and " + ctx->highlightError("u64") + "\n2) " +
+                       ctx->highlightError("multiptr:[u8]") + " and " + ctx->highlightError("u64") +
+                       "\nIn case you are providing two arguments, the first argument is supposed to be a pointer" +
+                       " to the start of the data and the second argument is supposed to be the number of characters," +
+                       " EXCLUDING the null character (which is required to be present at the end regardless)",
                    fileRange);
+      }
+    } else if (typeEmit->is_vector()) {
+      auto* vecTy = typeEmit->as_vector();
+      if (!fields.empty()) {
+        ctx->Error("The type for initialisation is " + ctx->highlightError(vecTy->toString()) +
+                       " so field names cannot be used here",
+                   fileRange);
+      }
+      if (vecTy->is_fixed() && (fieldValues.size() != vecTy->get_count())) {
+        ctx->Error("The vectorized type is " + ctx->highlightError(vecTy->toString()) +
+                       " with a fixed length, which expects " +
+                       ctx->highlightError(std::to_string(vecTy->get_count())) + " elements, but " +
+                       (fieldValues.size() < vecTy->get_count() ? "only " : "") +
+                       ctx->highlightError(std::to_string(fieldValues.size())) + " values are provided here",
+                   fileRange);
+      } else if (vecTy->is_scalable() && ((fieldValues.size() % vecTy->get_count()) != 0)) {
+        ctx->Error("The vectorized type is " + ctx->highlightError(vecTy->toString()) +
+                       " which is a scalable vector type, which expects " +
+                       ctx->highlightError("n X " + std::to_string(vecTy->get_count())) + " (a multiple of " +
+                       ctx->highlightError(std::to_string(vecTy->get_count())) + ") elements. But " +
+                       ctx->highlightError(std::to_string(fieldValues.size())) + " values were provided instead",
+                   fileRange);
+      }
+      bool                 areAllValuesConstant = true;
+      Vec<IR::Value*>      values;
+      Vec<llvm::Constant*> constVals;
+      SHOW("Handling field vals")
+      for (auto val : fieldValues) {
+        if (val->hasTypeInferrance()) {
+          val->asTypeInferrable()->setInferenceType(vecTy->get_element_type());
+        }
+        auto irVal = val->emit(ctx);
+        auto irTy  = irVal->getType();
+        if (!irVal->isPrerunValue()) {
+          areAllValuesConstant = false;
+        } else {
+          constVals.push_back(irVal->getLLVMConstant());
+        }
+        if (!irTy->isSame(vecTy->get_element_type()) &&
+            !(irTy->isReference() && irTy->asReference()->getSubType()->isSame(vecTy->get_element_type()))) {
+          ctx->Error("Expected an expression of type " + ctx->highlightError(vecTy->get_element_type()->toString()) +
+                         " but got an expression of type " + ctx->highlightError(irTy->toString()),
+                     fileRange);
+        }
+        SHOW("Done type check")
+        if (irTy->isReference() || irVal->isImplicitPointer()) {
+          irTy  = irTy->isReference() ? irTy->asReference()->getSubType() : irTy;
+          irVal = new IR::Value(ctx->builder.CreateLoad(irTy->getLLVMType(), irVal->getLLVM()), irTy, false,
+                                IR::Nature::temporary);
+        }
+        SHOW("Pushing value")
+        values.push_back(irVal);
+      }
+      SHOW("Handled all vals")
+      if (areAllValuesConstant) {
+        if (isLocalDecl()) {
+          SHOW("Is local decl and val is const")
+          type_check_local(vecTy, ctx, fileRange);
+          SHOW("Storing vector constant in local")
+          ctx->builder.CreateStore(llvm::ConstantVector::get(constVals), localValue->getLLVM());
+          return localValue->toNewIRValue();
+        } else if (irName.has_value()) {
+          auto newAlloca =
+              ctx->getActiveFunction()->getBlock()->newValue(irName.value().value, vecTy, isVar, fileRange);
+          ctx->builder.CreateStore(llvm::ConstantVector::get(constVals), newAlloca->getLLVM());
+          return newAlloca->toNewIRValue();
+        } else {
+          SHOW("Getting vector " << vecTy->toString())
+          return new IR::PrerunValue(llvm::ConstantVector::get(constVals), vecTy);
+        }
+      } else {
+        SHOW("Values not constant")
+        llvm::Value* lastValue = ctx->builder.CreateInsertElement(vecTy->getLLVMType(), values[0]->getLLVM(), 0ul);
+        for (usize i = 1; i < values.size(); i++) {
+          lastValue = ctx->builder.CreateInsertElement(lastValue, values[i]->getLLVM(), i);
+        }
+        if (isLocalDecl()) {
+          ctx->builder.CreateStore(lastValue, localValue->getLLVM());
+          return localValue->toNewIRValue();
+        } else if (irName.has_value()) {
+          auto newAlloca =
+              ctx->getActiveFunction()->getBlock()->newValue(irName.value().value, vecTy, isVar, fileRange);
+          ctx->builder.CreateStore(lastValue, localValue->getLLVM());
+          return newAlloca->toNewIRValue();
+        } else {
+          return new IR::Value(lastValue, vecTy, false, IR::Nature::temporary);
+        }
       }
     } else {
       ctx->Error("The type is " + ctx->highlightError(typeEmit->toString()) +
-                     " and hence cannot be used in a plain "
-                     "initialiser",
-                 type->fileRange);
+                     " and hence cannot be used in a plain initialiser",
+                 fileRange);
     }
   } else {
-    ctx->Error("No type provided for plain initialisation", fileRange);
+    ctx->Error("No type provided for plain initialisation and no type could be inferred from scope", fileRange);
   }
   return nullptr;
 }
 
 Json PlainInitialiser::toJson() const {
-  return Json()._("nodeType", "plainInitialiser")._("type", type->toJson())._("fileRange", fileRange);
+  return Json()
+      ._("nodeType", "plainInitialiser")
+      ._("hasType", type.has_value())
+      ._("type", type.has_value() ? type.value()->toJson() : JsonValue())
+      ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

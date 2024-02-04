@@ -92,6 +92,9 @@ enum class NodeType {
   ADDRESS_OF,
   PRERUN_GLOBAL,
   PRERUN_TUPLE_VALUE,
+  PRERUN_TO_CONVERSION,
+  PRERUN_BITWISE_NOT,
+  PRERUN_BINARY_OP,
 };
 
 } // namespace qat::ast

@@ -11,22 +11,41 @@
 
 namespace qat::ast {
 
+enum class AstMemberFnType {
+  Static,
+  normal,
+  variation,
+  valued,
+};
+
+inline String member_fn_type_to_string(AstMemberFnType ty) {
+  switch (ty) {
+    case AstMemberFnType::Static:
+      return "static";
+    case AstMemberFnType::normal:
+      return "normal";
+    case AstMemberFnType::variation:
+      return "variation";
+    case AstMemberFnType::valued:
+      return "valued";
+  }
+}
+
 class MemberPrototype : public Node {
   friend class MemberDefinition;
 
 private:
-  bool                  isVariationFn;
+  AstMemberFnType       fnTy;
   Identifier            name;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
   Maybe<QatType*>       returnType;
   Maybe<VisibilitySpec> visibSpec;
-  bool                  isStatic;
 
   mutable IR::MemberParent*   memberParent = nullptr;
   mutable IR::MemberFunction* memberFn     = nullptr;
 
-  MemberPrototype(bool isStatic, bool _isVariationFn, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
+  MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
                   Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
 public:
@@ -37,6 +56,10 @@ public:
   static MemberPrototype* Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
                                  Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
+
+  static MemberPrototype* Value(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
+                                Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                const FileRange& _fileRange);
 
   void setMemberParent(IR::MemberParent* _memPar) const;
 

@@ -2268,6 +2268,66 @@ void Parser::parse_struct_type(ParserContext& preCtx, usize from, usize upto, as
         }
         break;
       }
+      case TokenType::selfWord: {
+        auto start = i;
+        if (is_next(TokenType::colon, i)) {
+          if (is_next(TokenType::identifier, i + 1)) {
+            auto fnName = IdentifierAt(i + 2);
+            i           = i + 2;
+            if (is_next(TokenType::givenTypeSeparator, i) || is_next(TokenType::parenthesisOpen, i)) {
+              if (foundFirstMember && !finishedMemberList) {
+                add_error("The list of member fields in this type has not been finalised. Please add " +
+                              color_error(".") + " after the last member field to terminate the list",
+                          RangeSpan(start, i + 1));
+              }
+              haveNonMemberEntities = true;
+              Maybe<ast::QatType*> retTy;
+              if (is_next(TokenType::givenTypeSeparator, i)) {
+                auto typeRes = do_type(preCtx, i + 1, None);
+                retTy        = typeRes.first;
+                i            = typeRes.second;
+              }
+              Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
+              if (is_next(TokenType::parenthesisOpen, i)) {
+                auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+                if (pCloseRes.has_value()) {
+                  auto pClose = pCloseRes.value();
+                  argsRes     = do_function_parameters(preCtx, i + 1, pClose);
+                  i           = pClose;
+                } else {
+                  add_error("Expected end for (", RangeAt(i + 1));
+                }
+              }
+              if (is_next(TokenType::bracketOpen, i)) {
+                auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+                if (bCloseRes.has_value()) {
+                  auto bClose = bCloseRes.value();
+                  auto snts   = do_sentences(preCtx, i + 1, bClose);
+                  SHOW("Creating member function prototype")
+                  auto memVisib = getVisibility();
+                  coreTy->addMemberDefinition(ast::MemberDefinition::create(
+                      ast::MemberPrototype::Value(fnName, argsRes.first, argsRes.second, retTy, getVisibSpec(memVisib),
+                                                  getRangeWithVisib(memVisib, RangeSpan(start, i))),
+                      snts, RangeSpan(start, bClose)));
+                  i = bClose;
+                } else {
+                  add_error("Expected ] to end the function body", RangeAt(i + 1));
+                }
+              } else {
+                add_error("Expected [ to start the function body", RangeSpan(start, i));
+              }
+            } else {
+              add_error("Expected either -> before the given type or ( to start the argument list of the value method",
+                        RangeSpan(i, i + 2));
+            }
+          } else {
+            add_error("Expected identifier after " + color_error("self:"), RangeSpan(i, i + 1));
+          }
+        } else {
+          add_error("Expected self:function_name here", RangeAt(i));
+        }
+        break;
+      }
       case TokenType::identifier: {
         SHOW("Identifier inside core type: " << token.value)
         auto start = i;

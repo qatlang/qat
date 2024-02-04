@@ -35,7 +35,15 @@ public:
   Maybe<Identifier> irName;
   bool              isVar = false;
   useit inline bool isLocalDecl() const { return localValue != nullptr; }
-  inline void       setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
+  void inline type_check_local(IR::QatType* type, IR::Context* ctx, FileRange fileRange) {
+    if (!localValue->getType()->isSame(type)) {
+      ctx->Error("The type of this expression is " + ctx->highlightError(type->toString()) +
+                     " which does not match the type of the local declaration, which is " +
+                     ctx->highlightError(localValue->getType()->toString()),
+                 fileRange);
+    }
+  }
+  inline void setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
 };
 
 class InPlaceCreatable {

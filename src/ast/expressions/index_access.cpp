@@ -173,7 +173,7 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                      ctx->highlightError("usize"),
                  fileRange);
     }
-    if (inst->isImplicitPointer() || inst->isReference()) {
+    if (inst->isReference() || inst->isImplicitPointer()) {
       if (inst->isReference()) {
         inst->loadImplicitPointer(ctx->builder);
       }
@@ -236,10 +236,8 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
                    index->fileRange);
       }
     } else {
-      // FIXME - Add check
       auto* strTy              = IR::StringSliceType::get(ctx);
-      auto* strLen             = ctx->builder.CreateLoad(llvm::Type::getInt64Ty(ctx->llctx),
-                                                         ctx->builder.CreateStructGEP(strTy->getLLVMType(), inst->getLLVM(), 1u));
+      auto* strLen             = ctx->builder.CreateExtractValue(inst->getLLVM(), {1u});
       auto* currBlock          = ctx->getActiveFunction()->getBlock();
       auto* lenExceedTrueBlock = new IR::Block(ctx->getActiveFunction(), currBlock);
       auto* restBlock          = new IR::Block(ctx->getActiveFunction(), currBlock->getParent());
@@ -254,9 +252,8 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
       (void)IR::addBranch(ctx->builder, restBlock->getBB());
       restBlock->setActive(ctx->builder);
       return new IR::Value(
-          ctx->builder.CreateInBoundsGEP(
-              llvm::Type::getInt8Ty(ctx->llctx), ctx->builder.CreateExtractValue(inst->getLLVM(), {0u}),
-              {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u), ind->getLLVM()}),
+          ctx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->llctx),
+                                         ctx->builder.CreateExtractValue(inst->getLLVM(), {0u}), {ind->getLLVM()}),
           IR::ReferenceType::get(inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable()
                                                      : inst->isVariable(),
                                  IR::UnsignedType::get(8u, ctx), ctx),

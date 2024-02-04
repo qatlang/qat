@@ -21,6 +21,7 @@ add_library(QAT_IR_TYPES
 	typed.cpp
 	mix.cpp
 	unsigned.cpp
+	vector.cpp
 	void.cpp)
 
 target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")

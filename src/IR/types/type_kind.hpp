@@ -31,6 +31,7 @@ enum class TypeKind {
   typed,           // Type Wrapping to hold another type
   cType,           // Type from C language
   result,          // Result Type that also wraps an error
+  vector,
 };
 
 } // namespace qat::IR

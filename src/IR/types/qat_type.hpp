@@ -39,6 +39,7 @@ class PrerunValue;
 class CType;
 class ResultType;
 class DoSkill;
+class VectorType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
@@ -154,6 +155,9 @@ public:
 
   useit bool        isResult() const;
   useit ResultType* asResult() const;
+
+  useit bool        is_vector() const;
+  useit VectorType* as_vector() const;
 
   useit virtual TypeKind typeKind() const = 0;
   useit virtual String   toString() const = 0;

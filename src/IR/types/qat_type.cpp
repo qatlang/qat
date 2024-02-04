@@ -17,6 +17,7 @@
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
+#include "./vector.hpp"
 #include "c_type.hpp"
 #include "opaque.hpp"
 #include "result.hpp"
@@ -200,6 +201,16 @@ bool QatType::isSame(QatType* other) {
         auto* otherVal = (ArrayType*)other;
         if (thisVal->getLength() == otherVal->getLength()) {
           return thisVal->getElementType()->isSame(otherVal->getElementType());
+        } else {
+          return false;
+        }
+      }
+      case TypeKind::vector: {
+        auto* thisVal  = (VectorType*)this;
+        auto* otherVal = (VectorType*)other;
+        if (thisVal->get_count() == otherVal->get_count()) {
+          return thisVal->get_element_type()->isSame(otherVal->get_element_type()) &&
+                 (thisVal->get_vector_kind() == otherVal->get_vector_kind());
         } else {
           return false;
         }
@@ -455,6 +466,18 @@ bool QatType::isArray() const {
 ArrayType* QatType::asArray() const {
   return (typeKind() == TypeKind::definition) ? ((DefinitionType*)this)->getSubType()->asArray()
                                               : (isOpaque() ? asOpaque()->getSubType()->asArray() : (ArrayType*)this);
+}
+
+bool QatType::is_vector() const {
+  return (typeKind() == TypeKind::vector) ||
+         (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->is_vector()) ||
+         (typeKind() == TypeKind::definition && asDefinition()->getSubType()->is_vector());
+}
+
+VectorType* QatType::as_vector() const {
+  return (typeKind() == TypeKind::definition)
+             ? ((DefinitionType*)this)->getSubType()->as_vector()
+             : (isOpaque() ? asOpaque()->getSubType()->as_vector() : (VectorType*)this);
 }
 
 bool QatType::isTuple() const {

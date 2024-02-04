@@ -372,7 +372,7 @@ Token Lexer::tokeniser() {
       read();
       if (current == '\'') {
         read();
-        return Token::normal(TokenType::self, this->getPosition(2));
+        return Token::normal(TokenType::self_instance, this->getPosition(2));
       } else {
         return Token::normal(TokenType::child, this->getPosition(1));
       }
@@ -569,7 +569,7 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   Check_Normal_Keyword("null", null);
   else Check_Normal_Keyword("bring", bring);
   else Check_Normal_Keyword("pub", Public);
-  else Check_Normal_Keyword("new", New);
+  else Check_Normal_Keyword("let", let);
   else Check_Normal_Keyword("self", selfWord);
   else Check_Normal_Keyword("void", voidType);
   else Check_Normal_Keyword("type", Type);
@@ -613,14 +613,15 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("disown", disown);
   else Check_Normal_Keyword("end", end);
   else Check_Normal_Keyword("choice", choice);
-  else Check_Normal_Keyword("future", future);
-  else Check_Normal_Keyword("maybe", maybe);
+  else Check_Normal_Keyword("future", futureType);
+  else Check_Normal_Keyword("maybe", maybeType);
   else Check_Normal_Keyword("none", none);
   else Check_Normal_Keyword("meta", meta);
   else Check_Normal_Keyword("region", region);
   else Check_VALUED_Keyword("bool", unsignedIntegerType);
   else Check_Normal_Keyword("ptr", pointerType);
   else Check_Normal_Keyword("multiptr", multiPointerType);
+  else Check_Normal_Keyword("vec", vectorType);
   else Check_Normal_Keyword("is", is);
   else Check_Normal_Keyword("ok", ok);
   else Check_Normal_Keyword("range", range);

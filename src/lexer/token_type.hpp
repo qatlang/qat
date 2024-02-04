@@ -37,7 +37,7 @@ enum class TokenType {
   constant,
   Static,
   Default,
-  New,
+  let,
   assignment,
   associatedAssignment,
   separator,
@@ -46,7 +46,7 @@ enum class TokenType {
   StringLiteral,
   say,
   as,
-  self,
+  self_instance,
   lib,
   box,
   endOfFile,
@@ -90,8 +90,8 @@ enum class TokenType {
   copy,
   move,
   choice,
-  future,
-  maybe,
+  futureType,
+  maybeType,
   none,
   meta,
   region,
@@ -109,6 +109,7 @@ enum class TokenType {
   Do,
   questionMark,
   opaque,
+  vectorType,
 };
 
 } // namespace qat::lexer

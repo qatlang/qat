@@ -1,6 +1,7 @@
 add_library(QAT_AST_CONSTANTS
 	array_literal.cpp
 	binary_op.cpp
+	bitwise_not.cpp
 	boolean_literal.cpp
 	custom_float_literal.cpp
 	custom_integer_literal.cpp

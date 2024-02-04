@@ -13,7 +13,6 @@
 #include "utils/pstream/pstream.h"
 #include "utils/qat_region.hpp"
 #include "utils/visibility.hpp"
-#include "utils/workgroup.hpp"
 #include <chrono>
 #include <filesystem>
 #include <ios>
@@ -97,10 +96,10 @@ void QatSitter::initialise() {
   if (config->isCompile() || config->isAnalyse()) {
     auto qatStartTime = std::chrono::high_resolution_clock::now();
     for (auto* entity : fileEntities) {
-      entity->createModules(ctx);
+      entity->handleFilesystemBrings(ctx);
     }
     for (auto* entity : fileEntities) {
-      entity->handleFilesystemBrings(ctx);
+      entity->createModules(ctx);
     }
     for (auto* entity : fileEntities) {
       entity->handleBrings(ctx);
@@ -193,30 +192,22 @@ void QatSitter::initialise() {
     if (cfg->isCompile()) {
       SHOW("Checking whether clang exists or not")
       if (checkExecutableExists("clang") || checkExecutableExists("clang++")) {
-        Workgroup workers;
         for (auto* entity : fileEntities) {
-          workers.add(std::thread([&](IR::QatModule* mod) { mod->compileToObject(ctx); }, entity));
+          entity->compileToObject(ctx);
         }
-        workers.wait();
         ctx->finalise_errors();
-        SHOW("Modules compiled to object format")
+        IR::QatModule::find_native_library_paths();
         for (auto* entity : fileEntities) {
-          workers.add(std::thread([&](IR::QatModule* mod) { mod->handleNativeLibs(ctx); }, entity));
+          entity->handleNativeLibs(ctx);
         }
-        workers.wait();
-        SHOW("All native libs handled")
         ctx->finalise_errors();
         for (auto* entity : fileEntities) {
-          workers.add(std::thread([&](IR::QatModule* mod) { mod->bundleLibs(ctx); }, entity));
+          entity->bundleLibs(ctx);
         }
-        workers.wait();
         ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
                                         std::chrono::high_resolution_clock::now() - clangStartTime)
                                         .count();
         ctx->finalise_errors();
-        SHOW("Replacing uses")
-        IR::Value::replace_uses_for_all();
-        SHOW("Replaced uses")
         display_stats();
         ctx->writeJsonResult(true);
         clear_llvm_files();

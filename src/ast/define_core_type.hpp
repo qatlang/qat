@@ -69,7 +69,6 @@ public:
 private:
   Identifier                     name;
   Maybe<PrerunExpression*>       checker;
-  bool                           isPacked;
   Vec<Member*>                   members;
   Vec<StaticMember*>             staticMembers;
   Vec<MemberDefinition*>         memberDefinitions;
@@ -100,21 +99,21 @@ private:
   mutable IR::GenericCoreType*    genericCoreType = nullptr;
   mutable Vec<IR::GenericToFill*> genericsToFill;
   mutable Maybe<bool>             checkResult;
+  mutable Maybe<bool>             isPackedStruct;
 
 public:
   DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
                  FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
-                 Maybe<MetaInfo> _metaInfo, bool _isPacked = false)
-      : Node(_fileRange), name(_name), checker(_checker), isPacked(_isPacked), visibSpec(_visibSpec),
-        metaInfo(_metaInfo), generics(_generics), constraint(_constraint) {}
+                 Maybe<MetaInfo> _metaInfo)
+      : Node(_fileRange), name(_name), checker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
+        generics(_generics), constraint(_constraint) {}
 
   useit static inline DefineCoreType* create(Identifier _name, Maybe<PrerunExpression*> _checker,
                                              Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
                                              Vec<ast::GenericAbstractType*> _generics,
-                                             Maybe<PrerunExpression*> _constraint, Maybe<MetaInfo> _metaInfo,
-                                             bool _isPacked) {
+                                             Maybe<PrerunExpression*> _constraint, Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(DefineCoreType), _name, _checker, _visibSpec, _fileRange, _generics, _constraint,
-                             _metaInfo, _isPacked);
+                             _metaInfo);
   }
 
   COMMENTABLE_FUNCTIONS

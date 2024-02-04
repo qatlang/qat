@@ -65,8 +65,6 @@ void DefineCoreType::createModule(IR::Context* ctx) const {
         allMemEqTys.push_back(llvm::Type::getIntNTy(ctx->llctx, memSize.value()));
       }
     }
-    auto                eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
-    auto                mainVisibility = ctx->getVisibInfo(visibSpec);
     Maybe<IR::MetaInfo> irMeta;
     bool                isTypeNatureUnion = false;
     if (metaInfo.has_value()) {
@@ -86,7 +84,19 @@ void DefineCoreType::createModule(IR::Context* ctx) const {
         }
         isTypeNatureUnion = llvm::cast<llvm::ConstantInt>(typeNatVal->getLLVMConstant())->getValue().getBoolValue();
       }
+      if (irMeta->hasKey(IR::MetaInfo::packedKey)) {
+        auto packVal = irMeta->getValueFor(IR::MetaInfo::packedKey);
+        if (!packVal->getType()->isBool()) {
+          ctx->Error("The key " + ctx->highlightError(IR::MetaInfo::packedKey) + " expects a value of type " +
+                         ctx->highlightError("bool"),
+                     metaInfo.value().fileRange);
+        }
+        isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->getLLVMConstant())->getValue().getBoolValue();
+      }
     }
+    auto eqStructTy =
+        hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
+    auto mainVisibility = ctx->getVisibInfo(visibSpec);
     setOpaque(IR::OpaqueType::get(name, {}, None,
                                   isTypeNatureUnion ? IR::OpaqueSubtypeKind::Union : IR::OpaqueSubtypeKind::core, mod,
                                   eqStructTy ? Maybe<usize>(ctx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
@@ -135,8 +145,18 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     Maybe<IR::MetaInfo> irMeta;
     if (metaInfo.has_value()) {
       irMeta = metaInfo.value().toIR(ctx);
+      if (irMeta->hasKey(IR::MetaInfo::packedKey)) {
+        auto packVal = irMeta->getValueFor(IR::MetaInfo::packedKey);
+        if (!packVal->getType()->isBool()) {
+          ctx->Error("The key " + ctx->highlightError(IR::MetaInfo::packedKey) + " expects a value of type " +
+                         ctx->highlightError("bool"),
+                     metaInfo.value().fileRange);
+        }
+        isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->getLLVMConstant())->getValue().getBoolValue();
+      }
     }
-    auto eqStructTy = hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPacked) : nullptr;
+    auto eqStructTy =
+        hasAllMems ? llvm::StructType::get(ctx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
     SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
                                            << genericCoreType << "; datalayout: " << ctx->dataLayout.has_value())
     setOpaque(IR::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
@@ -175,7 +195,8 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                                             ctx->getVisibInfo(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
-  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, mainVisibility, ctx->llctx, None));
+  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, mainVisibility, ctx->llctx, None,
+                               isPackedStruct.value_or(false)));
   if (genericCoreType) {
     genericCoreType->variants.push_back(IR::GenericVariant<IR::CoreType>(getCoreType(), genericsToFill));
   }
@@ -194,6 +215,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
     }
   }
   unsetOpaque();
+  SHOW("Unset opaque")
   if (destructorDefinition) {
     getCoreType()->hasDefinedDestructor = true;
   }
@@ -420,7 +442,6 @@ Json DefineCoreType::toJson() const {
       ._("nodeType", "defineCoreType")
       ._("members", membersJsonValue)
       ._("staticMembers", staticMembersJsonValue)
-      ._("isPacked", isPacked)
       ._("hasVisibility", visibSpec.has_value())
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
       ._("fileRange", fileRange);

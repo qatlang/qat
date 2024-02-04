@@ -2,8 +2,10 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../IR/types/typed.hpp"
+#include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
@@ -54,14 +56,21 @@ public:
   useit inline bool isReference() const { return type->isReference(); }
   useit inline bool isPointer() const { return type->isPointer(); }
   useit inline bool isImplicitPointer() const {
-    return ll &&
-           ((llvm::isa<llvm::AllocaInst>(ll) || llvm::isa<llvm::GlobalVariable>(ll)) && !llvm::isa<llvm::Constant>(ll));
+    return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
+                    llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == getType()->getLLVMType()) ||
+                   (llvm::isa<llvm::GlobalVariable>(ll) && !llvm::cast<llvm::GlobalVariable>(ll)->isConstant() &&
+                    llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == getType()->getLLVMType())) &&
+                  !isPrerunValue());
   }
 
   inline void setSelf() { isSelf = true; }
   inline void setLocalID(const String& locID) { localID = locID; }
 
-  void loadImplicitPointer(llvm::IRBuilder<>& builder);
+  inline void loadImplicitPointer(llvm::IRBuilder<>& builder) {
+    if (isImplicitPointer()) {
+      ll = builder.CreateLoad(getType()->getLLVMType(), ll);
+    }
+  }
 
   useit Value* makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRange);
 

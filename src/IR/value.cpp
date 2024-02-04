@@ -26,12 +26,6 @@ Value* Value::makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRang
   }
 }
 
-void Value::loadImplicitPointer(llvm::IRBuilder<>& builder) {
-  if (isImplicitPointer()) {
-    ll = builder.CreateLoad(getType()->getLLVMType(), ll);
-  }
-}
-
 Value* Value::call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> _localID,
                    QatModule* mod) { // NOLINT(misc-unused-parameters)
   llvm::FunctionType* fnTy  = nullptr;

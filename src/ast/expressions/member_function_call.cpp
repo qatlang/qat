@@ -1,5 +1,8 @@
 #include "./member_function_call.hpp"
+#include "../../IR/types/vector.hpp"
 #include "../prerun/member_function_call.hpp"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/Support/TypeSize.h"
 
 namespace qat::ast {
 
@@ -9,22 +12,20 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     if (ctx->getActiveFunction()->isMemberFunction()) {
       auto* memFn = (IR::MemberFunction*)ctx->getActiveFunction();
       if (memFn->isStaticFunction()) {
-        ctx->Error("This is a static member function and hence cannot call member function on the parent instance",
-                   fileRange);
+        ctx->Error("This is a static method and hence cannot call method on the parent instance", fileRange);
       }
     } else {
-      ctx->Error(
-          "The parent function is not a member function of any type and hence cannot call member functions on the parent instance",
-          fileRange);
+      ctx->Error("The parent function is not a method of any type and hence cannot call methods on the parent instance",
+                 fileRange);
     }
   } else {
     if (instance->nodeType() == NodeType::SELF) {
-      ctx->Error("Do not use this syntax for calling member functions. Use " +
+      ctx->Error("Do not use this syntax for calling methods. Use " +
                      ctx->highlightError("''" + memberName.value + "(...)") + " instead",
                  fileRange);
     }
   }
-  auto* inst     = isExpSelf ? ctx->getActiveFunction()->getFirstBlock()->getValue("''") : instance->emit(ctx);
+  auto* inst     = instance->emit(ctx);
   auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
   if (instType->isReference()) {
@@ -33,7 +34,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     instType = instType->asReference()->getSubType();
   }
   if (instType->isPointer()) {
-    ctx->Error("The expression is of pointer type. Please dereference the pointer to call the member function",
+    ctx->Error("The expression is of pointer type. Please dereference the pointer to call the method",
                instance->fileRange);
   }
   if (instType->isExpanded()) {
@@ -58,29 +59,27 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       if (callNature.value()) {
         if (!eTy->hasVariationFn(memberName.value)) {
           if (eTy->hasNormalMemberFn(memberName.value)) {
-            ctx->Error(ctx->highlightError(memberName.value) + " is not a variation member function of type " +
+            ctx->Error(ctx->highlightError(memberName.value) + " is not a variation method of type " +
                            ctx->highlightError(eTy->getFullName()) + " and hence cannot be called as a variation",
                        fileRange);
           } else {
-            ctx->Error("No variation member function named " + ctx->highlightError(memberName.value) +
-                           " found in type " + ctx->highlightError(eTy->getFullName()),
+            ctx->Error("No variation method named " + ctx->highlightError(memberName.value) + " found in type " +
+                           ctx->highlightError(eTy->getFullName()),
                        fileRange);
           }
         }
         if (!isVar) {
-          ctx->Error("The expression does not have variability and hence variation "
-                     "member functions cannot be called",
+          ctx->Error("The expression does not have variability and hence variation methods cannot be called",
                      instance->fileRange);
         }
       } else {
         if (!eTy->hasNormalMemberFn(memberName.value)) {
           if (eTy->hasVariationFn(memberName.value)) {
-            ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
-                           ctx->highlightError(eTy->getFullName()) +
-                           " and hence cannot be called as a normal member function",
+            ctx->Error(ctx->highlightError(memberName.value) + " is a variation method of type " +
+                           ctx->highlightError(eTy->getFullName()) + " and hence cannot be called as a normal method",
                        fileRange);
           } else {
-            ctx->Error("No normal member function named " + ctx->highlightError(memberName.value) + " found in type " +
+            ctx->Error("No normal method named " + ctx->highlightError(memberName.value) + " found in type " +
                            ctx->highlightError(eTy->getFullName()),
                        fileRange);
           }
@@ -88,33 +87,38 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       }
     } else {
       if (isVar) {
-        if (!eTy->hasNormalMemberFn(memberName.value) && !eTy->hasVariationFn(memberName.value)) {
+        if (!eTy->has_valued_method(memberName.value) && !eTy->hasNormalMemberFn(memberName.value) &&
+            !eTy->hasVariationFn(memberName.value)) {
           ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
-                         " does not have a member function named " + ctx->highlightError(memberName.value) +
+                         " does not have a method named " + ctx->highlightError(memberName.value) +
                          ". Please check the logic",
                      fileRange);
         }
       } else {
-        if (!eTy->hasNormalMemberFn(memberName.value)) {
-          if (eTy->hasVariationFn(memberName.value)) {
-            ctx->Error(ctx->highlightError(memberName.value) + " is a variation member function of type " +
-                           ctx->highlightError(eTy->getFullName()) + " and cannot be called here as this expression " +
-                           (inst->isReference() ? "is a reference without variability" : "does not have variability"),
-                       memberName.range);
-          } else {
-            ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
-                           " does not have a normal member function named " + ctx->highlightError(memberName.value) +
-                           ". Please check the logic",
-                       fileRange);
+        if (!eTy->has_valued_method(memberName.value)) {
+          if (!eTy->hasNormalMemberFn(memberName.value)) {
+            if (eTy->hasVariationFn(memberName.value)) {
+              ctx->Error(ctx->highlightError(memberName.value) + " is a variation method of type " +
+                             ctx->highlightError(eTy->getFullName()) +
+                             " and cannot be called here as this expression " +
+                             (inst->isReference() ? "is a reference without variability" : "does not have variability"),
+                         memberName.range);
+            } else {
+              ctx->Error("Type " + ctx->highlightError(instType->asExpanded()->toString()) +
+                             " does not have a method named " + ctx->highlightError(memberName.value) +
+                             ". Please check the logic",
+                         fileRange);
+            }
           }
         }
       }
     }
     auto* memFn = (((callNature.has_value() && callNature.value()) || isVar) && eTy->hasVariationFn(memberName.value))
                       ? eTy->getVariationFn(memberName.value)
-                      : eTy->getNormalMemberFn(memberName.value);
+                      : (eTy->has_valued_method(memberName.value) ? eTy->get_valued_method(memberName.value)
+                                                                  : eTy->getNormalMemberFn(memberName.value));
     if (!memFn->isAccessible(ctx->getAccessInfo())) {
-      ctx->Error("Member function " + ctx->highlightError(memberName.value) + " of type " +
+      ctx->Error("Method " + ctx->highlightError(memberName.value) + " of type " +
                      ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                  fileRange);
     }
@@ -138,7 +142,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
             }
           }
           // NOTE - Maybe consider changing this to deeper call-tree-analysis
-          ctx->Error("Cannot call the " + String(callNature ? "variation " : "") + "member function as member field" +
+          ctx->Error("Cannot call the " + String(callNature ? "variation " : "") + "method as member field" +
                          (missingMembers.size() > 1 ? "s " : " ") + message +
                          " of this type have not been initialised yet. If the field" +
                          (missingMembers.size() > 1 ? "s or their" : " or its") +
@@ -149,13 +153,40 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       }
       thisFn->addMemberFunctionCall(memFn);
     }
-    if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->getType()->isPointer()) {
+    if (!inst->isImplicitPointer() && !inst->isReference() &&
+        (memFn->getMemberFnType() != IR::MemberFnType::value_method)) {
       inst = inst->makeLocal(ctx, None, instance->fileRange);
+    } else if ((memFn->getMemberFnType() == IR::MemberFnType::value_method) &&
+               (inst->isImplicitPointer() || inst->isReference())) {
+      if (instType->isTriviallyCopyable() || instType->isTriviallyMovable()) {
+        if (inst->isReference()) {
+          inst->loadImplicitPointer(ctx->builder);
+        }
+        auto origInst = inst;
+        inst          = new IR::Value(ctx->builder.CreateLoad(instType->getLLVMType(), inst->getLLVM()), instType, true,
+                                      IR::Nature::temporary);
+        if (!instType->isTriviallyCopyable()) {
+          if (inst->isReference() && !inst->getType()->asReference()->isSubtypeVariable()) {
+            ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
+                       instance->fileRange);
+          } else if (inst->isImplicitPointer() && !inst->isVariable()) {
+            ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+                       instance->fileRange);
+          }
+          ctx->builder.CreateStore(llvm::Constant::getNullValue(instType->getLLVMType()), origInst->getLLVM());
+        }
+      } else {
+        ctx->Error(
+            "The method to be called is a value method, so it requires a value of the parent type. The parent type is " +
+                ctx->highlightError(instType->toString()) + " which is not trivially copyable or movable. Please use " +
+                ctx->highlightError("'copy") + " or " + ctx->highlightError("'move") + " accordingly",
+            fileRange);
+      }
     }
     //
     auto fnArgsTy = memFn->getType()->asFunction()->getArgumentTypes();
     if ((fnArgsTy.size() - 1) != arguments.size()) {
-      ctx->Error("Number of arguments provided for the member function call does not "
+      ctx->Error("Number of arguments provided for the method call does not "
                  "match the signature",
                  fileRange);
     }
@@ -170,7 +201,7 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
       }
       argsEmit.push_back(arguments.at(i)->emit(ctx));
     }
-    SHOW("Argument values generated for member function")
+    SHOW("Argument values generated for method")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       auto fnArgType = fnArgsTy[i]->getType();
       auto argType   = argsEmit[i - 1]->getType();
@@ -250,9 +281,100 @@ IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
     return memFn->call(ctx, argVals, localID, ctx->getMod());
   } else if (instType->isTyped()) {
     return handle_type_wrap_functions(instType->asTyped(), arguments, memberName, ctx, fileRange);
+  } else if (instType->is_vector()) {
+    auto*      origInst        = new IR::Value(inst->getLLVM(), inst->getType(), false, IR::Nature::temporary);
+    const auto isOrigRefNotVar = (origInst->isImplicitPointer() && !origInst->isVariable()) ||
+                                 (origInst->isReference() && !origInst->getType()->asReference()->isSubtypeVariable());
+    const auto shouldStore = origInst->isImplicitPointer() || origInst->isReference();
+    auto*      vecTy       = instType->as_vector();
+    auto       refHandler  = [&]() {
+      if (inst->isReference() || inst->isImplicitPointer()) {
+        inst->loadImplicitPointer(ctx->builder);
+        if (inst->isReference()) {
+          inst = new IR::Value(ctx->builder.CreateLoad(vecTy->getLLVMType(), inst->getLLVM()), vecTy, false,
+                                      IR::Nature::temporary);
+        }
+      }
+    };
+    if (memberName.value == "insert") {
+      if (isOrigRefNotVar) {
+        ctx->Error(
+            "This " + String(origInst->isImplicitPointer() ? "expression" : "reference") +
+                " does not have variability and hence cannot be inserted into. Inserting vectors to values are possible, but for clarity, make sure to copy the vector first using " +
+                ctx->highlightError("'copy"),
+            fileRange);
+      }
+      if (!vecTy->is_scalable()) {
+        ctx->Error("Method " + ctx->highlightError(memberName.value) +
+                       " can only be called on expressions with scalable vector type. This expression is of type " +
+                       ctx->highlightError(vecTy->toString()) + " which is not scalable",
+                   fileRange);
+      }
+      if (arguments.size() != 1u) {
+        ctx->Error("Method " + ctx->highlightError(memberName.value) + " requires " +
+                       (arguments.size() > 1 ? "only " : "") + "one argument of type " +
+                       ctx->highlightError(vecTy->get_non_scalable_type(ctx)->toString()),
+                   fileRange);
+      }
+      if (arguments[0]->hasTypeInferrance()) {
+        arguments[0]->asTypeInferrable()->setInferenceType(vecTy->get_non_scalable_type(ctx));
+      }
+      auto* argVec = arguments[0]->emit(ctx);
+      if (argVec->getType()->isSame(vecTy->get_non_scalable_type(ctx)) ||
+          argVec->getType()->asReference()->getSubType()->isSame(vecTy->get_non_scalable_type(ctx))) {
+        if (argVec->isReference() || argVec->isImplicitPointer()) {
+          argVec->loadImplicitPointer(ctx->builder);
+          if (argVec->isReference()) {
+            argVec = new IR::Value(
+                ctx->builder.CreateLoad(vecTy->get_non_scalable_type(ctx)->getLLVMType(), argVec->getLLVM()),
+                vecTy->get_non_scalable_type(ctx), false, IR::Nature::temporary);
+          }
+        }
+        refHandler();
+        auto result = ctx->builder.CreateInsertVector(vecTy->getLLVMType(), inst->getLLVM(), argVec->getLLVM(),
+                                                      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u));
+        if (shouldStore) {
+          if (origInst->isReference()) {
+            origInst->loadImplicitPointer(ctx->builder);
+          }
+          ctx->builder.CreateStore(result, origInst->getLLVM());
+          return origInst;
+        } else {
+          return new IR::Value(result, vecTy, false, IR::Nature::temporary);
+        }
+      } else {
+        ctx->Error("The argument provided to " + ctx->highlightError(memberName.value) + " is expected to be of type " +
+                       ctx->highlightError(vecTy->get_non_scalable_type(ctx)->toString()),
+                   fileRange);
+      }
+    } else if (memberName.value == "reverse") {
+      if (isOrigRefNotVar) {
+        ctx->Error(
+            "This " + String(origInst->isImplicitPointer() ? "expression" : "reference") +
+                " does not have variability and hence cannot be reversed in-place. Reversing vector values are possible, but for clarity, make sure to copy the vector first using " +
+                ctx->highlightError("'copy"),
+            fileRange);
+      }
+      if (!arguments.empty()) {
+        ctx->Error("The method " + ctx->highlightError(memberName.value) + " expects zero arguments, but " +
+                       ctx->highlightError(std::to_string(arguments.size())) + " values were provided",
+                   fileRange);
+      }
+      refHandler();
+      auto result = ctx->builder.CreateVectorReverse(inst->getLLVM());
+      if (shouldStore) {
+        ctx->builder.CreateStore(result, origInst->getLLVM());
+        return origInst;
+      } else {
+        return new IR::Value(result, vecTy, false, IR::Nature::temporary);
+      }
+    } else {
+      ctx->Error("Method " + ctx->highlightError(memberName.value) + " is not supported for expression of type " +
+                     ctx->highlightError(vecTy->toString()),
+                 fileRange);
+    }
   } else {
-    ctx->Error("Member function call for expression of type " + ctx->highlightError(instType->toString()) +
-                   " is not supported",
+    ctx->Error("Method call for expression of type " + ctx->highlightError(instType->toString()) + " is not supported",
                fileRange);
   }
   return nullptr;

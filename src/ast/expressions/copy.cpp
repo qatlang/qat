@@ -24,7 +24,7 @@ IR::Value* Copy::emit(IR::Context* ctx) {
                  fileRange);
     }
   }
-  auto* expEmit = isExpSelf ? ctx->getActiveFunction()->getFirstBlock()->getValue("''") : exp->emit(ctx);
+  auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->getType();
   if (expEmit->isImplicitPointer() || expTy->isReference()) {
     if (expTy->isReference()) {

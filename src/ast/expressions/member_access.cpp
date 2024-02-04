@@ -35,7 +35,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  fileRange);
     }
   }
-  auto* inst     = isExpSelf ? ctx->getActiveFunction()->getFirstBlock()->getValue("''") : instance->emit(ctx);
+  auto* inst     = instance->emit(ctx);
   auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
   if (instType->isReference()) {

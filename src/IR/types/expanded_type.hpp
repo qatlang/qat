@@ -24,6 +24,7 @@ protected:
   QatModule*             parent             = nullptr;
   MemberFunction*        defaultConstructor = nullptr;
   Vec<MemberFunction*>   memberFunctions;          // Normal
+  Vec<MemberFunction*>   valuedMemberFunctions;    // Valued parent
   Vec<MemberFunction*>   normalBinaryOperators;    // Normal
   Vec<MemberFunction*>   variationBinaryOperators; // Variation
 
@@ -67,6 +68,11 @@ public:
                                                           String const&               name);
   useit bool                          hasNormalMemberFn(const String& fnName) const;
   useit MemberFunction*               getNormalMemberFn(const String& fnName) const;
+
+  useit static Maybe<MemberFunction*> check_valued_function(Vec<MemberFunction*> const& memberFunctions,
+                                                            String const&               name);
+  useit bool                          has_valued_method(String const& name) const;
+  useit MemberFunction*               get_valued_method(String const& name) const;
 
   useit static Maybe<IR::MemberFunction*> checkStaticFunction(Vec<MemberFunction*> const& staticFns,
                                                               String const&               name);

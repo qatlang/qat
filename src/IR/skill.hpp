@@ -79,6 +79,7 @@ class DoSkill : Uniq {
   Maybe<MemberFunction*> defaultConstructor;
   Vec<MemberFunction*>   staticFunctions;
   Vec<MemberFunction*>   memberFunctions;
+  Vec<MemberFunction*>   valuedMemberFunctions;
   Maybe<MemberFunction*> copyConstructor;
   Maybe<MemberFunction*> moveConstructor;
   Maybe<MemberFunction*> copyAssignment;
@@ -106,6 +107,7 @@ public:
   useit bool hasConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
   useit bool hasStaticFunction(String const& name) const;
   useit bool hasNormalMemberFn(String const& name) const;
+  useit bool has_valued_function(String const& name) const;
   useit bool hasVariationFn(String const& name) const;
   useit bool hasCopyConstructor() const;
   useit bool hasMoveConstructor() const;
@@ -122,6 +124,7 @@ public:
   useit IR::MemberFunction* getConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> argTypes) const;
   useit IR::MemberFunction* getStaticFunction(String const& name) const;
   useit IR::MemberFunction* getNormalMemberFn(String const& name) const;
+  useit IR::MemberFunction* get_valued_function(String const& name) const;
   useit IR::MemberFunction* getVariationFn(String const& name) const;
   useit IR::MemberFunction* getCopyConstructor() const;
   useit IR::MemberFunction* getMoveConstructor() const;

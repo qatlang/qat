@@ -47,6 +47,24 @@ String ExpandedType::getFullName() const {
 
 Identifier ExpandedType::getName() const { return name; }
 
+Maybe<MemberFunction*> ExpandedType::check_valued_function(const Vec<MemberFunction*>& valuedMemberFunctions,
+                                                           const String&               name) {
+  for (auto* vFn : valuedMemberFunctions) {
+    if (vFn->getName().value == name) {
+      return vFn;
+    }
+  }
+  return None;
+}
+
+bool ExpandedType::has_valued_method(String const& name) const {
+  return check_valued_function(valuedMemberFunctions, name).has_value();
+}
+
+MemberFunction* ExpandedType::get_valued_method(String const& name) const {
+  return check_valued_function(valuedMemberFunctions, name).value();
+}
+
 Maybe<MemberFunction*> ExpandedType::checkNormalMemberFn(const Vec<MemberFunction*>& memberFunctions,
                                                          const String&               name) {
   for (auto* mFn : memberFunctions) {

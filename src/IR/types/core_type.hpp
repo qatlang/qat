@@ -61,8 +61,8 @@ private:
 
 public:
   CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
-           Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
-           Maybe<MetaInfo> metaInfo);
+           Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo,
+           bool isPacked);
 
   ~CoreType() final;
 

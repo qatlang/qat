@@ -21,7 +21,7 @@ private:
   Vec<Identifier>                fields;
   Maybe<Vec<llvm::ConstantInt*>> values;
   Maybe<IR::QatType*>            providedType;
-  bool                           areValuesUnsigned = false;
+  bool                           areValuesUnsigned;
   VisibilityInfo                 visibility;
   Maybe<usize>                   defaultVal;
   Maybe<MetaInfo>                metaInfo;

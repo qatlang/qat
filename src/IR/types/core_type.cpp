@@ -16,7 +16,7 @@ namespace qat::IR {
 
 CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _generics, IR::OpaqueType* _opaqued,
                    Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
-                   Maybe<MetaInfo> _metaInfo)
+                   Maybe<MetaInfo> _metaInfo, bool isPacked)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
   SHOW("Generating LLVM Type for core type members")
@@ -28,7 +28,7 @@ CoreType::CoreType(QatModule* mod, Identifier _name, Vec<GenericParameter*> _gen
   SHOW("All members' LLVM types obtained")
   llvmType    = opaquedType->getLLVMType();
   linkingName = opaquedType->getNameForLinking();
-  llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, false);
+  llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, isPacked);
   if (!isGeneric()) {
     mod->coreTypes.push_back(this);
   }

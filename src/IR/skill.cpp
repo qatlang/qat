@@ -2,6 +2,7 @@
 #include "./qat_module.hpp"
 #include "./types/reference.hpp"
 #include "link_names.hpp"
+#include "member_function.hpp"
 #include "types/qat_type.hpp"
 
 namespace qat::IR {
@@ -156,6 +157,14 @@ bool DoSkill::hasStaticFunction(String const& name) const {
 
 IR::MemberFunction* DoSkill::getStaticFunction(String const& name) const {
   return ExpandedType::checkStaticFunction(staticFunctions, name).value();
+}
+
+bool DoSkill::has_valued_function(String const& name) const {
+  return ExpandedType::check_valued_function(valuedMemberFunctions, name).has_value();
+}
+
+IR::MemberFunction* DoSkill::get_valued_function(String const& name) const {
+  return ExpandedType::check_valued_function(valuedMemberFunctions, name).value();
 }
 
 bool DoSkill::hasNormalMemberFn(String const& name) const {

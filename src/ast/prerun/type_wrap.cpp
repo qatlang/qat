@@ -8,7 +8,11 @@ IR::PrerunValue* TypeWrap::emit(IR::Context* ctx) {
 }
 
 Json TypeWrap::toJson() const {
-  return Json()._("nodeType", "typeWrap")._("providedType", theType->toJson())._("fileRange", fileRange);
+  return Json()
+      ._("nodeType", "typeWrap")
+      ._("providedType", theType->toJson())
+      ._("isExplicit", isExplicit)
+      ._("fileRange", fileRange);
 }
 
 String TypeWrap::toString() const { return "type(" + theType->toString() + ")"; }

@@ -8,12 +8,14 @@ namespace qat::ast {
 
 class TypeWrap : public PrerunExpression {
   ast::QatType* theType;
+  bool          isExplicit;
 
 public:
-  TypeWrap(ast::QatType* _theType, FileRange _fileRange) : PrerunExpression(_fileRange), theType(_theType) {}
+  TypeWrap(ast::QatType* _theType, bool _isExplicit, FileRange _fileRange)
+      : PrerunExpression(_fileRange), theType(_theType), isExplicit(_isExplicit) {}
 
-  useit static inline TypeWrap* create(ast::QatType* _theType, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(TypeWrap), _theType, _fileRange);
+  useit static inline TypeWrap* create(ast::QatType* _theType, bool _isExplicit, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
   }
 
   IR::PrerunValue* emit(IR::Context* ctx);

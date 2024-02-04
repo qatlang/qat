@@ -87,8 +87,7 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
       llvmType = llvm::StructType::getTypeByName(ctx->llctx, linkingName);
     } else {
       llvmType = llvm::StructType::create(
-          {llvm::PointerType::get(subType->getLLVMType()->isVoidTy() ? llvm::Type::getInt8Ty(ctx->llctx)
-                                                                     : subType->getLLVMType(),
+          {llvm::PointerType::get(subType->isTypeSized() ? subType->getLLVMType() : llvm::Type::getInt8Ty(ctx->llctx),
                                   ctx->dataLayout->getProgramAddressSpace()),
            llvm::Type::getIntNTy(ctx->llctx, ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType()))},
           linkingName);
@@ -97,7 +96,7 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
     linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
                   subType->getNameForLinking() + (owner.isAnonymous() ? "" : ",") + owner.toString() + "]";
     llvmType =
-        llvm::PointerType::get(subType->isTypeSized() ? llvm::Type::getInt8Ty(ctx->llctx) : subType->getLLVMType(), 0U);
+        llvm::PointerType::get(subType->isTypeSized() ? subType->getLLVMType() : llvm::Type::getInt8Ty(ctx->llctx), 0U);
   }
 }
 

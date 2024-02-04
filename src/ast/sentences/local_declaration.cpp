@@ -19,11 +19,16 @@ IR::Value* LocalDeclaration::emit(IR::Context* ctx) {
 
   SHOW("Type for local declaration is " << (type ? type->toString() : "not provided"));
 
-  auto maybeTypeCheck = [&]() {
+  auto typeCheck = [&]() {
     if (declType && declType->isMaybe() && !variability) {
       ctx->Warning("The type of the declaration is " + ctx->highlightWarning(declType->toString()) +
                        ", but the local declaration is not a variable. And hence, it might not be usable",
                    fileRange);
+    }
+    if (declType && !declType->isTypeSized()) {
+      ctx->Error("The type " + ctx->highlightError(declType->toString()) +
+                     " is not sized and hence cannot be allocated",
+                 fileRange);
     }
   };
 
@@ -31,14 +36,14 @@ IR::Value* LocalDeclaration::emit(IR::Context* ctx) {
   if (value.has_value()) {
     if (type && value.value()->hasTypeInferrance()) {
       declType = type->emit(ctx);
-      maybeTypeCheck();
+      typeCheck();
       value.value()->asTypeInferrable()->setInferenceType(declType);
     }
     if (value.value()->isLocalDeclCompatible()) {
       if ((type || declType)) {
         if (!declType) {
           declType = type->emit(ctx);
-          maybeTypeCheck();
+          typeCheck();
         }
         value.value()->asLocalDeclCompatible()->setLocalValue(
             ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range));
@@ -53,13 +58,27 @@ IR::Value* LocalDeclaration::emit(IR::Context* ctx) {
     SHOW("Emitting value")
     expVal = value.value()->emit(ctx);
     SHOW("Type of value to be assigned to local value " << name.value << " is " << expVal->getType()->toString())
+  } else {
+    if (type) {
+      declType = type->emit(ctx);
+      if (declType->isTriviallyMovable()) {
+        auto result = ctx->getActiveFunction()->getBlock()->newValue(name.value, declType, variability, name.range);
+        ctx->builder.CreateStore(llvm::Constant::getNullValue(declType->getLLVMType()), result->getLLVM());
+        return result->toNewIRValue();
+      } else {
+        ctx->Error(
+            "The type of the local declaration is " + ctx->highlightError(declType->toString()) +
+                " which is not trivially movable. Expression to be assigned can only be skipped if the value is trivially movable",
+            fileRange);
+      }
+    }
   }
   SHOW("Type inference for value is complete")
   if (type) {
     SHOW("Checking & setting declType")
     if (!declType) {
       declType = type->emit(ctx);
-      maybeTypeCheck();
+      typeCheck();
     }
     SHOW("About to type match")
     if (value && (((declType->isReference() && !expVal->isReference()) &&
@@ -77,7 +96,7 @@ IR::Value* LocalDeclaration::emit(IR::Context* ctx) {
     if (expVal) {
       SHOW("Getting type from expression")
       declType = expVal->getType();
-      maybeTypeCheck();
+      typeCheck();
       if (expVal->getType()->isReference()) {
         if (!isRef) {
           declType = expVal->getType()->asReference()->getSubType();

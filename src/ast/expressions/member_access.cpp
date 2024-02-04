@@ -26,7 +26,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
   } else {
     if (instance->nodeType() == NodeType::SELF) {
       ctx->Error("Do not use this syntax for accessing members of the parent instance. Use " +
-                     ctx->highlightError(String("''") + (isPointerAccess ? "->" : "") +
+                     ctx->highlightError(String("''") +
                                          (isVariationAccess.has_value() && isVariationAccess.value()
                                               ? "var:"
                                               : (isVariationAccess.has_value() ? "const:" : "")) +
@@ -38,43 +38,10 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
   auto* inst     = isExpSelf ? ctx->getActiveFunction()->getFirstBlock()->getValue("''") : instance->emit(ctx);
   auto* instType = inst->getType();
   bool  isVar    = inst->isVariable();
-  if (isPointerAccess) {
-    if (instType->isReference()) {
-      inst->loadImplicitPointer(ctx->builder);
-      isVar    = instType->asReference()->isSubtypeVariable();
-      instType = instType->asReference()->getSubType();
-    }
-    if (instType->isPointer()) {
-      if (inst->getType()->isReference()) {
-        inst = new IR::Value(ctx->builder.CreateLoad(instType->getLLVMType(), inst->getLLVM()), instType, false,
-                             IR::Nature::temporary);
-      } else {
-        inst->loadImplicitPointer(ctx->builder);
-      }
-      auto* ptrTy = instType->asPointer();
-      if (!ptrTy->isNonNullable()) {
-        ctx->Error("The expression is of pointer type " + ctx->highlightError(ptrTy->toString()) +
-                       " which is a nullable pointer type -> cannot be used here",
-                   fileRange);
-      }
-      if (ptrTy->isMulti()) {
-        ctx->Error("The expression is of multi-pointer type " + ctx->highlightError(ptrTy->toString()) +
-                       " and -> cannot be used here",
-                   fileRange);
-      }
-      isVar    = ptrTy->isSubtypeVariable();
-      instType = ptrTy->getSubType();
-    } else {
-      ctx->Error("The expression is of type " + ctx->highlightError(instType->toString()) +
-                     " which is not a pointer type, and hence -> cannot be used here",
-                 fileRange);
-    }
-  } else {
-    if (instType->isReference()) {
-      inst->loadImplicitPointer(ctx->builder);
-      isVar    = instType->asReference()->isSubtypeVariable();
-      instType = instType->asReference()->getSubType();
-    }
+  if (instType->isReference()) {
+    inst->loadImplicitPointer(ctx->builder);
+    isVar    = instType->asReference()->isSubtypeVariable();
+    instType = instType->asReference()->getSubType();
   }
   if (instType->isArray()) {
     if (name.value == "length") {
@@ -89,9 +56,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     }
   } else if (instType->isStringSlice()) {
     if (name.value == "length") {
-      if (inst->isLLVMConstant() && !isPointerAccess) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::CType::getUsize(ctx));
-      } else if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
+      } else if (inst->isValue()) {
         return new IR::Value(ctx->builder.CreateExtractValue(inst->getLLVM(), {1u}), IR::CType::getUsize(ctx), false,
                              IR::Nature::temporary);
       } else {
@@ -100,11 +67,11 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             IR::ReferenceType::get(false, IR::CType::getUsize(ctx), ctx), false, IR::Nature::temporary);
       }
     } else if (name.value == "data") {
-      if (inst->isLLVMConstant() && !isPointerAccess) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(0u),
                                    IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false,
                                                         IR::PointerOwner::OfAnonymous(), false, ctx));
-      } else if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
+      } else if (inst->isValue()) {
         return new IR::Value(ctx->builder.CreateExtractValue(inst->getLLVM(), {0u}),
                              IR::PointerType::get(false, IR::UnsignedType::get(8u, ctx), false,
                                                   IR::PointerOwner::OfAnonymous(), false, ctx),
@@ -126,7 +93,8 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  name.range);
     }
   } else if (instType->isFuture()) {
-    if (!inst->isReference() && !inst->isImplicitPointer() && !inst->isLLVMConstant() && !isPointerAccess) {
+    // FIXME - ?? Also support values if possible
+    if (inst->isValue()) {
       inst = inst->makeLocal(ctx, None, instance->fileRange);
     }
     if (name.value == "isDone") {
@@ -168,13 +136,16 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                  name.range);
     }
   } else if (instType->isMaybe()) {
-    if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
+    if (inst->isValue() && !instType->isTriviallyMovable()) {
       inst = inst->makeLocal(ctx, None, instance->fileRange);
     }
     if (name.value == "hasValue") {
-      if (inst->isLLVMConstant()) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(llvm::cast<llvm::ConstantInt>(inst->getLLVMConstant()->getAggregateElement(0u)),
                                    IR::UnsignedType::getBool(ctx));
+      } else if (inst->isValue()) {
+        return new IR::Value(ctx->builder.CreateExtractValue(inst->getLLVM(), {0u}), IR::UnsignedType::getBool(ctx),
+                             false, IR::Nature::temporary);
       } else {
         return new IR::Value(
             ctx->builder.CreateICmpEQ(
@@ -184,7 +155,7 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
       }
     } else if (name.value == "hasNoValue") {
-      if (inst->isLLVMConstant()) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(
             llvm::ConstantFoldConstant(
                 llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
@@ -192,6 +163,9 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                                             llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), 0u)),
                 ctx->dataLayout.value()),
             IR::UnsignedType::getBool(ctx));
+      } else if (inst->isValue()) {
+        return new IR::Value(ctx->builder.CreateNot(ctx->builder.CreateExtractValue(inst->getLLVM(), {0u})),
+                             IR::UnsignedType::getBool(ctx), false, IR::Nature::temporary);
       } else {
         return new IR::Value(
             ctx->builder.CreateICmpEQ(
@@ -253,21 +227,23 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
                        ctx->highlightError(eTy->getFullName()) + " is not accessible here",
                    fileRange);
       }
-      if (!inst->isImplicitPointer() && !inst->getType()->isReference() && !inst->isLLVMConstant() &&
-          !isPointerAccess) {
+      if (inst->isValue() && !instType->isTriviallyMovable()) {
         inst = inst->makeLocal(ctx, None, instance->fileRange);
       }
-      if (inst->isLLVMConstant() && !isPointerAccess) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(
             inst->getLLVMConstant()->getAggregateElement(instType->asCore()->getIndexOf(name.value).value()),
             mem->type);
+      } else if (inst->isValue()) {
+        return new IR::Value(ctx->builder.CreateExtractValue(
+                                 inst->getLLVM(), {(uint)instType->asCore()->getIndexOf(name.value).value()}),
+                             instType->asCore()->getTypeOfMember(name.value), true, IR::Nature::temporary);
       } else {
         auto llVal    = ctx->builder.CreateStructGEP(instType->asCore()->getLLVMType(), inst->getLLVM(),
                                                      instType->asCore()->getIndexOf(name.value).value());
         auto memValTy = instType->asCore()->getTypeOfMember(name.value);
-        while (memValTy->isReference()) {
-          llVal    = ctx->builder.CreateLoad(memValTy->asReference()->getSubType()->getLLVMType(), llVal);
-          memValTy = memValTy->asReference()->getSubType();
+        if (memValTy->isReference()) {
+          llVal = ctx->builder.CreateLoad(memValTy->getLLVMType(), llVal);
         }
         return new IR::Value(llVal, IR::ReferenceType::get(isVar, memValTy, ctx), false, IR::Nature::temporary);
       }
@@ -277,14 +253,18 @@ IR::Value* MemberAccess::emit(IR::Context* ctx) {
     } else if ((isVariationAccess.has_value() && isVariationAccess.value()) && eTy->hasVariationFn(name.value)) {
       // FIXME - Implement
       ctx->Error("Referencing variation function is not supported", fileRange);
+    } else {
+      ctx->Error("Member access of " + ctx->highlightError(name.value) + " is not supported for expression of type " +
+                     ctx->highlightError(instType->toString()),
+                 fileRange);
     }
   } else if (instType->isPointer() && instType->asPointer()->isMulti()) {
     if (name.value == "length") {
-      if (!inst->isImplicitPointer() && !inst->isReference() && !inst->isLLVMConstant() && !isPointerAccess) {
-        inst = inst->makeLocal(ctx, None, instance->fileRange);
-      }
-      if (inst->isLLVMConstant() && !isPointerAccess) {
+      if (inst->isPrerunValue()) {
         return new IR::PrerunValue(inst->getLLVMConstant()->getAggregateElement(1u), IR::CType::getUsize(ctx));
+      } else if (inst->isValue()) {
+        return new IR::Value(ctx->builder.CreateExtractValue(inst->getLLVM(), {1u}), IR::CType::getUsize(ctx), false,
+                             IR::Nature::temporary);
       } else {
         return new IR::Value(
             ctx->builder.CreateLoad(IR::CType::getUsize(ctx)->getLLVMType(),

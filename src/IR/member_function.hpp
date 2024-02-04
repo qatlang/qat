@@ -18,6 +18,7 @@ namespace qat::IR {
 
 enum class MemberFnType {
   normal,
+  value_method,
   staticFn,
   fromConvertor,
   toConvertor,
@@ -83,6 +84,10 @@ public:
   static MemberFunction* Create(MemberParent* parent, bool is_variation, const Identifier& name,
                                 ReturnType* return_type, const Vec<Argument>& args, bool has_variadic_args,
                                 Maybe<FileRange> fileRange, const VisibilityInfo& visib_info, IR::Context* ctx);
+
+  static MemberFunction* CreateValued(MemberParent* parent, const Identifier& name, QatType* return_type,
+                                      const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                                      const VisibilityInfo& visib_info, IR::Context* ctx);
 
   static MemberFunction* DefaultConstructor(MemberParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
                                             Maybe<FileRange> fileRange, IR::Context* ctx);

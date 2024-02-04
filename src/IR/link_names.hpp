@@ -18,6 +18,7 @@ enum class LinkUnitType {
   method,
   variationMethod,
   staticFunction,
+  value_method,
   constructor,
   fromConvertor,
   toConvertor,
@@ -43,6 +44,7 @@ enum class LinkUnitType {
   name,
   typeName,
   global,
+  Union,
 };
 
 class LinkNameUnit;

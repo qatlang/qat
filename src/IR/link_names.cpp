@@ -24,9 +24,6 @@ LinkNames LinkNames::newWith(LinkNameUnit unit, Maybe<String> entityForeignID) {
 }
 
 String LinkNames::toName() const {
-  if (linkAlias.has_value()) {
-    return linkAlias.value();
-  }
   auto isForeign = [&](String const& id) {
     if (foreignID.has_value()) {
       return (foreignID.value() == id);
@@ -35,7 +32,14 @@ String LinkNames::toName() const {
     }
   };
   if (isForeign("C")) {
-    return units.back().name;
+    auto cand = linkAlias.value_or(units.back().name);
+    if (units.back().unitType == LinkUnitType::type) {
+      return "struct." + cand;
+    } else if (units.back().unitType == LinkUnitType::Union) {
+      return "union." + cand;
+    } else {
+      return cand;
+    }
   } else if (isForeign("C++")) {
     String result("");
     // FIXME - Implement C++ name mangling
@@ -114,6 +118,10 @@ String LinkNames::toName() const {
         }
         case LinkUnitType::method: {
           result += "method_" + unit.name;
+          break;
+        }
+        case LinkUnitType::value_method: {
+          result += "valuedfn_" + unit.name;
           break;
         }
         case LinkUnitType::defaultConstructor: {

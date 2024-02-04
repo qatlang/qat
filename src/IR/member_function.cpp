@@ -52,6 +52,10 @@ LinkNames MemberFunction::getNameInfoFrom(MemberParent* parent, bool isStatic, I
       linkNames.addUnit(LinkNameUnit(name.value, isVar ? LinkUnitType::variationMethod : LinkUnitType::method), None);
       break;
     }
+    case MemberFnType::value_method: {
+      linkNames.addUnit(LinkNameUnit(name.value, LinkUnitType::value_method), None);
+      break;
+    }
     case MemberFnType::fromConvertor: {
       linkNames.addUnit(LinkNameUnit(args.at(1).getType()->getNameForLinking(), LinkUnitType::fromConvertor), None);
       break;
@@ -141,6 +145,15 @@ MemberFunction::MemberFunction(MemberFnType _fnType, bool _isVariation, MemberPa
         parent->asDoneSkill()->memberFunctions.push_back(this);
       } else {
         parent->asExpanded()->memberFunctions.push_back(this);
+      }
+      break;
+    }
+    case MemberFnType::value_method: {
+      selfName = _name;
+      if (parent->isDoneSkill()) {
+        parent->asDoneSkill()->valuedMemberFunctions.push_back(this);
+      } else {
+        parent->asExpanded()->valuedMemberFunctions.push_back(this);
       }
       break;
     }
@@ -244,6 +257,8 @@ String memberFnTypeToString(MemberFnType type) {
       return "normalMemberFn";
     case MemberFnType::staticFn:
       return "staticFunction";
+    case MemberFnType::value_method:
+      return "valuedMethod";
     case MemberFnType::fromConvertor:
       return "fromConvertor";
     case MemberFnType::toConvertor:
@@ -283,6 +298,19 @@ MemberFunction* MemberFunction::Create(MemberParent* parent, bool is_variation, 
   }
   return new MemberFunction(MemberFnType::normal, is_variation, parent, name, returnTy, std::move(args_info),
                             has_variadic_args, false, fileRange, visibilityInfo, ctx);
+}
+
+MemberFunction* MemberFunction::CreateValued(MemberParent* parent, const Identifier& name, QatType* returnTy,
+                                             const Vec<Argument>& args, bool has_variadic_args,
+                                             Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo,
+                                             IR::Context* ctx) {
+  Vec<Argument> args_info;
+  args_info.push_back(Argument::Create(Identifier("''", parent->getTypeRange()), parent->getParentType(), 0));
+  for (const auto& arg : args) {
+    args_info.push_back(arg);
+  }
+  return new MemberFunction(MemberFnType::value_method, false, parent, name, IR::ReturnType::get(returnTy),
+                            std::move(args_info), has_variadic_args, false, fileRange, visibilityInfo, ctx);
 }
 
 MemberFunction* MemberFunction::DefaultConstructor(MemberParent* parent, FileRange nameRange,
@@ -421,115 +449,8 @@ String MemberFunction::getFullName() const {
          (isVariation ? "var:" : "") + name.value;
 }
 
-// Pair<bool, Maybe<FileRange>> MemberFunction::checkMissingMemberInits(IR::Context* ctx, usize index,
-//                                                                      FileRange range) const {
-//   std::function<Pair<bool, Maybe<FileRange>>(IR::Block*)> blockChecker =
-//       [&](IR::Block* block) -> Pair<bool, Maybe<FileRange>> {
-//     SHOW("   Checking block: " << block->getName())
-//     const auto bName = block->getName();
-//     for (auto initMem : block->initTypeMembers) {
-//       if (initMem.first == index) {
-//         return {true, None};
-//       }
-//     }
-//     SHOW(bName << ": Checking children blocks")
-//     Vec<Pair<bool, Maybe<FileRange>>> childrenResult;
-//     for (usize i = 0; i < block->children.size(); i++) {
-//       if (block->children.at(i)->hasNextBlock()) {
-//         auto startBlock = block->children.at(i);
-//         while (((i + 1) < block->children.size()) &&
-//                block->children.at(i)->getNextBlock()->getID() == block->children.at(i + 1)->getID()) {
-//           i++;
-//         }
-//         if (i < block->children.size()) {
-//           auto startRes = blockChecker(startBlock);
-//           childrenResult.push_back(startRes);
-//         } else {
-//           SHOW(bName << ": All child blocks are connected")
-//           auto startRes = blockChecker(startBlock);
-//           if (startRes.first) {
-//             return startRes;
-//           } else {
-//             childrenResult.push_back(startRes);
-//             break;
-//           }
-//         }
-//       } else {
-//         SHOW(bName << ": There is no next block for child")
-//         auto childRes = blockChecker(block->children.at(i));
-//         childrenResult.push_back(childRes);
-//       }
-//       if (!childrenResult.back().first) {
-//         SHOW(bName << ": Children result is false")
-//         break;
-//       }
-//     }
-//     bool childResult     = true;
-//     bool oneChildHasInit = false;
-//     for (auto child : childrenResult) {
-//       if (!child.first) {
-//         childResult = false;
-//       } else {
-//         oneChildHasInit = true;
-//       }
-//     }
-//     for (auto child : childrenResult) {
-//       if (oneChildHasInit && !child.first) {
-//         return child;
-//       }
-//     }
-//     if (childResult) {
-//       return {true, None};
-//     }
-//     if (block->nextBlock) {
-//       SHOW("Has next block: " << block->nextBlock->getName())
-//       auto nextRes = blockChecker(block->nextBlock);
-//       if (nextRes.first) {
-//         SHOW("   Ending check: " << block->getName())
-//         return nextRes;
-//       } else {
-//         FileRange resRange = range;
-//         bool      isFirst  = true;
-//         for (auto child : childrenResult) {
-//           if (!child.first) {
-//             if (isFirst) {
-//               resRange = block->getFileRange().value_or(child.second.value());
-//               if (block->getFileRange().has_value()) {
-//                 resRange = resRange.trimTo(child.second.value().start);
-//               }
-//             }
-//             resRange = resRange.spanTo(child.second.value());
-//           }
-//         }
-//         return {false, resRange};
-//       }
-//     } else {
-//       FileRange resRange = range;
-//       bool      isFirst  = true;
-//       for (auto child : childrenResult) {
-//         if (!child.first) {
-//           if (isFirst) {
-//             resRange = block->getFileRange().value_or(child.second.value());
-//             if (block->getFileRange().has_value()) {
-//               resRange = resRange.trimTo(child.second.value().start);
-//             }
-//           }
-//           resRange = resRange.spanTo(child.second.value());
-//         }
-//       }
-//       return {false, resRange};
-//     }
-//     SHOW("   Ending check: " << block->getName())
-//     return {false, block->getFileRange().value_or(range)};
-//   };
-//   if (getFirstBlock()) {
-//     return blockChecker(getFirstBlock());
-//   } else {
-//     return {false, range};
-//   }
-// }
-
 void MemberFunction::updateOverview() {
+  SHOW("Member fn overview update")
   Vec<JsonValue> localsJson;
   for (auto* block : blocks) {
     block->outputLocalOverview(localsJson);
@@ -542,9 +463,8 @@ void MemberFunction::updateOverview() {
       ._("parentTypeID", parent->getParentType()->getID())
       ._("moduleID", parent->isDoneSkill() ? parent->asDoneSkill()->getParent()->getID()
                                            : parent->asExpanded()->getParent()->getID())
-      ._("isStatic", isStatic)
       ._("isVariation", isVariation)
-      ._("memberFunctionType", memberFnTypeToString(fnType))
+      ._("methodType", memberFnTypeToString(fnType))
       ._("visibility", visibility_info)
       ._("isVariadic", hasVariadicArguments)
       ._("locals", localsJson);

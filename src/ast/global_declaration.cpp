@@ -37,21 +37,59 @@ void GlobalDeclaration::define(IR::Context* ctx) {
     auto* init  = mod->getGlobalInitialiser(ctx);
     auto* oldFn = ctx->setActiveFunction(init);
     init->getBlock()->setActive(ctx->builder);
-    auto val = value.value()->emit(ctx);
-    if (val->isPrerunValue()) {
-      gvar         = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), !isVariable,
-                                              ctx->getGlobalLinkageForVisibility(visibInfo),
-                                              llvm::dyn_cast<llvm::Constant>(val->getLLVM()), linkingName);
-      initialValue = val->getLLVMConstant();
-    } else {
-      mod->incrementNonConstGlobalCounter();
+    if (value.value()->isInPlaceCreatable()) {
       gvar = new llvm::GlobalVariable(
           *mod->getLLVMModule(), typ->getLLVMType(), false, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
           typ->getLLVMType()->isPointerTy()
               ? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->getLLVMType()))
               : llvm::Constant::getNullValue(typ->getLLVMType()),
           linkingName);
-      ctx->builder.CreateStore(val->getLLVM(), gvar);
+      value.value()->asInPlaceCreatable()->setCreateIn(new IR::Value(gvar, typ, false, IR::Nature::temporary));
+      value.value()->emit(ctx);
+    } else {
+      auto val = value.value()->emit(ctx);
+      if (val->isPrerunValue()) {
+        gvar         = new llvm::GlobalVariable(*mod->getLLVMModule(), typ->getLLVMType(), !isVariable,
+                                                ctx->getGlobalLinkageForVisibility(visibInfo),
+                                                llvm::dyn_cast<llvm::Constant>(val->getLLVM()), linkingName);
+        initialValue = val->getLLVMConstant();
+      } else {
+        if (typ->isReference()) {
+          typ = typ->asReference()->getSubType();
+        }
+        mod->incrementNonConstGlobalCounter();
+        gvar = new llvm::GlobalVariable(
+            *mod->getLLVMModule(), typ->getLLVMType(), false, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+            typ->getLLVMType()->isPointerTy()
+                ? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->getLLVMType()))
+                : llvm::Constant::getNullValue(typ->getLLVMType()),
+            linkingName);
+        if (val->isValue()) {
+          ctx->builder.CreateStore(val->getLLVM(), gvar);
+        } else {
+          if (typ->isTriviallyCopyable() || typ->isTriviallyMovable()) {
+            if (val->isReference()) {
+              val->loadImplicitPointer(ctx->builder);
+            }
+            auto origVal = val;
+            auto result  = ctx->builder.CreateLoad(typ->getLLVMType(), val->getLLVM());
+            if (!typ->isTriviallyCopyable()) {
+              if (origVal->isReference() ? origVal->getType()->asReference()->isSubtypeVariable()
+                                         : origVal->isVariable()) {
+                ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+                           value.value()->fileRange);
+              }
+              ctx->builder.CreateStore(llvm::Constant::getNullValue(typ->getLLVMType()), origVal->getLLVM());
+            }
+            ctx->builder.CreateStore(result, gvar);
+          } else {
+            ctx->Error("This expression is a reference to the type " + ctx->highlightError(typ->toString()) +
+                           " which is not trivially copyable or movable. Please use " + ctx->highlightError("'copy") +
+                           " or " + ctx->highlightError("'move") + " accordingly",
+                       fileRange);
+          }
+        }
+      }
     }
     (void)ctx->setActiveFunction(oldFn);
   } else {

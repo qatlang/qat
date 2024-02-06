@@ -33,6 +33,22 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
         }
       }
     }
+    if (ctx->has_active_done_skill() && (ctx->get_active_done_skill()->getType()->isExpanded() ||
+                                         ctx->get_active_done_skill()->getType()->isOpaque())) {
+      auto actTy = ctx->get_active_done_skill()->getType();
+      if ((actTy->isExpanded() && actTy->asExpanded()->hasGenericParameter(identifiers.front().value)) ||
+          (actTy->isOpaque() && actTy->asOpaque()->hasGenericParameter(identifiers.front().value))) {
+        auto* genVal = actTy->isExpanded() ? actTy->asExpanded()->getGenericParameter(identifiers.front().value)
+                                           : actTy->asOpaque()->getGenericParameter(identifiers.front().value);
+        if (genVal->isTyped()) {
+          return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
+        } else if (genVal->isPrerun()) {
+          return genVal->asPrerun()->getExpression();
+        } else {
+          ctx->Error("Invalid generic kind", genVal->getRange());
+        }
+      }
+    }
     if (ctx->hasActiveGeneric()) {
       if (ctx->hasGenericParameterFromLastMain(identifiers[0].value)) {
         auto* genVal = ctx->getGenericParameterFromLastMain(name.value);

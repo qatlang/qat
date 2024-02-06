@@ -24,7 +24,19 @@ IR::QatType* SelfType::emit(IR::Context* ctx) {
         return IR::ReferenceType::get(isVarRef, ctx->getActiveType(), ctx);
       } else {
         ctx->Error("The " + ctx->highlightError("''") +
-                       " type can only be used as return type in member functions and variation functions",
+                       " type can only be used as given type in normal and variation methods",
+                   fileRange);
+      }
+    }
+  } else if (ctx->has_active_done_skill()) {
+    if (isJustType) {
+      return ctx->get_active_done_skill()->getType();
+    } else {
+      if (canBeSelfInstance) {
+        return IR::ReferenceType::get(isVarRef, ctx->get_active_done_skill()->getType(), ctx);
+      } else {
+        ctx->Error("The " + ctx->highlightError("''") +
+                       " type can only be used as given type in normal and variation methods",
                    fileRange);
       }
     }

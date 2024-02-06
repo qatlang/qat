@@ -22,13 +22,26 @@ IR::Value* Entity::emit(IR::Context* ctx) {
           ctx->Error("Invalid generic kind", genVal->getRange());
         }
       } else if (ctx->hasActiveType() && (ctx->getActiveType()->isExpanded() || ctx->getActiveType()->isOpaque())) {
-        if ((ctx->getActiveType()->isExpanded() &&
-             ctx->getActiveType()->asExpanded()->hasGenericParameter(singleName.value)) ||
-            (ctx->getActiveType()->isOpaque() &&
-             ctx->getActiveType()->asOpaque()->hasGenericParameter(singleName.value))) {
-          auto* genVal = ctx->getActiveType()->isExpanded()
-                             ? ctx->getActiveType()->asExpanded()->getGenericParameter(singleName.value)
-                             : ctx->getActiveType()->asOpaque()->getGenericParameter(singleName.value);
+        auto actTy = ctx->getActiveType();
+        if ((actTy->isExpanded() && actTy->asExpanded()->hasGenericParameter(singleName.value)) ||
+            (actTy->isOpaque() && actTy->asOpaque()->hasGenericParameter(singleName.value))) {
+          auto* genVal = actTy->isExpanded() ? actTy->asExpanded()->getGenericParameter(singleName.value)
+                                             : actTy->asOpaque()->getGenericParameter(singleName.value);
+          if (genVal->isTyped()) {
+            return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
+          } else if (genVal->isPrerun()) {
+            return genVal->asPrerun()->getExpression();
+          } else {
+            ctx->Error("Invalid generic kind", genVal->getRange());
+          }
+        }
+      } else if (ctx->has_active_done_skill() && (ctx->get_active_done_skill()->getType()->isExpanded() ||
+                                                  ctx->get_active_done_skill()->getType()->isOpaque())) {
+        auto actTy = ctx->get_active_done_skill()->getType();
+        if ((actTy->isExpanded() && actTy->asExpanded()->hasGenericParameter(singleName.value)) ||
+            (actTy->isOpaque() && actTy->asOpaque()->hasGenericParameter(singleName.value))) {
+          auto* genVal = actTy->isExpanded() ? actTy->asExpanded()->getGenericParameter(singleName.value)
+                                             : actTy->asOpaque()->getGenericParameter(singleName.value);
           if (genVal->isTyped()) {
             return new IR::PrerunValue(IR::TypedType::get(genVal->asTyped()->getType()));
           } else if (genVal->isPrerun()) {

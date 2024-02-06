@@ -45,6 +45,28 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       } else {
         ctx->Error("Invalid generic kind", fileRange);
       }
+    } else if (ctx->has_active_done_skill() && (ctx->get_active_done_skill()->getType()->isExpanded() ||
+                                                ctx->get_active_done_skill()->getType()->isOpaque())) {
+      auto actTy = ctx->get_active_done_skill()->getType();
+      if ((actTy->isExpanded() && actTy->asExpanded()->hasGenericParameter(entityName.value)) ||
+          (actTy->isOpaque() && actTy->asOpaque()->hasGenericParameter(entityName.value))) {
+        auto* genVal = actTy->isExpanded() ? actTy->asExpanded()->getGenericParameter(entityName.value)
+                                           : actTy->asOpaque()->getGenericParameter(entityName.value);
+        if (genVal->isTyped()) {
+          return genVal->asTyped()->getType();
+        } else if (genVal->isPrerun()) {
+          auto exp = genVal->asPrerun()->getExpression();
+          if (exp->getType()->isTyped()) {
+            return exp->getType()->asTyped()->getSubType();
+          } else {
+            ctx->Error("The generic parameter " + ctx->highlightError(entityName.value) + " is an expression of type " +
+                           ctx->highlightError(exp->getType()->toString()) + ", and hence cannot be used as a type",
+                       fileRange);
+          }
+        } else {
+          ctx->Error("Invalid generic kind", genVal->getRange());
+        }
+      }
     }
   }
   if (names.size() > 1) {

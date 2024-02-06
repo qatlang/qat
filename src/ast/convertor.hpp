@@ -62,8 +62,6 @@ private:
   Vec<Sentence*>      sentences;
   ConvertorPrototype* prototype;
 
-  void setMemberParent(IR::MemberParent* memParent) const;
-
 public:
   ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : Node(_fileRange), sentences(_sentences), prototype(_prototype) {
@@ -75,6 +73,7 @@ public:
     return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
   }
 
+  void  setMemberParent(IR::MemberParent* memParent) const;
   void  define(IR::Context* ctx) final;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

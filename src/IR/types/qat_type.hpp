@@ -38,26 +38,27 @@ class TypedType;
 class PrerunValue;
 class CType;
 class ResultType;
-class DoSkill;
+class DoneSkill;
 class VectorType;
 
 // QatType is the base class for all types in the IR
 class QatType : public Uniq {
+  friend DoneSkill;
+
 protected:
   String               linkingName;
   static Vec<QatType*> allQatTypes;
   llvm::Type*          llvmType;
-  Vec<DoSkill*>        doneSkills;
+  Vec<DoneSkill*>      doneSkills;
 
 public:
   QatType();
   virtual ~QatType();
   static void clearAll();
 
-  useit bool     hasDefaultSkill() const;
-  useit DoSkill* getDefaultSkill() const;
+  useit bool has_default_implementations() const;
+  useit Vec<DoneSkill*> get_all_default_implementations() const;
 
-  useit virtual bool          hasNoValueSemantics() const;
   useit virtual bool          canBePrerunGeneric() const;
   useit virtual Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const;
   useit virtual bool          isTypeSized() const;

@@ -92,9 +92,9 @@ void MemberPrototype::define(IR::Context* ctx) {
                 ctx->highlightError(name.value) + " exists in the parent type " +
                 ctx->highlightError(expTy->toString()) + ". Try if you can change the name of this function" +
                 (memberParent->isDoneSkill() && memberParent->asDoneSkill()->isNormalSkill()
-                     ? (" in the skill " + ctx->highlightError(memberParent->asDoneSkill()->getSkill()->getFullName()) +
-                        " at " +
-                        ctx->highlightError(memberParent->asDoneSkill()->getSkill()->getName().range.startToString()))
+                     ? (" in the skill " +
+                        ctx->highlightError(memberParent->asDoneSkill()->getSkill()->get_full_name()) + " at " +
+                        ctx->highlightError(memberParent->asDoneSkill()->getSkill()->get_name().range.startToString()))
                      : ""),
             name.range);
       }

@@ -228,7 +228,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                                    ctx->llctx);
   }
   if (defaultConstructor) {
-    defaultConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    defaultConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   if (copyConstructor) {
     if (!copyAssignment) {
@@ -236,7 +236,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                      ", and hence copy assignment operator is also required to be defined",
                  fileRange);
     }
-    copyConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    copyConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   if (moveConstructor) {
     if (!moveAssignment) {
@@ -244,7 +244,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                      ", and hence move assignment operator is also required to be defined",
                  fileRange);
     }
-    moveConstructor->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    moveConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   if (copyAssignment) {
     if (!copyConstructor) {
@@ -252,7 +252,7 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                      ", and hence copy constructor is also required to be defined",
                  fileRange);
     }
-    copyAssignment->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    copyAssignment->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   if (moveAssignment) {
     if (!moveConstructor) {
@@ -260,22 +260,22 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                      ", and hence move constructor is also required to be defined",
                  fileRange);
     }
-    moveAssignment->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    moveAssignment->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   if (destructorDefinition) {
-    destructorDefinition->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    destructorDefinition->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   for (auto* conv : convertorDefinitions) {
-    conv->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    conv->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   for (auto* cons : constructorDefinitions) {
-    cons->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    cons->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   for (auto* memDef : memberDefinitions) {
-    memDef->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    memDef->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   for (auto* oprDef : operatorDefinitions) {
-    oprDef->setMemberParent(IR::MemberParent::CreateFromExpanded(getCoreType()));
+    oprDef->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
   }
   ctx->unsetActiveType();
 }
@@ -396,38 +396,6 @@ IR::Value* DefineCoreType::emit(IR::Context* ctx) {
 void DefineCoreType::addMember(Member* mem) { members.push_back(mem); }
 
 void DefineCoreType::addStaticMember(StaticMember* stm) { staticMembers.push_back(stm); }
-
-void DefineCoreType::addMemberDefinition(MemberDefinition* mdef) { memberDefinitions.push_back(mdef); }
-
-void DefineCoreType::addConvertorDefinition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }
-
-void DefineCoreType::addConstructorDefinition(ConstructorDefinition* cdef) { constructorDefinitions.push_back(cdef); }
-
-void DefineCoreType::addOperatorDefinition(OperatorDefinition* odef) { operatorDefinitions.push_back(odef); }
-
-void DefineCoreType::setDestructorDefinition(DestructorDefinition* ddef) { destructorDefinition = ddef; }
-
-void DefineCoreType::setDefaultConstructor(ConstructorDefinition* cDef) { defaultConstructor = cDef; }
-
-bool DefineCoreType::hasDestructor() const { return destructorDefinition != nullptr; }
-
-bool DefineCoreType::hasDefaultConstructor() const { return defaultConstructor != nullptr; }
-
-bool DefineCoreType::hasCopyConstructor() const { return copyConstructor != nullptr; }
-
-bool DefineCoreType::hasMoveConstructor() const { return moveConstructor != nullptr; }
-
-bool DefineCoreType::hasCopyAssignment() const { return copyAssignment != nullptr; }
-
-bool DefineCoreType::hasMoveAssignment() const { return moveAssignment != nullptr; }
-
-void DefineCoreType::setCopyConstructor(ConstructorDefinition* cDef) { copyConstructor = cDef; }
-
-void DefineCoreType::setMoveConstructor(ConstructorDefinition* cDef) { moveConstructor = cDef; }
-
-void DefineCoreType::setCopyAssignment(OperatorDefinition* mDef) { copyAssignment = mDef; }
-
-void DefineCoreType::setMoveAssignment(OperatorDefinition* mDef) { moveAssignment = mDef; }
 
 Json DefineCoreType::toJson() const {
   Vec<JsonValue> membersJsonValue;

@@ -50,7 +50,7 @@ void QatType::clearAll() {
   }
 }
 
-bool QatType::hasDefaultSkill() const {
+bool QatType::has_default_implementations() const {
   for (auto* doSkill : doneSkills) {
     if (doSkill->isDefaultForType()) {
       return true;
@@ -59,16 +59,15 @@ bool QatType::hasDefaultSkill() const {
   return false;
 }
 
-DoSkill* QatType::getDefaultSkill() const {
+Vec<DoneSkill*> QatType::get_all_default_implementations() const {
+  Vec<DoneSkill*> res;
   for (auto* doSkill : doneSkills) {
     if (doSkill->isDefaultForType()) {
-      return doSkill;
+      res.push_back(doSkill);
     }
   }
-  return nullptr;
+  return res;
 }
-
-bool QatType::hasNoValueSemantics() const { return false; }
 
 String QatType::getNameForLinking() const { return linkingName; }
 

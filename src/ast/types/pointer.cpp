@@ -38,8 +38,14 @@ IR::PointerOwner PointerType::getPointerOwner(IR::Context* ctx, Maybe<IR::QatTyp
   switch (ownTyp) {
     case PtrOwnType::type:
       return IR::PointerOwner::OfType(ownerVal.value());
-    case PtrOwnType::typeParent:
-      return IR::PointerOwner::OfParentInstance(ctx->getActiveType());
+    case PtrOwnType::typeParent: {
+      if (ctx->hasActiveType() || ctx->has_active_done_skill()) {
+        return IR::PointerOwner::OfParentInstance(ctx->hasActiveType() ? ctx->getActiveType()
+                                                                       : ctx->get_active_done_skill()->getType());
+      } else {
+        ctx->Error("No parent type or skill found", fileRange);
+      }
+    }
     case PtrOwnType::anonymous:
       return IR::PointerOwner::OfAnonymous();
     case PtrOwnType::heap:

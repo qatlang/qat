@@ -64,7 +64,6 @@ public:
   useit usize    getDeducedSize() const;
 
   useit bool isExpanded() const final;
-  useit bool hasNoValueSemantics() const final;
   useit bool canBePrerun() const final;
   useit bool canBePrerunGeneric() const final;
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* preVal) const final;

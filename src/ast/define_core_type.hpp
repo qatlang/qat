@@ -9,6 +9,7 @@
 #include "./types/qat_type.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
+#include "member_parent_like.hpp"
 #include "meta_info.hpp"
 #include "node.hpp"
 #include "types/generic_abstract.hpp"
@@ -18,7 +19,7 @@
 
 namespace qat::ast {
 
-class DefineCoreType final : public Node, public Commentable {
+class DefineCoreType final : public Node, public Commentable, public MemberParentLike {
   friend class IR::GenericCoreType;
 
 public:
@@ -67,24 +68,14 @@ public:
   };
 
 private:
-  Identifier                     name;
-  Maybe<PrerunExpression*>       checker;
-  Vec<Member*>                   members;
-  Vec<StaticMember*>             staticMembers;
-  Vec<MemberDefinition*>         memberDefinitions;
-  Vec<ConvertorDefinition*>      convertorDefinitions;
-  Vec<OperatorDefinition*>       operatorDefinitions;
-  Vec<ConstructorDefinition*>    constructorDefinitions;
-  Maybe<FileRange>               trivialCopy;
-  Maybe<FileRange>               trivialMove;
-  mutable ConstructorDefinition* defaultConstructor   = nullptr;
-  mutable ConstructorDefinition* copyConstructor      = nullptr;
-  mutable ConstructorDefinition* moveConstructor      = nullptr;
-  mutable OperatorDefinition*    copyAssignment       = nullptr;
-  mutable OperatorDefinition*    moveAssignment       = nullptr;
-  mutable DestructorDefinition*  destructorDefinition = nullptr;
-  Maybe<VisibilitySpec>          visibSpec;
-  Maybe<MetaInfo>                metaInfo;
+  Identifier               name;
+  Maybe<PrerunExpression*> checker;
+  Vec<Member*>             members;
+  Vec<StaticMember*>       staticMembers;
+  Maybe<FileRange>         trivialCopy;
+  Maybe<FileRange>         trivialMove;
+  Maybe<VisibilitySpec>    visibSpec;
+  Maybe<MetaInfo>          metaInfo;
 
   Vec<ast::GenericAbstractType*> generics;
   Maybe<PrerunExpression*>       constraint;
@@ -120,16 +111,6 @@ public:
 
   void addMember(Member* mem);
   void addStaticMember(StaticMember* stm);
-  void addMemberDefinition(MemberDefinition* mdef);
-  void addConvertorDefinition(ConvertorDefinition* cdef);
-  void addConstructorDefinition(ConstructorDefinition* cdef);
-  void addOperatorDefinition(OperatorDefinition* odef);
-  void setDestructorDefinition(DestructorDefinition* ddef);
-  void setDefaultConstructor(ConstructorDefinition* cDef);
-  void setCopyConstructor(ConstructorDefinition* cDef);
-  void setMoveConstructor(ConstructorDefinition* cDef);
-  void setCopyAssignment(OperatorDefinition* mDef);
-  void setMoveAssignment(OperatorDefinition* mDef);
 
   void createModule(IR::Context* ctx) const final;
   void createType(IR::Context* ctx) const;
@@ -141,13 +122,15 @@ public:
   useit inline bool hasTrivialMove() { return trivialMove.has_value(); }
   inline void       setTrivialMove(FileRange range) { trivialMove = std::move(range); }
 
-  useit bool isGeneric() const;
-  useit bool hasDefaultConstructor() const;
-  useit bool hasDestructor() const;
-  useit bool hasCopyConstructor() const;
-  useit bool hasMoveConstructor() const;
-  useit bool hasCopyAssignment() const;
-  useit bool hasMoveAssignment() const;
+  useit bool            isGeneric() const;
+  useit bool            hasDefaultConstructor() const;
+  useit bool            hasDestructor() const;
+  useit bool            hasCopyConstructor() const;
+  useit bool            hasMoveConstructor() const;
+  useit bool            hasCopyAssignment() const;
+  useit bool            hasMoveAssignment() const;
+  useit bool            is_define_core_type() const final { return true; }
+  useit DefineCoreType* as_define_core_type() final { return this; }
   useit IR::CoreType* getCoreType() const;
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

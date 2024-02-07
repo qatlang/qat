@@ -139,8 +139,6 @@ usize OpaqueType::getDeducedSize() const { return size.value(); }
 
 bool OpaqueType::isExpanded() const { return subTy && subTy->isExpanded(); }
 
-bool OpaqueType::hasNoValueSemantics() const { return subTy && subTy->hasNoValueSemantics(); }
-
 bool OpaqueType::canBePrerun() const { return subTy && subTy->canBePrerun(); }
 
 bool OpaqueType::canBePrerunGeneric() const { return subTy && subTy->canBePrerunGeneric(); }

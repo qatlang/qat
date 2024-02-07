@@ -1,7 +1,5 @@
 #include "./qat_region.hpp"
-#include "../show.hpp"
 #include "helpers.hpp"
-#include <type_traits>
 
 namespace qat {
 

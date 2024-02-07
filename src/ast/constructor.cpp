@@ -130,6 +130,12 @@ void ConstructorPrototype::define(IR::Context* ctx) {
                                                            ctx->getVisibInfo(visibSpec), ctx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
+    if (memberParent->isDoneSkill() && memberParent->getParentType()->isExpanded() &&
+        memberParent->getParentType()->asExpanded()->hasDefaultConstructor()) {
+      ctx->Error("The target type of this implementation already has a " + ctx->highlightError("default") +
+                     " constructor, so it cannot be defined again",
+                 fileRange);
+    }
     memberFunction =
         IR::MemberFunction::DefaultConstructor(memberParent, nameRange, ctx->getVisibInfo(visibSpec), fileRange, ctx);
   } else if (type == ConstructorType::copy) {

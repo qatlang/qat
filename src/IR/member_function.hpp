@@ -42,25 +42,19 @@ class MemberParent {
   void*            data;
   MemberParentType parentType;
 
-  MemberParent(MemberParentType _parentType, void* data);
-
 public:
-  useit static MemberParent* CreateFromExpanded(IR::ExpandedType* expTy);
-  useit static MemberParent* CreateFromDoSkill(IR::DoSkill* doneSkill);
+  MemberParent(MemberParentType _parentType, void* data);
+  useit static MemberParent* create_expanded_type(IR::ExpandedType* expTy);
+  useit static MemberParent* create_do_skill(IR::DoneSkill* doneSkill);
 
   useit bool isExpanded() const;
   useit bool isDoneSkill() const;
   useit IR::QatType* getParentType() const;
   useit IR::ExpandedType* asExpanded() const;
-  useit IR::DoSkill* asDoneSkill() const;
-  useit FileRange    getTypeRange() const;
+  useit IR::DoneSkill* asDoneSkill() const;
+  useit FileRange      getTypeRange() const;
 };
 
-/**
- *  MemberFunction represents a member function for a core type in
- * the language. It can be static or non-static
- *
- */
 class MemberFunction : public Function {
 private:
   MemberParent* parent;
@@ -167,7 +161,7 @@ public:
 
   useit inline bool isInSkill() const { return parent->isDoneSkill(); }
 
-  useit inline DoSkill* getParentSkill() const { return parent->asDoneSkill(); }
+  useit inline DoneSkill* getParentSkill() const { return parent->asDoneSkill(); }
 
   useit inline QatType* getParentType() { return parent->getParentType(); }
 

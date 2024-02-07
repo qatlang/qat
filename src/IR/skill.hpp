@@ -7,6 +7,10 @@
 #include "./types/qat_type.hpp"
 #include "types/function.hpp"
 
+namespace qat::ast {
+class QatType;
+}
+
 namespace qat::IR {
 
 class QatModule;
@@ -15,39 +19,46 @@ class MemberFunction;
 class Skill;
 
 struct SkillArg {
-  QatType*          type;
-  Maybe<Identifier> name;
-  bool              isVar;
+  ast::QatType* type;
+  Identifier    name;
+  bool          isVar;
 
-  SkillArg(QatType* _type, Maybe<Identifier> _name, bool _isVar);
+  SkillArg(ast::QatType* _type, Identifier _name, bool _isVar);
+};
+
+enum class SkillFnType {
+  static_method,
+  normal_method,
+  variation_method,
+  value_method,
 };
 
 class SkillPrototype {
   friend class Skill;
-  Skill*          parent;
-  bool            isStatic;
-  Identifier      name;
-  bool            isVariation;
-  IR::ReturnType* returnType;
-  Vec<SkillArg*>  arguments;
+  Skill*         parent;
+  Identifier     name;
+  SkillFnType    fnTy;
+  ast::QatType*  returnType;
+  Vec<SkillArg*> arguments;
 
 public:
-  SkillPrototype(bool _isStatic, Skill* _parent, Identifier _name, bool _isVar, IR::ReturnType* _returnType,
+  SkillPrototype(SkillFnType _fnTy, Skill* _parent, Identifier _name, ast::QatType* _returnType,
                  Vec<SkillArg*> _arguments);
 
-  useit static SkillPrototype* CreateStaticFn(Skill* _parent, Identifier _name, QatType* _returnType,
-                                              Vec<SkillArg*> _arguments);
-  useit static SkillPrototype* CreateMemberFn(Skill* _parent, Identifier _name, bool _isVar,
-                                              IR::ReturnType* _returnType, Vec<SkillArg*> _arguments);
+  useit static SkillPrototype* create_static_method(Skill* _parent, Identifier _name, ast::QatType* _returnType,
+                                                    Vec<SkillArg*> _arguments);
+  useit static SkillPrototype* create_method(Skill* _parent, Identifier _name, bool _isVar, ast::QatType* _returnType,
+                                             Vec<SkillArg*> _arguments);
+  useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::QatType* _returnType,
+                                                    Vec<SkillArg*> _arguments);
 
-  useit Skill*     getParentSkill() const;
-  useit bool       isStaticFn() const;
-  useit Identifier getName() const;
-  useit bool       isVariationFn() const;
-  useit IR::ReturnType* getReturnType() const;
-  useit Vec<SkillArg*>& getArguments();
-  useit usize           getArgumentCount() const;
-  useit SkillArg*       getArgumentAt(usize index);
+  useit inline Skill*          get_parent_skill() const { return parent; }
+  useit inline SkillFnType     get_method_type() const { return fnTy; }
+  useit inline Identifier      get_name() const { return name; }
+  useit inline ast::QatType*   get_return_type() const { return returnType; }
+  useit inline Vec<SkillArg*>& get_args() { return arguments; }
+  useit inline usize           get_arg_count() const { return arguments.size(); }
+  useit inline SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
 };
 
 class Skill {
@@ -57,18 +68,18 @@ class Skill {
   VisibilityInfo       visibInfo;
 
 public:
-  useit String          getFullName() const;
-  useit Identifier      getName() const;
-  useit QatModule*      getParent() const;
-  useit VisibilityInfo& getVisibility();
+  useit String          get_full_name() const;
+  useit Identifier      get_name() const;
+  useit QatModule*      get_module() const;
+  useit VisibilityInfo& get_visibility();
 
-  useit bool            hasPrototypeWithName(String const& name) const;
-  useit SkillPrototype* getPrototypeWithName(String const& name) const;
+  useit bool            has_proto_with_name(String const& name) const;
+  useit SkillPrototype* get_proto_with_name(String const& name) const;
 
   LinkNames getLinkNames() const;
 };
 
-class DoSkill : Uniq {
+class DoneSkill : Uniq {
   friend class MemberFunction;
   QatModule*    parent;
   Maybe<Skill*> skill;
@@ -92,14 +103,14 @@ class DoSkill : Uniq {
   Vec<MemberFunction*>   fromConvertors;
   Vec<MemberFunction*>   toConvertors;
 
-  DoSkill(QatModule* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, QatType* _candidateType,
-          FileRange _typeRange);
+  DoneSkill(QatModule* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, QatType* _candidateType,
+            FileRange _typeRange);
 
 public:
-  useit static DoSkill* CreateDefault(QatModule* parent, FileRange fileRange, QatType* candidateType,
-                                      FileRange typeRange);
-  useit static DoSkill* CreateNormal(QatModule* parent, Skill* skill, FileRange fileRange, QatType* candidateType,
-                                     FileRange typeRange);
+  useit static DoneSkill* create_default(QatModule* parent, FileRange fileRange, QatType* candidateType,
+                                         FileRange typeRange);
+  useit static DoneSkill* CreateNormal(QatModule* parent, Skill* skill, FileRange fileRange, QatType* candidateType,
+                                       FileRange typeRange);
 
   useit bool hasDefaultConstructor() const;
   useit bool hasFromConvertor(Maybe<bool> isValueVar, IR::QatType* type) const;

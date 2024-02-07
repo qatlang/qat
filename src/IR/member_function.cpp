@@ -17,12 +17,12 @@ namespace qat::IR {
 
 MemberParent::MemberParent(MemberParentType _parentTy, void* _data) : data(_data), parentType(_parentTy) {}
 
-MemberParent* MemberParent::CreateFromExpanded(IR::ExpandedType* expTy) {
-  return new MemberParent(MemberParentType::expandedType, (void*)expTy);
+MemberParent* MemberParent::create_expanded_type(IR::ExpandedType* expTy) {
+  return std::construct_at(OwnNormal(MemberParent), MemberParentType::expandedType, (void*)expTy);
 }
 
-MemberParent* MemberParent::CreateFromDoSkill(IR::DoSkill* doneSkill) {
-  return new MemberParent(MemberParentType::doSkill, (void*)doneSkill);
+MemberParent* MemberParent::create_do_skill(IR::DoneSkill* doneSkill) {
+  return std::construct_at(OwnNormal(MemberParent), MemberParentType::doSkill, (void*)doneSkill);
 }
 
 bool MemberParent::isExpanded() const { return parentType == MemberParentType::expandedType; }
@@ -31,7 +31,7 @@ bool MemberParent::isDoneSkill() const { return parentType == MemberParentType::
 
 IR::ExpandedType* MemberParent::asExpanded() const { return (IR::ExpandedType*)data; }
 
-IR::DoSkill* MemberParent::asDoneSkill() const { return (IR::DoSkill*)data; }
+IR::DoneSkill* MemberParent::asDoneSkill() const { return (IR::DoneSkill*)data; }
 
 IR::QatType* MemberParent::getParentType() const { return isDoneSkill() ? asDoneSkill()->getType() : asExpanded(); }
 
@@ -284,7 +284,7 @@ String memberFnTypeToString(MemberFnType type) {
   }
 }
 
-MemberFunction::~MemberFunction() { delete parent; }
+MemberFunction::~MemberFunction() {}
 
 MemberFunction* MemberFunction::Create(MemberParent* parent, bool is_variation, const Identifier& name,
                                        ReturnType* returnTy, const Vec<Argument>& args, bool has_variadic_args,
@@ -450,7 +450,6 @@ String MemberFunction::getFullName() const {
 }
 
 void MemberFunction::updateOverview() {
-  SHOW("Member fn overview update")
   Vec<JsonValue> localsJson;
   for (auto* block : blocks) {
     block->outputLocalOverview(localsJson);

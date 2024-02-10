@@ -61,7 +61,7 @@ public:
   useit inline SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
 };
 
-class Skill {
+class Skill : public Uniq {
   Identifier           name;
   QatModule*           parent;
   Vec<SkillPrototype*> prototypes;

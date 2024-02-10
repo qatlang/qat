@@ -561,9 +561,6 @@ void destructorCaller(IR::Context* ctx, IR::Function* fun) {
     } else if (loc->getType()->isDestructible()) {
       loc->getType()->destroyValue(ctx, loc->toNewIRValue(), fun);
       SHOW("Destroyed value using type level feature")
-    } else if (loc->getType()->hasDefaultSkill()) {
-      // FIXME - Implement
-      // loc->getType()->getDefaultSkill();
     } else if (loc->getType()->isPointer() && loc->getType()->asPointer()->getOwner().isParentFunction() &&
                loc->getType()->asPointer()->getOwner().ownerAsParentFunction()->getID() == fun->getID()) {
       auto* ptrTy = loc->getType()->asPointer();

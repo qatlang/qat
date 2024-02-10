@@ -95,6 +95,8 @@ enum class NodeType {
   PRERUN_TO_CONVERSION,
   PRERUN_BITWISE_NOT,
   PRERUN_BINARY_OP,
+  DEFINE_SKILL,
+  DO_SKILL,
 };
 
 } // namespace qat::ast

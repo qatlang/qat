@@ -373,6 +373,8 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
         } else {
           if (hasActiveFunction() && getActiveFunction()->isMemberFunction()) {
             return VisibilityInfo::type(((IR::MemberFunction*)getActiveFunction())->getParentType());
+          } else if (has_active_done_skill()) {
+            return VisibilityInfo::type(get_active_done_skill()->getType());
           } else {
             Error("There is no parent type and hence " + highlightError("type") + " visibility cannot be used here",
                   spec->range);
@@ -390,6 +392,8 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
     if (hasActiveType()) {
       SHOW("Found active type")
       return VisibilityInfo::type(getActiveType());
+    } else if (has_active_skill() || has_active_done_skill()) {
+      return VisibilityInfo::pub();
     } else {
       SHOW("No active type")
       switch (getMod()->getModuleType()) {
@@ -412,16 +416,15 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
 } // NOLINT(clang-diagnostic-return-type)
 
 AccessInfo Context::getAccessInfo() const {
-  IR::QatModule*      mod  = getActiveModule();
-  Maybe<IR::QatType*> type = None;
+  IR::QatModule*      mod   = getActiveModule();
+  Maybe<IR::QatType*> type  = None;
+  Maybe<IR::Skill*>   skill = None;
   if (hasActiveType()) {
     type = getActiveType();
-  } else if (hasActiveFunction()) {
-    if (getActiveFunction()->isMemberFunction()) {
-      type = ((MemberFunction*)getActiveFunction())->getParentType();
-    }
+  } else if (has_active_skill() || has_active_done_skill()) {
+    skill = has_active_skill() ? get_active_skill() : get_active_done_skill()->getSkill();
   }
-  return {mod, type};
+  return {mod, type, skill};
 }
 
 String Context::highlightError(const String& message, const char* color) {

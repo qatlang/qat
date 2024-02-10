@@ -5,6 +5,7 @@
 namespace qat::ast {
 
 IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
+  FnAtEnd        fnObj{[&] { createIn = nullptr; }};
   IR::ArrayType* arrTyOfLocal = nullptr;
   if (isLocalDecl()) {
     if (localValue->getType()->isArray()) {
@@ -31,13 +32,17 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
                fileRange);
   }
   Vec<IR::Value*> valsIR;
-  auto*           elemInferredTy = arrTyOfLocal ? arrTyOfLocal->getElementType()
-                                                : (inferredType ? inferredType->asArray()->getElementType() : nullptr);
+  auto*           elemInferredTy     = arrTyOfLocal ? arrTyOfLocal->getElementType()
+                                                    : (inferredType ? inferredType->asArray()->getElementType() : nullptr);
+  bool            areAllValsConstant = true;
   for (auto* val : values) {
     if ((arrTyOfLocal || isTypeInferred()) && val->hasTypeInferrance() && elemInferredTy) {
       val->asTypeInferrable()->setInferenceType(elemInferredTy);
     }
     valsIR.push_back(val->emit(ctx));
+    if (!valsIR.back()->isPrerunValue()) {
+      areAllValsConstant = false;
+    }
   }
   SHOW("Getting element type")
   IR::QatType* elemTy = nullptr;
@@ -66,19 +71,31 @@ IR::Value* ArrayLiteral::emit(IR::Context* ctx) {
       }
     }
     // TODO - Implement constant array literals
-    llvm::Value* alloca;
-    if (isLocalDecl()) {
-      if (localValue->getType()->isMaybe()) {
-        auto* locll = localValue->getLLVM();
-        alloca      = ctx->builder.CreateStructGEP(localValue->getType()->getLLVMType(), locll, 1u);
-      } else {
-        alloca = localValue->getLLVM();
+    llvm::Value*    alloca   = nullptr;
+    llvm::Constant* constVal = nullptr;
+    if (areAllValsConstant && !isLocalDecl() && !irName.has_value()) {
+      Vec<llvm::Constant*> valsConst;
+      for (auto v : valsIR) {
+        valsConst.push_back(v->getLLVMConstant());
       }
+      constVal = llvm::ConstantArray::get(llvm::ArrayType::get(elemTy->getLLVMType(), valsIR.size()), valsConst);
+      if (!isLocalDecl() && !irName.has_value()) {
+        return new IR::PrerunValue(constVal, IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx));
+      }
+    }
+    if (isLocalDecl()) {
+      alloca = localValue->getLLVM();
+    } else if (canCreateIn()) {
+      alloca = createIn->getLLVM();
     } else {
       auto* loc = ctx->getActiveFunction()->getBlock()->newValue(
           irName.has_value() ? irName->value : ctx->getActiveFunction()->getRandomAllocaName(),
           IR::ArrayType::get(elemTy, values.size(), ctx->llctx), isVar, irName.has_value() ? irName->range : fileRange);
       alloca = loc->getAlloca();
+    }
+    if (constVal) {
+      ctx->builder.CreateStore(constVal, alloca);
+      return new IR::Value(alloca, IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx), false, IR::Nature::temporary);
     }
     auto* elemPtr =
         ctx->builder.CreateInBoundsGEP(IR::ArrayType::get(elemTy, valsIR.size(), ctx->llctx)->getLLVMType(), alloca,

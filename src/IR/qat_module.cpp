@@ -356,23 +356,18 @@ void QatModule::outputAllOverview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& f
   if (!isOverviewOutputted) {
     isOverviewOutputted = true;
     modulesJson.push_back(overviewToJson());
-    SHOW("Overview functions")
     for (auto* fun : functions) {
       functionsJson.push_back(fun->overviewToJson());
     }
-    SHOW("Overview generic functions")
     for (auto* fun : genericFunctions) {
       genericFunctionsJson.push_back(fun->overviewToJson());
     }
-    SHOW("Overview core types")
     for (auto* cTy : coreTypes) {
       coreTypesJson.push_back(cTy->overviewToJson());
     }
-    SHOW("Overview Generic core types")
     for (auto* cTy : genericCoreTypes) {
       genericCoreTypesJson.push_back(cTy->overviewToJson());
     }
-    SHOW("Overview mix types")
     for (auto* mTy : mixTypes) {
       mixTypesJson.push_back(mTy->overviewToJson());
     }

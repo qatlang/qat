@@ -177,6 +177,8 @@ public:
   QatModule*              activeModule   = nullptr;
   IR::Function*           activeFunction = nullptr;
   Vec<IR::QatType*>       activeTypes;
+  IR::Skill*              activeSkill     = nullptr;
+  IR::DoneSkill*          activeDoneSkill = nullptr;
   Vec<LoopInfo>           loopsInfo;
   Vec<Breakable>          breakables;
   Vec<fs::path>           executablePaths;
@@ -215,6 +217,16 @@ public:
   useit inline IR::QatType* getActiveType() const { return activeTypes.back(); }
   inline void               setActiveType(IR::QatType* typ) { activeTypes.push_back(typ); }
   inline void               unsetActiveType() { activeTypes.pop_back(); }
+
+  useit inline bool       has_active_skill() const { return activeSkill != nullptr; }
+  useit inline IR::Skill* get_active_skill() const { return activeSkill; }
+  inline void             set_active_skill(IR::Skill* skill) { activeSkill = skill; }
+  inline void             unset_active_skill() { activeSkill = nullptr; }
+
+  useit inline bool           has_active_done_skill() const { return activeDoneSkill != nullptr; }
+  useit inline IR::DoneSkill* get_active_done_skill() const { return activeDoneSkill; }
+  inline void                 set_active_done_skill(IR::DoneSkill* done) { activeDoneSkill = done; }
+  inline void                 unset_active_done_skill() { activeDoneSkill = nullptr; }
 
   useit inline bool                 hasActiveGeneric() const { return !allActiveGenerics.empty(); }
   useit inline GenericEntityMarker& getActiveGeneric() const { return allActiveGenerics.back(); }
@@ -267,6 +279,14 @@ public:
                 (getActiveType()->isOpaque() && getActiveType()->asOpaque()->hasGenericParameter(name)))) {
       Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
                 highlightError(getActiveType()->toString()) + " so this will lead to ambiguity",
+            range);
+    } else if (has_active_done_skill() &&
+               ((get_active_done_skill()->getType()->isExpanded() &&
+                 get_active_done_skill()->getType()->asExpanded()->hasGenericParameter(name)) ||
+                (get_active_done_skill()->getType()->isOpaque() &&
+                 get_active_done_skill()->getType()->asOpaque()->hasGenericParameter(name)))) {
+      Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
+                highlightError(get_active_done_skill()->getType()->toString()) + " so this will lead to ambiguity",
             range);
     }
   }

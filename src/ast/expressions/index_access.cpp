@@ -129,25 +129,28 @@ IR::Value* IndexAccess::emit(IR::Context* ctx) {
             instType->asPointer()->isSubtypeVariable(),
             instType->asPointer()->isSubtypeVariable() ? IR::Nature::assignable : IR::Nature::temporary);
       } else {
-        SHOW("Getting first element")
-        auto* firstElem =
-            ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType(), inst->getLLVM(), {zero64, zero64});
+        if (inst->isReference()) {
+          inst->loadImplicitPointer(ctx->builder);
+        }
         if (llvm::isa<llvm::ConstantInt>(ind->getLLVM())) {
           SHOW("Index Access : Index is a constant")
           // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-          auto indConst = *(llvm::dyn_cast<llvm::ConstantInt>(ind->getLLVM())->getValue().getRawData());
-          if (indConst == 0) {
+          if (llvm::cast<llvm::ConstantInt>(ind->getLLVM())->isZero()) {
             SHOW("Returning the first element from inbounds")
             return new IR::Value(
-                firstElem, IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx),
-                inst->isVariable(), inst->isVariable() ? IR::Nature::assignable : IR::Nature::temporary);
+                ctx->builder.CreateInBoundsGEP(instType->getLLVMType(), inst->getLLVM(), {zero64, zero64}),
+                IR::ReferenceType::get(inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable()
+                                                           : inst->isVariable(),
+                                       instType->asArray()->getElementType(), ctx),
+                false, IR::Nature::temporary);
           }
         }
-        SHOW("Got first element, getting specific element")
-        return new IR::Value(ctx->builder.CreateInBoundsGEP(inst->getType()->getLLVMType()->getArrayElementType(),
-                                                            firstElem, ind->getLLVM()),
-                             IR::ReferenceType::get(inst->isVariable(), instType->asArray()->getElementType(), ctx),
-                             inst->isVariable(), inst->isVariable() ? IR::Nature::assignable : IR::Nature::temporary);
+        return new IR::Value(
+            ctx->builder.CreateInBoundsGEP(instType->getLLVMType(), inst->getLLVM(), {zero64, ind->getLLVM()}),
+            IR::ReferenceType::get(inst->isReference() ? inst->getType()->asReference()->isSubtypeVariable()
+                                                       : inst->isVariable(),
+                                   instType->asArray()->getElementType(), ctx),
+            false, IR::Nature::temporary);
       }
     } else {
       ctx->Error("The index is of type " + ind->getType()->toString() + ". It should be of the " +

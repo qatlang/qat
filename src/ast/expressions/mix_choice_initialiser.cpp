@@ -3,9 +3,9 @@
 namespace qat::ast {
 
 IR::Value* MixOrChoiceInitialiser::emit(IR::Context* ctx) {
+  FnAtEnd fnObj{[&] { createIn = nullptr; }};
   // FIXME - Support heaped value
   SHOW("Mix/Choice type initialiser")
-  auto reqInfo = ctx->getAccessInfo();
   if (!type.has_value() && !isTypeInferred()) {
     ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
   }

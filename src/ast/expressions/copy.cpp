@@ -5,6 +5,7 @@
 namespace qat::ast {
 
 IR::Value* Copy::emit(IR::Context* ctx) {
+  FnAtEnd fnObj{[&] { createIn = nullptr; }};
   if (isExpSelf) {
     if (!ctx->getActiveFunction()->isMemberFunction()) {
       ctx->Error("Cannot perform copy on the parent instance as this is not a member function", fileRange);

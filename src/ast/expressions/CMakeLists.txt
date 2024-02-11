@@ -10,6 +10,7 @@ add_library(QAT_AST_EXPRESSIONS
 	dereference.cpp
 	entity.cpp
 	function_call.cpp
+	get_intrinsic.cpp
 	heap.cpp
 	is.cpp
 	loop_index.cpp

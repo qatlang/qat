@@ -4,6 +4,7 @@
 namespace qat::ast {
 
 IR::Value* OkExpression::emit(IR::Context* ctx) {
+  FnAtEnd fnObj{[&] { createIn = nullptr; }};
   if (isTypeInferred()) {
     if (!inferredType->isResult()) {
       ctx->Error("Inferred type is " + ctx->highlightError(inferredType->toString()) + " cannot be the type of " +
@@ -52,6 +53,7 @@ IR::Value* OkExpression::emit(IR::Context* ctx) {
   auto* expr = subExpr->emit(ctx);
   SHOW("Sub expression emitted")
   if (subExpr->isInPlaceCreatable()) {
+    subExpr->asInPlaceCreatable()->unsetCreateIn();
     ctx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->llctx)),
                              ctx->builder.CreateStructGEP(inferredType->getLLVMType(), createIn->getLLVM(), 0u));
     return createIn;

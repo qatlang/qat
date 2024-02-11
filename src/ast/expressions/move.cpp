@@ -5,6 +5,7 @@
 namespace qat::ast {
 
 IR::Value* Move::emit(IR::Context* ctx) {
+  FnAtEnd fnObj{[&] { createIn = nullptr; }};
   if (isExpSelf) {
     if (!ctx->getActiveFunction()->isMemberFunction()) {
       ctx->Error("Cannot perform move on the parent instance as this is not a member function", fileRange);

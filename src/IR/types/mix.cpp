@@ -28,6 +28,12 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
   for (const auto& sub : subtypes) {
     if (sub.second.has_value()) {
       auto* typ = sub.second.value();
+      if (!typ->isTriviallyCopyable()) {
+        isTrivialCopy = false;
+      }
+      if (!typ->isTriviallyMovable()) {
+        isTrivialMove = false;
+      }
       SHOW("Getting size of the subtype in SUM TYPE")
       usize size = typ->isOpaque()
                        ? ((typ->asOpaque()->hasSubType() && typ->asOpaque()->getSubType()->isTypeSized())
@@ -40,7 +46,7 @@ MixType::MixType(Identifier _name, IR::OpaqueType* _opaquedTy, Vec<GenericParame
       }
     }
   }
-  findTagBitWidth(subtypes.size());
+  findTagBitWidth();
   SHOW("Opaqued type is: " << opaquedType)
   SHOW("Tag bitwidth is " << tagBitWidth)
   linkingName = opaquedType->getNameForLinking();
@@ -111,9 +117,9 @@ void MixType::updateOverview() {
   }
 }
 
-void MixType::findTagBitWidth(usize typeCount) {
+void MixType::findTagBitWidth() {
   tagBitWidth = 1;
-  while (std::pow(2, tagBitWidth) <= typeCount) {
+  while (std::pow(2, tagBitWidth) <= (subtypes.size() + (isTrivialMove ? 1 : 0))) {
     tagBitWidth++;
   }
 }
@@ -121,7 +127,7 @@ void MixType::findTagBitWidth(usize typeCount) {
 usize MixType::getIndexOfName(const String& name) const {
   for (usize i = 0; i < subtypes.size(); i++) {
     if (subtypes.at(i).first.value == name) {
-      return i;
+      return isTrivialMove ? (i + 1) : i;
     }
   }
   // NOLINTNEXTLINE(clang-diagnostic-return-type)
@@ -176,9 +182,9 @@ FileRange MixType::getFileRange() const { return fileRange; }
 
 bool MixType::isTypeSized() const { return true; }
 
-bool MixType::isTriviallyCopyable() const { return false; }
+bool MixType::isTriviallyCopyable() const { return isTrivialCopy; }
 
-bool MixType::isTriviallyMovable() const { return false; }
+bool MixType::isTriviallyMovable() const { return isTrivialMove; }
 
 bool MixType::isCopyConstructible() const {
   for (auto sub : subtypes) {

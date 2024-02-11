@@ -1,4 +1,5 @@
 #include "./entity.hpp"
+#include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
 
 namespace qat::ast {
@@ -91,6 +92,10 @@ IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
     }
     for (usize i = 0; i < (identifiers.size() - 1); i++) {
       auto section = identifiers.at(i);
+      if (relative == 0 && i == 0 && section.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      }
       if (mod->hasLib(section.value, reqInfo) || mod->hasBroughtLib(section.value, ctx->getAccessInfo()) ||
           mod->hasAccessibleLibInImports(section.value, reqInfo).first) {
         mod = mod->getLib(section.value, reqInfo);

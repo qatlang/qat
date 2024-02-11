@@ -17,8 +17,11 @@ class QatModule;
 class MixType : public ExpandedType, public EntityOverview {
 private:
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
-  u64                                    maxSize = 8u;
-  bool                                   isPack  = false;
+
+  u64  maxSize       = 8u;
+  bool isPack        = false;
+  bool isTrivialCopy = true;
+  bool isTrivialMove = true;
 
   usize           tagBitWidth = 1;
   Maybe<usize>    defaultVal;
@@ -27,7 +30,7 @@ private:
 
   IR::OpaqueType* opaquedType = nullptr;
 
-  void findTagBitWidth(usize typeCount);
+  void findTagBitWidth();
 
 public:
   MixType(Identifier name, IR::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, QatModule* parent,

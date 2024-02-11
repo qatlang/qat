@@ -132,7 +132,7 @@ IR::PrerunValue* PrerunBinaryOp::emit(IR::Context* ctx) {
                      fileRange);
         }
       }
-      return new IR::PrerunValue(llRes, resType);
+      return new IR::PrerunValue(llvm::ConstantFoldConstant(llRes, ctx->dataLayout.value()), resType);
     } else {
       if (rhsValTy->isChoice() && (rhsValTy->asChoice()->getUnderlyingType()->isSame(lhsValTy))) {
         if (opr == Op::bitwiseAnd) {
@@ -274,7 +274,7 @@ IR::PrerunValue* PrerunBinaryOp::emit(IR::Context* ctx) {
                      fileRange);
         }
       }
-      return new IR::PrerunValue(llRes, resType);
+      return new IR::PrerunValue(llvm::ConstantFoldConstant(llRes, ctx->dataLayout.value()), resType);
     } else {
       if (rhsValTy->isChoice() && rhsValTy->asChoice()->getUnderlyingType()->isSame(lhsValTy)) {
         if (opr == Op::bitwiseAnd) {

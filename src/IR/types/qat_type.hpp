@@ -46,10 +46,11 @@ class QatType : public Uniq {
   friend DoneSkill;
 
 protected:
-  String               linkingName;
   static Vec<QatType*> allQatTypes;
-  llvm::Type*          llvmType;
-  Vec<DoneSkill*>      doneSkills;
+
+  String          linkingName;
+  llvm::Type*     llvmType;
+  Vec<DoneSkill*> doneSkills;
 
 public:
   QatType();

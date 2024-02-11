@@ -52,6 +52,15 @@ public:
   useit LinkNames        getLinkNames() const final;
   useit bool             isTypeSized() const final;
 
+  useit inline bool canBePrerun() const final {
+    for (auto sub : subtypes) {
+      if (sub.second.has_value() && !sub.second.value()->canBePrerun()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   useit bool isTriviallyCopyable() const final;
   useit bool isTriviallyMovable() const final;
   useit bool isCopyConstructible() const final;

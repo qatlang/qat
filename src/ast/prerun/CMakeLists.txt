@@ -11,6 +11,7 @@ add_library(QAT_AST_CONSTANTS
 	integer_literal.cpp
 	member_access.cpp
 	member_function_call.cpp
+	mix_choice_init.cpp
 	negative.cpp
 	none.cpp
 	null_pointer.cpp

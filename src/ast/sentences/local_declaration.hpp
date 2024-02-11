@@ -26,9 +26,9 @@ public:
     return std::construct_at(OwnNormal(LocalDeclaration), _type, _isRef, _name, _value, _variability, _fileRange);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) override;
-  useit Json       toJson() const override;
-  useit NodeType   nodeType() const override { return NodeType::LOCAL_DECLARATION; }
+  useit IR::Value* emit(IR::Context* ctx) final;
+  useit Json       toJson() const final;
+  useit NodeType   nodeType() const final { return NodeType::LOCAL_DECLARATION; }
 };
 
 } // namespace qat::ast

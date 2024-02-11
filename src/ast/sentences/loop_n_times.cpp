@@ -42,13 +42,16 @@ IR::Value* LoopNTimes::emit(IR::Context* ctx) {
     auto* loopIndex = ctx->getActiveFunction()->getBlock()->newValue(uniq, originalLimitTy, false,
                                                                      tag.has_value() ? tag->range : fileRange);
     ctx->builder.CreateStore(llvm::ConstantInt::get(countTy->getLLVMType(), 0u), loopIndex->getAlloca());
-    auto* trueBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+    auto* loopBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+    auto* trueBlock = new IR::Block(ctx->getActiveFunction(), loopBlock);
     SHOW("loop times true block " << ctx->getActiveFunction()->getFullName() << "." << trueBlock->getName())
-    auto* condBlock = new IR::Block(ctx->getActiveFunction(), ctx->getActiveFunction()->getBlock());
+    auto* condBlock = new IR::Block(ctx->getActiveFunction(), loopBlock);
     SHOW("loop times cond block " << ctx->getActiveFunction()->getFullName() << "." << condBlock->getName())
-    auto* restBlock = new IR::Block(ctx->getActiveFunction(), nullptr);
-    restBlock->linkPrevBlock(ctx->getActiveFunction()->getBlock());
+    auto* restBlock = new IR::Block(ctx->getActiveFunction(), loopBlock->getParent()->getParent());
+    restBlock->linkPrevBlock(loopBlock->getParent());
     SHOW("loop times rest block " << ctx->getActiveFunction()->getFullName() << "." << restBlock->getName())
+    (void)IR::addBranch(ctx->builder, loopBlock->getBB());
+    loopBlock->setActive(ctx->builder);
     ctx->builder.CreateCondBr(
         (countTy->isUnsignedInteger()
              ? ctx->builder.CreateICmpULT(

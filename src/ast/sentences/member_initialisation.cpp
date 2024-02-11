@@ -127,6 +127,7 @@ IR::Value* MemberInit::emit(IR::Context* ctx) {
         if (value->isInPlaceCreatable()) {
           value->asInPlaceCreatable()->setCreateIn(memRef);
           (void)value->emit(ctx);
+          value->asInPlaceCreatable()->unsetCreateIn();
         } else {
           auto* irVal = value->emit(ctx);
           if (memTy->isSame(irVal->getType())) {

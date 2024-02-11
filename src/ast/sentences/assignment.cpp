@@ -26,12 +26,14 @@ IR::Value* Assignment::emit(IR::Context* ctx) {
         copyExp->isAssignment = true;
         copyExp->setCreateIn(lhsVal);
         (void)value->emit(ctx);
+        copyExp->unsetCreateIn();
         return nullptr;
       } else if (value->nodeType() == NodeType::MOVE_EXPRESSION) {
         auto moveExp          = (ast::Move*)value;
         moveExp->isAssignment = true;
         moveExp->setCreateIn(lhsVal);
         (void)value->emit(ctx);
+        moveExp->unsetCreateIn();
         return nullptr;
       }
       auto* expVal = value->emit(ctx);

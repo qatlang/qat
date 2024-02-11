@@ -79,9 +79,7 @@ private:
 
   Vec<ast::GenericAbstractType*> generics;
   Maybe<PrerunExpression*>       constraint;
-  mutable Vec<IR::CoreType*>     coreTypes;
-  void                           setCoreType(IR::CoreType*) const;
-  void                           unsetCoreType() const;
+  mutable IR::CoreType*          resultCoreType = nullptr;
   mutable Vec<IR::OpaqueType*>   opaquedTypes;
   useit bool                     hasOpaque() const;
   void                           setOpaque(IR::OpaqueType* opq) const;
@@ -113,9 +111,10 @@ public:
   void addStaticMember(StaticMember* stm);
 
   void createModule(IR::Context* ctx) const final;
-  void createType(IR::Context* ctx) const;
+  void createType(IR::CoreType** resultTy, IR::Context* ctx) const;
   void defineType(IR::Context* ctx) final;
   void define(IR::Context* ctx) final;
+  void do_define(IR::CoreType** resultTy, IR::Context* ctx);
 
   useit inline bool hasTrivialCopy() { return trivialCopy.has_value(); }
   inline void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
@@ -131,8 +130,8 @@ public:
   useit bool            hasMoveAssignment() const;
   useit bool            is_define_core_type() const final { return true; }
   useit DefineCoreType* as_define_core_type() final { return this; }
-  useit IR::CoreType* getCoreType() const;
   useit IR::Value* emit(IR::Context* ctx) final;
+  useit IR::Value* do_emit(IR::CoreType* resultTy, IR::Context* ctx);
   useit Json       toJson() const final;
   useit NodeType   nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
   ~DefineCoreType() final;

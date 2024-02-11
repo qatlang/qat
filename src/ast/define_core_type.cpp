@@ -5,6 +5,7 @@
 #include "../utils/identifier.hpp"
 #include "constructor.hpp"
 #include "destructor.hpp"
+#include "member_parent_like.hpp"
 #include "node.hpp"
 #include "types/generic_abstract.hpp"
 #include <algorithm>
@@ -34,10 +35,6 @@ Json DefineCoreType::StaticMember::toJson() const {
 }
 
 bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
-
-void DefineCoreType::setCoreType(IR::CoreType* cTy) const { coreTypes.push_back(cTy); }
-
-void DefineCoreType::unsetCoreType() const { coreTypes.pop_back(); }
 
 void DefineCoreType::setOpaque(IR::OpaqueType* oTy) const { opaquedTypes.push_back(oTy); }
 
@@ -104,7 +101,7 @@ void DefineCoreType::createModule(IR::Context* ctx) const {
   }
 }
 
-void DefineCoreType::createType(IR::Context* ctx) const {
+void DefineCoreType::createType(IR::CoreType** resultTy, IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
                          isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
@@ -195,16 +192,16 @@ void DefineCoreType::createType(IR::Context* ctx) const {
                                             ctx->getVisibInfo(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
-  setCoreType(new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, mainVisibility, ctx->llctx, None,
-                               isPackedStruct.value_or(false)));
+  *resultTy = new IR::CoreType(mod, cTyName, genericsIR, getOpaque(), mems, mainVisibility, ctx->llctx, None,
+                               isPackedStruct.value_or(false));
   if (genericCoreType) {
-    genericCoreType->variants.push_back(IR::GenericVariant<IR::CoreType>(getCoreType(), genericsToFill));
+    genericCoreType->variants.push_back(IR::GenericVariant<IR::CoreType>(*resultTy, genericsToFill));
   }
-  SHOW("CoreType ID: " << coreTypes.back()->getID())
-  getCoreType()->explicitTrivialCopy = trivialCopy.has_value();
-  getCoreType()->explicitTrivialMove = trivialMove.has_value();
+  SHOW("CoreType ID: " << (*resultTy)->getID())
+  (*resultTy)->explicitTrivialCopy = trivialCopy.has_value();
+  (*resultTy)->explicitTrivialMove = trivialMove.has_value();
   ctx->unsetActiveType();
-  ctx->setActiveType(getCoreType());
+  ctx->setActiveType(*resultTy);
   if (genericCoreType) {
     for (auto item = genericCoreType->opaqueVariants.begin(); item != genericCoreType->opaqueVariants.end(); item++) {
       SHOW("Opaque variant: " << item->get())
@@ -217,70 +214,38 @@ void DefineCoreType::createType(IR::Context* ctx) const {
   unsetOpaque();
   SHOW("Unset opaque")
   if (destructorDefinition) {
-    getCoreType()->hasDefinedDestructor = true;
+    (*resultTy)->hasDefinedDestructor = true;
   }
   if (needsDestructor) {
-    getCoreType()->needsImplicitDestructor = true;
+    (*resultTy)->needsImplicitDestructor = true;
   }
   for (auto* stm : staticMembers) {
-    getCoreType()->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
-                                   stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibSpec),
-                                   ctx->llctx);
+    (*resultTy)->addStaticMember(stm->name, stm->type->emit(ctx), stm->variability,
+                                 stm->value ? stm->value->emit(ctx) : nullptr, ctx->getVisibInfo(stm->visibSpec),
+                                 ctx->llctx);
   }
-  if (defaultConstructor) {
-    defaultConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
+  if (copyConstructor && !copyAssignment) {
+    ctx->Error("Copy constructor is defined for the type " + ctx->highlightError((*resultTy)->toString()) +
+                   ", and hence copy assignment operator is also required to be defined",
+               fileRange);
   }
-  if (copyConstructor) {
-    if (!copyAssignment) {
-      ctx->Error("Copy constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
-                     ", and hence copy assignment operator is also required to be defined",
-                 fileRange);
-    }
-    copyConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
+  if (moveConstructor && !moveAssignment) {
+    ctx->Error("Move constructor is defined for the type " + ctx->highlightError((*resultTy)->toString()) +
+                   ", and hence move assignment operator is also required to be defined",
+               fileRange);
   }
-  if (moveConstructor) {
-    if (!moveAssignment) {
-      ctx->Error("Move constructor is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
-                     ", and hence move assignment operator is also required to be defined",
-                 fileRange);
-    }
-    moveConstructor->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
+  if (copyAssignment && !copyConstructor) {
+    ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError((*resultTy)->toString()) +
+                   ", and hence copy constructor is also required to be defined",
+               fileRange);
   }
-  if (copyAssignment) {
-    if (!copyConstructor) {
-      ctx->Error("Copy assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
-                     ", and hence copy constructor is also required to be defined",
-                 fileRange);
-    }
-    copyAssignment->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  if (moveAssignment) {
-    if (!moveConstructor) {
-      ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError(getCoreType()->toString()) +
-                     ", and hence move constructor is also required to be defined",
-                 fileRange);
-    }
-    moveAssignment->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  if (destructorDefinition) {
-    destructorDefinition->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  for (auto* conv : convertorDefinitions) {
-    conv->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  for (auto* cons : constructorDefinitions) {
-    cons->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  for (auto* memDef : memberDefinitions) {
-    memDef->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
-  }
-  for (auto* oprDef : operatorDefinitions) {
-    oprDef->setMemberParent(IR::MemberParent::create_expanded_type(getCoreType()));
+  if (moveAssignment && !moveConstructor) {
+    ctx->Error("Move assignment operator is defined for the type " + ctx->highlightError((*resultTy)->toString()) +
+                   ", and hence move constructor is also required to be defined",
+               fileRange);
   }
   ctx->unsetActiveType();
 }
-
-IR::CoreType* DefineCoreType::getCoreType() const { return coreTypes.back(); }
 
 void DefineCoreType::defineType(IR::Context* ctx) {
   if (checker.has_value()) {
@@ -301,97 +266,183 @@ void DefineCoreType::defineType(IR::Context* ctx) {
     gen->emit(ctx);
   }
   if (!isGeneric()) {
-    createType(ctx);
+    createType(&resultCoreType, ctx);
   } else {
     genericCoreType =
         new IR::GenericCoreType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
   }
 }
 
-void DefineCoreType::define(IR::Context* ctx) {
+void DefineCoreType::do_define(IR::CoreType** resultTy, IR::Context* ctx) {
   if (checkResult.has_value() && !checkResult.value()) {
     return;
   }
   if (isGeneric()) {
-    createType(ctx);
-    ctx->setActiveType(getCoreType());
+    createType(resultTy, ctx);
   }
+  auto memberParent = IR::MemberParent::create_expanded_type(*resultTy);
+  auto parentState  = get_state_for(memberParent);
   if (defaultConstructor) {
-    defaultConstructor->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    defaultConstructor->define(state, ctx);
+    parentState->defaultConstructor = state.result;
+    ctx->unsetActiveType();
   }
   if (copyConstructor) {
-    SHOW("Defining copy constructor for " << getCoreType()->toString())
-    copyConstructor->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    copyConstructor->define(state, ctx);
+    parentState->copyConstructor = state.result;
+    ctx->unsetActiveType();
   }
   if (moveConstructor) {
-    SHOW("Defining move constructor for " << getCoreType()->toString())
-    moveConstructor->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    moveConstructor->define(state, ctx);
+    parentState->moveConstructor = state.result;
+    ctx->unsetActiveType();
   }
   if (copyAssignment) {
-    copyAssignment->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    copyAssignment->define(state, ctx);
+    parentState->copyAssignment = state.result;
+    ctx->unsetActiveType();
   }
   if (moveAssignment) {
-    moveAssignment->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    moveAssignment->define(state, ctx);
+    parentState->moveAssignment = state.result;
+    ctx->unsetActiveType();
   }
   if (destructorDefinition) {
-    destructorDefinition->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    destructorDefinition->define(state, ctx);
+    parentState->destructor = state.result;
+    ctx->unsetActiveType();
   }
   for (auto* cons : constructorDefinitions) {
-    cons->define(ctx);
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    cons->define(state, ctx);
+    parentState->constructors.push_back(state.result);
+    ctx->unsetActiveType();
   }
-  for (auto* conv : convertorDefinitions) {
-    conv->define(ctx);
+  for (auto& conv : convertorDefinitions) {
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    conv->define(state, ctx);
+    parentState->convertors.push_back(state.result);
+    ctx->unsetActiveType();
   }
   for (auto* mFn : memberDefinitions) {
-    mFn->define(ctx);
-  }
-  for (auto* oFn : operatorDefinitions) {
-    oFn->define(ctx);
-  }
-  if (isGeneric()) {
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    mFn->define(state, ctx);
+    SHOW("Method done result is " << state.result << " defineCond: " << state.defineCondition.has_value())
+    SHOW("All methods size: " << parentState->all_methods.size() << " for "
+                              << memberParent->getParentType()->toString())
+    parentState->all_methods.push_back(MethodResult(state.result, state.defineCondition));
+    SHOW("Updated parent state")
     ctx->unsetActiveType();
+  }
+  SHOW("All methods done")
+  for (auto* oFn : operatorDefinitions) {
+    SHOW("Handling opr")
+    ctx->setActiveType(*resultTy);
+    MethodState state(memberParent);
+    oFn->define(state, ctx);
+    SHOW("Defined operator")
+    parentState->operators.push_back(state.result);
+    ctx->unsetActiveType();
+    SHOW("Operator complete")
   }
 }
 
-IR::Value* DefineCoreType::emit(IR::Context* ctx) {
+void DefineCoreType::define(IR::Context* ctx) { do_define(&resultCoreType, ctx); }
+
+IR::Value* DefineCoreType::do_emit(IR::CoreType* resultTy, IR::Context* ctx) {
+  SHOW("Emitting")
   if (checkResult.has_value() && !checkResult.value()) {
     return nullptr;
   }
-  ctx->setActiveType(getCoreType());
+  SHOW("Creating member parent")
+  auto memberParent = IR::MemberParent::create_expanded_type(resultTy);
+  auto parentState  = get_state_for(memberParent);
+  SHOW("Got parent state")
   if (defaultConstructor) {
-    (void)defaultConstructor->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->defaultConstructor);
+    SHOW("Created method state, emitting")
+    (void)defaultConstructor->emit(state, ctx);
+    SHOW("EMit complete")
+    ctx->unsetActiveType();
   }
+  SHOW("Default done")
   if (copyConstructor) {
-    (void)copyConstructor->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->copyConstructor);
+    (void)copyConstructor->emit(state, ctx);
+    ctx->unsetActiveType();
   }
+  SHOW("Copy constr done")
   if (moveConstructor) {
-    (void)moveConstructor->emit(ctx);
-  }
-  for (auto* cons : constructorDefinitions) {
-    (void)cons->emit(ctx);
-  }
-  for (auto* conv : convertorDefinitions) {
-    (void)conv->emit(ctx);
-  }
-  for (auto* mFn : memberDefinitions) {
-    (void)mFn->emit(ctx);
-  }
-  for (auto* oFn : operatorDefinitions) {
-    (void)oFn->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->moveConstructor);
+    (void)moveConstructor->emit(state, ctx);
+    ctx->unsetActiveType();
   }
   if (copyAssignment) {
-    (void)copyAssignment->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->copyAssignment);
+    (void)copyAssignment->emit(state, ctx);
+    ctx->unsetActiveType();
   }
   if (moveAssignment) {
-    (void)moveAssignment->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->moveAssignment);
+    (void)moveAssignment->emit(state, ctx);
+    ctx->unsetActiveType();
+  }
+  for (usize i = 0; i < constructorDefinitions.size(); i++) {
+    ctx->setActiveType(resultTy);
+    SHOW("Constructor at " << i << " is " << parentState->constructors.at(i))
+    MethodState state(memberParent, parentState->constructors.at(i));
+    (void)constructorDefinitions.at(i)->emit(state, ctx);
+    ctx->unsetActiveType();
+  }
+  for (usize i = 0; i < convertorDefinitions.size(); i++) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->convertors[i]);
+    (void)convertorDefinitions[i]->emit(state, ctx);
+    ctx->unsetActiveType();
+  }
+  for (usize i = 0; i < memberDefinitions.size(); i++) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->all_methods.at(i).fn, parentState->all_methods.at(i).condition);
+    (void)memberDefinitions[i]->emit(state, ctx);
+    ctx->unsetActiveType();
+  }
+  for (usize i = 0; i < operatorDefinitions.size(); i++) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->operators.at(i));
+    (void)operatorDefinitions[i]->emit(state, ctx);
+    ctx->unsetActiveType();
   }
   if (destructorDefinition) {
-    (void)destructorDefinition->emit(ctx);
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent, parentState->destructor);
+    (void)destructorDefinition->emit(state, ctx);
+    ctx->unsetActiveType();
   }
   // TODO - Member function call tree analysis
-  ctx->unsetActiveType();
   return nullptr;
 }
+
+IR::Value* DefineCoreType::emit(IR::Context* ctx) { return do_emit(resultCoreType, ctx); }
 
 void DefineCoreType::addMember(Member* mem) { members.push_back(mem); }
 

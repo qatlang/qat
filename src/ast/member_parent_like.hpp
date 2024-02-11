@@ -1,26 +1,98 @@
 #ifndef QAT_AST_MEMBER_PARENT_LIKE_HPP
 #define QAT_AST_MEMBER_PARENT_LIKE_HPP
 
-#include "destructor.hpp"
-#include "member_function.hpp"
-#include "operator_function.hpp"
+#include "../IR/member_function.hpp"
+#include "../utils/helpers.hpp"
+#include "../utils/macros.hpp"
+#include "../utils/qat_region.hpp"
 
 namespace qat::ast {
 
 class DoSkill;
+class OperatorDefinition;
+class DestructorDefinition;
+class ConvertorDefinition;
+class MemberDefinition;
+class ConstructorDefinition;
+class DefineCoreType;
+
+struct MethodState {
+  IR::MemberParent*   parent;
+  IR::MemberFunction* result;
+  Maybe<bool>         defineCondition;
+
+  MethodState(IR::MemberParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
+  MethodState(IR::MemberParent* _parent, IR::MemberFunction* _result)
+      : parent(_parent), result(_result), defineCondition(None) {}
+
+  MethodState(IR::MemberParent* _parent, IR::MemberFunction* _result, Maybe<bool> _defineCondition)
+      : parent(_parent), result(_result), defineCondition(_defineCondition) {}
+};
+
+class MethodResult {
+public:
+  IR::MemberFunction* fn;
+  Maybe<bool>         condition;
+
+  MethodResult(IR::MemberFunction* _fn) : fn(_fn), condition(None) {}
+  MethodResult(IR::MemberFunction* _fn, Maybe<bool> _cond) : fn(_fn), condition(_cond) {}
+};
+
+class MemberParentState {
+public:
+  Vec<MethodResult>        all_methods;
+  Vec<IR::MemberFunction*> convertors;
+  Vec<IR::MemberFunction*> operators;
+  Vec<IR::MemberFunction*> constructors;
+  IR::MemberFunction*      defaultConstructor;
+  IR::MemberFunction*      copyConstructor;
+  IR::MemberFunction*      moveConstructor;
+  IR::MemberFunction*      copyAssignment;
+  IR::MemberFunction*      moveAssignment;
+  IR::MemberFunction*      destructor;
+
+  MemberParentState()
+      : all_methods(), convertors(), operators(), constructors(), defaultConstructor(nullptr), copyConstructor(nullptr),
+        moveConstructor(nullptr), copyAssignment(nullptr), moveAssignment(nullptr), destructor(nullptr) {}
+
+  useit static inline MemberParentState* get() { return std::construct_at(OwnNormal(MemberParentState)); }
+};
 
 class MemberParentLike {
 public:
-  Vec<MemberDefinition*>         memberDefinitions;
-  Vec<ConvertorDefinition*>      convertorDefinitions;
-  Vec<OperatorDefinition*>       operatorDefinitions;
-  Vec<ConstructorDefinition*>    constructorDefinitions;
-  mutable ConstructorDefinition* defaultConstructor   = nullptr;
-  mutable ConstructorDefinition* copyConstructor      = nullptr;
-  mutable ConstructorDefinition* moveConstructor      = nullptr;
-  mutable OperatorDefinition*    copyAssignment       = nullptr;
-  mutable OperatorDefinition*    moveAssignment       = nullptr;
-  mutable DestructorDefinition*  destructorDefinition = nullptr;
+  Vec<Pair<IR::MemberParent*, MemberParentState*>> parentStates;
+
+  MemberParentState* get_state_for(IR::MemberParent* parent) {
+    for (auto& state : parentStates) {
+      if (state.first->is_same(parent)) {
+        return state.second;
+      }
+    }
+    parentStates.push_back(std::make_pair(parent, MemberParentState::get()));
+    return parentStates.back().second;
+  }
+
+  Vec<MemberDefinition*>      memberDefinitions;
+  Vec<ConvertorDefinition*>   convertorDefinitions;
+  Vec<OperatorDefinition*>    operatorDefinitions;
+  Vec<ConstructorDefinition*> constructorDefinitions;
+  ConstructorDefinition*      defaultConstructor   = nullptr;
+  ConstructorDefinition*      copyConstructor      = nullptr;
+  ConstructorDefinition*      moveConstructor      = nullptr;
+  OperatorDefinition*         copyAssignment       = nullptr;
+  OperatorDefinition*         moveAssignment       = nullptr;
+  DestructorDefinition*       destructorDefinition = nullptr;
+
+  MemberParentLike()
+      : parentStates(), memberDefinitions(), convertorDefinitions(), operatorDefinitions(), constructorDefinitions(),
+        defaultConstructor(nullptr), copyConstructor(nullptr), moveConstructor(nullptr), copyAssignment(nullptr),
+        moveAssignment(nullptr), destructorDefinition(nullptr) {}
+
+  ~MemberParentLike() {
+    for (auto& it : parentStates) {
+      std::destroy_at(it.second);
+    }
+  }
 
   inline void add_method_definition(MemberDefinition* mdef) { memberDefinitions.push_back(mdef); }
   inline void add_convertor_definition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }

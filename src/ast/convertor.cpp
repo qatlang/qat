@@ -9,17 +9,12 @@
 
 namespace qat::ast {
 
-void ConvertorPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
-
-void ConvertorPrototype::define(IR::Context* ctx) {
-  if (!memberParent) {
-    ctx->Error("No parent found for this member function", fileRange);
-  }
+void ConvertorPrototype::define(MethodState& state, IR::Context* ctx) {
   SHOW("Generating candidate type")
   IR::QatType* candidate = nullptr;
   if (isFrom && argName.has_value() && isMemberArgument) {
-    if (memberParent->getParentType()->isCoreType()) {
-      auto coreType = memberParent->getParentType()->asCore();
+    if (state.parent->getParentType()->isCoreType()) {
+      auto coreType = state.parent->getParentType()->asCore();
       if (!coreType->hasMember(argName->value)) {
         ctx->Error("No member field named " + ctx->highlightError(argName->value) + " found in core type " +
                        ctx->highlightError(coreType->getFullName()),
@@ -27,8 +22,8 @@ void ConvertorPrototype::define(IR::Context* ctx) {
       }
       coreType->getMember(argName->value)->addMention(argName->range);
       candidate = coreType->getTypeOfMember(argName->value);
-    } else if (memberParent->getParentType()->isMix()) {
-      auto mixTy  = memberParent->getParentType()->asMix();
+    } else if (state.parent->getParentType()->isMix()) {
+      auto mixTy  = state.parent->getParentType()->asMix();
       auto mixRes = mixTy->hasSubTypeWithName(argName->value);
       if (!mixRes.first) {
         ctx->Error("No variant named " + ctx->highlightError(argName->value) + " is present in mix type " +
@@ -52,18 +47,17 @@ void ConvertorPrototype::define(IR::Context* ctx) {
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
   if (isFrom) {
-    SHOW("Convertor is FROM")
-    memberFn =
-        IR::MemberFunction::CreateFromConvertor(memberParent, nameRange, candidate, argName.value(),
+    SHOW("Convertor is FROM for " << state.parent->getParentType()->toString())
+    state.result =
+        IR::MemberFunction::CreateFromConvertor(state.parent, nameRange, candidate, argName.value(),
                                                 definitionRange.value_or(fileRange), ctx->getVisibInfo(visibSpec), ctx);
+    SHOW("Convertor IR created")
   } else {
     SHOW("Convertor is TO")
-    memberFn = IR::MemberFunction::CreateToConvertor(
-        memberParent, nameRange, candidate, definitionRange.value_or(fileRange), ctx->getVisibInfo(visibSpec), ctx);
+    state.result = IR::MemberFunction::CreateToConvertor(
+        state.parent, nameRange, candidate, definitionRange.value_or(fileRange), ctx->getVisibInfo(visibSpec), ctx);
   }
 }
-
-IR::Value* ConvertorPrototype::emit(IR::Context* ctx) { return memberFn; }
 
 Json ConvertorPrototype::toJson() const {
   return Json()
@@ -76,19 +70,22 @@ Json ConvertorPrototype::toJson() const {
       ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue());
 }
 
-void ConvertorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
+void ConvertorDefinition::define(MethodState& state, IR::Context* ctx) { prototype->define(state, ctx); }
 
-IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
-  auto* fnEmit = (IR::MemberFunction*)prototype->emit(ctx);
-  auto* oldFn  = ctx->setActiveFunction(fnEmit);
+IR::Value* ConvertorDefinition::emit(MethodState& state, IR::Context* ctx) {
+  SHOW("Defining Convertor is " << (prototype->isFrom ? "FROM" : "TO") << " for type "
+                                << state.parent->getParentType()->toString())
+  auto* fnEmit = state.result;
+  SHOW("MemberFn name is " << fnEmit->getFullName())
+  auto* oldFn = ctx->setActiveFunction(fnEmit);
   SHOW("Set active convertor function: " << fnEmit->getFullName())
   auto* block = new IR::Block((IR::Function*)fnEmit, nullptr);
   SHOW("Created entry block")
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
   SHOW("About to allocate necessary arguments")
-  auto* parentRefType = IR::ReferenceType::get(prototype->isFrom, prototype->memberParent->getParentType(), ctx);
-  auto* self          = block->newValue("''", parentRefType, false, prototype->memberParent->getTypeRange());
+  auto* parentRefType = IR::ReferenceType::get(prototype->isFrom, state.parent->getParentType(), ctx);
+  auto* self          = block->newValue("''", parentRefType, false, state.parent->getTypeRange());
   ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(0), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   if (prototype->isFrom) {
@@ -132,9 +129,9 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
   }
   emitSentences(sentences, ctx);
   if (prototype->isFrom) {
-    if (prototype->memberParent->getParentType()->isCoreType()) {
+    if (state.parent->getParentType()->isCoreType()) {
       SHOW("Setting default values for fields")
-      auto coreTy = prototype->memberParent->getParentType()->asCore();
+      auto coreTy = state.parent->getParentType()->asCore();
       for (usize i = 0; i < coreTy->getMemberCount(); i++) {
         auto mem = coreTy->getMemberAt(i);
         if (fnEmit->isMemberInitted(i)) {
@@ -218,9 +215,9 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
         }
       }
     }
-    if (prototype->memberParent->getParentType()->isCoreType()) {
+    if (state.parent->getParentType()->isCoreType()) {
       Vec<Pair<String, FileRange>> missingMembers;
-      auto                         cTy = prototype->memberParent->getParentType()->asCore();
+      auto                         cTy = state.parent->getParentType()->asCore();
       for (auto ind = 0; ind < cTy->getMemberCount(); ind++) {
         auto memCheck = fnEmit->isMemberInitted(ind);
         if (!memCheck.has_value()) {
@@ -237,9 +234,9 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
         }
         ctx->Errors(errors);
       }
-    } else if (prototype->memberParent->getParentType()->isMix()) {
+    } else if (state.parent->getParentType()->isMix()) {
       bool isMixInitialised = false;
-      for (usize i = 0; i < prototype->memberParent->getParentType()->asMix()->getSubTypeCount(); i++) {
+      for (usize i = 0; i < state.parent->getParentType()->asMix()->getSubTypeCount(); i++) {
         auto memRes = fnEmit->isMemberInitted(i);
         if (memRes.has_value()) {
           isMixInitialised = true;
@@ -255,10 +252,6 @@ IR::Value* ConvertorDefinition::emit(IR::Context* ctx) {
   SHOW("Sentences emitted")
   (void)ctx->setActiveFunction(oldFn);
   return nullptr;
-}
-
-void ConvertorDefinition::setMemberParent(IR::MemberParent* _memberParent) const {
-  prototype->setMemberParent(_memberParent);
 }
 
 Json ConvertorDefinition::toJson() const {

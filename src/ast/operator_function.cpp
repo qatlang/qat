@@ -13,33 +13,30 @@ OperatorPrototype::~OperatorPrototype() {
   }
 }
 
-void OperatorPrototype::define(IR::Context* ctx) {
-  if (!memberParent) {
-    ctx->Error("No parent type found for this member function", fileRange);
-  }
+void OperatorPrototype::define(MethodState& state, IR::Context* ctx) {
   if (opr == Op::copyAssignment) {
-    if (memberParent->isDoneSkill() && memberParent->asDoneSkill()->hasCopyAssignment()) {
+    if (state.parent->isDoneSkill() && state.parent->asDoneSkill()->hasCopyAssignment()) {
       ctx->Error("Copy assignment operator already exists in this implementation " +
-                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
+                     ctx->highlightError(state.parent->asDoneSkill()->toString()),
                  fileRange);
-    } else if (memberParent->isExpanded() && memberParent->asExpanded()->hasCopyAssignment()) {
+    } else if (state.parent->isExpanded() && state.parent->asExpanded()->hasCopyAssignment()) {
       ctx->Error("Copy assignment operator already exists for the parent type " +
-                     ctx->highlightError(memberParent->asExpanded()->toString()),
+                     ctx->highlightError(state.parent->asExpanded()->toString()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::CopyAssignment(memberParent, nameRange, argName.value(), fileRange, ctx);
+    state.result = IR::MemberFunction::CopyAssignment(state.parent, nameRange, argName.value(), fileRange, ctx);
     return;
   } else if (opr == Op::moveAssignment) {
-    if (memberParent->isExpanded() && memberParent->asExpanded()->hasMoveAssignment()) {
+    if (state.parent->isExpanded() && state.parent->asExpanded()->hasMoveAssignment()) {
       ctx->Error("Move assignment operator already exists for the parent type " +
-                     ctx->highlightError(memberParent->asExpanded()->getFullName()),
+                     ctx->highlightError(state.parent->asExpanded()->getFullName()),
                  fileRange);
-    } else if (memberParent->isDoneSkill() && memberParent->asDoneSkill()->hasMoveAssignment()) {
+    } else if (state.parent->isDoneSkill() && state.parent->asDoneSkill()->hasMoveAssignment()) {
       ctx->Error("Move assignment operator already exists in this implementation " +
-                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
+                     ctx->highlightError(state.parent->asDoneSkill()->toString()),
                  fileRange);
     }
-    memberFn = IR::MemberFunction::MoveAssignment(memberParent, nameRange, argName.value(), fileRange, ctx);
+    state.result = IR::MemberFunction::MoveAssignment(state.parent, nameRange, argName.value(), fileRange, ctx);
     return;
   }
   if (opr == Op::subtract) {
@@ -71,35 +68,35 @@ void OperatorPrototype::define(IR::Context* ctx) {
     }
   }
   if (is_unary_operator(opr)) {
-    if (memberParent->isExpanded() && memberParent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
+    if (state.parent->isExpanded() && state.parent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
       ctx->Error("Unary operator " + ctx->highlightError(operator_to_string(opr)) +
                      " already exists for the parent type " +
-                     ctx->highlightError(memberParent->asExpanded()->getFullName()),
+                     ctx->highlightError(state.parent->asExpanded()->getFullName()),
                  fileRange);
-    } else if (memberParent->isDoneSkill() && memberParent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
+    } else if (state.parent->isDoneSkill() && state.parent->asExpanded()->hasUnaryOperator(operator_to_string(opr))) {
       ctx->Error("Unary operator " + ctx->highlightError(operator_to_string(opr)) +
                      " already exists in the implementation " +
-                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
+                     ctx->highlightError(state.parent->asDoneSkill()->toString()),
                  fileRange);
     }
   } else {
-    if (memberParent->isExpanded() && (isVariationFn ? memberParent->asExpanded()->hasVariationBinaryOperator(
+    if (state.parent->isExpanded() && (isVariationFn ? state.parent->asExpanded()->hasVariationBinaryOperator(
                                                            operator_to_string(opr), {None, generatedTypes[0]})
-                                                     : memberParent->asExpanded()->hasNormalBinaryOperator(
+                                                     : state.parent->asExpanded()->hasNormalBinaryOperator(
                                                            operator_to_string(opr), {None, generatedTypes[0]}))) {
       ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
                      ctx->highlightError(operator_to_string(opr)) + " already exists for parent type " +
-                     ctx->highlightError(memberParent->asExpanded()->getFullName()) +
+                     ctx->highlightError(state.parent->asExpanded()->getFullName()) +
                      " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
                  fileRange);
-    } else if (memberParent->isDoneSkill() &&
-               (isVariationFn ? memberParent->asDoneSkill()->hasVariationBinaryOperator(operator_to_string(opr),
+    } else if (state.parent->isDoneSkill() &&
+               (isVariationFn ? state.parent->asDoneSkill()->hasVariationBinaryOperator(operator_to_string(opr),
                                                                                         {None, generatedTypes[0]})
-                              : memberParent->asDoneSkill()->hasNormalBinaryOperator(operator_to_string(opr),
+                              : state.parent->asDoneSkill()->hasNormalBinaryOperator(operator_to_string(opr),
                                                                                      {None, generatedTypes[0]}))) {
       ctx->Error(String(isVariationFn ? "Variation b" : "B") + "inary operator " +
                      ctx->highlightError(operator_to_string(opr)) + " already exists in the implementation " +
-                     ctx->highlightError(memberParent->asDoneSkill()->toString()) +
+                     ctx->highlightError(state.parent->asDoneSkill()->toString()) +
                      " with right hand side being type " + ctx->highlightError(generatedTypes.front()->toString()),
                  fileRange);
     }
@@ -130,14 +127,11 @@ void OperatorPrototype::define(IR::Context* ctx) {
   }
   auto retTy = returnType->emit(ctx);
   SHOW("Operator " + operator_to_string(opr) + " isVar: " << isVariationFn << " return type is " << retTy->toString())
-  memberFn = IR::MemberFunction::CreateOperator(memberParent, nameRange, !is_unary_operator(opr), isVariationFn,
-                                                operator_to_string(opr), IR::ReturnType::get(retTy, isSelfReturn), args,
-                                                fileRange, ctx->getVisibInfo(visibSpec), ctx);
+  state.result = IR::MemberFunction::CreateOperator(state.parent, nameRange, !is_unary_operator(opr), isVariationFn,
+                                                    operator_to_string(opr), IR::ReturnType::get(retTy, isSelfReturn),
+                                                    args, fileRange, ctx->getVisibInfo(visibSpec), ctx);
+  SHOW("Created IR operator")
 }
-
-IR::Value* OperatorPrototype::emit(IR::Context* ctx) { return memberFn; }
-
-void OperatorPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 Json OperatorPrototype::toJson() const {
   Vec<JsonValue> args;
@@ -159,10 +153,10 @@ Json OperatorPrototype::toJson() const {
       ._("fileRange", fileRange);
 }
 
-void OperatorDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
+void OperatorDefinition::define(MethodState& state, IR::Context* ctx) { prototype->define(state, ctx); }
 
-IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
-  auto* fnEmit = (IR::MemberFunction*)prototype->emit(ctx);
+IR::Value* OperatorDefinition::emit(MethodState& state, IR::Context* ctx) {
+  auto* fnEmit = state.result;
   auto* oldFn  = ctx->setActiveFunction(fnEmit);
   SHOW("Set active operator function: " << fnEmit->getFullName())
   auto* block = new IR::Block(fnEmit, nullptr);
@@ -197,10 +191,6 @@ IR::Value* OperatorDefinition::emit(IR::Context* ctx) {
   SHOW("Sentences emitted")
   (void)ctx->setActiveFunction(oldFn);
   return nullptr;
-}
-
-void OperatorDefinition::setMemberParent(IR::MemberParent* memberParent) const {
-  prototype->setMemberParent(memberParent);
 }
 
 Json OperatorDefinition::toJson() const {

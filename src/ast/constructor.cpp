@@ -12,12 +12,7 @@ ConstructorPrototype::~ConstructorPrototype() {
   }
 }
 
-IR::Value* ConstructorPrototype::emit(IR::Context* ctx) { return nullptr; }
-
-void ConstructorPrototype::define(IR::Context* ctx) {
-  if (!memberParent) {
-    ctx->Error("No parent type found for this constructor", fileRange);
-  }
+void ConstructorPrototype::define(MethodState& state, IR::Context* ctx) {
   if (type == ConstructorType::normal) {
     Vec<Pair<Maybe<bool>, IR::QatType*>> generatedTypes;
     bool                                 isMixAndHasMemberArg = false;
@@ -26,16 +21,16 @@ void ConstructorPrototype::define(IR::Context* ctx) {
       if (arg->isTypeMember()) {
         if (isMixAndHasMemberArg) {
           ctx->Error("Cannot have multiple member arguments in a constructor for type " +
-                         ctx->highlightError(memberParent->getParentType()->toString()) + ", since it is a mix type",
+                         ctx->highlightError(state.parent->getParentType()->toString()) + ", since it is a mix type",
                      arg->getName().range);
         }
         SHOW("Arg is type member")
-        if (!memberParent->getParentType()->isCoreType() && !memberParent->getParentType()->isMix()) {
+        if (!state.parent->getParentType()->isCoreType() && !state.parent->getParentType()->isMix()) {
           ctx->Error("The parent type is not a core or mix type, and hence member argument syntax cannot be used here",
                      arg->getName().range);
         }
-        if (memberParent->getParentType()->isCoreType()) {
-          auto* coreType = memberParent->getParentType()->asCore();
+        if (state.parent->getParentType()->isCoreType()) {
+          auto* coreType = state.parent->getParentType()->asCore();
           if (coreType->hasMember(arg->getName().value)) {
             for (auto mem : presentMembers) {
               if (mem->name.value == arg->getName().value) {
@@ -53,7 +48,7 @@ void ConstructorPrototype::define(IR::Context* ctx) {
                        arg->getName().range);
           }
         } else {
-          auto mixTy = memberParent->getParentType()->asMix();
+          auto mixTy = state.parent->getParentType()->asMix();
           auto check = mixTy->hasSubTypeWithName(arg->getName().value);
           if (!check.first) {
             ctx->Error("No variant named " + ctx->highlightError(arg->getName().value) + " is present in mix type " +
@@ -74,26 +69,26 @@ void ConstructorPrototype::define(IR::Context* ctx) {
       SHOW("Generated type of the argument is " << generatedTypes.back().second->toString())
     }
     SHOW("Argument types generated")
-    if (memberParent->isDoneSkill() && memberParent->asDoneSkill()->hasConstructorWithTypes(generatedTypes)) {
+    if (state.parent->isDoneSkill() && state.parent->asDoneSkill()->hasConstructorWithTypes(generatedTypes)) {
       ctx->Error("A constructor with the same signature exists in the same implementation " +
-                     ctx->highlightError(memberParent->asDoneSkill()->toString()),
+                     ctx->highlightError(state.parent->asDoneSkill()->toString()),
                  fileRange,
                  Pair<String, FileRange>{
                      "The existing constructor can be found here",
-                     memberParent->asDoneSkill()->getConstructorWithTypes(generatedTypes)->getName().range});
+                     state.parent->asDoneSkill()->getConstructorWithTypes(generatedTypes)->getName().range});
     }
-    if (memberParent->getParentType()->isExpanded() &&
-        memberParent->getParentType()->asExpanded()->hasConstructorWithTypes(generatedTypes)) {
+    if (state.parent->getParentType()->isExpanded() &&
+        state.parent->getParentType()->asExpanded()->hasConstructorWithTypes(generatedTypes)) {
       ctx->Error(
           "A constructor with the same signature exists in the parent type " +
-              ctx->highlightError(memberParent->getParentType()->toString()),
+              ctx->highlightError(state.parent->getParentType()->toString()),
           fileRange,
           Pair<String, FileRange>{
               "The existing constructor can be found here",
-              memberParent->getParentType()->asExpanded()->getConstructorWithTypes(generatedTypes)->getName().range});
+              state.parent->getParentType()->asExpanded()->getConstructorWithTypes(generatedTypes)->getName().range});
     }
-    if (memberParent->getParentType()->isCoreType()) {
-      auto  coreType   = memberParent->getParentType()->asCore();
+    if (state.parent->getParentType()->isCoreType()) {
+      auto  coreType   = state.parent->getParentType()->asCore();
       auto& allMembers = coreType->getMembers();
       for (auto* mem : allMembers) {
         bool foundMem = false;
@@ -126,26 +121,24 @@ void ConstructorPrototype::define(IR::Context* ctx) {
       }
     }
     SHOW("About to create function")
-    memberFunction = IR::MemberFunction::CreateConstructor(memberParent, nameRange, args, false, fileRange,
-                                                           ctx->getVisibInfo(visibSpec), ctx);
+    state.result = IR::MemberFunction::CreateConstructor(state.parent, nameRange, args, false, fileRange,
+                                                         ctx->getVisibInfo(visibSpec), ctx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
-    if (memberParent->isDoneSkill() && memberParent->getParentType()->isExpanded() &&
-        memberParent->getParentType()->asExpanded()->hasDefaultConstructor()) {
+    if (state.parent->isDoneSkill() && state.parent->getParentType()->isExpanded() &&
+        state.parent->getParentType()->asExpanded()->hasDefaultConstructor()) {
       ctx->Error("The target type of this implementation already has a " + ctx->highlightError("default") +
                      " constructor, so it cannot be defined again",
                  fileRange);
     }
-    memberFunction =
-        IR::MemberFunction::DefaultConstructor(memberParent, nameRange, ctx->getVisibInfo(visibSpec), fileRange, ctx);
+    state.result =
+        IR::MemberFunction::DefaultConstructor(state.parent, nameRange, ctx->getVisibInfo(visibSpec), fileRange, ctx);
   } else if (type == ConstructorType::copy) {
-    memberFunction = IR::MemberFunction::CopyConstructor(memberParent, nameRange, argName.value(), fileRange, ctx);
+    state.result = IR::MemberFunction::CopyConstructor(state.parent, nameRange, argName.value(), fileRange, ctx);
   } else if (type == ConstructorType::move) {
-    memberFunction = IR::MemberFunction::MoveConstructor(memberParent, nameRange, argName.value(), fileRange, ctx);
+    state.result = IR::MemberFunction::MoveConstructor(state.parent, nameRange, argName.value(), fileRange, ctx);
   }
 }
-
-void ConstructorPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 Json ConstructorPrototype::toJson() const {
   Vec<JsonValue> args;
@@ -164,14 +157,12 @@ Json ConstructorPrototype::toJson() const {
       ._("fileRange", fileRange);
 }
 
-void ConstructorDefinition::define(IR::Context* ctx) {
-  prototype->define(ctx);
-  functions.push_back(prototype->memberFunction);
-}
+void ConstructorDefinition::define(MethodState& state, IR::Context* ctx) { prototype->define(state, ctx); }
 
-IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
-  auto* fnEmit = functions.back();
-  auto* oldFn  = ctx->setActiveFunction(fnEmit);
+IR::Value* ConstructorDefinition::emit(MethodState& state, IR::Context* ctx) {
+  auto* fnEmit = state.result;
+  SHOW("FNemit is " << fnEmit)
+  auto* oldFn = ctx->setActiveFunction(fnEmit);
   SHOW("Set active contructor: " << fnEmit->getFullName())
   auto* block = new IR::Block(fnEmit, nullptr);
   block->setFileRange(fileRange);
@@ -190,8 +181,8 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
   if ((prototype->type == ConstructorType::copy) || (prototype->type == ConstructorType::move)) {
     auto* argVal = block->newValue(
         prototype->argName->value,
-        IR::ReferenceType::get(prototype->type == ConstructorType::move, prototype->memberParent->getParentType(), ctx),
-        false, prototype->argName->range);
+        IR::ReferenceType::get(prototype->type == ConstructorType::move, state.parent->getParentType(), ctx), false,
+        prototype->argName->range);
     ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(1), argVal->getAlloca(), false);
     argVal->loadImplicitPointer(ctx->builder);
   } else {
@@ -238,9 +229,9 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
     }
   }
   emitSentences(sentences, ctx);
-  if (prototype->memberParent->getParentType()->isCoreType()) {
+  if (state.parent->getParentType()->isCoreType()) {
     SHOW("Setting default values for fields")
-    auto coreTy = prototype->memberParent->getParentType()->asCore();
+    auto coreTy = state.parent->getParentType()->asCore();
     for (usize i = 0; i < coreTy->getMemberCount(); i++) {
       auto mem = coreTy->getMemberAt(i);
       if (fnEmit->isMemberInitted(i)) {
@@ -327,9 +318,9 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
       }
     }
   }
-  if (prototype->memberParent->getParentType()->isCoreType()) {
+  if (state.parent->getParentType()->isCoreType()) {
     Vec<Pair<String, FileRange>> missingMembers;
-    auto                         cTy = prototype->memberParent->getParentType()->asCore();
+    auto                         cTy = state.parent->getParentType()->asCore();
     for (auto ind = 0; ind < cTy->getMemberCount(); ind++) {
       auto memCheck = fnEmit->isMemberInitted(ind);
       if (!memCheck.has_value()) {
@@ -346,9 +337,9 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
       }
       ctx->Errors(errors);
     }
-  } else if (prototype->memberParent->getParentType()->isMix()) {
+  } else if (state.parent->getParentType()->isMix()) {
     bool isMixInitialised = false;
-    for (usize i = 0; i < prototype->memberParent->getParentType()->asMix()->getSubTypeCount(); i++) {
+    for (usize i = 0; i < state.parent->getParentType()->asMix()->getSubTypeCount(); i++) {
       auto memRes = fnEmit->isMemberInitted(i);
       if (memRes.has_value()) {
         isMixInitialised = true;
@@ -361,13 +352,8 @@ IR::Value* ConstructorDefinition::emit(IR::Context* ctx) {
   }
   IR::functionReturnHandler(ctx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
-  functions.pop_back();
   (void)ctx->setActiveFunction(oldFn);
   return nullptr;
-}
-
-void ConstructorDefinition::setMemberParent(IR::MemberParent* memberParent) const {
-  prototype->setMemberParent(memberParent);
 }
 
 Json ConstructorDefinition::toJson() const {

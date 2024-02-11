@@ -13,11 +13,7 @@ void DoSkill::defineType(IR::Context* ctx) {
                fileRange);
   }
   if (isDefaultSkill) {
-    doneSkill   = IR::DoneSkill::create_default(mod, fileRange, target, targetType->fileRange);
-    auto parent = IR::MemberParent::create_do_skill(doneSkill);
-    if (has_default_constructor()) {
-      defaultConstructor->setMemberParent(parent);
-    }
+    doneSkill = IR::DoneSkill::create_default(mod, fileRange, target, targetType->fileRange);
     if (has_copy_constructor()) {
       ctx->Error(
           "Copy constructor is not allowed in default implementations, but only in the original type, if the type is a struct type",
@@ -43,86 +39,153 @@ void DoSkill::defineType(IR::Context* ctx) {
           "Destructor is not allowed in default implementations, but only in the original type, if the type is a struct type",
           destructorDefinition->fileRange);
     }
-    for (auto* conv : convertorDefinitions) {
-      conv->setMemberParent(parent);
-    }
-    for (auto* cons : constructorDefinitions) {
-      cons->setMemberParent(parent);
-    }
-    for (auto* memDef : memberDefinitions) {
-      memDef->setMemberParent(parent);
-    }
-    for (auto* oprDef : operatorDefinitions) {
-      oprDef->setMemberParent(parent);
-    }
   } else {
     ctx->Error("Implementing skills is not supported for now", fileRange);
   }
 }
 
 void DoSkill::define(IR::Context* ctx) {
+  parent           = IR::MemberParent::create_do_skill(doneSkill);
+  auto parentState = get_state_for(parent);
   if (has_default_constructor()) {
-    defaultConstructor->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    defaultConstructor->define(state, ctx);
+    parentState->defaultConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (has_copy_constructor()) {
-    copyConstructor->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    copyConstructor->define(state, ctx);
+    parentState->copyConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (has_copy_assignment()) {
-    copyAssignment->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    copyAssignment->define(state, ctx);
+    parentState->copyAssignment = state.result;
+    ctx->unset_active_done_skill();
   }
   if (has_move_constructor()) {
-    moveConstructor->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    moveConstructor->define(state, ctx);
+    parentState->moveConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (has_move_assignment()) {
-    moveAssignment->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    moveAssignment->define(state, ctx);
+    parentState->moveAssignment = state.result;
+    ctx->unset_active_done_skill();
   }
   if (has_destructor()) {
-    destructorDefinition->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    destructorDefinition->define(state, ctx);
+    parentState->destructor = state.result;
+    ctx->unset_active_done_skill();
   }
   for (auto* conv : convertorDefinitions) {
-    conv->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    conv->define(state, ctx);
+    parentState->convertors.push_back(state.result);
+    ctx->unset_active_done_skill();
   }
   for (auto* cons : constructorDefinitions) {
-    cons->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    cons->define(state, ctx);
+    parentState->constructors.push_back(state.result);
+    ctx->unset_active_done_skill();
   }
   for (auto* memDef : memberDefinitions) {
-    memDef->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    memDef->define(state, ctx);
+    parentState->all_methods.push_back(MethodResult(state.result, state.defineCondition));
+    ctx->unset_active_done_skill();
   }
   for (auto* oprDef : operatorDefinitions) {
-    oprDef->define(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent);
+    oprDef->define(state, ctx);
+    parentState->operators.push_back(state.result);
+    ctx->unset_active_done_skill();
   }
 }
 
 IR::Value* DoSkill::emit(IR::Context* ctx) {
+  parent           = IR::MemberParent::create_do_skill(doneSkill);
+  auto parentState = get_state_for(parent);
   if (defaultConstructor) {
-    (void)defaultConstructor->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->defaultConstructor);
+    (void)defaultConstructor->emit(state, ctx);
+    parentState->defaultConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (copyConstructor) {
-    (void)copyConstructor->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->copyConstructor);
+    (void)copyConstructor->emit(state, ctx);
+    parentState->copyConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (moveConstructor) {
-    (void)moveConstructor->emit(ctx);
-  }
-  for (auto* cons : constructorDefinitions) {
-    (void)cons->emit(ctx);
-  }
-  for (auto* conv : convertorDefinitions) {
-    (void)conv->emit(ctx);
-  }
-  for (auto* mFn : memberDefinitions) {
-    (void)mFn->emit(ctx);
-  }
-  for (auto* oFn : operatorDefinitions) {
-    (void)oFn->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->moveConstructor);
+    (void)moveConstructor->emit(state, ctx);
+    parentState->moveConstructor = state.result;
+    ctx->unset_active_done_skill();
   }
   if (copyAssignment) {
-    (void)copyAssignment->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->copyAssignment);
+    (void)copyAssignment->emit(state, ctx);
+    parentState->copyAssignment = state.result;
+    ctx->unset_active_done_skill();
   }
   if (moveAssignment) {
-    (void)moveAssignment->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->moveAssignment);
+    (void)moveAssignment->emit(state, ctx);
+    parentState->moveAssignment = state.result;
+    ctx->unset_active_done_skill();
+  }
+  for (usize i = 0; i < constructorDefinitions.size(); i++) {
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->constructors[i]);
+    (void)constructorDefinitions[i]->emit(state, ctx);
+    ctx->unset_active_done_skill();
+  }
+  for (usize i = 0; i < convertorDefinitions.size(); i++) {
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->convertors[i]);
+    (void)convertorDefinitions[i]->emit(state, ctx);
+    ctx->unset_active_done_skill();
+  }
+  for (usize i = 0; i < memberDefinitions.size(); i++) {
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->all_methods[i].fn, parentState->all_methods[i].condition);
+    (void)memberDefinitions[i]->emit(state, ctx);
+    ctx->unset_active_done_skill();
+  }
+  for (usize i = 0; i < operatorDefinitions.size(); i++) {
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->operators[i]);
+    (void)operatorDefinitions[i]->emit(state, ctx);
+    ctx->unset_active_done_skill();
   }
   if (destructorDefinition) {
-    (void)destructorDefinition->emit(ctx);
+    ctx->set_active_done_skill(doneSkill);
+    MethodState state(parent, parentState->destructor);
+    (void)destructorDefinition->emit(state, ctx);
+    ctx->unset_active_done_skill();
   }
   // TODO - Member function call tree analysis
   return nullptr;

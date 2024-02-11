@@ -7,10 +7,11 @@
 
 namespace qat::ast {
 
-MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                 Maybe<QatType*> _returnType, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : Node(std::move(_fileRange)), fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), visibSpec(_visibSpec) {}
+MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
+                                 Vec<Argument*> _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    : fnTy(_fnTy), name(std::move(_name)), condition(_condition), arguments(std::move(_arguments)),
+      isVariadic(_isVariadic), returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange) {}
 
 MemberPrototype::~MemberPrototype() {
   for (auto* arg : arguments) {
@@ -18,33 +19,45 @@ MemberPrototype::~MemberPrototype() {
   }
 }
 
-MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, const Vec<Argument*>& _arguments,
+MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name,
+                                         Maybe<PrerunExpression*> _condition, const Vec<Argument*>& _arguments,
                                          bool _isVariadic, Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
-  return new MemberPrototype(_isVariationFn ? AstMemberFnType::variation : AstMemberFnType::normal, _name, _arguments,
-                             _isVariadic, _returnType, visibSpec, _fileRange);
+  return std::construct_at(OwnNormal(MemberPrototype),
+                           _isVariationFn ? AstMemberFnType::variation : AstMemberFnType::normal, _name, _condition,
+                           _arguments, _isVariadic, _returnType, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Static(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
+MemberPrototype* MemberPrototype::Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
+                                         const Vec<Argument*>& _arguments, bool _isVariadic,
                                          Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
-  return new MemberPrototype(AstMemberFnType::Static, _name, _arguments, _isVariadic, _returnType, visibSpec,
-                             _fileRange);
+  return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::Static, _name, _condition, _arguments,
+                           _isVariadic, _returnType, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Value(const Identifier& _name, const Vec<Argument*>& _arguments, bool _isVariadic,
-                                        Maybe<QatType*> _returnType, Maybe<VisibilitySpec> visibSpec,
-                                        const FileRange& _fileRange) {
-  return new MemberPrototype(AstMemberFnType::valued, _name, _arguments, _isVariadic, _returnType, visibSpec,
-                             _fileRange);
+MemberPrototype* MemberPrototype::Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
+                                        const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                                        Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange) {
+  return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::valued, _name, _condition, _arguments,
+                           _isVariadic, _returnType, visibSpec, _fileRange);
 }
 
-void MemberPrototype::define(IR::Context* ctx) {
-  if (!memberParent) {
-    ctx->Error("No parent type found for this member function", fileRange);
+void MemberPrototype::define(MethodState& state, IR::Context* ctx) {
+  if (condition.has_value()) {
+    auto condRes = condition.value()->emit(ctx);
+    if (!condRes->getType()->isBool()) {
+      ctx->Error("The condition for defining the method should be of " + ctx->highlightError("bool") + " type",
+                 condition.value()->fileRange);
+    }
+    state.defineCondition = llvm::cast<llvm::ConstantInt>(condRes->getLLVM())->getValue().getBoolValue();
+    if (state.defineCondition.has_value() && !state.defineCondition.value()) {
+      return;
+    }
   }
-  if (memberParent->isDoneSkill()) {
-    auto doneSkill = memberParent->asDoneSkill();
+  SHOW("Defining member proto " << name.value << " " << state.parent->getParentType()->toString())
+  if (state.parent->isDoneSkill()) {
+    auto doneSkill = state.parent->asDoneSkill();
     if ((fnTy != AstMemberFnType::normal) && doneSkill->hasVariationFn(name.value)) {
       ctx->Error("A variation function named " + ctx->highlightError(name.value) +
                      " already exists in the same implementation at " +
@@ -64,7 +77,7 @@ void MemberPrototype::define(IR::Context* ctx) {
                  name.range);
     }
   }
-  auto* parentType = memberParent->isDoneSkill() ? memberParent->asDoneSkill()->getType() : memberParent->asExpanded();
+  auto* parentType = state.parent->isDoneSkill() ? state.parent->asDoneSkill()->getType() : state.parent->asExpanded();
   if (parentType->isExpanded()) {
     auto expTy = parentType->asExpanded();
     if ((fnTy != AstMemberFnType::normal) && expTy->hasVariationFn(name.value)) {
@@ -91,10 +104,10 @@ void MemberPrototype::define(IR::Context* ctx) {
             String(expTy->asCore()->hasMember(name.value) ? "Member" : "Static") + " field named " +
                 ctx->highlightError(name.value) + " exists in the parent type " +
                 ctx->highlightError(expTy->toString()) + ". Try if you can change the name of this function" +
-                (memberParent->isDoneSkill() && memberParent->asDoneSkill()->isNormalSkill()
+                (state.parent->isDoneSkill() && state.parent->asDoneSkill()->isNormalSkill()
                      ? (" in the skill " +
-                        ctx->highlightError(memberParent->asDoneSkill()->getSkill()->get_full_name()) + " at " +
-                        ctx->highlightError(memberParent->asDoneSkill()->getSkill()->get_name().range.startToString()))
+                        ctx->highlightError(state.parent->asDoneSkill()->getSkill()->get_full_name()) + " at " +
+                        ctx->highlightError(state.parent->asDoneSkill()->getSkill()->get_name().range.startToString()))
                      : ""),
             name.range);
       }
@@ -115,15 +128,15 @@ void MemberPrototype::define(IR::Context* ctx) {
   SHOW("Generating types")
   for (auto* arg : arguments) {
     if (arg->isTypeMember()) {
-      if (!memberParent->getParentType()->isCoreType()) {
+      if (!state.parent->getParentType()->isCoreType()) {
         ctx->Error(
             "The parent type of this function is not a core type and hence the member argument syntax cannot be used",
             arg->getName().range);
       }
       if (fnTy != AstMemberFnType::Static && fnTy != AstMemberFnType::valued) {
-        auto coreType = memberParent->getParentType()->asCore();
+        auto coreType = state.parent->getParentType()->asCore();
         if (coreType->hasMember(arg->getName().value)) {
-          if (memberParent->isDoneSkill()) {
+          if (state.parent->isDoneSkill()) {
             if (!coreType->getMember(arg->getName().value)->visibility.isAccessible(ctx->getAccessInfo())) {
               ctx->Error("The member field " + ctx->highlightError(arg->getName().value) + " of parent type " +
                              ctx->highlightError(coreType->toString()) + " is not accessible here",
@@ -156,7 +169,7 @@ void MemberPrototype::define(IR::Context* ctx) {
         }
       } else {
         ctx->Error("Function " + name.value + " is not a normal or variation method of type " +
-                       memberParent->getParentType()->toString() + ". So it cannot use the member argument syntax",
+                       state.parent->getParentType()->toString() + ". So it cannot use the member argument syntax",
                    arg->getName().range);
       }
     } else {
@@ -182,26 +195,22 @@ void MemberPrototype::define(IR::Context* ctx) {
   SHOW("About to create function")
   if (fnTy == AstMemberFnType::Static) {
     SHOW("MemberFn :: " << name.value << " Static Method")
-    memberFn = IR::MemberFunction::CreateStatic(memberParent, name, retTy, args, isVariadic, fileRange,
-                                                ctx->getVisibInfo(visibSpec), ctx);
+    state.result = IR::MemberFunction::CreateStatic(state.parent, name, retTy, args, isVariadic, fileRange,
+                                                    ctx->getVisibInfo(visibSpec), ctx);
   } else if (fnTy == AstMemberFnType::valued) {
     SHOW("MemberFn :: " << name.value << " Valued Method")
     if (!parentType->isTriviallyCopyable()) {
       ctx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
     }
-    memberFn = IR::MemberFunction::CreateValued(memberParent, name, retTy, args, isVariadic, fileRange,
-                                                ctx->getVisibInfo(visibSpec), ctx);
+    state.result = IR::MemberFunction::CreateValued(state.parent, name, retTy, args, isVariadic, fileRange,
+                                                    ctx->getVisibInfo(visibSpec), ctx);
   } else {
     SHOW("MemberFn :: " << name.value << " Method or Variation")
-    memberFn = IR::MemberFunction::Create(memberParent, fnTy == AstMemberFnType::variation, name,
-                                          IR::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
-                                          ctx->getVisibInfo(visibSpec), ctx);
+    state.result = IR::MemberFunction::Create(state.parent, fnTy == AstMemberFnType::variation, name,
+                                              IR::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
+                                              ctx->getVisibInfo(visibSpec), ctx);
   }
 }
-
-IR::Value* MemberPrototype::emit(IR::Context* ctx) { return memberFn; }
-
-void MemberPrototype::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
 
 Json MemberPrototype::toJson() const {
   Vec<JsonValue> args;
@@ -222,10 +231,13 @@ Json MemberPrototype::toJson() const {
       ._("isVariadic", isVariadic);
 }
 
-void MemberDefinition::define(IR::Context* ctx) { prototype->define(ctx); }
+void MemberDefinition::define(MethodState& state, IR::Context* ctx) { prototype->define(state, ctx); }
 
-IR::Value* MemberDefinition::emit(IR::Context* ctx) {
-  auto* fnEmit = (IR::MemberFunction*)prototype->emit(ctx);
+IR::Value* MemberDefinition::emit(MethodState& state, IR::Context* ctx) {
+  if (state.defineCondition.has_value() && !state.defineCondition.value()) {
+    return nullptr;
+  }
+  auto* fnEmit = state.result;
   auto* oldFn  = ctx->setActiveFunction(fnEmit);
   SHOW("Set active member function: " << fnEmit->getFullName())
   auto* block = new IR::Block(fnEmit, nullptr);
@@ -269,10 +281,6 @@ IR::Value* MemberDefinition::emit(IR::Context* ctx) {
   SHOW("Sentences emitted")
   (void)ctx->setActiveFunction(oldFn);
   return nullptr;
-}
-
-void MemberDefinition::setMemberParent(IR::MemberParent* memberParent) const {
-  prototype->setMemberParent(memberParent);
 }
 
 Json MemberDefinition::toJson() const {

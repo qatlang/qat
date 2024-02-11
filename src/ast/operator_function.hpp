@@ -7,12 +7,13 @@
 #include "./expressions/operator.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
+#include "member_parent_like.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 
 namespace qat::ast {
 
-class OperatorPrototype final : public Node {
+class OperatorPrototype {
   friend class OperatorDefinition;
 
 private:
@@ -23,15 +24,13 @@ private:
   Maybe<VisibilitySpec> visibSpec;
   Maybe<Identifier>     argName;
   FileRange             nameRange;
-
-  mutable IR::MemberParent*   memberParent = nullptr;
-  mutable IR::MemberFunction* memberFn     = nullptr;
+  FileRange             fileRange;
 
 public:
   OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments, QatType* _returnType,
                     Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName)
-      : Node(_fileRange), isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType),
-        visibSpec(_visibSpec), argName(_argName), nameRange(_nameRange) {}
+      : isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType), visibSpec(_visibSpec),
+        argName(_argName), nameRange(_nameRange), fileRange(_fileRange) {}
 
   useit static inline OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange,
                                                 Vec<Argument*> _arguments, QatType* _returnType,
@@ -41,35 +40,33 @@ public:
                              _visibSpec, _fileRange, _argName);
   }
 
-  void setMemberParent(IR::MemberParent* _memberParent) const;
-
-  void  define(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::OPERATOR_PROTOTYPE; }
-  ~OperatorPrototype() final;
+  void           define(MethodState& state, IR::Context* ctx);
+  useit Json     toJson() const;
+  useit NodeType nodeType() const { return NodeType::OPERATOR_PROTOTYPE; }
+  ~OperatorPrototype();
 };
 
-class OperatorDefinition : public Node {
-private:
+class OperatorDefinition {
+  friend DefineCoreType;
+  friend DoSkill;
+
   Vec<Sentence*>     sentences;
   OperatorPrototype* prototype;
+  FileRange          fileRange;
 
 public:
   OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-      : Node(_fileRange), sentences(_sentences), prototype(_prototype) {}
+      : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
   useit static inline OperatorDefinition* create(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
                                                  FileRange _fileRange) {
     return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
   }
 
-  void setMemberParent(IR::MemberParent* coreType) const;
-
-  void  define(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::OPERATOR_DEFINITION; }
+  void  define(MethodState& state, IR::Context* ctx);
+  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
+  useit Json       toJson() const;
+  useit NodeType   nodeType() const { return NodeType::OPERATOR_DEFINITION; }
 };
 
 } // namespace qat::ast

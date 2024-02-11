@@ -97,12 +97,12 @@ Function* Block::getFn() const { return fn; }
 bool Block::hasValue(const String& name) const {
   SHOW("Number of local values: " << values.size())
   for (auto* val : values) {
+    SHOW("Local value name is: " << val->getName())
+    SHOW("Local value type is: " << val->getType()->toString())
     if (val->getName() == name) {
       SHOW("Has local with name")
       return true;
     }
-    SHOW("Local value name is: " << val->getName())
-    SHOW("Local value type is: " << val->getType()->toString())
   }
   if (prevBlock) {
     if (prevBlock->hasValue(name)) {

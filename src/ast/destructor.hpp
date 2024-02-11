@@ -6,34 +6,33 @@
 #include "./argument.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
+#include "member_parent_like.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 
 namespace qat::ast {
 
-class DestructorDefinition : public Node {
-private:
+class DestructorDefinition {
+  friend DefineCoreType;
+  friend DoSkill;
+
   FileRange      nameRange;
   Vec<Sentence*> sentences;
-
-  mutable IR::MemberFunction* memberFn     = nullptr;
-  mutable IR::MemberParent*   memberParent = nullptr;
+  FileRange      fileRange;
 
 public:
   DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
-      : Node(_fileRange), nameRange(_nameRange), sentences(_sentences) {}
+      : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange) {}
 
   useit static inline DestructorDefinition* create(FileRange _nameRange, Vec<Sentence*> _sentences,
                                                    FileRange _fileRange) {
     return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _sentences, _fileRange);
   }
 
-  void setMemberParent(IR::MemberParent* memberParent) const;
-
-  void  define(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::MEMBER_DEFINITION; }
+  void  define(MethodState& state, IR::Context* ctx);
+  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
+  useit Json       toJson() const;
+  useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

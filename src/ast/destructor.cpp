@@ -3,17 +3,13 @@
 
 namespace qat::ast {
 
-void DestructorDefinition::setMemberParent(IR::MemberParent* _memberParent) const { memberParent = _memberParent; }
-
-void DestructorDefinition::define(IR::Context* ctx) {
-  if (!memberParent) {
-    ctx->Error("No parent type found for this member function", fileRange);
-  }
-  memberFn = IR::MemberFunction::CreateDestructor(memberParent, nameRange, fileRange, ctx);
+void DestructorDefinition::define(MethodState& state, IR::Context* ctx) {
+  state.result = IR::MemberFunction::CreateDestructor(state.parent, nameRange, fileRange, ctx);
 }
 
-IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
-  auto* oldFn = ctx->setActiveFunction(memberFn);
+IR::Value* DestructorDefinition::emit(MethodState& state, IR::Context* ctx) {
+  auto  memberFn = state.result;
+  auto* oldFn    = ctx->setActiveFunction(state.result);
   SHOW("Set active destructor: " << memberFn->getFullName())
   auto* block = new IR::Block(memberFn, nullptr);
   SHOW("Created entry block")
@@ -22,14 +18,14 @@ IR::Value* DestructorDefinition::emit(IR::Context* ctx) {
   SHOW("About to allocate necessary arguments")
   auto  argIRTypes  = memberFn->getType()->asFunction()->getArgumentTypes();
   auto* parentRefTy = argIRTypes.at(0)->getType()->asReference();
-  auto* self        = block->newValue("''", parentRefTy, true, memberParent->getTypeRange());
+  auto* self        = block->newValue("''", parentRefTy, true, state.parent->getTypeRange());
   ctx->builder.CreateStore(memberFn->getLLVMFunction()->getArg(0u), self->getLLVM());
   self->loadImplicitPointer(ctx->builder);
   emitSentences(sentences, ctx);
   IR::functionReturnHandler(ctx, memberFn, sentences.empty() ? fileRange : sentences.back()->fileRange);
   SHOW("Sentences emitted")
   (void)ctx->setActiveFunction(oldFn);
-  SHOW("Destructor definition complete for " << memberParent->getParentType()->toString())
+  SHOW("Destructor definition complete for " << state.parent->getParentType()->toString())
   return nullptr;
 }
 

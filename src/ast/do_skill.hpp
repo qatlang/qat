@@ -19,7 +19,8 @@ class DoSkill : public Node, public MemberParentLike {
   Maybe<SkillName> name;
   ast::QatType*    targetType;
 
-  mutable IR::DoneSkill* doneSkill = nullptr;
+  mutable IR::DoneSkill*    doneSkill = nullptr;
+  mutable IR::MemberParent* parent    = nullptr;
 
 public:
   DoSkill(bool _isDef, Maybe<SkillName> _name, ast::QatType* _targetType, FileRange _fileRange)

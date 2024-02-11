@@ -12,10 +12,10 @@ IR::QatType* VectorType::emit(IR::Context* ctx) {
   auto usableSubTy = subTy->isCType() ? subTy->asCType()->getSubType() : subTy;
   if (usableSubTy->isInteger() || usableSubTy->isUnsignedInteger() || usableSubTy->isFloat()) {
     if (count->hasTypeInferrance()) {
-      count->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(8u, ctx));
+      count->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(32u, ctx));
     }
     auto num = count->emit(ctx);
-    if (num->getType()->isUnsignedInteger() && num->getType()->asUnsignedInteger()->getBitwidth() == 8u) {
+    if (num->getType()->isUnsignedInteger() && num->getType()->asUnsignedInteger()->getBitwidth() == 32u) {
       auto numVal =
           llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(num->getLLVMConstant(), ctx->dataLayout.value()));
       if (numVal->isZero()) {
@@ -24,7 +24,7 @@ IR::QatType* VectorType::emit(IR::Context* ctx) {
       return IR::VectorType::create(subTy, *numVal->getValue().getRawData(),
                                     scalable.has_value() ? IR::VectorKind::scalable : IR::VectorKind::fixed, ctx);
     } else {
-      ctx->Error("The number of elements of a vectorized type should be of " + ctx->highlightError("u8") + "type",
+      ctx->Error("The number of elements of a vectorized type should be of " + ctx->highlightError("u32") + "type",
                  count->fileRange);
     }
   } else {

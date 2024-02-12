@@ -110,6 +110,7 @@ enum class TokenType {
   questionMark,
   opaque,
   vectorType,
+  skill,
 };
 
 } // namespace qat::lexer

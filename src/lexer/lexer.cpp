@@ -573,6 +573,7 @@ Token Lexer::wordToToken(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("self", selfWord);
   else Check_Normal_Keyword("void", voidType);
   else Check_Normal_Keyword("type", Type);
+  else Check_Normal_Keyword("skill", skill);
   else Check_Normal_Keyword("pre", pre);
   else Check_Normal_Keyword("up", super);
   //   else Check_Normal_Keyword("const", constant);

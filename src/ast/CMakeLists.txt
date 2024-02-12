@@ -11,6 +11,7 @@ add_library(QAT_AST
 	define_opaque_type.cpp
 	define_region.cpp
 	destructor.cpp
+	do_skill.cpp
 	expression.cpp
 	function.cpp
 	generics.cpp

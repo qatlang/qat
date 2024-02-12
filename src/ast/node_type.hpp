@@ -97,6 +97,7 @@ enum class NodeType {
   PRERUN_BINARY_OP,
   DEFINE_SKILL,
   DO_SKILL,
+  GET_INTRINSIC,
 };
 
 } // namespace qat::ast

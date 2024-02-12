@@ -51,6 +51,13 @@ public:
   IR::Value*        createIn = nullptr;
   useit inline bool canCreateIn() const { return createIn != nullptr; }
   inline void       setCreateIn(IR::Value* _createIn) { createIn = _createIn; }
+  inline void       unsetCreateIn() { createIn = nullptr; }
+};
+
+struct FnAtEnd {
+  std::function<void()> fn;
+
+  ~FnAtEnd() { fn(); }
 };
 
 class TypeInferrable {

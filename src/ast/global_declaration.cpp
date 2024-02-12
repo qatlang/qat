@@ -45,7 +45,8 @@ void GlobalDeclaration::define(IR::Context* ctx) {
               : llvm::Constant::getNullValue(typ->getLLVMType()),
           linkingName);
       value.value()->asInPlaceCreatable()->setCreateIn(new IR::Value(gvar, typ, false, IR::Nature::temporary));
-      value.value()->emit(ctx);
+      (void)value.value()->emit(ctx);
+      value.value()->asInPlaceCreatable()->unsetCreateIn();
     } else {
       auto val = value.value()->emit(ctx);
       if (val->isPrerunValue()) {

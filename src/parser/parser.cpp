@@ -2392,6 +2392,40 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                 } else {
                   add_error("Expected end for (", RangeAt(i + 1));
                 }
+                Maybe<usize> altPos;
+                if (is_next(TokenType::If, i)) {
+                  altPos = first_primary_position(TokenType::altArrow, i + 1);
+                  if (!altPos.has_value()) {
+                    add_error("Expected => after " + color_error("if"), RangeAt(i));
+                  }
+                  bool isSep   = false;
+                  auto uptoPos = altPos.value();
+                  if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
+                    isSep   = true;
+                    uptoPos = first_primary_position(TokenType::separator, i + 1).value();
+                  }
+                  auto expRes = do_prerun_expression(preCtx, i + 1, uptoPos);
+                  if (expRes.second + 1 != uptoPos) {
+                    add_error("Condition did not span till " + String(isSep ? "," : "=>"),
+                              RangeSpan(expRes.second + 1, uptoPos));
+                  }
+                  checkExp = expRes.first;
+                  i        = expRes.second;
+                  if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
+                      !is_next(TokenType::meta, i + 1)) {
+                    add_error("Expected " + color_error("meta") + " after , for the meta info of the function",
+                              RangeAt(i + 1));
+                  } else if (is_next(TokenType::separator, i)) {
+                    i++;
+                  }
+                }
+                if (altPos.has_value()) {
+                  if (i + 1 == altPos.value()) {
+                    i++;
+                  } else {
+                    add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
+                  }
+                }
               }
               if (is_next(TokenType::bracketOpen, i)) {
                 auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
@@ -2440,6 +2474,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
             retTy        = typeRes.first;
             i            = typeRes.second;
           }
+          Maybe<ast::PrerunExpression*>   checkExp;
           Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
           if (is_next(TokenType::parenthesisOpen, i)) {
             auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
@@ -2450,6 +2485,40 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
             } else {
               add_error("Expected end for (", RangeAt(i + 1));
             }
+            Maybe<usize> altPos;
+            if (is_next(TokenType::If, i)) {
+              altPos = first_primary_position(TokenType::altArrow, i + 1);
+              if (!altPos.has_value()) {
+                add_error("Expected => after " + color_error("if"), RangeAt(i));
+              }
+              bool isSep   = false;
+              auto uptoPos = altPos.value();
+              if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
+                isSep   = true;
+                uptoPos = first_primary_position(TokenType::separator, i + 1).value();
+              }
+              auto expRes = do_prerun_expression(preCtx, i + 1, uptoPos);
+              if (expRes.second + 1 != uptoPos) {
+                add_error("Condition did not span till " + String(isSep ? "," : "=>"),
+                          RangeSpan(expRes.second + 1, uptoPos));
+              }
+              checkExp = expRes.first;
+              i        = expRes.second;
+              if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
+                  !is_next(TokenType::meta, i + 1)) {
+                add_error("Expected " + color_error("meta") + " after , for the meta info of the function",
+                          RangeAt(i + 1));
+              } else if (is_next(TokenType::separator, i)) {
+                i++;
+              }
+            }
+            if (altPos.has_value()) {
+              if (i + 1 == altPos.value()) {
+                i++;
+              } else {
+                add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
+              }
+            }
           }
           if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
@@ -2458,13 +2527,13 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
               auto snts   = do_sentences(preCtx, i + 1, bClose);
               SHOW("Creating member function prototype")
               auto memVisib = getVisibility();
-              coreTy->addMemberDefinition(ast::MemberDefinition::create(
-                  getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), argsRes.first, argsRes.second, retTy,
-                                                             getVisibSpec(memVisib),
-                                                             getRangeWithVisib(memVisib, RangeSpan(start, i)))
-                              : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), argsRes.first,
+              memParent->add_method_definition(ast::MemberDefinition::create(
+                  getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), checkExp, argsRes.first,
                                                              argsRes.second, retTy, getVisibSpec(memVisib),
-                                                             getRangeWithVisib(memVisib, RangeSpan(start, i))),
+                                                             getRangeWithVisib(memVisib, RangeSpan(start, i)))
+                              : ast::MemberPrototype::Normal(
+                                    getVariation(), IdentifierAt(start), checkExp, argsRes.first, argsRes.second, retTy,
+                                    getVisibSpec(memVisib), getRangeWithVisib(memVisib, RangeSpan(start, i))),
                   snts, RangeSpan(start, bClose)));
               i = bClose;
             } else {

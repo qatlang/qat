@@ -3583,6 +3583,26 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         i = typeRes.second;
         break;
       }
+      case TokenType::meta: {
+        auto start = i;
+        if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1) && (ValueAt(i + 2) == "intrinsic")) {
+          i = i + 2;
+          if (is_next(TokenType::genericTypeStart, i)) {
+            auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+            if (!gEnd.has_value()) {
+              add_error("Expected ] to end the parameter list", RangeAt(i + 1));
+            }
+            auto params = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
+            setCachedExpr(ast::GetIntrinsic::create(params, RangeSpan(start, gEnd.value())), gEnd.value());
+            i = gEnd.value();
+          } else {
+            add_error("Expected :[ here to start the parameters required to get intrinsics", RangeSpan(start, i));
+          }
+        } else {
+          add_error("Invalid token found here", RangeAt(i));
+        }
+        break;
+      }
       case TokenType::as: {
         if (hasCachedSymbol()) {
           auto symbol = consumeCachedSymbol();

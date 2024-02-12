@@ -2071,9 +2071,9 @@ void QatModule::compileToObject(IR::Context* ctx) {
     auto*  cfg = cli::Config::get();
     String compileCommand(cfg->hasClangPath() ? (fs::absolute(cfg->getClangPath()).string() + " ") : "clang ");
     if (cfg->shouldBuildShared()) {
-      compileCommand.append("-fPIC -c ");
+      compileCommand.append("-fPIC -c -mllvm -enable-matrix ");
     } else {
-      compileCommand.append("-c ");
+      compileCommand.append("-c -mllvm -enable-matrix ");
     }
     if (linkPthread) {
       compileCommand += "-pthread ";
@@ -2108,6 +2108,7 @@ void QatModule::compileToObject(IR::Context* ctx) {
       }
     }
     compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
+    SHOW("Compile command is " << compileCommand)
     log->say("Compile command is: " + compileCommand);
     redi::ipstream proc(compileCommand, redi::pstreams::pstderr);
     String         errMessage;

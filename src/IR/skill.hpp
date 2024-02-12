@@ -79,7 +79,7 @@ public:
   LinkNames getLinkNames() const;
 };
 
-class DoneSkill : Uniq {
+class DoneSkill : public Uniq {
   friend class MemberFunction;
   QatModule*    parent;
   Maybe<Skill*> skill;

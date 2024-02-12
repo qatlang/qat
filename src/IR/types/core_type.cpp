@@ -491,26 +491,27 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, IR::Con
           genParams,
       },
       true);
+  auto oldGenToFill              = defineCoreType->genericsToFill;
   defineCoreType->genericsToFill = toFillTypes;
-  (void)defineCoreType->define(ctx);
-  auto* cTy = defineCoreType->getCoreType();
-  defineCoreType->setCoreType(cTy);
-  (void)defineCoreType->emit(ctx);
-  defineCoreType->unsetCoreType();
+  IR::CoreType* resultTy;
+  (void)defineCoreType->do_define(&resultTy, ctx);
+  defineCoreType->genericsToFill = toFillTypes;
+  (void)defineCoreType->do_emit(resultTy, ctx);
+  defineCoreType->genericsToFill = oldGenToFill;
   for (auto* temp : generics) {
     temp->unset();
   }
   if (ctx->getActiveGeneric().warningCount > 0) {
     auto count = ctx->getActiveGeneric().warningCount;
-    ctx->removeActiveGeneric();
     ctx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                      " generated while creating generic variant " + ctx->highlightWarning(variantName),
                  range);
+    ctx->removeActiveGeneric();
   } else {
     ctx->removeActiveGeneric();
   }
   SHOW("Returning core type")
-  return cTy;
+  return resultTy;
 }
 
 } // namespace qat::IR

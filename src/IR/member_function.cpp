@@ -25,6 +25,16 @@ MemberParent* MemberParent::create_do_skill(IR::DoneSkill* doneSkill) {
   return std::construct_at(OwnNormal(MemberParent), MemberParentType::doSkill, (void*)doneSkill);
 }
 
+bool MemberParent::is_same(IR::MemberParent* other) {
+  if (isDoneSkill() && other->isDoneSkill()) {
+    return asDoneSkill()->getID() == other->asDoneSkill()->getID();
+  } else if (isExpanded() && other->isExpanded()) {
+    return asExpanded()->getID() == other->asExpanded()->getID();
+  } else {
+    return false;
+  }
+}
+
 bool MemberParent::isExpanded() const { return parentType == MemberParentType::expandedType; }
 
 bool MemberParent::isDoneSkill() const { return parentType == MemberParentType::doSkill; }

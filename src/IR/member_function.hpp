@@ -53,6 +53,8 @@ public:
   useit IR::ExpandedType* asExpanded() const;
   useit IR::DoneSkill* asDoneSkill() const;
   useit FileRange      getTypeRange() const;
+
+  useit bool is_same(IR::MemberParent* other);
 };
 
 class MemberFunction : public Function {

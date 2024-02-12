@@ -5,6 +5,7 @@
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_region.hpp"
 #include "../ast/destructor.hpp"
+#include "../ast/do_skill.hpp"
 #include "../ast/expressions/address_of.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/await.hpp"
@@ -17,6 +18,7 @@
 #include "../ast/expressions/entity.hpp"
 #include "../ast/expressions/function_call.hpp"
 #include "../ast/expressions/generic_entity.hpp"
+#include "../ast/expressions/get_intrinsic.hpp"
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/is.hpp"
@@ -50,6 +52,7 @@
 #include "../ast/prerun/integer_literal.hpp"
 #include "../ast/prerun/member_access.hpp"
 #include "../ast/prerun/member_function_call.hpp"
+#include "../ast/prerun/mix_choice_init.hpp"
 #include "../ast/prerun/negative.hpp"
 #include "../ast/prerun/none.hpp"
 #include "../ast/prerun/null_pointer.hpp"
@@ -112,6 +115,17 @@
 
 #define TOKEN_GENERIC_LIST_START ":["
 #define TOKEN_GENERIC_LIST_END   "]"
+
+#define TYPE_TRIGGER_TOKENS                                                                                            \
+  case TokenType::voidType:                                                                                            \
+  case TokenType::cType:                                                                                               \
+  case TokenType::maybeType:                                                                                           \
+  case TokenType::vectorType:                                                                                          \
+  case TokenType::stringSliceType:                                                                                     \
+  case TokenType::unsignedIntegerType:                                                                                 \
+  case TokenType::integerType:                                                                                         \
+  case TokenType::floatType:                                                                                           \
+  case TokenType::futureType:
 
 // NOTE - Check if file fileRange values are making use of the new merge
 // functionality
@@ -343,6 +357,12 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
       case TokenType::comment: {
         break;
       }
+        TYPE_TRIGGER_TOKENS {
+          auto typeRes = do_type(preCtx, i - 1, None);
+          i            = typeRes.second;
+          setCachedPreExp(ast::TypeWrap::create(typeRes.first, false, typeRes.first->fileRange), i);
+          break;
+        }
       case TokenType::super:
       case TokenType::identifier: {
         const auto start  = i;
@@ -364,6 +384,35 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
           SHOW("No generic found: " << name[0].value)
         }
         setCachedPreExp(ast::PrerunEntity::create(symRes.first.relative, name, RangeSpan(start, i)), symRes.second);
+        break;
+      }
+      case TokenType::typeSeparator: {
+        auto                          start = i;
+        Maybe<ast::PrerunExpression*> typeExp;
+        if (hasCachedExp()) {
+          typeExp = consumeCachedExp();
+        }
+        if (is_next(TokenType::identifier, i)) {
+          auto                          name = IdentifierAt(i + 1);
+          Maybe<ast::PrerunExpression*> valueExp;
+          i++;
+          if (is_next(TokenType::parenthesisOpen, i)) {
+            auto expRes = do_prerun_expression(preCtx, i + 1, None);
+            valueExp    = expRes.first;
+            i           = expRes.second;
+            if (is_next(TokenType::parenthesisClose, i)) {
+              i++;
+            } else {
+              add_error("The expression ended here, and expected ) to indicate the end of the expression",
+                        (typeExp.has_value() ? FileRange{typeExp.value()->fileRange, RangeSpan(start, i)}
+                                             : FileRange RangeSpan(start, i)));
+            }
+          }
+          setCachedPreExp(ast::PrerunMixOrChoiceInit::create(typeExp, name, valueExp, RangeSpan(start, i)), i);
+        } else {
+          add_error("Expected an identifier after this to mention the variant of the mix or choice type to init",
+                    (typeExp.has_value() ? FileRange{typeExp.value()->fileRange, RangeAt(i)} : RangeAt(i)));
+        }
         break;
       }
       case TokenType::Type: {
@@ -797,15 +846,7 @@ Vec<ast::FillGeneric*> Parser::do_generic_fill(ParserContext& preCtx, usize from
   for (usize i = from + 1; i < upto; i++) {
     auto& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::voidType:
-      case TokenType::cType:
-      case TokenType::maybeType:
-      case TokenType::vectorType:
-      case TokenType::stringSliceType:
-      case TokenType::unsignedIntegerType:
-      case TokenType::integerType:
-      case TokenType::floatType:
-      case TokenType::futureType: {
+      TYPE_TRIGGER_TOKENS {
         auto subRes = do_type(preCtx, i - 1, upto);
         result.push_back(ast::FillGeneric::create(subRes.first));
         i = subRes.second;
@@ -1686,6 +1727,29 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
+      case TokenType::Do: {
+        if (visibility.has_value()) {
+          add_error("Implementations are always public. Please remove the visibility info before this",
+                    getVisibility().value().range);
+        }
+        auto start = i;
+        if (is_next(TokenType::Type, i)) {
+          auto typeRes = do_type(preCtx, i + 1, None);
+          i            = typeRes.second;
+          if (is_next(TokenType::curlybraceOpen, i)) {
+            auto cClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
+            auto doneSk = ast::DoSkill::create(true, None, typeRes.first, RangeSpan(start, cClose.value()));
+            do_type_contents(preCtx, i + 1, cClose.value(), doneSk);
+            resultNodes.push_back(doneSk);
+            i = cClose.value();
+          } else {
+            add_error("Expected { after this to start the body of the implementation", RangeSpan(start, i));
+          }
+        } else {
+          add_error("Expected " + color_error("type") + " after this", RangeAt(i));
+        }
+        break;
+      }
       case TokenType::mix: {
         if (is_next(TokenType::identifier, i)) {
           if (is_next(TokenType::curlybraceOpen, i + 1)) {
@@ -1861,7 +1925,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               auto* tRes = ast::DefineCoreType::create(name, checkExp, getVisibility(),
                                                        {token.fileRange, RangeAt(bClose.value())}, genericList,
                                                        constraint, metaInfo);
-              do_struct_type(typeCtx, i + 1, bClose.value(), tRes);
+              do_type_contents(typeCtx, i + 1, bClose.value(), tRes);
               addNode(tRes);
               i = bClose.value();
               break;
@@ -2246,6 +2310,8 @@ Pair<ast::VisibilitySpec, usize> Parser::do_visibility_kind(usize from) {
   if (is_next(TokenType::colon, from)) {
     if (is_next(TokenType::Type, from + 1)) {
       return {{VisibilityKind::type, RangeSpan(from, from + 2)}, from + 2};
+    } else if (is_next(TokenType::skill, from + 1)) {
+      return {{VisibilityKind::skill, RangeSpan(from, from + 2)}, from + 2};
     } else if (is_next(TokenType::lib, from + 1)) {
       return {{VisibilityKind::lib, RangeSpan(from, from + 2)}, from + 2};
     } else if (is_next(TokenType::box, from + 1)) {
@@ -2270,7 +2336,7 @@ Pair<ast::VisibilitySpec, usize> Parser::do_visibility_kind(usize from) {
 } // NOLINT(clang-diagnostic-return-type)
 
 // FIXME - Finish functionality for parsing type contents
-void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::DefineCoreType* coreTy) {
+void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast::MemberParentLike* memParent) {
   using lexer::Token;
   using lexer::TokenType;
 
@@ -2376,7 +2442,8 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                           RangeSpan(start, i + 1));
               }
               haveNonMemberEntities = true;
-              Maybe<ast::QatType*> retTy;
+              Maybe<ast::QatType*>          retTy;
+              Maybe<ast::PrerunExpression*> checkExp;
               if (is_next(TokenType::givenTypeSeparator, i)) {
                 auto typeRes = do_type(preCtx, i + 1, None);
                 retTy        = typeRes.first;
@@ -2434,8 +2501,9 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                   auto snts   = do_sentences(preCtx, i + 1, bClose);
                   SHOW("Creating member function prototype")
                   auto memVisib = getVisibility();
-                  coreTy->addMemberDefinition(ast::MemberDefinition::create(
-                      ast::MemberPrototype::Value(fnName, argsRes.first, argsRes.second, retTy, getVisibSpec(memVisib),
+                  memParent->add_method_definition(ast::MemberDefinition::create(
+                      ast::MemberPrototype::Value(fnName, checkExp, argsRes.first, argsRes.second, retTy,
+                                                  getVisibSpec(memVisib),
                                                   getRangeWithVisib(memVisib, RangeSpan(start, i))),
                       snts, RangeSpan(start, bClose)));
                   i = bClose;
@@ -2543,6 +2611,9 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
             add_error("Expected [ to start the function body", RangeSpan(start, i));
           }
         } else if (is_next(TokenType::typeSeparator, i)) {
+          if (!memParent->is_define_core_type()) {
+            add_error("Member fields are only allowed for struct types", RangeSpan(start, i + 1));
+          }
           if (finishedMemberList) {
             add_error(
                 "The member list has already been finalised. Cannot add a member field after terminating the list. Did you add a " +
@@ -2578,9 +2649,10 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                           " to end the list of member fields",
                       RangeSpan(start, i));
           }
-          coreTy->addMember(ast::DefineCoreType::Member::create(memType, memName, memVar, getVisibSpec(memVisib),
-                                                                memValue,
-                                                                getRangeWithVisib(memVisib, RangeSpan(start, i))));
+          SHOW("Adding member")
+          memParent->as_define_core_type()->addMember(
+              ast::DefineCoreType::Member::create(memType, memName, memVar, getVisibSpec(memVisib), memValue,
+                                                  getRangeWithVisib(memVisib, RangeSpan(start, i))));
         } else {
           add_error("Unexpected identifier found inside core type", RangeAt(i));
         }
@@ -2594,7 +2666,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
         }
         haveNonMemberEntities = true;
         auto start            = i;
-        if (coreTy->hasDefaultConstructor()) {
+        if (memParent->has_default_constructor()) {
           add_error("A default destructor is already defined for the core type", RangeAt(i));
         }
         if (is_next(TokenType::bracketOpen, i)) {
@@ -2603,7 +2675,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
             auto bClose   = bCloseRes.value();
             auto snts     = do_sentences(preCtx, i + 1, bClose);
             auto defVisib = getVisibility();
-            coreTy->setDefaultConstructor(ast::ConstructorDefinition::create(
+            memParent->set_default_constructor(ast::ConstructorDefinition::create(
                 ast::ConstructorPrototype::Default(getVisibSpec(defVisib), RangeAt(start),
                                                    getRangeWithVisib(defVisib, RangeAt(i))),
                 std::move(snts), RangeSpan(i + 1, bClose)));
@@ -2624,34 +2696,10 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
         }
         haveNonMemberEntities = true;
         auto start            = i;
-        if (coreTy->hasCopyConstructor()) {
+        if (memParent->has_copy_constructor()) {
           add_error("A copy constructor is already defined for the core type", RangeAt(i));
-        } else if (coreTy->hasTrivialCopy()) {
-          add_error(
-              color_error("copy'trivial") +
-                  " has already been provided. copy constructor and copy assignment operator cannot be provided after that",
-              RangeAt(i));
         }
-        if (is_next(TokenType::child, i)) {
-          if (is_next(TokenType::identifier, i + 1)) {
-            if (ValueAt(i + 2) == "trivial") {
-              if (is_next(TokenType::stop, i + 2)) {
-                coreTy->setTrivialCopy(RangeSpan(start, i + 3));
-                i += 3;
-                break;
-              } else {
-                add_error("Expected . to end the " + color_error("copy'trivial") + " specification",
-                          RangeSpan(start, i + 2));
-              }
-            } else {
-              add_error("Invalid identifier found. Expected " + color_error("copy'trivial") +
-                            " to specify trivial copy",
-                        RangeAt(i + 2));
-            }
-          } else {
-            add_error("Expected " + color_error("copy'trivial") + " to specify trivial copy", RangeSpan(start, i + 1));
-          }
-        } else if (is_next(TokenType::identifier, i)) {
+        if (is_next(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (is_next(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
@@ -2659,7 +2707,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
               auto bClose   = bCloseRes.value();
               auto snts     = do_sentences(preCtx, i + 2, bClose);
               auto memVisib = getVisibility();
-              coreTy->setCopyConstructor(ast::ConstructorDefinition::create(
+              memParent->set_copy_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Copy(getVisibSpec(memVisib), RangeAt(start),
                                                   getRangeWithVisib(memVisib, RangeSpan(i, i + 1)), argName),
                   std::move(snts), RangeSpan(i + 2, bClose)));
@@ -2679,34 +2727,10 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
       }
       case TokenType::move: {
         auto start = i;
-        if (coreTy->hasMoveConstructor()) {
+        if (memParent->has_move_constructor()) {
           add_error("A move constructor is already defined for the core type", RangeAt(i));
-        } else if (coreTy->hasTrivialMove()) {
-          add_error(
-              color_error("move'trivial") +
-                  " has already been provided. move constructor and move assignment operator cannot be provided after that",
-              RangeAt(i));
         }
-        if (is_next(TokenType::child, i)) {
-          if (is_next(TokenType::identifier, i + 1)) {
-            if (ValueAt(i + 2) == "trivial") {
-              if (is_next(TokenType::stop, i + 2)) {
-                coreTy->setTrivialMove(RangeSpan(start, i + 3));
-                i += 3;
-                break;
-              } else {
-                add_error("Expected . to end the " + color_error("move'trivial") + " specification",
-                          RangeSpan(start, i + 2));
-              }
-            } else {
-              add_error("Invalid identifier found. Expected " + color_error("move'trivial") +
-                            " to specify trivial move",
-                        RangeAt(i + 2));
-            }
-          } else {
-            add_error("Expected " + color_error("move'trivial") + " to specify trivial move", RangeSpan(start, i + 1));
-          }
-        } else if (is_next(TokenType::identifier, i)) {
+        if (is_next(TokenType::identifier, i)) {
           auto argName = IdentifierAt(i + 1);
           if (is_next(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
@@ -2714,7 +2738,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
               auto bClose    = bCloseRes.value();
               auto snts      = do_sentences(preCtx, i + 2, bClose);
               auto moveVisib = getVisibility();
-              coreTy->setMoveConstructor(ast::ConstructorDefinition::create(
+              memParent->set_move_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Move(getVisibSpec(moveVisib), RangeAt(start),
                                                   getRangeWithVisib(moveVisib, RangeSpan(i, i + 1)), argName),
                   std::move(snts), RangeSpan(i + 2, bClose)));
@@ -2753,7 +2777,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                 auto memVisib = getVisibility();
                 if (argsRes.first.size() == 1) {
                   // NOTE - Convertor
-                  coreTy->addConvertorDefinition(ast::ConvertorDefinition::create(
+                  memParent->add_convertor_definition(ast::ConvertorDefinition::create(
                       ast::ConvertorPrototype::create_from(
                           RangeAt(start), argsRes.first.front()->getName(), argsRes.first.front()->getType(),
                           argsRes.first.front()->isTypeMember(), getVisibSpec(memVisib),
@@ -2761,7 +2785,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                       snts, RangeSpan(start, bClose)));
                 } else {
                   // NOTE = Constructor
-                  coreTy->addConstructorDefinition(ast::ConstructorDefinition::create(
+                  memParent->add_constructor_definition(ast::ConstructorDefinition::create(
                       ast::ConstructorPrototype::Normal(RangeAt(start), std::move(argsRes.first),
                                                         getVisibSpec(memVisib),
                                                         getRangeWithVisib(memVisib, RangeSpan(start, pClose))),
@@ -2789,18 +2813,12 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
         haveNonMemberEntities = true;
         auto start            = i;
         if (is_next(TokenType::copy, i)) {
-          if (coreTy->hasCopyAssignment()) {
+          if (memParent->has_copy_assignment()) {
             add_error("The copy assignment operator is already defined for this core "
                       "type",
                       RangeSpan(i, i + 1));
           }
           if (is_next(TokenType::assignment, i + 1)) {
-            if (coreTy->hasTrivialCopy()) {
-              add_error(
-                  color_error("copy'trivial") +
-                      " has already been provided. Copy assignment operator and Copy constructor cannot be provided after that",
-                  RangeSpan(start, i + 1));
-            }
             if (is_next(TokenType::identifier, i + 2)) {
               if (is_next(TokenType::bracketOpen, i + 3)) {
                 auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
@@ -2808,7 +2826,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                   auto bClose  = bCloseRes.value();
                   auto snts    = do_sentences(preCtx, i + 4, bClose);
                   auto opVisib = getVisibility();
-                  coreTy->setCopyAssignment(ast::OperatorDefinition::create(
+                  memParent->set_copy_assignment(ast::OperatorDefinition::create(
                       ast::OperatorPrototype::create(
                           true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {}, nullptr,
                           getVisibSpec(opVisib), getRangeWithVisib(opVisib, RangeSpan(i, i + 3)), IdentifierAt(i + 3)),
@@ -2832,18 +2850,12 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
           }
           break;
         } else if (is_next(TokenType::move, i)) {
-          if (coreTy->hasMoveAssignment()) {
+          if (memParent->has_move_assignment()) {
             add_error("The move assignment operator is already defined for this core "
                       "type",
                       RangeSpan(i, i + 1));
           }
           if (is_next(TokenType::assignment, i + 1)) {
-            if (coreTy->hasTrivialMove()) {
-              add_error(
-                  color_error("move'trivial") +
-                      " has already been provided. Copy assignment operator and Copy constructor cannot be provided after that",
-                  RangeSpan(start, i + 1));
-            }
             if (is_next(TokenType::identifier, i + 2)) {
               if (is_next(TokenType::bracketOpen, i + 3)) {
                 auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
@@ -2851,7 +2863,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
                   auto bClose  = bCloseRes.value();
                   auto snts    = do_sentences(preCtx, i + 4, bClose);
                   auto opVisib = getVisibility();
-                  coreTy->setMoveAssignment(ast::OperatorDefinition::create(
+                  memParent->set_move_assignment(ast::OperatorDefinition::create(
                       ast::OperatorPrototype::create(
                           true, ast::Op::moveAssignment, RangeAt(start), {}, nullptr, getVisibSpec(opVisib),
                           getRangeWithVisib(opVisib, RangeSpan(i, i + 3)), IdentifierAt(i + 3)),
@@ -2947,7 +2959,8 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
           if (bCloseRes.has_value()) {
             auto bClose = bCloseRes.value();
             auto snts   = do_sentences(preCtx, i + 1, bClose);
-            coreTy->addOperatorDefinition(ast::OperatorDefinition::create(prototype, snts, RangeSpan(start, bClose)));
+            memParent->add_operator_definition(
+                ast::OperatorDefinition::create(prototype, snts, RangeSpan(start, bClose)));
             i = bClose;
           } else {
             add_error("Expected end for [", RangeAt(i + 1));
@@ -2974,7 +2987,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
               auto bClose   = bCloseRes.value();
               auto snts     = do_sentences(preCtx, i + 2, bClose);
               auto memVisib = getVisibility();
-              coreTy->addConvertorDefinition(ast::ConvertorDefinition::create(
+              memParent->add_convertor_definition(ast::ConvertorDefinition::create(
                   ast::ConvertorPrototype::create_to(RangeAt(start), typRes.first, getVisibSpec(memVisib),
                                                      RangeSpan(start, i + 1)),
                   std::move(snts), getRangeWithVisib(memVisib, RangeSpan(start, bClose))));
@@ -2999,7 +3012,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
         }
         haveNonMemberEntities = true;
         auto start            = i;
-        if (coreTy->hasDestructor()) {
+        if (memParent->has_destructor()) {
           add_error("A destructor is already defined for the core type", RangeAt(i));
         }
         if (is_next(TokenType::bracketOpen, i)) {
@@ -3007,7 +3020,7 @@ void Parser::do_struct_type(ParserContext& preCtx, usize from, usize upto, ast::
           if (bCloseRes) {
             auto snts     = do_sentences(preCtx, i + 1, bCloseRes.value());
             auto memVisib = getVisibility();
-            coreTy->setDestructorDefinition(ast::DestructorDefinition::create(
+            memParent->set_destructor_definition(ast::DestructorDefinition::create(
                 RangeAt(start), snts, getRangeWithVisib(memVisib, RangeSpan(i, bCloseRes.value()))));
             i = bCloseRes.value();
           } else {
@@ -3392,6 +3405,7 @@ ast::PlainInitialiser* Parser::do_plain_initialiser(ParserContext& preCtx, Maybe
                                          type.has_value() ? FileRange{type.value()->fileRange, RangeAt(upto)}
                                                           : FileRange RangeSpan(from, upto));
   } else {
+    SHOW("PlainInit from " << from << " upto " << upto)
     auto exps = do_separated_expressions(preCtx, from, upto);
     return ast::PlainInitialiser::create(type, {}, exps,
                                          type.has_value() ? FileRange{type.value()->fileRange, RangeAt(upto)}
@@ -3416,9 +3430,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
   }
   SHOW("	FROM : " << from << " range: " << RangeAt(from))
   SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
-                   << (upto.has_value() ? "\n		" + std::to_string(upto.value()) +
-                                              " range: " + RangeAt(upto.value()).startToString()
-                                        : ""))
+                   << (upto.has_value()
+                           ? "\n		" + std::to_string(upto.value()) + " range: " + RangeAt(upto.value()).startToString()
+                           : ""))
 
   usize i = from + 1; // NOLINT(readability-identifier-length)
 
@@ -3629,7 +3643,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             auto exps   = do_separated_expressions(preCtx, i + 1, pClose);
             setCachedExpr(
                 ast::ConstructorCall::create(hasCachedType() ? Maybe<ast::QatType*>(consumeCachedType()) : None, exps,
-                                             None, None, None, {RangeAt(i), RangeAt(pClose)}),
+                                             {RangeAt(i), RangeAt(pClose)}),
                 pClose);
             i = pClose;
           } else {
@@ -3824,7 +3838,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
       }
       case TokenType::bracketOpen: {
         SHOW("Found [")
-        auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+        auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
         if (bCloseRes.has_value()) {
           //   if (isNotPartOfExpression(i, bCloseRes.value())) {
           //     if (hasCachedExpr()) {
@@ -3978,88 +3992,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
-      case TokenType::own: {
-        SHOW("Found own")
-        auto                 start = i;
-        auto                 ownTy = ast::ConstructorCall::OwnType::parent;
-        Maybe<ast::QatType*> ownerType;
-        Maybe<Expression*>   ownCount;
-        if (is_next(TokenType::child, i)) {
-          SHOW("Custom own type")
-          if (is_next(TokenType::heap, i + 1)) {
-            ownTy = ast::ConstructorCall::OwnType::heap;
-            i += 2;
-          } else if (is_next(TokenType::Type, i + 1)) {
-            ownTy = ast::ConstructorCall::OwnType::type;
-            i += 2;
-          } else if (is_next(TokenType::region, i + 1)) {
-            ownTy = ast::ConstructorCall::OwnType::region;
-            if (is_next(TokenType::parenthesisOpen, i + 2)) {
-              auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
-              if (pCloseRes.has_value()) {
-                ownerType = do_type(preCtx, i + 3, pCloseRes.value()).first;
-                i         = pCloseRes.value();
-              } else {
-                add_error("Expected end for (", RangeAt(i + 3));
-              }
-            } else {
-              add_error("Expected ( and ) to enclose the region for ownership", RangeAt(i + 3));
-            }
-          } else {
-            add_error("Unexpected ownership type", RangeSpan(i, i + 1));
-          }
-        }
-        if (is_next(TokenType::bracketOpen, i)) {
-          SHOW("Multiple owns")
-          auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
-          if (bCloseRes.has_value()) {
-            SHOW("Own count ends at: " << bCloseRes.value())
-            ownCount = do_expression(preCtx, None, i + 1, bCloseRes.value()).first;
-            i        = bCloseRes.value();
-          } else {
-            add_error("Expected end for [", RangeAt(i + 1));
-          }
-        }
-        // FIXME - Add heaped plain initialisation
-        auto symRes = do_symbol(preCtx, i + 1);
-        setSymbol(symRes.first);
-        i                  = symRes.second;
-        ast::QatType* type = nullptr;
-        if (is_next(TokenType::genericTypeStart, i)) {
-          auto tEndRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
-          if (tEndRes.has_value()) {
-            auto                   tEnd = tEndRes.value();
-            Vec<ast::FillGeneric*> types;
-            if (tEnd != i + 2) {
-              types = do_generic_fill(preCtx, i + 1, tEnd);
-            }
-            auto symbol = consumeCachedSymbol();
-            type        = ast::GenericNamedType::create(symbol.relative, symbol.name, types, symbol.fileRange);
-            i           = tEnd;
-          } else {
-            add_error("Expected end for the generic type specification", RangeAt(i + 1));
-          }
-        } else {
-          auto symbol = consumeCachedSymbol();
-          type        = ast::NamedType::create(symbol.relative, symbol.name, symbol.fileRange);
-        }
-        if (is_next(TokenType::from, i)) {
-          if (is_next(TokenType::parenthesisOpen, i + 1)) {
-            auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
-            if (pCloseRes) {
-              auto pClose = pCloseRes.value();
-              auto args   = do_separated_expressions(preCtx, i + 2, pClose);
-              setCachedExpr(
-                  ast::ConstructorCall::create(type, args, ownTy, ownerType, ownCount, RangeSpan(start, pClose)),
-                  pClose);
-              i = pClose;
-            } else {
-              add_error("Expected end for (", RangeAt(i + 2));
-            }
-          }
-        }
-        break;
-      }
       case TokenType::referenceType: {
         if (hasCachedExpr() || hasCachedSymbol()) {
           if (hasCachedSymbol()) {
@@ -4143,20 +4075,12 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
-      case TokenType::voidType:
-      case TokenType::cType:
-      case TokenType::maybeType:
-      case TokenType::vectorType:
-      case TokenType::stringSliceType:
-      case TokenType::unsignedIntegerType:
-      case TokenType::integerType:
-      case TokenType::floatType:
-      case TokenType::futureType: {
-        auto typeRes = do_type(preCtx, i - 1, None);
-        setCachedType(typeRes.first);
-        i = typeRes.second;
-        break;
-      }
+        TYPE_TRIGGER_TOKENS {
+          auto typeRes = do_type(preCtx, i - 1, None);
+          setCachedType(typeRes.first);
+          i = typeRes.second;
+          break;
+        }
       case TokenType::to: {
         SHOW("Found to expression. hasCachedSymbol: " << hasCachedSymbol() << " hasCachedExpr: " << hasCachedExpr())
         ast::Expression* source = nullptr;
@@ -4370,19 +4294,34 @@ Vec<ast::PrerunExpression*> Parser::do_separated_prerun_expressions(ParserContex
 
 Vec<ast::Expression*> Parser::do_separated_expressions(ParserContext& preCtx, usize from, usize to) {
   Vec<ast::Expression*> result;
+  SHOW("Sep exp: " << from << " - " << to)
   for (usize i = from + 1; i < to; i++) {
-    if (is_primary_within(lexer::TokenType::separator, i - 1, to)) {
-      auto endResult = first_primary_position(lexer::TokenType::separator, i - 1);
-      if (!endResult.has_value() || (endResult.value() >= to)) {
-        add_error("Invalid position for separator `,`", RangeAt(i));
-      }
-      auto end = endResult.value();
-      result.push_back(do_expression(preCtx, None, i - 1, end).first);
-      i = end;
+    SHOW("Separated exp iter " << i)
+    auto expRes = do_expression(preCtx, None, i - 1, None);
+    result.push_back(expRes.first);
+    i = expRes.second;
+    if (is_next(lexer::TokenType::separator, i)) {
+      i++;
     } else {
-      result.push_back(do_expression(preCtx, None, i - 1, to).first);
-      i = to;
+      if (i + 1 == to) {
+        continue;
+      }
+      SHOW("from " << from << " to " << to << " and i " << i)
+      add_error("Expected , after this expression as the list of expressions are not complete yet",
+                expRes.first->fileRange);
     }
+    // if (is_primary_within(lexer::TokenType::separator, i - 1, to)) {
+    //   auto endResult = first_primary_position(lexer::TokenType::separator, i - 1);
+    //   if (!endResult.has_value() || (endResult.value() >= to)) {
+    //     add_error("Invalid position for separator `,`", RangeAt(i));
+    //   }
+    //   auto end = endResult.value();
+    //   result.push_back(do_expression(preCtx, None, i - 1, end).first);
+    //   i = end;
+    // } else {
+    //   result.push_back(do_expression(preCtx, None, i - 1, to).first);
+    //   i = to;
+    // }
   }
   return result;
 }
@@ -4468,7 +4407,7 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext& preCtx, const usize st
   }
 } // NOLINT(clang-diagnostic-return-type)
 
-Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usize upto, bool onlyOne) {
+Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usize upto) {
   using ast::FloatType;
   using ast::IntegerType;
   using IR::FloatTypeKind;
@@ -4744,16 +4683,16 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           i++;
         }
         if (is_next(TokenType::identifier, i)) {
+          auto name = IdentifierAt(i + 1);
           if (is_next(TokenType::assignment, i + 1)) {
-            auto endRes = first_primary_position(TokenType::stop, i + 2);
-            if (endRes.has_value()) {
-              auto  end = endRes.value();
-              auto* exp = do_expression(preCtx, None, i + 2, end).first;
-              result.push_back(ast::LocalDeclaration::create(nullptr, isRef, IdentifierAt(i + 1), exp, isVarDecl,
-                                                             RangeSpan(start, end)));
-              i = end;
+            auto expRes = do_expression(preCtx, None, i + 2, None);
+            i           = expRes.second;
+            if (is_next(TokenType::stop, i)) {
+              i++;
+              result.push_back(
+                  ast::LocalDeclaration::create(nullptr, isRef, name, expRes.first, isVarDecl, RangeSpan(start, i)));
             } else {
-              add_error("Invalid end for sentence", RangeSpan(start, i + 2));
+              add_error("Expected . to end the local declaration", RangeSpan(start, i));
             }
           } else if (is_next(TokenType::typeSeparator, i + 1)) {
             auto endRes = first_primary_position(TokenType::stop, i + 2);
@@ -4783,14 +4722,10 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           } else if (is_next(TokenType::stop, i + 1)) {
             add_error("Only declarations with `maybe` type can omit the value to be assigned", RangeSpan(start, i + 2));
           } else {
-            add_error("Unexpected token found after the beginning of inferred "
-                      "declaration",
-                      RangeAt(i + 1));
+            add_error("Unexpected token found after the beginning of local declaration", RangeAt(i + 1));
           }
         } else {
-          add_error("Expected an identifier for the name of the local value, in "
-                    "the inferred declaration",
-                    RangeSpan(start, i));
+          add_error("Expected an identifier for the name of the local value", RangeSpan(start, i));
         }
         break;
       }
@@ -5102,11 +5037,6 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           result.push_back(ast::ExpressionSentence::create(expr, expr->fileRange));
           i++;
         }
-      }
-    }
-    if (onlyOne) {
-      if (!result.empty()) {
-        return result;
       }
     }
   }

@@ -59,7 +59,7 @@ public:
 
   void clear_brought_paths();
   void set_tokens(Vec<lexer::Token>* tokens);
-  void do_struct_type(ParserContext& prev_ctx, usize from, usize upto, ast::DefineCoreType* coreTy);
+  void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* coreTy);
   void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto,
                       Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef, Vec<FileRange>& fileRanges,
                       Maybe<usize>& defaultVal);
@@ -100,7 +100,7 @@ public:
                                                     bool                    returnAtFirstExp  = false);
   useit Vec<ast::Expression*> do_separated_expressions(ParserContext& prev_ctx, usize from, usize upto);
   useit Vec<ast::PrerunExpression*> do_separated_prerun_expressions(ParserContext& prev_ctx, usize from, usize upto);
-  useit Vec<ast::Sentence*> do_sentences(ParserContext& prev_ctx, usize from, usize upto, bool onlyOne = false);
+  useit Vec<ast::Sentence*> do_sentences(ParserContext& prev_ctx, usize from, usize upto);
   //   useit bool                isNotPartOfExpression(usize from, usize upto);
   useit Maybe<usize> get_pair_end(lexer::TokenType startType, lexer::TokenType endType, usize current);
   useit Maybe<usize> first_primary_position(lexer::TokenType candidate, usize from);

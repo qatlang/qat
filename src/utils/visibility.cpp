@@ -1,5 +1,6 @@
 #include "./visibility.hpp"
 #include "../IR/qat_module.hpp"
+#include "../IR/skill.hpp"
 #include "../IR/types/qat_type.hpp"
 
 namespace qat {
@@ -26,24 +27,19 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
   }
 }
 
-AccessInfo::AccessInfo(IR::QatModule* _module, Maybe<IR::QatType*> _type) : module(_module), type(_type) {}
+AccessInfo::AccessInfo(IR::QatModule* _module, Maybe<IR::QatType*> _type, Maybe<IR::DoneSkill*> _skill)
+    : module(_module), type(_type), skill(_skill) {}
 
 AccessInfo AccessInfo::GetPrivileged() {
-  AccessInfo result   = AccessInfo(nullptr, None);
+  AccessInfo result   = AccessInfo(nullptr, None, None);
   result.isPrivileged = true;
   return result;
 }
 
 bool AccessInfo::isPrivilegedAccess() const { return isPrivileged; }
 
-bool AccessInfo::hasType() const { return type.has_value() && (type.value() != nullptr); }
-
-IR::QatModule* AccessInfo::getModule() const { return module; }
-
-IR::QatType* AccessInfo::getType() const { return type.value_or(nullptr); }
-
-bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> req_info) {
-  if (req_info.has_value() && req_info->isPrivilegedAccess()) {
+bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo) {
+  if (reqInfo.has_value() && reqInfo->isPrivilegedAccess()) {
     return true;
   }
   switch (visibility.kind) {
@@ -52,8 +48,8 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo
     case VisibilityKind::folder:
     case VisibilityKind::lib: {
       SHOW("VisibilityInfo: Module")
-      return req_info.has_value() && ((visibility.moduleVal->getID() == req_info->getModule()->getID()) ||
-                                      visibility.moduleVal->isParentModuleOf(req_info->getModule()));
+      return reqInfo.has_value() && ((visibility.moduleVal->getID() == reqInfo->getModule()->getID()) ||
+                                     visibility.moduleVal->isParentModuleOf(reqInfo->getModule()));
     }
     case VisibilityKind::pub: {
       SHOW("VisibilityInfo: PUB")
@@ -61,21 +57,29 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo
     }
     case VisibilityKind::type: {
       SHOW("VisibilityInfo: TYPE")
-      if (req_info.has_value() && req_info->hasType()) {
-        return req_info->getType()->isSame(visibility.typePtr);
+      if (reqInfo.has_value() && reqInfo->has_type()) {
+        return reqInfo->get_type()->isSame(visibility.typePtr);
       }
       return false;
     }
+    case VisibilityKind::skill: {
+      SHOW("VisibilityInfo: SKILL")
+      if (reqInfo.has_value() && reqInfo->has_skill()) {
+        return reqInfo->get_skill()->getType()->isSame(visibility.typePtr);
+      }
+    }
     case VisibilityKind::parent: {
       SHOW("VisibilityInfo: PARENT")
-      if (!req_info.has_value()) {
+      if (!reqInfo.has_value()) {
         return false;
       }
-      if (visibility.typePtr && req_info->hasType()) {
-        return visibility.typePtr->isSame(req_info->getType());
-      } else if (visibility.moduleVal && req_info->getModule()) {
-        return (visibility.moduleVal->getID() == req_info->getModule()->getID()) ||
-               visibility.moduleVal->isParentModuleOf(req_info->getModule());
+      if (visibility.typePtr && reqInfo->has_type()) {
+        return visibility.typePtr->isSame(reqInfo->get_type());
+      } else if (visibility.typePtr && reqInfo->has_skill()) {
+        return reqInfo->get_skill()->getType()->isSame(visibility.typePtr);
+      } else if (visibility.moduleVal && reqInfo->getModule()) {
+        return (visibility.moduleVal->getID() == reqInfo->getModule()->getID()) ||
+               visibility.moduleVal->isParentModuleOf(reqInfo->getModule());
       }
       return false;
     }

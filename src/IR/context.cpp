@@ -367,6 +367,13 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
         }
         return VisibilityInfo::folder(getMod()->getFolderModule(folderPath));
       }
+      case VisibilityKind::skill: {
+        if (hasActiveType()) {
+          return VisibilityInfo::skill(getActiveType());
+        } else {
+          Error("There is no parent type in the scope and hence this visibility is not allowed", spec->range);
+        }
+      }
       case VisibilityKind::type: {
         if (hasActiveType()) {
           return VisibilityInfo::type(getActiveType());
@@ -416,13 +423,13 @@ VisibilityInfo Context::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
 } // NOLINT(clang-diagnostic-return-type)
 
 AccessInfo Context::getAccessInfo() const {
-  IR::QatModule*      mod   = getActiveModule();
-  Maybe<IR::QatType*> type  = None;
-  Maybe<IR::Skill*>   skill = None;
-  if (hasActiveType()) {
+  IR::QatModule*        mod   = getActiveModule();
+  Maybe<IR::QatType*>   type  = None;
+  Maybe<IR::DoneSkill*> skill = None;
+  if (has_active_done_skill()) {
+    skill = get_active_done_skill();
+  } else if (hasActiveType()) {
     type = getActiveType();
-  } else if (has_active_skill() || has_active_done_skill()) {
-    skill = has_active_skill() ? get_active_skill() : get_active_done_skill()->getSkill();
   }
   return {mod, type, skill};
 }

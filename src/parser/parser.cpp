@@ -1261,20 +1261,9 @@ Pair<ast::QatType*, usize> Parser::do_type(ParserContext& preCtx, usize from, Ma
           isRefVar = true;
           i++;
         }
-        if (is_next(TokenType::bracketOpen, i)) {
-          auto bEndRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
-          if (bEndRes.has_value()) {
-            auto subRes = do_type(ctx, i + 1, bEndRes.value());
-            cacheTy     = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, bEndRes.value()));
-            i           = bEndRes.value();
-          } else {
-            add_error("Expected ] to end the subtype of the reference", RangeAt(i + 1));
-          }
-        } else {
-          add_error("Did you forget to provide the subtype of the reference type? The syntax is expected to be @" +
-                        String(isRefVar ? "var[subtype]" : "[subtype]"),
-                    RangeSpan(start, i));
-        }
+        auto subRes = do_type(ctx, i, None);
+        i           = subRes.second;
+        cacheTy     = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, i));
         break;
       }
       case TokenType::multiPointerType:

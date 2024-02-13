@@ -66,7 +66,7 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
     index = fn->blocks.size();
     fn->blocks.push_back(this);
   }
-  name = (hasParent() ? (parent->getName() + ".") : "") + std::to_string(index) + "_bb";
+  name = (hasParent() ? (parent->getName() + "_") : "") + std::to_string(index) + "b";
   bb   = llvm::BasicBlock::Create(fn->getLLVMFunction()->getContext(), name, fn->getLLVMFunction());
   SHOW("Created llvm::BasicBlock " << name)
 }

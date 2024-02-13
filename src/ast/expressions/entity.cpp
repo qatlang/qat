@@ -1,6 +1,7 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
+#include "llvm/IR/GlobalVariable.h"
 #include <utility>
 
 namespace qat::ast {
@@ -101,7 +102,14 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         } else if (mod->hasGlobalEntity(singleName.value, reqInfo) ||
                    mod->hasBroughtGlobalEntity(singleName.value, ctx->getAccessInfo()) ||
                    mod->hasAccessibleGlobalEntityInImports(singleName.value, reqInfo).first) {
-          auto* gEnt = mod->getGlobalEntity(singleName.value, reqInfo);
+          auto* gEnt  = mod->getGlobalEntity(singleName.value, reqInfo);
+          auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->getLLVM())->getName();
+          if (!ctx->getActiveModule()->getLLVMModule()->getNamedGlobal(gName)) {
+            new llvm::GlobalVariable(*ctx->getActiveModule()->getLLVMModule(), gEnt->getType()->getLLVMType(),
+                                     !gEnt->isVariable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr,
+                                     gName, nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt,
+                                     true);
+          }
           return new IR::Value(gEnt->getLLVM(), gEnt->getType(), gEnt->isVariable(), gEnt->getNature());
         }
       }
@@ -153,7 +161,14 @@ IR::Value* Entity::emit(IR::Context* ctx) {
     } else if (mod->hasGlobalEntity(entityName.value, reqInfo) ||
                mod->hasBroughtGlobalEntity(entityName.value, ctx->getAccessInfo()) ||
                mod->hasAccessibleGlobalEntityInImports(entityName.value, reqInfo).first) {
-      auto* gEnt = mod->getGlobalEntity(entityName.value, reqInfo);
+      auto* gEnt  = mod->getGlobalEntity(entityName.value, reqInfo);
+      auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->getLLVM())->getName();
+      if (!ctx->getActiveModule()->getLLVMModule()->getNamedGlobal(gName)) {
+        new llvm::GlobalVariable(*ctx->getActiveModule()->getLLVMModule(), gEnt->getType()->getLLVMType(),
+                                 !gEnt->isVariable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr,
+                                 gName, nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt,
+                                 true);
+      }
       if (!gEnt->getVisibility().isAccessible(reqInfo)) {
         ctx->Error("Global entity " + ctx->highlightError(gEnt->getFullName()) + " is not accessible here", fileRange);
       }

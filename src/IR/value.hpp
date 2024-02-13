@@ -58,7 +58,7 @@ public:
   useit inline bool isImplicitPointer() const {
     return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
                     llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == getType()->getLLVMType()) ||
-                   (llvm::isa<llvm::GlobalVariable>(ll) && !llvm::cast<llvm::GlobalVariable>(ll)->isConstant() &&
+                   (llvm::isa<llvm::GlobalVariable>(ll) &&
                     llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == getType()->getLLVMType())) &&
                   !isPrerunValue());
   }

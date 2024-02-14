@@ -523,8 +523,13 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
   }
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
   functionDefinition->prototype->setVariantName(variantName);
+  Vec<IR::GenericParameter*> genParams;
+  for (auto genAb : generics) {
+    genParams.push_back(genAb->toIRGenericType());
+  }
   auto prevTemp = ctx->allActiveGenerics;
-  ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange}, true);
+  ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange, 0, genParams},
+                        true);
   auto* fun = (IR::Function*)functionDefinition->emit(ctx);
   variants.push_back(GenericVariant<Function>(fun, types));
   for (auto* temp : generics) {

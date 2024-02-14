@@ -190,15 +190,15 @@ IR::Value* ConvertorDefinition::emit(MethodState& state, IR::Context* ctx) {
                        FileRange{mem->name.range, mem->defaultValue.value()->fileRange});
           }
           fnEmit->addInitMember({i, mem->defaultValue.value()->fileRange});
-        } else if (mem->type->hasDefaultValue() || mem->type->isDefaultConstructible()) {
-          if (mem->type->hasDefaultValue()) {
+        } else if (mem->type->hasPrerunDefaultValue() || mem->type->isDefaultConstructible()) {
+          if (mem->type->hasPrerunDefaultValue()) {
             ctx->Warning("Member field " + ctx->highlightWarning(mem->name.value) +
                              " is initialised using the default value of type " +
                              ctx->highlightWarning(mem->type->toString()) +
                              " at the end of this convertor. Try using " + ctx->highlightWarning("default") +
                              " instead to explicitly initialise the member field",
                          fileRange);
-            ctx->builder.CreateStore(mem->type->getDefaultValue(ctx)->getLLVM(),
+            ctx->builder.CreateStore(mem->type->getPrerunDefaultValue(ctx)->getLLVM(),
                                      ctx->builder.CreateStructGEP(coreTy->getLLVMType(), self->getLLVM(), i));
           } else {
             ctx->Warning("Member field " + ctx->highlightWarning(mem->name.value) +

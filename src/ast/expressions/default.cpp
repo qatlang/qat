@@ -83,6 +83,17 @@ IR::Value* Default::emit(IR::Context* ctx) {
         ctx->Error("Choice type " + ctx->highlightError(theType->toString()) + " does not have a default value",
                    fileRange);
       }
+    } else if (theType->hasPrerunDefaultValue()) {
+      if (isLocalDecl()) {
+        ctx->builder.CreateStore(theType->getPrerunDefaultValue(ctx)->getLLVM(), localValue->getLLVM());
+        return nullptr;
+      } else if (irName.has_value()) {
+        auto* loc = ctx->getActiveFunction()->getBlock()->newValue(irName->value, theType, isVar, irName->range);
+        ctx->builder.CreateStore(theType->getPrerunDefaultValue(ctx)->getLLVM(), loc->getLLVM());
+        return nullptr;
+      } else {
+        return theType->getPrerunDefaultValue(ctx);
+      }
     } else {
       ctx->Error("The type " + ctx->highlightError(theType->toString()) + " does not have default value", fileRange);
       // FIXME - Handle other types

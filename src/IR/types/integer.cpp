@@ -1,6 +1,7 @@
 #include "./integer.hpp"
 #include "../context.hpp"
 #include "../value.hpp"
+#include "qat_type.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InstrTypes.h"
@@ -36,6 +37,10 @@ u64 IntegerType::getBitwidth() const { return bitWidth; }
 bool IntegerType::isTypeSized() const { return true; }
 
 String IntegerType::toString() const { return "i" + std::to_string(bitWidth); }
+
+IR::PrerunValue* IntegerType::getPrerunDefaultValue(IR::Context* ctx) {
+  return new IR::PrerunValue(llvm::ConstantInt::get(getLLVMType(), 0u, true), this);
+}
 
 Maybe<String> IntegerType::toPrerunGenericString(IR::PrerunValue* val) const {
   llvm::ConstantInt* digit = nullptr;

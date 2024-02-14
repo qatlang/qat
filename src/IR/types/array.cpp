@@ -92,6 +92,17 @@ bool ArrayType::isMoveAssignable() const { return elementType->isMoveAssignable(
 
 bool ArrayType::isDestructible() const { return elementType->isDestructible(); }
 
+IR::PrerunValue* ArrayType::getPrerunDefaultValue(IR::Context* ctx) {
+  if (elementType->hasPrerunDefaultValue()) {
+    Vec<llvm::Constant*> elems;
+    for (usize i = 0; i < length; i++) {
+      elems.push_back(elementType->getPrerunDefaultValue(ctx)->getLLVM());
+    }
+    return new IR::PrerunValue(llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(this->getLLVMType()), elems), this);
+  }
+  return nullptr;
+}
+
 void ArrayType::copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) {
   if (isCopyConstructible()) {
     auto* Ty64Int = llvm::Type::getInt64Ty(ctx->llctx);

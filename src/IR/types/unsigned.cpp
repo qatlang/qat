@@ -36,6 +36,10 @@ UnsignedType* UnsignedType::getBool(IR::Context* ctx) {
   return new UnsignedType(1u, ctx, true);
 }
 
+IR::PrerunValue* UnsignedType::getPrerunDefaultValue(IR::Context* ctx) {
+  return new IR::PrerunValue(llvm::ConstantInt::get(getLLVMType(), 0u, false), this);
+}
+
 Maybe<String> UnsignedType::toPrerunGenericString(IR::PrerunValue* val) const {
   llvm::ConstantInt* digit = nullptr;
   auto               len   = llvm::ConstantInt::get(llvm::Type::getInt64Ty(getLLVMType()->getContext()), 1u, false);

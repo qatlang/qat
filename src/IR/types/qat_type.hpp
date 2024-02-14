@@ -75,7 +75,7 @@ public:
   useit ExpandedType* asExpanded() const;
 
   useit virtual bool canBePrerun() const;
-  useit virtual bool hasDefaultValue() const;
+  useit virtual bool hasPrerunDefaultValue() const;
   useit virtual bool isDefaultConstructible() const;
   useit virtual bool isCopyConstructible() const;
   useit virtual bool isCopyAssignable() const;
@@ -85,13 +85,14 @@ public:
   useit virtual bool isTriviallyCopyable() const;
   useit virtual bool isTriviallyMovable() const;
 
-  virtual IR::Value* getDefaultValue(IR::Context* ctx);
-  virtual void       defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
-  virtual void       copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
-  virtual void       copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
-  virtual void       moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
-  virtual void       moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
-  virtual void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
+  virtual IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx);
+
+  virtual void defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
+  virtual void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun);
+  virtual void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun);
 
   useit bool        isOpaque() const;
   useit OpaqueType* asOpaque() const;

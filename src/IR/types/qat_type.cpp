@@ -313,17 +313,15 @@ OpaqueType* QatType::asOpaque() const {
 bool QatType::isTriviallyCopyable() const { return false; }
 bool QatType::isTriviallyMovable() const { return false; }
 
-bool QatType::hasDefaultValue() const { return false; }
+bool QatType::hasPrerunDefaultValue() const { return false; }
 
-IR::Value* QatType::getDefaultValue(IR::Context* ctx) { return nullptr; }
+IR::PrerunValue* QatType::getPrerunDefaultValue(IR::Context* ctx) { return nullptr; }
 
-bool QatType::isDefaultConstructible() const { return hasDefaultValue(); }
+bool QatType::isDefaultConstructible() const { return hasPrerunDefaultValue(); }
 void QatType::defaultConstructValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) {
-  if (hasDefaultValue()) {
-    auto* defVal = getDefaultValue(ctx);
-    ctx->builder.CreateStore(defVal->isPrerunValue() ? defVal->getLLVM()
-                                                     : ctx->builder.CreateLoad(llvmType, defVal->getLLVM()),
-                             instance->getLLVM());
+  if (hasPrerunDefaultValue()) {
+    auto* defVal = getPrerunDefaultValue(ctx);
+    ctx->builder.CreateStore(defVal->getLLVM(), instance->getLLVM());
   } else {
     ctx->Error("Could not default construct an instance of type " + ctx->highlightError(toString()), None);
   }
@@ -406,7 +404,7 @@ IntegerType* QatType::asInteger() const {
 }
 
 bool QatType::isUnsignedInteger() const {
-  return (typeKind() == TypeKind::unsignedInteger) ||
+  return ((typeKind() == TypeKind::unsignedInteger) && !((IR::UnsignedType*)this)->isBoolean()) ||
          (isOpaque() && asOpaque()->hasSubType() && asOpaque()->getSubType()->isUnsignedInteger()) ||
          (typeKind() == TypeKind::definition && asDefinition()->getSubType()->isUnsignedInteger());
 }
@@ -417,7 +415,7 @@ UnsignedType* QatType::asUnsignedInteger() const {
              : (isOpaque() ? asOpaque()->getSubType()->asUnsignedInteger() : (UnsignedType*)this);
 }
 
-bool QatType::isBool() const { return isUnsignedInteger() && asUnsignedInteger()->isBoolean(); }
+bool QatType::isBool() const { return (typeKind() == TypeKind::unsignedInteger) && asUnsignedInteger()->isBoolean(); }
 
 UnsignedType* QatType::asBool() const { return asUnsignedInteger(); }
 

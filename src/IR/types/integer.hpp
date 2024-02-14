@@ -2,6 +2,7 @@
 #define QAT_IR_TYPES_INTEGER_HPP
 
 #include "./qat_type.hpp"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
 
 namespace qat::IR {
@@ -19,11 +20,13 @@ public:
   useit TypeKind            typeKind() const final;
   useit String              toString() const final;
   useit bool                isTypeSized() const final;
-  useit bool                isTriviallyCopyable() const final { return true; }
-  useit bool                isTriviallyMovable() const final { return true; }
+  useit inline bool         isTriviallyCopyable() const final { return true; }
+  useit inline bool         isTriviallyMovable() const final { return true; }
+  useit inline bool         hasPrerunDefaultValue() const final { return true; }
 
-  useit bool canBePrerun() const final { return true; }
-  useit bool canBePrerunGeneric() const final { return true; }
+  useit IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx);
+  useit bool             canBePrerun() const final { return true; }
+  useit bool             canBePrerunGeneric() const final { return true; }
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };

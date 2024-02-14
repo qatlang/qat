@@ -29,6 +29,9 @@ public:
   useit inline bool isTriviallyMovable() const final { return true; }
   useit inline bool canBePrerun() const final { return true; }
   useit inline bool canBePrerunGeneric() const final { return true; }
+  useit inline bool hasPrerunDefaultValue() const final { return true; }
+
+  useit IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx);
   useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
   useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
 };

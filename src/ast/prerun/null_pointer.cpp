@@ -33,14 +33,17 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
                    " which is not a pointer type",
                fileRange);
   }
+  auto llPtrTy =
+      llvm::PointerType::get(llvm::PointerType::isValidElementType(finalTy->asPointer()->getSubType()->getLLVMType())
+                                 ? finalTy->asPointer()->getSubType()->getLLVMType()
+                                 : llvm::Type::getInt8Ty(ctx->llctx),
+                             ctx->dataLayout->getProgramAddressSpace());
   return new IR::PrerunValue(
       finalTy->asPointer()->isMulti()
-          ? llvm::ConstantStruct::get(
-                llvm::dyn_cast<llvm::StructType>(finalTy->getLLVMType()),
-                {llvm::ConstantPointerNull::get(finalTy->asPointer()->getSubType()->getLLVMType()->getPointerTo(
-                     ctx->dataLayout->getProgramAddressSpace())),
-                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
-          : llvm::ConstantPointerNull::get(finalTy->asPointer()->getSubType()->getLLVMType()->getPointerTo()),
+          ? llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(finalTy->getLLVMType()),
+                                      {llvm::ConstantPointerNull::get(llPtrTy),
+                                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->llctx), 0u)})
+          : llvm::ConstantPointerNull::get(llPtrTy),
       theType);
 }
 

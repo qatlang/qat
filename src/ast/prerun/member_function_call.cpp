@@ -247,11 +247,11 @@ IR::PrerunValue* handle_type_wrap_functions(IR::TypedType* typed, Vec<Expression
     return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
                                                       typed->getSubType()->isDefaultConstructible() ? 1u : 0u),
                                IR::UnsignedType::getBool(ctx));
-  } else if (memberName.value == "has_default_value") {
+  } else if (memberName.value == "has_prerun_default_value") {
     zeroArgCheck();
-    return new IR::PrerunValue(
-        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx), typed->getSubType()->hasDefaultValue() ? 1u : 0u),
-        IR::UnsignedType::getBool(ctx));
+    return new IR::PrerunValue(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->llctx),
+                                                      typed->getSubType()->hasPrerunDefaultValue() ? 1u : 0u),
+                               IR::UnsignedType::getBool(ctx));
   } else if (memberName.value == "can_be_prerun") {
     zeroArgCheck();
     return new IR::PrerunValue(

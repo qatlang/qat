@@ -74,9 +74,9 @@ IR::Value* MemberInit::emit(IR::Context* ctx) {
             memTy = parentTy->asMix()->getSubTypeWithName(memName.value);
             if (isInitOfMixVariantWithoutValue) {
               auto selfVal = memFn->getFirstBlock()->getValue("''");
-              if (memTy->hasDefaultValue()) {
+              if (memTy->hasPrerunDefaultValue()) {
                 ctx->builder.CreateStore(
-                    memTy->getDefaultValue(ctx)->getLLVM(),
+                    memTy->getPrerunDefaultValue(ctx)->getLLVM(),
                     ctx->builder.CreatePointerCast(
                         ctx->builder.CreateStructGEP(parentTy->getLLVMType(), selfVal->getLLVM(), 1u),
                         llvm::PointerType::get(memTy->getLLVMType(),

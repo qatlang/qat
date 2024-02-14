@@ -328,6 +328,34 @@ IR::PrerunValue* PrerunBinaryOp::emit(IR::Context* ctx) {
                    fileRange);
       }
     }
+  } else if (lhsValTy->isBool() && rhsValTy->isBool()) {
+    auto            lhsConst = lhsEmit->getLLVMConstant();
+    auto            rhsConst = rhsEmit->getLLVMConstant();
+    llvm::Constant* llRes    = nullptr;
+    switch (opr) {
+      case Op::Or: {
+        llRes = llvm::ConstantExpr::getOr(lhsConst, rhsConst);
+        break;
+      }
+      case Op::And: {
+        llRes = llvm::ConstantExpr::getAnd(lhsConst, rhsConst);
+        break;
+      }
+      case Op::equalTo: {
+        llRes = llvm::ConstantExpr::getICmp(llvm::ICmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
+        break;
+      }
+      case Op::notEqualTo: {
+        llRes = llvm::ConstantExpr::getICmp(llvm::ICmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
+        break;
+      }
+      default: {
+        ctx->Error("The operator " + ctx->highlightError(operator_to_string(opr)) +
+                       " is not supported for expressions of type " + ctx->highlightError(lhsValTy->toString()),
+                   fileRange);
+      }
+    }
+    return new IR::PrerunValue(llRes, lhsValTy);
   } else if (lhsValTy->isFloat()) {
     auto            lhsConst = lhsEmit->getLLVMConstant();
     auto            rhsConst = rhsEmit->getLLVMConstant();

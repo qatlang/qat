@@ -87,7 +87,9 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
       llvmType = llvm::StructType::getTypeByName(ctx->llctx, linkingName);
     } else {
       llvmType = llvm::StructType::create(
-          {llvm::PointerType::get(subType->isTypeSized() ? subType->getLLVMType() : llvm::Type::getInt8Ty(ctx->llctx),
+          {llvm::PointerType::get(llvm::PointerType::isValidElementType(subType->getLLVMType())
+                                      ? subType->getLLVMType()
+                                      : llvm::Type::getInt8Ty(ctx->llctx),
                                   ctx->dataLayout->getProgramAddressSpace()),
            llvm::Type::getIntNTy(ctx->llctx, ctx->clangTargetInfo->getTypeWidth(ctx->clangTargetInfo->getSizeType()))},
           linkingName);
@@ -95,8 +97,10 @@ PointerType::PointerType(bool _isSubtypeVariable, QatType* _type, bool _nonNulla
   } else {
     linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
                   subType->getNameForLinking() + (owner.isAnonymous() ? "" : ",") + owner.toString() + "]";
-    llvmType =
-        llvm::PointerType::get(subType->isTypeSized() ? subType->getLLVMType() : llvm::Type::getInt8Ty(ctx->llctx), 0U);
+    llvmType = llvm::PointerType::get(llvm::PointerType::isValidElementType(subType->getLLVMType())
+                                          ? subType->getLLVMType()
+                                          : llvm::Type::getInt8Ty(ctx->llctx),
+                                      ctx->dataLayout->getProgramAddressSpace());
   }
 }
 
@@ -119,10 +123,10 @@ bool PointerType::isSubtypeVariable() const { return isSubtypeVar; }
 
 bool PointerType::isTypeSized() const { return true; }
 
-bool PointerType::hasDefaultValue() const { return !nonNullable; }
+bool PointerType::hasPrerunDefaultValue() const { return !nonNullable; }
 
-IR::Value* PointerType::getDefaultValue(IR::Context* ctx) {
-  if (hasDefaultValue()) {
+IR::PrerunValue* PointerType::getPrerunDefaultValue(IR::Context* ctx) {
+  if (hasPrerunDefaultValue()) {
     if (isMulti()) {
       return new IR::PrerunValue(
           llvm::ConstantStruct::get(

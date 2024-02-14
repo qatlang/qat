@@ -77,12 +77,12 @@ public:
   useit bool isNonNullable() const;
   useit bool canBePrerun() const final { return subType->isFunction(); }
   useit bool isTypeSized() const final;
-  useit bool hasDefaultValue() const final;
+  useit bool hasPrerunDefaultValue() const final;
   useit bool isTriviallyCopyable() const final;
   useit bool isTriviallyMovable() const final;
-  useit IR::Value* getDefaultValue(IR::Context* ctx) final;
-  useit TypeKind   typeKind() const override;
-  useit String     toString() const override;
+  useit IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx) final;
+  useit TypeKind         typeKind() const override;
+  useit String           toString() const override;
 };
 
 } // namespace qat::IR

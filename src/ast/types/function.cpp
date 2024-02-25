@@ -3,15 +3,13 @@
 
 namespace qat::ast {
 
-// bool ArgumentType::hasName() const { return name.has_value(); }
-
-// String ArgumentType::getName() const { return name.value_or(""); }
-
-// QatType* ArgumentType::getType() { return type; }
-
-// Json ArgumentType::toJson() const {
-//   return Json()._("type", type->toJson())._("hasName", name.has_value())._("name", name.value_or(""));
-// }
+void FunctionType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                       IR::Context* ctx) {
+  returnType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  for (auto arg : argTypes) {
+    arg->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  }
+}
 
 IR::QatType* FunctionType::emit(IR::Context* ctx) {
   Vec<IR::ArgumentType*> irArgTys;

@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class MemberInit : public Sentence {
+class MemberInit final : public Sentence {
   friend class ConstructorDefinition;
   friend class ConvertorDefinition;
 
@@ -24,6 +24,11 @@ public:
   useit static inline MemberInit* create(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(MemberInit), _memName, _value, _isInitOfMixVariantWithoutValue, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(value);
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

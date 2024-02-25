@@ -3,9 +3,6 @@
 
 #include "../utils/visibility.hpp"
 #include "./node.hpp"
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace qat::ast {
 
@@ -23,10 +20,10 @@ public:
     return std::construct_at(OwnNormal(Box), _name, _members, _visibSpec, _fileRange);
   }
 
-  void  createModule(IR::Context* ctx) const final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::BOX; }
+  void createModule(IR::Context* ctx) const final;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::BOX; }
 };
 
 } // namespace qat::ast

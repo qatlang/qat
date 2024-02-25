@@ -5,7 +5,10 @@
 
 namespace qat::ast {
 
-class OkExpression : public Expression, public LocalDeclCompatible, public InPlaceCreatable, public TypeInferrable {
+class OkExpression final : public Expression,
+                           public LocalDeclCompatible,
+                           public InPlaceCreatable,
+                           public TypeInferrable {
   Expression* subExpr = nullptr;
 
 public:
@@ -18,6 +21,11 @@ public:
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(subExpr);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::OK; }

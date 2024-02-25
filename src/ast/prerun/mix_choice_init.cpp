@@ -105,6 +105,11 @@ IR::PrerunValue* PrerunMixOrChoiceInit::emit(IR::Context* ctx) {
   return nullptr;
 }
 
+String PrerunMixOrChoiceInit::toString() const {
+  return (type.has_value() ? type.value()->toString() : "") + "::" + subName.value +
+         (expression.has_value() ? ("(" + expression.value()->toString() + ")") : "");
+}
+
 Json PrerunMixOrChoiceInit::toJson() const {
   return Json()
       ._("nodeType", "prerunMixOrChoiceInit")

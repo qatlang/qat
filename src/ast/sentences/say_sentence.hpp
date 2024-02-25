@@ -6,13 +6,9 @@
 
 namespace qat::ast {
 
-enum class SayType {
-  say,
-  dbg,
-  only,
-};
+enum class SayType { say, dbg, only };
 
-class SayLike : public Sentence {
+class SayLike final : public Sentence {
 private:
   Vec<Expression*> expressions;
   SayType          sayType;
@@ -23,6 +19,13 @@ public:
 
   useit static inline SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange) {
     return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    for (auto exp : expressions) {
+      UPDATE_DEPS(exp);
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

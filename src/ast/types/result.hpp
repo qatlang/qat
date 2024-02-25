@@ -3,7 +3,8 @@
 
 #include "qat_type.hpp"
 namespace qat::ast {
-class ResultType : public QatType {
+
+class ResultType final : public QatType {
   ast::QatType* validType;
   ast::QatType* errorType;
   bool          isPacked;
@@ -17,11 +18,15 @@ public:
     return std::construct_at(OwnNormal(ResultType), _validType, _errorType, _isPacked, _fileRange);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
+
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit Json         toJson() const final;
   useit AstTypeKind  typeKind() const final;
   useit String       toString() const final;
 };
+
 } // namespace qat::ast
 
 #endif

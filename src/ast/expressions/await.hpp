@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class Await : public Expression {
+class Await final : public Expression {
 private:
   Expression* exp;
 
@@ -14,6 +14,11 @@ public:
 
   useit static inline Await* create(Expression* exp, FileRange fileRange) {
     return std::construct_at(OwnNormal(Await), exp, fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(exp);
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

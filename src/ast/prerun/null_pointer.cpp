@@ -47,7 +47,9 @@ IR::PrerunValue* NullPointer::emit(IR::Context* ctx) {
       theType);
 }
 
-String NullPointer::toString() const { return "null"; }
+String NullPointer::toString() const {
+  return "null" + (providedType.has_value() ? (":[" + providedType.value()->toString() + "]") : "");
+}
 
 Json NullPointer::toJson() const { return Json()._("nodeType", "nullPointer")._("fileRange", fileRange); }
 

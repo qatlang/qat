@@ -2,8 +2,6 @@
 #define QAT_IR_ARGUMENT_HPP
 
 #include "../utils/identifier.hpp"
-#include "types/qat_type.hpp"
-#include <string>
 
 namespace qat::IR {
 

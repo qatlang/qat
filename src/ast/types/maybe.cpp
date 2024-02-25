@@ -4,6 +4,11 @@
 
 namespace qat::ast {
 
+void MaybeType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                    IR::Context* ctx) {
+  subTyp->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 Maybe<usize> MaybeType::getTypeSizeInBits(IR::Context* ctx) const {
   auto subTySize = subTyp->getTypeSizeInBits(ctx);
   if (subTySize.has_value()) {

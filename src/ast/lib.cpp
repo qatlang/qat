@@ -11,8 +11,6 @@ void Lib::createModule(IR::Context* ctx) const {
   mod->closeLib();
 }
 
-IR::Value* Lib::emit(IR::Context* ctx) { return nullptr; }
-
 Json Lib::toJson() const {
   Vec<JsonValue> membersJsonValue;
   for (auto* mem : members) {

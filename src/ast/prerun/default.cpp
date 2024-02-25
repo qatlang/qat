@@ -8,6 +8,10 @@ namespace qat::ast {
 
 void PrerunDefault::setGenericAbstract(ast::GenericAbstractType* genAbs) const { genericAbstractType = genAbs; }
 
+String PrerunDefault::toString() const {
+  return "default" + String(theType.has_value() ? (":[" + theType.value()->toString() + "]") : "");
+}
+
 IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
   if (theType.has_value() || isTypeInferred()) {
     auto* type = theType.has_value() ? theType.value()->emit(ctx) : inferredType;
@@ -18,6 +22,8 @@ IR::PrerunValue* PrerunDefault::emit(IR::Context* ctx) {
                                  type->asUnsignedInteger());
     } else if (type->isChoice() && type->asChoice()->hasDefault()) {
       return new IR::PrerunValue(type->asChoice()->getDefault(), type);
+    } else if (type->hasPrerunDefaultValue()) {
+      return type->getPrerunDefaultValue(ctx);
     }
     ctx->Error("Type " + ctx->highlightError(type->toString()) + " does not have a prerun " +
                    ctx->highlightError("default") + " value",

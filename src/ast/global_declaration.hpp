@@ -10,7 +10,7 @@
 
 namespace qat::ast {
 
-class GlobalDeclaration : public Node {
+class GlobalDeclaration : public IsEntity {
 private:
   Identifier            name;
   QatType*              type;
@@ -22,7 +22,7 @@ private:
 public:
   GlobalDeclaration(Identifier _name, QatType* _type, Maybe<Expression*> _value, bool _isVariable,
                     Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
-      : Node(_fileRange), name(_name), type(_type), value(_value), isVariable(_isVariable), visibSpec(_visibSpec),
+      : IsEntity(_fileRange), name(_name), type(_type), value(_value), isVariable(_isVariable), visibSpec(_visibSpec),
         metaInfo(_metaInfo) {}
 
   useit static inline GlobalDeclaration* create(Identifier _name, QatType* _type, Maybe<Expression*> _value,
@@ -32,10 +32,13 @@ public:
                              _fileRange);
   }
 
-  void  define(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
+  void create_entity(IR::QatModule* parent, IR::Context* ctx);
+  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx);
+  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx);
+  void define(IR::QatModule* mod, IR::Context* ctx);
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
 };
 
 } // namespace qat::ast

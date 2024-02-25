@@ -4,7 +4,7 @@
 #include "qat_type.hpp"
 namespace qat::ast {
 
-class MaybeType : public QatType {
+class MaybeType final : public QatType {
 private:
   QatType* subTyp;
   bool     isPacked;
@@ -16,6 +16,9 @@ public:
   useit static inline MaybeType* create(bool _isPacked, QatType* _subType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MaybeType), _isPacked, _subType, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx) final;

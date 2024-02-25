@@ -7,21 +7,21 @@
 
 namespace qat::ast {
 
-class DefineMixType : public Node {
-  Identifier                             name;
+class DefineMixType final : public IsEntity {
   Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
-  bool                                   isPacked;
-  Vec<QatType*>                          generics;
-  Maybe<VisibilitySpec>                  visibSpec;
-  Vec<FileRange>                         fRanges;
-  Maybe<usize>                           defaultVal;
+
+  Identifier            name;
+  bool                  isPacked;
+  Maybe<VisibilitySpec> visibSpec;
+  Vec<FileRange>        fRanges;
+  Maybe<usize>          defaultVal;
 
   IR::OpaqueType* opaquedType = nullptr;
 
 public:
   DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes, Vec<FileRange> _ranges,
                 Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), name(_name), subtypes(_subTypes), isPacked(_isPacked), visibSpec(_visibSpec),
+      : IsEntity(_fileRange), name(_name), subtypes(_subTypes), isPacked(_isPacked), visibSpec(_visibSpec),
         fRanges(_ranges), defaultVal(_defaultVal) {}
 
   useit static inline DefineMixType* create(Identifier _name, Vec<Pair<Identifier, Maybe<QatType*>>> _subTypes,
@@ -31,13 +31,15 @@ public:
                              _fileRange);
   }
 
-  void       createType(IR::Context* ctx);
-  void       defineType(IR::Context* ctx) final;
-  void       define(IR::Context* ctx) final {}
-  useit bool isGeneric() const;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::DEFINE_MIX_TYPE; }
+  void create_opaque(IR::QatModule* mod, IR::Context* ctx);
+  void create_type(IR::QatModule* mod, IR::Context* ctx);
+
+  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::DEFINE_MIX_TYPE; }
 };
 
 } // namespace qat::ast

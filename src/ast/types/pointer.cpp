@@ -5,6 +5,14 @@
 
 namespace qat::ast {
 
+void PointerType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                      IR::Context* ctx) {
+  type->update_dependencies(phase, IR::DependType::partial, ent, ctx);
+  if (ownerTyTy.has_value()) {
+    ownerTyTy.value()->update_dependencies(phase, IR::DependType::partial, ent, ctx);
+  }
+}
+
 Maybe<usize> PointerType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(
       isMultiPtr

@@ -185,10 +185,9 @@ DefinitionType* GenericDefinitionType::fillGenerics(Vec<GenericToFill*>& types, 
           genParams,
       },
       true);
-  (void)defineTypeDef->define(ctx);
+  (void)defineTypeDef->create_type(parent, ctx);
   auto* dTy = defineTypeDef->getDefinition();
   variants.push_back(GenericVariant<DefinitionType>(dTy, types));
-  (void)defineTypeDef->emit(ctx);
   for (auto* temp : generics) {
     temp->unset();
   }

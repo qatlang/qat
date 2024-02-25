@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class TupleValue : public Expression, public LocalDeclCompatible, public TypeInferrable {
+class TupleValue final : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class LocalDeclaration;
 
   bool             isPacked = false;
@@ -22,6 +22,13 @@ public:
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    for (auto mem : members) {
+      UPDATE_DEPS(mem);
+    }
+  }
 
   useit IR::Value* emit(IR::Context* ctx);
   useit Json       toJson() const;

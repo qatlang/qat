@@ -47,6 +47,8 @@ IR::PrerunValue* NoneExpression::emit(IR::Context* ctx) {
   return nullptr;
 }
 
+String NoneExpression::toString() const { return "none" + (type ? (":[" + type->toString() + "]") : ""); }
+
 Json NoneExpression::toJson() const {
   return Json()
       ._("nodeType", "none")

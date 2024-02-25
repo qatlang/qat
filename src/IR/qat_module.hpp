@@ -3,8 +3,10 @@
 
 #include "../utils/file_range.hpp"
 #include "../utils/identifier.hpp"
+#include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
+#include "./emit_phase.hpp"
 #include "./function.hpp"
 #include "./global_entity.hpp"
 #include "./types/core_type.hpp"
@@ -19,7 +21,6 @@
 #include "value.hpp"
 #include "llvm/IR/LLVMContext.h"
 #include <set>
-#include <vector>
 
 LLD_HAS_DRIVER(elf)
 LLD_HAS_DRIVER(coff)
@@ -27,14 +28,22 @@ LLD_HAS_DRIVER(macho)
 LLD_HAS_DRIVER(mingw)
 LLD_HAS_DRIVER(wasm)
 
+namespace qat {
+class QatSitter;
+}
+
 namespace qat::ast {
 class Node;
+class IsEntity;
 class Lib;
 class Box;
 class ModInfo;
 class BringPaths;
 class BinaryExpression;
 class BringBitwidths;
+class BringEntities;
+class MemberFunctionCall;
+class MemberAccess;
 } // namespace qat::ast
 
 namespace qat::IR {
@@ -132,6 +141,181 @@ public:
   }
 };
 
+enum class EntityType {
+  structType,
+  choiceType,
+  mixType,
+  function,
+  genericFunction,
+  genericStructType,
+  genericTypeDef,
+  typeDefinition,
+  region,
+  global,
+  prerunGlobal,
+  opaque,
+  bringEntity,
+  defaultDoneSkill,
+};
+
+inline String entity_type_to_string(EntityType ty) {
+  switch (ty) {
+    case EntityType::structType:
+      return "struct type";
+    case EntityType::choiceType:
+      return "choice type";
+    case EntityType::mixType:
+      return "mix type";
+    case EntityType::function:
+      return "function";
+    case EntityType::genericFunction:
+      return "generic function";
+    case EntityType::genericStructType:
+      return "generic struct type";
+    case EntityType::genericTypeDef:
+      return "generic type definition";
+    case EntityType::typeDefinition:
+      return "type definition";
+    case EntityType::region:
+      return "region";
+    case EntityType::global:
+      return "global";
+    case EntityType::prerunGlobal:
+      return "prerun global";
+    case EntityType::opaque:
+      return "opaque type";
+    case EntityType::bringEntity:
+      return "brought entity";
+    case EntityType::defaultDoneSkill:
+      return "default skill implementation";
+  }
+}
+
+enum class EntityStatus { none, partial, complete, childrenPartial };
+enum class DependType { partial, complete, childrenPartial };
+enum class EntityChildType { staticFn, method, variation, valued };
+
+inline String entity_child_type_to_string(EntityChildType type) {
+  switch (type) {
+    case EntityChildType::staticFn:
+      return "static method";
+    case EntityChildType::method:
+      return "method";
+    case EntityChildType::variation:
+      return "variation method";
+    case EntityChildType::valued:
+      return "value method";
+  }
+}
+
+struct EntityState;
+struct EntityDependency {
+  EntityState* entity;
+  DependType   type;
+  EmitPhase    phase;
+};
+
+struct EntityState {
+  Maybe<Identifier>     name;
+  EntityType            type;
+  EntityStatus          status;
+  ast::IsEntity*        astNode = nullptr;
+  EmitPhase             maxPhase;
+  Vec<EntityDependency> dependencies;
+
+  std::set<Pair<EntityChildType, String>> children;
+
+  Maybe<EmitPhase> phaseToCompletion;
+  Maybe<EmitPhase> phaseToPartial;
+  bool             supportsChildren = false;
+  Maybe<EmitPhase> phaseToChildrenPartial;
+
+  Maybe<EmitPhase> currentPhase;
+
+  usize iterations = 0;
+
+  EntityState(Maybe<Identifier> _name, EntityType _type, EntityStatus _status, ast::IsEntity* _astEntity,
+              EmitPhase _maxPhase)
+      : name(_name), type(_type), status(_status), astNode(_astEntity), maxPhase(_maxPhase) {}
+
+  void addDependency(EntityDependency dep) {
+    if (this == dep.entity) {
+      return;
+    }
+    bool alreadyPresent = false;
+    for (auto& it : dependencies) {
+      if (it.entity == dep.entity && it.phase == dep.phase && it.type == dep.type) {
+        // if (it.phase > dep.phase) {
+        //   it.phase = dep.phase;
+        // }
+        // if (it.type > dep.type) {
+        //   it.type = dep.type;
+        // }
+        alreadyPresent = true;
+        break;
+      }
+    }
+    if (!alreadyPresent) {
+      dependencies.push_back(dep);
+    }
+  }
+
+  void updateStatus(EntityStatus _status) { status = _status; }
+
+  useit bool has_child(String const& child) {
+    for (auto& ch : children) {
+      if (ch.second == child) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  useit Pair<EntityChildType, String> get_child(String const& name) {
+    for (auto& ch : children) {
+      if (ch.second == name) {
+        return ch;
+      }
+    }
+  }
+
+  void add_child(Pair<EntityChildType, String> child) { children.insert(child); }
+
+  useit bool are_all_phases_complete() { return currentPhase.has_value() && (currentPhase.value() == maxPhase); }
+
+  useit bool is_ready_for_next_phase() {
+    auto nextPhase = get_next_phase(currentPhase);
+    if (nextPhase.has_value()) {
+      bool isAllDepsComplete = true;
+      for (auto& dep : dependencies) {
+        if (dep.phase == nextPhase.value()) {
+          if (dep.type == DependType::partial) {
+            if (dep.entity->status == EntityStatus::none) {
+              isAllDepsComplete = false;
+              break;
+            }
+          } else if (dep.type == DependType::complete) {
+            if (dep.entity->status < EntityStatus::complete) {
+              isAllDepsComplete = false;
+              break;
+            }
+          } else if (dep.type == DependType::childrenPartial) {
+            if (dep.entity->supportsChildren ? (dep.entity->status < EntityStatus::childrenPartial)
+                                             : (dep.entity->status < EntityStatus::complete)) {
+              isAllDepsComplete = false;
+              break;
+            }
+          }
+        }
+      }
+      return isAllDepsComplete;
+    }
+    return false;
+  }
+
+  void do_next_phase(IR::QatModule* mod, IR::Context* ctx);
+};
+
 class QatModule final : public Uniq, public EntityOverview {
   friend class Region;
   friend class OpaqueType;
@@ -151,6 +335,10 @@ class QatModule final : public Uniq, public EntityOverview {
   friend class Function;
   friend class ast::BinaryExpression;
   friend class ast::BringBitwidths;
+  friend class ast::BringEntities;
+  friend class qat::QatSitter;
+  friend class ast::MemberFunctionCall;
+  friend class ast::MemberAccess;
 
 public:
   QatModule(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type,
@@ -207,9 +395,12 @@ private:
   Vec<Brought<PrerunGlobal>>          broughtPrerunGlobals;
   Vec<Region*>                        regions;
   Vec<Brought<Region>>                broughtRegions;
-  Function*                           moduleInitialiser   = nullptr;
-  Function*                           moduleDeinitialiser = nullptr;
-  u64                                 nonConstantGlobals  = 0;
+
+  Vec<EntityState*> entityEntries;
+
+  Function* moduleInitialiser   = nullptr;
+  Function* moduleDeinitialiser = nullptr;
+  u64       nonConstantGlobals  = 0;
 
   Vec<u64>           integerBitwidths;
   Vec<u64>           unsignedBitwidths;
@@ -223,15 +414,17 @@ private:
   bool                  hasMain = false;
   fs::path              llPath;
   Maybe<fs::path>       objectFilePath;
-  mutable bool          hasCreatedModules          = false;
-  mutable bool          hasHandledFilesystemBrings = false;
-  mutable bool          hasHandledBrings           = false;
-  mutable bool          hasDefinedTypes            = false;
-  mutable bool          hasDefinedNodes            = false;
-  mutable bool          isEmitted                  = false;
-  mutable bool          isOverviewOutputted        = false;
-  bool                  isCompiledToObject         = false;
-  bool                  isBundled                  = false;
+  mutable bool          hasCreatedModules            = false;
+  mutable bool          hasHandledFilesystemBrings   = false;
+  mutable bool          hasCreatedEntities           = false;
+  mutable bool          hasUpdatedEntityDependencies = false;
+  //   mutable bool          hasHandledBrings           = false;
+  //   mutable bool          hasDefinedTypes            = false;
+  //   mutable bool          hasDefinedNodes            = false;
+  //   mutable bool          isEmitted                  = false;
+  mutable bool isOverviewOutputted = false;
+  bool         isCompiledToObject  = false;
+  bool         isBundled           = false;
 
   void addMember(QatModule* mod);
 
@@ -254,6 +447,59 @@ public:
 
   static bool           tripleIsEquivalent(llvm::Triple const& first, llvm::Triple const& second);
   static Vec<Function*> collectModuleInitialisers();
+
+  useit inline bool has_entity_with_name(String const& name) {
+    for (auto ent : entityEntries) {
+      if (ent->name.has_value() && ent->name->value == name) {
+        return true;
+      }
+    }
+    for (auto sub : submodules) {
+      if (!sub->shouldPrefixName()) {
+        if (sub->has_entity_with_name(name)) {
+          return true;
+        }
+      }
+    }
+    for (auto bMod : broughtModules) {
+      if (!bMod.isNamed() && !bMod.get()->shouldPrefixName()) {
+        if (bMod.get()->has_entity_with_name(name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  useit EntityState* add_entity(Maybe<Identifier> name, EntityType type, ast::IsEntity* node, EmitPhase maxPhase) {
+    entityEntries.push_back(std::construct_at(OwnNormal(EntityState), name, type, EntityStatus::none, node, maxPhase));
+    return entityEntries.back();
+  }
+
+  useit EntityState* get_entity(String const& name) {
+    for (auto ent : entityEntries) {
+      if (ent->name.has_value() && ent->name->value == name) {
+        return ent;
+      }
+    }
+    for (auto sub : submodules) {
+      if (!sub->shouldPrefixName()) {
+        if (sub->has_entity_with_name(name)) {
+          return sub->get_entity(name);
+        }
+      }
+    }
+    for (auto bMod : broughtModules) {
+      if (!bMod.isNamed() && !bMod.get()->shouldPrefixName()) {
+        if (bMod.get()->has_entity_with_name(name)) {
+          return bMod.get()->get_entity(name);
+        }
+      }
+    }
+    return nullptr;
+  }
+
+  void entity_name_check(IR::Context* ctx, Identifier name, IR::EntityType entTy);
 
   useit ModuleType getModuleType() const;
   useit String     getFullName() const;
@@ -443,13 +689,17 @@ public:
 
   static void find_native_library_paths();
 
-  bool areNodesEmitted() const;
+  //   bool areNodesEmitted() const;
   void createModules(IR::Context* ctx);
   void handleFilesystemBrings(IR::Context* ctx);
-  void handleBrings(IR::Context* ctx);
-  void defineTypes(IR::Context* ctx);
-  void defineNodes(IR::Context* ctx);
-  void emitNodes(IR::Context* ctx);
+  void create_entities(IR::Context* ctx);
+  void update_entity_dependencies(IR::Context* ctx);
+  void setup_llvm_file(IR::Context* ctx);
+  //   void handle_entity_phases(IR::Context* ctx);
+  //   void handleBrings(IR::Context* ctx);
+  //   void defineTypes(IR::Context* ctx);
+  //   void defineNodes(IR::Context* ctx);
+  //   void emitNodes(IR::Context* ctx);
   void compileToObject(IR::Context* ctx);
   void handleNativeLibs(IR::Context* ctx);
   void bundleLibs(IR::Context* ctx);

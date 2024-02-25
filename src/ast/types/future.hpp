@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FutureType : public QatType {
+class FutureType final : public QatType {
 private:
   ast::QatType* subType;
   bool          isPacked;
@@ -17,6 +17,9 @@ public:
   useit static inline FutureType* create(bool isPacked, ast::QatType* subType, FileRange fileRange) {
     return std::construct_at(OwnNormal(FutureType), isPacked, subType, fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

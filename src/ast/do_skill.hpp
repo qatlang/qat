@@ -14,7 +14,7 @@ struct SkillName {
   Vec<Identifier> names;
 };
 
-class DoSkill : public Node, public MemberParentLike {
+class DoSkill final : public IsEntity, public MemberParentLike {
   bool             isDefaultSkill;
   Maybe<SkillName> name;
   ast::QatType*    targetType;
@@ -24,20 +24,26 @@ class DoSkill : public Node, public MemberParentLike {
 
 public:
   DoSkill(bool _isDef, Maybe<SkillName> _name, ast::QatType* _targetType, FileRange _fileRange)
-      : Node(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
+      : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
   useit static inline DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::QatType* _targetType,
                                       FileRange _fileRange) {
     return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
   }
 
-  void  defineType(IR::Context* ctx) final;
-  void  define(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  Json             toJson() const final;
-  useit bool       is_done_skill() const final { return true; }
-  useit DoSkill*   as_done_skill() final { return this; }
-  NodeType         nodeType() const final { return NodeType::DO_SKILL; }
+  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+
+  void define_done_skill(IR::QatModule* mod, IR::Context* ctx);
+  void define_members(IR::Context* ctx);
+  void emit_members(IR::Context* ctx);
+
+  useit bool     is_done_skill() const final { return true; }
+  useit DoSkill* as_done_skill() final { return this; }
+
+  Json     toJson() const final;
+  NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 
 } // namespace qat::ast

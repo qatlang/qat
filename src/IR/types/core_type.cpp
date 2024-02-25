@@ -494,7 +494,8 @@ QatType* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, IR::Con
   auto oldGenToFill              = defineCoreType->genericsToFill;
   defineCoreType->genericsToFill = toFillTypes;
   IR::CoreType* resultTy;
-  (void)defineCoreType->do_define(&resultTy, ctx);
+  defineCoreType->create_type(&resultTy, parent, ctx);
+  defineCoreType->do_define(resultTy, parent, ctx);
   defineCoreType->genericsToFill = toFillTypes;
   (void)defineCoreType->do_emit(resultTy, ctx);
   defineCoreType->genericsToFill = oldGenToFill;

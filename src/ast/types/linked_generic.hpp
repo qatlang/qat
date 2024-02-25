@@ -5,7 +5,7 @@
 #include "qat_type.hpp"
 
 namespace qat::ast {
-class LinkedGeneric : public QatType {
+class LinkedGeneric final : public QatType {
   ast::GenericAbstractType* genAbs;
 
 public:

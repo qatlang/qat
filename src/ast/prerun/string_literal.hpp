@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class StringLiteral : public PrerunExpression {
+class StringLiteral final : public PrerunExpression {
   String value;
 
 public:
@@ -21,6 +21,10 @@ public:
   void addValue(const String& val, const FileRange& fRange);
 
   useit String get_value() const;
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
+
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;
   useit String           toString() const final;

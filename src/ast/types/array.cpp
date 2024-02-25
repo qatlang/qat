@@ -7,6 +7,12 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
+void ArrayType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                    IR::Context* ctx) {
+  lengthExp->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  elementType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 void ArrayType::typeInferenceForLength(IR::Context* ctx) const {
   if (lengthExp->hasTypeInferrance()) {
     lengthExp->asTypeInferrable()->setInferenceType(IR::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, ctx));

@@ -52,6 +52,18 @@ IR::PrerunValue* PrerunArrayLiteral::emit(IR::Context* ctx) {
       isTypeInferred() ? inferredType : IR::ArrayType::get(elementType, constVals.size(), ctx->llctx));
 }
 
+String PrerunArrayLiteral::toString() const {
+  String result("[");
+  for (usize i = 0; i < valuesExp.size(); i++) {
+    result += valuesExp[i]->toString();
+    if (i != (valuesExp.size() - 1)) {
+      result += ", ";
+    }
+  }
+  result += "]";
+  return result;
+}
+
 Json PrerunArrayLiteral::toJson() const {
   Vec<JsonValue> valuesJson;
   return Json()._("nodeType", "arrayLiteral")._("values", valuesJson)._("fileRange", fileRange);

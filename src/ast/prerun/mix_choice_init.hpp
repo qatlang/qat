@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunMixOrChoiceInit : public PrerunExpression, public TypeInferrable {
+class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrable {
   friend class LocalDeclaration;
 
 private:
@@ -28,8 +28,19 @@ public:
   IN_PLACE_CREATABLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (type.has_value()) {
+      UPDATE_DEPS(type.value());
+    }
+    if (expression.has_value()) {
+      UPDATE_DEPS(expression.value());
+    }
+  }
+
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;
+  useit String           toString() const final;
   useit NodeType         nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 

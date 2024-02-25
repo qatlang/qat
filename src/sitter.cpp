@@ -1,4 +1,4 @@
-#include "./qat_sitter.hpp"
+#include "./sitter.hpp"
 #include "./IR/stdlib.hpp"
 #include "./show.hpp"
 #include "IR/qat_module.hpp"
@@ -102,31 +102,114 @@ void QatSitter::initialise() {
       entity->createModules(ctx);
     }
     for (auto* entity : fileEntities) {
-      entity->handleBrings(ctx);
+      SHOW("Create Entity: " << entity->getName())
+      entity->create_entities(ctx);
     }
     for (auto* entity : fileEntities) {
-      entity->defineTypes(ctx);
+      SHOW("Update Entity Dependencies: " << entity->getName())
+      entity->update_entity_dependencies(ctx);
+    }
+    // for (auto* entity : fileEntities) {
+    //   entity->handleBrings(ctx);
+    // }
+    // for (auto* entity : fileEntities) {
+    //   entity->defineTypes(ctx);
+    // }
+    // for (auto* entity : fileEntities) {
+    //   entity->defineNodes(ctx);
+    // }
+    // for (auto* entity : fileEntities) {
+    //   entity->handleBrings(ctx);
+    // }
+    bool atleastOneEntityDone  = true;
+    bool hasIncompleteEntities = true;
+    while (hasIncompleteEntities && atleastOneEntityDone) {
+      atleastOneEntityDone  = false;
+      hasIncompleteEntities = false;
+      for (auto* itMod : IR::QatModule::allModules) {
+        auto oldMod = ctx->setActiveModule(itMod);
+        for (auto ent : itMod->entityEntries) {
+          SHOW("Entity " << (ent->name.has_value() ? ("hasName: " + ent->name.value().value) : ""))
+          SHOW("      type: " << IR::entity_type_to_string(ent->type))
+          SHOW("      Is complete: " << (ent->are_all_phases_complete() ? "true" : "false"))
+          SHOW("      Is ready: " << (ent->is_ready_for_next_phase() ? "true" : "false"))
+          SHOW("      Iterations: " << ent->iterations)
+          if (!ent->are_all_phases_complete()) {
+            if (ent->is_ready_for_next_phase()) {
+              ent->do_next_phase(itMod, ctx);
+              atleastOneEntityDone = true;
+            }
+            if (!ent->are_all_phases_complete()) {
+              hasIncompleteEntities = true;
+            }
+          }
+          ent->iterations++;
+        }
+        (void)ctx->setActiveModule(oldMod);
+      }
+    }
+    if (!atleastOneEntityDone && hasIncompleteEntities) {
+      Vec<IR::QatError> errors;
+      for (auto* iterMod : IR::QatModule::allModules) {
+        for (auto ent : iterMod->entityEntries) {
+          if (!ent->are_all_phases_complete()) {
+            String                     depStr;
+            usize                      incompleteDepCount = 0;
+            std::set<IR::EntityState*> ents;
+            for (auto dep : ent->dependencies) {
+              if (ents.contains(dep.entity)) {
+                continue;
+              }
+              ents.insert(dep.entity);
+              if (dep.entity->supportsChildren ? (dep.entity->status != IR::EntityStatus::childrenPartial)
+                                               : (dep.entity->status != IR::EntityStatus::complete)) {
+                if (dep.entity->name.has_value()) {
+                  depStr += (dep.type == IR::DependType::partial ? "- depends partially on " : "- depends on ") +
+                            ctx->highlightError(iterMod->getFullNameWithChild(dep.entity->name.value().value)) +
+                            +" at " + dep.entity->name.value().range.startToString() + "\n";
+                } else {
+                  depStr += String(dep.type == IR::DependType::partial ? "- Depends partially on " : " - Depends on ") +
+                            "unnamed " + IR::entity_type_to_string(ent->type) +
+                            (dep.entity->astNode ? (" at " + dep.entity->astNode->fileRange.startToString()) : "") +
+                            "\n";
+                }
+                incompleteDepCount++;
+              }
+            }
+            errors.push_back(IR::QatError(
+                "This " + String(ent->status == IR::EntityStatus::partial ? "partially created " : "") +
+                    IR::entity_type_to_string(ent->type) + " " +
+                    (ent->name.has_value() ? ctx->highlightError(ent->name.value().value) + " " : "") +
+                    "could not be finalised as its dependencies were not resolved properly. This entity has " +
+                    ctx->highlightError(std::to_string(incompleteDepCount)) + " incomplete dependenc" +
+                    (incompleteDepCount > 1 ? "ies" : "y") +
+                    ((incompleteDepCount > 0) ? ((incompleteDepCount > 1 ? ". The dependencies are\n" : "\n") + depStr)
+                                              : ""),
+                ent->astNode ? ent->astNode->fileRange
+                             : (ent->name.has_value() ? Maybe<FileRange>(ent->name.value().range) : None)));
+          }
+        }
+      }
+      ctx->Errors(errors);
     }
     for (auto* entity : fileEntities) {
-      entity->defineNodes(ctx);
+      entity->setup_llvm_file(ctx);
     }
-    for (auto* entity : fileEntities) {
-      entity->handleBrings(ctx);
-    }
-    auto* cfg = cli::Config::get();
-    if (cfg->hasOutputPath()) {
-      fs::remove_all(cfg->getOutputPath() / "llvm");
-    }
-    for (auto* entity : fileEntities) {
-      auto* oldMod = ctx->setActiveModule(entity);
-      entity->emitNodes(ctx);
-      (void)ctx->setActiveModule(oldMod);
-    }
+    // for (auto* entity : fileEntities) {
+    //   auto* oldMod = ctx->setActiveModule(entity);
+    //   entity->emitNodes(ctx);
+    //   (void)ctx->setActiveModule(oldMod);
+    // }
     SHOW("Emitted nodes")
     auto qatCompileTime =
         std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - qatStartTime)
             .count();
     ctx->qatCompileTimeInMs = qatCompileTime;
+    auto* cfg               = cli::Config::get();
+    // if (cfg->hasOutputPath()) {
+    //   fs::remove_all(cfg->getOutputPath() / "llvm");
+    // }
+
     //
     //
     if (cfg->exportCodeMetadata()) {

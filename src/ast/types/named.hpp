@@ -6,11 +6,12 @@
 
 namespace qat::ast {
 
-// NamedType is a type, usually a core type, that can be identified by a name
-class NamedType : public QatType {
+class NamedType final : public QatType {
 private:
   u32             relative;
   Vec<Identifier> names;
+
+  Maybe<usize> typeSize;
 
 public:
   NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
@@ -20,8 +21,12 @@ public:
     return std::construct_at(OwnNormal(NamedType), _relative, _names, _fileRange);
   }
 
-  useit String getName() const;
-  useit u32    getRelative() const;
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
+
+  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final { return typeSize; }
+  useit String       getName() const;
+  useit u32          getRelative() const;
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit AstTypeKind  typeKind() const final;
   useit Json         toJson() const final;

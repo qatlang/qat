@@ -6,7 +6,10 @@
 
 namespace qat::ast {
 
-class ArrayLiteral : public Expression, public LocalDeclCompatible, public InPlaceCreatable, public TypeInferrable {
+class ArrayLiteral final : public Expression,
+                           public LocalDeclCompatible,
+                           public InPlaceCreatable,
+                           public TypeInferrable {
   friend class LocalDeclaration;
   friend class Assignment;
 
@@ -24,6 +27,13 @@ public:
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    for (auto it : values) {
+      UPDATE_DEPS(it);
+    }
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

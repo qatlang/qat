@@ -4,7 +4,7 @@
 #include "../cli/config.hpp"
 #include "../lexer/lexer.hpp"
 #include "../parser/parser.hpp"
-#include "../qat_sitter.hpp"
+#include "../sitter.hpp"
 #include "../utils/logger.hpp"
 #include "../utils/qat_region.hpp"
 #include "./value.hpp"

@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class PrerunMemberFnCall : public PrerunExpression {
+class PrerunMemberFnCall final : public PrerunExpression {
   PrerunExpression*      instance;
   Identifier             memberName;
   Vec<PrerunExpression*> arguments;
@@ -20,8 +20,17 @@ public:
     return std::construct_at(OwnNormal(PrerunMemberFnCall), instance, memberName, arguments, fileRange);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(instance);
+    for (auto arg : arguments) {
+      UPDATE_DEPS(arg);
+    }
+  }
+
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;
+  useit String           toString() const final;
   useit NodeType         nodeType() const final { return NodeType::PRERUN_MEMBER_FUNCTION_CALL; }
 };
 

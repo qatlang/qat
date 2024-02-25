@@ -5,10 +5,14 @@
 
 namespace qat::ast {
 
-void DefineRegion::defineType(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
-  ctx->nameCheckInModule(name, "region", None);
-  IR::Region::get(name, mod, ctx->getVisibInfo(visibSpec), ctx, fileRange);
+void DefineRegion::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  mod->entity_name_check(ctx, name, IR::EntityType::region);
+  entityState = mod->add_entity(name, IR::EntityType::region, this, IR::EmitPhase::phase_1);
+}
+
+void DefineRegion::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
+  (void)IR::Region::get(name, mod, ctx->getVisibInfo(visibSpec), ctx, fileRange);
 }
 
 Json DefineRegion::toJson() const {

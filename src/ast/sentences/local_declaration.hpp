@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-class LocalDeclaration : public Sentence {
+class LocalDeclaration final : public Sentence {
 private:
   QatType*           type = nullptr;
   Identifier         name;
@@ -24,6 +24,16 @@ public:
   useit static inline LocalDeclaration* create(QatType* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
                                                bool _variability, FileRange _fileRange) {
     return std::construct_at(OwnNormal(LocalDeclaration), _type, _isRef, _name, _value, _variability, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (type) {
+      UPDATE_DEPS(type);
+    }
+    if (value.has_value()) {
+      UPDATE_DEPS(value.value());
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

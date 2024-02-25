@@ -11,7 +11,7 @@ enum class IntrinsicID : u32 {
   llvm_matrix_transpose,
 };
 
-class GetIntrinsic : public Expression {
+class GetIntrinsic final : public Expression {
   Vec<PrerunExpression*> args;
 
 public:
@@ -19,6 +19,13 @@ public:
 
   useit static inline GetIntrinsic* create(Vec<PrerunExpression*> _args, FileRange _fileRange) {
     return std::construct_at(OwnNormal(GetIntrinsic), _args, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    for (auto arg : args) {
+      UPDATE_DEPS(arg);
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

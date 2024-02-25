@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FloatType : public QatType {
+class FloatType final : public QatType {
 private:
   IR::FloatTypeKind kind;
 

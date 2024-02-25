@@ -62,6 +62,43 @@ public:
                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
+  IR::EntityChildType fn_type_to_child_type() {
+    switch (fnTy) {
+      case AstMemberFnType::Static:
+        return IR::EntityChildType::staticFn;
+      case AstMemberFnType::normal:
+        return IR::EntityChildType::method;
+      case AstMemberFnType::variation:
+        return IR::EntityChildType::variation;
+      case AstMemberFnType::valued:
+        return IR::EntityChildType::valued;
+    }
+  }
+
+  void add_to_parent(IR::EntityState* ent, IR::Context* ctx) {
+    if (ent->has_child(name.value)) {
+      auto ch = ent->get_child(name.value);
+      ctx->Error("Found " + IR::entity_child_type_to_string(ch.first) + " named " + ctx->highlightError(name.value) +
+                     " found",
+                 name.range);
+    }
+    ent->add_child({fn_type_to_child_type(), name.value});
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    if (condition.has_value()) {
+      UPDATE_DEPS(condition.value());
+    }
+    if (returnType.has_value()) {
+      UPDATE_DEPS(returnType.value());
+    }
+    for (auto arg : arguments) {
+      if (arg->getType()) {
+        UPDATE_DEPS(arg->getType());
+      }
+    }
+  }
+
   void           define(MethodState& state, IR::Context* ctx);
   useit Json     toJson() const;
   useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
@@ -69,6 +106,9 @@ public:
 };
 
 class MemberDefinition {
+  friend class DefineCoreType;
+  friend class DoSkill;
+
 private:
   Vec<Sentence*>   sentences;
   MemberPrototype* prototype;
@@ -81,6 +121,12 @@ public:
   useit static inline MemberDefinition* create(MemberPrototype* _prototype, Vec<Sentence*> _sentences,
                                                FileRange _fileRange) {
     return std::construct_at(OwnNormal(MemberDefinition), _prototype, _sentences, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
   }
 
   void  define(MethodState& state, IR::Context* ctx);

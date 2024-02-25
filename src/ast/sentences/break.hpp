@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class Break : public Sentence {
+class Break final : public Sentence {
   Maybe<Identifier> tag;
 
 public:
@@ -14,6 +14,9 @@ public:
   useit static inline Break* create(Maybe<Identifier> _tag, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Break), _tag, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::BREAK; }

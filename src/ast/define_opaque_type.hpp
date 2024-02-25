@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class DefineOpaqueType : public Node {
+class DefineOpaqueType final : public IsEntity {
   friend class IR::QatModule;
   Identifier               name;
   Maybe<PrerunExpression*> condition;
@@ -17,7 +17,7 @@ class DefineOpaqueType : public Node {
 public:
   DefineOpaqueType(Identifier _name, Maybe<PrerunExpression*> _condition, Maybe<VisibilitySpec> _visibSpec,
                    Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
-      : Node(_fileRange), name(_name), condition(_condition), visibSpec(_visibSpec), metaInfo(_metaInfo) {}
+      : IsEntity(_fileRange), name(_name), condition(_condition), visibSpec(_visibSpec), metaInfo(_metaInfo) {}
 
   useit static inline DefineOpaqueType* create(Identifier _name, Maybe<PrerunExpression*> _condition,
                                                Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
@@ -25,10 +25,12 @@ public:
     return std::construct_at(OwnNormal(DefineOpaqueType), _name, _condition, _visibSpec, _metaInfo, _fileRange);
   }
 
-  void  createModule(IR::Context* ctx) const final;
-  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::DEFINE_OPAQUE_TYPE; }
+  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule*, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::DEFINE_OPAQUE_TYPE; }
 };
 
 } // namespace qat::ast

@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class Dereference : public Expression {
+class Dereference final : public Expression {
 private:
   Expression* exp;
 
@@ -14,6 +14,11 @@ public:
 
   useit static inline Dereference* create(Expression* _exp, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Dereference), _exp, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(exp);
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

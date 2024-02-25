@@ -21,14 +21,11 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
-#include <iostream>
-#include <string>
-#include <vector>
 
 #define DEFAULT_FUNCTION_LINKAGE llvm::GlobalValue::LinkageTypes::ExternalLinkage
 
 namespace qat::ast {
-class FunctionDefinition;
+class FunctionPrototype;
 class GenericAbstractType;
 class ConstructorDefinition;
 class ConvertorDefinition;
@@ -194,7 +191,7 @@ class GenericFunction : public Uniq, public EntityOverview {
 private:
   Identifier                     name;
   Vec<ast::GenericAbstractType*> generics;
-  ast::FunctionDefinition*       functionDefinition;
+  ast::FunctionPrototype*        functionDefinition;
   Maybe<ast::PrerunExpression*>  constraint;
   QatModule*                     parent;
   VisibilityInfo                 visibInfo;
@@ -203,7 +200,7 @@ private:
 
 public:
   GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
-                  ast::FunctionDefinition* functionDef, QatModule* parent, const VisibilityInfo& _visibInfo);
+                  ast::FunctionPrototype* functionDef, QatModule* parent, const VisibilityInfo& _visibInfo);
 
   ~GenericFunction() = default;
 

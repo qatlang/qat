@@ -7,8 +7,22 @@
 
 namespace qat::ast {
 
-void GlobalDeclaration::define(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
+void GlobalDeclaration::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  mod->entity_name_check(ctx, name, IR::EntityType::global);
+  entityState = mod->add_entity(name, IR::EntityType::global, this, IR::EmitPhase::phase_1);
+}
+
+void GlobalDeclaration::update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) {
+  type->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  if (value.has_value()) {
+    value.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+}
+
+void GlobalDeclaration::do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) { define(parent, ctx); }
+
+void GlobalDeclaration::define(IR::QatModule* mod, IR::Context* ctx) {
   ctx->nameCheckInModule(name, "global entity", None);
   auto visibInfo = ctx->getVisibInfo(visibSpec);
   if (!type) {
@@ -105,8 +119,6 @@ void GlobalDeclaration::define(IR::Context* ctx) {
   }
   new IR::GlobalEntity(mod, name, type->emit(ctx), isVariable, initialValue, gvar, visibInfo);
 }
-
-IR::Value* GlobalDeclaration::emit(IR::Context* ctx) { return nullptr; }
 
 Json GlobalDeclaration::toJson() const {
   return Json()

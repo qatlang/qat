@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class SelfType : public QatType {
+class SelfType final : public QatType {
   friend class MemberPrototype;
   friend class OperatorPrototype;
   bool isJustType;

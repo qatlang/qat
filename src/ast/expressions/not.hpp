@@ -1,18 +1,23 @@
-#ifndef QAT_AST_EXPRESSIONS_NOT_HPP
-#define QAT_AST_EXPRESSIONS_NOT_HPP
+#ifndef QAT_AST_EXPRESSIONS_LOGICAL_NOT_HPP
+#define QAT_AST_EXPRESSIONS_LOGICAL_NOT_HPP
 
 #include "../expression.hpp"
 
 namespace qat::ast {
 
-class Not : public Expression {
+class LogicalNot final : public Expression {
   Expression* exp;
 
 public:
-  Not(Expression* _exp, FileRange _range) : Expression(_range), exp(_exp) {}
+  LogicalNot(Expression* _exp, FileRange _range) : Expression(_range), exp(_exp) {}
 
-  useit static inline Not* create(Expression* _exp, FileRange _range) {
-    return std::construct_at(OwnNormal(Not), _exp, _range);
+  useit static inline LogicalNot* create(Expression* _exp, FileRange _range) {
+    return std::construct_at(OwnNormal(LogicalNot), _exp, _range);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(exp);
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

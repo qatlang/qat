@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class Copy : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
+class Copy final : public Expression, public LocalDeclCompatible, public InPlaceCreatable {
   friend class Assignment;
   friend class LocalDeclaration;
 
@@ -25,6 +25,11 @@ public:
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   IN_PLACE_CREATABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(exp);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::COPY; }

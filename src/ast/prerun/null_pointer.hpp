@@ -10,7 +10,7 @@ namespace qat::ast {
  *  A null pointer
  *
  */
-class NullPointer : public PrerunExpression, public TypeInferrable {
+class NullPointer final : public PrerunExpression, public TypeInferrable {
   Maybe<ast::QatType*> providedType;
 
 public:
@@ -19,6 +19,13 @@ public:
 
   useit static inline NullPointer* create(Maybe<ast::QatType*> _providedType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (providedType.has_value()) {
+      UPDATE_DEPS(providedType.value());
+    }
   }
 
   TYPE_INFERRABLE_FUNCTIONS

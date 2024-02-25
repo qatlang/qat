@@ -16,7 +16,7 @@ enum class PtrOwnType {
   anyRegion,
 };
 
-class PointerType : public QatType {
+class PointerType final : public QatType {
   QatType*             type;
   PtrOwnType           ownTyp;
   Maybe<ast::QatType*> ownerTyTy;
@@ -38,6 +38,9 @@ public:
     return std::construct_at(OwnNormal(PointerType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy,
                              _isMultiPtr, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

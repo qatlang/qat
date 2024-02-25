@@ -6,6 +6,51 @@
 
 namespace qat::ast {
 
+void GenericNamedType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                           IR::Context* ctx) {
+  auto* mod     = ctx->getMod();
+  auto  reqInfo = ctx->getAccessInfo();
+  if (relative != 0) {
+    if (mod->hasNthParent(relative)) {
+      mod = mod->getNthParent(relative);
+    }
+  }
+  auto entityName = names.back();
+  if (names.size() > 1) {
+    for (usize i = 0; i < (names.size() - 1); i++) {
+      auto split = names.at(i);
+      if (split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      } else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
+        ent->addDependency(
+            IR::EntityDependency{mod->get_entity(split.value), expect.value_or(IR::DependType::complete), phase});
+        break;
+      }
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
+        mod = mod->getLib(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
+        mod = mod->getBox(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, reqInfo) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else {
+        ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
+                       ctx->highlightError(mod->getFullName()) + " or any of its submodules",
+                   fileRange);
+      }
+    }
+  }
+  if (mod->has_entity_with_name(entityName.value)) {
+    ent->addDependency(IR::EntityDependency{mod->get_entity(entityName.value), IR::DependType::complete, phase});
+  }
+}
+
 Maybe<IR::QatType*> handle_generic_named_type(IR::QatModule* mod, IR::Function* fun, IR::Block* curr,
                                               Identifier entityName, Vec<Identifier> names,
                                               Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRange fileRange,

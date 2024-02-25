@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class StringSliceType : public QatType {
+class StringSliceType final : public QatType {
 public:
   explicit StringSliceType(FileRange _fileRange) : QatType(_fileRange) {}
 

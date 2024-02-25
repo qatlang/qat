@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class GiveSentence : public Sentence {
+class GiveSentence final : public Sentence {
 private:
   Maybe<Expression*> give_expr;
 
@@ -17,6 +17,13 @@ public:
 
   useit static inline GiveSentence* create(Maybe<Expression*> _given_expr, FileRange _fileRange) {
     return std::construct_at(OwnNormal(GiveSentence), _given_expr, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (give_expr.has_value()) {
+      UPDATE_DEPS(give_expr.value());
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) override;

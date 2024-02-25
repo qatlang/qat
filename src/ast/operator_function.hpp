@@ -8,8 +8,6 @@
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
-#include "llvm/IR/GlobalValue.h"
-#include <string>
 
 namespace qat::ast {
 
@@ -40,6 +38,17 @@ public:
                              _visibSpec, _fileRange, _argName);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    if (returnType) {
+      UPDATE_DEPS(returnType);
+    }
+    for (auto arg : arguments) {
+      if (arg->getType()) {
+        UPDATE_DEPS(arg->getType());
+      }
+    }
+  }
+
   void           define(MethodState& state, IR::Context* ctx);
   useit Json     toJson() const;
   useit NodeType nodeType() const { return NodeType::OPERATOR_PROTOTYPE; }
@@ -61,6 +70,12 @@ public:
   useit static inline OperatorDefinition* create(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
                                                  FileRange _fileRange) {
     return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
   }
 
   void  define(MethodState& state, IR::Context* ctx);

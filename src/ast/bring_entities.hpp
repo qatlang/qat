@@ -19,7 +19,8 @@ private:
 
   ///
 
-  mutable bool isAlreadyBrought = false;
+  mutable bool             isAlreadyBrought = false;
+  mutable IR::EntityState* entityState      = nullptr;
 
 public:
   BroughtGroup(u32 _relative, Vec<Identifier> _entity, Vec<BroughtGroup*> _members, FileRange _fileRange)
@@ -46,25 +47,29 @@ public:
   useit Json toJson() const;
 };
 
-class BringEntities final : public Node {
+class BringEntities final : public IsEntity {
   Vec<BroughtGroup*>    entities;
   Maybe<VisibilitySpec> visibSpec;
 
-  mutable bool initialRunComplete = false;
+  mutable bool throwErrorsWhenUnfound = false;
 
 public:
   BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), entities(_entities), visibSpec(_visibSpec) {}
+      : IsEntity(_fileRange), entities(_entities), visibSpec(_visibSpec) {}
 
   useit static inline BringEntities* create(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
                                             FileRange _fileRange) {
     return std::construct_at(OwnNormal(BringEntities), _entities, _visibSpec, _fileRange);
   }
 
-  void  handleBrings(IR::Context* ctx) const final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::BRING_ENTITIES; }
+  void create_entity(IR::QatModule* mod, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
+
+  void handle_brings(IR::QatModule* mod, IR::Context* ctx) const;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::BRING_ENTITIES; }
   ~BringEntities() final;
 };
 

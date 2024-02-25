@@ -29,6 +29,12 @@ public:
     return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _sentences, _fileRange);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
+  }
+
   void  define(MethodState& state, IR::Context* ctx);
   useit IR::Value* emit(MethodState& state, IR::Context* ctx);
   useit Json       toJson() const;

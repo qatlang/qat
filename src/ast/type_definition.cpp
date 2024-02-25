@@ -1,16 +1,38 @@
 #include "./type_definition.hpp"
 #include "./types/generic_abstract.hpp"
+#include "./types/prerun_generic.hpp"
+#include "./types/typed_generic.hpp"
 #include "expression.hpp"
 
 namespace qat::ast {
 
-bool TypeDefinition::isGeneric() const { return !generics.empty(); }
+void TypeDefinition::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  typeSize = subType->getTypeSizeInBits(ctx);
+  mod->entity_name_check(ctx, name, isGeneric() ? IR::EntityType::genericTypeDef : IR::EntityType::typeDefinition);
+  entityState = mod->add_entity(name, isGeneric() ? IR::EntityType::genericTypeDef : IR::EntityType::typeDefinition,
+                                this, IR::EmitPhase::phase_1);
+}
 
-void TypeDefinition::setVariantName(const String& name) const { variantName = name; }
+void TypeDefinition::update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) {
+  if (checker.has_value()) {
+    checker.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+  if (isGeneric()) {
+    for (auto gen : generics) {
+      if (gen->isPrerun() && gen->asPrerun()->hasDefault()) {
+        gen->asPrerun()->getDefaultAST()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete,
+                                                              entityState, ctx);
+      } else if (gen->isTyped() && gen->asTyped()->hasDefault()) {
+        gen->asTyped()->getDefaultAST()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete,
+                                                             entityState, ctx);
+      }
+    }
+  }
+  subType->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+}
 
-void TypeDefinition::unsetVariantName() const { variantName = None; }
-
-void TypeDefinition::createType(IR::Context* ctx) const {
+void TypeDefinition::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
   if (checker.has_value()) {
     auto* checkRes = checker.value()->emit(ctx);
     if (checkRes->getType()->isBool()) {
@@ -25,7 +47,21 @@ void TypeDefinition::createType(IR::Context* ctx) const {
                  checker.value()->fileRange);
     }
   }
-  auto* mod = ctx->getMod();
+  if (isGeneric()) {
+    genericTypeDefinition =
+        new IR::GenericDefinitionType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
+  } else {
+    create_type(mod, ctx);
+  }
+}
+
+bool TypeDefinition::isGeneric() const { return !generics.empty(); }
+
+void TypeDefinition::setVariantName(const String& name) const { variantName = name; }
+
+void TypeDefinition::unsetVariantName() const { variantName = None; }
+
+void TypeDefinition::create_type(IR::QatModule* mod, IR::Context* ctx) const {
   ctx->nameCheckInModule(name, isGeneric() ? "generic type definition" : "type definition",
                          isGeneric() ? Maybe<String>(genericTypeDefinition->getID()) : None);
   auto dTyName = name;
@@ -52,28 +88,8 @@ void TypeDefinition::createType(IR::Context* ctx) const {
   if (isGeneric()) {
     ctx->getActiveGeneric().generics = genericsIR;
   }
+  SHOW("Type definition " << dTyName.value)
   typeDefinition = new IR::DefinitionType(dTyName, subType->emit(ctx), genericsIR, mod, ctx->getVisibInfo(visibSpec));
-}
-
-void TypeDefinition::defineType(IR::Context* ctx) {
-  if (checkResult.has_value() && !checkResult.value()) {
-    return;
-  }
-  if (isGeneric()) {
-    genericTypeDefinition =
-        new IR::GenericDefinitionType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
-  } else {
-    createType(ctx);
-  }
-}
-
-void TypeDefinition::define(IR::Context* ctx) {
-  if (checkResult.has_value() && !checkResult.value()) {
-    return;
-  }
-  if (isGeneric()) {
-    createType(ctx);
-  }
 }
 
 IR::DefinitionType* TypeDefinition::getDefinition() const { return typeDefinition; }

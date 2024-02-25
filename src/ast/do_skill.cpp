@@ -5,8 +5,76 @@
 
 namespace qat::ast {
 
-void DoSkill::defineType(IR::Context* ctx) {
-  auto* mod    = ctx->getMod();
+void DoSkill::create_entity(IR::QatModule* parent, IR::Context* ctx) {
+  if (isDefaultSkill) {
+    entityState = parent->add_entity(None, IR::EntityType::defaultDoneSkill, this, IR::EmitPhase::phase_3);
+    entityState->phaseToPartial = IR::EmitPhase::phase_2;
+    for (auto memFn : memberDefinitions) {
+      memFn->prototype->add_to_parent(entityState, ctx);
+    }
+  }
+}
+void DoSkill::update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) {
+  if (isDefaultSkill) {
+    targetType->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+    // targetType->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::childrenPartial, entityState, ctx);
+    if (defaultConstructor) {
+      defaultConstructor->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState,
+                                                         ctx);
+      defaultConstructor->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    if (copyConstructor) {
+      copyConstructor->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState,
+                                                      ctx);
+      copyConstructor->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    if (moveConstructor) {
+      moveConstructor->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState,
+                                                      ctx);
+      moveConstructor->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    if (copyAssignment) {
+      copyAssignment->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState,
+                                                     ctx);
+      copyAssignment->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    if (moveAssignment) {
+      moveAssignment->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState,
+                                                     ctx);
+      moveAssignment->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    if (destructorDefinition) {
+      destructorDefinition->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto cons : constructorDefinitions) {
+      cons->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+      cons->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto conv : convertorDefinitions) {
+      conv->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+      conv->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto memFn : memberDefinitions) {
+      memFn->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+      memFn->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto opr : operatorDefinitions) {
+      opr->prototype->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+      opr->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+    }
+  }
+}
+void DoSkill::do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) {
+  if (phase == IR::EmitPhase::phase_1) {
+    define_done_skill(parent, ctx);
+  } else if (phase == IR::EmitPhase::phase_2) {
+    define_members(ctx);
+  } else if (phase == IR::EmitPhase::phase_3) {
+    emit_members(ctx);
+  }
+}
+
+void DoSkill::define_done_skill(IR::QatModule* mod, IR::Context* ctx) {
   auto* target = targetType->emit(ctx);
   if (target->isRegion() || target->isReference() || target->isTyped() || target->isFunction() || target->isVoid()) {
     ctx->Error("Creating a default implementation for " + ctx->highlightError(target->toString()) + " is not allowed",
@@ -44,7 +112,7 @@ void DoSkill::defineType(IR::Context* ctx) {
   }
 }
 
-void DoSkill::define(IR::Context* ctx) {
+void DoSkill::define_members(IR::Context* ctx) {
   parent           = IR::MemberParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (has_default_constructor()) {
@@ -119,7 +187,7 @@ void DoSkill::define(IR::Context* ctx) {
   }
 }
 
-IR::Value* DoSkill::emit(IR::Context* ctx) {
+void DoSkill::emit_members(IR::Context* ctx) {
   parent           = IR::MemberParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (defaultConstructor) {
@@ -188,7 +256,6 @@ IR::Value* DoSkill::emit(IR::Context* ctx) {
     ctx->unset_active_done_skill();
   }
   // TODO - Member function call tree analysis
-  return nullptr;
 }
 
 Json DoSkill::toJson() const {

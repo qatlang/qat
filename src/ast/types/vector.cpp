@@ -6,6 +6,12 @@
 
 namespace qat::ast {
 
+void VectorType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                     IR::Context* ctx) {
+  subType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  count->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 IR::QatType* VectorType::emit(IR::Context* ctx) {
   SHOW("Scalable has value " << scalable.has_value())
   auto subTy       = subType->emit(ctx);

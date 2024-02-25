@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunPlainInit : public PrerunExpression, public TypeInferrable {
+class PrerunPlainInit final : public PrerunExpression, public TypeInferrable {
 private:
   Maybe<PrerunExpression*> type;
   Maybe<Vec<Identifier>>   fields;
@@ -24,8 +24,19 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (type.has_value()) {
+      UPDATE_DEPS(type.value());
+    }
+    for (auto field : fieldValues) {
+      UPDATE_DEPS(field);
+    }
+  }
+
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit NodeType         nodeType() const final { return NodeType::PRERUN_PLAIN_INITIALISER; }
+  useit String           toString() const final;
   useit Json             toJson() const final;
 };
 

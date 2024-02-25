@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class PrerunTupleValue : public PrerunExpression, public TypeInferrable {
+class PrerunTupleValue final : public PrerunExpression, public TypeInferrable {
   Vec<PrerunExpression*> members;
 
 public:
@@ -17,6 +17,9 @@ public:
   }
 
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;

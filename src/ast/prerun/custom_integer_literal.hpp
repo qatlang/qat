@@ -7,8 +7,7 @@
 
 namespace qat::ast {
 
-class CustomIntegerLiteral : public PrerunExpression, public TypeInferrable {
-private:
+class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrable {
   String      value;
   Maybe<u32>  bitWidth;
   Maybe<u8>   radix;
@@ -33,14 +32,17 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
-  IR::PrerunValue* emit(IR::Context* ctx) override;
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
+
+  IR::PrerunValue* emit(IR::Context* ctx) final;
 
   useit static String radixToString(u8 val);
 
-  useit Json   toJson() const override;
+  useit Json   toJson() const final;
   useit String toString() const final;
 
-  useit NodeType nodeType() const override { return NodeType::CUSTOM_INTEGER_LITERAL; }
+  useit NodeType nodeType() const final { return NodeType::CUSTOM_INTEGER_LITERAL; }
 };
 
 } // namespace qat::ast

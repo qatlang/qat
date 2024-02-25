@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FloatLiteral : public PrerunExpression, public TypeInferrable {
+class FloatLiteral final : public PrerunExpression, public TypeInferrable {
 private:
   String value;
 
@@ -17,6 +17,8 @@ public:
   }
 
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase, Maybe<IR::DependType>, IR::EntityState*, IR::Context*) final {}
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override;
   useit Json             toJson() const override;

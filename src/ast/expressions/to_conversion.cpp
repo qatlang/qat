@@ -4,7 +4,6 @@
 #include "../../IR/types/c_type.hpp"
 #include "../../IR/types/string_slice.hpp"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Support/Casting.h"
 
 namespace qat::ast {
 
@@ -222,17 +221,34 @@ IR::Value* ToConversion::emit(IR::Context* ctx) {
                    fileRange);
       }
     } else if (valType->isChoice()) {
-      if ((destTy->isInteger() || destTy->isUnsignedInteger()) && valType->asChoice()->hasProvidedType() &&
-          (destTy->isInteger() == valType->asChoice()->getProvidedType()->isInteger())) {
-        auto* intTy = valType->asChoice()->getProvidedType()->asInteger();
-        if (intTy->getBitwidth() == destTy->asInteger()->getBitwidth()) {
-          loadRef();
-          return new IR::Value(val->getLLVM(), destTy, false, IR::Nature::temporary);
+      if ((destTy->is_underlying_type_integer() || destTy->is_underlying_type_unsigned()) &&
+          valType->asChoice()->hasProvidedType() &&
+          (destTy->is_underlying_type_integer() ==
+           valType->asChoice()->getProvidedType()->is_underlying_type_integer())) {
+        if (destTy->is_underlying_type_integer()) {
+          auto desIntTy  = destTy->get_underlying_integer_type();
+          auto provIntTy = valType->asChoice()->getProvidedType()->get_underlying_integer_type();
+          if (desIntTy->isSame(provIntTy)) {
+            loadRef();
+            return new IR::Value(val->getLLVM(), destTy, false, IR::Nature::temporary);
+          } else {
+            ctx->Error("The underlying type of the choice type " + ctx->highlightError(valType->toString()) + " is " +
+                           ctx->highlightError(valType->asChoice()->getProvidedType()->toString()) +
+                           ", but the type for conversion is " + ctx->highlightError(destTy->toString()),
+                       fileRange);
+          }
         } else {
-          ctx->Error("The underlying type of the choice type " + ctx->highlightError(valType->toString()) + " is " +
-                         ctx->highlightError(intTy->toString()) + ", but the type for conversion is " +
-                         ctx->highlightError(destTy->toString()),
-                     fileRange);
+          auto desIntTy  = destTy->get_underlying_unsigned_type();
+          auto provIntTy = valType->asChoice()->getProvidedType()->get_underlying_unsigned_type();
+          if (desIntTy->isSame(provIntTy)) {
+            loadRef();
+            return new IR::Value(val->getLLVM(), destTy, false, IR::Nature::temporary);
+          } else {
+            ctx->Error("The underlying type of the choice type " + ctx->highlightError(valType->toString()) + " is " +
+                           ctx->highlightError(valType->asChoice()->getProvidedType()->toString()) +
+                           ", but the type for conversion is " + ctx->highlightError(destTy->toString()),
+                       fileRange);
+          }
         }
       } else {
         ctx->Error("The underlying type of the choice type " + ctx->highlightError(valType->toString()) + " is " +

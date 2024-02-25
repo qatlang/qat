@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunDefault : public PrerunExpression, public TypeInferrable {
+class PrerunDefault final : public PrerunExpression, public TypeInferrable {
   mutable Maybe<ast::QatType*>             theType;
   mutable Maybe<ast::GenericAbstractType*> genericAbstractType;
 
@@ -21,8 +21,16 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (theType.has_value()) {
+      UPDATE_DEPS(theType.value());
+    }
+  }
+
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit NodeType         nodeType() const final { return NodeType::PRERUN_DEFAULT; }
+  useit String           toString() const final;
   useit Json             toJson() const final;
 };
 

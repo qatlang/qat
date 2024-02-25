@@ -2,6 +2,13 @@
 
 namespace qat::ast {
 
+void PrerunTupleValue::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                           IR::Context* ctx) {
+  for (auto mem : members) {
+    mem->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  }
+}
+
 IR::PrerunValue* PrerunTupleValue::emit(IR::Context* ctx) {
   Maybe<IR::TupleType*> expected;
   if (isTypeInferred()) {

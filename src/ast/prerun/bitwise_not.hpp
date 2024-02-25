@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunBitwiseNot : public PrerunExpression {
+class PrerunBitwiseNot final : public PrerunExpression {
   PrerunExpression* value;
 
 public:
@@ -14,6 +14,11 @@ public:
 
   useit static inline PrerunBitwiseNot* create(PrerunExpression* _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunBitwiseNot), _value, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(value);
   }
 
   useit IR::PrerunValue* emit(IR::Context* ctx);

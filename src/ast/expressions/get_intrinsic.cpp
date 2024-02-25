@@ -3,7 +3,6 @@
 #include "../../IR/types/function.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../../IR/value.hpp"
-#include "../types/qat_type.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Intrinsics.h"
 

@@ -106,6 +106,11 @@ public:
   useit bool          isUnsignedInteger() const;
   useit UnsignedType* asUnsignedInteger() const;
 
+  useit bool          is_underlying_type_integer() const;
+  useit bool          is_underlying_type_unsigned() const;
+  useit IntegerType*  get_underlying_integer_type() const;
+  useit UnsignedType* get_underlying_unsigned_type() const;
+
   useit bool          isBool() const;
   useit UnsignedType* asBool() const;
 

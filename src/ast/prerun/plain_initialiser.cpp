@@ -110,6 +110,25 @@ IR::PrerunValue* PrerunPlainInit::emit(IR::Context* ctx) {
   }
 }
 
+String PrerunPlainInit::toString() const {
+  String result;
+  if (type.has_value()) {
+    result += type.value()->toString() + " ";
+  }
+  result += "from { ";
+  for (usize i = 0; i < fieldValues.size(); i++) {
+    if (fields.has_value()) {
+      result += fields.value()[i].value + " := ";
+    }
+    result += fieldValues[i]->toString();
+    if (i != (fieldValues.size() - 1)) {
+      result += ", ";
+    }
+  }
+  result += " }";
+  return result;
+}
+
 Json PrerunPlainInit::toJson() const {
   Vec<JsonValue> fieldsJson;
   Vec<JsonValue> fieldValsJson;

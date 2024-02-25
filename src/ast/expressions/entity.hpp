@@ -12,7 +12,7 @@ namespace qat::ast {
  * entity is present in the global constant
  *
  */
-class Entity : public Expression {
+class Entity final : public Expression {
 
 private:
   Vec<Identifier> names;
@@ -25,6 +25,9 @@ public:
   static inline Entity* create(u32 relative, Vec<Identifier> _name, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Entity), relative, _name, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::Value* emit(IR::Context* ctx);
   useit Json       toJson() const final;

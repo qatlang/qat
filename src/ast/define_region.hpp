@@ -6,21 +6,22 @@
 
 namespace qat::ast {
 
-class DefineRegion : public Node {
+class DefineRegion : public IsEntity {
 private:
   Identifier            name;
   Maybe<VisibilitySpec> visibSpec;
 
 public:
   DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), name(_name), visibSpec(_visibSpec) {}
+      : IsEntity(_fileRange), name(_name), visibSpec(_visibSpec) {}
 
   useit static inline DefineRegion* create(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(DefineRegion), _name, _visibSpec, _fileRange);
   }
 
-  void  defineType(IR::Context* ctx) final;
-  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
+  void create_entity(IR::QatModule* mod, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final {}
+  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
 
   useit Json     toJson() const final;
   useit NodeType nodeType() const final { return NodeType::DEFINE_REGION; }

@@ -1,6 +1,7 @@
 #include "./parser.hpp"
 #include "../ast/bring_bitwidths.hpp"
 #include "../ast/constructor.hpp"
+#include "../ast/convertor.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_region.hpp"
@@ -2151,16 +2152,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
             }
           }
-          auto* prototype = ast::FunctionPrototype::create(
-              IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
-              getVisibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
-              genericList);
           if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               auto bClose    = bCloseRes.value();
               auto sentences = do_sentences(fnCtx, i + 1, bClose);
-              addNode(ast::FunctionDefinition::create(prototype, sentences, RangeSpan(i + 1, bClose)));
+              addNode(ast::FunctionPrototype::create(
+                  IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
+                  getVisibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
+                  genericList, Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
               i = bClose;
               break;
             } else {
@@ -2168,7 +2168,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               add_error("Expected end for [", RangeAt(i + 1));
             }
           } else if (is_next(TokenType::stop, i)) {
-            addNode(prototype);
+            addNode(ast::FunctionPrototype::create(
+                IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
+                getVisibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
+                genericList, None));
             i++;
             break;
           } else {
@@ -2253,23 +2256,23 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           if (cacheSym.name.size() > 1) {
             add_error("Function name should be just one identifier", cacheSym.fileRange);
           }
-          auto* prototype = ast::FunctionPrototype::create(cacheSym.name.front(), argResult.first, argResult.second,
-                                                           retType, checkExp, constraint, metaInfo, getVisibility(),
-                                                           FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange});
           if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseResult = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
             if (!bCloseResult.has_value() || (bCloseResult.value() >= tokens->size())) {
               add_error("Expected ] to end the function definition", RangeAt(pClose + 1));
             }
-            auto  bClose    = bCloseResult.value();
-            auto  sentences = do_sentences(thisCtx, pClose + 1, bClose);
-            auto* definition =
-                ast::FunctionDefinition::create(prototype, sentences, FileRange(RangeAt(pClose + 1), RangeAt(bClose)));
-            addNode(definition);
+            auto bClose    = bCloseResult.value();
+            auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
+            addNode(ast::FunctionPrototype::create(
+                cacheSym.name.front(), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
+                getVisibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
+                Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
             i = bClose;
             continue;
           } else if (is_next(TokenType::stop, i)) {
-            addNode(prototype);
+            addNode(ast::FunctionPrototype::create(cacheSym.name.front(), argResult.first, argResult.second, retType,
+                                                   checkExp, constraint, metaInfo, getVisibility(),
+                                                   FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
             i++;
           } else {
             add_error("Expected either [ to start the definition of the function or . to end the declaration",
@@ -3196,14 +3199,14 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
           auto j = i;
           while (is_next(TokenType::separator, j)) {
             if (isValueRequested) {
-              add_error("Matched value is requested once and hence a list of subfields to match cannot be provided",
+              add_error("Matched value is requested once and hence a list of variants to match cannot be provided",
                         RangeSpan(start, j));
             }
             if (is_next(TokenType::typeSeparator, j + 1)) {
               if (is_next(TokenType::identifier, j + 2)) {
                 if (is_next(TokenType::parenthesisOpen, j + 3)) {
                   add_error(
-                      "Cannot destructure value for the matched subfield, since a list of values to match are provided",
+                      "Cannot destructure value for the matched variant, since a list of values to match are provided",
                       RangeAt(j + 4));
                 }
                 matchVals.push_back(ast::MixOrChoiceMatchValue::create(IdentifierAt(j + 3), None, false));
@@ -3272,6 +3275,9 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
         } else {
           add_error("Expected sentences for the else case in match sentence", RangeAt(i));
         }
+        break;
+      }
+      case TokenType::comment: {
         break;
       }
       default: {
@@ -4157,7 +4163,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
           }
           auto* exp = consumeCachedExpr();
           if (is_next(TokenType::Not, i)) {
-            setCachedExpr(ast::Not::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
+            setCachedExpr(ast::LogicalNot::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
             i++;
             break;
           } else if (is_next(TokenType::copy, i)) {

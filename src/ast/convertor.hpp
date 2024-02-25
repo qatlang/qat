@@ -45,6 +45,12 @@ public:
                              _fileRange);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    if (candidateType) {
+      UPDATE_DEPS(candidateType);
+    }
+  }
+
   void           define(MethodState& state, IR::Context* ctx);
   useit Json     toJson() const;
   useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
@@ -52,6 +58,7 @@ public:
 
 class ConvertorDefinition {
   friend class DefineCoreType;
+  friend class DoSkill;
 
 private:
   Vec<Sentence*>      sentences;
@@ -67,6 +74,12 @@ public:
   useit static inline ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
                                                   FileRange _fileRange) {
     return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
   }
 
   void  define(MethodState& state, IR::Context* ctx);

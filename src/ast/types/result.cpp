@@ -4,6 +4,12 @@
 
 namespace qat::ast {
 
+void ResultType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                     IR::Context* ctx) {
+  validType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  errorType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 IR::QatType* ResultType::emit(IR::Context* ctx) {
   auto* validRes = validType->emit(ctx);
   if (validRes->isOpaque() && !validRes->asOpaque()->hasSubType() && !validRes->asOpaque()->hasDeducedSize()) {

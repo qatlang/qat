@@ -12,7 +12,6 @@ add_library(QAT_AST
 	define_region.cpp
 	destructor.cpp
 	do_skill.cpp
-	expression.cpp
 	function.cpp
 	generics.cpp
 	global_declaration.cpp

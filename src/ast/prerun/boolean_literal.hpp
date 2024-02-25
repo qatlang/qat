@@ -5,8 +5,7 @@
 
 namespace qat::ast {
 
-class BooleanLiteral : public PrerunExpression {
-private:
+class BooleanLiteral final : public PrerunExpression {
   bool value;
 
 public:
@@ -15,6 +14,9 @@ public:
   useit static inline BooleanLiteral* create(bool _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(BooleanLiteral), _value, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
 
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;

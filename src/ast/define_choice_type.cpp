@@ -1,23 +1,40 @@
 #include "./define_choice_type.hpp"
-#include "../IR/logic.hpp"
 #include "./types/qat_type.hpp"
 #include "expression.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 
 namespace qat::ast {
 
-void DefineChoiceType::createType(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
-  ctx->nameCheckInModule(name, "choice type", None);
+void DefineChoiceType::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  mod->entity_name_check(ctx, name, IR::EntityType::choiceType);
+  entityState = mod->add_entity(name, IR::EntityType::choiceType, this, IR::EmitPhase::phase_1);
+}
+
+void DefineChoiceType::update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) {
+  if (providedIntegerTy.has_value()) {
+    providedIntegerTy.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+  for (auto& field : fields) {
+    if (field.second.has_value()) {
+      field.second.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+    }
+  }
+}
+
+void DefineChoiceType::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
   Vec<Identifier>                fieldNames;
   Maybe<Vec<llvm::ConstantInt*>> fieldValues;
   IR::QatType*                   variantValueType = nullptr;
   Maybe<llvm::ConstantInt*>      lastVal;
   Maybe<IR::QatType*>            providedType;
+  SHOW("Checking provided integer type")
   if (providedIntegerTy) {
     providedType = providedIntegerTy.value()->emit(ctx);
-    if (!providedType.value()->isInteger() && !providedType.value()->isUnsignedInteger()) {
-      ctx->Error("Choice types can only have an integer or unsigned integer as its underlying type. This is incorrect",
+    if (!providedType.value()->isInteger() && !providedType.value()->isUnsignedInteger() &&
+        !(providedType.value()->isCType() && (providedType.value()->asCType()->getSubType()->isUnsignedInteger() ||
+                                              providedType.value()->asCType()->getSubType()->isInteger()))) {
+      ctx->Error("Choice types can only have an integer or unsigned integer as its underlying type",
                  providedIntegerTy.value()->fileRange);
     }
   }
@@ -51,7 +68,9 @@ void DefineChoiceType::createType(IR::Context* ctx) {
                        ", which does not match the provided underlying type " +
                        ctx->highlightError(providedType.value()->toString()),
                    fields.at(i).second.value()->fileRange);
-      } else if (!iVal->getType()->isInteger() && !iVal->getType()->isUnsignedInteger()) {
+      } else if (!iVal->getType()->isInteger() && !iVal->getType()->isUnsignedInteger() &&
+                 !(iVal->getType()->isCType() && (iVal->getType()->asCType()->getSubType()->isUnsignedInteger() ||
+                                                  iVal->getType()->asCType()->getSubType()->isInteger()))) {
         ctx->Error("Value for variant for choice type should either be a signed or unsigned integer type",
                    fields.at(i).second.value()->fileRange);
       }
@@ -133,13 +152,10 @@ void DefineChoiceType::createType(IR::Context* ctx) {
       }
     }
   }
-  new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned, None,
-                     ctx->getVisibInfo(visibSpec), ctx, fileRange, None);
-}
-
-void DefineChoiceType::defineType(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
-  createType(ctx);
+  SHOW("Creating choice type in the IR")
+  new IR::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned,
+                     defaultVal, ctx->getVisibInfo(visibSpec), ctx, fileRange, None);
+  SHOW("Created choice type")
 }
 
 Json DefineChoiceType::toJson() const {

@@ -25,10 +25,10 @@ public:
     return std::construct_at(OwnNormal(Lib), _name, _members, _visibSpec, _file_range);
   }
 
-  void  createModule(IR::Context* ctx) const final;
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::LIB; }
+  void createModule(IR::Context* ctx) const final;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::LIB; }
 };
 
 } // namespace qat::ast

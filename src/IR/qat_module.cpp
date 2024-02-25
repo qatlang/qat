@@ -29,8 +29,6 @@
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/raw_ostream.h"
-#include <chrono>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -40,6 +38,27 @@ namespace qat::IR {
 
 Vec<QatModule*> QatModule::allModules{};
 Vec<fs::path>   QatModule::usableNativeLibPaths{};
+
+void EntityState::do_next_phase(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("EntityState::do_next_phase " << (name.has_value() ? name.value().value : ""))
+  auto nextPhaseVal = get_next_phase(currentPhase);
+  if (nextPhaseVal.has_value()) {
+    auto nextPhase = nextPhaseVal.value();
+    if (astNode) {
+      astNode->do_phase(nextPhase, mod, ctx);
+    }
+    currentPhase = nextPhase;
+    if (phaseToPartial.has_value() && phaseToPartial.value() == nextPhase) {
+      status = EntityStatus::partial;
+    } else if (phaseToCompletion.has_value() && phaseToCompletion.value() == nextPhase) {
+      status = EntityStatus::complete;
+    } else if (phaseToChildrenPartial.has_value() && phaseToCompletion.value() == nextPhase) {
+      status = EntityStatus::childrenPartial;
+    } else if ((nextPhase == maxPhase) && (nextPhase != IR::EmitPhase::phase_last)) {
+      status = supportsChildren ? EntityStatus::childrenPartial : EntityStatus::complete;
+    }
+  }
+}
 
 void QatModule::clearAll() {
   for (auto* mod : allModules) {
@@ -118,6 +137,24 @@ QatModule::~QatModule() {
   }
   for (auto* gTdef : genericTypeDefinitions) {
     delete gTdef;
+  }
+  for (auto* ent : entityEntries) {
+    std::destroy_at(ent);
+  }
+}
+
+void QatModule::entity_name_check(IR::Context* ctx, Identifier name, IR::EntityType entTy) {
+  for (auto ent : entityEntries) {
+    if (ent->name.has_value() && (ent->name->value == name.value)) {
+      ctx->Error("Found " + entity_type_to_string(ent->type) + " named " + ctx->highlightError(name.value) +
+                     " in the parent module. So cannot define a " + entity_type_to_string(entTy) + " named " +
+                     ctx->highlightError(name.value) + ".",
+                 name.range,
+                 ent->name.has_value()
+                     ? Maybe<Pair<String, FileRange>>(Pair<String, FileRange>{
+                           "The existing " + entity_type_to_string(ent->type) + " can be found here", ent->name->range})
+                     : None);
+    }
   }
 }
 
@@ -1540,6 +1577,7 @@ GenericCoreType* QatModule::getGenericCoreType(const String& name, const AccessI
 // TYPEDEF
 
 bool QatModule::hasTypeDef(const String& name, AccessInfo reqInfo) const {
+  SHOW("Typedef count: " << typeDefs.size())
   for (auto* typ : typeDefs) {
     if ((typ->getName().value == name) && typ->isAccessible(reqInfo)) {
       return true;
@@ -1920,7 +1958,7 @@ QatModule* QatModule::getClosestParentLib() {
 
 String QatModule::getFilePath() const { return filePath.string(); }
 
-bool QatModule::areNodesEmitted() const { return isEmitted; }
+// bool QatModule::areNodesEmitted() const { return isEmitted; }
 
 void QatModule::createModules(IR::Context* ctx) {
   if (!hasCreatedModules) {
@@ -1954,114 +1992,83 @@ void QatModule::handleFilesystemBrings(IR::Context* ctx) {
   }
 }
 
-void QatModule::handleBrings(IR::Context* ctx) {
-  if (!hasHandledBrings) {
-    hasHandledBrings = true;
-    auto* oldMod     = ctx->setActiveModule(this);
+void QatModule::create_entities(IR::Context* ctx) {
+  if (!hasCreatedEntities) {
+    hasCreatedEntities = true;
+    auto* oldMod       = ctx->setActiveModule(this);
     for (auto* node : nodes) {
-      node->handleBrings(ctx);
-    }
-    for (auto* sub : submodules) {
-      sub->handleBrings(ctx);
-    }
-    (void)ctx->setActiveModule(oldMod);
-  }
-}
-
-void QatModule::defineTypes(IR::Context* ctx) {
-  if (!hasDefinedTypes) {
-    hasDefinedTypes = true;
-    SHOW("Defining types")
-    auto* oldMod = ctx->setActiveModule(this);
-    for (auto& node : nodes) {
-      node->defineType(ctx);
-      if (((node->nodeType() == ast::NodeType::DEFINE_CORE_TYPE) && ((ast::DefineCoreType*)node)->isGeneric()) ||
-          ((node->nodeType() == ast::NodeType::TYPE_DEFINITION) && ((ast::TypeDefinition*)node)->isGeneric())) {
-        node = new ast::HolderNode(node);
+      if (node->is_entity()) {
+        ((ast::IsEntity*)node)->create_entity(this, ctx);
       }
     }
     for (auto* sub : submodules) {
-      sub->defineTypes(ctx);
+      sub->create_entities(ctx);
     }
     (void)ctx->setActiveModule(oldMod);
   }
 }
 
-void QatModule::defineNodes(IR::Context* ctx) {
-  if (!hasDefinedNodes) {
-    hasDefinedNodes = true;
-    SHOW("Defining nodes")
-    auto* oldMod = ctx->setActiveModule(this);
-    for (auto& node : nodes) {
-      node->define(ctx);
-      if ((node->nodeType() == ast::NodeType::FUNCTION_DEFINITION) && (((ast::FunctionDefinition*)node)->isGeneric())) {
-        node = new ast::HolderNode(node);
-      } else if ((node->nodeType() == ast::NodeType::FUNCTION_PROTOTYPE) &&
-                 (((ast::FunctionPrototype*)node)->isGeneric())) {
-        node = new ast::HolderNode(node);
-      }
-    }
-    for (auto* sub : submodules) {
-      sub->defineNodes(ctx);
-    }
-    (void)ctx->setActiveModule(oldMod);
-  }
-}
-
-void QatModule::emitNodes(IR::Context* ctx) {
-  if (!isEmitted) {
-    isEmitted    = true;
-    auto* oldMod = ctx->setActiveModule(this);
-    SHOW("About to emit for module: " << getFullName())
+void QatModule::update_entity_dependencies(IR::Context* ctx) {
+  if (!hasUpdatedEntityDependencies) {
+    hasUpdatedEntityDependencies = true;
+    auto* oldMod                 = ctx->setActiveModule(this);
     for (auto* node : nodes) {
-      if (node) {
-        SHOW("Emitting node with type: " << (int)node->nodeType())
-        (void)node->emit(ctx);
+      if (node->is_entity()) {
+        ((ast::IsEntity*)node)->update_entity_dependencies(this, ctx);
       }
     }
-    SHOW("Emission for module complete")
     for (auto* sub : submodules) {
-      SHOW("About to emit for submodule: " << sub->getFullName())
-      sub->emitNodes(ctx);
+      sub->update_entity_dependencies(ctx);
     }
-    SHOW("Emitted submodules")
-    if (moduleInitialiser) {
-      moduleInitialiser->getBlock()->setActive(ctx->builder);
-      ctx->builder.CreateRetVoid();
+    (void)ctx->setActiveModule(oldMod);
+  }
+}
+
+void QatModule::setup_llvm_file(IR::Context* ctx) {
+  auto oldMod = ctx->setActiveModule(this);
+  if (moduleInitialiser) {
+    moduleInitialiser->getBlock()->setActive(ctx->builder);
+    ctx->builder.CreateRetVoid();
+  }
+  auto* cfg = cli::Config::get();
+  SHOW("Creating llvm output path")
+  auto fileName = getWritableName() + ".ll";
+  llPath        = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "llvm" /
+           filePath.lexically_relative(basePath).replace_filename(fileName);
+  std::error_code errorCode;
+  if (fs::exists(llPath)) {
+    fs::remove(llPath, errorCode);
+    if (errorCode) {
+
+      ctx->Error("Error while deleting existing file " + ctx->highlightError(llPath.string()), None);
     }
-    SHOW("Module type is: " << (int)moduleType)
-    auto* cfg = cli::Config::get();
-    SHOW("Creating llvm output path")
-    auto fileName = getWritableName() + ".ll";
-    if (!cfg->hasOutputPath()) {
-      fs::remove_all(basePath / "llvm");
-    }
-    llPath = (cfg->hasOutputPath() ? cfg->getOutputPath() : basePath) / "llvm" /
-             filePath.lexically_relative(basePath).replace_filename(fileName);
-    std::error_code errorCode;
-    SHOW("Creating all folders in llvm output path: " << llPath)
-    fs::create_directories(llPath.parent_path(), errorCode);
+  }
+  SHOW("Creating all folders in llvm output path: " << llPath)
+  fs::create_directories(llPath.parent_path(), errorCode);
+  if (!errorCode) {
+    errorCode.clear();
+    llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
     if (!errorCode) {
-      errorCode.clear();
-      llvm::raw_fd_ostream fStream(llPath.string(), errorCode);
-      if (!errorCode) {
-        SHOW("Printing LLVM module")
-        llvmModule->print(fStream, nullptr);
-        SHOW("LLVM module printed")
-        ctx->llvmOutputPaths.push_back(llPath);
-        SHOW("Number of llvm output paths is: " << ctx->llvmOutputPaths.size())
-      } else {
-        SHOW("Could not open file for writing")
-      }
-      fStream.flush();
-      SHOW("Flushed llvm IR file stream")
+      SHOW("Printing LLVM module")
+      llvmModule->print(fStream, nullptr);
+      SHOW("LLVM module printed")
+      ctx->llvmOutputPaths.push_back(llPath);
+      SHOW("Number of llvm output paths is: " << ctx->llvmOutputPaths.size())
     } else {
-      ctx->Error("Error while creating parent directory for LLVM output file with path: " +
-                     ctx->highlightError(llPath.parent_path().string()) + " with error: " + errorCode.message(),
-                 None);
+      SHOW("Could not open file for writing")
+      ctx->Error("Error while writing the LLVM IR to the file " + ctx->highlightError(llPath), None);
     }
-    (void)ctx->setActiveModule(oldMod);
+    fStream.flush();
+    SHOW("Flushed llvm IR file stream")
+  } else {
+    ctx->Error("Error while creating parent directory for LLVM output file with path: " +
+                   ctx->highlightError(llPath.parent_path().string()) + " with error: " + errorCode.message(),
+               None);
   }
+  for (auto sub : submodules) {
+    sub->setup_llvm_file(ctx);
+  }
+  (void)ctx->setActiveModule(oldMod);
 }
 
 void QatModule::compileToObject(IR::Context* ctx) {

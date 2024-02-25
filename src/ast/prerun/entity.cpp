@@ -4,6 +4,47 @@
 
 namespace qat::ast {
 
+void PrerunEntity::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                       IR::Context* ctx) {
+  auto mod     = ctx->getMod();
+  auto reqInfo = ctx->getAccessInfo();
+  if (relative > 0) {
+    if (mod->hasNthParent(relative)) {
+      mod = mod->getNthParent(relative);
+    } else {
+      ctx->Error("Module does not have " + ctx->highlightError(std::to_string(relative)) + " parents", fileRange);
+    }
+  }
+  for (usize i = 0; i < (identifiers.size() - 1); i++) {
+    auto section = identifiers.at(i);
+    if (relative == 0 && i == 0 && section.value == "std" && IR::StdLib::isStdLibFound()) {
+      mod = IR::StdLib::stdLib;
+      continue;
+    }
+    if (mod->hasLib(section.value, reqInfo) || mod->hasBroughtLib(section.value, ctx->getAccessInfo()) ||
+        mod->hasAccessibleLibInImports(section.value, reqInfo).first) {
+      mod = mod->getLib(section.value, reqInfo);
+      mod->addMention(section.range);
+    } else if (mod->hasBox(section.value, reqInfo) || mod->hasBroughtBox(section.value, ctx->getAccessInfo()) ||
+               mod->hasAccessibleBoxInImports(section.value, reqInfo).first) {
+      mod = mod->getBox(section.value, reqInfo);
+      mod->addMention(section.range);
+    } else if (mod->hasBroughtModule(section.value, reqInfo) ||
+               mod->hasAccessibleBroughtModuleInImports(section.value, reqInfo).first) {
+      mod = mod->getBroughtModule(section.value, reqInfo);
+      mod->addMention(section.range);
+    } else {
+      ctx->Error("No module named " + ctx->highlightError(section.value) + " found inside the current module",
+                 fileRange);
+    }
+  }
+  auto entName = identifiers.back();
+  if (mod->has_entity_with_name(entName.value)) {
+    ent->addDependency(
+        IR::EntityDependency{mod->get_entity(entName.value), dep.value_or(IR::DependType::complete), phase});
+  }
+}
+
 IR::PrerunValue* PrerunEntity::emit(IR::Context* ctx) {
   SHOW("PrerunEntity")
   auto* mod  = ctx->getMod();

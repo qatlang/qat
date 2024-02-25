@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class GenericEntity : public Expression {
+class GenericEntity final : public Expression {
 private:
   u32               relative;
   Vec<Identifier>   names;
@@ -21,6 +21,9 @@ public:
                                             FileRange _fileRange) {
     return std::construct_at(OwnNormal(GenericEntity), _relative, _names, _genericTypes, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit Json       toJson() const final;

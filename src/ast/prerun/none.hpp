@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class NoneExpression : public PrerunExpression, public TypeInferrable {
+class NoneExpression final : public PrerunExpression, public TypeInferrable {
   friend class Assignment;
   friend class LocalDeclaration;
   QatType*         type = nullptr;
@@ -24,8 +24,16 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (type) {
+      UPDATE_DEPS(type);
+    }
+  }
+
   useit IR::PrerunValue* emit(IR::Context* ctx) final;
   useit Json             toJson() const final;
+  useit String           toString() const final;
   useit NodeType         nodeType() const final { return NodeType::NONE; }
 };
 

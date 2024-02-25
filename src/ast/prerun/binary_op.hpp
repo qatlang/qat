@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunBinaryOp : public PrerunExpression {
+class PrerunBinaryOp final : public PrerunExpression {
   PrerunExpression* lhs;
   Op                opr;
   PrerunExpression* rhs;
@@ -18,6 +18,12 @@ public:
   useit static inline PrerunBinaryOp* create(PrerunExpression* _lhs, Op _opr, PrerunExpression* _rhs,
                                              FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunBinaryOp), _lhs, _opr, _rhs, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(lhs);
+    UPDATE_DEPS(rhs);
   }
 
   useit IR::PrerunValue* emit(IR::Context* ctx);

@@ -12,7 +12,7 @@ class PrerunExpression;
  * is fixed length
  *
  */
-class ArrayType : public QatType {
+class ArrayType final : public QatType {
 private:
   QatType*                  elementType;
   mutable PrerunExpression* lengthExp;
@@ -26,6 +26,9 @@ public:
   useit static inline ArrayType* create(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ArrayType), _element_type, _length, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
   useit IR::QatType* emit(IR::Context* ctx);

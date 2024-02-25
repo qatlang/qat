@@ -28,7 +28,16 @@ public:
   }
 
   useit bool hasDefault() const final;
+  useit ast::PrerunExpression* getDefaultAST() { return defaultValueAST.value(); }
   useit IR::PrerunValue* getDefault() const;
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(expTy);
+    if (defaultValueAST.has_value()) {
+      UPDATE_DEPS(defaultValueAST.value());
+    }
+  }
 
   void emit(IR::Context* ctx) const final;
 

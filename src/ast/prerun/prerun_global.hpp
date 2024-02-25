@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunGlobal : public PrerunExpression {
+class PrerunGlobal final : public IsEntity {
   Identifier            name;
   Maybe<QatType*>       type;
   PrerunExpression*     value;
@@ -15,17 +15,20 @@ class PrerunGlobal : public PrerunExpression {
 public:
   PrerunGlobal(Identifier _name, Maybe<QatType*> _type, PrerunExpression* _value, Maybe<VisibilitySpec> _visibSpec,
                FileRange _fileRange)
-      : PrerunExpression(_fileRange), name(_name), type(_type), value(_value), visibSpec(_visibSpec) {}
+      : IsEntity(_fileRange), name(_name), type(_type), value(_value), visibSpec(_visibSpec) {}
 
   useit static inline PrerunGlobal* create(Identifier _name, Maybe<QatType*> _type, PrerunExpression* _value,
                                            Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunGlobal), _name, _type, _value, _visibSpec, _fileRange);
   }
 
-  void  createModule(IR::Context* ctx) const final;
-  useit IR::PrerunValue* emit(IR::Context* ctx) final { return nullptr; }
-  useit Json             toJson() const final;
-  useit NodeType         nodeType() const final { return NodeType::PRERUN_GLOBAL; }
+  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+
+  void           define(IR::QatModule* mod, IR::Context* ctx) const;
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::PRERUN_GLOBAL; }
 };
 
 } // namespace qat::ast

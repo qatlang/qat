@@ -4,6 +4,11 @@
 
 namespace qat::ast {
 
+void ReferenceType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                        IR::Context* ctx) {
+  type->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 Maybe<usize> ReferenceType::getTypeSizeInBits(IR::Context* ctx) const {
   return (
       usize)(ctx->dataLayout->getTypeAllocSizeInBits(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->llctx), 0u)));

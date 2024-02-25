@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FunctionType : public QatType {
+class FunctionType final : public QatType {
 private:
   QatType*      returnType;
   Vec<QatType*> argTypes;
@@ -17,6 +17,9 @@ public:
   useit static inline FunctionType* create(QatType* _retType, Vec<QatType*> _argTypes, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit AstTypeKind  typeKind() const final { return AstTypeKind::FUNCTION; }

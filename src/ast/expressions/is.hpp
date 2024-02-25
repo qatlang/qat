@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class IsExpression : public Expression, public LocalDeclCompatible, public TypeInferrable {
+class IsExpression final : public Expression, public LocalDeclCompatible, public TypeInferrable {
   friend class Assignment;
   friend class LocalDeclaration;
 
@@ -22,6 +22,11 @@ public:
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(subExpr);
+  }
 
   useit IR::Value* emit(IR::Context* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::IS; }

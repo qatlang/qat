@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class ExpressionSentence : public Sentence {
+class ExpressionSentence final : public Sentence {
   Expression* expr;
 
 public:
@@ -14,6 +14,11 @@ public:
 
   useit static inline ExpressionSentence* create(Expression* _expr, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ExpressionSentence), _expr, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(expr);
   }
 
   useit IR::Value* emit(IR::Context* ctx);

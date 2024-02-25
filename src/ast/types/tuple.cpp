@@ -4,6 +4,13 @@
 
 namespace qat::ast {
 
+void TupleType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                    IR::Context* ctx) {
+  for (auto typ : types) {
+    typ->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  }
+}
+
 Maybe<usize> TupleType::getTypeSizeInBits(IR::Context* ctx) const {
   usize total = 0;
   for (auto* typ : types) {

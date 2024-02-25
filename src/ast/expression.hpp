@@ -70,11 +70,9 @@ public:
 };
 
 class Expression : public Node {
-private:
-  ExpressionKind expected;
-
 public:
-  Expression(FileRange _fileRange);
+  Expression(FileRange _fileRange) : Node(std::move(_fileRange)) {}
+  ~Expression() override = default;
 
   useit virtual bool                 isLocalDeclCompatible() const { return false; }
   useit virtual LocalDeclCompatible* asLocalDeclCompatible() { return nullptr; }
@@ -85,24 +83,24 @@ public:
   useit virtual bool            hasTypeInferrance() const { return false; }
   useit virtual TypeInferrable* asTypeInferrable() { return nullptr; }
 
-  void                 setExpectedKind(ExpressionKind _kind);
-  useit ExpressionKind getExpectedKind();
-  useit bool           isExpectedKind(ExpressionKind _kind);
-  useit IR::Value* emit(IR::Context* ctx) override = 0;
-  useit NodeType   nodeType() const override       = 0;
-  useit Json       toJson() const override         = 0;
-  ~Expression() override                           = default;
+  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                   IR::Context* ctx) = 0;
+
+  useit virtual IR::Value* emit(IR::Context* ctx) = 0;
+
+  useit NodeType nodeType() const override = 0;
+  useit Json     toJson() const override   = 0;
 };
 
 class PrerunExpression : public Expression {
 public:
-  PrerunExpression(FileRange fileRange);
+  PrerunExpression(FileRange _fileRange) : Expression(_fileRange) {}
+  ~PrerunExpression() override = default;
 
   useit IR::PrerunValue* emit(IR::Context* ctx) override = 0;
   useit NodeType         nodeType() const override       = 0;
   useit Json             toJson() const override         = 0;
-  useit virtual String   toString() const;
-  ~PrerunExpression() override = default;
+  useit virtual String   toString() const                = 0;
 };
 
 } // namespace qat::ast

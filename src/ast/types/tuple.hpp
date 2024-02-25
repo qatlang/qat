@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-class TupleType : public QatType {
+class TupleType final : public QatType {
 private:
   Vec<QatType*> types;
   bool          isPacked;
@@ -20,6 +20,9 @@ public:
   useit static inline TupleType* create(Vec<QatType*> _types, bool _isPacked, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TupleType), _types, _isPacked, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
 

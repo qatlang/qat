@@ -8,7 +8,10 @@ bool PrerunGeneric::hasDefault() const { return defaultValueAST.has_value(); }
 IR::PrerunValue* PrerunGeneric::getDefault() const { return defaultValue; }
 
 void PrerunGeneric::emit(IR::Context* ctx) const {
+  SHOW("Emitting prerun generic " << name.value << " and hasDefault: " << hasDefault())
+  SHOW("TypeKind for prerun param type " << (uint)expTy->typeKind());
   expressionType = expTy->emit(ctx);
+  SHOW("Emitted type of prerun generic parameter")
   if (!expressionType->canBePrerunGeneric()) {
     ctx->Error("The provided type is not qualified to be used for a prerun generic expression", expTy->fileRange);
   }

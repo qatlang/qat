@@ -1,14 +1,17 @@
 #include "./define_core_type.hpp"
 #include "../IR/generics.hpp"
-#include "../IR/logic.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../utils/identifier.hpp"
+#include "./types/prerun_generic.hpp"
+#include "./types/typed_generic.hpp"
 #include "constructor.hpp"
+#include "convertor.hpp"
 #include "destructor.hpp"
+#include "member_function.hpp"
 #include "member_parent_like.hpp"
 #include "node.hpp"
+#include "operator_function.hpp"
 #include "types/generic_abstract.hpp"
-#include <algorithm>
 
 namespace qat::ast {
 
@@ -47,10 +50,8 @@ IR::OpaqueType* DefineCoreType::getOpaque() const { return opaquedTypes.back(); 
 
 void DefineCoreType::unsetOpaque() const { opaquedTypes.pop_back(); }
 
-void DefineCoreType::createModule(IR::Context* ctx) const {
+void DefineCoreType::create_opaque(IR::QatModule* mod, IR::Context* ctx) {
   if (!isGeneric()) {
-    auto* mod = ctx->getMod();
-    ctx->nameCheckInModule(name, "core type", None);
     bool             hasAllMems = true;
     Vec<llvm::Type*> allMemEqTys;
     for (auto* mem : members) {
@@ -101,11 +102,7 @@ void DefineCoreType::createModule(IR::Context* ctx) const {
   }
 }
 
-void DefineCoreType::createType(IR::CoreType** resultTy, IR::Context* ctx) const {
-  auto* mod = ctx->getMod();
-  ctx->nameCheckInModule(name, isGeneric() ? "generic core type" : "core type",
-                         isGeneric() ? Maybe<String>(genericCoreType->getID()) : None,
-                         isGeneric() ? None : Maybe<String>(getOpaque()->getID()));
+void DefineCoreType::create_type(IR::CoreType** resultTy, IR::QatModule* mod, IR::Context* ctx) const {
   bool needsDestructor = false;
   auto cTyName         = name;
   SHOW("Creating IR generics")
@@ -247,7 +244,191 @@ void DefineCoreType::createType(IR::CoreType** resultTy, IR::Context* ctx) const
   ctx->unsetActiveType();
 }
 
-void DefineCoreType::defineType(IR::Context* ctx) {
+void DefineCoreType::setup_type(IR::QatModule* mod, IR::Context* ctx) {
+  for (auto* gen : generics) {
+    SHOW("Generic parameter is " << gen->getName().value)
+    gen->emit(ctx);
+    SHOW("Emit complete for parameter")
+  }
+  SHOW("Emitted generics")
+  if (!isGeneric()) {
+    create_type(&resultCoreType, mod, ctx);
+  } else {
+    genericCoreType = new IR::GenericCoreType(name, generics, constraint, this, mod, ctx->getVisibInfo(visibSpec));
+  }
+  SHOW("Set old mod")
+}
+
+void DefineCoreType::do_define(IR::CoreType* resultTy, IR::QatModule* mod, IR::Context* ctx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  }
+  auto memberParent = IR::MemberParent::create_expanded_type(resultTy);
+  auto parentState  = get_state_for(memberParent);
+  if (defaultConstructor) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    defaultConstructor->define(state, ctx);
+    parentState->defaultConstructor = state.result;
+    ctx->unsetActiveType();
+  }
+  if (copyConstructor) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    copyConstructor->define(state, ctx);
+    parentState->copyConstructor = state.result;
+    ctx->unsetActiveType();
+  }
+  if (moveConstructor) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    moveConstructor->define(state, ctx);
+    parentState->moveConstructor = state.result;
+    ctx->unsetActiveType();
+  }
+  if (copyAssignment) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    copyAssignment->define(state, ctx);
+    parentState->copyAssignment = state.result;
+    ctx->unsetActiveType();
+  }
+  if (moveAssignment) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    moveAssignment->define(state, ctx);
+    parentState->moveAssignment = state.result;
+    ctx->unsetActiveType();
+  }
+  if (destructorDefinition) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    destructorDefinition->define(state, ctx);
+    parentState->destructor = state.result;
+    ctx->unsetActiveType();
+  }
+  for (auto* cons : constructorDefinitions) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    cons->define(state, ctx);
+    parentState->constructors.push_back(state.result);
+    ctx->unsetActiveType();
+  }
+  for (auto& conv : convertorDefinitions) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    conv->define(state, ctx);
+    parentState->convertors.push_back(state.result);
+    ctx->unsetActiveType();
+  }
+  for (auto* mFn : memberDefinitions) {
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    mFn->define(state, ctx);
+    SHOW("Method done result is " << state.result << " defineCond: " << state.defineCondition.has_value())
+    SHOW("All methods size: " << parentState->all_methods.size() << " for "
+                              << memberParent->getParentType()->toString())
+    parentState->all_methods.push_back(MethodResult(state.result, state.defineCondition));
+    SHOW("Updated parent state")
+    ctx->unsetActiveType();
+  }
+  SHOW("All methods done")
+  for (auto* oFn : operatorDefinitions) {
+    SHOW("Handling opr")
+    ctx->setActiveType(resultTy);
+    MethodState state(memberParent);
+    oFn->define(state, ctx);
+    SHOW("Defined operator")
+    parentState->operators.push_back(state.result);
+    ctx->unsetActiveType();
+    SHOW("Operator complete")
+  }
+}
+
+void DefineCoreType::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  mod->entity_name_check(ctx, name, IR::EntityType::structType);
+  entityState = mod->add_entity(name, isGeneric() ? IR::EntityType::genericStructType : IR::EntityType::structType,
+                                this, isGeneric() ? IR::EmitPhase::phase_1 : IR::EmitPhase::phase_4);
+  if (!isGeneric()) {
+    entityState->phaseToPartial         = IR::EmitPhase::phase_1;
+    entityState->phaseToCompletion      = IR::EmitPhase::phase_2;
+    entityState->supportsChildren       = true;
+    entityState->phaseToChildrenPartial = IR::EmitPhase::phase_3;
+    for (auto memFn : memberDefinitions) {
+      memFn->prototype->add_to_parent(entityState, ctx);
+    }
+  }
+}
+
+void DefineCoreType::update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) {
+  if (checker.has_value()) {
+    checker.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+  if (isGeneric()) {
+    for (auto gen : generics) {
+      gen->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+    }
+  }
+  for (auto mem : members) {
+    mem->type->update_dependencies(isGeneric() ? IR::EmitPhase::phase_1 : IR::EmitPhase::phase_2,
+                                   IR::DependType::complete, entityState, ctx);
+    if (mem->expression.has_value()) {
+      mem->expression.value()->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+  }
+  for (auto stat : staticMembers) {
+    stat->type->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+  }
+  if (!isGeneric()) {
+    if (defaultConstructor) {
+      defaultConstructor->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState,
+                                                         ctx);
+      defaultConstructor->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    if (copyConstructor) {
+      copyConstructor->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState,
+                                                      ctx);
+      copyConstructor->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    if (moveConstructor) {
+      moveConstructor->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState,
+                                                      ctx);
+      moveConstructor->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    if (copyAssignment) {
+      copyAssignment->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState,
+                                                     ctx);
+      copyAssignment->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    if (moveAssignment) {
+      moveAssignment->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState,
+                                                     ctx);
+      moveAssignment->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    if (destructorDefinition) {
+      destructorDefinition->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto cons : constructorDefinitions) {
+      cons->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+      cons->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto conv : convertorDefinitions) {
+      conv->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+      conv->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto memFn : memberDefinitions) {
+      memFn->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+      memFn->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+    for (auto opr : operatorDefinitions) {
+      opr->prototype->update_dependencies(IR::EmitPhase::phase_3, IR::DependType::complete, entityState, ctx);
+      opr->update_dependencies(IR::EmitPhase::phase_4, IR::DependType::complete, entityState, ctx);
+    }
+  }
+}
+
+void DefineCoreType::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
   if (checker.has_value()) {
     auto* checkRes = checker.value()->emit(ctx);
     if (checkRes->getType()->isBool()) {
@@ -262,112 +443,25 @@ void DefineCoreType::defineType(IR::Context* ctx) {
                  checker.value()->fileRange);
     }
   }
-  for (auto* gen : generics) {
-    gen->emit(ctx);
-  }
-  if (!isGeneric()) {
-    createType(&resultCoreType, ctx);
-  } else {
-    genericCoreType =
-        new IR::GenericCoreType(name, generics, constraint, this, ctx->getMod(), ctx->getVisibInfo(visibSpec));
-  }
-}
-
-void DefineCoreType::do_define(IR::CoreType** resultTy, IR::Context* ctx) {
-  if (checkResult.has_value() && !checkResult.value()) {
-    return;
-  }
   if (isGeneric()) {
-    createType(resultTy, ctx);
-  }
-  auto memberParent = IR::MemberParent::create_expanded_type(*resultTy);
-  auto parentState  = get_state_for(memberParent);
-  if (defaultConstructor) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    defaultConstructor->define(state, ctx);
-    parentState->defaultConstructor = state.result;
-    ctx->unsetActiveType();
-  }
-  if (copyConstructor) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    copyConstructor->define(state, ctx);
-    parentState->copyConstructor = state.result;
-    ctx->unsetActiveType();
-  }
-  if (moveConstructor) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    moveConstructor->define(state, ctx);
-    parentState->moveConstructor = state.result;
-    ctx->unsetActiveType();
-  }
-  if (copyAssignment) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    copyAssignment->define(state, ctx);
-    parentState->copyAssignment = state.result;
-    ctx->unsetActiveType();
-  }
-  if (moveAssignment) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    moveAssignment->define(state, ctx);
-    parentState->moveAssignment = state.result;
-    ctx->unsetActiveType();
-  }
-  if (destructorDefinition) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    destructorDefinition->define(state, ctx);
-    parentState->destructor = state.result;
-    ctx->unsetActiveType();
-  }
-  for (auto* cons : constructorDefinitions) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    cons->define(state, ctx);
-    parentState->constructors.push_back(state.result);
-    ctx->unsetActiveType();
-  }
-  for (auto& conv : convertorDefinitions) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    conv->define(state, ctx);
-    parentState->convertors.push_back(state.result);
-    ctx->unsetActiveType();
-  }
-  for (auto* mFn : memberDefinitions) {
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    mFn->define(state, ctx);
-    SHOW("Method done result is " << state.result << " defineCond: " << state.defineCondition.has_value())
-    SHOW("All methods size: " << parentState->all_methods.size() << " for "
-                              << memberParent->getParentType()->toString())
-    parentState->all_methods.push_back(MethodResult(state.result, state.defineCondition));
-    SHOW("Updated parent state")
-    ctx->unsetActiveType();
-  }
-  SHOW("All methods done")
-  for (auto* oFn : operatorDefinitions) {
-    SHOW("Handling opr")
-    ctx->setActiveType(*resultTy);
-    MethodState state(memberParent);
-    oFn->define(state, ctx);
-    SHOW("Defined operator")
-    parentState->operators.push_back(state.result);
-    ctx->unsetActiveType();
-    SHOW("Operator complete")
+    setup_type(mod, ctx);
+  } else {
+    if (phase == IR::EmitPhase::phase_1) {
+      create_opaque(mod, ctx);
+    } else if (phase == IR::EmitPhase::phase_2) {
+      create_type(&resultCoreType, mod, ctx);
+    } else if (phase == IR::EmitPhase::phase_3) {
+      do_define(resultCoreType, mod, ctx);
+    } else if (phase == IR::EmitPhase::phase_4) {
+      do_emit(resultCoreType, ctx);
+    }
   }
 }
 
-void DefineCoreType::define(IR::Context* ctx) { do_define(&resultCoreType, ctx); }
-
-IR::Value* DefineCoreType::do_emit(IR::CoreType* resultTy, IR::Context* ctx) {
+void DefineCoreType::do_emit(IR::CoreType* resultTy, IR::Context* ctx) {
   SHOW("Emitting")
   if (checkResult.has_value() && !checkResult.value()) {
-    return nullptr;
+    return;
   }
   SHOW("Creating member parent")
   auto memberParent = IR::MemberParent::create_expanded_type(resultTy);
@@ -439,10 +533,9 @@ IR::Value* DefineCoreType::do_emit(IR::CoreType* resultTy, IR::Context* ctx) {
     ctx->unsetActiveType();
   }
   // TODO - Member function call tree analysis
-  return nullptr;
 }
 
-IR::Value* DefineCoreType::emit(IR::Context* ctx) { return do_emit(resultCoreType, ctx); }
+void DefineCoreType::emit(IR::Context* ctx) { return do_emit(resultCoreType, ctx); }
 
 void DefineCoreType::addMember(Member* mem) { members.push_back(mem); }
 

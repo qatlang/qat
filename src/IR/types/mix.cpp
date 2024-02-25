@@ -119,7 +119,7 @@ void MixType::updateOverview() {
 
 void MixType::findTagBitWidth() {
   tagBitWidth = 1;
-  while (std::pow(2, tagBitWidth) <= (subtypes.size() + (isTrivialMove ? 1 : 0))) {
+  while (std::pow(2, tagBitWidth) <= (subtypes.size() + 1)) {
     tagBitWidth++;
   }
 }
@@ -127,7 +127,7 @@ void MixType::findTagBitWidth() {
 usize MixType::getIndexOfName(const String& name) const {
   for (usize i = 0; i < subtypes.size(); i++) {
     if (subtypes.at(i).first.value == name) {
-      return isTrivialMove ? (i + 1) : i;
+      return i + 1;
     }
   }
   // NOLINTNEXTLINE(clang-diagnostic-return-type)

@@ -4,15 +4,25 @@
 
 namespace qat::ast {
 
-bool DefineMixType::isGeneric() const { return !generics.empty(); }
+void DefineMixType::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  mod->entity_name_check(ctx, name, IR::EntityType::mixType);
+  entityState = mod->add_entity(name, IR::EntityType::mixType, this, IR::EmitPhase::phase_2);
+}
 
-void DefineMixType::createType(IR::Context* ctx) {
-  auto* mod = ctx->getMod();
-  ctx->nameCheckInModule(name, "mix type", None);
+void DefineMixType::update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) {
+  for (auto& sub : subtypes) {
+    if (sub.second.has_value()) {
+      sub.second.value()->update_dependencies(IR::EmitPhase::phase_2, IR::DependType::complete, entityState, ctx);
+    }
+  }
+}
+
+void DefineMixType::create_opaque(IR::QatModule* mod, IR::Context* ctx) {
   usize maxSubtypeSize          = 8u;
   bool  foundSizeForAssociation = true;
   usize tagBitwidth             = 1u;
-  while (std::pow(2, tagBitwidth) < subtypes.size()) {
+  while (std::pow(2, tagBitwidth) < (subtypes.size() + 1)) {
     tagBitwidth++;
   }
   for (auto& subty : subtypes) {
@@ -37,7 +47,20 @@ void DefineMixType::createType(IR::Context* ctx) {
                 isPacked)))
           : None,
       ctx->getVisibInfo(visibSpec), ctx->llctx, None);
-  ctx->setActiveType(opaquedType);
+}
+
+void DefineMixType::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
+  if (phase == IR::EmitPhase::phase_1) {
+    create_opaque(mod, ctx);
+  } else if (phase == IR::EmitPhase::phase_2) {
+    create_type(mod, ctx);
+  }
+}
+
+void DefineMixType::create_type(IR::QatModule* mod, IR::Context* ctx) {
+  if (opaquedType) {
+    ctx->setActiveType(opaquedType);
+  }
   Vec<Pair<Identifier, Maybe<IR::QatType*>>> subTypesIR;
   bool                                       hasAssociatedType = false;
   for (usize i = 0; i < subtypes.size(); i++) {
@@ -87,20 +110,6 @@ void DefineMixType::createType(IR::Context* ctx) {
   new IR::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, ctx, isPacked, ctx->getVisibInfo(visibSpec),
                   fileRange, None);
 }
-
-void DefineMixType::defineType(IR::Context* ctx) {
-  // auto* mod = ctx->getMod();
-  if (!isGeneric()) {
-    createType(ctx);
-  } else {
-    //   SHOW("Creating generic mix type: " << name)
-    //   genericMixType = new IR::GenericMixType(
-    //       name, generics, this, ctx->getMod(),
-    //       ctx->getVisibInfo(visibility));
-  }
-}
-
-IR::Value* DefineMixType::emit(IR::Context* ctx) { return nullptr; }
 
 Json DefineMixType::toJson() const {
   Vec<JsonValue> subTypesJson;

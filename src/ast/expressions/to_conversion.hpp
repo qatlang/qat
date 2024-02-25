@@ -6,8 +6,7 @@
 
 namespace qat::ast {
 
-class ToConversion : public Expression {
-private:
+class ToConversion final : public Expression {
   Expression* source;
   QatType*    destinationType;
 
@@ -19,11 +18,15 @@ public:
     return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(source);
+    UPDATE_DEPS(destinationType);
+  }
+
   useit IR::Value* emit(IR::Context* ctx) override;
-
-  useit Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::TO_CONVERSION; };
+  useit Json       toJson() const override;
+  useit NodeType   nodeType() const override { return NodeType::TO_CONVERSION; };
 };
 
 } // namespace qat::ast

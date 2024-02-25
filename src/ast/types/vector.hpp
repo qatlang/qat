@@ -5,7 +5,7 @@
 #include "type_kind.hpp"
 namespace qat::ast {
 
-class VectorType : public QatType {
+class VectorType final : public QatType {
   QatType*          subType;
   PrerunExpression* count;
   Maybe<FileRange>  scalable;
@@ -18,6 +18,9 @@ public:
                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(VectorType), _subType, _count, _scalable, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::QatType* emit(IR::Context* ctx);
 

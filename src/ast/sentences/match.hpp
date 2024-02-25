@@ -16,6 +16,9 @@ class MatchValue {
 public:
   ~MatchValue() = default;
 
+  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                   IR::Context* ctx) = 0;
+
   useit MixOrChoiceMatchValue* asMixOrChoice();
   useit ExpressionMatchValue*  asExp();
   useit virtual FileRange      getMainRange() const = 0;
@@ -23,7 +26,7 @@ public:
   useit virtual Json           toJson() const       = 0;
 };
 
-class MixOrChoiceMatchValue : public MatchValue {
+class MixOrChoiceMatchValue final : public MatchValue {
 private:
   Identifier        name;
   Maybe<Identifier> valueName;
@@ -35,6 +38,9 @@ public:
     return std::construct_at(OwnNormal(MixOrChoiceMatchValue), name, valueName, isVar);
   }
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
+
   useit Identifier getName() const;
   useit bool       hasValueName() const;
   useit Identifier getValueName() const;
@@ -44,7 +50,7 @@ public:
   useit Json       toJson() const final;
 };
 
-class ExpressionMatchValue : public MatchValue {
+class ExpressionMatchValue final : public MatchValue {
 private:
   Expression* exp;
 
@@ -53,6 +59,11 @@ public:
 
   useit static inline ExpressionMatchValue* create(Expression* exp) {
     return std::construct_at(OwnNormal(ExpressionMatchValue), exp);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(exp);
   }
 
   useit Expression* getExpression() const;
@@ -67,7 +78,7 @@ struct CaseResult {
   CaseResult(Maybe<bool> result, bool areAllConstant);
 };
 
-class Match : public Sentence {
+class Match final : public Sentence {
 private:
   bool                                        isTypeMatch;
   Expression*                                 candidate;
@@ -85,6 +96,24 @@ public:
                                     Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
                                     Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Match), _isTypeMatch, _candidate, _chain, _elseCase, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(candidate);
+    for (auto& ch : chain) {
+      for (auto m : ch.first) {
+        UPDATE_DEPS(m);
+      }
+      for (auto snt : ch.second) {
+        UPDATE_DEPS(snt);
+      }
+    }
+    if (elseCase.has_value()) {
+      for (auto snt : elseCase.value().first) {
+        UPDATE_DEPS(snt);
+      }
+    }
   }
 
   useit bool hasConstResultForAllCases();

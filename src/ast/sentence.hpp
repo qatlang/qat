@@ -9,10 +9,13 @@ class Sentence : public Node {
 public:
   Sentence(FileRange _fileRange) : Node(std::move(_fileRange)) {}
 
-  useit IR::Value* emit(IR::Context* ctx) override = 0;
-  useit NodeType   nodeType() const override       = 0;
-  useit Json       toJson() const override         = 0;
-  ~Sentence() override                             = default;
+  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                   IR::Context* ctx) = 0;
+
+  useit virtual IR::Value* emit(IR::Context* ctx)    = 0;
+  useit NodeType           nodeType() const override = 0;
+  useit Json               toJson() const override   = 0;
+  ~Sentence() override                               = default;
 };
 
 void emitSentences(const Vec<Sentence*>& sentences, IR::Context* ctx);

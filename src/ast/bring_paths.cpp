@@ -31,7 +31,11 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             ctx->nameCheckInModule(name, "named folder module", None);
             auto* folderModule = IR::QatModule::getFolderModule(path);
             folderModule->addBroughtMention(mod, paths.at(i)->fileRange);
+            mod->entity_name_check(ctx, name, IR::EntityType::bringEntity);
             mod->bringModule(folderModule, ctx->getVisibInfo(visibSpec), name);
+            auto foldEnt          = mod->add_entity(name, IR::EntityType::bringEntity, nullptr, IR::EmitPhase::phase_1);
+            foldEnt->currentPhase = IR::EmitPhase::phase_1;
+            foldEnt->updateStatus(IR::EntityStatus::complete);
           } else {
             if (isMember) {
               if (IR::QatModule::getFolderModule(path)->parent) {
@@ -62,7 +66,11 @@ void BringPaths::handleFilesystemBrings(IR::Context* ctx) const {
             ctx->nameCheckInModule(name, "named file module", None);
             auto* fileModule = IR::QatModule::getFileModule(path);
             fileModule->addFilesystemBroughtMention(mod, paths.at(i)->fileRange);
+            mod->entity_name_check(ctx, name, IR::EntityType::bringEntity);
             mod->bringModule(fileModule, ctx->getVisibInfo(visibSpec), name);
+            auto fileEnt          = mod->add_entity(name, IR::EntityType::bringEntity, nullptr, IR::EmitPhase::phase_1);
+            fileEnt->currentPhase = IR::EmitPhase::phase_1;
+            fileEnt->updateStatus(IR::EntityStatus::complete);
           } else {
             if (isMember) {
               if (IR::QatModule::getFileModule(path)->parent) {

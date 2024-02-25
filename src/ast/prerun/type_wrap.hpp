@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class TypeWrap : public PrerunExpression {
+class TypeWrap final : public PrerunExpression {
   ast::QatType* theType;
   bool          isExplicit;
 
@@ -17,6 +17,9 @@ public:
   useit static inline TypeWrap* create(ast::QatType* _theType, bool _isExplicit, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   IR::PrerunValue* emit(IR::Context* ctx);
   Json             toJson() const;

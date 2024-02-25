@@ -17,8 +17,7 @@ public:
     return std::construct_at(OwnNormal(BringBitwidths), _broughtTypes, _fileRange);
   }
 
-  void           handleBrings(IR::Context* ctx) const final;
-  IR::Value*     emit(IR::Context* ctx) final { return nullptr; }
+  void           createModule(IR::Context* ctx) const final;
   useit Json     toJson() const final;
   useit NodeType nodeType() const final { return NodeType::BRING_BITWIDTHS; }
 };

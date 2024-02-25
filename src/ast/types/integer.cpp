@@ -10,9 +10,11 @@ Maybe<usize> IntegerType::getTypeSizeInBits(IR::Context* ctx) const {
 }
 
 IR::QatType* IntegerType::emit(IR::Context* ctx) {
+  SHOW("IntegerType::emit")
   if (bitWidth > 128) {
     ctx->Error("Arbitrary integer bitwidths above 128 are not allowed at the moment", fileRange);
   }
+  SHOW("Curr mod is " << ctx->getMod())
   if (isPartOfGeneric || ctx->getMod()->hasIntegerBitwidth(bitWidth)) {
     return IR::IntegerType::get(bitWidth, ctx);
   } else {

@@ -1,13 +1,14 @@
 #include "./function.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
+#include "./types/prerun_generic.hpp"
+#include "./types/typed_generic.hpp"
 #include "sentence.hpp"
 #include "types/generic_abstract.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
-#include <climits>
 
 #define MainFirstArgBitwidth 32u
 
@@ -23,20 +24,70 @@ bool FunctionPrototype::isGeneric() const { return !generics.empty(); }
 
 Vec<GenericAbstractType*> FunctionPrototype::getGenerics() const { return generics; }
 
-IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
-  auto* mod = ctx->getMod();
+void FunctionPrototype::create_entity(IR::QatModule* mod, IR::Context* ctx) {
+  mod->entity_name_check(ctx, name, isGeneric() ? IR::EntityType::genericFunction : IR::EntityType::function);
+  entityState =
+      mod->add_entity(name, isGeneric() ? IR::EntityType::genericFunction : IR::EntityType::function, this,
+                      isGeneric() ? IR::EmitPhase::phase_1
+                                  : (definition.has_value() ? IR::EmitPhase::phase_2 : IR::EmitPhase::phase_1));
+}
+
+void FunctionPrototype::update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) {
+  if (returnType.has_value()) {
+    returnType.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+  if (isGeneric()) {
+    for (auto gen : generics) {
+      if (gen->isPrerun() && gen->asPrerun()->hasDefault()) {
+        gen->asPrerun()->getDefaultAST()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete,
+                                                              entityState, ctx);
+      } else if (gen->isTyped() && gen->asTyped()->hasDefault()) {
+        gen->asTyped()->getDefaultAST()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete,
+                                                             entityState, ctx);
+      }
+    }
+  }
+  for (auto arg : arguments) {
+    if (arg->getType()) {
+      arg->getType()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+    }
+  }
+  if (definition.has_value()) {
+    for (auto snt : definition.value().first) {
+      snt->update_dependencies(isGeneric() ? IR::EmitPhase::phase_1 : IR::EmitPhase::phase_2, IR::DependType::complete,
+                               entityState, ctx);
+    }
+  }
+}
+
+void FunctionPrototype::do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) {
   if (checker.has_value()) {
     auto cond = checker.value()->emit(ctx);
     if (cond->getType()->isBool()) {
       if (!llvm::cast<llvm::ConstantInt>(cond->getLLVMConstant())->getValue().getBoolValue()) {
         checkResult = false;
-        return nullptr;
+        return;
       }
     } else {
       ctx->Error("The condition for defining a function should be of " + ctx->highlightError("bool") + " type",
                  checker.value()->fileRange);
     }
   }
+  if (isGeneric()) {
+    for (auto* gen : generics) {
+      gen->emit(ctx);
+    }
+    genericFn = new IR::GenericFunction(name, generics, genericConstraint, this, mod, ctx->getVisibInfo(visibSpec));
+  } else {
+    if (phase == IR::EmitPhase::phase_1) {
+      function = create_function(mod, ctx);
+    } else if (phase == IR::EmitPhase::phase_2) {
+      emit_definition(ctx);
+    }
+  }
+}
+
+IR::Function* FunctionPrototype::create_function(IR::QatModule* mod, IR::Context* ctx) const {
   SHOW("Creating function " << name.value << " with generic count: " << generics.size())
   ctx->nameCheckInModule(name, isGeneric() ? "generic function" : "function",
                          isGeneric() ? Maybe<String>(genericFn->getID()) : None);
@@ -169,100 +220,25 @@ IR::Function* FunctionPrototype::createFunction(IR::Context* ctx) const {
                                          "C", nullptr))
             : None,
         {}, IR::ReturnType::get(retTy), args, isVariadic, fileRange, ctx->getVisibInfo(visibSpec), ctx,
-        hasDefinition ? None
-                      : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage),
+        definition.has_value()
+            ? None
+            : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage),
         irMetaInfo);
     SHOW("Created IR function")
     return fun;
   }
 }
 
-void FunctionPrototype::setVariantName(const String& value) const { variantName = value; }
-
-void FunctionPrototype::unsetVariantName() const { variantName = None; }
-
-void FunctionPrototype::define(IR::Context* ctx) {
-  if (!isGeneric()) {
-    function = createFunction(ctx);
-  }
-}
-
-// NOLINTNEXTLINE(misc-unused-parameters)
-IR::Value* FunctionPrototype::emit(IR::Context* ctx) {
-  if (!isGeneric()) {
-    return function;
-  } else {
-    function = createFunction(ctx);
-    return function;
-  }
-}
-
-Json FunctionPrototype::toJson() const {
-  Vec<JsonValue> args;
-  for (auto* arg : arguments) {
-    auto aJson = Json()._("name", arg->getName())._("type", arg->getType() ? arg->getType()->toJson() : Json());
-    args.push_back(aJson);
-  }
-  return Json()
-      ._("nodeType", "functionPrototype")
-      ._("name", name)
-      ._("hasReturnType", returnType.has_value())
-      ._("returnType", returnType.has_value() ? returnType.value()->toJson() : JsonValue())
-      ._("arguments", args)
-      ._("isVariadic", isVariadic)
-      ._("hasVisibility", visibSpec.has_value())
-      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
-      ._("hasMetaInfo", metaInfo.has_value())
-      ._("metaInfo", metaInfo.has_value() ? metaInfo.value().toJson() : JsonValue());
-}
-
-void FunctionDefinition::define(IR::Context* ctx) {
-  if (!prototype->isGeneric()) {
-    prototype->hasDefinition = true;
-    prototype->define(ctx);
-  } else {
-    if (prototype->checker.has_value()) {
-      auto condRes = prototype->checker.value()->emit(ctx);
-      if (condRes->getType()->isBool()) {
-        prototype->checkResult = llvm::cast<llvm::ConstantInt>(condRes->getLLVMConstant())->getValue().getBoolValue();
-        if (!prototype->checkResult.value()) {
-          return;
-        }
-      } else {
-        ctx->Error("The condition for defining this function should be of " + ctx->highlightError("bool") + " type",
-                   prototype->checker.value()->fileRange);
-      }
-    }
-    auto* tempFn = new IR::GenericFunction(prototype->name, prototype->generics, prototype->genericConstraint, this,
-                                           ctx->getMod(), ctx->getVisibInfo(prototype->visibSpec));
-    for (auto* gen : prototype->generics) {
-      gen->emit(ctx);
-    }
-    prototype->genericFn = tempFn;
-  }
-}
-
-bool FunctionDefinition::isGeneric() const { return prototype->isGeneric(); }
-
-IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
-  if (prototype->isGeneric()) {
-    prototype->hasDefinition = true;
-    SHOW("Function is generic")
-    (void)prototype->emit(ctx);
-    prototype->hasDefinition = false;
-  }
-  if (prototype->checkResult.has_value() && !prototype->checkResult.value()) {
-    return nullptr;
-  }
-  SHOW("Getting IR function from prototype")
-  auto* fnEmit = prototype->function;
+void FunctionPrototype::emit_definition(IR::Context* ctx) {
+  SHOW("Getting IR function from prototype for " << name.value)
+  auto* fnEmit = function;
   auto* oldFn  = ctx->setActiveFunction(fnEmit);
   SHOW("Set active function: " << fnEmit->getFullName())
   auto* block = new IR::Block(fnEmit, nullptr);
   SHOW("Created entry block")
   block->setActive(ctx->builder);
   SHOW("Set new block as the active block")
-  if (prototype->isMainFn) {
+  if (isMainFn) {
     SHOW("Calling module initialisers")
     auto modInits = IR::QatModule::collectModuleInitialisers();
     for (auto* modFn : modInits) {
@@ -293,30 +269,48 @@ IR::Value* FunctionDefinition::emit(IR::Context* ctx) {
         SHOW("Argument name is " << argIRTypes[i]->getName())
         SHOW("Argument type is " << argType->toString())
         auto* argVal = block->newValue(argIRTypes[i]->getName(), argType, argIRTypes[i]->isVariable(),
-                                       prototype->arguments[i]->getName().range);
+                                       arguments[i]->getName().range);
         SHOW("Created local value for the argument")
         ctx->builder.CreateStore(fnEmit->getLLVMFunction()->getArg(i), argVal->getAlloca(), false);
       }
     }
   }
   SHOW("Emitting sentences")
-  emitSentences(sentences, ctx);
+  emitSentences(definition.value().first, ctx);
   SHOW("Sentences emitted")
   IR::functionReturnHandler(ctx, fnEmit, fileRange);
   (void)ctx->setActiveFunction(oldFn);
-  return fnEmit;
 }
 
-Json FunctionDefinition::toJson() const {
+void FunctionPrototype::setVariantName(const String& value) const { variantName = value; }
+
+void FunctionPrototype::unsetVariantName() const { variantName = None; }
+
+Json FunctionPrototype::toJson() const {
+  Vec<JsonValue> args;
+  for (auto* arg : arguments) {
+    auto aJson = Json()._("name", arg->getName())._("type", arg->getType() ? arg->getType()->toJson() : Json());
+    args.push_back(aJson);
+  }
   Vec<JsonValue> sntcs;
-  for (auto* sentence : sentences) {
-    sntcs.push_back(sentence->toJson());
+  if (definition.has_value()) {
+    for (auto* sentence : definition.value().first) {
+      sntcs.push_back(sentence->toJson());
+    }
   }
   return Json()
-      ._("nodeType", "functionDefinition")
-      ._("prototype", prototype->toJson())
-      ._("body", sntcs)
-      ._("fileRange", fileRange);
+      ._("nodeType", "functionPrototype")
+      ._("name", name)
+      ._("hasReturnType", returnType.has_value())
+      ._("returnType", returnType.has_value() ? returnType.value()->toJson() : JsonValue())
+      ._("arguments", args)
+      ._("isVariadic", isVariadic)
+      ._("hasVisibility", visibSpec.has_value())
+      ._("visibility", visibSpec.has_value() ? visibSpec->toJson() : JsonValue())
+      ._("hasMetaInfo", metaInfo.has_value())
+      ._("metaInfo", metaInfo.has_value() ? metaInfo.value().toJson() : JsonValue())
+      ._("sentences", sntcs)
+      ._("bodyRange", definition.has_value() ? definition.value().second : JsonValue());
 }
 
 } // namespace qat::ast

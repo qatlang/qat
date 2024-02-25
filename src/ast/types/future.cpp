@@ -4,6 +4,11 @@
 
 namespace qat::ast {
 
+void FutureType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                     IR::Context* ctx) {
+  subType->update_dependencies(phase, expect.value_or(IR::DependType::partial), ent, ctx);
+}
+
 Maybe<usize> FutureType::getTypeSizeInBits(IR::Context* ctx) const {
   return (usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
       {llvm::Type::getInt64Ty(ctx->llctx), llvm::Type::getInt64Ty(ctx->llctx)->getPointerTo(),

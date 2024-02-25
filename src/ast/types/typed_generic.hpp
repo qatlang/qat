@@ -23,7 +23,15 @@ public:
   }
 
   useit bool hasDefault() const final;
+  useit ast::QatType* getDefaultAST() const { return defaultTypeAST.value(); }
   useit IR::QatType* getDefault() const;
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    if (defaultTypeAST.has_value()) {
+      UPDATE_DEPS(defaultTypeAST.value());
+    }
+  }
 
   void emit(IR::Context* ctx) const final;
 

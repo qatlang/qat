@@ -22,9 +22,13 @@ private:
 
 public:
   explicit QatType(FileRange _fileRange);
+  virtual ~QatType() = default;
+
   FileRange fileRange;
 
-  virtual ~QatType() = default;
+  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                   IR::Context* ctx) {}
+
   useit virtual Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const;
   useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
   useit virtual AstTypeKind  typeKind() const       = 0;

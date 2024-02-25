@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class PrerunMemberAccess : public PrerunExpression {
+class PrerunMemberAccess final : public PrerunExpression {
   PrerunExpression* expr;
   Identifier        memberName;
 
@@ -15,6 +15,11 @@ public:
 
   useit static inline PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(expr);
   }
 
   useit IR::PrerunValue* emit(IR::Context* ctx);

@@ -5,7 +5,19 @@
 
 namespace qat::ast {
 
-void DefineOpaqueType::createModule(IR::Context* ctx) const {
+void DefineOpaqueType::create_entity(IR::QatModule* parent, IR::Context* ctx) {
+  SHOW("CreateEntity: " << name.value)
+  parent->entity_name_check(ctx, name, IR::EntityType::opaque);
+  entityState = parent->add_entity(name, IR::EntityType::opaque, this, IR::EmitPhase::phase_1);
+}
+
+void DefineOpaqueType::update_entity_dependencies(IR::QatModule*, IR::Context* ctx) {
+  if (condition.has_value()) {
+    condition.value()->update_dependencies(IR::EmitPhase::phase_1, IR::DependType::complete, entityState, ctx);
+  }
+}
+
+void DefineOpaqueType::do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) {
   SHOW("Defining opaque type " << name.value << " with visibility "
                                << (visibSpec.has_value() ? visibSpec.value().toString() : ""))
   if (condition.has_value()) {
@@ -21,12 +33,11 @@ void DefineOpaqueType::createModule(IR::Context* ctx) const {
     }
   }
   ctx->nameCheckInModule(name, "opaque type", None);
-  auto                mod = ctx->getMod();
   Maybe<IR::MetaInfo> irMeta;
   if (metaInfo.has_value()) {
     irMeta = metaInfo.value().toIR(ctx);
   }
-  (void)IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, mod, None, ctx->getVisibInfo(visibSpec),
+  (void)IR::OpaqueType::get(name, {}, None, IR::OpaqueSubtypeKind::core, parent, None, ctx->getVisibInfo(visibSpec),
                             ctx->llctx, irMeta);
 }
 

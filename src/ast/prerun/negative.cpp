@@ -40,6 +40,8 @@ IR::PrerunValue* PrerunNegative::emit(IR::Context* ctx) {
   return nullptr;
 }
 
+String PrerunNegative::toString() const { return "-" + value->toString(); }
+
 Json PrerunNegative::toJson() const {
   return Json()._("nodeType", "prerunNegative")._("subExpression", value->toJson())._("fileRange", fileRange);
 }

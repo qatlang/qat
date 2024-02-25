@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class PrerunNegative : public PrerunExpression, public TypeInferrable {
+class PrerunNegative final : public PrerunExpression, public TypeInferrable {
   PrerunExpression* value;
 
 public:
@@ -17,8 +17,14 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(value);
+  }
+
   IR::PrerunValue* emit(IR::Context* ctx);
   useit Json       toJson() const;
+  useit String     toString() const;
   useit NodeType   nodeType() const { return NodeType::PRERUN_NEGATIVE; }
 };
 

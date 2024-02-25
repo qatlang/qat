@@ -43,6 +43,8 @@ struct VisibilitySpec {
         return "pub:box";
       case VisibilityKind::parent:
         return "pub:parent";
+      case VisibilityKind::skill:
+        return "pub:skill";
     }
   }
   useit Json toJson() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
@@ -57,6 +59,9 @@ public:
 #define COMMENTABLE_FUNCTIONS                                                                                          \
   useit bool         isCommentable() const final { return true; }                                                      \
   useit Commentable* asCommentable() final { return (Commentable*)this; }
+
+#define UPDATE_DEPS(x)               x->update_dependencies(phase, IR::DependType::complete, ent, ctx)
+#define UPDATE_DEPS_CUSTOM(x, depTy) x->update_dependencies(phase, IR::DependType::depTy, ent, ctx)
 
 // Node is the base class for all AST members of the language, and it
 // requires a FileRange instance that indicates its position in the
@@ -73,15 +78,34 @@ public:
   useit virtual bool         isCommentable() const { return false; }
   useit virtual Commentable* asCommentable() { return nullptr; }
   useit virtual bool         isPrerunNode() const { return false; }
-  virtual void               createModule(IR::Context* ctx) const {}
-  virtual void               handleFilesystemBrings(IR::Context* ctx) const {}
-  virtual void               handleBrings(IR::Context* ctx) const {}
-  virtual void               defineType(IR::Context* ctx) {}
-  virtual void               define(IR::Context* ctx) {}
-  useit virtual IR::Value*   emit(IR::Context* ctx) = 0;
-  useit virtual Json         toJson() const         = 0;
-  useit virtual NodeType     nodeType() const       = 0;
-  static void                clearAll();
+
+  virtual void createModule(IR::Context* ctx) const {}
+  virtual void handleFilesystemBrings(IR::Context* ctx) const {}
+  //   virtual void handleFilesystemBrings(IR::Context* ctx) const {}
+  //   virtual void handleBrings(IR::Context* ctx) const {}
+  //   virtual void defineType(IR::Context* ctx) {}
+  //   virtual void define(IR::Context* ctx) {}
+
+  //   useit virtual IR::Value* emit(IR::Context* ctx) = 0;
+  useit virtual bool is_entity() const { return false; }
+
+  useit virtual Json     toJson() const   = 0;
+  useit virtual NodeType nodeType() const = 0;
+  static void            clearAll();
+};
+
+class IsEntity : public Node {
+public:
+  IR::EntityState* entityState = nullptr;
+
+  IsEntity(FileRange _fileRange) : Node(_fileRange) {}
+  virtual ~IsEntity() = default;
+
+  useit bool is_entity() const final { return true; }
+
+  virtual void create_entity(IR::QatModule* parent, IR::Context* ctx)                 = 0;
+  virtual void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx)    = 0;
+  virtual void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) = 0;
 };
 
 class HolderNode : public Node {
@@ -92,9 +116,8 @@ public:
   explicit HolderNode(Node* _node) : Node(_node->fileRange), node(_node) {}
 
   // NOLINTNEXTLINE(misc-unused-parameters)
-  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
-  useit Json       toJson() const final { return node->toJson(); }
-  useit NodeType   nodeType() const final { return NodeType::HOLDER; }
+  useit Json     toJson() const final { return node->toJson(); }
+  useit NodeType nodeType() const final { return NodeType::HOLDER; }
 };
 
 } // namespace qat::ast

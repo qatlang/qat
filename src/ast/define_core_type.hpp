@@ -1,25 +1,16 @@
 #ifndef QAT_AST_DEFINE_CORE_HPP
 #define QAT_AST_DEFINE_CORE_HPP
 
-#include "../utils/visibility.hpp"
-#include "./convertor.hpp"
 #include "./expression.hpp"
-#include "./member_function.hpp"
-#include "./operator_function.hpp"
 #include "./types/qat_type.hpp"
-#include "constructor.hpp"
-#include "destructor.hpp"
 #include "member_parent_like.hpp"
 #include "meta_info.hpp"
 #include "node.hpp"
 #include "types/generic_abstract.hpp"
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace qat::ast {
 
-class DefineCoreType final : public Node, public Commentable, public MemberParentLike {
+class DefineCoreType final : public IsEntity, public Commentable, public MemberParentLike {
   friend class IR::GenericCoreType;
 
 public:
@@ -89,12 +80,13 @@ private:
   mutable Vec<IR::GenericToFill*> genericsToFill;
   mutable Maybe<bool>             checkResult;
   mutable Maybe<bool>             isPackedStruct;
+  mutable IR::EntityState*        entityState = nullptr;
 
 public:
   DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
                  FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
                  Maybe<MetaInfo> _metaInfo)
-      : Node(_fileRange), name(_name), checker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
+      : IsEntity(_fileRange), name(_name), checker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
         generics(_generics), constraint(_constraint) {}
 
   useit static inline DefineCoreType* create(Identifier _name, Maybe<PrerunExpression*> _checker,
@@ -110,11 +102,10 @@ public:
   void addMember(Member* mem);
   void addStaticMember(StaticMember* stm);
 
-  void createModule(IR::Context* ctx) const final;
-  void createType(IR::CoreType** resultTy, IR::Context* ctx) const;
-  void defineType(IR::Context* ctx) final;
-  void define(IR::Context* ctx) final;
-  void do_define(IR::CoreType** resultTy, IR::Context* ctx);
+  void create_opaque(IR::QatModule* mod, IR::Context* ctx);
+  void create_type(IR::CoreType** resultTy, IR::QatModule* mod, IR::Context* ctx) const;
+  void setup_type(IR::QatModule* mod, IR::Context* ctx);
+  void do_define(IR::CoreType* resultTy, IR::QatModule* mod, IR::Context* ctx);
 
   useit inline bool hasTrivialCopy() { return trivialCopy.has_value(); }
   inline void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
@@ -130,10 +121,16 @@ public:
   useit bool            hasMoveAssignment() const;
   useit bool            is_define_core_type() const final { return true; }
   useit DefineCoreType* as_define_core_type() final { return this; }
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit IR::Value* do_emit(IR::CoreType* resultTy, IR::Context* ctx);
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
+
+  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
+
+  void emit(IR::Context* ctx);
+  void do_emit(IR::CoreType* resultTy, IR::Context* ctx);
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
   ~DefineCoreType() final;
 };
 

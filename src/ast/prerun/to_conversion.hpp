@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class PrerunTo : public PrerunExpression {
+class PrerunTo final : public PrerunExpression {
   PrerunExpression* value;
   QatType*          targetType;
 
@@ -17,6 +17,9 @@ public:
   useit static inline PrerunTo* create(PrerunExpression* _value, QatType* _targetType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunTo), _value, _targetType, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::PrerunValue* emit(IR::Context* ctx);
   useit String           toString() const final;

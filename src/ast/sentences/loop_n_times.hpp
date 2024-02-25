@@ -11,7 +11,7 @@ namespace qat::ast {
  * of times
  *
  */
-class LoopNTimes : public Sentence {
+class LoopNTimes final : public Sentence {
   Vec<Sentence*>    sentences;
   Expression*       count;
   Maybe<Identifier> tag;
@@ -23,6 +23,14 @@ public:
   useit static inline LoopNTimes* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag,
                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(LoopNTimes), _count, _snts, _tag, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(count);
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
   }
 
   useit bool hasTag() const;

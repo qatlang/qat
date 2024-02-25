@@ -465,7 +465,7 @@ usize& Function::getCopiedCounter() { return copiedCounter; }
 usize& Function::getMovedCounter() { return movedCounter; }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionDefinition* _functionDef,
+                                 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
                                  QatModule* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
@@ -522,7 +522,7 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
     }
   }
   auto variantName = IR::Logic::getGenericVariantName(name.value, types);
-  functionDefinition->prototype->setVariantName(variantName);
+  functionDefinition->setVariantName(variantName);
   Vec<IR::GenericParameter*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
@@ -530,12 +530,14 @@ Function* GenericFunction::fillGenerics(Vec<IR::GenericToFill*> types, IR::Conte
   auto prevTemp = ctx->allActiveGenerics;
   ctx->addActiveGeneric(IR::GenericEntityMarker{variantName, IR::GenericEntityType::function, fileRange, 0, genParams},
                         true);
-  auto* fun = (IR::Function*)functionDefinition->emit(ctx);
+  auto* fun                    = functionDefinition->create_function(parent, ctx);
+  functionDefinition->function = fun;
+  functionDefinition->emit_definition(ctx);
   variants.push_back(GenericVariant<Function>(fun, types));
   for (auto* temp : generics) {
     temp->unset();
   }
-  functionDefinition->prototype->unsetVariantName();
+  functionDefinition->unsetVariantName();
   if (ctx->getActiveGeneric().warningCount > 0) {
     auto count = ctx->getActiveGeneric().warningCount;
     ctx->removeActiveGeneric();
@@ -800,7 +802,7 @@ void destroyLocalsFrom(IR::Context* ctx, IR::Block* block) {
                                          (loc->getType()->asPointer()->getOwner().ownerAsParentFunction()->getID() ==
                                           ctx->getActiveFunction()->getID()))
                                       : true) {
-        loc->getType()->destroyValue(ctx, {loc}, ctx->getActiveFunction());
+        loc->getType()->destroyValue(ctx, loc, ctx->getActiveFunction());
       }
     }
   }

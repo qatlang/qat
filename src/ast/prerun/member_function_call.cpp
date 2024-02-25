@@ -283,6 +283,17 @@ IR::PrerunValue* handle_type_wrap_functions(IR::TypedType* typed, Vec<Expression
   return nullptr;
 }
 
+String PrerunMemberFnCall::toString() const {
+  String argStr;
+  for (usize i = 0; i < arguments.size(); i++) {
+    argStr += arguments[i]->toString();
+    if (i != (arguments.size() - 1)) {
+      argStr += ", ";
+    }
+  }
+  return instance->toString() + "'" + memberName.value + "(" + argStr + ")";
+}
+
 Json PrerunMemberFnCall::toJson() const {
   Vec<JsonValue> argJson;
   for (auto arg : arguments) {

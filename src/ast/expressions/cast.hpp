@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class Cast : public Expression {
+class Cast final : public Expression {
   Expression* instance;
   QatType*    destination;
 
@@ -16,6 +16,11 @@ public:
 
   useit static inline Cast* create(Expression* mainExp, QatType* value, FileRange fileRange) {
     return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(destination);
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

@@ -9,7 +9,7 @@
 
 namespace qat::ast {
 
-class MemberFunctionCall : public Expression {
+class MemberFunctionCall final : public Expression {
 private:
   Expression*      instance;
   bool             isExpSelf = false;
@@ -30,11 +30,12 @@ public:
                              _fileRange);
   }
 
-  IR::Value* emit(IR::Context* ctx) override;
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
-  useit Json toJson() const override;
-
-  useit NodeType nodeType() const override { return NodeType::MEMBER_FUNCTION_CALL; }
+  useit IR::Value* emit(IR::Context* ctx) override;
+  useit Json       toJson() const override;
+  useit NodeType   nodeType() const override { return NodeType::MEMBER_FUNCTION_CALL; }
 };
 
 } // namespace qat::ast

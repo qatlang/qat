@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class TagOfLoop : public Expression {
+class TagOfLoop final : public Expression {
   String indexName;
 
 public:
@@ -14,6 +14,9 @@ public:
   useit static inline TagOfLoop* create(String _indexName, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TagOfLoop), _indexName, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {}
 
   useit bool hasName() const;
   useit IR::Value* emit(IR::Context* ctx) final;

@@ -415,6 +415,30 @@ UnsignedType* QatType::asUnsignedInteger() const {
              : (isOpaque() ? asOpaque()->getSubType()->asUnsignedInteger() : (UnsignedType*)this);
 }
 
+bool QatType::is_underlying_type_integer() const {
+  return isInteger() || (isCType() && asCType()->getSubType()->isInteger());
+}
+
+IntegerType* QatType::get_underlying_integer_type() const {
+  if (isInteger()) {
+    return asInteger();
+  } else {
+    return asCType()->getSubType()->asInteger();
+  }
+}
+
+bool QatType::is_underlying_type_unsigned() const {
+  return isUnsignedInteger() || (isCType() && asCType()->getSubType()->isUnsignedInteger());
+}
+
+UnsignedType* QatType::get_underlying_unsigned_type() const {
+  if (isUnsignedInteger()) {
+    return asUnsignedInteger();
+  } else {
+    return asCType()->getSubType()->asUnsignedInteger();
+  }
+}
+
 bool QatType::isBool() const { return (typeKind() == TypeKind::unsignedInteger) && asUnsignedInteger()->isBoolean(); }
 
 UnsignedType* QatType::asBool() const { return asUnsignedInteger(); }

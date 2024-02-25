@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FunctionCall : public Expression {
+class FunctionCall final : public Expression {
 private:
   Expression*      fnExpr;
   Vec<Expression*> values;
@@ -16,6 +16,14 @@ public:
 
   useit static inline FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(fnExpr);
+    for (auto arg : values) {
+      UPDATE_DEPS(arg);
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

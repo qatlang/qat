@@ -11,7 +11,7 @@ namespace qat::ast {
  *  LoopWhile is used to loop a block of code while a condition is true
  *
  */
-class LoopWhile : public Sentence {
+class LoopWhile final : public Sentence {
   Expression*       condition;
   Vec<Sentence*>    sentences;
   Maybe<Identifier> tag;
@@ -25,6 +25,14 @@ public:
   useit static inline LoopWhile* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
                                         Maybe<Identifier> _tag, FileRange _fileRange) {
     return std::construct_at(OwnNormal(LoopWhile), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(condition);
+    for (auto snt : sentences) {
+      UPDATE_DEPS(snt);
+    }
   }
 
   useit IR::Value* emit(IR::Context* ctx) final;

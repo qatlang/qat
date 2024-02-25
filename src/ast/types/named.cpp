@@ -2,8 +2,68 @@
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/choice.hpp"
 #include "../../IR/types/region.hpp"
+#include "../type_definition.hpp"
 
 namespace qat::ast {
+
+void NamedType::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                    IR::Context* ctx) {
+  //
+  auto currentMod = ctx->getMod();
+  auto mod        = currentMod;
+  auto reqInfo    = ctx->getAccessInfo();
+  if (relative != 0) {
+    if (ctx->getMod()->hasNthParent(relative)) {
+      mod = ctx->getMod()->getNthParent(relative);
+    } else {
+      ctx->Error("The active scope does not have " + std::to_string(relative) + " parents", fileRange);
+    }
+  }
+  if (names.size() > 1) {
+    for (usize i = 0; i < (names.size() - 1); i++) {
+      auto split = names.at(i);
+      if (split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      } else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
+        ent->addDependency(
+            IR::EntityDependency{mod->get_entity(split.value), expect.value_or(IR::DependType::complete), phase});
+        break;
+      }
+      auto fullName = Identifier::fullName(names);
+      SHOW("UpdateDeps :: " << fullName.value)
+      if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
+          mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
+        SHOW("Has lib")
+        mod = mod->getLib(split.value, reqInfo);
+      } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
+                 mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
+        SHOW("Has box")
+        mod = mod->getBox(split.value, reqInfo);
+      } else if (mod->hasBroughtModule(split.value, ctx->getAccessInfo()) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        SHOW("Has brought module")
+        mod = mod->getBroughtModule(split.value, reqInfo);
+      } else {
+        SHOW("Update deps")
+        ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
+                       ctx->highlightError(mod->getFullName()) + " or any of its submodules",
+                   split.range);
+      }
+    }
+    SHOW("Mod retrieval complete")
+  }
+  auto entName = names.back();
+  SHOW("Checking entity")
+  if (mod->has_entity_with_name(entName.value)) {
+    SHOW("Has entity with name")
+    auto entVal = mod->get_entity(entName.value);
+    if ((entVal->type == IR::EntityType::typeDefinition) && entVal->astNode) {
+      typeSize = ((ast::TypeDefinition*)(entVal->astNode))->typeSize;
+    }
+    ent->addDependency(IR::EntityDependency{entVal, expect.value_or(IR::DependType::complete), phase});
+  }
+}
 
 IR::QatType* NamedType::emit(IR::Context* ctx) {
   auto* mod        = ctx->getMod();
@@ -78,23 +138,29 @@ IR::QatType* NamedType::emit(IR::Context* ctx) {
       }
       if (mod->hasLib(split.value, reqInfo) || mod->hasBroughtLib(split.value, reqInfo) ||
           mod->hasAccessibleLibInImports(split.value, reqInfo).first) {
+        SHOW("Has lib")
         mod = mod->getLib(split.value, reqInfo);
         mod->addMention(split.range);
       } else if (mod->hasBox(split.value, reqInfo) || mod->hasBroughtBox(split.value, reqInfo) ||
                  mod->hasAccessibleBoxInImports(split.value, reqInfo).first) {
+        SHOW("Has box")
         mod = mod->getBox(split.value, reqInfo);
         mod->addMention(split.range);
       } else if (mod->hasBroughtModule(split.value, ctx->getAccessInfo()) ||
                  mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        SHOW("Has brought module")
         mod = mod->getBroughtModule(split.value, reqInfo);
         mod->addMention(split.range);
       } else {
+        SHOW("Emit fn")
         ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside " +
                        ctx->highlightError(mod->getFullName()) + " or any of its submodules",
                    split.range);
       }
     }
   }
+  SHOW("Module is " << mod->getName() << " at file: " << mod->getFilePath()
+                    << " has submods: " << (mod->hasSubmodules() ? "true" : "false"))
   if (mod->hasOpaqueType(entityName.value, reqInfo) ||
       mod->hasBroughtOpaqueType(entityName.value, ctx->getAccessInfo()) ||
       mod->hasAccessibleOpaqueTypeInImports(entityName.value, reqInfo).first) {

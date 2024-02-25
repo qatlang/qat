@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class BinaryExpression : public Expression {
+class BinaryExpression final : public Expression {
 private:
   Op          op;
   Expression* lhs;
@@ -20,6 +20,12 @@ public:
   useit static inline BinaryExpression* create(Expression* _lhs, const String& _binaryOperator, Expression* _rhs,
                                                FileRange _fileRange) {
     return std::construct_at(OwnNormal(BinaryExpression), _lhs, _binaryOperator, _rhs, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(lhs);
+    UPDATE_DEPS(rhs);
   }
 
   useit IR::Value* emit(IR::Context* ctx) override;

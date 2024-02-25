@@ -37,6 +37,9 @@ public:
   useit bool           isPrerun() const;
   useit PrerunGeneric* asPrerun() const;
 
+  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                                   IR::Context* ctx) = 0;
+
   virtual void       emit(IR::Context* ctx) const = 0;
   useit virtual bool hasDefault() const           = 0;
   useit virtual bool isSet() const                = 0;

@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-class GenericNamedType : public QatType {
+class GenericNamedType final : public QatType {
 private:
   u32               relative;
   Vec<Identifier>   names;
@@ -22,6 +22,9 @@ public:
                                                FileRange _fileRange) {
     return std::construct_at(OwnNormal(GenericNamedType), _relative, _names, _genericTypes, _fileRange);
   }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
+                           IR::Context* ctx) final;
 
   useit IR::QatType* emit(IR::Context* ctx) final;
   useit Json         toJson() const final;

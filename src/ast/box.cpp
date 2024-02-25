@@ -16,8 +16,6 @@ void Box::createModule(IR::Context* ctx) const {
   mod->closeBox();
 }
 
-IR::Value* Box::emit(IR::Context* ctx) { return nullptr; }
-
 Json Box::toJson() const {
   Vec<JsonValue> mems;
   for (auto* mem : members) {

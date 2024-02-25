@@ -3,6 +3,12 @@
 
 namespace qat::ast {
 
+void PrerunTo::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                   IR::Context* ctx) {
+  value->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+  targetType->update_dependencies(phase, IR::DependType::complete, ent, ctx);
+}
+
 IR::PrerunValue* PrerunTo::emit(IR::Context* ctx) {
   auto val          = value->emit(ctx);
   auto usableTarget = targetType->emit(ctx);

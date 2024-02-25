@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-IR::Value* Not::emit(IR::Context* ctx) {
+IR::Value* LogicalNot::emit(IR::Context* ctx) {
   auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->getType();
   if (expTy->isReference()) {
@@ -25,7 +25,7 @@ IR::Value* Not::emit(IR::Context* ctx) {
   return nullptr;
 }
 
-Json Not::toJson() const {
+Json LogicalNot::toJson() const {
   return Json()._("nodeType", "notExpression")._("expression", exp->toJson())._("fileRange", fileRange);
 }
 

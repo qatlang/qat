@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-void BringBitwidths::handleBrings(IR::Context* ctx) const {
+void BringBitwidths::createModule(IR::Context* ctx) const {
   auto* mod = ctx->getMod();
   for (auto typ : broughtTypes) {
     if (typ->typeKind() == AstTypeKind::INTEGER) {

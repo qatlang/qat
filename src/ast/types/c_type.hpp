@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class CType : public QatType {
+class CType final : public QatType {
   IR::CTypeKind cTypeKind;
 
   QatType* subType                  = nullptr;
@@ -25,6 +25,12 @@ public:
 
   useit static inline CType* create(QatType* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange) {
     return std::construct_at(OwnNormal(CType), _pointerSubTy, _isPtrSubTyVar, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent, IR::Context* ctx) {
+    if (cTypeKind == IR::CTypeKind::Pointer) {
+      subType->update_dependencies(phase, IR::DependType::partial, ent, ctx);
+    }
   }
 
   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;

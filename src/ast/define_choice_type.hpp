@@ -8,7 +8,7 @@ namespace qat::ast {
 
 class QatType;
 
-class DefineChoiceType : public Node {
+class DefineChoiceType : public IsEntity {
 private:
   Identifier                                      name;
   Vec<Pair<Identifier, Maybe<PrerunExpression*>>> fields;
@@ -16,13 +16,14 @@ private:
   Maybe<usize>                                    defaultVal;
   Maybe<ast::QatType*>                            providedIntegerTy;
 
-  mutable bool areValuesUnsigned;
+  mutable bool             areValuesUnsigned;
+  mutable IR::EntityState* entityState = nullptr;
 
 public:
   DefineChoiceType(Identifier _name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
                    Maybe<ast::QatType*> _providedTy, Maybe<usize> _defaultVal, Maybe<VisibilitySpec> _visibSpec,
                    FileRange _fileRange)
-      : Node(_fileRange), name(_name), fields(_fields), visibSpec(_visibSpec), defaultVal(_defaultVal),
+      : IsEntity(_fileRange), name(_name), fields(_fields), visibSpec(_visibSpec), defaultVal(_defaultVal),
         providedIntegerTy(_providedTy) {}
 
   useit static inline DefineChoiceType* create(Identifier                                           _name,
@@ -33,12 +34,12 @@ public:
                              _fileRange);
   }
 
-  void  createType(IR::Context* ctx);
-  void  defineType(IR::Context* ctx) final;
-  void  define(IR::Context* ctx) final {}
-  useit IR::Value* emit(IR::Context* ctx) final { return nullptr; }
-  useit Json       toJson() const final;
-  useit NodeType   nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
+  void create_entity(IR::QatModule* mod, IR::Context* ctx) final;
+  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
+  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
+
+  useit Json     toJson() const final;
+  useit NodeType nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
 };
 
 } // namespace qat::ast

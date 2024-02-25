@@ -1,6 +1,4 @@
 #include "./member_access.hpp"
-#include "../../IR/types/maybe.hpp"
-#include "entity.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"

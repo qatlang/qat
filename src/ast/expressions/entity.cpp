@@ -6,6 +6,55 @@
 
 namespace qat::ast {
 
+void Entity::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                 IR::Context* ctx) {
+  auto mod     = ctx->getMod();
+  auto reqInfo = ctx->getAccessInfo();
+  if ((relative != 0)) {
+    if (ctx->getMod()->hasNthParent(relative)) {
+      mod = ctx->getMod()->getNthParent(relative);
+    } else {
+      ctx->Error("The current scope do not have " + (relative == 1 ? "a" : std::to_string(relative)) + " parent" +
+                     (relative == 1 ? "" : "s") +
+                     ". Relative mentions of identifiers cannot be used here. "
+                     "Please check the logic.",
+                 fileRange);
+    }
+  }
+  if (names.size() > 1) {
+    for (usize i = 0; i < (names.size() - 1); i++) {
+      auto split = names.at(i);
+      if (relative == 0 && i == 0 && split.value == "std" && IR::StdLib::isStdLibFound()) {
+        mod = IR::StdLib::stdLib;
+        continue;
+      } else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
+        ent->addDependency(
+            IR::EntityDependency{mod->get_entity(split.value), dep.value_or(IR::DependType::complete), phase});
+        break;
+      }
+      if (mod->hasLib(split.value, reqInfo)) {
+        mod = mod->getLib(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBox(split.value, reqInfo)) {
+        mod = mod->getBox(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else if (mod->hasBroughtModule(split.value, ctx->getAccessInfo()) ||
+                 mod->hasAccessibleBroughtModuleInImports(split.value, reqInfo).first) {
+        mod = mod->getBroughtModule(split.value, reqInfo);
+        mod->addMention(split.range);
+      } else {
+        SHOW("Update deps")
+        ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside scope ", split.range);
+      }
+    }
+  }
+  auto entName = names.back();
+  if (mod->has_entity_with_name(entName.value)) {
+    ent->addDependency(
+        IR::EntityDependency{mod->get_entity(entName.value), dep.value_or(IR::DependType::complete), phase});
+  }
+}
+
 IR::Value* Entity::emit(IR::Context* ctx) {
   auto* fun     = ctx->getActiveFunction();
   auto  reqInfo = ctx->getAccessInfo();
@@ -58,22 +107,10 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         auto* local = fun->getBlock()->getValue(singleName.value);
         local->addMention(singleName.range);
         auto* alloca = local->getAlloca();
-        if (getExpectedKind() == ExpressionKind::assignable) {
-          if (local->getType()->isReference() ? local->getType()->asReference()->isSubtypeVariable()
-                                              : local->isVariable()) {
-            auto* val = new IR::Value(alloca, local->getType(), !local->isReference(), IR::Nature::assignable);
-            val->setLocalID(local->getID());
-            return val;
-          } else {
-            ctx->Error(ctx->highlightError(singleName.value) + " is not a variable and is not assignable",
-                       names.front().range);
-          }
-        } else {
-          auto* val = new IR::Value(alloca, local->getType(), local->isVariable(), IR::Nature::temporary);
-          SHOW("Returning local value with alloca name: " << alloca->getName().str())
-          val->setLocalID(local->getID());
-          return val;
-        }
+        auto* val    = new IR::Value(alloca, local->getType(), local->isVariable(), IR::Nature::temporary);
+        SHOW("Returning local value with alloca name: " << alloca->getName().str())
+        val->setLocalID(local->getID());
+        return val;
       } else {
         SHOW("No local value with name: " << singleName.value)
         // Checking arguments
@@ -82,16 +119,9 @@ IR::Value* Entity::emit(IR::Context* ctx) {
         auto argTypes = fun->getType()->asFunction()->getArgumentTypes();
         for (usize i = 0; i < argTypes.size(); i++) {
           if (fun->argumentNameAt(i).value == singleName.value) {
-            if ((getExpectedKind() == ExpressionKind::assignable) && !argTypes.at(i)->isVariable()) {
-              ctx->Error("Argument " + singleName.value +
-                             " is not assignable. If the argument should be "
-                             "reassigned in the function, make it var",
-                         singleName.range);
-            } else {
-              //   mod->addMention("parameter", singleName.range, fun->argumentNameAt(i).range);
-              return new IR::Value(llvm::dyn_cast<llvm::Function>(fun->getLLVM())->getArg(i), argTypes.at(i)->getType(),
-                                   false, IR::Nature::pure);
-            }
+            //   mod->addMention("parameter", singleName.range, fun->argumentNameAt(i).range);
+            return new IR::Value(llvm::dyn_cast<llvm::Function>(fun->getLLVM())->getArg(i), argTypes.at(i)->getType(),
+                                 false, IR::Nature::pure);
           }
         }
         // Checking functions
@@ -143,6 +173,7 @@ IR::Value* Entity::emit(IR::Context* ctx) {
             mod = mod->getBroughtModule(split.value, reqInfo);
             mod->addMention(split.range);
           } else {
+            SHOW("Emit fn")
             ctx->Error("No box or lib named " + ctx->highlightError(split.value) + " found inside scope ", split.range);
           }
         }

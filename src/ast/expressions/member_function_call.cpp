@@ -1,10 +1,31 @@
 #include "./member_function_call.hpp"
+#include "../../IR/qat_module.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../prerun/member_function_call.hpp"
 #include "llvm/IR/Intrinsics.h"
-#include "llvm/Support/TypeSize.h"
 
 namespace qat::ast {
+
+void MemberFunctionCall::update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                                             IR::Context* ctx) {
+  UPDATE_DEPS(instance);
+  for (auto arg : arguments) {
+    UPDATE_DEPS(arg);
+  }
+  for (auto mod : IR::QatModule::allModules) {
+    for (auto modEnt : mod->entityEntries) {
+      if (modEnt->type == IR::EntityType::defaultDoneSkill) {
+        if (modEnt->has_child(memberName.value)) {
+          ent->addDependency(IR::EntityDependency{modEnt, IR::DependType::partial, phase});
+        }
+      } else if (modEnt->type == IR::EntityType::structType) {
+        if (modEnt->has_child(memberName.value)) {
+          ent->addDependency(IR::EntityDependency{modEnt, IR::DependType::childrenPartial, phase});
+        }
+      }
+    }
+  }
+}
 
 IR::Value* MemberFunctionCall::emit(IR::Context* ctx) {
   SHOW("Member variable emitting")

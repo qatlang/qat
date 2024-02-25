@@ -3,11 +3,6 @@
 
 namespace qat::ast {
 
-Maybe<usize> VoidType::getTypeSizeInBits(IR::Context* ctx) const {
-  return (
-      usize)(ctx->getMod()->getLLVMModule()->getDataLayout().getTypeAllocSizeInBits(llvm::Type::getVoidTy(ctx->llctx)));
-}
-
 IR::QatType* VoidType::emit(IR::Context* ctx) { return IR::VoidType::get(ctx->llctx); }
 
 AstTypeKind VoidType::typeKind() const { return AstTypeKind::VOID; }

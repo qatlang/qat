@@ -6,11 +6,9 @@
 #include "../node_type.hpp"
 #include "../sentence.hpp"
 
-#include <string>
-
 namespace qat::ast {
 
-class Assignment : public Sentence {
+class Assignment final : public Sentence {
 private:
   Expression* lhs;
   Expression* value;
@@ -21,6 +19,12 @@ public:
 
   useit static inline Assignment* create(Expression* _lhs, Expression* _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Assignment), _lhs, _value, _fileRange);
+  }
+
+  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
+                           IR::Context* ctx) final {
+    UPDATE_DEPS(lhs);
+    UPDATE_DEPS(value);
   }
 
   useit IR::Value* emit(IR::Context* ctx);

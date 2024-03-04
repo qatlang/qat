@@ -1,6 +1,7 @@
-add_library(QAT_CLI error.cpp
-        config.cpp
-        display.cpp)
+add_library(QAT_CLI
+	error.cc
+	config.cc
+	display.cc)
 
 target_include_directories(QAT_CLI PUBLIC "${LLVM_ROOT_DIR}/include")
 

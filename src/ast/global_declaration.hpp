@@ -13,31 +13,31 @@ namespace qat::ast {
 class GlobalDeclaration : public IsEntity {
 private:
   Identifier            name;
-  QatType*              type;
+  Type*                 type;
   Maybe<Expression*>    value;
-  bool                  isVariable;
+  bool                  is_variable;
   Maybe<VisibilitySpec> visibSpec;
   Maybe<MetaInfo>       metaInfo;
 
 public:
-  GlobalDeclaration(Identifier _name, QatType* _type, Maybe<Expression*> _value, bool _isVariable,
+  GlobalDeclaration(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
                     Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
-      : IsEntity(_fileRange), name(_name), type(_type), value(_value), isVariable(_isVariable), visibSpec(_visibSpec),
+      : IsEntity(_fileRange), name(_name), type(_type), value(_value), is_variable(_isVariable), visibSpec(_visibSpec),
         metaInfo(_metaInfo) {}
 
-  useit static inline GlobalDeclaration* create(Identifier _name, QatType* _type, Maybe<Expression*> _value,
+  useit static inline GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value,
                                                 bool _isVariable, Maybe<VisibilitySpec> _visibSpec,
                                                 Maybe<MetaInfo> _metaInfo, FileRange _fileRange) {
     return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _metaInfo,
                              _fileRange);
   }
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx);
-  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx);
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx);
-  void define(IR::QatModule* mod, IR::Context* ctx);
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx);
+  void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx);
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx);
+  void define(ir::Mod* mod, ir::Ctx* irCtx);
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
 };
 

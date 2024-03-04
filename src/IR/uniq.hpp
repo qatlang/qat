@@ -5,7 +5,7 @@
 #include "../utils/unique_id.hpp"
 #include <string>
 
-namespace qat::IR {
+namespace qat::ir {
 
 class Uniq {
 private:
@@ -15,10 +15,10 @@ public:
   explicit Uniq(String idVal) : id(std::move(idVal)) {}
   Uniq() : id(utils::unique_id()) {}
 
-  useit String getID() const { return id; }
-  useit bool   isID(const String &val) const { return (val == id); }
+  useit String get_id() const { return id; }
+  useit bool   isID(const String& val) const { return (val == id); }
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

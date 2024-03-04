@@ -8,11 +8,11 @@
 
 namespace qat {
 
-namespace IR {
-class QatType;
-class QatModule;
+namespace ir {
+class Type;
+class Mod;
 class DoneSkill;
-} // namespace IR
+} // namespace ir
 
 enum class VisibilityKind {
   type,
@@ -20,7 +20,6 @@ enum class VisibilityKind {
   lib,
   file,
   folder,
-  box,
   parent,
   skill,
 };
@@ -31,25 +30,24 @@ class AccessInfo;
 
 class VisibilityInfo {
 private:
-  VisibilityInfo(VisibilityKind _kind, IR::QatModule* _module) : kind(_kind), moduleVal(_module) {}
-  explicit VisibilityInfo(VisibilityKind _kind, IR::QatType* _type) : kind(_kind), typePtr(_type) {}
+  VisibilityInfo(VisibilityKind _kind, ir::Mod* _module) : kind(_kind), moduleVal(_module) {}
+  explicit VisibilityInfo(VisibilityKind _kind, ir::Type* _type) : kind(_kind), typePtr(_type) {}
 
 public:
   VisibilityKind kind;
-  IR::QatModule* moduleVal = nullptr;
-  IR::QatType*   typePtr   = nullptr;
+  ir::Mod*       moduleVal = nullptr;
+  ir::Type*      typePtr   = nullptr;
 
   VisibilityInfo(const VisibilityInfo& other);
 
-  static VisibilityInfo type(IR::QatType* type) { return VisibilityInfo(VisibilityKind::type, type); }
-  static VisibilityInfo pub() { return {VisibilityKind::pub, (IR::QatModule*)nullptr}; }
-  static VisibilityInfo lib(IR::QatModule* mod) { return {VisibilityKind::lib, mod}; }
-  static VisibilityInfo file(IR::QatModule* mod) { return {VisibilityKind::file, mod}; }
-  static VisibilityInfo folder(IR::QatModule* mod) { return {VisibilityKind::folder, mod}; }
-  static VisibilityInfo box(IR::QatModule* mod) { return {VisibilityKind::box, mod}; }
-  static VisibilityInfo skill(IR::QatType* type) { return VisibilityInfo(VisibilityKind::skill, type); }
+  static VisibilityInfo type(ir::Type* type) { return VisibilityInfo(VisibilityKind::type, type); }
+  static VisibilityInfo pub() { return {VisibilityKind::pub, (ir::Mod*)nullptr}; }
+  static VisibilityInfo lib(ir::Mod* mod) { return {VisibilityKind::lib, mod}; }
+  static VisibilityInfo file(ir::Mod* mod) { return {VisibilityKind::file, mod}; }
+  static VisibilityInfo folder(ir::Mod* mod) { return {VisibilityKind::folder, mod}; }
+  static VisibilityInfo skill(ir::Type* type) { return VisibilityInfo(VisibilityKind::skill, type); }
 
-  useit bool isAccessible(Maybe<AccessInfo> reqInfo) const;
+  useit bool is_accessible(Maybe<AccessInfo> reqInfo) const;
 
   useit bool operator==(const VisibilityInfo& other) const;
   operator Json() const;
@@ -58,23 +56,23 @@ public:
 
 class AccessInfo {
 private:
-  IR::QatModule*        module;
-  Maybe<IR::QatType*>   type;
-  Maybe<IR::DoneSkill*> skill;
+  ir::Mod*              module;
+  Maybe<ir::Type*>      type;
+  Maybe<ir::DoneSkill*> skill;
 
   bool isPrivileged = false;
 
 public:
-  AccessInfo(IR::QatModule* _lib, Maybe<IR::QatType*> _type, Maybe<IR::DoneSkill*> _skill);
+  AccessInfo(ir::Mod* _lib, Maybe<ir::Type*> _type, Maybe<ir::DoneSkill*> _skill);
 
   useit static AccessInfo GetPrivileged();
 
   useit bool        has_type() const { return type.has_value() && (type.value() != nullptr); }
   useit inline bool has_skill() const { return skill.has_value() && (skill.value() != nullptr); }
   useit bool        isPrivilegedAccess() const;
-  useit IR::QatModule* getModule() const { return module; }
-  useit IR::QatType*          get_type() const { return type.value(); }
-  useit inline IR::DoneSkill* get_skill() const { return skill.value(); }
+  useit ir::Mod* getModule() const { return module; }
+  useit ir::Type*             get_type() const { return type.value(); }
+  useit inline ir::DoneSkill* get_skill() const { return skill.value(); }
 };
 
 class Visibility {
@@ -84,7 +82,7 @@ public:
 
   useit static String         getValue(VisibilityKind kind);
   useit static VisibilityKind getKind(const String& value);
-  useit static bool           isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
+  useit static bool           is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
 };
 
 } // namespace qat

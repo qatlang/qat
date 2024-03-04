@@ -12,29 +12,28 @@ class PrerunExpression;
  * is fixed length
  *
  */
-class ArrayType final : public QatType {
+class ArrayType final : public Type {
 private:
-  QatType*                  elementType;
+  Type*                     elementType;
   mutable PrerunExpression* lengthExp;
 
-  void typeInferenceForLength(IR::Context* ctx) const;
+  void typeInferenceForLength(ir::Ctx* irCtx) const;
 
 public:
-  ArrayType(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange)
-      : QatType(_fileRange), elementType(_element_type), lengthExp(_length) {}
+  ArrayType(Type* _element_type, PrerunExpression* _length, FileRange _fileRange)
+      : Type(_fileRange), elementType(_element_type), lengthExp(_length) {}
 
-  useit static inline ArrayType* create(QatType* _element_type, PrerunExpression* _length, FileRange _fileRange) {
+  useit static inline ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ArrayType), _element_type, _length, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
-  useit IR::QatType* emit(IR::Context* ctx);
-  useit AstTypeKind  typeKind() const;
-  useit Json         toJson() const;
-  useit String       toString() const;
+  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit AstTypeKind type_kind() const;
+  useit Json        to_json() const;
+  useit String      to_string() const;
 };
 
 } // namespace qat::ast

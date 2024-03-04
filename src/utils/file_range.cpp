@@ -28,7 +28,7 @@ FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*th
 
 FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, start, othStart); }
 
-String FileRange::startToString() const {
+String FileRange::start_to_string() const {
   return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
 }
 

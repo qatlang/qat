@@ -1,27 +1,27 @@
 add_library(QAT_AST_TYPES
-	array.cpp
-	c_type.cpp
-	float.cpp
-	function.cpp
-	future.cpp
-	generic_named_type.cpp
-	generic_abstract.cpp
-	integer.cpp
-	linked_generic.cpp
-	maybe.cpp
-	named.cpp
-	reference.cpp
-	pointer.cpp
-	prerun_generic.cpp
-	qat_type.cpp
-	result.cpp
-	self_type.cpp
-	string_slice.cpp
-	tuple.cpp
-	typed_generic.cpp
-	unsigned.cpp
-	vector.cpp
-	void.cpp)
+	array.cc
+	c_type.cc
+	float.cc
+	function.cc
+	future.cc
+	generic_named_type.cc
+	generic_abstract.cc
+	integer.cc
+	linked_generic.cc
+	maybe.cc
+	named.cc
+	reference.cc
+	pointer.cc
+	prerun_generic.cc
+	qat_type.cc
+	result.cc
+	self_type.cc
+	string_slice.cc
+	tuple.cc
+	typed_generic.cc
+	unsigned.cc
+	vector.cc
+	void.cc)
 
 target_include_directories(QAT_AST_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
 

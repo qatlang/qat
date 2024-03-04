@@ -5,14 +5,14 @@
 #include "qat_type.hpp"
 #include "llvm/IR/GlobalVariable.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 
-class Region : public QatType, public EntityOverview {
+class Region : public Type, public EntityOverview {
 private:
   Identifier     name;
-  QatModule*     parent;
+  Mod*           parent;
   VisibilityInfo visibInfo;
   FileRange      fileRange;
 
@@ -21,27 +21,27 @@ private:
   llvm::Function*       ownFn;
   llvm::Function*       destructor;
 
-  Region(Identifier _name, QatModule* _module, const VisibilityInfo& visibInfo, IR::Context* ctx, FileRange fileRange);
+  Region(Identifier _name, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx, FileRange fileRange);
 
 public:
-  static Region* get(Identifier name, QatModule* parent, const VisibilityInfo& visibInfo, IR::Context* ctx,
+  static Region* get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
                      FileRange fileRange);
 
-  useit Identifier getName() const;
-  useit String     getFullName() const;
-  useit IR::QatModule* getParent() const;
-  useit IR::Value* ownData(IR::QatType* _type, Maybe<llvm::Value*> count, IR::Context* ctx);
-  void             destroyObjects(IR::Context* ctx);
+  useit Identifier get_name() const;
+  useit String     get_full_name() const;
+  useit ir::Mod* getParent() const;
+  useit ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
+  void             destroyObjects(ir::Ctx* irCtx);
 
-  useit bool                  isAccessible(const AccessInfo& reqInfo) const;
-  useit const VisibilityInfo& getVisibility() const;
+  useit bool                  is_accessible(const AccessInfo& reqInfo) const;
+  useit const VisibilityInfo& get_visibility() const;
 
-  void updateOverview() final;
+  void update_overview() final;
 
-  useit TypeKind typeKind() const final { return TypeKind::region; }
-  useit String   toString() const final;
+  useit TypeKind type_kind() const final { return TypeKind::region; }
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

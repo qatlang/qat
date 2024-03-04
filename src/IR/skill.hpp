@@ -5,25 +5,26 @@
 #include "../utils/visibility.hpp"
 #include "./link_names.hpp"
 #include "./types/qat_type.hpp"
+#include "generics.hpp"
 #include "types/function.hpp"
 
 namespace qat::ast {
-class QatType;
+class Type;
 }
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
-class MemberFunction;
+class Mod;
+class Method;
 
 class Skill;
 
 struct SkillArg {
-  ast::QatType* type;
-  Identifier    name;
-  bool          isVar;
+  ast::Type* type;
+  Identifier name;
+  bool       isVar;
 
-  SkillArg(ast::QatType* _type, Identifier _name, bool _isVar);
+  SkillArg(ast::Type* _type, Identifier _name, bool _isVar);
 };
 
 enum class SkillFnType {
@@ -38,24 +39,24 @@ class SkillPrototype {
   Skill*         parent;
   Identifier     name;
   SkillFnType    fnTy;
-  ast::QatType*  returnType;
+  ast::Type*     returnType;
   Vec<SkillArg*> arguments;
 
 public:
-  SkillPrototype(SkillFnType _fnTy, Skill* _parent, Identifier _name, ast::QatType* _returnType,
+  SkillPrototype(SkillFnType _fnTy, Skill* _parent, Identifier _name, ast::Type* _returnType,
                  Vec<SkillArg*> _arguments);
 
-  useit static SkillPrototype* create_static_method(Skill* _parent, Identifier _name, ast::QatType* _returnType,
+  useit static SkillPrototype* create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
                                                     Vec<SkillArg*> _arguments);
-  useit static SkillPrototype* create_method(Skill* _parent, Identifier _name, bool _isVar, ast::QatType* _returnType,
+  useit static SkillPrototype* create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
                                              Vec<SkillArg*> _arguments);
-  useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::QatType* _returnType,
+  useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
                                                     Vec<SkillArg*> _arguments);
 
   useit inline Skill*          get_parent_skill() const { return parent; }
   useit inline SkillFnType     get_method_type() const { return fnTy; }
   useit inline Identifier      get_name() const { return name; }
-  useit inline ast::QatType*   get_return_type() const { return returnType; }
+  useit inline ast::Type*      get_return_type() const { return returnType; }
   useit inline Vec<SkillArg*>& get_args() { return arguments; }
   useit inline usize           get_arg_count() const { return arguments.size(); }
   useit inline SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
@@ -63,102 +64,118 @@ public:
 
 class Skill : public Uniq {
   Identifier           name;
-  QatModule*           parent;
+  Mod*                 parent;
   Vec<SkillPrototype*> prototypes;
   VisibilityInfo       visibInfo;
 
 public:
   useit String          get_full_name() const;
   useit Identifier      get_name() const;
-  useit QatModule*      get_module() const;
+  useit Mod*            get_module() const;
   useit VisibilityInfo& get_visibility();
 
   useit bool            has_proto_with_name(String const& name) const;
   useit SkillPrototype* get_proto_with_name(String const& name) const;
 
-  LinkNames getLinkNames() const;
+  LinkNames get_link_names() const;
 };
 
 class DoneSkill : public Uniq {
-  friend class MemberFunction;
-  QatModule*    parent;
-  Maybe<Skill*> skill;
-  FileRange     fileRange;
-  QatType*      candidateType;
-  FileRange     typeRange;
+  friend class Method;
+  Mod*                       parent;
+  Maybe<Skill*>              skill;
+  Vec<ir::GenericParameter*> generics;
+  FileRange                  fileRange;
+  Type*                      candidateType;
+  FileRange                  typeRange;
 
-  Maybe<MemberFunction*> defaultConstructor;
-  Vec<MemberFunction*>   staticFunctions;
-  Vec<MemberFunction*>   memberFunctions;
-  Vec<MemberFunction*>   valuedMemberFunctions;
-  Maybe<MemberFunction*> copyConstructor;
-  Maybe<MemberFunction*> moveConstructor;
-  Maybe<MemberFunction*> copyAssignment;
-  Maybe<MemberFunction*> moveAssignment;
-  Maybe<MemberFunction*> destructor;
-  Vec<MemberFunction*>   unaryOperators;
-  Vec<MemberFunction*>   normalBinaryOperators;
-  Vec<MemberFunction*>   variationBinaryOperators;
-  Vec<MemberFunction*>   constructors;
-  Vec<MemberFunction*>   fromConvertors;
-  Vec<MemberFunction*>   toConvertors;
+  Maybe<Method*> defaultConstructor;
+  Vec<Method*>   staticFunctions;
+  Vec<Method*>   memberFunctions;
+  Vec<Method*>   valuedMemberFunctions;
+  Maybe<Method*> copyConstructor;
+  Maybe<Method*> moveConstructor;
+  Maybe<Method*> copyAssignment;
+  Maybe<Method*> moveAssignment;
+  Maybe<Method*> destructor;
+  Vec<Method*>   unaryOperators;
+  Vec<Method*>   normalBinaryOperators;
+  Vec<Method*>   variationBinaryOperators;
+  Vec<Method*>   constructors;
+  Vec<Method*>   fromConvertors;
+  Vec<Method*>   toConvertors;
 
-  DoneSkill(QatModule* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, QatType* _candidateType,
-            FileRange _typeRange);
+  DoneSkill(Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType, FileRange _typeRange);
 
 public:
-  useit static DoneSkill* create_default(QatModule* parent, FileRange fileRange, QatType* candidateType,
-                                         FileRange typeRange);
-  useit static DoneSkill* CreateNormal(QatModule* parent, Skill* skill, FileRange fileRange, QatType* candidateType,
-                                       FileRange typeRange);
+  useit static DoneSkill* create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange);
+  useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
+                                        FileRange typeRange);
 
-  useit bool hasDefaultConstructor() const;
-  useit bool hasFromConvertor(Maybe<bool> isValueVar, IR::QatType* type) const;
-  useit bool hasToConvertor(IR::QatType* type) const;
-  useit bool hasConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
-  useit bool hasStaticFunction(String const& name) const;
-  useit bool hasNormalMemberFn(String const& name) const;
-  useit bool has_valued_function(String const& name) const;
-  useit bool hasVariationFn(String const& name) const;
-  useit bool hasCopyConstructor() const;
-  useit bool hasMoveConstructor() const;
-  useit bool hasCopyAssignment() const;
-  useit bool hasMoveAssignment() const;
-  useit bool hasDestructor() const;
-  useit bool hasUnaryOperator(String const& name) const;
-  useit bool hasNormalBinaryOperator(String const& name, Pair<Maybe<bool>, IR::QatType*> argType) const;
-  useit bool hasVariationBinaryOperator(String const& name, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit inline bool is_generic() const { return !generics.empty(); }
+  useit inline bool has_generic_parameter(String const& name) {
+    for (auto gen : generics) {
+      if (gen->get_name().value == name) {
+        return true;
+      }
+    }
+    return false;
+  }
+  useit inline GenericParameter* get_generic_parameter(String const& name) {
+    for (auto gen : generics) {
+      if (gen->get_name().value == name) {
+        return gen;
+      }
+    }
+    return nullptr;
+  }
 
-  useit IR::MemberFunction* getDefaultConstructor() const;
-  useit IR::MemberFunction* getFromConvertor(Maybe<bool> isValueVar, IR::QatType* type) const;
-  useit IR::MemberFunction* getToConvertor(IR::QatType* type) const;
-  useit IR::MemberFunction* getConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> argTypes) const;
-  useit IR::MemberFunction* getStaticFunction(String const& name) const;
-  useit IR::MemberFunction* getNormalMemberFn(String const& name) const;
-  useit IR::MemberFunction* get_valued_function(String const& name) const;
-  useit IR::MemberFunction* getVariationFn(String const& name) const;
-  useit IR::MemberFunction* getCopyConstructor() const;
-  useit IR::MemberFunction* getMoveConstructor() const;
-  useit IR::MemberFunction* getCopyAssignment() const;
-  useit IR::MemberFunction* getMoveAssignment() const;
-  useit IR::MemberFunction* getDestructor() const;
-  useit IR::MemberFunction* getUnaryOperator(String const& name) const;
-  useit IR::MemberFunction* getNormalBinaryOperator(String const& name, Pair<Maybe<bool>, IR::QatType*> argType) const;
-  useit IR::MemberFunction* getVariationBinaryOperator(String const&                   name,
-                                                       Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit bool has_default_constructor() const;
+  useit bool has_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
+  useit bool has_to_convertor(ir::Type* type) const;
+  useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
+  useit bool has_static_method(String const& name) const;
+  useit bool has_normal_method(String const& name) const;
+  useit bool has_valued_method(String const& name) const;
+  useit bool has_variation_method(String const& name) const;
+  useit bool has_copy_constructor() const;
+  useit bool has_move_constructor() const;
+  useit bool has_copy_assignment() const;
+  useit bool has_move_assignment() const;
+  useit bool has_destructor() const;
+  useit bool has_unary_operator(String const& name) const;
+  useit bool has_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+  useit bool has_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-  useit bool           isDefaultForType() const;
-  useit bool           isNormalSkill() const;
-  useit Skill*         getSkill() const;
-  useit FileRange      getTypeRange() const;
-  useit FileRange      getFileRange() const;
-  useit QatType*       getType() const;
-  useit QatModule*     getParent() const;
-  useit VisibilityInfo getVisibility() const;
-  useit LinkNames      getLinkNames() const;
-  useit String         toString() const;
+  useit ir::Method* get_default_constructor() const;
+  useit ir::Method* get_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
+  useit ir::Method* get_to_convertor(ir::Type* type) const;
+  useit ir::Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const;
+  useit ir::Method* get_static_method(String const& name) const;
+  useit ir::Method* get_normal_method(String const& name) const;
+  useit ir::Method* get_valued_method(String const& name) const;
+  useit ir::Method* get_variation_method(String const& name) const;
+  useit ir::Method* get_copy_constructor() const;
+  useit ir::Method* get_move_constructor() const;
+  useit ir::Method* get_copy_assignment() const;
+  useit ir::Method* get_move_assignment() const;
+  useit ir::Method* get_destructor() const;
+  useit ir::Method* get_unary_operator(String const& name) const;
+  useit ir::Method* get_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+  useit ir::Method* get_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+
+  useit bool           is_type_extension() const;
+  useit bool           is_normal_skill() const;
+  useit Skill*         get_skill() const;
+  useit FileRange      get_type_range() const;
+  useit FileRange      get_file_range() const;
+  useit Type*          get_ir_type() const;
+  useit Mod*           get_module() const;
+  useit VisibilityInfo get_visibility() const;
+  useit LinkNames      get_link_names() const;
+  useit String         to_string() const;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -1,17 +1,17 @@
 add_library(QAT_AST_SENTENCES
-	assignment.cpp
-	break.cpp
-	continue.cpp
-	expression_sentence.cpp
-	give_sentence.cpp
-	if_else.cpp
-	local_declaration.cpp
-	loop_infinite.cpp
-	loop_n_times.cpp
-	loop_while.cpp
-	match.cpp
-	member_initialisation.cpp
-	say_sentence.cpp)
+	assignment.cc
+	break.cc
+	continue.cc
+	expression_sentence.cc
+	give_sentence.cc
+	if_else.cc
+	local_declaration.cc
+	loop_infinite.cc
+	loop_n_times.cc
+	loop_while.cc
+	match.cc
+	member_initialisation.cc
+	say_sentence.cc)
 
 target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")
 

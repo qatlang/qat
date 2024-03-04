@@ -23,10 +23,10 @@ public:
     return std::construct_at(OwnNormal(ModInfo), _metaInfo, _fileRange);
   }
 
-  void createModule(IR::Context* ctx) const final;
+  void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
   useit NodeType nodeType() const final { return NodeType::MODULE_INFO; }
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
 };
 
 } // namespace qat::ast

@@ -4,23 +4,29 @@
 #include "./function.hpp"
 #include "./generics.hpp"
 
-namespace qat::IR {
+namespace qat::ast {
+
+struct EmitCtx;
+
+}
+
+namespace qat::ir {
 
 class Logic {
 public:
-  useit static llvm::AllocaInst* newAlloca(IR::Function* fun, Maybe<String> name, llvm::Type* type);
-  useit static String            getGenericVariantName(String mainName, Vec<IR::GenericToFill*>& types);
+  useit static llvm::AllocaInst* newAlloca(ir::Function* fun, Maybe<String> name, llvm::Type* type);
+  useit static String            getGenericVariantName(String mainName, Vec<ir::GenericToFill*>& types);
   useit static bool compareConstantStrings(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
                                            llvm::Constant* rhsCount, llvm::LLVMContext& llCtx);
 
-  static Pair<String, Vec<llvm::Value*>> formatValues(IR::Context* ctx, Vec<IR::Value*> values, Vec<FileRange> ranges,
+  static Pair<String, Vec<llvm::Value*>> formatValues(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
                                                       FileRange fileRange);
-  static void panicInFunction(IR::Function* fun, Vec<IR::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-                              IR::Context* ctx);
+  static void panicInFunction(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
+                              ast::EmitCtx* ctx);
 
-  static IR::Value* int_to_std_string(bool isSigned, IR::Context* ctx, IR::Value* value, FileRange fileRange);
+  static ir::Value* int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange);
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

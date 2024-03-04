@@ -8,20 +8,20 @@
 namespace qat::ast {
 
 class PrerunGeneric final : public GenericAbstractType {
-  QatType*                      expTy;
+  Type*                         expTy;
   Maybe<ast::PrerunExpression*> defaultValueAST;
 
-  mutable IR::QatType*     expressionType  = nullptr;
-  mutable IR::PrerunValue* defaultValue    = nullptr;
-  mutable IR::PrerunValue* expressionValue = nullptr;
+  mutable ir::Type*             expressionType = nullptr;
+  mutable ir::PrerunValue*      defaultValue   = nullptr;
+  mutable Vec<ir::PrerunValue*> expressionValue;
 
 public:
-  PrerunGeneric(usize _index, Identifier _name, QatType* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+  PrerunGeneric(usize _index, Identifier _name, Type* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
                 FileRange _range)
       : GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
         defaultValueAST(_defaultVal) {}
 
-  useit static inline PrerunGeneric* get(usize _index, Identifier _name, QatType* _expTy,
+  useit static inline PrerunGeneric* get(usize _index, Identifier _name, Type* _expTy,
                                          Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
     return std::construct_at(OwnNormal(PrerunGeneric), _index, std::move(_name), _expTy, _defaultVal,
                              std::move(_range));
@@ -29,26 +29,26 @@ public:
 
   useit bool hasDefault() const final;
   useit ast::PrerunExpression* getDefaultAST() { return defaultValueAST.value(); }
-  useit IR::PrerunValue* getDefault() const;
+  useit ir::PrerunValue* getDefault() const;
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                           EmitCtx* ctx) final {
     UPDATE_DEPS(expTy);
     if (defaultValueAST.has_value()) {
       UPDATE_DEPS(defaultValueAST.value());
     }
   }
 
-  void emit(IR::Context* ctx) const final;
+  void emit(EmitCtx* ctx) const final;
 
-  useit IR::QatType* getType() const;
-  useit IR::PrerunValue* getPrerun() const;
-  useit IR::PrerunGeneric* toIR() const;
+  useit ir::Type* getType() const;
+  useit ir::PrerunValue* getPrerun() const;
+  useit ir::PrerunGeneric* toIR() const;
 
   useit bool isSet() const final;
-  void       setExpression(IR::PrerunValue* exp) const;
+  void       setExpression(ir::PrerunValue* exp) const;
   void       unset() const final;
-  useit Json toJson() const final;
+  useit Json to_json() const final;
 
   ~PrerunGeneric() final;
 };

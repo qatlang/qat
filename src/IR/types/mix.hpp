@@ -10,13 +10,13 @@
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 
 class MixType : public ExpandedType, public EntityOverview {
 private:
-  Vec<Pair<Identifier, Maybe<QatType*>>> subtypes;
+  Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
 
   u64  maxSize       = 8u;
   bool isPack        = false;
@@ -28,56 +28,58 @@ private:
   FileRange       fileRange;
   Maybe<MetaInfo> metaInfo;
 
-  IR::OpaqueType* opaquedType = nullptr;
+  ir::OpaqueType* opaquedType = nullptr;
 
   void findTagBitWidth();
 
 public:
-  MixType(Identifier name, IR::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, QatModule* parent,
-          Vec<Pair<Identifier, Maybe<QatType*>>> subtypes, Maybe<usize> defaultVal, IR::Context* ctx, bool isPacked,
+  MixType(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, Mod* parent,
+          Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool isPacked,
           const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
-  useit usize getIndexOfName(const String& name) const;
-  useit Pair<bool, bool> hasSubTypeWithName(const String& sname) const;
-  useit QatType*         getSubTypeWithName(const String& sname) const;
-  useit bool             hasDefault() const;
-  useit usize            getDefault() const;
-  useit usize            getSubTypeCount() const;
-  useit bool             isPacked() const;
-  useit usize            getTagBitwidth() const;
-  useit u64              getDataBitwidth() const;
-  useit FileRange        getFileRange() const;
-  useit String           toString() const final;
-  useit TypeKind         typeKind() const final;
-  useit LinkNames        getLinkNames() const final;
-  useit bool             isTypeSized() const final;
+  useit usize get_index_of(const String& name) const;
 
-  useit inline bool canBePrerun() const final {
+  useit Pair<bool, bool> has_variant_with_name(const String& sname) const;
+  useit Type*            get_variant_with_name(const String& sname) const;
+
+  useit bool      has_default_variant() const;
+  useit usize     get_default_index() const;
+  useit usize     get_variant_count() const;
+  useit bool      is_packed() const;
+  useit usize     get_tag_bitwidth() const;
+  useit u64       get_data_bitwidth() const;
+  useit FileRange get_file_range() const;
+  useit String    to_string() const final;
+  useit TypeKind  type_kind() const final;
+  useit LinkNames get_link_names() const final;
+  useit bool      is_type_sized() const final;
+
+  useit inline bool can_be_prerun() const final {
     for (auto sub : subtypes) {
-      if (sub.second.has_value() && !sub.second.value()->canBePrerun()) {
+      if (sub.second.has_value() && !sub.second.value()->can_be_prerun()) {
         return false;
       }
     }
     return true;
   }
 
-  useit bool isTriviallyCopyable() const final;
-  useit bool isTriviallyMovable() const final;
-  useit bool isCopyConstructible() const final;
-  useit bool isCopyAssignable() const final;
-  useit bool isMoveConstructible() const final;
-  useit bool isMoveAssignable() const final;
-  useit bool isDestructible() const final;
+  useit bool is_trivially_copyable() const final;
+  useit bool is_trivially_movable() const final;
+  useit bool is_copy_constructible() const final;
+  useit bool is_copy_assignable() const final;
+  useit bool is_move_constructible() const final;
+  useit bool is_move_assignable() const final;
+  useit bool is_destructible() const final;
 
-  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
-  void updateOverview() final;
-  void getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
+  void update_overview() final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

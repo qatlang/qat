@@ -48,7 +48,6 @@ enum class TokenType {
   as,
   self_instance,
   lib,
-  box,
   endOfFile,
   packed,
   var,

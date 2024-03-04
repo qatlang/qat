@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-namespace qat::IR {
+namespace qat::ir {
 
-enum class MemberFnType {
+enum class MethodType {
   normal,
   value_method,
   staticFn,
@@ -33,104 +33,106 @@ enum class MemberFnType {
   defaultConstructor,
 };
 
-String memberFnTypeToString(MemberFnType type);
+String memberFnTypeToString(MethodType type);
 
 class ExpandedType;
 
 enum class MemberParentType { expandedType, doSkill };
 class MemberParent {
+  static Vec<MemberParent*> allMemberParents;
+
   void*            data;
   MemberParentType parentType;
 
 public:
   MemberParent(MemberParentType _parentType, void* data);
-  useit static MemberParent* create_expanded_type(IR::ExpandedType* expTy);
-  useit static MemberParent* create_do_skill(IR::DoneSkill* doneSkill);
+  useit static MemberParent* create_expanded_type(ir::ExpandedType* expTy);
+  useit static MemberParent* create_do_skill(ir::DoneSkill* doneSkill);
 
-  useit bool isExpanded() const;
-  useit bool isDoneSkill() const;
-  useit IR::QatType* getParentType() const;
-  useit IR::ExpandedType* asExpanded() const;
-  useit IR::DoneSkill* asDoneSkill() const;
-  useit FileRange      getTypeRange() const;
+  useit bool is_expanded() const;
+  useit bool is_done_skill() const;
+  useit ir::Type* get_parent_type() const;
+  useit ir::ExpandedType* as_expanded() const;
+  useit ir::DoneSkill* as_done_skill() const;
+  useit FileRange      get_type_range() const;
+  useit ir::Mod* get_module() const;
 
-  useit bool is_same(IR::MemberParent* other);
+  useit bool is_same(ir::MemberParent* other);
 };
 
-class MemberFunction : public Function {
+class Method : public Function {
 private:
   MemberParent* parent;
   bool          isStatic;
   bool          isVariation;
-  MemberFnType  fnType;
+  MethodType    fnType;
   Identifier    selfName;
 
-  std::set<String>              usedMembers;
-  std::set<IR::MemberFunction*> memberFunctionCalls;
-  Vec<Pair<usize, FileRange>>   initTypeMembers;
+  std::set<String>            usedMembers;
+  std::set<ir::Method*>       memberFunctionCalls;
+  Vec<Pair<usize, FileRange>> initTypeMembers;
 
-  static LinkNames getNameInfoFrom(MemberParent* parent, bool isStatic, Identifier name, bool isVar,
-                                   MemberFnType fnType, Vec<Argument> args, QatType* retTy);
+  static LinkNames get_link_names_from(MemberParent* parent, bool isStatic, Identifier name, bool isVar,
+                                       MethodType fnType, Vec<Argument> args, Type* retTy);
 
-  MemberFunction(MemberFnType fnType, bool _isVariation, MemberParent* _parent, const Identifier& _name,
-                 ReturnType* returnType, Vec<Argument> _args, bool has_variadic_arguments, bool _is_static,
-                 Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, IR::Context* ctx);
+  Method(MethodType fnType, bool _isVariation, MemberParent* _parent, const Identifier& _name, ReturnType* returnType,
+         Vec<Argument> _args, bool has_variadic_arguments, bool _is_static, Maybe<FileRange> _fileRange,
+         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
 
 public:
-  static MemberFunction* Create(MemberParent* parent, bool is_variation, const Identifier& name,
-                                ReturnType* return_type, const Vec<Argument>& args, bool has_variadic_args,
-                                Maybe<FileRange> fileRange, const VisibilityInfo& visib_info, IR::Context* ctx);
+  static Method* Create(MemberParent* parent, bool is_variation, const Identifier& name, ReturnType* return_type,
+                        const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                        const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static MemberFunction* CreateValued(MemberParent* parent, const Identifier& name, QatType* return_type,
-                                      const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
-                                      const VisibilityInfo& visib_info, IR::Context* ctx);
+  static Method* CreateValued(MemberParent* parent, const Identifier& name, Type* return_type,
+                              const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                              const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static MemberFunction* DefaultConstructor(MemberParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
-                                            Maybe<FileRange> fileRange, IR::Context* ctx);
+  static Method* DefaultConstructor(MemberParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
+                                    Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static MemberFunction* CopyConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
-                                         Maybe<FileRange> fileRange, IR::Context* ctx);
+  static Method* CopyConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static MemberFunction* MoveConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
-                                         Maybe<FileRange> fileRange, IR::Context* ctx);
+  static Method* MoveConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static MemberFunction* CopyAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
-                                        Maybe<FileRange> fileRange, IR::Context* ctx);
+  static Method* CopyAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+                                Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static MemberFunction* MoveAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
-                                        const FileRange& fileRange, IR::Context* ctx);
+  static Method* MoveAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+                                const FileRange& fileRange, ir::Ctx* irCtx);
 
-  static MemberFunction* CreateConstructor(MemberParent* parent, FileRange nameRange, const Vec<Argument>& args,
-                                           bool hasVariadicArgs, Maybe<FileRange> fileRange,
-                                           const VisibilityInfo& visibInfo, IR::Context* ctx);
+  static Method* CreateConstructor(MemberParent* parent, FileRange nameRange, const Vec<Argument>& args,
+                                   bool hasVariadicArgs, Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo,
+                                   ir::Ctx* irCtx);
 
-  static MemberFunction* CreateFromConvertor(MemberParent* parent, FileRange nameRange, QatType* sourceType,
-                                             const Identifier& name, Maybe<FileRange> fileRange,
-                                             const VisibilityInfo& visibInfo, IR::Context* ctx);
+  static Method* CreateFromConvertor(MemberParent* parent, FileRange nameRange, Type* sourceType,
+                                     const Identifier& name, Maybe<FileRange> fileRange,
+                                     const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static MemberFunction* CreateToConvertor(MemberParent* parent, FileRange nameRange, QatType* destType,
-                                           Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo,
-                                           IR::Context* ctx);
+  static Method* CreateToConvertor(MemberParent* parent, FileRange nameRange, Type* destType,
+                                   Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static MemberFunction* CreateDestructor(MemberParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
-                                          IR::Context* ctx);
+  static Method* CreateDestructor(MemberParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
+                                  ir::Ctx* irCtx);
 
-  static MemberFunction* CreateOperator(MemberParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
-                                        const String& opr, ReturnType* returnType, const Vec<Argument>& args,
-                                        Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, IR::Context* ctx);
+  static Method* CreateOperator(MemberParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
+                                const String& opr, ReturnType* returnType, const Vec<Argument>& args,
+                                Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static MemberFunction* CreateStatic(MemberParent* parent, const Identifier& name, QatType* return_type,
-                                      const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
-                                      const VisibilityInfo& visib_info, IR::Context* ctx);
+  static Method* CreateStatic(MemberParent* parent, const Identifier& name, Type* return_type,
+                              const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                              const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  ~MemberFunction() override;
+  ~Method() override;
 
-  useit inline Identifier getName() const final {
+  useit inline Identifier get_name() const final {
     switch (fnType) {
-      case MemberFnType::normal:
-      case MemberFnType::binaryOperator:
-      case MemberFnType::unaryOperator:
-      case MemberFnType::staticFn: {
+      case MethodType::normal:
+      case MethodType::binaryOperator:
+      case MethodType::unaryOperator:
+      case MethodType::staticFn: {
         return selfName;
       }
       default:
@@ -138,15 +140,15 @@ public:
     }
   }
 
-  useit inline MemberFnType getMemberFnType() const { return fnType; }
+  useit inline MethodType get_method_type() const { return fnType; }
 
   useit inline bool isConstructor() const {
-    switch (getMemberFnType()) {
-      case MemberFnType::fromConvertor:
-      case MemberFnType::constructor:
-      case MemberFnType::copyConstructor:
-      case MemberFnType::moveConstructor:
-      case MemberFnType::defaultConstructor:
+    switch (get_method_type()) {
+      case MethodType::fromConvertor:
+      case MethodType::constructor:
+      case MethodType::copyConstructor:
+      case MethodType::moveConstructor:
+      case MethodType::defaultConstructor:
         return true;
       default:
         return false;
@@ -157,17 +159,17 @@ public:
 
   useit inline bool isStaticFunction() const { return isStatic; }
 
-  useit String getFullName() const final;
+  useit String get_full_name() const final;
 
   useit bool isMemberFunction() const final;
 
-  useit inline bool isInSkill() const { return parent->isDoneSkill(); }
+  useit inline bool isInSkill() const { return parent->is_done_skill(); }
 
-  useit inline DoneSkill* getParentSkill() const { return parent->asDoneSkill(); }
+  useit inline DoneSkill* getParentSkill() const { return parent->as_done_skill(); }
 
-  useit inline QatType* getParentType() { return parent->getParentType(); }
+  useit inline Type* get_parent_type() { return parent->get_parent_type(); }
 
-  useit inline Json toJson() const { return Json()._("parentType", parent->getParentType()->getID()); }
+  useit inline Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
 
   useit inline Maybe<FileRange> isMemberInitted(usize memInd) const {
     for (auto mem : initTypeMembers) {
@@ -181,13 +183,13 @@ public:
 
   void inline addUsedMember(String memberName) { usedMembers.insert(memberName); }
 
-  void inline addMemberFunctionCall(IR::MemberFunction* other) { memberFunctionCalls.insert(other); }
+  void inline addMemberFunctionCall(ir::Method* other) { memberFunctionCalls.insert(other); }
 
   void inline addInitMember(Pair<usize, FileRange> memInfo) { initTypeMembers.push_back(memInfo); }
 
-  void updateOverview() final;
+  void update_overview() final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

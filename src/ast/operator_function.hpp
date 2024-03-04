@@ -18,39 +18,39 @@ private:
   bool                  isVariationFn;
   Op                    opr;
   Vec<Argument*>        arguments;
-  QatType*              returnType;
+  Type*                 returnType;
   Maybe<VisibilitySpec> visibSpec;
   Maybe<Identifier>     argName;
   FileRange             nameRange;
   FileRange             fileRange;
 
 public:
-  OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments, QatType* _returnType,
+  OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments, Type* _returnType,
                     Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName)
       : isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType), visibSpec(_visibSpec),
         argName(_argName), nameRange(_nameRange), fileRange(_fileRange) {}
 
   useit static inline OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange,
-                                                Vec<Argument*> _arguments, QatType* _returnType,
+                                                Vec<Argument*> _arguments, Type* _returnType,
                                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                                                 Maybe<Identifier> _argName) {
     return std::construct_at(OwnNormal(OperatorPrototype), _isVariationFn, _op, _nameRange, _arguments, _returnType,
                              _visibSpec, _fileRange, _argName);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     if (returnType) {
       UPDATE_DEPS(returnType);
     }
     for (auto arg : arguments) {
-      if (arg->getType()) {
-        UPDATE_DEPS(arg->getType());
+      if (arg->get_type()) {
+        UPDATE_DEPS(arg->get_type());
       }
     }
   }
 
-  void           define(MethodState& state, IR::Context* ctx);
-  useit Json     toJson() const;
+  void           define(MethodState& state, ir::Ctx* irCtx);
+  useit Json     to_json() const;
   useit NodeType nodeType() const { return NodeType::OPERATOR_PROTOTYPE; }
   ~OperatorPrototype();
 };
@@ -72,15 +72,15 @@ public:
     return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto snt : sentences) {
       UPDATE_DEPS(snt);
     }
   }
 
-  void  define(MethodState& state, IR::Context* ctx);
-  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
-  useit Json       toJson() const;
+  void  define(MethodState& state, ir::Ctx* irCtx);
+  useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+  useit Json       to_json() const;
   useit NodeType   nodeType() const { return NodeType::OPERATOR_DEFINITION; }
 };
 

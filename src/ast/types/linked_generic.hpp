@@ -5,20 +5,20 @@
 #include "qat_type.hpp"
 
 namespace qat::ast {
-class LinkedGeneric final : public QatType {
+class LinkedGeneric final : public Type {
   ast::GenericAbstractType* genAbs;
 
 public:
-  LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange _range) : QatType(_range), genAbs(_genAbs) {}
+  LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange _range) : Type(_range), genAbs(_genAbs) {}
 
   useit static inline LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRange _range) {
     return std::construct_at(OwnNormal(LinkedGeneric), _genAbs, _range);
   }
 
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit AstTypeKind  typeKind() const final;
-  useit Json         toJson() const final;
-  useit String       toString() const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit AstTypeKind type_kind() const final;
+  useit Json        to_json() const final;
+  useit String      to_string() const final;
 };
 
 } // namespace qat::ast

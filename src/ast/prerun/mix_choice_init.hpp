@@ -28,8 +28,7 @@ public:
   IN_PLACE_CREATABLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (type.has_value()) {
       UPDATE_DEPS(type.value());
     }
@@ -38,9 +37,9 @@ public:
     }
   }
 
-  useit IR::PrerunValue* emit(IR::Context* ctx) final;
-  useit Json             toJson() const final;
-  useit String           toString() const final;
+  useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+  useit Json             to_json() const final;
+  useit String           to_string() const final;
   useit NodeType         nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 

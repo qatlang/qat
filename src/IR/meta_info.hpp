@@ -5,14 +5,14 @@
 #include "./types/string_slice.hpp"
 #include "value.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
 struct MetaInfo {
   static constexpr auto linkAsKey = "linkAs";
   static constexpr auto unionKey  = "union";
   static constexpr auto packedKey = "packed";
 
-  MetaInfo(Vec<Pair<Identifier, IR::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
+  MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
       : valueRanges(_valueRanges), fileRange(_fileRange) {
     for (auto& kv : keyValues) {
       keys.push_back(kv.first);
@@ -21,11 +21,11 @@ struct MetaInfo {
   }
 
   Vec<Identifier>       keys;
-  Vec<IR::PrerunValue*> values;
+  Vec<ir::PrerunValue*> values;
   Vec<FileRange>        valueRanges;
   FileRange             fileRange;
 
-  useit bool hasKey(String const& name) const {
+  useit bool has_key(String const& name) const {
     for (auto& k : keys) {
       if (k.value == name) {
         return true;
@@ -33,7 +33,7 @@ struct MetaInfo {
     }
     return false;
   }
-  useit IR::PrerunValue* getValueFor(String const& name) const {
+  useit ir::PrerunValue* get_value_for(String const& name) const {
     usize ind = 0;
     for (auto& k : keys) {
       if (k.value == name) {
@@ -44,7 +44,7 @@ struct MetaInfo {
     return nullptr;
   }
 
-  useit FileRange getValueRangeFor(String const& name) const {
+  useit FileRange get_value_range_for(String const& name) const {
     usize ind = 0;
     for (auto& k : keys) {
       if (k.value == name) {
@@ -55,23 +55,23 @@ struct MetaInfo {
     return fileRange;
   }
 
-  useit Maybe<String> getForeignID() const {
-    if (hasKey("foreign")) {
-      return IR::StringSliceType::value_to_string(getValueFor("foreign"));
+  useit Maybe<String> get_foreign_id() const {
+    if (has_key("foreign")) {
+      return ir::StringSliceType::value_to_string(get_value_for("foreign"));
     } else {
       return None;
     }
   }
 
-  useit Maybe<String> getValueAsStringFor(String key) const {
-    if (hasKey(key)) {
-      return IR::StringSliceType::value_to_string(getValueFor(key));
+  useit Maybe<String> get_value_as_string_for(String key) const {
+    if (has_key(key)) {
+      return ir::StringSliceType::value_to_string(get_value_for(key));
     } else {
       return None;
     }
   }
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -9,39 +9,38 @@
 #include <optional>
 #include <string>
 
-namespace qat::IR {
+namespace qat::ir {
 
-class CoreType;
-class QatModule;
+class StructType;
+class Mod;
 
 class StaticMember final : public Value, public EntityOverview {
 private:
   Identifier     name;
-  CoreType*      parent;
+  StructType*    parent;
   Value*         initial;
-  u64            loads;
-  u64            stores;
-  u64            refers;
   VisibilityInfo visibility;
 
 public:
-  StaticMember(CoreType* _parent, Identifier name, QatType* _type, bool _is_variable, Value* _initial,
+  StaticMember(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
                const VisibilityInfo& _visibility);
 
-  useit CoreType*             getParentType();
-  useit Identifier            getName() const;
-  useit String                getFullName() const;
-  useit const VisibilityInfo& getVisibility() const;
-  useit bool                  hasInitial() const;
-  useit u64                   getLoadCount() const;
-  useit u64                   getStoreCount() const;
-  useit u64                   getReferCount() const;
-  useit Json                  toJson() const;
-  void                        updateOverview() final;
+  useit static inline StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable,
+                                        Value* _initial, const VisibilityInfo& _visibility) {
+    return new StaticMember(_parent, name, _type, _is_variable, _initial, _visibility);
+  }
+
+  useit StructType*           get_parent_type();
+  useit Identifier            get_name() const;
+  useit String                get_full_name() const;
+  useit const VisibilityInfo& get_visibility() const;
+  useit bool                  has_initial() const;
+  useit Json                  to_json() const;
+  void                        update_overview() final;
 
   ~StaticMember() final = default;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

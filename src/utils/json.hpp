@@ -148,7 +148,7 @@ public:
   useit bool    isNull() const;
   useit bool    isString() const;
   useit std::string asString() const;
-  useit bool        isBool() const;
+  useit bool        is_bool() const;
   useit bool        asBool() const;
   useit bool        isJson() const;
   useit Json        asJson() const;
@@ -192,7 +192,7 @@ public:
 
   void setSpaces(unsigned spc) const;
 
-  std::string toString() const;
+  std::string to_string() const;
 
   bool has(const std::string& key) const;
 

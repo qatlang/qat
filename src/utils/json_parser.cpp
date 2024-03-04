@@ -58,27 +58,27 @@ bool JsonParser::lex(String val) {
       i = j;
       toks.emplace_back(Token(TokenType::string));
     } else if ((digits.find(val.at(i)) != String::npos) || (val.at(i) == '-')) {
-      bool   isFloat = false;
+      bool   is_float = false;
       String num(val.substr(i, 1));
       String decimal;
       usize  jInd = i + 1;
-      for (; ((isFloat ? (digits.find(val.at(jInd)) != String::npos)
-                       : ((digits.find(val.at(jInd)) != String::npos) || (val.at(jInd) == '.'))) &&
+      for (; ((is_float ? (digits.find(val.at(jInd)) != String::npos)
+                        : ((digits.find(val.at(jInd)) != String::npos) || (val.at(jInd) == '.'))) &&
               (jInd < val.size()));
            jInd++) {
-        if (isFloat) {
+        if (is_float) {
           decimal += val.at(jInd);
         } else {
           if (val.at(jInd) != '.') {
             num += val.at(jInd);
           } else {
-            isFloat = true;
+            is_float = true;
           }
         }
       }
       i = jInd - 1;
       if (decimal.empty()) {
-        isFloat = false;
+        is_float = false;
       } else {
         bool onlyZeroes = true;
         for (auto dec : decimal) {
@@ -86,9 +86,9 @@ bool JsonParser::lex(String val) {
             onlyZeroes = false;
           }
         }
-        isFloat = !onlyZeroes;
+        is_float = !onlyZeroes;
       }
-      if (isFloat) {
+      if (is_float) {
         toks.emplace_back(Token(TokenType::floating, num.append(".").append(decimal)));
       } else {
         toks.emplace_back(Token(TokenType::integer, num));

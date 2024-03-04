@@ -2,6 +2,7 @@
 #define QAT_IR_CONTEXT_HPP
 
 #include "../cli/color.hpp"
+#include "../cli/config.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/qat_region.hpp"
 #include "./qat_module.hpp"
@@ -28,15 +29,7 @@ struct VisibilitySpec;
 
 } // namespace qat
 
-namespace qat::IR {
-
-enum class LoopType {
-  nTimes,
-  While,
-  doWhile,
-  over,
-  infinite,
-};
+namespace qat::ir {
 
 enum class GenericEntityType {
   function,
@@ -51,58 +44,25 @@ struct GenericEntityMarker {
   GenericEntityType          type;
   FileRange                  fileRange;
   u64                        warningCount = 0;
-  Vec<IR::GenericParameter*> generics{};
+  Vec<ir::GenericParameter*> generics{};
 
   bool hasGenericParameter(const String& name) const {
     for (auto* gen : generics) {
-      if (gen->isSame(name)) {
+      if (gen->is_same(name)) {
         return true;
       }
     }
     return false;
   }
 
-  GenericParameter* getGenericParameter(const String& name) const {
+  ir::GenericParameter* getGenericParameter(const String& name) const {
     for (auto* gen : generics) {
-      if (gen->isSame(name)) {
+      if (gen->is_same(name)) {
         return gen;
       }
     }
     return nullptr;
   }
-};
-
-class LoopInfo {
-public:
-  LoopInfo(String _name, IR::Block* _mainB, IR::Block* _condB, IR::Block* _restB, IR::LocalValue* _index,
-           LoopType _type);
-
-  ~LoopInfo() = default;
-
-  String          name;
-  IR::Block*      mainBlock;
-  IR::Block*      condBlock;
-  IR::Block*      restBlock;
-  IR::LocalValue* index;
-  LoopType        type;
-
-  useit inline bool isTimes() const { return type == LoopType::nTimes; }
-};
-
-enum class BreakableType {
-  loop,
-  match,
-};
-
-class Breakable {
-public:
-  Breakable(Maybe<String> _tag, IR::Block* _restBlock, IR::Block* _trueBlock);
-
-  ~Breakable() = default;
-
-  Maybe<String> tag;
-  IR::Block*    restBlock;
-  IR::Block*    trueBlock;
 };
 
 class CodeProblem {
@@ -116,7 +76,7 @@ public:
 };
 
 class QatError {
-  friend class IR::Context;
+  friend class ir::Ctx;
   String           message;
   Maybe<FileRange> fileRange;
 
@@ -129,19 +89,19 @@ public:
   void      setRange(FileRange range);
 };
 
-class Context {
+class Ctx {
   friend class qat::QatSitter;
 
 private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
 
-  Vec<IR::QatModule*>       modulesWithErrors;
+  Vec<ir::Mod*>             modulesWithErrors;
   std::set<std::thread::id> threadsWithErrors;
   std::recursive_mutex      ctxMut;
 
-  useit inline bool module_has_errors(IR::QatModule* cand) {
+  useit inline bool module_has_errors(ir::Mod* cand) {
     for (auto* module : modulesWithErrors) {
-      if (module->getID() == cand->getID()) {
+      if (module->get_id() == cand->get_id()) {
         return true;
       }
     }
@@ -155,32 +115,23 @@ private:
   QatSitter* sitter = nullptr;
 
   // NOTE - Single instance for now
-  static Context* instance;
+  static Ctx* instance;
 
 public:
-  Context();
+  Ctx();
 
-  static inline Context* New() {
+  static inline Ctx* New() {
     if (instance) {
       return instance;
     }
-    instance = std::construct_at(OwnTracked(Context));
+    instance = std::construct_at(OwnTracked(Ctx));
     return instance;
   }
-
-  useit inline llvm::LLVMContext& getllCtx() { return this->llctx; }
 
   llvm::LLVMContext       llctx;
   clang::TargetInfo*      clangTargetInfo;
   Maybe<llvm::DataLayout> dataLayout;
   IRBuilderTy             builder;
-  QatModule*              activeModule   = nullptr;
-  IR::Function*           activeFunction = nullptr;
-  Vec<IR::QatType*>       activeTypes;
-  IR::Skill*              activeSkill     = nullptr;
-  IR::DoneSkill*          activeDoneSkill = nullptr;
-  Vec<LoopInfo>           loopsInfo;
-  Vec<Breakable>          breakables;
   Vec<fs::path>           executablePaths;
 
   // META
@@ -196,42 +147,10 @@ public:
   mutable Maybe<u64>               qatCompileTimeInMs;
   mutable Maybe<u64>               clangAndLinkTimeInMs;
 
-  useit inline bool          hasActiveFunction() const { return activeFunction != nullptr; }
-  useit inline IR::Function* getActiveFunction() const { return activeFunction; }
-  useit inline IR::Function* setActiveFunction(IR::Function* fun) {
-    auto* oldFn    = activeFunction;
-    activeFunction = fun;
-    return oldFn;
-  }
-
-  useit inline bool           hasActiveModule() const { return activeModule != nullptr; }
-  useit inline IR::QatModule* getActiveModule() const { return activeModule; }
-  useit inline IR::QatModule* setActiveModule(IR::QatModule* module) {
-    auto* oldMod = activeModule;
-    activeModule = module;
-    return oldMod;
-  }
-  useit inline QatModule* getMod() const { return getActiveModule()->getActive(); }
-
-  useit inline bool         hasActiveType() const { return !activeTypes.empty(); }
-  useit inline IR::QatType* getActiveType() const { return activeTypes.back(); }
-  inline void               setActiveType(IR::QatType* typ) { activeTypes.push_back(typ); }
-  inline void               unsetActiveType() { activeTypes.pop_back(); }
-
-  useit inline bool       has_active_skill() const { return activeSkill != nullptr; }
-  useit inline IR::Skill* get_active_skill() const { return activeSkill; }
-  inline void             set_active_skill(IR::Skill* skill) { activeSkill = skill; }
-  inline void             unset_active_skill() { activeSkill = nullptr; }
-
-  useit inline bool           has_active_done_skill() const { return activeDoneSkill != nullptr; }
-  useit inline IR::DoneSkill* get_active_done_skill() const { return activeDoneSkill; }
-  inline void                 set_active_done_skill(IR::DoneSkill* done) { activeDoneSkill = done; }
-  inline void                 unset_active_done_skill() { activeDoneSkill = nullptr; }
-
   useit inline bool                 hasActiveGeneric() const { return !allActiveGenerics.empty(); }
   useit inline GenericEntityMarker& getActiveGeneric() const { return allActiveGenerics.back(); }
-  useit bool                        hasGenericParameterFromLastMain(String const& name) const;
-  useit GenericParameter*           getGenericParameterFromLastMain(String const& name) const;
+  useit bool                        has_generic_parameter_in_entity(String const& name) const;
+  useit GenericParameter*           get_generic_parameter_from_entity(String const& name) const;
 
   inline void addActiveGeneric(GenericEntityMarker marker, bool main) {
     if (main) {
@@ -250,7 +169,7 @@ public:
   useit inline String joinActiveGenericNames(bool highlight) const {
     String result;
     for (usize i = 0; i < allActiveGenerics.size(); i++) {
-      result.append(highlight ? highlightError(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
+      result.append(highlight ? color(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
       if (i < allActiveGenerics.size() - 1) {
         result.append(" and ");
       }
@@ -258,7 +177,7 @@ public:
     return result;
   }
 
-  useit inline clang::LangAS getProgramAddressSpaceAsLangAS() const {
+  useit inline clang::LangAS get_language_address_space() const {
     if (dataLayout) {
       return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
     } else {
@@ -266,56 +185,35 @@ public:
     }
   }
 
-  void nameCheckInModule(const Identifier& name, const String& entityType, Maybe<String> genericID,
-                         Maybe<String> opaqueID = None);
-
-  inline void genericNameCheck(const String& name, const FileRange& range) {
-    if (hasActiveFunction() && getActiveFunction()->hasGenericParameter(name)) {
-      Error("A generic parameter named " + highlightError(name) +
-                " is present in this function. This will lead to ambiguity.",
-            range);
-    } else if (hasActiveType() &&
-               ((getActiveType()->isExpanded() && getActiveType()->asExpanded()->hasGenericParameter(name)) ||
-                (getActiveType()->isOpaque() && getActiveType()->asOpaque()->hasGenericParameter(name)))) {
-      Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
-                highlightError(getActiveType()->toString()) + " so this will lead to ambiguity",
-            range);
-    } else if (has_active_done_skill() &&
-               ((get_active_done_skill()->getType()->isExpanded() &&
-                 get_active_done_skill()->getType()->asExpanded()->hasGenericParameter(name)) ||
-                (get_active_done_skill()->getType()->isOpaque() &&
-                 get_active_done_skill()->getType()->asOpaque()->hasGenericParameter(name)))) {
-      Error("A generic parameter named " + highlightError(name) + " is present in the parent type " +
-                highlightError(get_active_done_skill()->getType()->toString()) + " so this will lead to ambiguity",
-            range);
-    }
-  }
-
-  useit inline String getGlobalStringName() const {
+  useit inline String get_global_string_name() const {
     auto res = "qat'str'" + std::to_string(stringCount);
     stringCount++;
     return res;
   }
-
-  useit AccessInfo getAccessInfo() const;
-
-  useit VisibilityInfo getVisibInfo(Maybe<ast::VisibilitySpec> spec);
   useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
   void add_exe_path(fs::path path);
   void add_binary_size(usize size);
-  void writeJsonResult(bool status) const;
+  void write_json_result(bool status) const;
 
   void finalise_errors();
-  void addError(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+  void add_error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
+                 Maybe<Pair<String, FileRange>> pointTo = None);
+  void Error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
+             Maybe<Pair<String, FileRange>> pointTo = None);
   void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+  void Errors(ir::Mod* activeMod, Vec<QatError> errors);
   void Errors(Vec<QatError> errors);
   void Warning(const String& message, const FileRange& fileRange);
-  static String highlightError(const String& message, const char* color = colors::bold::yellow);
+
+  static String color(String const& message, const char* color = colors::bold::yellow) {
+    auto* cfg = cli::Config::get();
+    return (cfg->no_color_mode() ? "`" : color) + message + (cfg->no_color_mode() ? "`" : colors::bold::white);
+  }
   static String highlightWarning(const String& message, const char* color = colors::bold::yellow);
-  ~Context() = default;
+  ~Ctx() = default;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

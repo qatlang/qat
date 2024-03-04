@@ -12,44 +12,44 @@ class DoSkill;
 class OperatorDefinition;
 class DestructorDefinition;
 class ConvertorDefinition;
-class MemberDefinition;
+class MethodDefinition;
 class ConstructorDefinition;
 class DefineCoreType;
 
 struct MethodState {
-  IR::MemberParent*   parent;
-  IR::MemberFunction* result;
-  Maybe<bool>         defineCondition;
+  ir::MemberParent* parent;
+  ir::Method*       result;
+  Maybe<bool>       defineCondition;
 
-  MethodState(IR::MemberParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
-  MethodState(IR::MemberParent* _parent, IR::MemberFunction* _result)
+  MethodState(ir::MemberParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
+  MethodState(ir::MemberParent* _parent, ir::Method* _result)
       : parent(_parent), result(_result), defineCondition(None) {}
 
-  MethodState(IR::MemberParent* _parent, IR::MemberFunction* _result, Maybe<bool> _defineCondition)
+  MethodState(ir::MemberParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition)
       : parent(_parent), result(_result), defineCondition(_defineCondition) {}
 };
 
 class MethodResult {
 public:
-  IR::MemberFunction* fn;
-  Maybe<bool>         condition;
+  ir::Method* fn;
+  Maybe<bool> condition;
 
-  MethodResult(IR::MemberFunction* _fn) : fn(_fn), condition(None) {}
-  MethodResult(IR::MemberFunction* _fn, Maybe<bool> _cond) : fn(_fn), condition(_cond) {}
+  MethodResult(ir::Method* _fn) : fn(_fn), condition(None) {}
+  MethodResult(ir::Method* _fn, Maybe<bool> _cond) : fn(_fn), condition(_cond) {}
 };
 
 class MemberParentState {
 public:
-  Vec<MethodResult>        all_methods;
-  Vec<IR::MemberFunction*> convertors;
-  Vec<IR::MemberFunction*> operators;
-  Vec<IR::MemberFunction*> constructors;
-  IR::MemberFunction*      defaultConstructor;
-  IR::MemberFunction*      copyConstructor;
-  IR::MemberFunction*      moveConstructor;
-  IR::MemberFunction*      copyAssignment;
-  IR::MemberFunction*      moveAssignment;
-  IR::MemberFunction*      destructor;
+  Vec<MethodResult> all_methods;
+  Vec<ir::Method*>  convertors;
+  Vec<ir::Method*>  operators;
+  Vec<ir::Method*>  constructors;
+  ir::Method*       defaultConstructor;
+  ir::Method*       copyConstructor;
+  ir::Method*       moveConstructor;
+  ir::Method*       copyAssignment;
+  ir::Method*       moveAssignment;
+  ir::Method*       destructor;
 
   MemberParentState()
       : all_methods(), convertors(), operators(), constructors(), defaultConstructor(nullptr), copyConstructor(nullptr),
@@ -60,9 +60,9 @@ public:
 
 class MemberParentLike {
 public:
-  Vec<Pair<IR::MemberParent*, MemberParentState*>> parentStates;
+  Vec<Pair<ir::MemberParent*, MemberParentState*>> parentStates;
 
-  MemberParentState* get_state_for(IR::MemberParent* parent) {
+  MemberParentState* get_state_for(ir::MemberParent* parent) {
     for (auto& state : parentStates) {
       if (state.first->is_same(parent)) {
         return state.second;
@@ -72,7 +72,7 @@ public:
     return parentStates.back().second;
   }
 
-  Vec<MemberDefinition*>      memberDefinitions;
+  Vec<MethodDefinition*>      memberDefinitions;
   Vec<ConvertorDefinition*>   convertorDefinitions;
   Vec<OperatorDefinition*>    operatorDefinitions;
   Vec<ConstructorDefinition*> constructorDefinitions;
@@ -94,7 +94,7 @@ public:
     }
   }
 
-  inline void add_method_definition(MemberDefinition* mdef) { memberDefinitions.push_back(mdef); }
+  inline void add_method_definition(MethodDefinition* mdef) { memberDefinitions.push_back(mdef); }
   inline void add_convertor_definition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }
   inline void add_constructor_definition(ConstructorDefinition* cdef) { constructorDefinitions.push_back(cdef); }
   inline void add_operator_definition(OperatorDefinition* odef) { operatorDefinitions.push_back(odef); }

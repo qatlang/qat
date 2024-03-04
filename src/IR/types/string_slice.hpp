@@ -3,31 +3,31 @@
 
 #include "qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class StringSliceType : public QatType {
+class StringSliceType : public Type {
 private:
   bool isPack;
 
-  StringSliceType(IR::Context* ctx, bool isPacked = false);
+  StringSliceType(ir::Ctx* irCtx, bool isPacked = false);
 
 public:
-  useit static StringSliceType* get(IR::Context* ctx, bool isPacked = false);
-  useit static IR::PrerunValue* create_value(IR::Context* ctx, String value);
-  useit static String           value_to_string(IR::PrerunValue* value);
+  useit static StringSliceType* get(ir::Ctx* irCtx, bool isPacked = false);
+  useit static ir::PrerunValue* create_value(ir::Ctx* irCtx, String value);
+  useit static String           value_to_string(ir::PrerunValue* value);
   useit bool                    isPacked() const;
-  useit TypeKind                typeKind() const override;
-  useit String                  toString() const override;
+  useit TypeKind                type_kind() const override;
+  useit String                  to_string() const override;
 
-  useit bool canBePrerun() const final { return true; }
-  useit bool canBePrerunGeneric() const final { return true; }
-  useit bool isTypeSized() const final;
-  useit bool isTriviallyCopyable() const final { return true; }
-  useit bool isTriviallyMovable() const final { return true; }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit bool can_be_prerun() const final { return true; }
+  useit bool can_be_prerun_generic() const final { return true; }
+  useit bool is_type_sized() const final;
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

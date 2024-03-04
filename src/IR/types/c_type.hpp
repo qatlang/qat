@@ -3,7 +3,7 @@
 
 #include "qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
 // TODO - Support C arrays
 enum class CTypeKind {
@@ -37,101 +37,101 @@ enum class CTypeKind {
   LongDouble,
 };
 
-Maybe<CTypeKind> cTypeKindFromString(String const& val);
+Maybe<CTypeKind> ctype_kind_from_string(String const& val);
 
-String cTypeKindToString(CTypeKind kind);
+String ctype_kind_to_string(CTypeKind kind);
 
-class CType : public QatType {
+class CType : public Type {
 private:
-  IR::QatType* subType;
-  CTypeKind    cTypeKind;
+  ir::Type* subType;
+  CTypeKind cTypeKind;
 
-  CType(IR::QatType* actual, CTypeKind c_kind);
+  CType(ir::Type* actual, CTypeKind c_kind);
 
 public:
   useit CTypeKind get_c_type_kind() const;
-  useit IR::QatType* getSubType() const;
+  useit ir::Type* get_subtype() const;
 
-  useit inline bool canBePrerun() const final { return subType->canBePrerun(); }
-  useit inline bool canBePrerunGeneric() const final { return subType->canBePrerunGeneric(); }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* value) const final {
-    if (subType->canBePrerunGeneric()) {
-      return subType->toPrerunGenericString(value);
+  useit inline bool can_be_prerun() const final { return subType->can_be_prerun(); }
+  useit inline bool can_be_prerun_generic() const final { return subType->can_be_prerun_generic(); }
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final {
+    if (subType->can_be_prerun_generic()) {
+      return subType->to_prerun_generic_string(value);
     }
     return None;
   }
-  useit inline Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit inline Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-  useit inline bool isInt() const { return cTypeKind == CTypeKind::Int; }
-  useit inline bool isUint() const { return cTypeKind == CTypeKind::Uint; }
-  useit inline bool isCBool() const { return cTypeKind == CTypeKind::Bool; }
-  useit inline bool isChar() const { return cTypeKind == CTypeKind::Char; }
-  useit inline bool isCharUnsigned() const { return cTypeKind == CTypeKind::UChar; }
-  useit inline bool isShort() const { return cTypeKind == CTypeKind::Short; }
-  useit inline bool isShortUnsigned() const { return cTypeKind == CTypeKind::Short; }
-  useit inline bool isWideChar() const { return cTypeKind == CTypeKind::WideChar; }
-  useit inline bool isWideCharUnsigned() const { return cTypeKind == CTypeKind::UWideChar; }
-  useit inline bool isLongInt() const { return cTypeKind == CTypeKind::LongInt; }
-  useit inline bool isLongIntUnsigned() const { return cTypeKind == CTypeKind::ULongInt; }
-  useit inline bool isLongLong() const { return cTypeKind == CTypeKind::LongLong; }
-  useit inline bool isLongLongUnsigned() const { return cTypeKind == CTypeKind::ULongLong; }
-  useit inline bool isUsize() const { return cTypeKind == CTypeKind::Usize; }
-  useit inline bool isIsize() const { return cTypeKind == CTypeKind::Isize; }
-  useit inline bool isCFloat() const { return cTypeKind == CTypeKind::Float; }
-  useit inline bool isDouble() const { return cTypeKind == CTypeKind::Double; }
-  useit inline bool isIntMax() const { return cTypeKind == CTypeKind::IntMax; }
-  useit inline bool isIntMaxUnsigned() const { return cTypeKind == CTypeKind::UintMax; }
-  useit inline bool isCPointer() const { return cTypeKind == CTypeKind::Pointer; }
-  useit inline bool isIntPtr() const { return cTypeKind == CTypeKind::IntPtr; }
-  useit inline bool isIntPtrUnsigned() const { return cTypeKind == CTypeKind::UintPtr; }
-  useit inline bool isPtrDiff() const { return cTypeKind == CTypeKind::PtrDiff; }
-  useit inline bool isPtrDiffUnsigned() const { return cTypeKind == CTypeKind::UPtrDiff; }
-  useit inline bool isSigAtomic() const { return cTypeKind == CTypeKind::SigAtomic; }
-  useit inline bool isProcessID() const { return cTypeKind == CTypeKind::ProcessID; }
-  useit inline bool isCString() const { return cTypeKind == CTypeKind::String; }
-  useit inline bool isLongDouble() const { return cTypeKind == CTypeKind::LongDouble; }
+  useit inline bool is_int() const { return cTypeKind == CTypeKind::Int; }
+  useit inline bool is_uint() const { return cTypeKind == CTypeKind::Uint; }
+  useit inline bool is_cbool() const { return cTypeKind == CTypeKind::Bool; }
+  useit inline bool is_char() const { return cTypeKind == CTypeKind::Char; }
+  useit inline bool is_char_unsigned() const { return cTypeKind == CTypeKind::UChar; }
+  useit inline bool is_short() const { return cTypeKind == CTypeKind::Short; }
+  useit inline bool is_short_unsigned() const { return cTypeKind == CTypeKind::Short; }
+  useit inline bool is_wide_char() const { return cTypeKind == CTypeKind::WideChar; }
+  useit inline bool is_wide_char_unsigned() const { return cTypeKind == CTypeKind::UWideChar; }
+  useit inline bool is_long_int() const { return cTypeKind == CTypeKind::LongInt; }
+  useit inline bool is_long_int_unsigned() const { return cTypeKind == CTypeKind::ULongInt; }
+  useit inline bool is_long_long() const { return cTypeKind == CTypeKind::LongLong; }
+  useit inline bool is_long_long_unsigned() const { return cTypeKind == CTypeKind::ULongLong; }
+  useit inline bool is_usize() const { return cTypeKind == CTypeKind::Usize; }
+  useit inline bool is_isize() const { return cTypeKind == CTypeKind::Isize; }
+  useit inline bool is_cfloat() const { return cTypeKind == CTypeKind::Float; }
+  useit inline bool is_double() const { return cTypeKind == CTypeKind::Double; }
+  useit inline bool is_int_max() const { return cTypeKind == CTypeKind::IntMax; }
+  useit inline bool is_int_max_unsigned() const { return cTypeKind == CTypeKind::UintMax; }
+  useit inline bool is_c_ptr() const { return cTypeKind == CTypeKind::Pointer; }
+  useit inline bool is_intptr() const { return cTypeKind == CTypeKind::IntPtr; }
+  useit inline bool is_intptr_unsigned() const { return cTypeKind == CTypeKind::UintPtr; }
+  useit inline bool is_ptrdiff() const { return cTypeKind == CTypeKind::PtrDiff; }
+  useit inline bool is_ptrdiff_unsigned() const { return cTypeKind == CTypeKind::UPtrDiff; }
+  useit inline bool is_sig_atomic() const { return cTypeKind == CTypeKind::SigAtomic; }
+  useit inline bool is_process_id() const { return cTypeKind == CTypeKind::ProcessID; }
+  useit inline bool is_cstring() const { return cTypeKind == CTypeKind::String; }
+  useit inline bool is_long_double() const { return cTypeKind == CTypeKind::LongDouble; }
 
-  useit static CType* getFromCTypeKind(CTypeKind kind, IR::Context* ctx);
-  useit static CType* getInt(IR::Context* ctx);
-  useit static CType* getUInt(IR::Context* ctx);
-  useit static CType* getBool(IR::Context* ctx);
-  useit static CType* getChar(IR::Context* ctx);
-  useit static CType* getCharUnsigned(IR::Context* ctx);
-  useit static CType* getShort(IR::Context* ctx);
-  useit static CType* getShortUnsigned(IR::Context* ctx);
-  useit static CType* getWideChar(IR::Context* ctx);
-  useit static CType* getWideCharUnsigned(IR::Context* ctx);
-  useit static CType* getLongInt(IR::Context* ctx);
-  useit static CType* getLongIntUnsigned(IR::Context* ctx);
-  useit static CType* getLongLong(IR::Context* ctx);
-  useit static CType* getLongLongUnsigned(IR::Context* ctx);
-  useit static CType* getUsize(IR::Context* ctx);
-  useit static CType* getIsize(IR::Context* ctx);
-  useit static CType* getFloat(IR::Context* ctx);
-  useit static CType* getDouble(IR::Context* ctx);
-  useit static CType* getIntMax(IR::Context* ctx);
-  useit static CType* getUintMax(IR::Context* ctx);
-  useit static CType* getPointer(bool isSubTypeVariable, IR::QatType* subType, IR::Context* ctx);
-  useit static CType* getIntPtr(IR::Context* ctx);
-  useit static CType* getUintPtr(IR::Context* ctx);
-  useit static CType* getPtrDiff(IR::Context* ctx);
-  useit static CType* getPtrDiffUnsigned(IR::Context* ctx);
+  useit static CType* get_from_ctype_kind(CTypeKind kind, ir::Ctx* irCtx);
+  useit static CType* get_int(ir::Ctx* irCtx);
+  useit static CType* get_uint(ir::Ctx* irCtx);
+  useit static CType* get_bool(ir::Ctx* irCtx);
+  useit static CType* get_char(ir::Ctx* irCtx);
+  useit static CType* get_char_unsigned(ir::Ctx* irCtx);
+  useit static CType* get_short(ir::Ctx* irCtx);
+  useit static CType* get_short_unsigned(ir::Ctx* irCtx);
+  useit static CType* get_wide_char(ir::Ctx* irCtx);
+  useit static CType* get_wide_char_unsigned(ir::Ctx* irCtx);
+  useit static CType* get_long_int(ir::Ctx* irCtx);
+  useit static CType* get_long_int_unsigned(ir::Ctx* irCtx);
+  useit static CType* get_long_long(ir::Ctx* irCtx);
+  useit static CType* get_long_long_unsigned(ir::Ctx* irCtx);
+  useit static CType* get_usize(ir::Ctx* irCtx);
+  useit static CType* get_isize(ir::Ctx* irCtx);
+  useit static CType* get_float(ir::Ctx* irCtx);
+  useit static CType* get_double(ir::Ctx* irCtx);
+  useit static CType* get_intmax(ir::Ctx* irCtx);
+  useit static CType* get_uintmax(ir::Ctx* irCtx);
+  useit static CType* get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx);
+  useit static CType* get_intptr(ir::Ctx* irCtx);
+  useit static CType* get_uintptr(ir::Ctx* irCtx);
+  useit static CType* get_ptrdiff(ir::Ctx* irCtx);
+  useit static CType* get_ptrdiff_unsigned(ir::Ctx* irCtx);
   // TODO - Check if there is more to SigAtomic than just an integer type
-  useit static CType* getSigAtomic(IR::Context* ctx);
-  useit static CType* getProcessID(IR::Context* ctx);
-  useit static CType* getCString(IR::Context* ctx);
+  useit static CType* get_sigatomic(ir::Ctx* irCtx);
+  useit static CType* get_processid(ir::Ctx* irCtx);
+  useit static CType* get_cstr(ir::Ctx* irCtx);
 
-  useit static bool   hasLongDouble(IR::Context* ctx);
-  useit static CType* getLongDouble(IR::Context* ctx);
+  useit static bool   has_long_double(ir::Ctx* irCtx);
+  useit static CType* get_long_double(ir::Ctx* irCtx);
 
-  useit bool isTypeSized() const final { return true; }
-  useit bool isTriviallyCopyable() const final { return true; }
-  useit bool isTriviallyMovable() const final { return true; }
+  useit bool is_type_sized() const final { return true; }
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
 
-  TypeKind typeKind() const final { return TypeKind::cType; }
-  String   toString() const final;
+  TypeKind type_kind() const final { return TypeKind::cType; }
+  String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

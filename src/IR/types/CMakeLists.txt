@@ -1,28 +1,29 @@
 add_library(QAT_IR_TYPES
-	array.cpp
-	c_type.cpp
-	choice.cpp
-	core_type.cpp
-	definition.cpp
-	expanded_type.cpp
-	float.cpp
-	function.cpp
-	future.cpp
-	integer.cpp
-	maybe.cpp
-	opaque.cpp
-	pointer.cpp
-	qat_type.cpp
-	reference.cpp
-	region.cpp
-	result.cpp
-	string_slice.cpp
-	tuple.cpp
-	typed.cpp
-	mix.cpp
-	unsigned.cpp
-	vector.cpp
-	void.cpp)
+	array.cc
+	c_type.cc
+	choice.cc
+	core_type.cc
+	definition.cc
+	expanded_type.cc
+	float.cc
+	function.cc
+	future.cc
+	integer.cc
+	maybe.cc
+	opaque.cc
+	pointer.cc
+	qat_type.cc
+	reference.cc
+	region.cc
+	result.cc
+	string_slice.cc
+	toggle.cc
+	tuple.cc
+	typed.cc
+	mix.cc
+	unsigned.cc
+	vector.cc
+	void.cc)
 
 target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
 

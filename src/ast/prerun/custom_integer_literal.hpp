@@ -32,15 +32,14 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {}
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {}
 
-  IR::PrerunValue* emit(IR::Context* ctx) final;
+  ir::PrerunValue* emit(EmitCtx* ctx) final;
 
   useit static String radixToString(u8 val);
 
-  useit Json   toJson() const final;
-  useit String toString() const final;
+  useit Json   to_json() const final;
+  useit String to_string() const final;
 
   useit NodeType nodeType() const final { return NodeType::CUSTOM_INTEGER_LITERAL; }
 };

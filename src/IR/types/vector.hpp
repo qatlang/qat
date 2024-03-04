@@ -3,39 +3,39 @@
 
 #include "./qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
 enum class VectorKind {
   fixed,
   scalable,
 };
 
-class VectorType : public QatType {
-  IR::QatType* subType;
-  usize        count;
-  VectorKind   kind;
+class VectorType : public Type {
+  ir::Type*  subType;
+  usize      count;
+  VectorKind kind;
 
 public:
-  VectorType(IR::QatType* subType, usize count, VectorKind kind, IR::Context* ctx);
-  useit static VectorType* create(IR::QatType* subType, usize count, VectorKind kind, IR::Context* ctx);
+  VectorType(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
+  useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
 
-  useit inline IR::QatType*    get_element_type() const { return subType; }
+  useit inline ir::Type*       get_element_type() const { return subType; }
   useit inline usize           get_count() const { return count; }
   useit inline bool            is_scalable() const { return kind == VectorKind::scalable; }
   useit inline bool            is_fixed() const { return kind == VectorKind::fixed; }
-  useit inline IR::VectorType* get_non_scalable_type(IR::Context* ctx) const {
-    return VectorType::create(subType, count, VectorKind::fixed, ctx);
+  useit inline ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
+    return VectorType::create(subType, count, VectorKind::fixed, irCtx);
   }
   useit inline VectorKind get_vector_kind() const { return kind; }
 
-  useit TypeKind typeKind() const final { return TypeKind::vector; }
-  useit String   toString() const final;
+  useit TypeKind type_kind() const final { return TypeKind::vector; }
+  useit String   to_string() const final;
 
-  useit bool isTypeSized() const final { return kind == VectorKind::fixed; }
-  useit bool isTriviallyCopyable() const final { return true; }
-  useit bool isTriviallyMovable() const final { return true; }
+  useit bool is_type_sized() const final { return kind == VectorKind::fixed; }
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -22,12 +22,11 @@ public:
 
   useit String get_value() const;
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {}
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {}
 
-  useit IR::PrerunValue* emit(IR::Context* ctx) override;
-  useit Json             toJson() const override;
-  useit String           toString() const final;
+  useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+  useit Json             to_json() const override;
+  useit String           to_string() const final;
   useit NodeType         nodeType() const override { return NodeType::STRING_LITERAL; }
 };
 

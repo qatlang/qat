@@ -29,15 +29,15 @@ public:
     return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _sentences, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto snt : sentences) {
       UPDATE_DEPS(snt);
     }
   }
 
-  void  define(MethodState& state, IR::Context* ctx);
-  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
-  useit Json       toJson() const;
+  void  define(MethodState& state, ir::Ctx* irCtx);
+  useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+  useit Json       to_json() const;
   useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 

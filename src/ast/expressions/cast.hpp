@@ -8,23 +8,22 @@ namespace qat::ast {
 
 class Cast final : public Expression {
   Expression* instance;
-  QatType*    destination;
+  Type*       destination;
 
 public:
-  Cast(Expression* _mainExp, QatType* _dest, FileRange _fileRange)
+  Cast(Expression* _mainExp, Type* _dest, FileRange _fileRange)
       : Expression(_fileRange), instance(_mainExp), destination(_dest) {}
 
-  useit static inline Cast* create(Expression* mainExp, QatType* value, FileRange fileRange) {
+  useit static inline Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
     return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(destination);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
+  useit Json       to_json() const final;
   useit NodeType   nodeType() const final { return NodeType::CAST; }
 };
 

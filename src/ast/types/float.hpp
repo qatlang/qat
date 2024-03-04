@@ -5,23 +5,23 @@
 
 namespace qat::ast {
 
-class FloatType final : public QatType {
+class FloatType final : public Type {
 private:
-  IR::FloatTypeKind kind;
+  ir::FloatTypeKind kind;
 
 public:
-  FloatType(IR::FloatTypeKind _kind, FileRange _fileRange) : QatType(_fileRange), kind(_kind) {}
+  FloatType(ir::FloatTypeKind _kind, FileRange _fileRange) : Type(_fileRange), kind(_kind) {}
 
-  useit static inline FloatType* create(IR::FloatTypeKind _kind, FileRange _fileRange) {
+  useit static inline FloatType* create(ir::FloatTypeKind _kind, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FloatType), _kind, _fileRange);
   }
 
-  useit static String kindToString(IR::FloatTypeKind kind);
-  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
-  useit IR::QatType* emit(IR::Context* ctx);
-  useit AstTypeKind  typeKind() const;
-  useit Json         toJson() const;
-  useit String       toString() const;
+  useit static String kindToString(ir::FloatTypeKind kind);
+  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+  useit ir::Type*   emit(EmitCtx* ctx);
+  useit AstTypeKind type_kind() const;
+  useit Json        to_json() const;
+  useit String      to_string() const;
 };
 
 } // namespace qat::ast

@@ -20,15 +20,14 @@ public:
     return std::construct_at(OwnNormal(PrerunBinaryOp), _lhs, _opr, _rhs, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(lhs);
     UPDATE_DEPS(rhs);
   }
 
-  useit IR::PrerunValue* emit(IR::Context* ctx);
-  useit String           toString() const final;
-  useit Json             toJson() const final;
+  useit ir::PrerunValue* emit(EmitCtx* ctx);
+  useit String           to_string() const final;
+  useit Json             to_json() const final;
   useit NodeType         nodeType() const final { return NodeType::PRERUN_BINARY_OP; }
 };
 

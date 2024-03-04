@@ -4,27 +4,26 @@
 #include "qat_type.hpp"
 namespace qat::ast {
 
-class ResultType final : public QatType {
-  ast::QatType* validType;
-  ast::QatType* errorType;
-  bool          isPacked;
+class ResultType final : public Type {
+  ast::Type* validType;
+  ast::Type* errorType;
+  bool       isPacked;
 
 public:
-  ResultType(ast::QatType* _validType, ast::QatType* _errorType, bool _isPacked, FileRange _fileRange)
-      : QatType(_fileRange), validType(_validType), errorType(_errorType), isPacked(_isPacked) {}
+  ResultType(ast::Type* _validType, ast::Type* _errorType, bool _isPacked, FileRange _fileRange)
+      : Type(_fileRange), validType(_validType), errorType(_errorType), isPacked(_isPacked) {}
 
-  useit static inline ResultType* create(ast::QatType* _validType, ast::QatType* _errorType, bool _isPacked,
+  useit static inline ResultType* create(ast::Type* _validType, ast::Type* _errorType, bool _isPacked,
                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(ResultType), _validType, _errorType, _isPacked, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit Json         toJson() const final;
-  useit AstTypeKind  typeKind() const final;
-  useit String       toString() const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit Json        to_json() const final;
+  useit AstTypeKind type_kind() const final;
+  useit String      to_string() const final;
 };
 
 } // namespace qat::ast

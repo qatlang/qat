@@ -7,23 +7,22 @@
 namespace qat::ast {
 
 class TypeWrap final : public PrerunExpression {
-  ast::QatType* theType;
-  bool          isExplicit;
+  ast::Type* theType;
+  bool       isExplicit;
 
 public:
-  TypeWrap(ast::QatType* _theType, bool _isExplicit, FileRange _fileRange)
+  TypeWrap(ast::Type* _theType, bool _isExplicit, FileRange _fileRange)
       : PrerunExpression(_fileRange), theType(_theType), isExplicit(_isExplicit) {}
 
-  useit static inline TypeWrap* create(ast::QatType* _theType, bool _isExplicit, FileRange _fileRange) {
+  useit static inline TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  IR::PrerunValue* emit(IR::Context* ctx);
-  Json             toJson() const;
-  String           toString() const;
+  ir::PrerunValue* emit(EmitCtx* ctx);
+  Json             to_json() const;
+  String           to_string() const;
   NodeType         nodeType() const { return NodeType::TYPE_WRAP; }
 };
 

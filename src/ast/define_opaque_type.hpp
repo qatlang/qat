@@ -8,7 +8,7 @@
 namespace qat::ast {
 
 class DefineOpaqueType final : public IsEntity {
-  friend class IR::QatModule;
+  friend class ir::Mod;
   Identifier               name;
   Maybe<PrerunExpression*> condition;
   Maybe<VisibilitySpec>    visibSpec;
@@ -25,11 +25,11 @@ public:
     return std::construct_at(OwnNormal(DefineOpaqueType), _name, _condition, _visibSpec, _metaInfo, _fileRange);
   }
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule*, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod*, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::DEFINE_OPAQUE_TYPE; }
 };
 

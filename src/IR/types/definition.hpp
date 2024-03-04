@@ -15,51 +15,51 @@ class GenericAbstractType;
 class TypeDefinition;
 } // namespace qat::ast
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 
 class DefinitionType : public ExpandedType, public EntityOverview {
 private:
-  QatType* subType;
+  Type* subType;
 
 public:
-  DefinitionType(Identifier _name, QatType* _actualType, Vec<GenericParameter*> _generics, QatModule* mod,
+  DefinitionType(Identifier _name, Type* _actualType, Vec<GenericParameter*> _generics, Mod* mod,
                  const VisibilityInfo& _visibInfo);
 
-  void setSubType(QatType* _subType);
+  void setSubType(Type* _subType);
 
-  useit Identifier getName() const;
-  useit String     getFullName() const;
-  useit QatModule* getParent();
-  useit QatType*   getSubType();
-  useit TypeKind   typeKind() const final;
-  useit LinkNames  getLinkNames() const final;
-  useit String     toString() const final;
-  useit bool       isExpanded() const final;
-  useit bool       isTypeSized() const final;
+  useit Identifier get_name() const;
+  useit String     get_full_name() const;
+  useit Mod*       get_module();
+  useit Type*      get_subtype();
+  useit TypeKind   type_kind() const final;
+  useit LinkNames  get_link_names() const final;
+  useit String     to_string() const final;
+  useit bool       is_expanded() const final;
+  useit bool       is_type_sized() const final;
 
-  useit bool isTriviallyCopyable() const final;
-  useit bool isTriviallyMovable() const final;
-  useit bool isCopyConstructible() const final;
-  useit bool isCopyAssignable() const final;
-  useit bool isMoveConstructible() const final;
-  useit bool isMoveAssignable() const final;
-  useit bool isDestructible() const final;
+  useit bool is_trivially_copyable() const final;
+  useit bool is_trivially_movable() const final;
+  useit bool is_copy_constructible() const final;
+  useit bool is_copy_assignable() const final;
+  useit bool is_move_constructible() const final;
+  useit bool is_move_assignable() const final;
+  useit bool is_destructible() const final;
 
-  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
-  void updateOverview() final;
+  void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
+  void update_overview() final;
 
-  useit bool canBePrerun() const final { return subType->canBePrerun(); }
-  useit bool canBePrerunGeneric() const final { return subType->canBePrerunGeneric(); }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* constant) const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
+  useit bool can_be_prerun_generic() const final { return subType->can_be_prerun_generic(); }
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* constant) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-  useit VisibilityInfo getVisibility() const;
+  useit VisibilityInfo get_visibility() const;
 };
 
 class GenericDefinitionType : public Uniq, public EntityOverview {
@@ -67,7 +67,7 @@ private:
   Identifier                     name;
   Vec<ast::GenericAbstractType*> generics;
   ast::TypeDefinition*           defineTypeDef;
-  QatModule*                     parent;
+  Mod*                           parent;
   VisibilityInfo                 visibility;
 
   Maybe<ast::PrerunExpression*> constraint;
@@ -76,22 +76,22 @@ private:
 
 public:
   GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics,
-                        Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType,
-                        QatModule* parent, const VisibilityInfo& visibInfo);
+                        Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType, Mod* parent,
+                        const VisibilityInfo& visibInfo);
 
   ~GenericDefinitionType() = default;
 
-  useit Identifier      getName() const;
-  useit usize           getTypeCount() const;
-  useit bool            allTypesHaveDefaults() const;
-  useit usize           getVariantCount() const;
-  useit QatModule*      getModule() const;
-  useit DefinitionType* fillGenerics(Vec<IR::GenericToFill*>& types, IR::Context* ctx, FileRange range);
+  useit Identifier      get_name() const;
+  useit usize           get_generic_count() const;
+  useit bool            all_generics_have_defaults() const;
+  useit usize           get_variant_count() const;
+  useit Mod*            get_module() const;
+  useit DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
 
-  useit ast::GenericAbstractType* getGenericAt(usize index) const;
-  useit VisibilityInfo            getVisibility() const;
+  useit ast::GenericAbstractType* get_generic_at(usize index) const;
+  useit VisibilityInfo            get_visibility() const;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -11,51 +11,51 @@
 namespace qat::ast {
 
 class DefineCoreType final : public IsEntity, public Commentable, public MemberParentLike {
-  friend class IR::GenericCoreType;
+  friend class ir::GenericCoreType;
 
 public:
   struct Member {
-    Member(QatType* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
+    Member(Type* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
            Maybe<Expression*> _expression, FileRange _fileRange)
         : type(_type), name(_name), variability(_variability), visibSpec(_visibSpec), expression(_expression),
           fileRange(_fileRange) {}
 
-    useit static inline Member* create(QatType* _type, Identifier _name, bool _variability,
+    useit static inline Member* create(Type* _type, Identifier _name, bool _variability,
                                        Maybe<VisibilitySpec> _visibSpec, Maybe<Expression*> _expression,
                                        FileRange _fileRange) {
       return std::construct_at(OwnNormal(Member), _type, _name, _variability, _visibSpec, _expression, _fileRange);
     }
 
-    QatType*              type;
+    Type*                 type;
     Identifier            name;
     bool                  variability;
     Maybe<VisibilitySpec> visibSpec;
     Maybe<Expression*>    expression;
     FileRange             fileRange;
 
-    useit Json toJson() const;
+    useit Json to_json() const;
   };
 
   // Static member representation in the AST
   struct StaticMember {
-    StaticMember(QatType* _type, Identifier _name, bool _variability, Expression* _value,
-                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+    StaticMember(Type* _type, Identifier _name, bool _variability, Expression* _value, Maybe<VisibilitySpec> _visibSpec,
+                 FileRange _fileRange)
         : type(_type), name(_name), variability(_variability), value(_value), visibSpec(_visibSpec),
           fileRange(_fileRange) {}
 
-    useit static inline StaticMember* create(QatType* _type, Identifier _name, bool _variability, Expression* _value,
+    useit static inline StaticMember* create(Type* _type, Identifier _name, bool _variability, Expression* _value,
                                              Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
       return std::construct_at(OwnNormal(StaticMember), _type, _name, _variability, _value, _visibSpec, _fileRange);
     }
 
-    QatType*              type;
+    Type*                 type;
     Identifier            name;
     bool                  variability;
     Expression*           value;
     Maybe<VisibilitySpec> visibSpec;
     FileRange             fileRange;
 
-    useit Json toJson() const;
+    useit Json to_json() const;
   };
 
 private:
@@ -70,17 +70,17 @@ private:
 
   Vec<ast::GenericAbstractType*> generics;
   Maybe<PrerunExpression*>       constraint;
-  mutable IR::CoreType*          resultCoreType = nullptr;
-  mutable Vec<IR::OpaqueType*>   opaquedTypes;
+  mutable ir::StructType*        resultCoreType = nullptr;
+  mutable Vec<ir::OpaqueType*>   opaquedTypes;
   useit bool                     hasOpaque() const;
-  void                           setOpaque(IR::OpaqueType* opq) const;
-  useit IR::OpaqueType*           getOpaque() const;
+  void                           setOpaque(ir::OpaqueType* opq) const;
+  useit ir::OpaqueType*           get_opaque() const;
   void                            unsetOpaque() const;
-  mutable IR::GenericCoreType*    genericCoreType = nullptr;
-  mutable Vec<IR::GenericToFill*> genericsToFill;
+  mutable ir::GenericCoreType*    genericCoreType = nullptr;
+  mutable Vec<ir::GenericToFill*> genericsToFill;
   mutable Maybe<bool>             checkResult;
   mutable Maybe<bool>             isPackedStruct;
-  mutable IR::EntityState*        entityState = nullptr;
+  mutable ir::EntityState*        entityState = nullptr;
 
 public:
   DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
@@ -102,10 +102,10 @@ public:
   void addMember(Member* mem);
   void addStaticMember(StaticMember* stm);
 
-  void create_opaque(IR::QatModule* mod, IR::Context* ctx);
-  void create_type(IR::CoreType** resultTy, IR::QatModule* mod, IR::Context* ctx) const;
-  void setup_type(IR::QatModule* mod, IR::Context* ctx);
-  void do_define(IR::CoreType* resultTy, IR::QatModule* mod, IR::Context* ctx);
+  void create_opaque(ir::Mod* mod, ir::Ctx* irCtx);
+  void create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ctx* irCtx) const;
+  void setup_type(ir::Mod* mod, ir::Ctx* irCtx);
+  void do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx);
 
   useit inline bool hasTrivialCopy() { return trivialCopy.has_value(); }
   inline void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
@@ -113,23 +113,23 @@ public:
   inline void       setTrivialMove(FileRange range) { trivialMove = std::move(range); }
 
   useit bool            isGeneric() const;
-  useit bool            hasDefaultConstructor() const;
-  useit bool            hasDestructor() const;
-  useit bool            hasCopyConstructor() const;
-  useit bool            hasMoveConstructor() const;
-  useit bool            hasCopyAssignment() const;
-  useit bool            hasMoveAssignment() const;
+  useit bool            has_default_constructor() const;
+  useit bool            has_destructor() const;
+  useit bool            has_copy_constructor() const;
+  useit bool            has_move_constructor() const;
+  useit bool            has_copy_assignment() const;
+  useit bool            has_move_assignment() const;
   useit bool            is_define_core_type() const final { return true; }
   useit DefineCoreType* as_define_core_type() final { return this; }
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-  void emit(IR::Context* ctx);
-  void do_emit(IR::CoreType* resultTy, IR::Context* ctx);
+  void emit(ir::Ctx* irCtx);
+  void do_emit(ir::StructType* resultTy, ir::Ctx* irCtx);
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
   ~DefineCoreType() final;
 };

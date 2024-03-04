@@ -5,36 +5,34 @@
 #include "qat_type.hpp"
 #include "type_kind.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class FutureType : public QatType {
+class FutureType final : public Type {
 private:
-  QatType* subTy;
-  bool     isPacked;
+  Type* subTy;
+  bool  isPacked;
 
-  FutureType(QatType* subType, bool isPacked, IR::Context* ctx);
+  FutureType(Type* subType, bool isPacked, ir::Ctx* irCtx);
 
 public:
-  useit static FutureType* get(QatType* subType, bool isPacked, IR::Context* ctx);
+  useit static FutureType* get(Type* subType, bool isPacked, ir::Ctx* irCtx);
 
-  useit QatType* getSubType() const;
-  useit String   toString() const final;
-  useit TypeKind typeKind() const final;
-  useit bool     isTypeSized() const final;
-  useit bool     isTypePacked() const;
+  useit Type*    get_subtype() const;
+  useit String   to_string() const final;
+  useit TypeKind type_kind() const final;
+  useit bool     is_type_sized() const final;
+  useit bool     is_type_packed() const;
 
-  useit bool isCopyConstructible() const final;
-  useit bool isCopyAssignable() const final;
-  useit bool isMoveConstructible() const final { return false; }
-  useit bool isMoveAssignable() const final { return false; }
-  void       copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void       copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  //   void       moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  //   void       moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  useit bool isDestructible() const final;
-  void       destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
+  useit bool is_copy_constructible() const final;
+  useit bool is_copy_assignable() const final;
+  useit bool is_move_constructible() const final { return false; }
+  useit bool is_move_assignable() const final { return false; }
+  void       copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void       copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  useit bool is_destructible() const final;
+  void       destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

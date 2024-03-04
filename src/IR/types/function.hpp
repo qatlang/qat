@@ -8,48 +8,48 @@
 #include <string>
 #include <vector>
 
-namespace qat::IR {
+namespace qat::ir {
 
 class ArgumentType {
 private:
   // Name of the argument
   Maybe<String> name;
   // Type of the argument
-  QatType* type;
+  Type* type;
   // Variability of the argument
   bool variability;
   bool isMemberArg;
 
 public:
-  ArgumentType(QatType* _type, bool _variability);
-  ArgumentType(String _name, QatType* _type, bool _variability);
-  ArgumentType(String _name, QatType* type, bool isMemberArg, bool _variability);
+  ArgumentType(Type* _type, bool _variability);
+  ArgumentType(String _name, Type* _type, bool _variability);
+  ArgumentType(String _name, Type* type, bool is_member_argument, bool _variability);
 
-  useit bool     hasName() const;
-  useit String   getName() const;
-  useit QatType* getType();
-  useit bool     isVariable() const;
-  useit bool     isMemberArgument() const;
-  useit String   toString() const;
+  useit bool   has_name() const;
+  useit String get_name() const;
+  useit Type*  get_type();
+  useit bool   is_variable() const;
+  useit bool   is_member_argument() const;
+  useit String to_string() const;
 };
 
 class ReturnType {
 private:
-  QatType* retTy;
-  bool     isReturnSelfRef;
+  Type* retTy;
+  bool  isReturnSelfRef;
 
-  ReturnType(QatType* _retTy, bool _isReturnSelfRef);
+  ReturnType(Type* _retTy, bool _isReturnSelfRef);
 
 public:
-  useit static ReturnType* get(QatType* _retTy);
-  useit static ReturnType* get(QatType* _retTy, bool _isRetSelf);
+  useit static ReturnType* get(Type* _retTy);
+  useit static ReturnType* get(Type* _retTy, bool _isRetSelf);
 
-  useit QatType* getType() const;
-  useit bool     isReturnSelf() const;
-  useit String   toString() const;
+  useit Type*  get_type() const;
+  useit bool   is_return_self() const;
+  useit String to_string() const;
 };
 
-class FunctionType final : public QatType {
+class FunctionType final : public Type {
   ReturnType*        returnType;
   Vec<ArgumentType*> argTypes;
 
@@ -58,14 +58,14 @@ public:
 
   ~FunctionType() final;
 
-  useit ReturnType*   getReturnType();
-  useit ArgumentType* getArgumentTypeAt(u32 index);
-  useit Vec<ArgumentType*> getArgumentTypes() const;
-  useit u64                getArgumentCount() const;
-  useit TypeKind           typeKind() const final { return TypeKind::function; }
-  useit String             toString() const final;
+  useit ReturnType*   get_return_type();
+  useit ArgumentType* get_argument_type_at(u32 index);
+  useit Vec<ArgumentType*> get_argument_types() const;
+  useit u64                get_argument_count() const;
+  useit TypeKind           type_kind() const final { return TypeKind::function; }
+  useit String             to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

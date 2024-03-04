@@ -8,7 +8,7 @@ namespace qat::ast {
 class GenericAbstractType;
 }
 
-namespace qat::IR {
+namespace qat::ir {
 
 enum class GenericKind {
   typedGeneric,
@@ -20,7 +20,7 @@ class PrerunGeneric;
 class PrerunValue;
 class GenericToFill;
 
-void fillGenerics(IR::Context* ctx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
+void fillGenerics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
                   FileRange const& fileRange);
 
 class GenericToFill {
@@ -31,18 +31,18 @@ class GenericToFill {
   GenericToFill(void* _data, GenericKind _kind, FileRange _range);
 
 public:
-  useit static GenericToFill* GetPrerun(IR::PrerunValue* constVal, FileRange range);
-  useit static GenericToFill* GetType(IR::QatType* type, FileRange range);
+  useit static GenericToFill* GetPrerun(ir::PrerunValue* constVal, FileRange range);
+  useit static GenericToFill* GetType(ir::Type* type, FileRange range);
 
-  useit bool isPrerun() const;
-  useit IR::PrerunValue* asPrerun() const;
+  useit bool is_prerun() const;
+  useit ir::PrerunValue* as_prerun() const;
 
-  useit bool isType() const;
-  useit IR::QatType* asType() const;
+  useit bool is_type() const;
+  useit ir::Type* as_type() const;
 
-  useit FileRange getRange() const;
+  useit FileRange get_range() const;
 
-  useit String toString() const;
+  useit String to_string() const;
 };
 
 class GenericParameter {
@@ -54,50 +54,50 @@ protected:
   GenericParameter(Identifier name, GenericKind kind, FileRange range);
 
 public:
-  useit Identifier getName() const;
-  useit FileRange  getRange() const;
-  useit bool       isSame(const String& name) const;
+  useit Identifier get_name() const;
+  useit FileRange  get_range() const;
+  useit bool       is_same(const String& name) const;
 
-  useit bool          isTyped() const;
-  useit TypedGeneric* asTyped() const;
+  useit bool          is_typed() const;
+  useit TypedGeneric* as_typed() const;
 
-  useit bool           isPrerun() const;
-  useit PrerunGeneric* asPrerun() const;
+  useit bool           is_prerun() const;
+  useit PrerunGeneric* as_prerun() const;
 
-  useit bool isEqualTo(IR::Context* ctx, GenericToFill* fill) const;
+  useit bool is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const;
 
-  useit String       toString() const;
-  useit virtual Json toJson() const = 0;
-  virtual ~GenericParameter()       = default;
+  useit String       to_string() const;
+  useit virtual Json to_json() const = 0;
+  virtual ~GenericParameter()        = default;
 };
 
 class TypedGeneric : public GenericParameter {
-  IR::QatType* type;
+  ir::Type* type;
 
-  TypedGeneric(Identifier name, IR::QatType* type, FileRange range);
+  TypedGeneric(Identifier name, ir::Type* type, FileRange range);
 
 public:
-  useit static TypedGeneric* get(Identifier name, IR::QatType* type, FileRange range);
+  useit static TypedGeneric* get(Identifier name, ir::Type* type, FileRange range);
 
-  useit IR::QatType* getType() const;
+  useit ir::Type* get_type() const;
 
-  useit Json toJson() const final;
+  useit Json to_json() const final;
 };
 
 class PrerunGeneric : public GenericParameter {
-  IR::PrerunValue* constant;
+  ir::PrerunValue* constant;
 
-  PrerunGeneric(Identifier name, IR::PrerunValue* constant, FileRange range);
+  PrerunGeneric(Identifier name, ir::PrerunValue* constant, FileRange range);
 
 public:
-  useit static PrerunGeneric* get(Identifier name, IR::PrerunValue* type, FileRange range);
+  useit static PrerunGeneric* get(Identifier name, ir::PrerunValue* type, FileRange range);
 
-  useit IR::PrerunValue* getExpression() const;
-  useit IR::QatType* getType() const;
+  useit ir::PrerunValue* get_expression() const;
+  useit ir::Type* get_type() const;
 
-  useit Json toJson() const final;
+  useit Json to_json() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

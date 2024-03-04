@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <fstream>
 
-namespace qat::IR {
-class Context;
+namespace qat::ir {
+class Ctx;
 }
 
 namespace qat::lexer {
@@ -23,11 +23,11 @@ private:
 
   Vec<TokenType> bracketOccurences;
 
-  IR::Context* irCtx;
+  ir::Ctx* irCtx;
 
 public:
-  explicit Lexer(IR::Context* _irCtx) : irCtx(_irCtx){};
-  useit static Lexer* get(IR::Context* ctx);
+  explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx){};
+  useit static Lexer* get(ir::Ctx* irCtx);
 
   ~Lexer();
 
@@ -37,15 +37,17 @@ public:
   static u64 timeInMicroSeconds;
   static u64 lineCount;
 
-  void               clearTokens();
-  void               throwError(const String& message, Maybe<usize> offset = None);
-  void               analyse();
-  void               read();
-  void               changeFile(fs::path newFile);
-  useit static Token wordToToken(const String& value, Lexer* lexInst);
-  useit Vec<Token>* getTokens();
+  void clear_tokens();
+  void throw_error(const String& message, Maybe<usize> offset = None);
+  void analyse();
+  void read();
+  void change_file(fs::path newFile);
+
+  useit static Token word_to_token(const String& value, Lexer* lexInst);
+  useit Vec<Token>* get_tokens();
   useit Token       tokeniser();
-  useit FileRange   getPosition(u64 length);
+
+  useit FileRange get_position(u64 length);
 };
 
 } // namespace qat::lexer

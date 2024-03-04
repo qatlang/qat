@@ -6,17 +6,16 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
-useit bool isTerminatorInstruction(llvm::Value *value);
-useit bool hasTerminatorInstruction(llvm::BasicBlock *basicblock);
-useit llvm::Instruction *addBranch(llvm::IRBuilder<> &builder,
-                                   llvm::BasicBlock  *dest);
+useit bool is_terminator_instruction(llvm::Value* value);
+useit bool has_terminator_instruction(llvm::BasicBlock* basicblock);
+useit llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest);
 
 // void addConditionalBranch(llvm::IRBuilder<> &builder, llvm::Value *condition,
 //                           llvm::BasicBlock *trueBlock,
 //                           llvm::BasicBlock *falseBlock);
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

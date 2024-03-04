@@ -6,27 +6,26 @@
 
 namespace qat::ast {
 
-class ReferenceType final : public QatType {
+class ReferenceType final : public Type {
 private:
-  QatType* type;
-  bool     isSubtypeVar;
+  Type* type;
+  bool  isSubtypeVar;
 
 public:
-  ReferenceType(QatType* _type, bool _isSubtypeVar, FileRange _fileRange)
-      : QatType(_fileRange), type(_type), isSubtypeVar(_isSubtypeVar) {}
+  ReferenceType(Type* _type, bool _isSubtypeVar, FileRange _fileRange)
+      : Type(_fileRange), type(_type), isSubtypeVar(_isSubtypeVar) {}
 
-  useit static inline ReferenceType* create(QatType* _type, bool _isSubtypeVar, FileRange _fileRange) {
+  useit static inline ReferenceType* create(Type* _type, bool _isSubtypeVar, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ReferenceType), _type, _isSubtypeVar, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit AstTypeKind  typeKind() const final;
-  useit Json         toJson() const final;
-  useit String       toString() const final;
+  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit AstTypeKind type_kind() const final;
+  useit Json        to_json() const final;
+  useit String      to_string() const final;
 };
 
 } // namespace qat::ast

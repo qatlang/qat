@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class NamedType final : public QatType {
+class NamedType final : public Type {
 private:
   u32             relative;
   Vec<Identifier> names;
@@ -15,22 +15,21 @@ private:
 
 public:
   NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
-      : QatType(_fileRange), relative(_relative), names(_names) {}
+      : Type(_fileRange), relative(_relative), names(_names) {}
 
   useit static inline NamedType* create(u32 _relative, Vec<Identifier> _names, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NamedType), _relative, _names, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final { return typeSize; }
-  useit String       getName() const;
+  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final { return typeSize; }
+  useit String       get_name() const;
   useit u32          getRelative() const;
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit AstTypeKind  typeKind() const final;
-  useit Json         toJson() const final;
-  useit String       toString() const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit AstTypeKind type_kind() const final;
+  useit Json        to_json() const final;
+  useit String      to_string() const final;
 };
 
 } // namespace qat::ast

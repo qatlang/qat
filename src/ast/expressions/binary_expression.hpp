@@ -22,14 +22,13 @@ public:
     return std::construct_at(OwnNormal(BinaryExpression), _lhs, _binaryOperator, _rhs, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(lhs);
     UPDATE_DEPS(rhs);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) override;
-  useit Json       toJson() const override;
+  useit ir::Value* emit(EmitCtx* ctx) override;
+  useit Json       to_json() const override;
   useit NodeType   nodeType() const override { return NodeType::BINARY_EXPRESSION; }
 };
 

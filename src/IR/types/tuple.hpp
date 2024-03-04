@@ -7,61 +7,61 @@
 
 #include <vector>
 
-namespace qat::IR {
+namespace qat::ir {
 
 /**
  *  Tuples are product types. It is a defined fixed-length sequence of
  * other types
  *
  */
-class TupleType : public QatType {
+class TupleType : public Type {
 private:
-  Vec<QatType*> subTypes;
-  bool          isPacked;
+  Vec<Type*> subTypes;
+  bool       isPacked;
 
-  TupleType(Vec<QatType*> _types, bool _isPacked, llvm::LLVMContext& llctx);
+  TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx);
 
 public:
-  useit static TupleType* get(Vec<QatType*> types, bool isPacked, llvm::LLVMContext& llctx);
+  useit static TupleType* get(Vec<Type*> types, bool isPacked, llvm::LLVMContext& llctx);
 
-  useit bool isCopyConstructible() const final;
-  useit bool isCopyAssignable() const final;
-  useit bool isMoveConstructible() const final;
-  useit bool isMoveAssignable() const final;
-  useit bool isDestructible() const final;
+  useit bool is_copy_constructible() const final;
+  useit bool is_copy_assignable() const final;
+  useit bool is_move_constructible() const final;
+  useit bool is_move_assignable() const final;
+  useit bool is_destructible() const final;
 
-  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
+  void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-  useit bool isTypeSized() const;
-  useit bool isTriviallyCopyable() const final {
+  useit bool is_type_sized() const;
+  useit bool is_trivially_copyable() const final {
     for (auto* sub : subTypes) {
-      if (!sub->isTriviallyCopyable()) {
+      if (!sub->is_trivially_copyable()) {
         return false;
       }
     }
     return true;
   }
-  useit bool isTriviallyMovable() const final {
+  useit bool is_trivially_movable() const final {
     for (auto* sub : subTypes) {
-      if (!sub->isTriviallyMovable()) {
+      if (!sub->is_trivially_movable()) {
         return false;
       }
     }
     return true;
   }
 
-  useit Vec<QatType*> getSubTypes() const;
-  useit QatType*      getSubtypeAt(u32 index);
-  useit u32           getSubTypeCount() const;
-  useit bool          isPackedTuple() const;
-  useit TypeKind      typeKind() const final;
-  useit String        toString() const final;
+  useit Vec<Type*> getSubTypes() const;
+  useit Type*      getSubtypeAt(u32 index);
+  useit u32        getSubTypeCount() const;
+  useit bool       isPackedTuple() const;
+  useit TypeKind   type_kind() const final;
+  useit String     to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -21,15 +21,14 @@ public:
     return std::construct_at(OwnNormal(GetIntrinsic), _args, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     for (auto arg : args) {
       UPDATE_DEPS(arg);
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
+  useit Json       to_json() const final;
   useit NodeType   nodeType() const final { return NodeType::GET_INTRINSIC; }
 };
 

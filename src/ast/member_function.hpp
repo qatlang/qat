@@ -34,58 +34,58 @@ inline String member_fn_type_to_string(AstMemberFnType ty) {
 }
 
 class MemberPrototype {
-  friend class MemberDefinition;
+  friend class MethodDefinition;
 
   AstMemberFnType          fnTy;
   Identifier               name;
   Maybe<PrerunExpression*> condition;
   Vec<Argument*>           arguments;
   bool                     isVariadic;
-  Maybe<QatType*>          returnType;
+  Maybe<Type*>             returnType;
   Maybe<VisibilitySpec>    visibSpec;
   FileRange                fileRange;
 
 public:
   MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
-                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                   Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
   static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, Maybe<PrerunExpression*> _condition,
-                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
   static MemberPrototype* Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
-                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
   static MemberPrototype* Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
-                                const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+                                const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
-  IR::EntityChildType fn_type_to_child_type() {
+  ir::EntityChildType fn_type_to_child_type() {
     switch (fnTy) {
       case AstMemberFnType::Static:
-        return IR::EntityChildType::staticFn;
+        return ir::EntityChildType::staticFn;
       case AstMemberFnType::normal:
-        return IR::EntityChildType::method;
+        return ir::EntityChildType::method;
       case AstMemberFnType::variation:
-        return IR::EntityChildType::variation;
+        return ir::EntityChildType::variation;
       case AstMemberFnType::valued:
-        return IR::EntityChildType::valued;
+        return ir::EntityChildType::valued;
     }
   }
 
-  void add_to_parent(IR::EntityState* ent, IR::Context* ctx) {
+  void add_to_parent(ir::EntityState* ent, ir::Ctx* irCtx) {
     if (ent->has_child(name.value)) {
       auto ch = ent->get_child(name.value);
-      ctx->Error("Found " + IR::entity_child_type_to_string(ch.first) + " named " + ctx->highlightError(name.value) +
-                     " found",
-                 name.range);
+      irCtx->Error("Found " + ir::entity_child_type_to_string(ch.first) + " named " + irCtx->color(name.value) +
+                       " found",
+                   name.range);
     }
     ent->add_child({fn_type_to_child_type(), name.value});
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     if (condition.has_value()) {
       UPDATE_DEPS(condition.value());
     }
@@ -93,19 +93,19 @@ public:
       UPDATE_DEPS(returnType.value());
     }
     for (auto arg : arguments) {
-      if (arg->getType()) {
-        UPDATE_DEPS(arg->getType());
+      if (arg->get_type()) {
+        UPDATE_DEPS(arg->get_type());
       }
     }
   }
 
-  void           define(MethodState& state, IR::Context* ctx);
-  useit Json     toJson() const;
+  void           define(MethodState& state, ir::Ctx* irCtx);
+  useit Json     to_json() const;
   useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
   ~MemberPrototype();
 };
 
-class MemberDefinition {
+class MethodDefinition {
   friend class DefineCoreType;
   friend class DoSkill;
 
@@ -115,23 +115,23 @@ private:
   FileRange        fileRange;
 
 public:
-  MemberDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+  MethodDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-  useit static inline MemberDefinition* create(MemberPrototype* _prototype, Vec<Sentence*> _sentences,
+  useit static inline MethodDefinition* create(MemberPrototype* _prototype, Vec<Sentence*> _sentences,
                                                FileRange _fileRange) {
-    return std::construct_at(OwnNormal(MemberDefinition), _prototype, _sentences, _fileRange);
+    return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto snt : sentences) {
       UPDATE_DEPS(snt);
     }
   }
 
-  void  define(MethodState& state, IR::Context* ctx);
-  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
-  useit Json       toJson() const;
+  void  define(MethodState& state, ir::Ctx* irCtx);
+  useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+  useit Json       to_json() const;
   useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 

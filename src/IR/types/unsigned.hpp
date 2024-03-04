@@ -4,38 +4,39 @@
 #include "./qat_type.hpp"
 #include "llvm/IR/LLVMContext.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
 // Unsigned integer datatype in the language
-class UnsignedType : public QatType {
+class UnsignedType : public Type {
 private:
-  IR::Context* ctx;
-  u64          bitWidth;
-  bool         isBool;
+  u64  bitWidth;
+  bool is_bool;
 
-  UnsignedType(u64 _bitWidth, IR::Context* ctx, bool _isBool = false);
+  ir::Ctx* irCtx;
+
+  UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool = false);
 
 public:
-  useit static UnsignedType* get(u64 bits, IR::Context* llctx);
-  useit static UnsignedType* getBool(IR::Context* llctx);
+  useit static UnsignedType* get(u64 bits, ir::Ctx* llctx);
+  useit static UnsignedType* getBool(ir::Ctx* llctx);
   useit inline u64           getBitwidth() const { return bitWidth; }
   useit inline bool          isBitWidth(u64 width) const { return bitWidth == width; }
-  useit inline bool          isBoolean() const { return isBool; }
-  useit inline TypeKind      typeKind() const final { return TypeKind::unsignedInteger; }
-  useit inline String        toString() const final { return isBool ? "bool" : ("u" + std::to_string(bitWidth)); }
+  useit inline bool          isBoolean() const { return is_bool; }
+  useit inline TypeKind      type_kind() const final { return TypeKind::unsignedInteger; }
+  useit inline String        to_string() const final { return is_bool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
-  useit inline bool isTypeSized() const final { return true; }
-  useit inline bool isTriviallyCopyable() const final { return true; }
-  useit inline bool isTriviallyMovable() const final { return true; }
-  useit inline bool canBePrerun() const final { return true; }
-  useit inline bool canBePrerunGeneric() const final { return true; }
-  useit inline bool hasPrerunDefaultValue() const final { return true; }
+  useit inline bool is_type_sized() const final { return true; }
+  useit inline bool is_trivially_copyable() const final { return true; }
+  useit inline bool is_trivially_movable() const final { return true; }
+  useit inline bool can_be_prerun() const final { return true; }
+  useit inline bool can_be_prerun_generic() const final { return true; }
+  useit inline bool has_prerun_default_value() const final { return true; }
 
-  useit IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx);
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

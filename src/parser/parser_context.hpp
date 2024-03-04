@@ -19,12 +19,12 @@ class ParserContext {
 public:
   ParserContext();
 
-  useit bool hasTypedGeneric(const String& name) const;
-  useit bool hasConstGeneric(const String& name) const;
-  void       addAbstractGeneric(ast::GenericAbstractType* type);
-  void       removeNamedGenericAbstract(const String& name);
-  useit ast::TypedGeneric* getTypedGeneric(const String& name);
-  useit ast::PrerunGeneric* getConstGeneric(const String& name);
+  useit bool has_typed_generic(const String& name) const;
+  useit bool has_prerun_generic(const String& name) const;
+  void       add_abstract_generic(ast::GenericAbstractType* type);
+  void       remove_named_generic_abstract(const String& name);
+  useit ast::TypedGeneric* get_typed_generic(const String& name);
+  useit ast::PrerunGeneric* get_prerun_generic(const String& name);
 
 private:
   // All generic abstracts available in the current scope

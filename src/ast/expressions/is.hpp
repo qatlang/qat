@@ -23,14 +23,13 @@ public:
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(subExpr);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::IS; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

@@ -29,9 +29,9 @@ private:
   FileRange             nameRange;
   FileRange             fileRange;
 
-  mutable Vec<IR::CoreType::Member*> presentMembers;
-  mutable Vec<IR::CoreType::Member*> absentMembersWithDefault;
-  mutable Vec<IR::CoreType::Member*> absentMembersWithoutDefault;
+  mutable Vec<ir::StructType::Member*> presentMembers;
+  mutable Vec<ir::StructType::Member*> absentMembersWithDefault;
+  mutable Vec<ir::StructType::Member*> absentMembersWithoutDefault;
 
 public:
   ConstructorPrototype(ConstructorType _constrType, FileRange _nameRange, Vec<Argument*> _arguments,
@@ -62,16 +62,16 @@ public:
                              visibSpec, std::move(fileRange), _argName);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto arg : arguments) {
-      if (arg->getType()) {
-        UPDATE_DEPS(arg->getType());
+      if (arg->get_type()) {
+        UPDATE_DEPS(arg->get_type());
       }
     }
   }
 
-  void           define(MethodState& state, IR::Context* ctx);
-  useit Json     toJson() const;
+  void           define(MethodState& state, ir::Ctx* irCtx);
+  useit Json     to_json() const;
   useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
 
   ~ConstructorPrototype();
@@ -94,15 +94,15 @@ public:
     return std::construct_at(OwnNormal(ConstructorDefinition), _prototype, _sentences, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent, IR::Context* ctx) {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto snt : sentences) {
       UPDATE_DEPS(snt);
     }
   }
 
-  void  define(MethodState& state, IR::Context* ctx);
-  useit IR::Value* emit(MethodState& state, IR::Context* ctx);
-  useit Json       toJson() const;
+  void  define(MethodState& state, ir::Ctx* irCtx);
+  useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+  useit Json       to_json() const;
   useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 

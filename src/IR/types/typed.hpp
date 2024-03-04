@@ -3,28 +3,28 @@
 
 #include "qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
 // Meant mainly for const expressions
-class TypedType : public QatType {
-  QatType* subTy;
+class TypedType : public Type {
+  Type* subTy;
 
 public:
-  explicit TypedType(QatType* _subTy);
+  explicit TypedType(Type* _subTy);
 
-  useit static TypedType* get(QatType* _subTy);
+  useit static TypedType* get(Type* _subTy);
 
-  useit QatType* getSubType() const;
+  useit Type* get_subtype() const;
 
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
-  useit inline bool canBePrerun() const final { return true; }
-  useit inline bool canBePrerunGeneric() const final { return true; }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+  useit inline bool can_be_prerun() const final { return true; }
+  useit inline bool can_be_prerun_generic() const final { return true; }
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-  useit TypeKind typeKind() const final;
-  useit String   toString() const final;
+  useit TypeKind type_kind() const final;
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

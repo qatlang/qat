@@ -5,18 +5,18 @@
 
 namespace qat::ast {
 
-class VoidType final : public QatType {
+class VoidType final : public Type {
 public:
-  explicit VoidType(FileRange _fileRange) : QatType(_fileRange) {}
+  explicit VoidType(FileRange _fileRange) : Type(_fileRange) {}
 
   useit static inline VoidType* create(FileRange _fileRange) {
     return std::construct_at(OwnNormal(VoidType), _fileRange);
   }
 
-  useit IR::QatType* emit(IR::Context* ctx);
-  useit AstTypeKind  typeKind() const;
-  useit Json         toJson() const;
-  useit String       toString() const;
+  useit ir::Type*   emit(EmitCtx* ctx);
+  useit AstTypeKind type_kind() const;
+  useit Json        to_json() const;
+  useit String      to_string() const;
 };
 
 } // namespace qat::ast

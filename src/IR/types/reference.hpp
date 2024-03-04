@@ -2,27 +2,26 @@
 #define QAT_IR_TYPES_REFERENCE_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
-#include <string>
 
-namespace qat::IR {
+namespace qat::ir {
 
-class ReferenceType : public QatType {
+class ReferenceType : public Type {
 private:
-  QatType* subType;
-  bool     isSubVariable;
-  ReferenceType(bool isSubtypeVariable, QatType* _type, IR::Context* ctx);
+  Type* subType;
+  bool  isSubVariable;
+
+  ReferenceType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
 
 public:
-  useit static ReferenceType* get(bool _isSubtypeVariable, QatType* _subtype, IR::Context* ctx);
+  useit static ReferenceType* get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx);
 
-  useit QatType* getSubType() const;
+  useit Type*    get_subtype() const;
   useit bool     isSubtypeVariable() const;
-  useit bool     isTypeSized() const final;
-  useit TypeKind typeKind() const final;
-  useit String   toString() const final;
+  useit bool     is_type_sized() const final;
+  useit TypeKind type_kind() const final;
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

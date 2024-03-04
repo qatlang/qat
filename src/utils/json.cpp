@@ -135,7 +135,7 @@ JsonValue& JsonValue::operator=(const char* val) {
 JsonValue::JsonValue(bool val) : data(new bool(val)), type(JsonValueType::boolean) {}
 
 JsonValue& JsonValue::operator=(const bool val) {
-  if (isBool()) {
+  if (is_bool()) {
     *((bool*)data) = val;
   } else {
     clear();
@@ -458,13 +458,13 @@ bool JsonValue::operator!=(const std::string& val) const {
 }
 
 bool JsonValue::operator==(const bool val) const {
-  if (isBool()) {
+  if (is_bool()) {
     return ((*((bool*)data)) == val);
   }
   return false;
 }
 bool JsonValue::operator!=(const bool val) const {
-  if (isBool()) {
+  if (is_bool()) {
     return ((*((bool*)data)) != val);
   }
   return true;
@@ -591,7 +591,7 @@ std::string JsonValue::toString(const bool isJson) const {
       return (*((bool*)data)) ? "true" : "false";
     }
     case JsonValueType::json: {
-      return ((Json*)data)->toString();
+      return ((Json*)data)->to_string();
     }
     case JsonValueType::list: {
       std::string result("[");
@@ -617,7 +617,7 @@ std::string JsonValue::toString(const bool isJson) const {
 
 JsonValueType JsonValue::getType() const { return type; }
 
-bool JsonValue::isBool() const { return (type == JsonValueType::boolean); }
+bool JsonValue::is_bool() const { return (type == JsonValueType::boolean); }
 
 bool JsonValue::asBool() const { return *((bool*)data); }
 
@@ -760,7 +760,7 @@ void Json::setSpaces(unsigned spc) const {
   }
 }
 
-String Json::toString() const {
+String Json::to_string() const {
   if (size() == 0) {
     return "{}";
   } else {
@@ -846,7 +846,7 @@ std::size_t Json::size() const {
   return result;
 }
 
-std::ostream& operator<<(std::ostream& os, const Json& json) { return (os << json.toString() << "\n"); }
+std::ostream& operator<<(std::ostream& os, const Json& json) { return (os << json.to_string() << "\n"); }
 
 void Json::clear() noexcept {
   keys.clear();

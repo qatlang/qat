@@ -17,32 +17,32 @@ struct SkillName {
 class DoSkill final : public IsEntity, public MemberParentLike {
   bool             isDefaultSkill;
   Maybe<SkillName> name;
-  ast::QatType*    targetType;
+  ast::Type*       targetType;
 
-  mutable IR::DoneSkill*    doneSkill = nullptr;
-  mutable IR::MemberParent* parent    = nullptr;
+  mutable ir::DoneSkill*    doneSkill = nullptr;
+  mutable ir::MemberParent* parent    = nullptr;
 
 public:
-  DoSkill(bool _isDef, Maybe<SkillName> _name, ast::QatType* _targetType, FileRange _fileRange)
+  DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
       : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
-  useit static inline DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::QatType* _targetType,
+  useit static inline DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType,
                                       FileRange _fileRange) {
     return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
   }
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-  void define_done_skill(IR::QatModule* mod, IR::Context* ctx);
-  void define_members(IR::Context* ctx);
-  void emit_members(IR::Context* ctx);
+  void define_done_skill(ir::Mod* mod, ir::Ctx* irCtx);
+  void define_members(ir::Ctx* irCtx);
+  void emit_members(ir::Ctx* irCtx);
 
   useit bool     is_done_skill() const final { return true; }
   useit DoSkill* as_done_skill() final { return this; }
 
-  Json     toJson() const final;
+  Json     to_json() const final;
   NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 

@@ -11,29 +11,28 @@ class Default final : public Expression, public LocalDeclCompatible, public Type
   friend class Assignment;
 
 private:
-  Maybe<ast::QatType*> providedType;
+  Maybe<ast::Type*> providedType;
 
 public:
-  Default(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
+  Default(Maybe<ast::Type*> _providedType, FileRange _fileRange)
       : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
-  useit static inline Default* create(Maybe<ast::QatType*> _providedType, FileRange _fileRange) {
+  useit static inline Default* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Default), _providedType, _fileRange);
   }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (providedType.has_value()) {
-      providedType.value()->update_dependencies(phase, IR::DependType::childrenPartial, ent, ctx);
+      providedType.value()->update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::DEFAULT; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

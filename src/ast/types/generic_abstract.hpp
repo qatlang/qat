@@ -24,29 +24,29 @@ protected:
 
   GenericAbstractType(usize _index, Identifier _name, GenericKind _kind, FileRange _range)
       : index(_index), name(std::move(_name)), kind(_kind), range(std::move(_range)) {
-    ast::QatType::generics.push_back(this);
+    ast::Type::generics.push_back(this);
   }
 
 public:
   useit usize      getIndex() const;
-  useit Identifier getName() const;
-  useit FileRange  getRange() const;
+  useit Identifier get_name() const;
+  useit FileRange  get_range() const;
 
-  useit bool           isTyped() const;
-  useit TypedGeneric*  asTyped() const;
-  useit bool           isPrerun() const;
-  useit PrerunGeneric* asPrerun() const;
+  useit bool           is_typed() const;
+  useit TypedGeneric*  as_typed() const;
+  useit bool           is_prerun() const;
+  useit PrerunGeneric* as_prerun() const;
 
-  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                                   IR::Context* ctx) = 0;
+  virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                                   EmitCtx* ctx) = 0;
 
-  virtual void       emit(IR::Context* ctx) const = 0;
-  useit virtual bool hasDefault() const           = 0;
-  useit virtual bool isSet() const                = 0;
-  virtual void       unset() const                = 0;
-  useit virtual Json toJson() const               = 0;
+  virtual void       emit(EmitCtx* ctx) const = 0;
+  useit virtual bool hasDefault() const       = 0;
+  useit virtual bool isSet() const            = 0;
+  virtual void       unset() const            = 0;
+  useit virtual Json to_json() const          = 0;
 
-  useit IR::GenericParameter* toIRGenericType() const;
+  useit ir::GenericParameter* toIRGenericType() const;
 
   virtual ~GenericAbstractType() = default;
 };

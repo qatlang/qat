@@ -3,34 +3,34 @@
 
 #include "qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class ResultType : public QatType {
-  friend class QatType;
+class ResultType : public Type {
+  friend class Type;
 
-  IR::QatType* validType;
-  IR::QatType* errorType;
-  bool         isPacked = false;
+  ir::Type* validType;
+  ir::Type* errorType;
+  bool      isPacked = false;
 
-  ResultType(IR::QatType* validType, IR::QatType* errorType, bool isPacked, IR::Context* ctx);
+  ResultType(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
 
 public:
-  static ResultType* get(IR::QatType* validType, IR::QatType* errorType, bool isPacked, IR::Context* ctx);
+  static ResultType* get(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
 
-  useit IR::QatType* getValidType() const;
-  useit IR::QatType* getErrorType() const;
-  useit bool         isTypePacked() const;
-  useit bool         isTypeSized() const final;
-  useit bool         isTriviallyCopyable() const final {
-    return validType->isTriviallyCopyable() && errorType->isTriviallyCopyable();
+  useit ir::Type* getValidType() const;
+  useit ir::Type* getErrorType() const;
+  useit bool      isTypePacked() const;
+  useit bool      is_type_sized() const final;
+  useit bool      is_trivially_copyable() const final {
+    return validType->is_trivially_copyable() && errorType->is_trivially_copyable();
   }
-  useit bool isTriviallyMovable() const final {
-    return validType->isTriviallyMovable() && errorType->isTriviallyMovable();
+  useit bool is_trivially_movable() const final {
+    return validType->is_trivially_movable() && errorType->is_trivially_movable();
   }
-  useit TypeKind typeKind() const final;
-  useit String   toString() const final;
+  useit TypeKind type_kind() const final;
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

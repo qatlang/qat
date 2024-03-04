@@ -3,7 +3,7 @@
 
 #include "../utils/helpers.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 enum class EmitPhase : u8 {
   phase_1,
   phase_2,
@@ -41,6 +41,6 @@ static Maybe<EmitPhase> get_next_phase(Maybe<EmitPhase> phase) {
     return EmitPhase::phase_1;
   }
 }
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

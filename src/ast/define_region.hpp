@@ -19,11 +19,11 @@ public:
     return std::construct_at(OwnNormal(DefineRegion), _name, _visibSpec, _fileRange);
   }
 
-  void create_entity(IR::QatModule* mod, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final {}
-  void do_phase(IR::EmitPhase phase, IR::QatModule* mod, IR::Context* ctx) final;
+  void create_entity(ir::Mod* mod, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final {}
+  void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::DEFINE_REGION; }
 };
 

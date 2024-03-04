@@ -23,15 +23,14 @@ public:
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     for (auto mem : members) {
       UPDATE_DEPS(mem);
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx);
-  useit Json       toJson() const;
+  useit ir::Value* emit(EmitCtx* ctx);
+  useit Json       to_json() const;
   useit NodeType   nodeType() const { return NodeType::TUPLE_VALUE; }
 };
 

@@ -8,26 +8,26 @@ namespace qat::ast {
 
 class PrerunGlobal final : public IsEntity {
   Identifier            name;
-  Maybe<QatType*>       type;
+  Maybe<Type*>          type;
   PrerunExpression*     value;
   Maybe<VisibilitySpec> visibSpec;
 
 public:
-  PrerunGlobal(Identifier _name, Maybe<QatType*> _type, PrerunExpression* _value, Maybe<VisibilitySpec> _visibSpec,
+  PrerunGlobal(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value, Maybe<VisibilitySpec> _visibSpec,
                FileRange _fileRange)
       : IsEntity(_fileRange), name(_name), type(_type), value(_value), visibSpec(_visibSpec) {}
 
-  useit static inline PrerunGlobal* create(Identifier _name, Maybe<QatType*> _type, PrerunExpression* _value,
+  useit static inline PrerunGlobal* create(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value,
                                            Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunGlobal), _name, _type, _value, _visibSpec, _fileRange);
   }
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-  void           define(IR::QatModule* mod, IR::Context* ctx) const;
-  useit Json     toJson() const final;
+  void           define(ir::Mod* mod, ir::Ctx* irCtx) const;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::PRERUN_GLOBAL; }
 };
 

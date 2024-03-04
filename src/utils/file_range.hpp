@@ -68,7 +68,7 @@ public:
 
   useit FileRange spanTo(FileRange const& other) const;
   useit FileRange trimTo(FilePos othStart) const;
-  useit String    startToString() const;
+  useit String    start_to_string() const;
 
   operator Json() const;
 

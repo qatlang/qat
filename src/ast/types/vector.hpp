@@ -3,31 +3,30 @@
 
 #include "qat_type.hpp"
 #include "type_kind.hpp"
+
 namespace qat::ast {
 
-class VectorType final : public QatType {
-  QatType*          subType;
+class VectorType final : public Type {
+  Type*             subType;
   PrerunExpression* count;
   Maybe<FileRange>  scalable;
 
 public:
-  VectorType(QatType* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable, FileRange _fileRange)
-      : QatType(_fileRange), subType(_subType), count(_count), scalable(_scalable) {}
+  VectorType(Type* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable, FileRange _fileRange)
+      : Type(_fileRange), subType(_subType), count(_count), scalable(_scalable) {}
 
-  useit static inline VectorType* create(QatType* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable,
+  useit static inline VectorType* create(Type* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable,
                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(VectorType), _subType, _count, _scalable, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit IR::QatType* emit(IR::Context* ctx);
+  useit ir::Type* emit(EmitCtx* ctx);
 
-  //   useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
-  AstTypeKind typeKind() const final { return AstTypeKind::VECTOR; }
-  Json        toJson() const final;
-  String      toString() const final;
+  AstTypeKind type_kind() const final { return AstTypeKind::VECTOR; }
+  Json        to_json() const final;
+  String      to_string() const final;
 };
 
 } // namespace qat::ast

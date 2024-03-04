@@ -19,14 +19,13 @@ public:
     return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(instance);
     UPDATE_DEPS(index);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
+  useit Json       to_json() const final;
   useit NodeType   nodeType() const final { return NodeType::INDEX_ACCESS; }
 };
 

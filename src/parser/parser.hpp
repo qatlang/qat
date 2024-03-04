@@ -2,16 +2,14 @@
 #define QAT_PARSER_PARSER_HPP
 
 #include "../ast/argument.hpp"
-#include "../ast/box.hpp"
 #include "../ast/bring_entities.hpp"
 #include "../ast/bring_paths.hpp"
 #include "../ast/define_choice_type.hpp"
-#include "../ast/define_core_type.hpp"
 #include "../ast/expression.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/generics.hpp"
+#include "../ast/member_parent_like.hpp"
 #include "../ast/meta_info.hpp"
-#include "../ast/prerun/string_literal.hpp"
 #include "../ast/sentence.hpp"
 #include "../ast/sentences/match.hpp"
 #include "../lexer/token.hpp"
@@ -20,18 +18,12 @@
 #include "../utils/identifier.hpp"
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
-#include "./token_family.hpp"
 #include <chrono>
-#include <deque>
-#include <iostream>
 #include <map>
 #include <optional>
-#include <sstream>
-#include <vector>
 
 namespace qat::parser {
 
-//  Parser handles parsing of all tokens analysed by the lexer
 class Parser {
 private:
   Vec<lexer::Token>*            tokens = nullptr;
@@ -39,7 +31,7 @@ private:
   Vec<fs::path>                 memberPaths;
   std::map<usize, lexer::Token> comments;
   ParserContext                 g_ctx;
-  IR::Context*                  irCtx;
+  ir::Ctx*                      irCtx;
 
   // Filter all comments from the original token sequence and set a new
   // sequence that maps comments to the relevant AST members
@@ -48,8 +40,8 @@ private:
   void filter_comments();
 
 public:
-  explicit Parser(IR::Context* irCtx);
-  useit static Parser* get(IR::Context* ctx);
+  explicit Parser(ir::Ctx* irCtx);
+  useit static Parser* get(ir::Ctx* irCtx);
   ~Parser();
 
   static u64 timeInMicroSeconds;
@@ -60,9 +52,8 @@ public:
   void clear_brought_paths();
   void set_tokens(Vec<lexer::Token>* tokens);
   void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* coreTy);
-  void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto,
-                      Vec<Pair<Identifier, Maybe<ast::QatType*>>>& uRef, Vec<FileRange>& fileRanges,
-                      Maybe<usize>& defaultVal);
+  void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef,
+                      Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
   void do_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
                       Maybe<usize>& defaultVal);
   void parse_match_contents(ParserContext& prev_ctx, usize from, usize upto,
@@ -82,13 +73,15 @@ public:
                                                  usize upto);
   useit ast::BringPaths* parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
                                            const FileRange& start);
+
   useit Vec<fs::path>& get_brought_paths();
   useit Vec<fs::path>& get_member_paths();
   void                 clear_member_paths();
+
   useit ast::MetaInfo do_meta_info(usize from, usize upto, FileRange fileRange);
   useit Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
   useit Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prev_ctx, usize from, usize upto);
-  useit Pair<ast::QatType*, usize> do_type(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
+  useit Pair<ast::Type*, usize> do_type(ParserContext& prev_ctx, usize from, Maybe<usize> upto);
   useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
   useit Pair<CacheSymbol, usize> do_symbol(ParserContext& prev_ctx, usize start);
   useit Pair<Vec<ast::Argument*>, bool> do_function_parameters(ParserContext& prev_ctx, usize from, usize upto);
@@ -106,9 +99,8 @@ public:
   useit Maybe<usize> first_primary_position(lexer::TokenType candidate, usize from);
   useit Vec<usize> primary_positions_within(lexer::TokenType candidate, usize from, usize upto);
   useit Vec<ast::GenericAbstractType*> do_generic_abstracts(ParserContext& preCtx, usize from, usize upto);
-  useit Vec<ast::QatType*> do_separated_types(ParserContext& prev_ctx, usize from, usize upto);
-  useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& ctx, Maybe<ast::QatType*> type, usize from,
-                                                    usize upto);
+  useit Vec<ast::Type*> do_separated_types(ParserContext& prev_ctx, usize from, usize upto);
+  useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& ctx, Maybe<ast::Type*> type, usize from, usize upto);
 };
 
 } // namespace qat::parser

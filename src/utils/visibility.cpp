@@ -22,12 +22,12 @@ JsonValue kindToJsonValue(VisibilityKind kind) {
       return "folder";
     case VisibilityKind::parent:
       return "parent";
-    case VisibilityKind::box:
-      return "box";
+    case VisibilityKind::skill:
+      return "skill";
   }
 }
 
-AccessInfo::AccessInfo(IR::QatModule* _module, Maybe<IR::QatType*> _type, Maybe<IR::DoneSkill*> _skill)
+AccessInfo::AccessInfo(ir::Mod* _module, Maybe<ir::Type*> _type, Maybe<ir::DoneSkill*> _skill)
     : module(_module), type(_type), skill(_skill) {}
 
 AccessInfo AccessInfo::GetPrivileged() {
@@ -38,18 +38,17 @@ AccessInfo AccessInfo::GetPrivileged() {
 
 bool AccessInfo::isPrivilegedAccess() const { return isPrivileged; }
 
-bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo) {
+bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo) {
   if (reqInfo.has_value() && reqInfo->isPrivilegedAccess()) {
     return true;
   }
   switch (visibility.kind) {
-    case VisibilityKind::box:
     case VisibilityKind::file:
     case VisibilityKind::folder:
     case VisibilityKind::lib: {
       SHOW("VisibilityInfo: Module")
-      return reqInfo.has_value() && ((visibility.moduleVal->getID() == reqInfo->getModule()->getID()) ||
-                                     visibility.moduleVal->isParentModuleOf(reqInfo->getModule()));
+      return reqInfo.has_value() && ((visibility.moduleVal->get_id() == reqInfo->getModule()->get_id()) ||
+                                     visibility.moduleVal->is_parent_mod_of(reqInfo->getModule()));
     }
     case VisibilityKind::pub: {
       SHOW("VisibilityInfo: PUB")
@@ -58,14 +57,14 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo
     case VisibilityKind::type: {
       SHOW("VisibilityInfo: TYPE")
       if (reqInfo.has_value() && reqInfo->has_type()) {
-        return reqInfo->get_type()->isSame(visibility.typePtr);
+        return reqInfo->get_type()->is_same(visibility.typePtr);
       }
       return false;
     }
     case VisibilityKind::skill: {
       SHOW("VisibilityInfo: SKILL")
       if (reqInfo.has_value() && reqInfo->has_skill()) {
-        return reqInfo->get_skill()->getType()->isSame(visibility.typePtr);
+        return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
       }
     }
     case VisibilityKind::parent: {
@@ -74,19 +73,21 @@ bool Visibility::isAccessible(const VisibilityInfo& visibility, Maybe<AccessInfo
         return false;
       }
       if (visibility.typePtr && reqInfo->has_type()) {
-        return visibility.typePtr->isSame(reqInfo->get_type());
+        return visibility.typePtr->is_same(reqInfo->get_type());
       } else if (visibility.typePtr && reqInfo->has_skill()) {
-        return reqInfo->get_skill()->getType()->isSame(visibility.typePtr);
+        return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
       } else if (visibility.moduleVal && reqInfo->getModule()) {
-        return (visibility.moduleVal->getID() == reqInfo->getModule()->getID()) ||
-               visibility.moduleVal->isParentModuleOf(reqInfo->getModule());
+        return (visibility.moduleVal->get_id() == reqInfo->getModule()->get_id()) ||
+               visibility.moduleVal->is_parent_mod_of(reqInfo->getModule());
       }
       return false;
     }
   }
 }
 
-bool VisibilityInfo::isAccessible(Maybe<AccessInfo> reqInfo) const { return Visibility::isAccessible(*this, reqInfo); }
+bool VisibilityInfo::is_accessible(Maybe<AccessInfo> reqInfo) const {
+  return Visibility::is_accessible(*this, reqInfo);
+}
 
 bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
   return (kind == other.kind) && (typePtr == other.typePtr) && (moduleVal == other.moduleVal);
@@ -96,9 +97,9 @@ VisibilityInfo::operator Json() const {
   return Json()
       ._("nature", Visibility::getValue(kind))
       ._("hasModule", moduleVal != nullptr)
-      ._("moduleID", moduleVal ? moduleVal->getID() : "")
+      ._("moduleID", moduleVal ? moduleVal->get_id() : "")
       ._("hasType", typePtr != nullptr)
-      ._("typeID", typePtr ? typePtr->getID() : "");
+      ._("typeID", typePtr ? typePtr->get_id() : "");
 }
 
 VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
@@ -107,14 +108,12 @@ VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
     : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 
 const std::map<VisibilityKind, String> Visibility::kind_value_map = {
-    {VisibilityKind::pub, "public"},   {VisibilityKind::type, "type"}, {VisibilityKind::lib, "library"},
-    {VisibilityKind::file, "file"},    {VisibilityKind::box, "box"},   {VisibilityKind::parent, "parent"},
-    {VisibilityKind::folder, "folder"}};
+    {VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"},     {VisibilityKind::lib, "library"},
+    {VisibilityKind::file, "file"},  {VisibilityKind::parent, "parent"}, {VisibilityKind::folder, "folder"}};
 
 const std::map<String, VisibilityKind> Visibility::value_kind_map = {
-    {"public", VisibilityKind::pub},   {"type", VisibilityKind::type}, {"library", VisibilityKind::lib},
-    {"file", VisibilityKind::file},    {"box", VisibilityKind::box},   {"parent", VisibilityKind::parent},
-    {"folder", VisibilityKind::folder}};
+    {"public", VisibilityKind::pub}, {"type", VisibilityKind::type},     {"library", VisibilityKind::lib},
+    {"file", VisibilityKind::file},  {"parent", VisibilityKind::parent}, {"folder", VisibilityKind::folder}};
 
 String Visibility::getValue(VisibilityKind kind) { return kind_value_map.find(kind)->second; }
 

@@ -11,11 +11,11 @@
 namespace qat::ast {
 
 class FunctionPrototype final : public IsEntity {
-  friend class IR::GenericFunction;
+  friend class ir::GenericFunction;
   Identifier               name;
   Vec<Argument*>           arguments;
   bool                     isVariadic;
-  Maybe<QatType*>          returnType;
+  Maybe<Type*>             returnType;
   Maybe<MetaInfo>          metaInfo;
   Maybe<VisibilitySpec>    visibSpec;
   Maybe<PrerunExpression*> checker;
@@ -24,17 +24,17 @@ class FunctionPrototype final : public IsEntity {
   Maybe<Pair<Vec<Sentence*>, FileRange>> definition;
 
   Vec<GenericAbstractType*> generics;
-  IR::GenericFunction*      genericFn = nullptr;
+  ir::GenericFunction*      genericFn = nullptr;
 
   mutable Maybe<llvm::GlobalValue::LinkageTypes> linkageType;
 
   mutable Maybe<String> variantName;
-  mutable IR::Function* function = nullptr;
+  mutable ir::Function* function = nullptr;
   mutable bool          isMainFn = false;
   mutable Maybe<bool>   checkResult;
 
 public:
-  FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<QatType*> _returnType,
+  FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                     Maybe<PrerunExpression*> _checker, Maybe<PrerunExpression*> _genericConstraint,
                     Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                     Vec<GenericAbstractType*> _generics, Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
@@ -43,7 +43,7 @@ public:
         generics(_generics), definition(_definition) {}
 
   useit static inline FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                                Maybe<QatType*> _returnType, Maybe<PrerunExpression*> _checker,
+                                                Maybe<Type*> _returnType, Maybe<PrerunExpression*> _checker,
                                                 Maybe<PrerunExpression*> _genericConstraint, Maybe<MetaInfo> _metaInfo,
                                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                                                 Vec<GenericAbstractType*>              _generics,
@@ -56,14 +56,14 @@ public:
   useit Vec<GenericAbstractType*> getGenerics() const;
   void                            setVariantName(const String& value) const;
   void                            unsetVariantName() const;
-  IR::Function*                   create_function(IR::QatModule* mod, IR::Context* ctx) const;
+  ir::Function*                   create_function(ir::Mod* mod, ir::Ctx* irCtx) const;
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-  useit void     emit_definition(IR::Context* ctx);
-  useit Json     toJson() const final;
+  useit void     emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
   ~FunctionPrototype() final;
 };

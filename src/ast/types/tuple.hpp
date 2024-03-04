@@ -8,28 +8,27 @@
 
 namespace qat::ast {
 
-class TupleType final : public QatType {
+class TupleType final : public Type {
 private:
-  Vec<QatType*> types;
-  bool          isPacked;
+  Vec<Type*> types;
+  bool       isPacked;
 
 public:
-  TupleType(Vec<QatType*> _types, bool _isPacked, FileRange _fileRange)
-      : QatType(_fileRange), types(_types), isPacked(_isPacked) {}
+  TupleType(Vec<Type*> _types, bool _isPacked, FileRange _fileRange)
+      : Type(_fileRange), types(_types), isPacked(_isPacked) {}
 
-  useit static inline TupleType* create(Vec<QatType*> _types, bool _isPacked, FileRange _fileRange) {
+  useit static inline TupleType* create(Vec<Type*> _types, bool _isPacked, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TupleType), _types, _isPacked, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+  Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
 
-  useit IR::QatType* emit(IR::Context* ctx) final;
-  useit AstTypeKind  typeKind() const final;
-  useit Json         toJson() const final;
-  useit String       toString() const final;
+  useit ir::Type*   emit(EmitCtx* ctx) final;
+  useit AstTypeKind type_kind() const final;
+  useit Json        to_json() const final;
+  useit String      to_string() const final;
 };
 
 } // namespace qat::ast

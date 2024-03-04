@@ -24,26 +24,25 @@ public:
     return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, _isVariationAccess, _name, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(instance);
-    for (auto mod : IR::QatModule::allModules) {
+    for (auto mod : ir::Mod::allModules) {
       for (auto modEnt : mod->entityEntries) {
-        if (modEnt->type == IR::EntityType::defaultDoneSkill) {
+        if (modEnt->type == ir::EntityType::defaultDoneSkill) {
           if (modEnt->has_child(name.value)) {
-            ent->addDependency(IR::EntityDependency{modEnt, IR::DependType::partial, phase});
+            ent->addDependency(ir::EntityDependency{modEnt, ir::DependType::partial, phase});
           }
-        } else if (modEnt->type == IR::EntityType::structType) {
+        } else if (modEnt->type == ir::EntityType::structType) {
           if (modEnt->has_child(name.value)) {
-            ent->addDependency(IR::EntityDependency{modEnt, IR::DependType::childrenPartial, phase});
+            ent->addDependency(ir::EntityDependency{modEnt, ir::DependType::childrenPartial, phase});
           }
         }
       }
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) override;
-  useit Json       toJson() const override;
+  useit ir::Value* emit(EmitCtx* ctx) override;
+  useit Json       to_json() const override;
   useit NodeType   nodeType() const override { return NodeType::MEMBER_ACCESS; }
 };
 

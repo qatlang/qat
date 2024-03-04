@@ -8,53 +8,54 @@
 #include "./value.hpp"
 #include "types/qat_type.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
 template <typename T> class GenericVariant {
 private:
   T*                      entity;
-  Vec<IR::GenericToFill*> genericTypes;
+  Vec<ir::GenericToFill*> genericTypes;
 
 public:
-  GenericVariant(T* _entity, Vec<IR::GenericToFill*> _types) : entity(_entity), genericTypes(std::move(_types)) {}
+  GenericVariant(T* _entity, Vec<ir::GenericToFill*> _types) : entity(_entity), genericTypes(std::move(_types)) {}
 
-  useit bool check(IR::Context* ctx, std::function<void(const String&, const FileRange&)> errorFn,
+  useit bool check(ir::Ctx* irCtx, std::function<void(const String&, const FileRange&)> errorFn,
                    Vec<GenericToFill*> dest) const {
     if (genericTypes.size() != dest.size()) {
       return false;
     } else {
       for (usize i = 0; i < genericTypes.size(); i++) {
         auto* genTy = genericTypes.at(i);
-        if (genTy->isType()) {
-          if (dest.at(i)->isType()) {
-            if (!genTy->asType()->isSame(dest.at(i)->asType())) {
+        if (genTy->is_type()) {
+          if (dest.at(i)->is_type()) {
+            if (!genTy->as_type()->is_same(dest.at(i)->as_type())) {
               return false;
             }
           } else {
-            auto* preVal = dest.at(i)->asPrerun();
-            if (preVal->getType()->isTyped()) {
-              if (!genTy->asType()->isSame(preVal->getType()->asTyped()->getSubType())) {
+            auto* preVal = dest.at(i)->as_prerun();
+            if (preVal->get_ir_type()->is_typed()) {
+              if (!genTy->as_type()->is_same(preVal->get_ir_type()->as_typed()->get_subtype())) {
                 return false;
               }
             } else {
               return false;
             }
           }
-        } else if (genTy->isPrerun()) {
-          if (dest.at(i)->isPrerun()) {
-            auto* genExp  = genTy->asPrerun();
-            auto* destExp = dest.at(i)->asPrerun();
-            if (genExp->getType()->isTyped()) {
-              if (destExp->getType()->isTyped()) {
-                if (!genExp->getType()->asTyped()->getSubType()->isSame(destExp->getType()->asTyped()->getSubType())) {
+        } else if (genTy->is_prerun()) {
+          if (dest.at(i)->is_prerun()) {
+            auto* genExp  = genTy->as_prerun();
+            auto* destExp = dest.at(i)->as_prerun();
+            if (genExp->get_ir_type()->is_typed()) {
+              if (destExp->get_ir_type()->is_typed()) {
+                if (!genExp->get_ir_type()->as_typed()->get_subtype()->is_same(
+                        destExp->get_ir_type()->as_typed()->get_subtype())) {
                   return false;
                 }
               } else {
                 return false;
               }
             } else {
-              if (genExp->getType()->isSame(destExp->getType())) {
-                auto eqRes = genExp->getType()->equalityOf(ctx, genExp, destExp);
+              if (genExp->get_ir_type()->is_same(destExp->get_ir_type())) {
+                auto eqRes = genExp->get_ir_type()->equality_of(irCtx, genExp, destExp);
                 if (eqRes.has_value()) {
                   if (!eqRes.value()) {
                     return false;
@@ -67,8 +68,8 @@ public:
               }
             }
           } else {
-            if (genTy->asPrerun()->getType()->isTyped()) {
-              if (!dest.at(i)->asType()->isSame(genTy->asPrerun()->getType()->asTyped()->getSubType())) {
+            if (genTy->as_prerun()->get_ir_type()->is_typed()) {
+              if (!dest.at(i)->as_type()->is_same(genTy->as_prerun()->get_ir_type()->as_typed()->get_subtype())) {
                 return false;
               }
             } else {
@@ -76,7 +77,7 @@ public:
             }
           }
         } else {
-          errorFn("Invalid generic kind", genTy->getRange());
+          errorFn("Invalid generic kind", genTy->get_range());
         }
       }
       return true;
@@ -85,6 +86,6 @@ public:
   useit T* get() { return entity; }
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

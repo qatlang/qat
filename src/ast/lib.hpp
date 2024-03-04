@@ -25,9 +25,9 @@ public:
     return std::construct_at(OwnNormal(Lib), _name, _members, _visibSpec, _file_range);
   }
 
-  void createModule(IR::Context* ctx) const final;
+  void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::LIB; }
 };
 

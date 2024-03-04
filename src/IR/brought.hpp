@@ -6,11 +6,11 @@
 #include <functional>
 #include <optional>
 
-namespace qat::IR {
+namespace qat::ir {
 
 // Brought Entity
 template <class T> class Brought {
-  friend IR::QatModule;
+  friend ir::Mod;
   template <typename E> friend bool matchBroughtEntity(Brought<E> brought, String candName, Maybe<AccessInfo> reqInfo);
 
   // Optional name of the entity
@@ -29,28 +29,28 @@ public:
   Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
   // Get the name if the brought entity is named
-  useit inline Identifier getName() const { return name.value_or(Identifier("", {""})); }
+  useit inline Identifier get_name() const { return name.value_or(Identifier("", {""})); }
 
   // Is entity named
-  useit inline bool isNamed() const { return name.has_value(); }
+  useit inline bool is_named() const { return name.has_value(); }
 
   // Get the entity
   useit inline T* get() const { return entity; }
 
   // Get the visibility of the brought entity
-  useit inline const VisibilityInfo& getVisibility() const { return visibility; }
+  useit inline const VisibilityInfo& get_visibility() const { return visibility; }
 };
 
 template <typename T> useit bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {
-  if (brought.isNamed()) {
-    return (brought.name.value().value == candName) && brought.visibility.isAccessible(reqInfo) &&
-           brought.entity->getVisibility().isAccessible(reqInfo);
+  if (brought.is_named()) {
+    return (brought.name.value().value == candName) && brought.visibility.is_accessible(reqInfo) &&
+           brought.entity->get_visibility().is_accessible(reqInfo);
   } else {
-    return (brought.entity->getName().value == candName) && brought.visibility.isAccessible(reqInfo) &&
-           brought.entity->getVisibility().isAccessible(reqInfo);
+    return (brought.entity->get_name().value == candName) && brought.visibility.is_accessible(reqInfo) &&
+           brought.entity->get_visibility().is_accessible(reqInfo);
   }
 }
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

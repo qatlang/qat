@@ -3,39 +3,38 @@
 
 #include "../../IR/context.hpp"
 #include "../../utils/file_range.hpp"
+#include "../emit_ctx.hpp"
 #include "./type_kind.hpp"
-
-#include <string>
 
 namespace qat::ast {
 
 class GenericAbstractType;
 
-class QatType {
+class Type {
   friend GenericAbstractType;
 
 protected:
   static Vec<GenericAbstractType*> generics;
 
 private:
-  static Vec<QatType*> allTypes;
+  static Vec<Type*> allTypes;
 
 public:
-  explicit QatType(FileRange _fileRange);
-  virtual ~QatType() = default;
+  explicit Type(FileRange _fileRange);
+  virtual ~Type() = default;
 
   FileRange fileRange;
 
-  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                                   IR::Context* ctx) {}
+  virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                                   EmitCtx* ctx) {}
 
-  useit virtual Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const;
-  useit virtual IR::QatType* emit(IR::Context* ctx) = 0;
-  useit virtual AstTypeKind  typeKind() const       = 0;
-  useit virtual Json         toJson() const         = 0;
-  useit virtual String       toString() const       = 0;
+  useit virtual Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const;
+  useit virtual ir::Type*    emit(EmitCtx* ctx) = 0;
+  useit virtual AstTypeKind  type_kind() const  = 0;
+  useit virtual Json         to_json() const    = 0;
+  useit virtual String       to_string() const  = 0;
   virtual void               destroy() {}
-  static void                clearAll();
+  static void                clear_all();
 };
 
 } // namespace qat::ast

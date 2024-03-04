@@ -7,20 +7,20 @@ namespace qat {
 class QatSitter;
 }
 
-namespace qat::IR {
+namespace qat::ir {
 
 class StdLib {
-  static IR::DefinitionType* stdStringType;
+  static ir::DefinitionType* stdStringType;
 
 public:
-  static IR::QatModule* stdLib;
+  static ir::Mod* stdLib;
 
-  useit static bool isStdLibFound();
+  useit static bool is_std_lib_found();
 
-  useit static bool            hasStringType();
-  useit static DefinitionType* getStringType();
+  useit static bool            has_string_type();
+  useit static DefinitionType* get_string_type();
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

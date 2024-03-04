@@ -1,21 +1,10 @@
 #ifndef QAT_AST_EXPRESSION_HPP
 #define QAT_AST_EXPRESSION_HPP
 
+#include "./emit_ctx.hpp"
 #include "./node.hpp"
 
 namespace qat::ast {
-
-// Nature of the expression
-//
-// "assignable" & "temporary" can be grouped to the generalised nature glvalue
-// "pure" and "temporary" can be grouped to the generalsied nature rvalue
-//
-// Assignable expressions can be assigned to
-enum class ExpressionKind {
-  assignable, // lvalue
-  temporary,  // xvalue
-  pure,       // prvalue
-};
 
 #define LOCAL_DECL_COMPATIBLE_FUNCTIONS                                                                                \
   useit bool                 isLocalDeclCompatible() const final { return true; }                                      \
@@ -31,26 +20,26 @@ enum class ExpressionKind {
 
 class LocalDeclCompatible {
 public:
-  IR::LocalValue*   localValue = nullptr;
+  ir::LocalValue*   localValue = nullptr;
   Maybe<Identifier> irName;
   bool              isVar = false;
   useit inline bool isLocalDecl() const { return localValue != nullptr; }
-  void inline type_check_local(IR::QatType* type, IR::Context* ctx, FileRange fileRange) {
-    if (!localValue->getType()->isSame(type)) {
-      ctx->Error("The type of this expression is " + ctx->highlightError(type->toString()) +
-                     " which does not match the type of the local declaration, which is " +
-                     ctx->highlightError(localValue->getType()->toString()),
-                 fileRange);
+  void inline type_check_local(ir::Type* type, ir::Ctx* irCtx, FileRange fileRange) {
+    if (!localValue->get_ir_type()->is_same(type)) {
+      irCtx->Error("The type of this expression is " + irCtx->color(type->to_string()) +
+                       " which does not match the type of the local declaration, which is " +
+                       irCtx->color(localValue->get_ir_type()->to_string()),
+                   fileRange);
     }
   }
-  inline void setLocalValue(IR::LocalValue* _localValue) { localValue = _localValue; }
+  inline void setLocalValue(ir::LocalValue* _localValue) { localValue = _localValue; }
 };
 
 class InPlaceCreatable {
 public:
-  IR::Value*        createIn = nullptr;
+  ir::Value*        createIn = nullptr;
   useit inline bool canCreateIn() const { return createIn != nullptr; }
-  inline void       setCreateIn(IR::Value* _createIn) { createIn = _createIn; }
+  inline void       setCreateIn(ir::Value* _createIn) { createIn = _createIn; }
   inline void       unsetCreateIn() { createIn = nullptr; }
 };
 
@@ -62,10 +51,10 @@ struct FnAtEnd {
 
 class TypeInferrable {
 public:
-  IR::QatType*      inferredType = nullptr;
+  ir::Type*         inferredType = nullptr;
   useit inline bool isTypeInferred() const { return inferredType != nullptr; }
-  inline void       setInferenceType(IR::QatType* _type) {
-    inferredType = _type->isReference() ? _type->asReference()->getSubType() : _type;
+  inline void       setInferenceType(ir::Type* _type) {
+    inferredType = _type->is_reference() ? _type->as_reference()->get_subtype() : _type;
   }
 };
 
@@ -83,13 +72,13 @@ public:
   useit virtual bool            hasTypeInferrance() const { return false; }
   useit virtual TypeInferrable* asTypeInferrable() { return nullptr; }
 
-  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                                   IR::Context* ctx) = 0;
+  virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+                                   EmitCtx* ctx) = 0;
 
-  useit virtual IR::Value* emit(IR::Context* ctx) = 0;
+  useit virtual ir::Value* emit(EmitCtx* emitCtx) = 0;
 
   useit NodeType nodeType() const override = 0;
-  useit Json     toJson() const override   = 0;
+  useit Json     to_json() const override  = 0;
 };
 
 class PrerunExpression : public Expression {
@@ -97,10 +86,10 @@ public:
   PrerunExpression(FileRange _fileRange) : Expression(_fileRange) {}
   ~PrerunExpression() override = default;
 
-  useit IR::PrerunValue* emit(IR::Context* ctx) override = 0;
+  useit ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;
   useit NodeType         nodeType() const override       = 0;
-  useit Json             toJson() const override         = 0;
-  useit virtual String   toString() const                = 0;
+  useit Json             to_json() const override        = 0;
+  useit virtual String   to_string() const               = 0;
 };
 
 } // namespace qat::ast

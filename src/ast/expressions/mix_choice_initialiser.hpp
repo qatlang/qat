@@ -13,16 +13,15 @@ class MixOrChoiceInitialiser final : public Expression,
   friend class LocalDeclaration;
 
 private:
-  Maybe<QatType*>    type;
+  Maybe<Type*>       type;
   Identifier         subName;
   Maybe<Expression*> expression;
 
 public:
-  MixOrChoiceInitialiser(Maybe<QatType*> _type, Identifier _subName, Maybe<Expression*> _expression,
-                         FileRange _fileRange)
+  MixOrChoiceInitialiser(Maybe<Type*> _type, Identifier _subName, Maybe<Expression*> _expression, FileRange _fileRange)
       : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-  useit static inline MixOrChoiceInitialiser* create(Maybe<QatType*> type, Identifier subName,
+  useit static inline MixOrChoiceInitialiser* create(Maybe<Type*> type, Identifier subName,
                                                      Maybe<Expression*> expression, FileRange fileRange) {
     return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
   }
@@ -31,8 +30,7 @@ public:
   IN_PLACE_CREATABLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (type.has_value()) {
       UPDATE_DEPS(type.value());
     }
@@ -41,8 +39,8 @@ public:
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
+  useit Json       to_json() const final;
   useit NodeType   nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 

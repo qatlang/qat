@@ -27,7 +27,7 @@ struct VisibilitySpec {
   VisibilityKind kind;
   FileRange      range;
 
-  useit String toString() const {
+  useit String to_string() const {
     switch (kind) {
       case VisibilityKind::type:
         return "pub:type";
@@ -39,15 +39,13 @@ struct VisibilitySpec {
         return "pub:file";
       case VisibilityKind::folder:
         return "pub:folder";
-      case VisibilityKind::box:
-        return "pub:box";
       case VisibilityKind::parent:
         return "pub:parent";
       case VisibilityKind::skill:
         return "pub:skill";
     }
   }
-  useit Json toJson() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
+  useit Json to_json() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
 };
 
 class Commentable {
@@ -60,8 +58,8 @@ public:
   useit bool         isCommentable() const final { return true; }                                                      \
   useit Commentable* asCommentable() final { return (Commentable*)this; }
 
-#define UPDATE_DEPS(x)               x->update_dependencies(phase, IR::DependType::complete, ent, ctx)
-#define UPDATE_DEPS_CUSTOM(x, depTy) x->update_dependencies(phase, IR::DependType::depTy, ent, ctx)
+#define UPDATE_DEPS(x)               x->update_dependencies(phase, ir::DependType::complete, ent, ctx)
+#define UPDATE_DEPS_CUSTOM(x, depTy) x->update_dependencies(phase, ir::DependType::depTy, ent, ctx)
 
 // Node is the base class for all AST members of the language, and it
 // requires a FileRange instance that indicates its position in the
@@ -79,33 +77,28 @@ public:
   useit virtual Commentable* asCommentable() { return nullptr; }
   useit virtual bool         isPrerunNode() const { return false; }
 
-  virtual void createModule(IR::Context* ctx) const {}
-  virtual void handleFilesystemBrings(IR::Context* ctx) const {}
-  //   virtual void handleFilesystemBrings(IR::Context* ctx) const {}
-  //   virtual void handleBrings(IR::Context* ctx) const {}
-  //   virtual void defineType(IR::Context* ctx) {}
-  //   virtual void define(IR::Context* ctx) {}
+  virtual void create_module(ir::Mod* mod, ir::Ctx* irCtx) const {}
+  virtual void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {}
 
-  //   useit virtual IR::Value* emit(IR::Context* ctx) = 0;
   useit virtual bool is_entity() const { return false; }
 
-  useit virtual Json     toJson() const   = 0;
+  useit virtual Json     to_json() const  = 0;
   useit virtual NodeType nodeType() const = 0;
-  static void            clearAll();
+  static void            clear_all();
 };
 
 class IsEntity : public Node {
 public:
-  IR::EntityState* entityState = nullptr;
+  ir::EntityState* entityState = nullptr;
 
   IsEntity(FileRange _fileRange) : Node(_fileRange) {}
   virtual ~IsEntity() = default;
 
   useit bool is_entity() const final { return true; }
 
-  virtual void create_entity(IR::QatModule* parent, IR::Context* ctx)                 = 0;
-  virtual void update_entity_dependencies(IR::QatModule* parent, IR::Context* ctx)    = 0;
-  virtual void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) = 0;
+  virtual void create_entity(ir::Mod* parent, ir::Ctx* irCtx)                 = 0;
+  virtual void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx)    = 0;
+  virtual void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) = 0;
 };
 
 class HolderNode : public Node {
@@ -116,7 +109,7 @@ public:
   explicit HolderNode(Node* _node) : Node(_node->fileRange), node(_node) {}
 
   // NOLINTNEXTLINE(misc-unused-parameters)
-  useit Json     toJson() const final { return node->toJson(); }
+  useit Json     to_json() const final { return node->to_json(); }
   useit NodeType nodeType() const final { return NodeType::HOLDER; }
 };
 

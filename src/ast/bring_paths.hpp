@@ -22,9 +22,9 @@ public:
     return std::construct_at(OwnNormal(BringPaths), _isMember, _paths, _names, _visibSpec, _fileRange);
   }
 
-  void handleFilesystemBrings(IR::Context* ctx) const final;
+  void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::BRING_PATHS; }
 };
 

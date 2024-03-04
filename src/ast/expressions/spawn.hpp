@@ -16,8 +16,8 @@ public:
     return std::construct_at(OwnNormal(Spawn), sentences, fileRange);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
-  useit Json       toJson() const final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
+  useit Json       to_json() const final;
   useit NodeType   nodeType() const final { return NodeType::SPAWN; }
 };
 

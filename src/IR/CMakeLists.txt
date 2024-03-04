@@ -1,19 +1,18 @@
 add_library(QAT_IR
-	context.cpp
-	generics.cpp
-	logic.cpp
-	entity_overview.cpp
-	function.cpp
-	global_entity.cpp
-	link_names.cpp
-	member_function.cpp
-	control_flow.cpp
-	qat_module.cpp
-	skill.cpp
-	static_member.cpp
-	stdlib.cpp
-	use.cpp
-	value.cpp)
+	context.cc
+	generics.cc
+	logic.cc
+	entity_overview.cc
+	function.cc
+	global_entity.cc
+	link_names.cc
+	member_function.cc
+	control_flow.cc
+	qat_module.cc
+	skill.cc
+	static_member.cc
+	stdlib.cc
+	value.cc)
 
 target_include_directories(QAT_IR PUBLIC "${LLVM_ROOT_DIR}/include")
 

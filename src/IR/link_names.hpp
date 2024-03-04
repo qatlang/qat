@@ -4,15 +4,14 @@
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
 
-namespace qat::IR {
-class QatModule;
+namespace qat::ir {
+class Mod;
 }
 
 namespace qat {
 
 enum class LinkUnitType {
   lib,
-  box,
   type,
   function,
   method,
@@ -44,7 +43,7 @@ enum class LinkUnitType {
   name,
   typeName,
   global,
-  Union,
+  toggle,
 };
 
 class LinkNameUnit;
@@ -54,10 +53,10 @@ public:
   Vec<LinkNameUnit> units;
   Maybe<String>     linkAlias;
   Maybe<String>     foreignID;
-  IR::QatModule*    parentMod;
+  ir::Mod*          parentMod;
 
   LinkNames();
-  LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, IR::QatModule* _mod);
+  LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, ir::Mod* _mod);
 
   void            setLinkAlias(Maybe<String> _linkAlias);
   void            addUnit(LinkNameUnit unit, Maybe<String> foreignID);

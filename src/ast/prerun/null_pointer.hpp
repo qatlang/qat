@@ -11,18 +11,17 @@ namespace qat::ast {
  *
  */
 class NullPointer final : public PrerunExpression, public TypeInferrable {
-  Maybe<ast::QatType*> providedType;
+  Maybe<ast::Type*> providedType;
 
 public:
-  NullPointer(Maybe<ast::QatType*> _providedType, FileRange _fileRange)
+  NullPointer(Maybe<ast::Type*> _providedType, FileRange _fileRange)
       : PrerunExpression(_fileRange), providedType(_providedType) {}
 
-  useit static inline NullPointer* create(Maybe<ast::QatType*> _providedType, FileRange _fileRange) {
+  useit static inline NullPointer* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (providedType.has_value()) {
       UPDATE_DEPS(providedType.value());
     }
@@ -30,9 +29,9 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
-  useit IR::PrerunValue* emit(IR::Context* ctx) override;
-  useit Json             toJson() const override;
-  useit String           toString() const final;
+  useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+  useit Json             to_json() const override;
+  useit String           to_string() const final;
   useit NodeType         nodeType() const override { return NodeType::NULL_POINTER; }
 };
 

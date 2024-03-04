@@ -5,32 +5,35 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class IntegerType : public QatType {
+class IntegerType final : public Type {
 private:
-  const u64    bitWidth;
-  IR::Context* ctx;
-  IntegerType(u64 _bitWidth, IR::Context* ctx);
+  const u64 bitWidth;
+  ir::Ctx*  irCtx;
+
+  IntegerType(u64 _bitWidth, ir::Ctx* irCtx);
 
 public:
-  useit static IntegerType* get(u64 _bits, IR::Context* ctx);
-  useit bool                isBitWidth(u64 width) const;
-  useit u64                 getBitwidth() const;
-  useit TypeKind            typeKind() const final;
-  useit String              toString() const final;
-  useit bool                isTypeSized() const final;
-  useit inline bool         isTriviallyCopyable() const final { return true; }
-  useit inline bool         isTriviallyMovable() const final { return true; }
-  useit inline bool         hasPrerunDefaultValue() const final { return true; }
+  useit static IntegerType* get(u64 _bits, ir::Ctx* irCtx);
 
-  useit IR::PrerunValue* getPrerunDefaultValue(IR::Context* ctx);
-  useit bool             canBePrerun() const final { return true; }
-  useit bool             canBePrerunGeneric() const final { return true; }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit inline bool is_bitwidth(u64 width) const { return bitWidth == width; }
+  useit inline u64  get_bitwidth() const { return bitWidth; }
+  useit inline bool is_type_sized() const final { return true; }
+  useit inline bool is_trivially_copyable() const final { return true; }
+  useit inline bool is_trivially_movable() const final { return true; }
+  useit inline bool has_prerun_default_value() const final { return true; }
+  useit inline bool can_be_prerun() const final { return true; }
+  useit inline bool can_be_prerun_generic() const final { return true; }
+
+  useit ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+
+  useit TypeKind type_kind() const final { return TypeKind::integer; }
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -3,32 +3,25 @@
 
 #include "./IR/context.hpp"
 #include "./IR/qat_module.hpp"
-#include "./cli/config.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
 #include "utils/helpers.hpp"
-#include "llvm/IR/LLVMContext.h"
 #include <filesystem>
-#include <fstream>
-#include <optional>
-#include <string>
-#include <system_error>
 #include <thread>
-#include <vector>
 
 namespace qat {
 
 namespace fs = std::filesystem;
 
 class QatSitter {
-  friend class qat::IR::Context;
+  friend class qat::ir::Ctx;
 
 private:
-  Deque<IR::QatModule*> fileEntities;
-  IR::Context*          ctx    = nullptr;
-  lexer::Lexer*         Lexer  = nullptr;
-  parser::Parser*       Parser = nullptr;
-  std::thread::id       mainThread;
+  Deque<ir::Mod*> fileEntities;
+  ir::Ctx*        ctx    = nullptr;
+  lexer::Lexer*   Lexer  = nullptr;
+  parser::Parser* Parser = nullptr;
+  std::thread::id mainThread;
 
 public:
   QatSitter();
@@ -37,8 +30,8 @@ public:
 
   void initialise();
   void destroy();
-  void removeEntityWithPath(const fs::path& path);
-  void handlePath(const fs::path& path, IR::Context* ctx);
+  void remove_entity_with_path(const fs::path& path);
+  void handle_path(const fs::path& path, ir::Ctx* irCtx);
   void display_stats();
 
   useit static bool checkExecutableExists(const String& name);

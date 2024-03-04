@@ -8,24 +8,23 @@ namespace qat::ast {
 
 class ToConversion final : public Expression {
   Expression* source;
-  QatType*    destinationType;
+  Type*       destinationType;
 
 public:
-  ToConversion(Expression* _source, QatType* _destinationType, FileRange _fileRange)
+  ToConversion(Expression* _source, Type* _destinationType, FileRange _fileRange)
       : Expression(_fileRange), source(_source), destinationType(_destinationType) {}
 
-  useit static inline ToConversion* create(Expression* _source, QatType* _destinationType, FileRange _fileRange) {
+  useit static inline ToConversion* create(Expression* _source, Type* _destinationType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(source);
     UPDATE_DEPS(destinationType);
   }
 
-  useit IR::Value* emit(IR::Context* ctx) override;
-  useit Json       toJson() const override;
+  useit ir::Value* emit(EmitCtx* ctx) override;
+  useit Json       to_json() const override;
   useit NodeType   nodeType() const override { return NodeType::TO_CONVERSION; };
 };
 

@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-class IntegerType final : public QatType {
+class IntegerType final : public Type {
   friend class BringBitwidths;
   friend class FillGeneric;
 
@@ -16,19 +16,19 @@ private:
   mutable bool isPartOfGeneric = false;
 
 public:
-  IntegerType(u32 _bitWidth, FileRange _fileRange) : QatType(_fileRange), bitWidth(_bitWidth) {}
+  IntegerType(u32 _bitWidth, FileRange _fileRange) : Type(_fileRange), bitWidth(_bitWidth) {}
 
   useit static inline IntegerType* create(u32 _bitWidth, FileRange _fileRange) {
     return std::construct_at(OwnNormal(IntegerType), _bitWidth, _fileRange);
   }
 
-  useit Maybe<usize> getTypeSizeInBits(IR::Context* ctx) const final;
+  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
 
-  IR::QatType* emit(IR::Context* ctx);
-  AstTypeKind  typeKind() const;
-  bool         isBitWidth(const u32 width) const;
-  Json         toJson() const;
-  String       toString() const;
+  ir::Type*   emit(EmitCtx* ctx);
+  AstTypeKind type_kind() const;
+  bool        isBitWidth(const u32 width) const;
+  Json        to_json() const;
+  String      to_string() const;
 };
 
 } // namespace qat::ast

@@ -10,61 +10,64 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 
-class ChoiceType : public QatType, public EntityOverview {
+class ChoiceType : public Type, public EntityOverview {
 private:
   Identifier                     name;
-  QatModule*                     parent;
+  Mod*                           parent;
   Vec<Identifier>                fields;
   Maybe<Vec<llvm::ConstantInt*>> values;
-  Maybe<IR::QatType*>            providedType;
+  Maybe<ir::Type*>               providedType;
   bool                           areValuesUnsigned;
   VisibilityInfo                 visibility;
   Maybe<usize>                   defaultVal;
   Maybe<MetaInfo>                metaInfo;
 
-  IR::Context* ctx;
-  mutable u64  bitwidth = 1;
+  ir::Ctx*    irCtx;
+  mutable u64 bitwidth = 1;
 
   FileRange fileRange;
 
 public:
-  ChoiceType(Identifier name, QatModule* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
-             Maybe<IR::QatType*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
-             const VisibilityInfo& visibility, IR::Context* ctx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
+  ChoiceType(Identifier name, Mod* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
+             Maybe<ir::Type*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
+             const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
-  useit Identifier getName() const;
-  useit String     getFullName() const;
-  useit QatModule* getParent() const;
-  useit bool       hasCustomValue() const;
-  useit bool       hasProvidedType() const;
-  useit bool       hasNegativeValues() const;
-  useit bool       hasDefault() const;
-  useit bool       hasField(const String& name) const;
-  useit llvm::ConstantInt* getValueFor(const String& name) const;
-  useit llvm::ConstantInt* getDefault() const;
-  useit IR::QatType* getProvidedType() const;
-  useit IR::QatType*          getUnderlyingType() const;
-  useit TypeKind              typeKind() const final { return TypeKind::choice; }
-  useit String                toString() const final;
-  useit const VisibilityInfo& getVisibility() const;
-  void                        findBitwidthNormal() const;
-  void                        findBitwidthForValues() const;
-  void                        getMissingNames(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
-  void                        updateOverview() final;
-  useit bool                  isTypeSized() const final;
-  useit bool                  isTriviallyCopyable() const final { return true; }
-  useit bool                  isTriviallyMovable() const final { return true; }
+  useit Identifier get_name() const;
+  useit String     get_full_name() const;
+  useit Mod*       get_module() const;
 
-  useit bool canBePrerun() const final { return true; }
-  useit bool canBePrerunGeneric() const final { return true; }
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* val) const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
+  useit bool has_custom_value() const;
+  useit bool has_provided_type() const;
+  useit bool has_negative_values() const;
+  useit bool has_default() const;
+  useit bool has_field(const String& name) const;
+
+  useit llvm::ConstantInt* get_value_for(const String& name) const;
+  useit llvm::ConstantInt* get_default() const;
+  useit ir::Type* get_provided_type() const;
+  useit ir::Type*             get_underlying_type() const;
+  useit TypeKind              type_kind() const final { return TypeKind::choice; }
+  useit const VisibilityInfo& get_visibility() const;
+  void                        find_bitwidth_normal() const;
+  void                        find_bitwidth_for_values() const;
+  void                        get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
+  void                        update_overview() final;
+  useit bool                  is_type_sized() const final;
+  useit bool                  is_trivially_copyable() const final { return true; }
+  useit bool                  is_trivially_movable() const final { return true; }
+
+  useit bool can_be_prerun() const final { return true; }
+  useit bool can_be_prerun_generic() const final { return true; }
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+
+  useit String to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

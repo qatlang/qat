@@ -16,14 +16,14 @@ class MatchValue {
 public:
   ~MatchValue() = default;
 
-  virtual void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                                   IR::Context* ctx) = 0;
+  virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+                                   EmitCtx* ctx) = 0;
 
   useit MixOrChoiceMatchValue* asMixOrChoice();
   useit ExpressionMatchValue*  asExp();
   useit virtual FileRange      getMainRange() const = 0;
   useit virtual MatchType      getType() const      = 0;
-  useit virtual Json           toJson() const       = 0;
+  useit virtual Json           to_json() const      = 0;
 };
 
 class MixOrChoiceMatchValue final : public MatchValue {
@@ -38,16 +38,15 @@ public:
     return std::construct_at(OwnNormal(MixOrChoiceMatchValue), name, valueName, isVar);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {}
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {}
 
-  useit Identifier getName() const;
+  useit Identifier get_name() const;
   useit bool       hasValueName() const;
   useit Identifier getValueName() const;
-  useit bool       isVariable() const;
+  useit bool       is_variable() const;
   useit MatchType  getType() const final { return MatchType::mixOrChoice; }
   useit FileRange  getMainRange() const final { return name.range; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 class ExpressionMatchValue final : public MatchValue {
@@ -61,15 +60,14 @@ public:
     return std::construct_at(OwnNormal(ExpressionMatchValue), exp);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(exp);
   }
 
   useit Expression* getExpression() const;
   useit MatchType   getType() const final { return MatchType::Exp; }
   useit FileRange   getMainRange() const final { return exp->fileRange; }
-  useit Json        toJson() const final;
+  useit Json        to_json() const final;
 };
 
 struct CaseResult {
@@ -98,8 +96,7 @@ public:
     return std::construct_at(OwnNormal(Match), _isTypeMatch, _candidate, _chain, _elseCase, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     UPDATE_DEPS(candidate);
     for (auto& ch : chain) {
       for (auto m : ch.first) {
@@ -120,9 +117,9 @@ public:
   useit bool isFalseForAllCases();
   useit bool isTrueForACase();
 
-  useit IR::Value* emit(IR::Context* ctx) final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::MATCH; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

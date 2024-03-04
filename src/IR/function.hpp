@@ -32,12 +32,12 @@ class ConvertorDefinition;
 class PrerunExpression;
 } // namespace qat::ast
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 class FunctionCall;
-class Context;
-class MemberFunction;
+class Ctx;
+class Method;
 
 enum class ExternFnType {
   C,
@@ -49,17 +49,22 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
   FileRange fileRange;
 
 public:
-  LocalValue(String name, IR::QatType* type, bool isVariable, Function* fun, FileRange fileRange);
+  LocalValue(String name, ir::Type* type, bool is_variable, Function* fun, FileRange fileRange);
+
+  useit static inline LocalValue* get(String name, ir::Type* type, bool isVar, Function* fn, FileRange fileRange) {
+    return new LocalValue(name, type, isVar, fn, fileRange);
+  }
+
   ~LocalValue() final = default;
 
-  useit String getName() const;
+  useit String get_name() const;
   useit llvm::AllocaInst* getAlloca() const;
-  useit FileRange         getFileRange() const;
-  useit IR::Value* toNewIRValue() const;
+  useit FileRange         get_file_range() const;
+  useit ir::Value* to_new_ir_value() const;
 };
 
 class Block : public Uniq {
-  friend MemberFunction;
+  friend Method;
 
 private:
   String                                name;
@@ -73,7 +78,7 @@ private:
   mutable Vec<String>                   movedValues;
   mutable bool                          isGhost = false;
   mutable bool                          hasGive = false;
-  mutable Vec<Pair<String, IR::Value*>> aliases;
+  mutable Vec<Pair<String, ir::Value*>> aliases;
 
   Block* prevBlock = nullptr;
   Block* nextBlock = nullptr;
@@ -85,35 +90,34 @@ public:
 
   ~Block() = default;
 
-  useit String getName() const;
-  useit llvm::BasicBlock* getBB() const;
+  useit String get_name() const;
+  useit llvm::BasicBlock* get_bb() const;
 
-  useit bool hasPrevBlock() const;
-  Block*     getPrevBlock() const;
-  useit bool hasNextBlock() const;
-  Block*     getNextBlock() const;
-  void       linkPrevBlock(Block* block);
+  useit bool has_previous_block() const;
+  Block*     get_previous_block() const;
+  useit bool has_next_block() const;
+  Block*     get_next_block() const;
+  void       link_previous_block(Block* block);
 
-  useit bool        hasParent() const;
+  useit bool        has_parent() const;
   useit Block*      getParent() const;
   useit Function*   getFn() const;
   useit bool        hasValue(const String& name) const;
   useit LocalValue* getValue(const String& name) const;
-  useit LocalValue* newValue(const String& name, IR::QatType* type, bool isVar, FileRange fileRange);
-  useit bool        isMoved(const String& locID) const;
-  useit bool        hasGiveInAllControlPaths() const;
+  useit LocalValue* new_value(const String& name, ir::Type* type, bool isVar, FileRange fileRange);
+  useit bool        is_moved(const String& locID) const;
+  useit bool        has_give_in_all_control_paths() const;
   useit Block*      getActive();
-  useit Vec<LocalValue*>& getLocals();
-  useit Maybe<FileRange> getFileRange() const;
+  useit Vec<LocalValue*>& get_locals();
+  useit Maybe<FileRange> get_file_range() const;
 
   void setFileRange(FileRange _fileRange);
-  void setGhost(bool value) const;
-  void setHasGive() const;
+  void set_has_give() const;
   void addMovedValue(String locID) const;
-  void setActive(llvm::IRBuilder<>& builder);
-  void collectAllLocalValuesSoFar(Vec<LocalValue*>& vals) const;
-  void collectLocalsFrom(Vec<LocalValue*>& vals) const;
-  void destroyLocals(IR::Context* ctx);
+  void set_active(llvm::IRBuilder<>& builder);
+  void collect_all_local_values_so_far(Vec<LocalValue*>& vals) const;
+  void collect_locals_from(Vec<LocalValue*>& vals) const;
+  void destroyLocals(ast::EmitCtx* ctx);
   void outputLocalOverview(Vec<JsonValue>& jsonVals);
 };
 
@@ -126,15 +130,15 @@ protected:
   LinkNames              namingInfo;
   String                 linkingName;
   Vec<GenericParameter*> generics;
-  QatModule*             mod;
+  Mod*                   mod;
   Vec<Argument>          arguments;
   VisibilityInfo         visibility_info;
   Maybe<FileRange>       fileRange;
   bool                   hasVariadicArguments;
   Vec<Block*>            blocks;
-  IR::LocalValue*        strComparisonIndex = nullptr;
+  ir::LocalValue*        strComparisonIndex = nullptr;
   Maybe<MetaInfo>        metaInfo;
-  IR::Context*           ctx;
+  ir::Ctx*               ctx;
 
   mutable u64   localNameCounter = 0;
   mutable usize activeBlock      = 0;
@@ -147,34 +151,34 @@ protected:
   Maybe<llvm::Function*>   asyncFn;
   Maybe<llvm::StructType*> asyncArgTy;
 
-  Function(QatModule* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
+public:
+  Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
            ReturnType* returnType, Vec<Argument> _args, bool has_variadic_arguments, Maybe<FileRange> fileRange,
-           const VisibilityInfo& _visibility_info, IR::Context* ctx, bool isMemberFn = false,
+           const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool isMemberFn = false,
            Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
-public:
-  static Function* Create(QatModule* mod, Identifier name, Maybe<LinkNames> _namingInfo,
-                          Vec<GenericParameter*> _generics, ReturnType* return_type, Vec<Argument> args,
-                          bool has_variadic_args, Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo,
-                          IR::Context* ctx, Maybe<llvm::GlobalValue::LinkageTypes> linkage = None,
-                          Maybe<MetaInfo> metaInfo = None);
-  useit Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod) override;
-  useit virtual bool       isMemberFunction() const;
-  useit bool               hasVariadicArgs() const;
-  useit Identifier         argumentNameAt(u32 index) const;
-  useit virtual Identifier getName() const;
-  useit virtual String     getFullName() const;
-  useit bool               isAccessible(const AccessInfo& req_info) const;
-  useit VisibilityInfo     getVisibility() const;
-  useit IR::QatModule* getParentModule() const;
-  useit llvm::Function* getLLVMFunction();
+  static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
+                          ReturnType* return_type, Vec<Argument> args, bool has_variadic_args,
+                          Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+                          Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
+
+  useit Value*       call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
+  useit virtual bool isMemberFunction() const;
+  useit bool         hasVariadicArgs() const;
+  useit Identifier   argumentNameAt(u32 index) const;
+  useit virtual Identifier get_name() const;
+  useit virtual String     get_full_name() const;
+  useit bool               is_accessible(const AccessInfo& req_info) const;
+  useit VisibilityInfo     get_visibility() const;
+  useit ir::Mod* get_module() const;
+  useit llvm::Function* get_llvmFunction();
   void                  setActiveBlock(usize index) const;
-  useit Block*          getBlock() const;
+  useit Block*          get_block() const;
   useit Block*          getFirstBlock() const;
   useit usize           getBlockCount() const;
   useit usize&          getCopiedCounter();
   useit usize&          getMovedCounter();
-  useit IR::LocalValue*   getFunctionCommonIndex();
+  useit ir::LocalValue*   getFunctionCommonIndex();
   useit bool              isGeneric() const;
   useit bool              hasGenericParameter(const String& name) const;
   useit GenericParameter* getGenericParameter(const String& name) const;
@@ -182,7 +186,7 @@ public:
   useit FileRange         getDefinitionRange() const;
   useit String            getRandomAllocaName() const;
 
-  void updateOverview() override;
+  void update_overview() override;
 
   ~Function() override;
 };
@@ -193,32 +197,32 @@ private:
   Vec<ast::GenericAbstractType*> generics;
   ast::FunctionPrototype*        functionDefinition;
   Maybe<ast::PrerunExpression*>  constraint;
-  QatModule*                     parent;
+  Mod*                           parent;
   VisibilityInfo                 visibInfo;
 
   mutable Vec<GenericVariant<Function>> variants;
 
 public:
   GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
-                  ast::FunctionPrototype* functionDef, QatModule* parent, const VisibilityInfo& _visibInfo);
+                  ast::FunctionPrototype* functionDef, Mod* parent, const VisibilityInfo& _visibInfo);
 
   ~GenericFunction() = default;
 
-  useit Identifier getName() const;
+  useit Identifier get_name() const;
   useit usize      getTypeCount() const;
   useit usize      getVariantCount() const;
-  useit QatModule* getModule() const;
+  useit Mod*       get_module() const;
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
-  useit VisibilityInfo            getVisibility() const;
-  useit Function* fillGenerics(Vec<IR::GenericToFill*> _types, IR::Context* ctx, const FileRange& fileRange);
+  useit VisibilityInfo            get_visibility() const;
+  useit Function* fillGenerics(Vec<ir::GenericToFill*> _types, ir::Ctx* irCtx, const FileRange& fileRange);
   useit bool      allTypesHaveDefaults() const;
 };
 
-void functionReturnHandler(IR::Context* ctx, IR::Function* fun, const FileRange& fileRange);
-void destructorCaller(IR::Context* ctx, IR::Function* fun);
-void memberFunctionHandler(IR::Context* ctx, IR::Function* fun);
-void destroyLocalsFrom(IR::Context* ctx, IR::Block* block);
+void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange& fileRange);
+void destructorCaller(ir::Ctx* irCtx, ir::Function* fun);
+void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun);
+void destroyLocalsFrom(ir::Ctx* irCtx, ir::Block* block);
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

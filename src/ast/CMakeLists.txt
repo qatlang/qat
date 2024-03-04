@@ -1,27 +1,27 @@
 add_library(QAT_AST
-	box.cpp
-	bring_bitwidths.cpp
-	bring_paths.cpp
-	bring_entities.cpp
-	convertor.cpp
-	constructor.cpp
-	define_choice_type.cpp
-	define_core_type.cpp
-	define_mix_type.cpp
-	define_opaque_type.cpp
-	define_region.cpp
-	destructor.cpp
-	do_skill.cpp
-	function.cpp
-	generics.cpp
-	global_declaration.cpp
-	lib.cpp
-	member_function.cpp
-	mod_info.cpp
-	node.cpp
-	operator_function.cpp
-	sentence.cpp
-	type_definition.cpp)
+	bring_bitwidths.cc
+	bring_paths.cc
+	bring_entities.cc
+	convertor.cc
+	constructor.cc
+	define_choice_type.cc
+	define_core_type.cc
+	define_mix_type.cc
+	define_opaque_type.cc
+	define_region.cc
+	destructor.cc
+	do_skill.cc
+	emit_ctx.cc
+	function.cc
+	generics.cc
+	global_declaration.cc
+	lib.cc
+	member_function.cc
+	mod_info.cc
+	node.cc
+	operator_function.cc
+	sentence.cc
+	type_definition.cc)
 
 target_include_directories(QAT_AST PUBLIC "${LLVM_ROOT_DIR}/include")
 

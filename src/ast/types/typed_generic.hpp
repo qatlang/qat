@@ -9,40 +9,40 @@
 namespace qat::ast {
 
 class TypedGeneric final : public GenericAbstractType {
-  Maybe<ast::QatType*> defaultTypeAST;
-  mutable IR::QatType* defaultType = nullptr;
-  mutable IR::QatType* typeValue   = nullptr;
+  Maybe<ast::Type*>      defaultTypeAST;
+  mutable ir::Type*      defaultType = nullptr;
+  mutable Vec<ir::Type*> typeValue;
 
 public:
-  TypedGeneric(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy, FileRange _fileRange)
+  TypedGeneric(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRange _fileRange)
       : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
 
-  useit static inline TypedGeneric* create(usize _index, Identifier _name, Maybe<ast::QatType*> _defaultTy,
+  useit static inline TypedGeneric* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
                                            FileRange _fileRange) {
     return std::construct_at(OwnNormal(TypedGeneric), _index, std::move(_name), _defaultTy, std::move(_fileRange));
   }
 
   useit bool hasDefault() const final;
-  useit ast::QatType* getDefaultAST() const { return defaultTypeAST.value(); }
-  useit IR::QatType* getDefault() const;
+  useit ast::Type* getDefaultAST() const { return defaultTypeAST.value(); }
+  useit ir::Type* getDefault() const;
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> expect, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                           EmitCtx* ctx) final {
     if (defaultTypeAST.has_value()) {
       UPDATE_DEPS(defaultTypeAST.value());
     }
   }
 
-  void emit(IR::Context* ctx) const final;
+  void emit(EmitCtx* ctx) const final;
 
-  useit IR::QatType* getType() const;
-  useit IR::TypedGeneric* toIR() const;
+  useit ir::Type* get_type() const;
+  useit ir::TypedGeneric* toIR() const;
 
   useit bool isSet() const final;
-  void       setType(IR::QatType* typ) const;
+  void       setType(ir::Type* typ) const;
   void       unset() const final;
 
-  useit Json toJson() const final;
+  useit Json to_json() const final;
 
   ~TypedGeneric() final;
 };

@@ -2,102 +2,111 @@
 #define QAT_IR_VALUE_HPP
 
 #include "../IR/types/typed.hpp"
-#include "../show.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/qat_region.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
 
-namespace qat::IR {
+namespace qat::ast {
 
-class QatType;
+struct EmitCtx;
 
-enum class Nature { assignable, temporary, pure, expired };
+}
+
+namespace qat::ir {
+
+class Type;
 
 class PrerunValue;
-class Context;
-class QatModule;
+class Ctx;
+class Mod;
 class Function;
 
 class Value {
 private:
-  static Vec<IR::Value*> allValues;
+  static Vec<ir::Value*> allValues;
 
 protected:
-  IR::QatType*  type;
-  Nature        nature;
+  ir::Type*     type;
   bool          variable;
   llvm::Value*  ll;
   Maybe<String> localID;
   bool          isSelf = false;
 
 public:
-  Value(llvm::Value* _llValue, IR::QatType* _type, bool _isVariable, Nature kind);
+  Value(llvm::Value* _llValue, ir::Type* _type, bool _isVariable);
+
+  useit static inline Value* get(llvm::Value* ll, ir::Type* type, bool isVar) { return new Value(ll, type, isVar); }
 
   virtual ~Value() = default;
 
-  useit virtual llvm::Value* getLLVM() const { return ll; }
-  useit virtual bool         isPrerunValue() const { return false; }
-  useit virtual Value* call(IR::Context* ctx, const Vec<llvm::Value*>& args, Maybe<String> localID, QatModule* mod);
+  useit virtual llvm::Value* get_llvm() const { return ll; }
+  useit virtual bool         is_prerun_value() const { return false; }
+  useit virtual Value*       call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod);
 
-  useit inline QatType*        getType() const { return type; }
-  useit inline Maybe<String>   getLocalID() const { return localID; }
-  useit inline llvm::Constant* getLLVMConstant() const { return llvm::cast<llvm::Constant>(ll); }
-  useit inline PrerunValue*    asPrerun() const { return (PrerunValue*)this; }
-  useit inline Nature          getNature() const { return nature; }
+  useit inline Type*           get_ir_type() const { return type; }
+  useit inline Maybe<String>   get_local_id() const { return localID; }
+  useit inline llvm::Constant* get_llvm_constant() const { return llvm::cast<llvm::Constant>(ll); }
+  useit inline PrerunValue*    as_prerun() const { return (PrerunValue*)this; }
 
-  useit inline bool isSelfValue() const { return isSelf; }
-  useit inline bool isVariable() const { return variable; }
-  useit inline bool isLLVMConstant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
-  useit inline bool isValue() const { return !isReference() && !isPrerunValue() && !isImplicitPointer(); }
-  useit inline bool isLocalToFn() const { return localID.has_value(); }
-  useit inline bool isReference() const { return type->isReference(); }
-  useit inline bool isPointer() const { return type->isPointer(); }
-  useit inline bool isImplicitPointer() const {
+  useit inline bool is_self_value() const { return isSelf; }
+  useit inline bool is_variable() const { return variable; }
+  useit inline bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+  useit inline bool is_value() const { return !is_reference() && !is_prerun_value() && !is_ghost_pointer(); }
+  useit inline bool is_local_value() const { return localID.has_value(); }
+  useit inline bool is_reference() const { return type->is_reference(); }
+  useit inline bool is_pointer() const { return type->is_pointer(); }
+  useit inline bool is_ghost_pointer() const {
     return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
-                    llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == getType()->getLLVMType()) ||
+                    llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == get_ir_type()->get_llvm_type()) ||
                    (llvm::isa<llvm::GlobalVariable>(ll) &&
-                    llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == getType()->getLLVMType())) &&
-                  !isPrerunValue());
+                    llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == get_ir_type()->get_llvm_type())) &&
+                  !is_prerun_value());
   }
 
-  inline void setSelf() { isSelf = true; }
-  inline void setLocalID(const String& locID) { localID = locID; }
+  inline void set_self() { isSelf = true; }
+  inline void set_local_id(const String& locID) { localID = locID; }
 
-  inline void loadImplicitPointer(llvm::IRBuilder<>& builder) {
-    if (isImplicitPointer()) {
-      ll = builder.CreateLoad(getType()->getLLVMType(), ll);
+  inline void load_ghost_pointer(llvm::IRBuilder<>& builder) {
+    if (is_ghost_pointer()) {
+      ll = builder.CreateLoad(get_ir_type()->get_llvm_type(), ll);
     }
   }
 
-  useit Value* makeLocal(IR::Context* ctx, Maybe<String> name, FileRange fileRange);
+  useit Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange);
 
   static inline void replace_uses_for_all() {
     for (auto itVal : allValues) {
-      if (itVal && itVal->getLLVM()) {
-        itVal->getLLVM()->replaceAllUsesWith(llvm::UndefValue::get(itVal->getLLVM()->getType()));
+      if (itVal && itVal->get_llvm()) {
+        itVal->get_llvm()->replaceAllUsesWith(llvm::UndefValue::get(itVal->get_llvm()->getType()));
       }
     }
   }
-  static void clearAll();
+  static void clear_all();
 };
 
 class PrerunValue : public Value {
 public:
-  PrerunValue(llvm::Constant* _llconst, IR::QatType* _type);
-  explicit PrerunValue(IR::TypedType* typed);
+  PrerunValue(llvm::Constant* _llconst, ir::Type* _type);
+
+  useit static inline PrerunValue* get(llvm::Constant* ll, ir::Type* type) { return new PrerunValue(ll, type); }
+
+  explicit PrerunValue(ir::TypedType* typed);
+
+  useit static inline PrerunValue* get_typed_prerun(ir::TypedType* typed) { return new PrerunValue(typed); }
 
   ~PrerunValue() override = default;
 
-  useit llvm::Constant* getLLVM() const final;
+  useit llvm::Constant* get_llvm() const final;
 
-  bool isEqualTo(IR::Context* ctx, PrerunValue* other);
+  bool is_equal_to(ir::Ctx* irCtx, PrerunValue* other);
 
-  useit bool isPrerunValue() const final;
+  useit bool is_prerun_value() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

@@ -1,27 +1,27 @@
 add_library(QAT_AST_CONSTANTS
-	array_literal.cpp
-	binary_op.cpp
-	bitwise_not.cpp
-	boolean_literal.cpp
-	custom_float_literal.cpp
-	custom_integer_literal.cpp
-	default.cpp
-	entity.cpp
-	float_literal.cpp
-	integer_literal.cpp
-	member_access.cpp
-	member_function_call.cpp
-	mix_choice_init.cpp
-	negative.cpp
-	none.cpp
-	null_pointer.cpp
-	plain_initialiser.cpp
-	prerun_global.cpp
-	string_literal.cpp
-	to_conversion.cpp
-	tuple_value.cpp
-	type_wrap.cpp
-	unsigned_literal.cpp)
+	array_literal.cc
+	binary_op.cc
+	bitwise_not.cc
+	boolean_literal.cc
+	custom_float_literal.cc
+	custom_integer_literal.cc
+	default.cc
+	entity.cc
+	float_literal.cc
+	integer_literal.cc
+	member_access.cc
+	member_function_call.cc
+	mix_choice_init.cc
+	negative.cc
+	none.cc
+	null_pointer.cc
+	plain_initialiser.cc
+	prerun_global.cc
+	string_literal.cc
+	to_conversion.cc
+	tuple_value.cc
+	type_wrap.cc
+	unsigned_literal.cc)
 
 target_link_directories(QAT_AST_CONSTANTS PUBLIC ../../utils)
 

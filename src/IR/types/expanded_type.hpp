@@ -11,125 +11,120 @@ class DefineCoreType;
 class DefineMixType;
 } // namespace qat::ast
 
-namespace qat::IR {
+namespace qat::ir {
 
-class ExpandedType : public QatType {
-  friend class MemberFunction;
+class ExpandedType : public Type {
+  friend class Method;
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
 
 protected:
   Identifier             name;
   Vec<GenericParameter*> generics;
-  QatModule*             parent             = nullptr;
-  MemberFunction*        defaultConstructor = nullptr;
-  Vec<MemberFunction*>   memberFunctions;          // Normal
-  Vec<MemberFunction*>   valuedMemberFunctions;    // Valued parent
-  Vec<MemberFunction*>   normalBinaryOperators;    // Normal
-  Vec<MemberFunction*>   variationBinaryOperators; // Variation
+  Mod*                   parent             = nullptr;
+  Method*                defaultConstructor = nullptr;
+  Vec<Method*>           memberFunctions;          // Normal
+  Vec<Method*>           valuedMemberFunctions;    // Valued parent
+  Vec<Method*>           normalBinaryOperators;    // Normal
+  Vec<Method*>           variationBinaryOperators; // Variation
 
-  Vec<MemberFunction*>   unaryOperators;  //
-  Vec<MemberFunction*>   constructors;    // Constructors
-  Vec<MemberFunction*>   fromConvertors;  // From Convertors
-  Vec<MemberFunction*>   toConvertors;    // To Convertors
-  Vec<MemberFunction*>   staticFunctions; // Static
-  Maybe<MemberFunction*> copyConstructor; // Copy constructor
-  Maybe<MemberFunction*> moveConstructor; // Move constructor
-  Maybe<MemberFunction*> copyAssignment;  // Copy assignment operator
-  Maybe<MemberFunction*> moveAssignment;  // Move assignment operator
+  Vec<Method*>   unaryOperators;  //
+  Vec<Method*>   constructors;    // Constructors
+  Vec<Method*>   fromConvertors;  // From Convertors
+  Vec<Method*>   toConvertors;    // To Convertors
+  Vec<Method*>   staticFunctions; // Static
+  Maybe<Method*> copyConstructor; // Copy constructor
+  Maybe<Method*> moveConstructor; // Move constructor
+  Maybe<Method*> copyAssignment;  // Copy assignment operator
+  Maybe<Method*> moveAssignment;  // Move assignment operator
 
   bool explicitTrivialCopy     = false;
   bool explicitTrivialMove     = false;
   bool needsImplicitDestructor = false;
   bool hasDefinedDestructor    = false;
 
-  Maybe<MemberFunction*> destructor; // Destructor
+  Maybe<Method*> destructor; // Destructor
 
   OpaqueType* opaqueEquivalent = nullptr;
 
   VisibilityInfo visibility;
 
-  ExpandedType(Identifier _name, Vec<GenericParameter*> _generics, QatModule* _parent, const VisibilityInfo& _visib);
+  ExpandedType(Identifier _name, Vec<GenericParameter*> _generics, Mod* _parent, const VisibilityInfo& _visib);
 
 public:
-  useit bool              isGeneric() const;
-  useit bool              hasGenericParameter(const String& name) const;
-  useit GenericParameter* getGenericParameter(const String& name) const;
+  useit bool              is_generic() const;
+  useit bool              has_generic_parameter(const String& name) const;
+  useit GenericParameter* get_generic_parameter(const String& name) const;
 
-  useit String     getFullName() const;
-  useit Identifier getName() const;
+  useit String     get_full_name() const;
+  useit Identifier get_name() const;
 
-  useit static Maybe<MemberFunction*> checkVariationFn(Vec<MemberFunction*> const& variationFunctions,
-                                                       String const&               name);
-  useit bool                          hasVariationFn(String const& name) const;
-  useit MemberFunction*               getVariationFn(const String& name) const;
+  useit static Maybe<Method*> check_variation(Vec<Method*> const& variationFunctions, String const& name);
+  useit bool                  has_variation(String const& name) const;
+  useit Method*               get_variation(const String& name) const;
 
-  useit static Maybe<MemberFunction*> checkNormalMemberFn(Vec<MemberFunction*> const& memberFunctions,
-                                                          String const&               name);
-  useit bool                          hasNormalMemberFn(const String& fnName) const;
-  useit MemberFunction*               getNormalMemberFn(const String& fnName) const;
+  useit static Maybe<Method*> check_normal_method(Vec<Method*> const& memberFunctions, String const& name);
+  useit bool                  has_normal_method(const String& fnName) const;
+  useit Method*               get_normal_method(const String& fnName) const;
 
-  useit static Maybe<MemberFunction*> check_valued_function(Vec<MemberFunction*> const& memberFunctions,
-                                                            String const&               name);
-  useit bool                          has_valued_method(String const& name) const;
-  useit MemberFunction*               get_valued_method(String const& name) const;
+  useit static Maybe<Method*> check_valued_function(Vec<Method*> const& memberFunctions, String const& name);
+  useit bool                  has_valued_method(String const& name) const;
+  useit Method*               get_valued_method(String const& name) const;
 
-  useit static Maybe<IR::MemberFunction*> checkStaticFunction(Vec<MemberFunction*> const& staticFns,
-                                                              String const&               name);
-  useit bool                              hasStaticFunction(const String& fnName) const;
-  useit MemberFunction*                   getStaticFunction(const String& fnName) const;
+  useit static Maybe<ir::Method*> check_static_method(Vec<Method*> const& staticFns, String const& name);
+  useit bool                      has_static_method(const String& fnName) const;
+  useit Method*                   get_static_method(const String& fnName) const;
 
-  useit static Maybe<IR::MemberFunction*> checkBinaryOperator(Vec<MemberFunction*> const& binOps, const String& opr,
-                                                              Pair<Maybe<bool>, IR::QatType*> argType);
-  useit bool            hasNormalBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
-  useit MemberFunction* getNormalBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit static Maybe<ir::Method*> check_binary_operator(Vec<Method*> const& binOps, const String& opr,
+                                                        Pair<Maybe<bool>, ir::Type*> argType);
+  useit bool    has_normal_binary_operator(const String& opr, Pair<Maybe<bool>, ir::Type*> argType) const;
+  useit Method* get_normal_binary_operator(const String& opr, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-  useit bool            hasVariationBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
-  useit MemberFunction* getVariationBinaryOperator(const String& opr, Pair<Maybe<bool>, IR::QatType*> argType) const;
+  useit bool    has_variation_binary_operator(const String& opr, Pair<Maybe<bool>, ir::Type*> argType) const;
+  useit Method* get_variation_binary_operator(const String& opr, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-  useit static Maybe<IR::MemberFunction*> checkUnaryOperator(Vec<MemberFunction*> const& unaryOps, String const& opr);
-  useit bool                              hasUnaryOperator(const String& opr) const;
-  useit MemberFunction*                   getUnaryOperator(const String& opr) const;
+  useit static Maybe<ir::Method*> check_unary_operator(Vec<Method*> const& unaryOps, String const& opr);
+  useit bool                      has_unary_operator(const String& opr) const;
+  useit Method*                   get_unary_operator(const String& opr) const;
 
-  useit static Maybe<IR::MemberFunction*> checkFromConvertor(Vec<MemberFunction*> const& fromConvs,
-                                                             Maybe<bool> isValueVar, IR::QatType* argType);
-  useit bool                              hasFromConvertor(Maybe<bool> isValueVar, IR::QatType* argType) const;
-  useit MemberFunction*                   getFromConvertor(Maybe<bool> isValueVar, IR::QatType* argType) const;
+  useit static Maybe<ir::Method*> check_from_convertor(Vec<Method*> const& fromConvs, Maybe<bool> isValueVar,
+                                                       ir::Type* argType);
+  useit bool                      has_from_convertor(Maybe<bool> isValueVar, ir::Type* argType) const;
+  useit Method*                   get_from_convertor(Maybe<bool> isValueVar, ir::Type* argType) const;
 
-  useit static Maybe<IR::MemberFunction*> checkToConvertor(Vec<MemberFunction*> const& toConvertors,
-                                                           IR::QatType*                targetTy);
-  useit bool                              hasToConvertor(IR::QatType* type) const;
-  useit MemberFunction*                   getToConvertor(IR::QatType* type) const;
+  useit static Maybe<ir::Method*> check_to_convertor(Vec<Method*> const& toConvertors, ir::Type* targetTy);
+  useit bool                      has_to_convertor(ir::Type* type) const;
+  useit Method*                   get_to_convertor(ir::Type* type) const;
 
-  useit static Maybe<IR::MemberFunction*> checkConstructorWithTypes(Vec<MemberFunction*> const&          cons,
-                                                                    Vec<Pair<Maybe<bool>, IR::QatType*>> types);
-  useit bool                              hasConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
-  useit MemberFunction*                   getConstructorWithTypes(Vec<Pair<Maybe<bool>, IR::QatType*>> types) const;
+  useit static Maybe<ir::Method*> check_constructor_with_types(Vec<Method*> const&               cons,
+                                                               Vec<Pair<Maybe<bool>, ir::Type*>> types);
+  useit bool                      has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
+  useit Method*                   get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
 
-  useit bool              hasDefaultConstructor() const;
-  useit MemberFunction*   getDefaultConstructor() const;
-  useit bool              hasAnyFromConvertor() const;
-  useit bool              hasAnyConstructor() const;
-  useit bool              hasCopyConstructor() const;
-  useit MemberFunction*   getCopyConstructor() const;
-  useit bool              hasMoveConstructor() const;
-  useit MemberFunction*   getMoveConstructor() const;
-  useit bool              hasCopyAssignment() const;
-  useit MemberFunction*   getCopyAssignment() const;
-  useit bool              hasMoveAssignment() const;
-  useit MemberFunction*   getMoveAssignment() const;
-  useit bool              hasCopy() const;
-  useit bool              hasMove() const;
-  useit bool              hasDestructor() const;
-  useit MemberFunction*   getDestructor() const;
-  useit QatModule*        getParent();
-  useit virtual LinkNames getLinkNames() const = 0;
+  useit bool              has_default_constructor() const;
+  useit Method*           get_default_constructor() const;
+  useit bool              has_any_from_convertor() const;
+  useit bool              has_any_constructor() const;
+  useit bool              has_copy_constructor() const;
+  useit Method*           get_copy_constructor() const;
+  useit bool              has_move_constructor() const;
+  useit Method*           get_move_constructor() const;
+  useit bool              has_copy_assignment() const;
+  useit Method*           get_copy_assignment() const;
+  useit bool              has_move_assignment() const;
+  useit Method*           get_move_assignment() const;
+  useit bool              has_copy() const;
+  useit bool              has_move() const;
+  useit bool              has_destructor() const;
+  useit Method*           get_destructor() const;
+  useit Mod*              get_module();
+  useit virtual LinkNames get_link_names() const = 0;
 
-  useit bool           isAccessible(const AccessInfo& reqInfo) const;
-  useit VisibilityInfo getVisibility() const;
-  useit bool           isExpanded() const override;
+  useit bool           is_accessible(const AccessInfo& reqInfo) const;
+  useit VisibilityInfo get_visibility() const;
+  useit bool           is_expanded() const override;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

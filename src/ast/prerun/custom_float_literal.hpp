@@ -20,12 +20,11 @@ public:
 
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {}
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {}
 
-  useit IR::PrerunValue* emit(IR::Context* ctx) override;
-  useit Json             toJson() const override;
-  useit String           toString() const override;
+  useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+  useit Json             to_json() const override;
+  useit String           to_string() const override;
   useit NodeType         nodeType() const override { return NodeType::CUSTOM_FLOAT_LITERAL; }
 };
 

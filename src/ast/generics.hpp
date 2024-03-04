@@ -17,26 +17,26 @@ class FillGeneric {
   FillGenericKind kind;
 
 public:
-  explicit FillGeneric(QatType* type) : data(type), kind(FillGenericKind::typed) {}
+  explicit FillGeneric(Type* type) : data(type), kind(FillGenericKind::typed) {}
   explicit FillGeneric(PrerunExpression* expression) : data(expression), kind(FillGenericKind::prerun) {}
 
-  useit static inline FillGeneric* create(QatType* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
+  useit static inline FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
   useit static inline FillGeneric* create(PrerunExpression* _exp) {
     return std::construct_at(OwnNormal(FillGeneric), _exp);
   }
 
-  useit bool isType() const;
-  useit bool isPrerun() const;
+  useit bool is_type() const;
+  useit bool is_prerun() const;
 
-  useit QatType*          asType() const;
-  useit PrerunExpression* asPrerun() const;
+  useit Type*             as_type() const;
+  useit PrerunExpression* as_prerun() const;
 
-  useit FileRange const& getRange() const;
+  useit FileRange const& get_range() const;
 
-  useit IR::GenericToFill* toFill(IR::Context* ctx) const;
+  useit ir::GenericToFill* toFill(EmitCtx* ctx) const;
 
-  useit Json   toJson() const;
-  useit String toString() const;
+  useit Json   to_json() const;
+  useit String to_string() const;
 };
 
 } // namespace qat::ast

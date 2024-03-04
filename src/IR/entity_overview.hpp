@@ -4,12 +4,12 @@
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
+class Mod;
 
 class EntityOverview {
-  friend class CoreType;
+  friend class StructType;
   friend class MixType;
 
 protected:
@@ -19,22 +19,22 @@ protected:
   Vec<FileRange> ovMentions;
   bool           isOverviewUpdated = false;
 
-  Vec<Pair<QatModule*, FileRange>> ovBroughtMentions;
+  Vec<Pair<Mod*, FileRange>> ovBroughtMentions;
 
 public:
   EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
 
   virtual ~EntityOverview() = default;
 
-  void addMention(FileRange _range);
-  void addBroughtMention(QatModule* module, const FileRange& range);
+  void add_mention(FileRange _range);
+  void add_bring_mention(Mod* module, const FileRange& range);
 
-  Vec<Pair<QatModule*, FileRange>> const& getBroughtMentions() const;
+  Vec<Pair<Mod*, FileRange>> const& get_brought_mentions() const;
 
-  virtual void updateOverview() {}
+  virtual void update_overview() {}
   Json         overviewToJson();
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

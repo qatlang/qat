@@ -8,8 +8,8 @@
 
 #define EraseLineAndGoToStartOfLine "\33[2K\r"
 namespace qat {
-namespace IR {
-class Context;
+namespace ir {
+class Ctx;
 }
 namespace cli {
 class Config;
@@ -29,7 +29,7 @@ enum class LogLevel { NONE, VERBOSE };
 
 class Logger {
   friend cli::Config;
-  friend IR::Context;
+  friend ir::Ctx;
 
   static Maybe<Unique<Logger>> instance;
 

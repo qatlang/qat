@@ -10,17 +10,17 @@ class PlainInitialiser final : public Expression, public LocalDeclCompatible, pu
   friend class LocalDeclaration;
 
 private:
-  Maybe<QatType*>              type;
+  Maybe<Type*>                 type;
   Vec<Pair<String, FileRange>> fields;
   Vec<u64>                     indices;
   Vec<Expression*>             fieldValues;
 
 public:
-  PlainInitialiser(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
+  PlainInitialiser(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
                    FileRange _fileRange)
       : Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-  useit static inline PlainInitialiser* create(Maybe<QatType*> _type, Vec<Pair<String, FileRange>> _fields,
+  useit static inline PlainInitialiser* create(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields,
                                                Vec<Expression*> _fieldValues, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PlainInitialiser), _type, _fields, _fieldValues, _fileRange);
   }
@@ -28,8 +28,7 @@ public:
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (type) {
       UPDATE_DEPS(type.value());
     }
@@ -38,9 +37,9 @@ public:
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::PLAIN_INITIALISER; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

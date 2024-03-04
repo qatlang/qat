@@ -8,22 +8,21 @@ namespace qat::ast {
 
 class PrerunTo final : public PrerunExpression {
   PrerunExpression* value;
-  QatType*          targetType;
+  Type*             targetType;
 
 public:
-  PrerunTo(PrerunExpression* _value, QatType* _targetType, FileRange _fileRange)
+  PrerunTo(PrerunExpression* _value, Type* _targetType, FileRange _fileRange)
       : PrerunExpression(_fileRange), value(_value), targetType(_targetType) {}
 
-  useit static inline PrerunTo* create(PrerunExpression* _value, QatType* _targetType, FileRange _fileRange) {
+  useit static inline PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunTo), _value, _targetType, _fileRange);
   }
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final;
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-  useit IR::PrerunValue* emit(IR::Context* ctx);
-  useit String           toString() const final;
-  useit Json             toJson() const final;
+  useit ir::PrerunValue* emit(EmitCtx* ctx);
+  useit String           to_string() const final;
+  useit Json             to_json() const final;
   useit NodeType         nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
 };
 

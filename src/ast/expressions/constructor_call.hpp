@@ -10,33 +10,32 @@ class ConstructorCall final : public Expression, public LocalDeclCompatible, pub
   friend class LocalDeclaration;
 
 private:
-  Maybe<QatType*>  type;
+  Maybe<Type*>     type;
   Vec<Expression*> args;
 
 public:
-  ConstructorCall(Maybe<QatType*> _type, Vec<Expression*> _args, FileRange _fileRange)
+  ConstructorCall(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange)
       : Expression(_fileRange), type(_type), args(_args) {}
 
-  useit static inline ConstructorCall* create(Maybe<QatType*> _type, Vec<Expression*> _args, FileRange _fileRange) {
+  useit static inline ConstructorCall* create(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
   }
 
   LOCAL_DECL_COMPATIBLE_FUNCTIONS
   TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(IR::EmitPhase phase, Maybe<IR::DependType> dep, IR::EntityState* ent,
-                           IR::Context* ctx) final {
+  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
     if (type.has_value()) {
-      type.value()->update_dependencies(phase, IR::DependType::childrenPartial, ent, ctx);
+      type.value()->update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
     }
     for (auto arg : args) {
       UPDATE_DEPS(arg);
     }
   }
 
-  useit IR::Value* emit(IR::Context* ctx) final;
+  useit ir::Value* emit(EmitCtx* ctx) final;
   useit NodeType   nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
-  useit Json       toJson() const final;
+  useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

@@ -10,7 +10,7 @@ namespace qat::ast {
 class TypeDefinition : public IsEntity {
 private:
   Identifier name;
-  QatType*   subType;
+  Type*      subType;
 
   Maybe<PrerunExpression*> checker;
   Maybe<PrerunExpression*> constraint;
@@ -18,21 +18,21 @@ private:
 
   Vec<ast::GenericAbstractType*>     generics;
   mutable Maybe<String>              variantName;
-  mutable IR::DefinitionType*        typeDefinition        = nullptr;
-  mutable IR::GenericDefinitionType* genericTypeDefinition = nullptr;
+  mutable ir::DefinitionType*        typeDefinition        = nullptr;
+  mutable ir::GenericDefinitionType* genericTypeDefinition = nullptr;
   mutable Maybe<bool>                checkResult;
 
 public:
   TypeDefinition(Identifier _name, Maybe<PrerunExpression*> _checker, Vec<ast::GenericAbstractType*> _generics,
-                 Maybe<PrerunExpression*> _constraint, QatType* _subType, FileRange _fileRange,
+                 Maybe<PrerunExpression*> _constraint, Type* _subType, FileRange _fileRange,
                  Maybe<VisibilitySpec> _visibSpec)
       : IsEntity(_fileRange), name(_name), subType(_subType), checker(_checker), constraint(_constraint),
         visibSpec(_visibSpec), generics(_generics) {}
 
   useit static inline TypeDefinition* create(Identifier _name, Maybe<PrerunExpression*> _checker,
                                              Vec<ast::GenericAbstractType*> _generics,
-                                             Maybe<PrerunExpression*> _constraint, QatType* _subType,
-                                             FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec) {
+                                             Maybe<PrerunExpression*> _constraint, Type* _subType, FileRange _fileRange,
+                                             Maybe<VisibilitySpec> _visibSpec) {
     return std::construct_at(OwnNormal(TypeDefinition), _name, _checker, _generics, _constraint, _subType, _fileRange,
                              _visibSpec);
   }
@@ -41,17 +41,17 @@ public:
 
   void setVariantName(const String& name) const;
   void unsetVariantName() const;
-  void create_type(IR::QatModule* mod, IR::Context* ctx) const;
+  void create_type(ir::Mod* mod, ir::Ctx* irCtx) const;
 
-  void create_entity(IR::QatModule* parent, IR::Context* ctx) final;
-  void update_entity_dependencies(IR::QatModule* mod, IR::Context* ctx) final;
-  void do_phase(IR::EmitPhase phase, IR::QatModule* parent, IR::Context* ctx) final;
+  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+  void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
   useit bool isGeneric() const;
-  useit IR::DefinitionType* getDefinition() const;
+  useit ir::DefinitionType* getDefinition() const;
 
   useit NodeType nodeType() const final { return NodeType::TYPE_DEFINITION; }
-  useit Json     toJson() const final;
+  useit Json     to_json() const final;
 };
 
 } // namespace qat::ast

@@ -7,18 +7,17 @@
 namespace qat::ast {
 
 class BringBitwidths : public Node {
-  Vec<ast::QatType*> broughtTypes;
+  Vec<ast::Type*> broughtTypes;
 
 public:
-  BringBitwidths(Vec<ast::QatType*> _broughtTypes, FileRange _fileRange)
-      : Node(_fileRange), broughtTypes(_broughtTypes) {}
+  BringBitwidths(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) : Node(_fileRange), broughtTypes(_broughtTypes) {}
 
-  useit static inline BringBitwidths* create(Vec<ast::QatType*> _broughtTypes, FileRange _fileRange) {
+  useit static inline BringBitwidths* create(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) {
     return std::construct_at(OwnNormal(BringBitwidths), _broughtTypes, _fileRange);
   }
 
-  void           createModule(IR::Context* ctx) const final;
-  useit Json     toJson() const final;
+  void           create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
+  useit Json     to_json() const final;
   useit NodeType nodeType() const final { return NodeType::BRING_BITWIDTHS; }
 };
 

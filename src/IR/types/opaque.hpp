@@ -14,80 +14,80 @@ class DefineCoreType;
 class DefineMixType;
 } // namespace qat::ast
 
-namespace qat::IR {
+namespace qat::ir {
 
-class QatModule;
-class MemberFunction;
+class Mod;
+class Method;
 
 enum class OpaqueSubtypeKind { core, mix, Union, unknown };
 
-class OpaqueType : public QatType, public EntityOverview {
+class OpaqueType : public Type, public EntityOverview {
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
-  friend class IR::CoreType;
+  friend class ir::StructType;
 
   Identifier               name;
   Vec<GenericParameter*>   generics;
   Maybe<String>            genericID;
   Maybe<OpaqueSubtypeKind> subtypeKind;
-  IR::QatModule*           parent;
-  IR::ExpandedType*        subTy = nullptr;
+  ir::Mod*                 parent;
+  ir::ExpandedType*        subTy = nullptr;
   Maybe<usize>             size;
   VisibilityInfo           visibility;
   Maybe<MetaInfo>          metaInfo;
 
   OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
-             Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* _parent, Maybe<usize> _size,
-             VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
+             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
+             llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
 public:
   useit static OpaqueType* get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
-                               Maybe<OpaqueSubtypeKind> subtypeKind, IR::QatModule* parent, Maybe<usize> size,
+                               Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
                                VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
-  useit String     getFullName() const;
-  useit Identifier getName() const;
-  useit IR::QatModule*        getParent() const;
-  useit VisibilityInfo const& getVisibility() const;
-  useit bool                  isGeneric() const;
-  useit Maybe<String>     getGenericID() const;
-  useit bool              hasGenericParameter(String const& name) const;
-  useit GenericParameter* getGenericParameter(String const& name) const;
+  useit String     get_full_name() const;
+  useit Identifier get_name() const;
+  useit ir::Mod*              get_module() const;
+  useit VisibilityInfo const& get_visibility() const;
+  useit bool                  is_generic() const;
+  useit Maybe<String>     get_generic_id() const;
+  useit bool              has_generic_parameter(String const& name) const;
+  useit GenericParameter* get_generic_parameter(String const& name) const;
 
-  useit bool     isSubtypeCore() const;
-  useit bool     isSubtypeMix() const;
-  useit bool     isSubtypeUnknown() const;
-  useit bool     hasSubType() const;
-  void           setSubType(IR::ExpandedType* _subTy);
-  useit QatType* getSubType() const;
-  useit bool     hasDeducedSize() const;
-  useit usize    getDeducedSize() const;
+  useit bool  is_subtype_struct() const;
+  useit bool  is_subtype_mix() const;
+  useit bool  is_subtype_unknown() const;
+  useit bool  has_subtype() const;
+  void        set_sub_type(ir::ExpandedType* _subTy);
+  useit Type* get_subtype() const;
+  useit bool  has_deduced_size() const;
+  useit usize get_deduced_size() const;
 
-  useit bool isExpanded() const final;
-  useit bool canBePrerun() const final;
-  useit bool canBePrerunGeneric() const final;
-  useit Maybe<String> toPrerunGenericString(IR::PrerunValue* preVal) const final;
-  useit bool          isTypeSized() const final;
-  useit Maybe<bool> equalityOf(IR::Context* ctx, IR::PrerunValue* first, IR::PrerunValue* second) const final;
-  useit bool        isTriviallyCopyable() const final;
-  useit bool        isTriviallyMovable() const final;
+  useit bool is_expanded() const final;
+  useit bool can_be_prerun() const final;
+  useit bool can_be_prerun_generic() const final;
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* preVal) const final;
+  useit bool          is_type_sized() const final;
+  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+  useit bool        is_trivially_copyable() const final;
+  useit bool        is_trivially_movable() const final;
 
-  useit bool isCopyConstructible() const final;
-  useit bool isCopyAssignable() const final;
-  useit bool isMoveConstructible() const final;
-  useit bool isMoveAssignable() const final;
-  useit bool isDestructible() const final;
+  useit bool is_copy_constructible() const final;
+  useit bool is_copy_assignable() const final;
+  useit bool is_move_constructible() const final;
+  useit bool is_move_assignable() const final;
+  useit bool is_destructible() const final;
 
-  void copyConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void copyAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveConstructValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void moveAssignValue(IR::Context* ctx, IR::Value* first, IR::Value* second, IR::Function* fun) final;
-  void destroyValue(IR::Context* ctx, IR::Value* instance, IR::Function* fun) final;
+  void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+  void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-  useit TypeKind typeKind() const final;
-  useit String   toString() const final;
+  useit TypeKind type_kind() const final;
+  useit String   to_string() const final;
 };
 
-} // namespace qat::IR
+} // namespace qat::ir
 
 #endif

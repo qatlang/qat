@@ -17,7 +17,7 @@ ir::Value* SayLike::emit(EmitCtx* ctx) {
       valuesRange.push_back(expressions[i]->fileRange);
       valuesIR.push_back(expressions[i]->emit(ctx));
     }
-    auto fmtRes = ir::Logic::formatValues(ctx, valuesIR, {}, fileRange);
+    auto fmtRes = ir::Logic::format_values(ctx, valuesIR, {}, fileRange);
     if (sayType != SayType::only) {
       fmtRes.first += "\n";
     }

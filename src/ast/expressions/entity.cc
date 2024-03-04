@@ -57,8 +57,8 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
   auto* mod     = ctx->mod;
   if ((names.size() == 1) && (relative == 0)) {
     auto singleName = names.front();
-    if (fun->hasGenericParameter(singleName.value)) {
-      auto* genVal = fun->getGenericParameter(singleName.value);
+    if (fun->has_generic_parameter(singleName.value)) {
+      auto* genVal = fun->get_generic_parameter(singleName.value);
       if (genVal->is_typed()) {
         return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
       } else if (genVal->is_prerun()) {
@@ -115,7 +115,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
       // local values first
       auto argTypes = fun->get_ir_type()->as_function()->get_argument_types();
       for (usize i = 0; i < argTypes.size(); i++) {
-        if (fun->argumentNameAt(i).value == singleName.value) {
+        if (fun->arg_name_at(i).value == singleName.value) {
           //   mod->addMention("parameter", singleName.range, fun->argumentNameAt(i).range);
           return ir::Value::get(llvm::dyn_cast<llvm::Function>(fun->get_llvm())->getArg(i), argTypes.at(i)->get_type(),
                                 false);

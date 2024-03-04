@@ -69,7 +69,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
                     llvm::ConstantInt::get(ir::CType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u, true)),
                 nullTrueBlock->get_bb(), restBlock->get_bb());
             nullTrueBlock->set_active(ctx->irCtx->builder);
-            ir::Logic::panicInFunction(
+            ir::Logic::panic_in_function(
                 fun,
                 {ir::StringSliceType::create_value(
                     ctx->irCtx,

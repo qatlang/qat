@@ -7,11 +7,11 @@ namespace qat::ast {
 ir::Value* Move::emit(EmitCtx* ctx) {
   FnAtEnd fnObj{[&] { createIn = nullptr; }};
   if (isExpSelf) {
-    if (!ctx->get_fn()->isMemberFunction()) {
+    if (!ctx->get_fn()->is_method()) {
       ctx->Error("Cannot perform move on the parent instance as this is not a member function", fileRange);
     } else {
       auto memFn = (ir::Method*)ctx->get_fn();
-      if (memFn->isStaticFunction()) {
+      if (memFn->is_static_method()) {
         ctx->Error("Cannot perform move on the parent instance as this is a static function", fileRange);
       }
       if (memFn->isConstructor()) {

@@ -8,7 +8,7 @@ namespace qat {
 #define VISIB_KIND  "visibility_kind"
 #define VISIB_VALUE "visibility_value"
 
-JsonValue kindToJsonValue(VisibilityKind kind) {
+String kind_to_string(VisibilityKind kind) {
   switch (kind) {
     case VisibilityKind::type:
       return "type";
@@ -36,10 +36,10 @@ AccessInfo AccessInfo::GetPrivileged() {
   return result;
 }
 
-bool AccessInfo::isPrivilegedAccess() const { return isPrivileged; }
+bool AccessInfo::is_privileged_access() const { return isPrivileged; }
 
 bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo) {
-  if (reqInfo.has_value() && reqInfo->isPrivilegedAccess()) {
+  if (reqInfo.has_value() && reqInfo->is_privileged_access()) {
     return true;
   }
   switch (visibility.kind) {
@@ -47,8 +47,8 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
     case VisibilityKind::folder:
     case VisibilityKind::lib: {
       SHOW("VisibilityInfo: Module")
-      return reqInfo.has_value() && ((visibility.moduleVal->get_id() == reqInfo->getModule()->get_id()) ||
-                                     visibility.moduleVal->is_parent_mod_of(reqInfo->getModule()));
+      return reqInfo.has_value() && ((visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
+                                     visibility.moduleVal->is_parent_mod_of(reqInfo->get_module()));
     }
     case VisibilityKind::pub: {
       SHOW("VisibilityInfo: PUB")
@@ -76,9 +76,9 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
         return visibility.typePtr->is_same(reqInfo->get_type());
       } else if (visibility.typePtr && reqInfo->has_skill()) {
         return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
-      } else if (visibility.moduleVal && reqInfo->getModule()) {
-        return (visibility.moduleVal->get_id() == reqInfo->getModule()->get_id()) ||
-               visibility.moduleVal->is_parent_mod_of(reqInfo->getModule());
+      } else if (visibility.moduleVal && reqInfo->get_module()) {
+        return (visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
+               visibility.moduleVal->is_parent_mod_of(reqInfo->get_module());
       }
       return false;
     }

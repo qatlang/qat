@@ -20,8 +20,8 @@ class PrerunGeneric;
 class PrerunValue;
 class GenericToFill;
 
-void fillGenerics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
-                  FileRange const& fileRange);
+void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
+                   FileRange const& fileRange);
 
 class GenericToFill {
   void*       data = nullptr;

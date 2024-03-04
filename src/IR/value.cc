@@ -18,8 +18,8 @@ Vec<Value*> Value::allValues = {};
 
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange) {
   if (!is_ghost_pointer()) {
-    auto result = ctx->get_fn()->get_block()->new_value(name.value_or(ctx->get_fn()->getRandomAllocaName()), type, true,
-                                                        fileRange);
+    auto result = ctx->get_fn()->get_block()->new_value(name.value_or(ctx->get_fn()->get_random_alloca_name()), type,
+                                                        true, fileRange);
     ctx->irCtx->builder.CreateStore(get_llvm(), result->get_llvm());
     return result;
   } else {

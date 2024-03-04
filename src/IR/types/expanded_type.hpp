@@ -2,7 +2,7 @@
 #define QAT_IR_TYPES_EXPANDED_TYPE_HPP
 
 #include "../generics.hpp"
-#include "../member_function.hpp"
+#include "../method.hpp"
 #include "opaque.hpp"
 #include "qat_type.hpp"
 

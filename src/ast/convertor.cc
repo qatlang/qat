@@ -87,7 +87,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   SHOW("About to allocate necessary arguments")
   auto* parentRefType = ir::ReferenceType::get(prototype->isFrom, state.parent->get_parent_type(), irCtx);
   auto* self          = block->new_value("''", parentRefType, false, state.parent->get_type_range());
-  irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(0), self->get_llvm());
+  irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
   self->load_ghost_pointer(irCtx->builder);
   if (prototype->isFrom) {
     if (prototype->is_member_argumentument) {
@@ -96,7 +96,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         memPtr = irCtx->builder.CreateStructGEP(
             parentRefType->get_subtype()->get_llvm_type(), self->get_llvm(),
             parentRefType->get_subtype()->as_struct()->get_index_of(prototype->argName->value).value());
-        fnEmit->addInitMember(
+        fnEmit->add_init_member(
             {parentRefType->get_subtype()->as_struct()->get_index_of(prototype->argName->value).value(),
              prototype->argName->range});
       } else {
@@ -107,11 +107,11 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                                        ->get_variant_with_name(prototype->argName->value)
                                        ->get_llvm_type(),
                                    irCtx->dataLayout.value().getProgramAddressSpace()));
-        fnEmit->addInitMember({parentRefType->get_subtype()->as_mix()->get_index_of(prototype->argName->value),
-                               prototype->argName->range});
+        fnEmit->add_init_member({parentRefType->get_subtype()->as_mix()->get_index_of(prototype->argName->value),
+                                 prototype->argName->range});
       }
       SHOW("Storing member arg in from convertor")
-      irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(1), memPtr, false);
+      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), memPtr, false);
       if (parentRefType->get_subtype()->is_mix()) {
         auto* mixTy = parentRefType->get_subtype()->as_mix();
         irCtx->builder.CreateStore(
@@ -124,7 +124,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       auto* argTy = fnEmit->get_ir_type()->as_function()->get_argument_type_at(1);
       auto* argVal =
           block->new_value(argTy->get_name(), argTy->get_type(), argTy->is_variable(), prototype->argName->range);
-      irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(1), argVal->get_llvm());
+      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_llvm());
     }
   }
   for (auto sent : sentences) {
@@ -141,7 +141,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       auto coreTy = state.parent->get_parent_type()->as_struct();
       for (usize i = 0; i < coreTy->get_field_count(); i++) {
         auto mem = coreTy->get_field_at(i);
-        if (fnEmit->isMemberInitted(i)) {
+        if (fnEmit->is_member_initted(i)) {
           continue;
         }
         if (mem->defaultValue.has_value()) {
@@ -202,7 +202,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                              " but the value provided is of type " + irCtx->color(memVal->get_ir_type()->to_string()),
                          FileRange{mem->name.range, mem->defaultValue.value()->fileRange});
           }
-          fnEmit->addInitMember({i, mem->defaultValue.value()->fileRange});
+          fnEmit->add_init_member({i, mem->defaultValue.value()->fileRange});
         } else if (mem->type->has_prerun_default_value() || mem->type->is_default_constructible()) {
           if (mem->type->has_prerun_default_value()) {
             irCtx->Warning("Member field " + irCtx->highlightWarning(mem->name.value) +
@@ -225,7 +225,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                                ir::ReferenceType::get(true, mem->type, irCtx), false),
                 fnEmit);
           }
-          fnEmit->addInitMember({i, fileRange});
+          fnEmit->add_init_member({i, fileRange});
         }
       }
     }
@@ -233,7 +233,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       Vec<Pair<String, FileRange>> missingMembers;
       auto                         cTy = state.parent->get_parent_type()->as_struct();
       for (auto ind = 0; ind < cTy->get_field_count(); ind++) {
-        auto memCheck = fnEmit->isMemberInitted(ind);
+        auto memCheck = fnEmit->is_member_initted(ind);
         if (!memCheck.has_value()) {
           missingMembers.push_back({cTy->get_field_at(ind)->name.value, fileRange});
         }
@@ -251,7 +251,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     } else if (state.parent->get_parent_type()->is_mix()) {
       bool isMixInitialised = false;
       for (usize i = 0; i < state.parent->get_parent_type()->as_mix()->get_variant_count(); i++) {
-        auto memRes = fnEmit->isMemberInitted(i);
+        auto memRes = fnEmit->is_member_initted(i);
         if (memRes.has_value()) {
           isMixInitialised = true;
           break;

@@ -108,7 +108,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
         ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), ptrLen),
                                          lenExceedTrueBlock->get_bb(), restBlock->get_bb());
         lenExceedTrueBlock->set_active(ctx->irCtx->builder);
-        ir::Logic::panicInFunction(
+        ir::Logic::panic_in_function(
             ctx->get_fn(),
             {ir::StringSliceType::create_value(ctx->irCtx, "The index is "), ind,
              ir::StringSliceType::create_value(ctx->irCtx,
@@ -195,7 +195,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
                                        lenExceedTrueBlock->get_bb(), restBlock->get_bb());
       lenExceedTrueBlock->set_active(ctx->irCtx->builder);
-      ir::Logic::panicInFunction(
+      ir::Logic::panic_in_function(
           ctx->get_fn(),
           {ir::StringSliceType::create_value(ctx->irCtx, "Index for string slice is "), ind,
            ir::StringSliceType::create_value(ctx->irCtx, " which is not less than its length, which is "),
@@ -253,7 +253,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
                                        lenExceedTrueBlock->get_bb(), restBlock->get_bb());
       lenExceedTrueBlock->set_active(ctx->irCtx->builder);
-      ir::Logic::panicInFunction(
+      ir::Logic::panic_in_function(
           ctx->get_fn(),
           {ir::StringSliceType::create_value(ctx->irCtx, "Index of string slice is not less than its length")}, {},
           fileRange, ctx);

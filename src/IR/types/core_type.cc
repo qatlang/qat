@@ -442,7 +442,7 @@ Mod* GenericCoreType::get_module() const { return parent; }
 
 ast::GenericAbstractType* GenericCoreType::getGenericAt(usize index) const { return generics.at(index); }
 
-Type* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+Type* GenericCoreType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
   for (auto& oVar : opaqueVariants) {
     SHOW("Opaque variant: " << oVar.get()->get_full_name())
     if (oVar.check(
@@ -457,7 +457,7 @@ Type* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* i
       return var.get();
     }
   }
-  ir::fillGenerics(irCtx, generics, toFillTypes, range);
+  ir::fill_generics(irCtx, generics, toFillTypes, range);
   if (constraint.has_value()) {
     auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
     if (checkVal->get_ir_type()->is_bool()) {
@@ -475,14 +475,14 @@ Type* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* i
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }
-  auto variantName = ir::Logic::getGenericVariantName(name.value, toFillTypes);
+  auto variantName = ir::Logic::get_generic_variant_name(name.value, toFillTypes);
   for (auto varName : variantNames) {
     if (varName == variantName) {
       irCtx->Error("Repeating variant name: " + variantName, range);
     }
   }
   variantNames.push_back(variantName);
-  irCtx->addActiveGeneric(
+  irCtx->add_active_generic(
       ir::GenericEntityMarker{
           variantName,
           ir::GenericEntityType::coreType,
@@ -502,14 +502,14 @@ Type* GenericCoreType::fillGenerics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* i
   for (auto* temp : generics) {
     temp->unset();
   }
-  if (irCtx->getActiveGeneric().warningCount > 0) {
-    auto count = irCtx->getActiveGeneric().warningCount;
+  if (irCtx->get_active_generic().warningCount > 0) {
+    auto count = irCtx->get_active_generic().warningCount;
     irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                        " generated while creating generic variant " + irCtx->highlightWarning(variantName),
                    range);
-    irCtx->removeActiveGeneric();
+    irCtx->remove_active_generic();
   } else {
-    irCtx->removeActiveGeneric();
+    irCtx->remove_active_generic();
   }
   SHOW("Returning core type")
   return resultTy;

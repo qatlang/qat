@@ -147,19 +147,19 @@ public:
   mutable Maybe<u64>               qatCompileTimeInMs;
   mutable Maybe<u64>               clangAndLinkTimeInMs;
 
-  useit inline bool                 hasActiveGeneric() const { return !allActiveGenerics.empty(); }
-  useit inline GenericEntityMarker& getActiveGeneric() const { return allActiveGenerics.back(); }
+  useit inline bool                 has_active_generic() const { return !allActiveGenerics.empty(); }
+  useit inline GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
   useit bool                        has_generic_parameter_in_entity(String const& name) const;
   useit GenericParameter*           get_generic_parameter_from_entity(String const& name) const;
 
-  inline void addActiveGeneric(GenericEntityMarker marker, bool main) {
+  inline void add_active_generic(GenericEntityMarker marker, bool main) {
     if (main) {
       lastMainActiveGeneric.push_back(allActiveGenerics.size());
     }
     allActiveGenerics.push_back(marker);
   }
 
-  inline void removeActiveGeneric() {
+  inline void remove_active_generic() {
     if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
       lastMainActiveGeneric.pop_back();
     }

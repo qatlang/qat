@@ -15,14 +15,14 @@ namespace qat::ir {
 class Logic {
 public:
   useit static llvm::AllocaInst* newAlloca(ir::Function* fun, Maybe<String> name, llvm::Type* type);
-  useit static String            getGenericVariantName(String mainName, Vec<ir::GenericToFill*>& types);
+  useit static String            get_generic_variant_name(String mainName, Vec<ir::GenericToFill*>& types);
   useit static bool compareConstantStrings(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
                                            llvm::Constant* rhsCount, llvm::LLVMContext& llCtx);
 
-  static Pair<String, Vec<llvm::Value*>> formatValues(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
-                                                      FileRange fileRange);
-  static void panicInFunction(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-                              ast::EmitCtx* ctx);
+  static Pair<String, Vec<llvm::Value*>> format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
+                                                       FileRange fileRange);
+  static void panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
+                                ast::EmitCtx* ctx);
 
   static ir::Value* int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange);
 };

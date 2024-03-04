@@ -24,7 +24,7 @@ String EmitCtx::color(String const& message, const char* color) const {
 }
 
 void EmitCtx::genericNameCheck(String const& name, FileRange const& range) {
-  if (has_fn() && get_fn()->hasGenericParameter(name)) {
+  if (has_fn() && get_fn()->has_generic_parameter(name)) {
     Error("A generic parameter named " + color(name) + " is present in this function. This will lead to ambiguity.",
           range);
   } else if (has_member_parent()) {

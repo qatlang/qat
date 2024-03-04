@@ -97,7 +97,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
       }
     }
     SHOW("Filling generics")
-    auto* tyRes = genericCoreTy->fillGenerics(types, ctx->irCtx, fileRange);
+    auto* tyRes = genericCoreTy->fill_generics(types, ctx->irCtx, fileRange);
     SHOW("Filled generics: " << tyRes->is_struct())
     SHOW("Generic filled: " << tyRes->to_string())
     SHOW("  with llvm type: " << (tyRes->get_llvm_type()->isStructTy() ? tyRes->get_llvm_type()->getStructName().str()

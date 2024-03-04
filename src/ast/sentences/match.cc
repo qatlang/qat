@@ -398,7 +398,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
         // FIXME - Add optimisation for constant strings
         if (caseIR->get_ir_type()->is_string_slice() ||
             (caseIR->is_reference() && caseIR->get_ir_type()->as_reference()->get_subtype()->is_string_slice())) {
-          auto* elemIter = ctx->get_fn()->getFunctionCommonIndex();
+          auto* elemIter = ctx->get_fn()->get_function_common_index();
           if (caseIR->is_prerun_value()) {
             caseStrBuff  = caseIR->get_llvm_constant()->getAggregateElement(0u);
             caseStrCount = caseIR->get_llvm_constant()->getAggregateElement(1u);

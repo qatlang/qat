@@ -8,8 +8,8 @@
 
 namespace qat::ir {
 
-void fillGenerics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
-                  FileRange const& fileRange) {
+void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
+                   FileRange const& fileRange) {
   for (usize i = 0; i < generics.size(); i++) {
     if (generics.at(i)->is_typed()) {
       if ((types.size() > i)) {

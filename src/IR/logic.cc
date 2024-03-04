@@ -31,7 +31,7 @@ ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value*
     auto convGenericFn = ir::StdLib::stdLib->get_generic_function(isSigned ? "signed_to_string" : "unsigned_to_string",
                                                                   AccessInfo::GetPrivileged());
     auto intTy  = value->is_reference() ? value->get_ir_type()->as_reference()->get_subtype() : value->get_ir_type();
-    auto convFn = convGenericFn->fillGenerics({ir::GenericToFill::GetType(intTy, fileRange)}, ctx->irCtx, fileRange);
+    auto convFn = convGenericFn->fill_generics({ir::GenericToFill::GetType(intTy, fileRange)}, ctx->irCtx, fileRange);
     if (value->is_reference() || value->is_ghost_pointer()) {
       value->load_ghost_pointer(ctx->irCtx->builder);
       if (value->is_reference()) {
@@ -42,7 +42,7 @@ ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value*
     ctx->irCtx->builder.CreateStore(strRes->get_llvm(),
                                     ctx->get_fn()
                                         ->get_block()
-                                        ->new_value(ctx->get_fn()->getRandomAllocaName(), stringTy, true, fileRange)
+                                        ->new_value(ctx->get_fn()->get_random_alloca_name(), stringTy, true, fileRange)
                                         ->get_llvm());
     return strRes;
   } else {
@@ -56,8 +56,8 @@ ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value*
   return nullptr;
 }
 
-Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
-                                                    FileRange fileRange) {
+Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
+                                                     FileRange fileRange) {
   Vec<llvm::Value*> printVals;
   String            formatString;
 
@@ -242,7 +242,7 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::V
         ctx->irCtx->builder.CreateStore(val->get_llvm(),
                                         ctx->get_fn()
                                             ->get_block()
-                                            ->new_value(ctx->get_fn()->getRandomAllocaName(), valTy, true, valRange)
+                                            ->new_value(ctx->get_fn()->get_random_alloca_name(), valTy, true, valRange)
                                             ->get_llvm());
       }
     } else if (valTy->is_array()) {
@@ -286,7 +286,7 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::V
         auto toFn     = eTy->get_to_convertor(stringTy);
         if (!val->is_reference() && !val->is_ghost_pointer()) {
           auto candVal =
-              ctx->get_fn()->get_block()->new_value(ctx->get_fn()->getRandomAllocaName(), valTy, true, valRange);
+              ctx->get_fn()->get_block()->new_value(ctx->get_fn()->get_random_alloca_name(), valTy, true, valRange);
           ctx->irCtx->builder.CreateStore(val->get_llvm(), candVal->get_llvm());
           val = candVal;
         } else if (val->is_reference()) {
@@ -296,7 +296,7 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::V
         formatString += "%.*s";
         printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {1u}));
         printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {0u, 0u}));
-        (void)ctx->get_fn()->get_block()->new_value(ctx->get_fn()->getRandomAllocaName(), stringTy, false, valRange);
+        (void)ctx->get_fn()->get_block()->new_value(ctx->get_fn()->get_random_alloca_name(), stringTy, false, valRange);
       } else if (!val->is_prerun_value() && ir::StdLib::is_std_lib_found() && ir::StdLib::has_string_type() &&
                  valTy->is_same(ir::StdLib::get_string_type())) {
         auto stringTy = ir::StdLib::get_string_type();
@@ -321,7 +321,7 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::V
               val->get_llvm(),
               ctx->get_fn()
                   ->get_block()
-                  ->new_value(ctx->get_fn()->getRandomAllocaName(), ir::StdLib::get_string_type(), true, valRange)
+                  ->new_value(ctx->get_fn()->get_random_alloca_name(), ir::StdLib::get_string_type(), true, valRange)
                   ->get_llvm());
         }
       } else {
@@ -336,15 +336,15 @@ Pair<String, Vec<llvm::Value*>> Logic::formatValues(ast::EmitCtx* ctx, Vec<ir::V
   return {formatString, printVals};
 }
 
-void Logic::panicInFunction(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-                            ast::EmitCtx* ctx) {
+void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
+                              ast::EmitCtx* ctx) {
   fileRange.file    = fs::canonical(fileRange.file);
   auto startMessage = ir::StringSliceType::create_value(
       ctx->irCtx, "\nFunction " + fun->get_full_name() + " panicked at " + fileRange.start_to_string() + " => ");
   auto* mod = fun->get_module();
   mod->link_native(NativeUnit::printf);
   auto              printFn   = mod->get_llvm_module()->getFunction("printf");
-  auto              formatRes = formatValues(ctx, values, ranges, fileRange);
+  auto              formatRes = format_values(ctx, values, ranges, fileRange);
   Vec<llvm::Value*> printVals{
       ctx->irCtx->builder.CreateGlobalStringPtr("%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
                                                 ctx->irCtx->dataLayout.value().getDefaultGlobalsAddressSpace()),
@@ -362,7 +362,7 @@ void Logic::panicInFunction(ir::Function* fun, Vec<ir::Value*> values, Vec<FileR
                                           ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()))});
 }
 
-String Logic::getGenericVariantName(String mainName, Vec<ir::GenericToFill*>& fills) {
+String Logic::get_generic_variant_name(String mainName, Vec<ir::GenericToFill*>& fills) {
   String result(std::move(mainName));
   result.append(":[");
   SHOW("Initial part of name")
@@ -379,9 +379,9 @@ String Logic::getGenericVariantName(String mainName, Vec<ir::GenericToFill*>& fi
 
 llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::Type* type) {
   llvm::AllocaInst* result = nullptr;
-  llvm::Function*   func   = fun->get_llvmFunction();
+  llvm::Function*   func   = fun->get_llvm_function();
   if (func->getEntryBlock().empty()) {
-    result = new llvm::AllocaInst(type, 0U, name.value_or(fun->getRandomAllocaName()), &func->getEntryBlock());
+    result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
   } else {
     llvm::Instruction* inst = nullptr;
     // NOLINTNEXTLINE(modernize-loop-convert)
@@ -394,9 +394,9 @@ llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::
       }
     }
     if (inst) {
-      result = new llvm::AllocaInst(type, 0U, name.value_or(fun->getRandomAllocaName()), inst);
+      result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), inst);
     } else {
-      result = new llvm::AllocaInst(type, 0U, name.value_or(fun->getRandomAllocaName()), &func->getEntryBlock());
+      result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
     }
   }
   return result;

@@ -54,8 +54,8 @@ public:
 
   useit bool isGeneric() const;
   useit Vec<GenericAbstractType*> getGenerics() const;
-  void                            setVariantName(const String& value) const;
-  void                            unsetVariantName() const;
+  void                            set_variant_name(const String& value) const;
+  void                            unset_variant_name() const;
   ir::Function*                   create_function(ir::Mod* mod, ir::Ctx* irCtx) const;
 
   void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;

@@ -1,4 +1,4 @@
-#include "./member_function.hpp"
+#include "./method.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
 #include "./qat_module.hpp"
@@ -15,11 +15,11 @@
 
 namespace qat::ir {
 
-Vec<MemberParent*> MemberParent::allMemberParents = {};
+Vec<MethodParent*> MethodParent::allMemberParents = {};
 
-MemberParent::MemberParent(MemberParentType _parentTy, void* _data) : data(_data), parentType(_parentTy) {}
+MethodParent::MethodParent(MemberParentType _parentTy, void* _data) : data(_data), parentType(_parentTy) {}
 
-MemberParent* MemberParent::create_expanded_type(ir::ExpandedType* expTy) {
+MethodParent* MethodParent::create_expanded_type(ir::ExpandedType* expTy) {
   for (auto mem : allMemberParents) {
     if (mem->is_expanded()) {
       if (mem->as_expanded()->is_same(expTy)) {
@@ -27,10 +27,10 @@ MemberParent* MemberParent::create_expanded_type(ir::ExpandedType* expTy) {
       }
     }
   }
-  return std::construct_at(OwnNormal(MemberParent), MemberParentType::expandedType, (void*)expTy);
+  return std::construct_at(OwnNormal(MethodParent), MemberParentType::expandedType, (void*)expTy);
 }
 
-MemberParent* MemberParent::create_do_skill(ir::DoneSkill* doneSkill) {
+MethodParent* MethodParent::create_do_skill(ir::DoneSkill* doneSkill) {
   for (auto mem : allMemberParents) {
     if (mem->is_done_skill()) {
       if (mem->as_done_skill()->get_id() == doneSkill->get_id()) {
@@ -38,10 +38,10 @@ MemberParent* MemberParent::create_do_skill(ir::DoneSkill* doneSkill) {
       }
     }
   }
-  return std::construct_at(OwnNormal(MemberParent), MemberParentType::doSkill, (void*)doneSkill);
+  return std::construct_at(OwnNormal(MethodParent), MemberParentType::doSkill, (void*)doneSkill);
 }
 
-bool MemberParent::is_same(ir::MemberParent* other) {
+bool MethodParent::is_same(ir::MethodParent* other) {
   if (is_done_skill() && other->is_done_skill()) {
     return as_done_skill()->get_id() == other->as_done_skill()->get_id();
   } else if (is_expanded() && other->is_expanded()) {
@@ -51,15 +51,15 @@ bool MemberParent::is_same(ir::MemberParent* other) {
   }
 }
 
-bool MemberParent::is_expanded() const { return parentType == MemberParentType::expandedType; }
+bool MethodParent::is_expanded() const { return parentType == MemberParentType::expandedType; }
 
-bool MemberParent::is_done_skill() const { return parentType == MemberParentType::doSkill; }
+bool MethodParent::is_done_skill() const { return parentType == MemberParentType::doSkill; }
 
-ir::ExpandedType* MemberParent::as_expanded() const { return (ir::ExpandedType*)data; }
+ir::ExpandedType* MethodParent::as_expanded() const { return (ir::ExpandedType*)data; }
 
-ir::DoneSkill* MemberParent::as_done_skill() const { return (ir::DoneSkill*)data; }
+ir::DoneSkill* MethodParent::as_done_skill() const { return (ir::DoneSkill*)data; }
 
-ir::Mod* MemberParent::get_module() const {
+ir::Mod* MethodParent::get_module() const {
   if (is_done_skill()) {
     return as_done_skill()->get_module();
   } else {
@@ -67,15 +67,15 @@ ir::Mod* MemberParent::get_module() const {
   }
 }
 
-ir::Type* MemberParent::get_parent_type() const {
+ir::Type* MethodParent::get_parent_type() const {
   return is_done_skill() ? as_done_skill()->get_ir_type() : as_expanded();
 }
 
-FileRange MemberParent::get_type_range() const {
+FileRange MethodParent::get_type_range() const {
   return is_done_skill() ? as_done_skill()->get_type_range() : as_expanded()->get_name().range;
 }
 
-LinkNames Method::get_link_names_from(MemberParent* parent, bool isStatic, Identifier name, bool isVar,
+LinkNames Method::get_link_names_from(MethodParent* parent, bool isStatic, Identifier name, bool isVar,
                                       MethodType fnType, Vec<Argument> args, Type* retTy) {
   // FIXME - Update foreignID using meta info
   auto linkNames =
@@ -150,7 +150,7 @@ LinkNames Method::get_link_names_from(MemberParent* parent, bool isStatic, Ident
   return linkNames;
 }
 
-Method::Method(MethodType _fnType, bool _isVariation, MemberParent* _parent, const Identifier& _name,
+Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name,
                ReturnType* returnType, Vec<Argument> _args, bool is_variable_arguments, bool _is_static,
                Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* irCtx)
     : Function(_parent->is_done_skill() ? _parent->as_done_skill()->get_module() : _parent->as_expanded()->get_module(),
@@ -323,7 +323,7 @@ String memberFnTypeToString(MethodType type) {
 
 Method::~Method() {}
 
-Method* Method::Create(MemberParent* parent, bool is_variation, const Identifier& name, ReturnType* returnTy,
+Method* Method::Create(MethodParent* parent, bool is_variation, const Identifier& name, ReturnType* returnTy,
                        const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx) {
   Vec<Argument> args_info;
@@ -336,7 +336,7 @@ Method* Method::Create(MemberParent* parent, bool is_variation, const Identifier
                     false, fileRange, visibilityInfo, irCtx);
 }
 
-Method* Method::CreateValued(MemberParent* parent, const Identifier& name, Type* returnTy, const Vec<Argument>& args,
+Method* Method::CreateValued(MethodParent* parent, const Identifier& name, Type* returnTy, const Vec<Argument>& args,
                              bool has_variadic_args, Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo,
                              ir::Ctx* irCtx) {
   Vec<Argument> args_info;
@@ -348,7 +348,7 @@ Method* Method::CreateValued(MemberParent* parent, const Identifier& name, Type*
                     has_variadic_args, false, fileRange, visibilityInfo, irCtx);
 }
 
-Method* Method::DefaultConstructor(MemberParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
+Method* Method::DefaultConstructor(MethodParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
                                    Maybe<FileRange> fileRange, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
@@ -359,7 +359,7 @@ Method* Method::DefaultConstructor(MemberParent* parent, FileRange nameRange, co
                     visibInfo, irCtx);
 }
 
-Method* Method::CopyConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+Method* Method::CopyConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create({"''", parent->get_type_range()},
@@ -370,7 +370,7 @@ Method* Method::CopyConstructor(MemberParent* parent, FileRange nameRange, const
                     VisibilityInfo::pub(), irCtx);
 }
 
-Method* Method::MoveConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+Method* Method::MoveConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create({"''", parent->get_type_range()},
@@ -381,7 +381,7 @@ Method* Method::MoveConstructor(MemberParent* parent, FileRange nameRange, const
                     VisibilityInfo::pub(), irCtx);
 }
 
-Method* Method::CopyAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+Method* Method::CopyAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                Maybe<FileRange> fileRange, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
@@ -392,7 +392,7 @@ Method* Method::CopyAssignment(MemberParent* parent, FileRange nameRange, const 
                     VisibilityInfo::pub(), irCtx);
 }
 
-Method* Method::MoveAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+Method* Method::MoveAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                const FileRange& fileRange, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
@@ -403,7 +403,7 @@ Method* Method::MoveAssignment(MemberParent* parent, FileRange nameRange, const 
                     VisibilityInfo::pub(), irCtx);
 }
 
-Method* Method::CreateConstructor(MemberParent* parent, FileRange nameRange, const Vec<Argument>& args,
+Method* Method::CreateConstructor(MethodParent* parent, FileRange nameRange, const Vec<Argument>& args,
                                   bool hasVariadicArgs, Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo,
                                   ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
@@ -417,7 +417,7 @@ Method* Method::CreateConstructor(MemberParent* parent, FileRange nameRange, con
                     visibInfo, irCtx);
 }
 
-Method* Method::CreateFromConvertor(MemberParent* parent, FileRange nameRange, Type* sourceType, const Identifier& name,
+Method* Method::CreateFromConvertor(MethodParent* parent, FileRange nameRange, Type* sourceType, const Identifier& name,
                                     Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
@@ -429,7 +429,7 @@ Method* Method::CreateFromConvertor(MemberParent* parent, FileRange nameRange, T
                     ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, false, fileRange, visibInfo, irCtx);
 }
 
-Method* Method::CreateToConvertor(MemberParent* parent, FileRange nameRange, Type* destType, Maybe<FileRange> fileRange,
+Method* Method::CreateToConvertor(MethodParent* parent, FileRange nameRange, Type* destType, Maybe<FileRange> fileRange,
                                   const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
   Vec<Argument> argsInfo;
   argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
@@ -438,7 +438,7 @@ Method* Method::CreateToConvertor(MemberParent* parent, FileRange nameRange, Typ
                     ReturnType::get(destType), argsInfo, false, false, fileRange, visibInfo, irCtx);
 }
 
-Method* Method::CreateStatic(MemberParent* parent, const Identifier& name, Type* returnTy, const Vec<Argument>& args,
+Method* Method::CreateStatic(MethodParent* parent, const Identifier& name, Type* returnTy, const Vec<Argument>& args,
                              bool has_variadic_args, Maybe<FileRange> fileRange, const VisibilityInfo& visib_info,
                              ir::Ctx* irCtx //
 ) {
@@ -446,7 +446,7 @@ Method* Method::CreateStatic(MemberParent* parent, const Identifier& name, Type*
                     true, fileRange, visib_info, irCtx);
 }
 
-Method* Method::CreateDestructor(MemberParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
+Method* Method::CreateDestructor(MethodParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
                                  ir::Ctx* irCtx) {
   SHOW("Creating destructor")
   return new Method(MethodType::destructor, true, parent, Identifier("end", nameRange),
@@ -456,7 +456,7 @@ Method* Method::CreateDestructor(MemberParent* parent, FileRange nameRange, Mayb
                     false, false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
-Method* Method::CreateOperator(MemberParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
+Method* Method::CreateOperator(MethodParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
                                const String& opr, ReturnType* returnType, const Vec<Argument>& args,
                                Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
   Vec<Argument> args_info;
@@ -469,7 +469,7 @@ Method* Method::CreateOperator(MemberParent* parent, FileRange nameRange, bool i
                     Identifier(opr, nameRange), returnType, args_info, false, false, fileRange, visibInfo, irCtx);
 }
 
-bool Method::isMemberFunction() const { return true; }
+bool Method::is_method() const { return true; }
 
 String Method::get_full_name() const {
   return (parent->is_done_skill() ? parent->as_done_skill()->to_string() : parent->as_expanded()->to_string()) + ":" +
@@ -484,8 +484,8 @@ void Method::update_overview() {
   ovRange = selfName.range;
   ovInfo._("fullName", get_full_name())
       ._("selfName", selfName)
-      ._("isInSkill", isInSkill())
-      ._("skillID", isInSkill() ? getParentSkill()->get_id() : "")
+      ._("is_in_skill", is_in_skill())
+      ._("skillID", is_in_skill() ? get_parent_skill()->get_id() : "")
       ._("parentTypeID", parent->get_parent_type()->get_id())
       ._("moduleID", parent->is_done_skill() ? parent->as_done_skill()->get_module()->get_id()
                                              : parent->as_expanded()->get_module()->get_id())

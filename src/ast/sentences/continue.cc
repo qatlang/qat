@@ -12,11 +12,11 @@ ir::Value* Continue::emit(EmitCtx* ctx) {
       for (usize i = (ctx->loopsInfo.size() - 1); i >= 0; i--) {
         if (tag.value().value == ctx->loopsInfo.at(i).name) {
           if (ctx->loopsInfo.at(i).type == LoopType::infinite) {
-            ir::destroyLocalsFrom(ctx->irCtx, ctx->loopsInfo.at(i).mainBlock);
+            ir::destroy_locals_from(ctx->irCtx, ctx->loopsInfo.at(i).mainBlock);
             return ir::Value::get(ir::add_branch(ctx->irCtx->builder, ctx->loopsInfo.at(i).mainBlock->get_bb()),
                                   ir::VoidType::get(ctx->irCtx->llctx), false);
           } else {
-            ir::destroyLocalsFrom(ctx->irCtx, ctx->loopsInfo.at(i).mainBlock);
+            ir::destroy_locals_from(ctx->irCtx, ctx->loopsInfo.at(i).mainBlock);
             return ir::Value::get(ir::add_branch(ctx->irCtx->builder, ctx->loopsInfo.at(i).condBlock->get_bb()),
                                   ir::VoidType::get(ctx->irCtx->llctx), false);
           }
@@ -29,11 +29,11 @@ ir::Value* Continue::emit(EmitCtx* ctx) {
     } else {
       if (ctx->loopsInfo.size() == 1) {
         if (ctx->loopsInfo.front().type == LoopType::infinite) {
-          ir::destroyLocalsFrom(ctx->irCtx, ctx->loopsInfo.front().mainBlock);
+          ir::destroy_locals_from(ctx->irCtx, ctx->loopsInfo.front().mainBlock);
           return ir::Value::get(ir::add_branch(ctx->irCtx->builder, ctx->loopsInfo.front().mainBlock->get_bb()),
                                 ir::VoidType::get(ctx->irCtx->llctx), false);
         } else {
-          ir::destroyLocalsFrom(ctx->irCtx, ctx->loopsInfo.front().mainBlock);
+          ir::destroy_locals_from(ctx->irCtx, ctx->loopsInfo.front().mainBlock);
           return ir::Value::get(ir::add_branch(ctx->irCtx->builder, ctx->loopsInfo.front().condBlock->get_bb()),
                                 ir::VoidType::get(ctx->irCtx->llctx), false);
         }

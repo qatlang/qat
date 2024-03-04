@@ -212,7 +212,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
   if (needsDestructor) {
     (*resultTy)->needsImplicitDestructor = true;
   }
-  auto memParent = ir::MemberParent::create_expanded_type(*resultTy);
+  auto memParent = ir::MethodParent::create_expanded_type(*resultTy);
   auto emitCtx   = EmitCtx::get(irCtx, mod)->with_member_parent(memParent);
   for (auto* stm : staticMembers) {
     (*resultTy)->addStaticMember(stm->name, stm->type->emit(emitCtx), stm->variability,
@@ -258,7 +258,7 @@ void DefineCoreType::do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* 
   if (checkResult.has_value() && !checkResult.value()) {
     return;
   }
-  auto memberParent = ir::MemberParent::create_expanded_type(resultTy);
+  auto memberParent = ir::MethodParent::create_expanded_type(resultTy);
   auto parentState  = get_state_for(memberParent);
   if (defaultConstructor) {
     MethodState state(memberParent);
@@ -433,7 +433,7 @@ void DefineCoreType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
     return;
   }
   SHOW("Creating member parent")
-  auto memberParent = ir::MemberParent::create_expanded_type(resultTy);
+  auto memberParent = ir::MethodParent::create_expanded_type(resultTy);
   auto parentState  = get_state_for(memberParent);
   SHOW("Got parent state")
   if (defaultConstructor) {

@@ -24,7 +24,7 @@ enum class VisibilityKind {
   skill,
 };
 
-JsonValue kindToJsonValue(VisibilityKind kind);
+String kind_to_string(VisibilityKind kind);
 
 class AccessInfo;
 
@@ -67,10 +67,10 @@ public:
 
   useit static AccessInfo GetPrivileged();
 
-  useit bool        has_type() const { return type.has_value() && (type.value() != nullptr); }
-  useit inline bool has_skill() const { return skill.has_value() && (skill.value() != nullptr); }
-  useit bool        isPrivilegedAccess() const;
-  useit ir::Mod* getModule() const { return module; }
+  useit bool        has_type() const { return type.has_value(); }
+  useit inline bool has_skill() const { return skill.has_value(); }
+  useit bool        is_privileged_access() const;
+  useit ir::Mod* get_module() const { return module; }
   useit ir::Type*             get_type() const { return type.value(); }
   useit inline ir::DoneSkill* get_skill() const { return skill.value(); }
 };

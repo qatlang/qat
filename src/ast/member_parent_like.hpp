@@ -1,7 +1,7 @@
 #ifndef QAT_AST_MEMBER_PARENT_LIKE_HPP
 #define QAT_AST_MEMBER_PARENT_LIKE_HPP
 
-#include "../IR/member_function.hpp"
+#include "../IR/method.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
 #include "../utils/qat_region.hpp"
@@ -17,15 +17,15 @@ class ConstructorDefinition;
 class DefineCoreType;
 
 struct MethodState {
-  ir::MemberParent* parent;
+  ir::MethodParent* parent;
   ir::Method*       result;
   Maybe<bool>       defineCondition;
 
-  MethodState(ir::MemberParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
-  MethodState(ir::MemberParent* _parent, ir::Method* _result)
+  MethodState(ir::MethodParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
+  MethodState(ir::MethodParent* _parent, ir::Method* _result)
       : parent(_parent), result(_result), defineCondition(None) {}
 
-  MethodState(ir::MemberParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition)
+  MethodState(ir::MethodParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition)
       : parent(_parent), result(_result), defineCondition(_defineCondition) {}
 };
 
@@ -38,7 +38,7 @@ public:
   MethodResult(ir::Method* _fn, Maybe<bool> _cond) : fn(_fn), condition(_cond) {}
 };
 
-class MemberParentState {
+class MethodParentState {
 public:
   Vec<MethodResult> all_methods;
   Vec<ir::Method*>  convertors;
@@ -51,24 +51,24 @@ public:
   ir::Method*       moveAssignment;
   ir::Method*       destructor;
 
-  MemberParentState()
+  MethodParentState()
       : all_methods(), convertors(), operators(), constructors(), defaultConstructor(nullptr), copyConstructor(nullptr),
         moveConstructor(nullptr), copyAssignment(nullptr), moveAssignment(nullptr), destructor(nullptr) {}
 
-  useit static inline MemberParentState* get() { return std::construct_at(OwnNormal(MemberParentState)); }
+  useit static inline MethodParentState* get() { return std::construct_at(OwnNormal(MethodParentState)); }
 };
 
 class MemberParentLike {
 public:
-  Vec<Pair<ir::MemberParent*, MemberParentState*>> parentStates;
+  Vec<Pair<ir::MethodParent*, MethodParentState*>> parentStates;
 
-  MemberParentState* get_state_for(ir::MemberParent* parent) {
+  MethodParentState* get_state_for(ir::MethodParent* parent) {
     for (auto& state : parentStates) {
       if (state.first->is_same(parent)) {
         return state.second;
       }
     }
-    parentStates.push_back(std::make_pair(parent, MemberParentState::get()));
+    parentStates.push_back(std::make_pair(parent, MethodParentState::get()));
     return parentStates.back().second;
   }
 

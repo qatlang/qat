@@ -6,7 +6,6 @@
 #include "./link_names.hpp"
 #include "./types/qat_type.hpp"
 #include "generics.hpp"
-#include "types/function.hpp"
 
 namespace qat::ast {
 class Type;

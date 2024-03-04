@@ -259,7 +259,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   if (prototype->fnTy != AstMemberFnType::Static && prototype->fnTy != AstMemberFnType::valued) {
     coreRefTy = argIRTypes.at(0)->get_type()->as_reference();
     self      = block->new_value("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
-    irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(0u), self->get_llvm());
+    irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
     self->load_ghost_pointer(irCtx->builder);
   }
   SHOW("Arguments size is " << argIRTypes.size())
@@ -274,14 +274,14 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       if (memTy->is_reference()) {
         memPtr = irCtx->builder.CreateLoad(memTy->as_reference()->get_llvm_type(), memPtr);
       }
-      irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), memPtr, false);
+      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
     } else {
       if (!argIRTypes.at(i)->get_type()->is_trivially_copyable() || argIRTypes.at(i)->is_variable()) {
         auto* argVal =
             block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
                              argIRTypes.at(i)->is_variable(), prototype->arguments.at(i - 1)->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
       }
     }
   }

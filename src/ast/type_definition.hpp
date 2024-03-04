@@ -39,8 +39,8 @@ public:
 
   mutable Maybe<usize> typeSize;
 
-  void setVariantName(const String& name) const;
-  void unsetVariantName() const;
+  void set_variant_name(const String& name) const;
+  void unset_variant_name() const;
   void create_type(ir::Mod* mod, ir::Ctx* irCtx) const;
 
   void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;

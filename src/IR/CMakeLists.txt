@@ -1,13 +1,14 @@
 add_library(QAT_IR
 	context.cc
+	control_flow.cc
 	generics.cc
 	logic.cc
 	entity_overview.cc
 	function.cc
 	global_entity.cc
 	link_names.cc
-	member_function.cc
-	control_flow.cc
+	method.cc
+	prerun_function.cc
 	qat_module.cc
 	skill.cc
 	static_member.cc

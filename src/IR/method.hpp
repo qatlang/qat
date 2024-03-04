@@ -38,16 +38,16 @@ String memberFnTypeToString(MethodType type);
 class ExpandedType;
 
 enum class MemberParentType { expandedType, doSkill };
-class MemberParent {
-  static Vec<MemberParent*> allMemberParents;
+class MethodParent {
+  static Vec<MethodParent*> allMemberParents;
 
   void*            data;
   MemberParentType parentType;
 
 public:
-  MemberParent(MemberParentType _parentType, void* data);
-  useit static MemberParent* create_expanded_type(ir::ExpandedType* expTy);
-  useit static MemberParent* create_do_skill(ir::DoneSkill* doneSkill);
+  MethodParent(MemberParentType _parentType, void* data);
+  useit static MethodParent* create_expanded_type(ir::ExpandedType* expTy);
+  useit static MethodParent* create_do_skill(ir::DoneSkill* doneSkill);
 
   useit bool is_expanded() const;
   useit bool is_done_skill() const;
@@ -57,12 +57,12 @@ public:
   useit FileRange      get_type_range() const;
   useit ir::Mod* get_module() const;
 
-  useit bool is_same(ir::MemberParent* other);
+  useit bool is_same(ir::MethodParent* other);
 };
 
 class Method : public Function {
 private:
-  MemberParent* parent;
+  MethodParent* parent;
   bool          isStatic;
   bool          isVariation;
   MethodType    fnType;
@@ -72,56 +72,56 @@ private:
   std::set<ir::Method*>       memberFunctionCalls;
   Vec<Pair<usize, FileRange>> initTypeMembers;
 
-  static LinkNames get_link_names_from(MemberParent* parent, bool isStatic, Identifier name, bool isVar,
+  static LinkNames get_link_names_from(MethodParent* parent, bool isStatic, Identifier name, bool isVar,
                                        MethodType fnType, Vec<Argument> args, Type* retTy);
 
-  Method(MethodType fnType, bool _isVariation, MemberParent* _parent, const Identifier& _name, ReturnType* returnType,
+  Method(MethodType fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, ReturnType* returnType,
          Vec<Argument> _args, bool has_variadic_arguments, bool _is_static, Maybe<FileRange> _fileRange,
          const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
 
 public:
-  static Method* Create(MemberParent* parent, bool is_variation, const Identifier& name, ReturnType* return_type,
+  static Method* Create(MethodParent* parent, bool is_variation, const Identifier& name, ReturnType* return_type,
                         const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
                         const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static Method* CreateValued(MemberParent* parent, const Identifier& name, Type* return_type,
+  static Method* CreateValued(MethodParent* parent, const Identifier& name, Type* return_type,
                               const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
                               const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static Method* DefaultConstructor(MemberParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
+  static Method* DefaultConstructor(MethodParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
                                     Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* CopyConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+  static Method* CopyConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                  Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* MoveConstructor(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+  static Method* MoveConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                  Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* CopyAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+  static Method* CopyAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* MoveAssignment(MemberParent* parent, FileRange nameRange, const Identifier& otherName,
+  static Method* MoveAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
                                 const FileRange& fileRange, ir::Ctx* irCtx);
 
-  static Method* CreateConstructor(MemberParent* parent, FileRange nameRange, const Vec<Argument>& args,
+  static Method* CreateConstructor(MethodParent* parent, FileRange nameRange, const Vec<Argument>& args,
                                    bool hasVariadicArgs, Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo,
                                    ir::Ctx* irCtx);
 
-  static Method* CreateFromConvertor(MemberParent* parent, FileRange nameRange, Type* sourceType,
+  static Method* CreateFromConvertor(MethodParent* parent, FileRange nameRange, Type* sourceType,
                                      const Identifier& name, Maybe<FileRange> fileRange,
                                      const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateToConvertor(MemberParent* parent, FileRange nameRange, Type* destType,
+  static Method* CreateToConvertor(MethodParent* parent, FileRange nameRange, Type* destType,
                                    Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateDestructor(MemberParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
+  static Method* CreateDestructor(MethodParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
                                   ir::Ctx* irCtx);
 
-  static Method* CreateOperator(MemberParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
+  static Method* CreateOperator(MethodParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
                                 const String& opr, ReturnType* returnType, const Vec<Argument>& args,
                                 Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateStatic(MemberParent* parent, const Identifier& name, Type* return_type,
+  static Method* CreateStatic(MethodParent* parent, const Identifier& name, Type* return_type,
                               const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
                               const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
@@ -155,23 +155,23 @@ public:
     }
   }
 
-  useit inline bool isVariationFunction() const { return isStatic ? false : isVariation; }
+  useit inline bool is_variation_method() const { return isStatic ? false : isVariation; }
 
-  useit inline bool isStaticFunction() const { return isStatic; }
+  useit inline bool is_static_method() const { return isStatic; }
 
   useit String get_full_name() const final;
 
-  useit bool isMemberFunction() const final;
+  useit bool is_method() const final;
 
-  useit inline bool isInSkill() const { return parent->is_done_skill(); }
+  useit inline bool is_in_skill() const { return parent->is_done_skill(); }
 
-  useit inline DoneSkill* getParentSkill() const { return parent->as_done_skill(); }
+  useit inline DoneSkill* get_parent_skill() const { return parent->as_done_skill(); }
 
   useit inline Type* get_parent_type() { return parent->get_parent_type(); }
 
   useit inline Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
 
-  useit inline Maybe<FileRange> isMemberInitted(usize memInd) const {
+  useit inline Maybe<FileRange> is_member_initted(usize memInd) const {
     for (auto mem : initTypeMembers) {
       if (mem.first == memInd) {
         return mem.second;
@@ -179,13 +179,13 @@ public:
     }
     return None;
   }
-  useit inline std::set<String>& getUsedMembers() { return usedMembers; }
+  useit inline std::set<String>& get_used_members() { return usedMembers; }
 
-  void inline addUsedMember(String memberName) { usedMembers.insert(memberName); }
+  void inline add_used_members(String memberName) { usedMembers.insert(memberName); }
 
-  void inline addMemberFunctionCall(ir::Method* other) { memberFunctionCalls.insert(other); }
+  void inline add_method_call(ir::Method* other) { memberFunctionCalls.insert(other); }
 
-  void inline addInitMember(Pair<usize, FileRange> memInfo) { initTypeMembers.push_back(memInfo); }
+  void inline add_init_member(Pair<usize, FileRange> memInfo) { initTypeMembers.push_back(memInfo); }
 
   void update_overview() final;
 };

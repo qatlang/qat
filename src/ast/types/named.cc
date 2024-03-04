@@ -80,9 +80,9 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
     SHOW("Checking generic parameters")
     SHOW("Has Fn " << ctx->has_fn())
     SHOW("Has member parent " << ctx->has_member_parent())
-    if (ctx->has_fn() && ctx->get_fn()->hasGenericParameter(entityName.value)) {
+    if (ctx->has_fn() && ctx->get_fn()->has_generic_parameter(entityName.value)) {
       SHOW("Checking function generic params")
-      auto genParam = ctx->get_fn()->getGenericParameter(entityName.value);
+      auto genParam = ctx->get_fn()->get_generic_parameter(entityName.value);
       if (genParam->is_typed()) {
         return genParam->as_typed()->get_type();
       } else if (genParam->is_prerun()) {

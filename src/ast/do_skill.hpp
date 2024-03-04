@@ -20,7 +20,7 @@ class DoSkill final : public IsEntity, public MemberParentLike {
   ast::Type*       targetType;
 
   mutable ir::DoneSkill*    doneSkill = nullptr;
-  mutable ir::MemberParent* parent    = nullptr;
+  mutable ir::MethodParent* parent    = nullptr;
 
 public:
   DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)

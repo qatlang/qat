@@ -45,9 +45,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
   auto* mod  = ctx->mod;
   auto  name = identifiers.back();
   if (identifiers.size() == 1 && relative == 0) {
-    if (ctx->has_fn() && ctx->get_fn()->hasGenericParameter(identifiers[0].value)) {
+    if (ctx->has_fn() && ctx->get_fn()->has_generic_parameter(identifiers[0].value)) {
       SHOW("PrerunEntity: Has active function and generic parameter")
-      auto* genVal = ctx->get_fn()->getGenericParameter(identifiers[0].value);
+      auto* genVal = ctx->get_fn()->get_generic_parameter(identifiers[0].value);
       if (genVal->is_typed()) {
         return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
       } else if (genVal->is_prerun()) {
@@ -80,7 +80,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
         }
       }
     }
-    if (ctx->irCtx->hasActiveGeneric()) {
+    if (ctx->irCtx->has_active_generic()) {
       if (ctx->irCtx->has_generic_parameter_in_entity(identifiers[0].value)) {
         auto* genVal = ctx->irCtx->get_generic_parameter_from_entity(name.value);
         if (genVal->is_typed()) {
@@ -92,7 +92,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
         }
       }
     }
-    if (ctx->has_fn() && ctx->get_fn()->isMemberFunction() &&
+    if (ctx->has_fn() && ctx->get_fn()->is_method() &&
         (((ir::Method*)ctx->get_fn())->get_parent_type()->is_expanded()) &&
         ((ir::Method*)ctx->get_fn())->get_parent_type()->as_expanded()->has_generic_parameter(identifiers[0].value)) {
       // FIXME - Also check generic skills

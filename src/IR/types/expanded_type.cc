@@ -66,7 +66,7 @@ Method* ExpandedType::get_valued_method(String const& name) const {
 
 Maybe<Method*> ExpandedType::check_normal_method(const Vec<Method*>& memberFunctions, const String& name) {
   for (auto* mFn : memberFunctions) {
-    if (!mFn->isVariationFunction() && mFn->get_name().value == name) {
+    if (!mFn->is_variation_method() && mFn->get_name().value == name) {
       return mFn;
     }
   }
@@ -79,7 +79,7 @@ bool ExpandedType::has_normal_method(const String& fnName) const {
 
 Maybe<Method*> ExpandedType::check_variation(Vec<Method*> const& variationFunctions, const String& name) {
   for (auto* mFn : variationFunctions) {
-    if (mFn->isVariationFunction() && mFn->get_name().value == name) {
+    if (mFn->is_variation_method() && mFn->get_name().value == name) {
       return mFn;
     }
   }

@@ -3,18 +3,18 @@
 namespace qat::ast {
 
 ir::Value* SelfInstance::emit(EmitCtx* ctx) {
-  if (ctx->get_fn()->isMemberFunction()) {
+  if (ctx->get_fn()->is_method()) {
     auto* mFn = (ir::Method*)ctx->get_fn();
     if (mFn->get_method_type() == ir::MethodType::staticFn) {
       ctx->Error("This is a static method and hence the parent instance cannot be retrieved", fileRange);
     }
-    if (mFn->getFirstBlock()->hasValue("''")) {
-      auto selfVal = mFn->getFirstBlock()->getValue("''");
+    if (mFn->get_first_block()->hasValue("''")) {
+      auto selfVal = mFn->get_first_block()->getValue("''");
       return ir::Value::get(selfVal->get_llvm(), selfVal->get_ir_type(),
                             mFn->get_method_type() == ir::MethodType::value_method);
     } else {
       if (mFn->get_ir_type()->as_function()->get_argument_type_at(0)->get_name() == "''") {
-        return ir::Value::get(mFn->get_llvmFunction()->getArg(0),
+        return ir::Value::get(mFn->get_llvm_function()->getArg(0),
                               mFn->get_ir_type()->as_function()->get_argument_type_at(0)->get_type(),
                               mFn->get_method_type() == ir::MethodType::value_method);
       } else {

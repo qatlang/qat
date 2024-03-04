@@ -48,7 +48,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
           }
         }
       }
-      if (ctx->get_fn()->isMemberFunction() ? !((ir::Method*)ctx->get_fn())->get_parent_type()->is_same(cTy) : true) {
+      if (ctx->get_fn()->is_method() ? !((ir::Method*)ctx->get_fn())->get_parent_type()->is_same(cTy) : true) {
         if (cTy->has_any_constructor()) {
           ctx->Error("Core type " + ctx->color(cTy->get_full_name()) +
                          " have constructors and hence the plain initialiser "
@@ -137,7 +137,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
         alloca = localValue->get_llvm();
       } else {
         auto newAlloca = ctx->get_fn()->get_block()->new_value(
-            irName.has_value() ? irName->value : ctx->get_fn()->getRandomAllocaName(), cTy, isVar,
+            irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), cTy, isVar,
             irName.has_value() ? irName->range : fileRange);
         alloca = newAlloca->get_llvm();
       }

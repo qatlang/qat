@@ -4,7 +4,7 @@ namespace qat::ast {
 
 ir::Value* MemberInit::emit(EmitCtx* ctx) {
   SHOW("Checking if member fn")
-  if (ctx->get_fn()->isMemberFunction()) {
+  if (ctx->get_fn()->is_method()) {
     SHOW("Getting function")
     auto* memFn = (ir::Method*)ctx->get_fn();
     SHOW("Doing switch")
@@ -24,19 +24,19 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
         ir::Type*    memTy    = nullptr;
         Maybe<usize> memIndex;
         // FIXME - Support tuple types with named member fields?
-        auto selfRef = memFn->getFirstBlock()->getValue("''");
+        auto selfRef = memFn->get_first_block()->getValue("''");
         if (parentTy->is_struct()) {
           if (parentTy->as_struct()->has_field_with_name(memName.value)) {
             memTy            = parentTy->as_struct()->get_type_of_field(memName.value);
             memIndex         = parentTy->as_struct()->get_index_of(memName.value);
-            auto memCheckRes = memFn->isMemberInitted(memIndex.value());
+            auto memCheckRes = memFn->is_member_initted(memIndex.value());
             if (memCheckRes.has_value()) {
               ctx->Error("Member field " + ctx->color(memName.value) + " is already initialised at " +
                              ctx->color(memCheckRes.value().start_to_string()),
                          fileRange);
             } else {
               SHOW("Adding init member")
-              memFn->addInitMember({memIndex.value(), fileRange});
+              memFn->add_init_member({memIndex.value(), fileRange});
             }
           } else {
             ctx->Error("Parent type " + ctx->color(parentTy->to_string()) + " does not have a member field named " +
@@ -51,7 +51,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
                        memName.range);
           }
           for (auto ind = 0; ind < parentTy->as_mix()->get_variant_count(); ind++) {
-            auto memCheckRes = memFn->isMemberInitted(ind);
+            auto memCheckRes = memFn->is_member_initted(ind);
             if (memCheckRes.has_value()) {
               ctx->Error("The mix type instance has already been initialised at " +
                              ctx->color(memCheckRes.value().start_to_string()) + ". Cannot initialise again",
@@ -59,7 +59,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
             }
           }
           SHOW("Adding mix init member")
-          memFn->addInitMember({parentTy->as_mix()->get_index_of(memName.value), fileRange});
+          memFn->add_init_member({parentTy->as_mix()->get_index_of(memName.value), fileRange});
           if (!mixRes.second) {
             if (isInitOfMixVariantWithoutValue) {
               ctx->irCtx->builder.CreateStore(
@@ -78,7 +78,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
           } else {
             memTy = parentTy->as_mix()->get_variant_with_name(memName.value);
             if (isInitOfMixVariantWithoutValue) {
-              auto selfVal = memFn->getFirstBlock()->getValue("''");
+              auto selfVal = memFn->get_first_block()->getValue("''");
               if (memTy->has_prerun_default_value()) {
                 ctx->irCtx->builder.CreateStore(
                     memTy->get_prerun_default_value(ctx->irCtx)->get_llvm(),

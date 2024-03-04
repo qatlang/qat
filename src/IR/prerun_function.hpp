@@ -16,12 +16,12 @@ class PrerunLocal {
   bool         isVar;
   PrerunValue* value = nullptr;
 
-public:
   PrerunLocal(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal)
       : name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
 
+public:
   useit static inline PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
-    return std::construct_at(OwnNormal(PrerunLocal), _name, _type, _isVar, _initialVal);
+    return new PrerunLocal(_name, _type, _isVar, _initialVal);
   }
 
   useit inline Identifier   get_name() const { return name; }
@@ -43,7 +43,7 @@ public:
   PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {}
 
   useit static inline PreBlock* get(PrerunFunction* _function, PreBlock* _parent) {
-    return std::construct_at(OwnNormal(PreBlock), _function, _parent);
+    return new PreBlock(_function, _parent);
   }
 
   useit bool has_previous() const { return previous != nullptr; }
@@ -75,6 +75,11 @@ class PreFnState {
   PrerunFunction* function = nullptr;
   Vec<PreBlock*>  blocks;
   usize           activeBlock = 0;
+
+  PreFnState(PrerunFunction* _function) : function(_function) {}
+
+public:
+  useit static inline PreFnState* get(PrerunFunction* fun) { return new PreFnState(fun); }
 };
 
 class PrerunFunction : public PrerunValue {

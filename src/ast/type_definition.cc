@@ -59,9 +59,9 @@ void TypeDefinition::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
 
 bool TypeDefinition::isGeneric() const { return !generics.empty(); }
 
-void TypeDefinition::setVariantName(const String& name) const { variantName = name; }
+void TypeDefinition::set_variant_name(const String& name) const { variantName = name; }
 
-void TypeDefinition::unsetVariantName() const { variantName = None; }
+void TypeDefinition::unset_variant_name() const { variantName = None; }
 
 void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
   auto emitCtx = EmitCtx::get(irCtx, mod);
@@ -89,7 +89,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
     genericsIR.push_back(gen->toIRGenericType());
   }
   if (isGeneric()) {
-    irCtx->getActiveGeneric().generics = genericsIR;
+    irCtx->get_active_generic().generics = genericsIR;
   }
   SHOW("Type definition " << dTyName.value)
   typeDefinition =

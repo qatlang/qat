@@ -52,24 +52,24 @@ struct EmitCtx {
   ir::Ctx* irCtx = nullptr;
   ir::Mod* mod   = nullptr;
 
-  ir::Skill*          skill;
-  ir::MemberParent*   memberParent;
-  ir::OpaqueType*     parentOpaque;
-  ir::Function*       fn;
-  ir::PrerunFunction* preFn;
+  ir::Skill*        skill;
+  ir::MethodParent* memberParent;
+  ir::OpaqueType*   parentOpaque;
+  ir::Function*     fn;
+  ir::PreFnState*   preFnState;
 
   Vec<LoopInfo>  loopsInfo;
   Vec<Breakable> breakables;
 
   EmitCtx(ir::Ctx* _irCtx, ir::Mod* _mod)
       : irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
-        preFn(nullptr) {}
+        preFnState(nullptr) {}
 
   useit static inline EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
     return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
   }
 
-  EmitCtx* with_member_parent(ir::MemberParent* _memberParent) {
+  EmitCtx* with_member_parent(ir::MethodParent* _memberParent) {
     memberParent = _memberParent;
     return this;
   }
@@ -79,8 +79,8 @@ struct EmitCtx {
     return this;
   }
 
-  EmitCtx* with_prerun_function(ir::PrerunFunction* _preFn) {
-    preFn = _preFn;
+  EmitCtx* with_prerun_function_state(ir::PreFnState* _preFn) {
+    preFnState = _preFn;
     return this;
   }
 
@@ -92,13 +92,13 @@ struct EmitCtx {
   useit AccessInfo get_access_info() const;
 
   useit inline bool              has_member_parent() const { return memberParent != nullptr; }
-  useit inline ir::MemberParent* get_member_parent() const { return memberParent; }
+  useit inline ir::MethodParent* get_member_parent() const { return memberParent; }
 
   useit inline bool          has_fn() const { return fn != nullptr; }
   useit inline ir::Function* get_fn() const { return fn; }
 
-  useit inline bool                has_pre_fn() const { return preFn != nullptr; }
-  useit inline ir::PrerunFunction* get_pre_fn() const { return preFn; }
+  useit inline bool            has_pre_fn_state() const { return preFnState != nullptr; }
+  useit inline ir::PreFnState* get_pre_fn_state() const { return preFnState; }
 
   useit inline bool            has_opaque_parent() const { return parentOpaque != nullptr; }
   useit inline ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }

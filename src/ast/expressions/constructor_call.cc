@@ -113,7 +113,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
       llAlloca = localValue->getAlloca();
     } else {
       auto newAlloca = ctx->get_fn()->get_block()->new_value(
-          irName.has_value() ? irName.value().value : ctx->get_fn()->getRandomAllocaName(), eTy, isVar,
+          irName.has_value() ? irName.value().value : ctx->get_fn()->get_random_alloca_name(), eTy, isVar,
           irName.has_value() ? irName.value().range : fileRange);
       llAlloca = newAlloca->get_llvm();
     }

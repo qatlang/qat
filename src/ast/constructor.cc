@@ -178,7 +178,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto* parentRefTy = argIRTypes.at(0)->get_type()->as_reference();
   auto* self = block->new_value("''", parentRefTy, false, parentRefTy->get_subtype()->as_struct()->get_name().range);
   SHOW("Storing self instance")
-  irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(0u), self->get_llvm());
+  irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
   SHOW("Loading implicit ptr")
   self->load_ghost_pointer(irCtx->builder);
   SHOW("Loaded self instance")
@@ -187,7 +187,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         prototype->argName->value,
         ir::ReferenceType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(), irCtx), false,
         prototype->argName->range);
-    irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(1), argVal->getAlloca(), false);
+    irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->getAlloca(), false);
     argVal->load_ghost_pointer(irCtx->builder);
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -198,8 +198,9 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
           memPtr = irCtx->builder.CreateStructGEP(
               parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
               parentRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes.at(i)->get_name()).value());
-          fnEmit->addInitMember({parentRefTy->get_subtype()->as_struct()->get_field_index(argIRTypes.at(i)->get_name()),
-                                 prototype->arguments.at(i - 1)->get_name().range});
+          fnEmit->add_init_member(
+              {parentRefTy->get_subtype()->as_struct()->get_field_index(argIRTypes.at(i)->get_name()),
+               prototype->arguments.at(i - 1)->get_name().range});
         } else if (parentRefTy->get_subtype()->is_mix()) {
           memPtr = irCtx->builder.CreatePointerCast(
               irCtx->builder.CreateStructGEP(parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(), 1u),
@@ -208,21 +209,21 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                   ->get_variant_with_name(argIRTypes.at(i)->get_name())
                   ->get_llvm_type()
                   ->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()));
-          fnEmit->addInitMember({parentRefTy->get_subtype()->as_mix()->get_index_of(argIRTypes.at(i)->get_name()),
-                                 prototype->arguments.at(i)->get_name().range});
+          fnEmit->add_init_member({parentRefTy->get_subtype()->as_mix()->get_index_of(argIRTypes.at(i)->get_name()),
+                                   prototype->arguments.at(i)->get_name().range});
         } else {
           irCtx->Error("Cannot use member argument syntax for the parent type " +
                            irCtx->color(parentRefTy->get_subtype()->to_string()) + " as it is not a mix or core type",
                        prototype->arguments.at(i - 1)->get_name().range);
         }
-        irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), memPtr);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr);
       } else {
         SHOW("Argument is variable")
         auto* argVal = block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
                                         prototype->arguments.at(i - 1)->is_variable(),
                                         prototype->arguments.at(i - 1)->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
       }
     }
   }
@@ -239,7 +240,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     auto coreTy = state.parent->get_parent_type()->as_struct();
     for (usize i = 0; i < coreTy->get_field_count(); i++) {
       auto mem = coreTy->get_field_at(i);
-      if (fnEmit->isMemberInitted(i)) {
+      if (fnEmit->is_member_initted(i)) {
         continue;
       }
       if (mem->defaultValue.has_value()) {
@@ -300,7 +301,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                            " but the value provided is of type " + irCtx->color(memVal->get_ir_type()->to_string()),
                        FileRange{mem->name.range, mem->defaultValue.value()->fileRange});
         }
-        fnEmit->addInitMember({i, mem->defaultValue.value()->fileRange});
+        fnEmit->add_init_member({i, mem->defaultValue.value()->fileRange});
       } else if (mem->type->has_prerun_default_value() || mem->type->is_default_constructible()) {
         if (mem->type->has_prerun_default_value()) {
           irCtx->Warning("Member field " + irCtx->highlightWarning(mem->name.value) +
@@ -322,7 +323,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                              ir::ReferenceType::get(true, mem->type, irCtx), false),
               fnEmit);
         }
-        fnEmit->addInitMember({i, fileRange});
+        fnEmit->add_init_member({i, fileRange});
       }
     }
   }
@@ -330,7 +331,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     Vec<Pair<String, FileRange>> missingMembers;
     auto                         cTy = state.parent->get_parent_type()->as_struct();
     for (auto ind = 0; ind < cTy->get_field_count(); ind++) {
-      auto memCheck = fnEmit->isMemberInitted(ind);
+      auto memCheck = fnEmit->is_member_initted(ind);
       if (!memCheck.has_value()) {
         missingMembers.push_back({cTy->get_field_at(ind)->name.value, fileRange});
       }
@@ -348,7 +349,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   } else if (state.parent->get_parent_type()->is_mix()) {
     bool isMixInitialised = false;
     for (usize i = 0; i < state.parent->get_parent_type()->as_mix()->get_variant_count(); i++) {
-      auto memRes = fnEmit->isMemberInitted(i);
+      auto memRes = fnEmit->is_member_initted(i);
       if (memRes.has_value()) {
         isMixInitialised = true;
         break;

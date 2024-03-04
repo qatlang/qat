@@ -45,7 +45,7 @@ struct VisibilitySpec {
         return "pub:skill";
     }
   }
-  useit Json to_json() const { return Json()._("visibilityKind", kindToJsonValue(kind))._("fileRange", range); }
+  useit Json to_json() const { return Json()._("visibilityKind", kind_to_string(kind))._("fileRange", range); }
 };
 
 class Commentable {

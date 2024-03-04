@@ -1,5 +1,5 @@
-#ifndef QAT_AST_CONSTANTS_ENTITY_HPP
-#define QAT_AST_CONSTANTS_ENTITY_HPP
+#ifndef QAT_AST_PRERUN_ENTITY_HPP
+#define QAT_AST_PRERUN_ENTITY_HPP
 
 #include "../expression.hpp"
 #include "member_access.hpp"

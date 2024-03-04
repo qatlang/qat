@@ -1,5 +1,5 @@
-#ifndef QAT_AST_CONSTANTS_STRING_LITERAL_HPP
-#define QAT_AST_CONSTANTS_STRING_LITERAL_HPP
+#ifndef QAT_AST_PRERUN_STRING_LITERAL_HPP
+#define QAT_AST_PRERUN_STRING_LITERAL_HPP
 
 #include "../../IR/context.hpp"
 #include "../expression.hpp"

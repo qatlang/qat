@@ -3,16 +3,16 @@
 #include "../ast/types/generic_abstract.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
+#include "./control_flow.hpp"
 #include "./generics.hpp"
 #include "./logic.hpp"
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
 #include "./types/region.hpp"
-#include "control_flow.hpp"
 #include "link_names.hpp"
-#include "member_function.hpp"
 #include "meta_info.hpp"
+#include "method.hpp"
 #include "types/qat_type.hpp"
 #include "types/unsigned.hpp"
 #include "value.hpp"
@@ -66,7 +66,7 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
     fn->blocks.push_back(this);
   }
   name = (has_parent() ? (parent->get_name() + "_") : "") + std::to_string(index) + "b";
-  bb   = llvm::BasicBlock::Create(fn->get_llvmFunction()->getContext(), name, fn->get_llvmFunction());
+  bb   = llvm::BasicBlock::Create(fn->get_llvm_function()->getContext(), name, fn->get_llvm_function());
   SHOW("Created llvm::BasicBlock " << name)
 }
 
@@ -168,7 +168,7 @@ void Block::set_active(llvm::IRBuilder<>& builder) {
     parent->set_active(builder);
     parent->active = index;
   } else {
-    fn->setActiveBlock(index);
+    fn->set_active_block(index);
   }
   builder.SetInsertPoint(bb);
 }
@@ -330,7 +330,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
         llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName, mod->get_llvm_module());
   }
-  if (!isMemberFunction() && !isGeneric()) {
+  if (!is_method() && !isGeneric()) {
     mod->functions.push_back(this);
   }
 }
@@ -400,15 +400,15 @@ void Function::update_overview() {
       ._("locals", localsJson);
 }
 
-bool Function::hasVariadicArgs() const { return hasVariadicArguments; }
+bool Function::has_variadic_args() const { return hasVariadicArguments; }
 
-Identifier Function::argumentNameAt(u32 index) const { return arguments.at(index).get_name(); }
+Identifier Function::arg_name_at(u32 index) const { return arguments.at(index).get_name(); }
 
 Identifier Function::get_name() const { return name; }
 
 ir::Mod* Function::get_module() const { return mod; }
 
-bool Function::hasGenericParameter(const String& name) const {
+bool Function::has_generic_parameter(const String& name) const {
   for (auto* gen : generics) {
     if (gen->get_name().value == name) {
       return true;
@@ -417,12 +417,12 @@ bool Function::hasGenericParameter(const String& name) const {
   return false;
 }
 
-String Function::getRandomAllocaName() const {
+String Function::get_random_alloca_name() const {
   localNameCounter++;
   return std::to_string(localNameCounter) + "_new";
 }
 
-GenericParameter* Function::getGenericParameter(const String& name) const {
+GenericParameter* Function::get_generic_parameter(const String& name) const {
   for (auto* gen : generics) {
     if (gen->get_name().value == name) {
       return gen;
@@ -437,32 +437,32 @@ bool Function::is_accessible(const AccessInfo& req_info) const {
   return Visibility::is_accessible(visibility_info, req_info);
 }
 
-ir::LocalValue* Function::getFunctionCommonIndex() {
+ir::LocalValue* Function::get_function_common_index() {
   if (!strComparisonIndex) {
-    strComparisonIndex = getFirstBlock()->new_value("qat'function'commonIndex",
-                                                    // NOLINTNEXTLINE(readability-magic-numbers)
-                                                    ir::UnsignedType::get(64u, ctx), true, name.range);
+    strComparisonIndex = get_first_block()->new_value("qat'function'commonIndex",
+                                                      // NOLINTNEXTLINE(readability-magic-numbers)
+                                                      ir::UnsignedType::get(64u, ctx), true, name.range);
   }
   return strComparisonIndex;
 }
 
 VisibilityInfo Function::get_visibility() const { return visibility_info; }
 
-bool Function::isMemberFunction() const { return false; }
+bool Function::is_method() const { return false; }
 
-llvm::Function* Function::get_llvmFunction() { return (llvm::Function*)ll; }
+llvm::Function* Function::get_llvm_function() { return (llvm::Function*)ll; }
 
-void Function::setActiveBlock(usize index) const { activeBlock = index; }
+void Function::set_active_block(usize index) const { activeBlock = index; }
 
 Block* Function::get_block() const { return blocks.at(activeBlock)->getActive(); }
 
-Block* Function::getFirstBlock() const { return blocks.at(0); };
+Block* Function::get_first_block() const { return blocks.at(0); };
 
-usize Function::getBlockCount() const { return blocks.size(); }
+usize Function::get_block_count() const { return blocks.size(); }
 
-usize& Function::getCopiedCounter() { return copiedCounter; }
+usize& Function::get_copied_counter() { return copiedCounter; }
 
-usize& Function::getMovedCounter() { return movedCounter; }
+usize& Function::get_moved_counter() { return movedCounter; }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
@@ -490,7 +490,7 @@ Mod* GenericFunction::get_module() const { return parent; }
 
 ast::GenericAbstractType* GenericFunction::getGenericAt(usize index) const { return generics.at(index); }
 
-useit bool GenericFunction::allTypesHaveDefaults() const {
+useit bool GenericFunction::all_generics_have_default() const {
   for (auto* gen : generics) {
     if (!gen->hasDefault()) {
       return false;
@@ -499,14 +499,14 @@ useit bool GenericFunction::allTypesHaveDefaults() const {
   return true;
 }
 
-Function* GenericFunction::fillGenerics(Vec<ir::GenericToFill*> types, ir::Ctx* irCtx, const FileRange& fileRange) {
+Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx* irCtx, const FileRange& fileRange) {
   for (auto var : variants) {
     if (var.check(
             irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }
-  ir::fillGenerics(irCtx, generics, types, fileRange);
+  ir::fill_generics(irCtx, generics, types, fileRange);
   if (constraint.has_value()) {
     auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
     if (checkVal->get_ir_type()->is_bool()) {
@@ -521,14 +521,14 @@ Function* GenericFunction::fillGenerics(Vec<ir::GenericToFill*> types, ir::Ctx* 
                    constraint.value()->fileRange);
     }
   }
-  auto variantName = ir::Logic::getGenericVariantName(name.value, types);
-  functionDefinition->setVariantName(variantName);
+  auto variantName = ir::Logic::get_generic_variant_name(name.value, types);
+  functionDefinition->set_variant_name(variantName);
   Vec<ir::GenericParameter*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }
   auto prevTemp = irCtx->allActiveGenerics;
-  irCtx->addActiveGeneric(
+  irCtx->add_active_generic(
       ir::GenericEntityMarker{variantName, ir::GenericEntityType::function, fileRange, 0, genParams}, true);
   auto* fun                    = functionDefinition->create_function(parent, irCtx);
   functionDefinition->function = fun;
@@ -537,20 +537,20 @@ Function* GenericFunction::fillGenerics(Vec<ir::GenericToFill*> types, ir::Ctx* 
   for (auto* temp : generics) {
     temp->unset();
   }
-  functionDefinition->unsetVariantName();
-  if (irCtx->getActiveGeneric().warningCount > 0) {
-    auto count = irCtx->getActiveGeneric().warningCount;
-    irCtx->removeActiveGeneric();
+  functionDefinition->unset_variant_name();
+  if (irCtx->get_active_generic().warningCount > 0) {
+    auto count = irCtx->get_active_generic().warningCount;
+    irCtx->remove_active_generic();
     irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                        " generated while creating generic function: " + irCtx->highlightWarning(variantName),
                    fileRange);
   } else {
-    irCtx->removeActiveGeneric();
+    irCtx->remove_active_generic();
   }
   return fun;
 }
 
-void destructorCaller(ir::Ctx* irCtx, ir::Function* fun) {
+void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
   SHOW("DestructorCaller")
   Vec<ir::LocalValue*> locals;
   fun->get_block()->collect_all_local_values_so_far(locals);
@@ -628,7 +628,7 @@ void destructorCaller(ir::Ctx* irCtx, ir::Function* fun) {
                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
               trueBlock->get_bb(), restBlock->get_bb());
           trueBlock->set_active(irCtx->builder);
-          irCtx->builder.CreateCall(dstrFn->get_llvmFunction()->getFunctionType(), dstrFn->get_llvmFunction(),
+          irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(), dstrFn->get_llvm_function(),
                                     {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
           (void)ir::add_branch(irCtx->builder, restBlock->get_bb());
           restBlock->set_active(irCtx->builder);
@@ -651,8 +651,8 @@ void destructorCaller(ir::Ctx* irCtx, ir::Function* fun) {
   locals.clear();
 }
 
-void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun) {
-  if (fun->isMemberFunction()) {
+void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
+  if (fun->is_method()) {
     auto* mFn = (ir::Method*)fun;
     // FIXME - Change this
     if (!mFn->get_parent_type()->is_struct()) {
@@ -667,7 +667,8 @@ void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun) {
           auto* ptrTy  = mem->type->as_pointer();
           auto* memPtr = irCtx->builder.CreateStructGEP(
               ptrTy->get_llvm_type(),
-              irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), mFn->getFirstBlock()->getValue("''")->get_llvm(), i),
+              irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), mFn->get_first_block()->getValue("''")->get_llvm(),
+                                             i),
               0u);
           if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
             auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
@@ -725,7 +726,7 @@ void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun) {
                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
                   trueBlock->get_bb(), restBlock->get_bb());
               trueBlock->set_active(irCtx->builder);
-              irCtx->builder.CreateCall(dstrFn->get_llvmFunction()->getFunctionType(), dstrFn->get_llvmFunction(),
+              irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(), dstrFn->get_llvm_function(),
                                         {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr)});
               (void)ir::add_branch(irCtx->builder, restBlock->get_bb());
               restBlock->set_active(irCtx->builder);
@@ -744,9 +745,9 @@ void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun) {
                                                       llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
         }
       }
-      if (fun->getBlockCount() >= 1 && fun->getFirstBlock()->hasValue("''")) {
+      if (fun->get_block_count() >= 1 && fun->get_first_block()->hasValue("''")) {
         SHOW("Destructor self value is zero assigned")
-        auto* selfVal = fun->getFirstBlock()->getValue("''");
+        auto* selfVal = fun->get_first_block()->getValue("''");
         irCtx->builder.CreateStore(llvm::Constant::getNullValue(cTy->get_llvm_type()), selfVal->getAlloca());
       } else {
         SHOW("Destructor has no self value")
@@ -764,9 +765,9 @@ void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange&
     SHOW("Empty instruction list in block")
     if (retTy->get_type()->is_void()) {
       SHOW("Calling destructor caller")
-      destructorCaller(irCtx, fun);
+      destructor_caller(irCtx, fun);
       SHOW("Calling member function caller")
-      memberFunctionHandler(irCtx, fun);
+      method_handler(irCtx, fun);
       if (fun->get_full_name() == "main") {
         for (auto* reg : Type::allRegions()) {
           reg->destroyObjects(irCtx);
@@ -782,9 +783,9 @@ void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange&
       SHOW("Last instruction is not a return")
       if (retTy->get_type()->is_void()) {
         SHOW("Calling destructor caller")
-        destructorCaller(irCtx, fun);
+        destructor_caller(irCtx, fun);
         SHOW("Calling member function handler")
-        memberFunctionHandler(irCtx, fun);
+        method_handler(irCtx, fun);
         if (fun->get_full_name() == "main") {
           for (auto* reg : Type::allRegions()) {
             reg->destroyObjects(irCtx);
@@ -798,7 +799,7 @@ void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange&
   }
 }
 
-void destroyLocalsFrom(ir::Ctx* irCtx, ir::Block* block) {
+void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
   Vec<ir::LocalValue*> locals;
   block->collect_locals_from(locals);
   for (auto* loc : locals) {

@@ -4,7 +4,7 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
 #include "../generics.hpp"
-#include "../member_function.hpp"
+#include "../method.hpp"
 #include "../static_member.hpp"
 #include "./qat_type.hpp"
 #include "expanded_type.hpp"
@@ -162,7 +162,7 @@ public:
   useit bool       allTypesHaveDefaults() const;
   useit usize      getVariantCount() const;
   useit Mod*       get_module() const;
-  useit Type*      fillGenerics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+  useit Type*      fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
 
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit VisibilityInfo            get_visibility() const;

@@ -2,7 +2,7 @@
 #include "./qat_module.hpp"
 #include "./types/reference.hpp"
 #include "link_names.hpp"
-#include "member_function.hpp"
+#include "method.hpp"
 #include "types/qat_type.hpp"
 
 namespace qat::ir {

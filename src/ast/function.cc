@@ -249,16 +249,16 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
     SHOW("Storing args for main function")
     if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
       auto* cmdArgsVal = block->new_value(
-          fnEmit->argumentNameAt(0).value.substr(0, fnEmit->argumentNameAt(0).value.find('\'')),
+          fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
           ir::PointerType::get(false, ir::CType::get_cstr(irCtx), false, ir::PointerOwner::OfAnonymous(), true, irCtx),
-          false, fnEmit->argumentNameAt(0).range);
+          false, fnEmit->arg_name_at(0).range);
       SHOW("Storing argument pointer")
       irCtx->builder.CreateStore(
-          fnEmit->get_llvmFunction()->getArg(1u),
+          fnEmit->get_llvm_function()->getArg(1u),
           irCtx->builder.CreateStructGEP(cmdArgsVal->get_ir_type()->get_llvm_type(), cmdArgsVal->get_llvm(), 0u));
       SHOW("Storing argument count")
       irCtx->builder.CreateStore(
-          irCtx->builder.CreateIntCast(fnEmit->get_llvmFunction()->getArg(0u), llvm::Type::getInt64Ty(irCtx->llctx),
+          irCtx->builder.CreateIntCast(fnEmit->get_llvm_function()->getArg(0u), llvm::Type::getInt64Ty(irCtx->llctx),
                                        false),
           irCtx->builder.CreateStructGEP(cmdArgsVal->get_ir_type()->get_llvm_type(), cmdArgsVal->get_llvm(), 1u));
     }
@@ -274,7 +274,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
         auto* argVal = block->new_value(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),
                                         arguments[i]->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
       }
     }
   }
@@ -284,9 +284,9 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
   ir::function_return_handler(irCtx, fnEmit, fileRange);
 }
 
-void FunctionPrototype::setVariantName(const String& value) const { variantName = value; }
+void FunctionPrototype::set_variant_name(const String& value) const { variantName = value; }
 
-void FunctionPrototype::unsetVariantName() const { variantName = None; }
+void FunctionPrototype::unset_variant_name() const { variantName = None; }
 
 Json FunctionPrototype::to_json() const {
   Vec<JsonValue> args;

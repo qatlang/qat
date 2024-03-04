@@ -89,7 +89,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
       alloca = createIn->get_llvm();
     } else {
       auto* loc = ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value
-                                                                           : ctx->get_fn()->getRandomAllocaName(),
+                                                                           : ctx->get_fn()->get_random_alloca_name(),
                                                         ir::ArrayType::get(elemTy, values.size(), ctx->irCtx->llctx),
                                                         isVar, irName.has_value() ? irName->range : fileRange);
       alloca = loc->getAlloca();

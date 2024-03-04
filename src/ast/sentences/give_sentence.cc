@@ -19,8 +19,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
     SHOW("RetType: " << retType->to_string() << "\nRetValType: " << retVal->getType()->to_string())
     if (retType->is_same(retVal->get_ir_type())) {
       if (retType->is_void()) {
-        ir::destructorCaller(ctx->irCtx, fun);
-        ir::memberFunctionHandler(ctx->irCtx, fun);
+        ir::destructor_caller(ctx->irCtx, fun);
+        ir::method_handler(ctx->irCtx, fun);
         return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), retType, false);
       } else {
         if (retVal->is_ghost_pointer()) {
@@ -34,8 +34,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
               ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()),
                                               retVal->get_llvm());
             }
-            ir::destructorCaller(ctx->irCtx, fun);
-            ir::memberFunctionHandler(ctx->irCtx, fun);
+            ir::destructor_caller(ctx->irCtx, fun);
+            ir::method_handler(ctx->irCtx, fun);
             return ir::Value::get(ctx->irCtx->builder.CreateRet(loadRes), retType, false);
           } else {
             ctx->Error(
@@ -45,8 +45,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
                 fileRange);
           }
         } else {
-          ir::destructorCaller(ctx->irCtx, fun);
-          ir::memberFunctionHandler(ctx->irCtx, fun);
+          ir::destructor_caller(ctx->irCtx, fun);
+          ir::method_handler(ctx->irCtx, fun);
           return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
         }
       }
@@ -68,8 +68,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
       if (retVal->is_reference()) {
         retVal->load_ghost_pointer(ctx->irCtx->builder);
       }
-      ir::destructorCaller(ctx->irCtx, fun);
-      ir::memberFunctionHandler(ctx->irCtx, fun);
+      ir::destructor_caller(ctx->irCtx, fun);
+      ir::method_handler(ctx->irCtx, fun);
       return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
     } else if (retVal->get_ir_type()->is_reference() &&
                retVal->get_ir_type()->as_reference()->get_subtype()->is_same(retType)) {
@@ -84,8 +84,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
           }
           ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()), retVal->get_llvm());
         }
-        ir::destructorCaller(ctx->irCtx, fun);
-        ir::memberFunctionHandler(ctx->irCtx, fun);
+        ir::destructor_caller(ctx->irCtx, fun);
+        ir::method_handler(ctx->irCtx, fun);
         return ir::Value::get(ctx->irCtx->builder.CreateRet(loadRes), retType, false);
       } else {
         ctx->Error(
@@ -102,8 +102,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
     }
   } else {
     if (fun->get_ir_type()->as_function()->get_return_type()->get_type()->is_void()) {
-      ir::destructorCaller(ctx->irCtx, fun);
-      ir::memberFunctionHandler(ctx->irCtx, fun);
+      ir::destructor_caller(ctx->irCtx, fun);
+      ir::method_handler(ctx->irCtx, fun);
       return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), ir::VoidType::get(ctx->irCtx->llctx), false);
     } else {
       ctx->Error("No value is provided to give while the given type of the function is " +

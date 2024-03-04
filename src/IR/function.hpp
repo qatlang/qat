@@ -163,28 +163,28 @@ public:
                           Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
   useit Value*       call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
-  useit virtual bool isMemberFunction() const;
-  useit bool         hasVariadicArgs() const;
-  useit Identifier   argumentNameAt(u32 index) const;
+  useit virtual bool is_method() const;
+  useit bool         has_variadic_args() const;
+  useit Identifier   arg_name_at(u32 index) const;
   useit virtual Identifier get_name() const;
   useit virtual String     get_full_name() const;
   useit bool               is_accessible(const AccessInfo& req_info) const;
   useit VisibilityInfo     get_visibility() const;
   useit ir::Mod* get_module() const;
-  useit llvm::Function* get_llvmFunction();
-  void                  setActiveBlock(usize index) const;
+  useit llvm::Function* get_llvm_function();
+  void                  set_active_block(usize index) const;
   useit Block*          get_block() const;
-  useit Block*          getFirstBlock() const;
-  useit usize           getBlockCount() const;
-  useit usize&          getCopiedCounter();
-  useit usize&          getMovedCounter();
-  useit ir::LocalValue*   getFunctionCommonIndex();
+  useit Block*          get_first_block() const;
+  useit usize           get_block_count() const;
+  useit usize&          get_copied_counter();
+  useit usize&          get_moved_counter();
+  useit ir::LocalValue*   get_function_common_index();
   useit bool              isGeneric() const;
-  useit bool              hasGenericParameter(const String& name) const;
-  useit GenericParameter* getGenericParameter(const String& name) const;
+  useit bool              has_generic_parameter(const String& name) const;
+  useit GenericParameter* get_generic_parameter(const String& name) const;
   useit bool              hasDefinitionRange() const;
   useit FileRange         getDefinitionRange() const;
-  useit String            getRandomAllocaName() const;
+  useit String            get_random_alloca_name() const;
 
   void update_overview() override;
 
@@ -214,14 +214,14 @@ public:
   useit Mod*       get_module() const;
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit VisibilityInfo            get_visibility() const;
-  useit Function* fillGenerics(Vec<ir::GenericToFill*> _types, ir::Ctx* irCtx, const FileRange& fileRange);
-  useit bool      allTypesHaveDefaults() const;
+  useit Function* fill_generics(Vec<ir::GenericToFill*> _types, ir::Ctx* irCtx, const FileRange& fileRange);
+  useit bool      all_generics_have_default() const;
 };
 
 void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange& fileRange);
-void destructorCaller(ir::Ctx* irCtx, ir::Function* fun);
-void memberFunctionHandler(ir::Ctx* irCtx, ir::Function* fun);
-void destroyLocalsFrom(ir::Ctx* irCtx, ir::Block* block);
+void destructor_caller(ir::Ctx* irCtx, ir::Function* fun);
+void method_handler(ir::Ctx* irCtx, ir::Function* fun);
+void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block);
 
 } // namespace qat::ir
 

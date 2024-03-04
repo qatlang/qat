@@ -19,7 +19,7 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto* parentRefTy = argIRTypes.at(0)->get_type()->as_reference();
   auto* self        = block->new_value("''", parentRefTy, true, state.parent->get_type_range());
   SHOW("Storing self")
-  irCtx->builder.CreateStore(memberFn->get_llvmFunction()->getArg(0u), self->get_llvm());
+  irCtx->builder.CreateStore(memberFn->get_llvm_function()->getArg(0u), self->get_llvm());
   SHOW("Loading self")
   self->load_ghost_pointer(irCtx->builder);
   SHOW("Emitting sentences")

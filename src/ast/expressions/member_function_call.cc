@@ -30,9 +30,9 @@ void MemberFunctionCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depe
 ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
   SHOW("Member variable emitting")
   if (isExpSelf) {
-    if (ctx->get_fn()->isMemberFunction()) {
+    if (ctx->get_fn()->is_method()) {
       auto* memFn = (ir::Method*)ctx->get_fn();
-      if (memFn->isStaticFunction()) {
+      if (memFn->is_static_method()) {
         ctx->Error("This is a static method and hence cannot call method on the parent instance", fileRange);
       }
     } else {
@@ -141,12 +141,12 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                      " is not accessible here",
                  fileRange);
     }
-    if (isExpSelf && instType->is_struct() && ctx->get_fn()->isMemberFunction()) {
+    if (isExpSelf && instType->is_struct() && ctx->get_fn()->is_method()) {
       auto thisFn = (ir::Method*)ctx->get_fn();
       if (thisFn->isConstructor()) {
         Vec<String> missingMembers;
         for (usize i = 0; i < instType->as_struct()->get_field_count(); i++) {
-          if (!thisFn->isMemberInitted(i)) {
+          if (!thisFn->is_member_initted(i)) {
             missingMembers.push_back(instType->as_struct()->get_field_name_at(i));
           }
         }
@@ -170,7 +170,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                      fileRange);
         }
       }
-      thisFn->addMemberFunctionCall(memFn);
+      thisFn->add_method_call(memFn);
     }
     if (!inst->is_ghost_pointer() && !inst->is_reference() &&
         (memFn->get_method_type() != ir::MethodType::value_method)) {

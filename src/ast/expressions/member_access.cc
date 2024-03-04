@@ -10,9 +10,9 @@ namespace qat::ast {
 ir::Value* MemberAccess::emit(EmitCtx* ctx) {
   // NOLINTBEGIN(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
   if (isExpSelf) {
-    if (ctx->get_fn()->isMemberFunction()) {
+    if (ctx->get_fn()->is_method()) {
       auto* memFn = (ir::Method*)ctx->get_fn();
-      if (memFn->isStaticFunction()) {
+      if (memFn->is_static_method()) {
         ctx->Error("This is a static member function and hence cannot access members of the parent instance",
                    fileRange);
       }
@@ -205,7 +205,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
       if (isExpSelf) {
         auto* mFn = (ir::Method*)ctx->get_fn();
         if (mFn->isConstructor()) {
-          if (!mFn->isMemberInitted(eTy->as_struct()->get_field_index(name.value))) {
+          if (!mFn->is_member_initted(eTy->as_struct()->get_field_index(name.value))) {
             auto mem = eTy->as_struct()->get_field_with_name(name.value);
             if (mem->defaultValue.has_value()) {
               ctx->Error(
@@ -219,7 +219,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
             }
           }
         } else {
-          mFn->addUsedMember(mem->name.value);
+          mFn->add_used_members(mem->name.value);
         }
       }
       if (!mem->visibility.is_accessible(ctx->get_access_info())) {

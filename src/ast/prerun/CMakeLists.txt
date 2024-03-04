@@ -1,4 +1,4 @@
-add_library(QAT_AST_CONSTANTS
+add_library(QAT_AST_PRERUN
 	array_literal.cc
 	binary_op.cc
 	bitwise_not.cc
@@ -23,8 +23,8 @@ add_library(QAT_AST_CONSTANTS
 	type_wrap.cc
 	unsigned_literal.cc)
 
-target_link_directories(QAT_AST_CONSTANTS PUBLIC ../../utils)
+target_link_directories(QAT_AST_PRERUN PUBLIC ../../utils)
 
-target_include_directories(QAT_AST_CONSTANTS PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_AST_PRERUN PUBLIC "${LLVM_ROOT_DIR}/include")
 
-target_link_libraries(QAT_AST_CONSTANTS QAT_UTILS)
+target_link_libraries(QAT_AST_PRERUN QAT_UTILS)

@@ -96,7 +96,7 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
     }
     if (genericTypes.empty()) {
       SHOW("Checking if all generic abstracts have defaults")
-      if (!genericFn->allTypesHaveDefaults()) {
+      if (!genericFn->all_generics_have_default()) {
         ctx->Error(
             "Not all generic parameters in this function have a default type associated with it, and hence the generic values can't be empty. Use " +
                 ctx->color("default") + " to use the default type or value of the generic parameter.",
@@ -129,9 +129,9 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
       }
       types.push_back(genericTypes.at(i)->toFill(ctx));
     }
-    SHOW("Calling fillGenerics")
-    auto* fnRes = genericFn->fillGenerics(types, ctx->irCtx, fileRange);
-    SHOW("fillGenerics completed")
+    SHOW("Calling fill_generics")
+    auto* fnRes = genericFn->fill_generics(types, ctx->irCtx, fileRange);
+    SHOW("fill_generics completed")
     if (curr) {
       curr->set_active(ctx->irCtx->builder);
     }

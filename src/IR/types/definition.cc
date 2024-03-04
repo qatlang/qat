@@ -158,7 +158,7 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
       return var.get();
     }
   }
-  ir::fillGenerics(irCtx, generics, types, range);
+  ir::fill_generics(irCtx, generics, types, range);
   if (constraint.has_value()) {
     auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
     if (checkVal->get_ir_type()->is_bool()) {
@@ -176,9 +176,9 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }
-  auto variantName = ir::Logic::getGenericVariantName(name.value, types);
-  defineTypeDef->setVariantName(variantName);
-  irCtx->addActiveGeneric(
+  auto variantName = ir::Logic::get_generic_variant_name(name.value, types);
+  defineTypeDef->set_variant_name(variantName);
+  irCtx->add_active_generic(
       ir::GenericEntityMarker{
           variantName,
           ir::GenericEntityType::typeDefinition,
@@ -193,15 +193,15 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
   for (auto* temp : generics) {
     temp->unset();
   }
-  defineTypeDef->unsetVariantName();
-  if (irCtx->getActiveGeneric().warningCount > 0) {
-    auto count = irCtx->getActiveGeneric().warningCount;
-    irCtx->removeActiveGeneric();
+  defineTypeDef->unset_variant_name();
+  if (irCtx->get_active_generic().warningCount > 0) {
+    auto count = irCtx->get_active_generic().warningCount;
+    irCtx->remove_active_generic();
     irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
                        " generated while creating generic variant " + irCtx->highlightWarning(variantName),
                    range);
   } else {
-    irCtx->removeActiveGeneric();
+    irCtx->remove_active_generic();
   }
   return dTy;
 }

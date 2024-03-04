@@ -1,5 +1,5 @@
-#ifndef QAT_AST_CONSTANTS_NULL_POINTER_HPP
-#define QAT_AST_CONSTANTS_NULL_POINTER_HPP
+#ifndef QAT_AST_PRERUN_NULL_POINTER_HPP
+#define QAT_AST_PRERUN_NULL_POINTER_HPP
 
 #include "../expression.hpp"
 #include "../types/qat_type.hpp"

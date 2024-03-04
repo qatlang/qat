@@ -12,7 +12,7 @@ ir::Value* Break::emit(EmitCtx* ctx) {
       for (auto& brk : ctx->breakables) {
         if (brk.tag.has_value()) {
           if (tag.value().value == brk.tag.value()) {
-            ir::destroyLocalsFrom(ctx->irCtx, brk.trueBlock);
+            ir::destroy_locals_from(ctx->irCtx, brk.trueBlock);
             return ir::Value::get(ir::add_branch(ctx->irCtx->builder, brk.restBlock->get_bb()),
                                   ir::VoidType::get(ctx->irCtx->llctx), false);
           }
@@ -23,7 +23,7 @@ ir::Value* Break::emit(EmitCtx* ctx) {
                  tag->range);
     } else {
       if (ctx->breakables.size() == 1) {
-        ir::destroyLocalsFrom(ctx->irCtx, ctx->breakables.front().trueBlock);
+        ir::destroy_locals_from(ctx->irCtx, ctx->breakables.front().trueBlock);
         return ir::Value::get(ir::add_branch(ctx->irCtx->builder, ctx->breakables.front().restBlock->get_bb()),
                               ir::VoidType::get(ctx->irCtx->llctx), false);
       } else {

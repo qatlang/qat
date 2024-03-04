@@ -167,21 +167,21 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto* coreRefTy  = argIRTypes.at(0)->get_type()->as_reference();
   auto* self       = block->new_value("''", coreRefTy, prototype->isVariationFn,
                                       coreRefTy->get_subtype()->as_struct()->get_name().range);
-  irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(0u), self->get_llvm());
+  irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
   self->load_ghost_pointer(irCtx->builder);
   if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
     auto* argVal =
         block->new_value(prototype->argName->value,
                          ir::ReferenceType::get(prototype->opr == Op::moveAssignment, coreRefTy->get_subtype(), irCtx),
                          false, prototype->argName->range);
-    irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(1u), argVal->get_llvm());
+    irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
       SHOW("Argument type is " << argIRTypes.at(i)->get_type()->to_string())
       auto* argVal = block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true,
                                       prototype->arguments.at(i - 1)->get_name().range);
       SHOW("Created local value for the argument")
-      irCtx->builder.CreateStore(fnEmit->get_llvmFunction()->getArg(i), argVal->getAlloca(), false);
+      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
     }
     SHOW("Operator Return type is " << fnEmit->getType()->as_function()->get_return_type()->to_string())
   }

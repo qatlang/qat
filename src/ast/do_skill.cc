@@ -114,7 +114,7 @@ void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 }
 
 void DoSkill::define_members(ir::Ctx* irCtx) {
-  parent           = ir::MemberParent::create_do_skill(doneSkill);
+  parent           = ir::MethodParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (has_default_constructor()) {
     MethodState state(parent);
@@ -169,7 +169,7 @@ void DoSkill::define_members(ir::Ctx* irCtx) {
 }
 
 void DoSkill::emit_members(ir::Ctx* irCtx) {
-  parent           = ir::MemberParent::create_do_skill(doneSkill);
+  parent           = ir::MethodParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (defaultConstructor) {
     MethodState state(parent, parentState->defaultConstructor);

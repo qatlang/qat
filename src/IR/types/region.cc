@@ -430,10 +430,10 @@ ir::Value* Region::ownData(ir::Type* otype, Maybe<llvm::Value*> _count, ir::Ctx*
                                       irCtx->dataLayout.value().getTypeAllocSize(otype->get_llvm_type())),
                ((otype->is_struct() && otype->as_struct()->has_destructor())
                     ? irCtx->builder.CreatePointerCast(
-                          irCtx->builder.CreateBitCast(otype->as_struct()->get_destructor()->get_llvmFunction(),
+                          irCtx->builder.CreateBitCast(otype->as_struct()->get_destructor()->get_llvm_function(),
                                                        otype->as_struct()
                                                            ->get_destructor()
-                                                           ->get_llvmFunction()
+                                                           ->get_llvm_function()
                                                            ->getFunctionType()
                                                            ->getPointerTo()),
                           llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())

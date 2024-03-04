@@ -175,23 +175,23 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
   }
   threadsWithErrors.insert(std::this_thread::get_id());
   auto* cfg = cli::Config::get();
-  if (hasActiveGeneric()) {
+  if (has_active_generic()) {
     codeProblems.push_back(CodeProblem(true,
-                                       "Errors generated while creating generic variant: " + getActiveGeneric().name,
-                                       getActiveGeneric().fileRange));
+                                       "Errors generated while creating generic variant: " + get_active_generic().name,
+                                       get_active_generic().fileRange));
     Logger::get()->errOut << "\n"
                           << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan)
-                          << " --> " << Colored(colors::reset) << getActiveGeneric().fileRange.file.string() << ":"
-                          << getActiveGeneric().fileRange.start << "\n"
-                          << "Errors while creating generic variant: " << color(getActiveGeneric().name) << "\n"
+                          << " --> " << Colored(colors::reset) << get_active_generic().fileRange.file.string() << ":"
+                          << get_active_generic().fileRange.start << "\n"
+                          << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
                           << "\n";
   }
   codeProblems.push_back(CodeProblem(
-      true, (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") + message, fileRange));
+      true, (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") + message, fileRange));
   Logger::get()->errOut << "\n"
                         << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::reset) << " ";
   Logger::get()->errOut << Colored(colors::bold::white)
-                        << (hasActiveGeneric() ? ("Creating " + getActiveGeneric().name + " => ") : "") << message
+                        << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
                         << Colored(colors::reset) << "\n";
   if (fileRange) {
     Logger::get()->errOut << Colored(colors::cyan) << " --> " << Colored(colors::reset)
@@ -209,8 +209,8 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
   }
   Logger::get()->errOut << "\n";
   if (activeMod && !module_has_errors(activeMod)) {
-    if (hasActiveGeneric()) {
-      removeActiveGeneric();
+    if (has_active_generic()) {
+      remove_active_generic();
     }
     modulesWithErrors.push_back(activeMod);
     for (const auto& modNRange : activeMod->get_brought_mentions()) {
@@ -368,17 +368,18 @@ Pair<usize, Vec<std::tuple<String, u64, u64>>> Ctx::get_range_content(FileRange 
 void Ctx::Warning(const String& message, const FileRange& fileRange) {
   while (!ctxMut.try_lock()) {
   }
-  if (hasActiveGeneric()) {
-    getActiveGeneric().warningCount++;
+  if (has_active_generic()) {
+    get_active_generic().warningCount++;
   }
-  codeProblems.push_back(CodeProblem(
-      false, (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message, fileRange));
+  codeProblems.push_back(
+      CodeProblem(false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
+                  fileRange));
   auto* cfg = cli::Config::get();
   Logger::get()->out << "\n"
                      << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan)
                      << " --> " << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line
                      << ":" << fileRange.start.character << Colored(colors::bold::white) << "\n"
-                     << (hasActiveGeneric() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+                     << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
                      << Colored(colors::reset) << "\n";
   print_range_content(fileRange, false, false);
   ctxMut.unlock();

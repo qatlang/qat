@@ -19,30 +19,30 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
   ir::Value* rhsEmit = nullptr;
   if (lhs->nodeType() == NodeType::DEFAULT) {
     rhsEmit = rhs->emit(ctx);
-    lhs->asTypeInferrable()->setInferenceType(
+    lhs->as_type_inferrable()->set_inference_type(
         rhsEmit->is_reference() ? rhsEmit->get_ir_type()->as_reference()->get_subtype() : rhsEmit->get_ir_type());
     lhsEmit = lhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::DEFAULT) {
     lhsEmit = lhs->emit(ctx);
-    rhs->asTypeInferrable()->setInferenceType(
+    rhs->as_type_inferrable()->set_inference_type(
         lhsEmit->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype() : lhsEmit->get_ir_type());
     rhsEmit = rhs->emit(ctx);
   } else if (lhs->nodeType() == NodeType::NULL_POINTER) {
     rhsEmit = rhs->emit(ctx);
-    lhs->asTypeInferrable()->setInferenceType(rhsEmit->get_ir_type());
+    lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
     lhsEmit = lhs->emit(ctx);
   } else if (rhs->nodeType() == NodeType::NULL_POINTER) {
     lhsEmit = lhs->emit(ctx);
-    rhs->asTypeInferrable()->setInferenceType(lhsEmit->get_ir_type());
+    rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
     rhsEmit = rhs->emit(ctx);
   } else if ((lhs->nodeType() == NodeType::INTEGER_LITERAL || lhs->nodeType() == NodeType::UNSIGNED_LITERAL ||
               lhs->nodeType() == NodeType::FLOAT_LITERAL || lhs->nodeType() == NodeType::CUSTOM_FLOAT_LITERAL ||
               lhs->nodeType() == NodeType::CUSTOM_INTEGER_LITERAL) &&
              expect_same_operand_types(op)) {
     rhsEmit = rhs->emit(ctx);
-    lhs->asTypeInferrable()->setInferenceType(rhsEmit->get_ir_type());
+    lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->hasTypeInferrance() && expect_same_operand_types(op)) {
+  } else if (rhs->has_type_inferrance() && expect_same_operand_types(op)) {
     lhsEmit    = lhs->emit(ctx);
     auto lhsTy = lhsEmit->get_ir_type()->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype()
                                                         : lhsEmit->get_ir_type();
@@ -50,7 +50,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       lhsTy = lhsTy->as_ctype()->get_subtype();
     }
     if (lhsTy->is_integer() || lhsTy->is_unsigned_integer() || lhsTy->is_float()) {
-      rhs->asTypeInferrable()->setInferenceType(lhsEmit->get_ir_type());
+      rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
     }
     rhsEmit = rhs->emit(ctx);
   } else {
@@ -434,12 +434,16 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         case Op::divide: {
           llRes = ctx->irCtx->builder.CreateFDiv(lhsVal, rhsVal);
-          ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
+          if (!llvm::Triple(cli::Config::get()->get_target_triple()).isOSWindows()) {
+            ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
+          }
           break;
         }
         case Op::remainder: {
           llRes = ctx->irCtx->builder.CreateFRem(lhsVal, rhsVal);
-          ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
+          if (!llvm::Triple(cli::Config::get()->get_target_triple()).isOSWindows()) {
+            ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
+          }
           break;
         }
         case Op::equalTo: {

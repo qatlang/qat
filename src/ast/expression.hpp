@@ -15,8 +15,8 @@ namespace qat::ast {
   useit InPlaceCreatable* asInPlaceCreatable() final { return (InPlaceCreatable*)this; }
 
 #define TYPE_INFERRABLE_FUNCTIONS                                                                                      \
-  useit bool            hasTypeInferrance() const final { return true; }                                               \
-  useit TypeInferrable* asTypeInferrable() final { return (TypeInferrable*)this; }
+  useit bool            has_type_inferrance() const final { return true; }                                             \
+  useit TypeInferrable* as_type_inferrable() final { return (TypeInferrable*)this; }
 
 class LocalDeclCompatible {
 public:
@@ -52,8 +52,8 @@ struct FnAtEnd {
 class TypeInferrable {
 public:
   ir::Type*         inferredType = nullptr;
-  useit inline bool isTypeInferred() const { return inferredType != nullptr; }
-  inline void       setInferenceType(ir::Type* _type) {
+  useit inline bool is_type_inferred() const { return inferredType != nullptr; }
+  inline void       set_inference_type(ir::Type* _type) {
     inferredType = _type->is_reference() ? _type->as_reference()->get_subtype() : _type;
   }
 };
@@ -69,8 +69,8 @@ public:
   useit virtual bool              isInPlaceCreatable() const { return false; }
   useit virtual InPlaceCreatable* asInPlaceCreatable() { return nullptr; }
 
-  useit virtual bool            hasTypeInferrance() const { return false; }
-  useit virtual TypeInferrable* asTypeInferrable() { return nullptr; }
+  useit virtual bool            has_type_inferrance() const { return false; }
+  useit virtual TypeInferrable* as_type_inferrable() { return nullptr; }
 
   virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
                                    EmitCtx* ctx) = 0;

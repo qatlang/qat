@@ -14,8 +14,8 @@ void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 }
 
 void ArrayType::typeInferenceForLength(ir::Ctx* irCtx) const {
-  if (lengthExp->hasTypeInferrance()) {
-    lengthExp->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, irCtx));
+  if (lengthExp->has_type_inferrance()) {
+    lengthExp->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, irCtx));
   }
 }
 

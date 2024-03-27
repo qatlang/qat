@@ -9,7 +9,7 @@ ir::PrerunValue* PrerunGeneric::getDefault() const { return defaultValue; }
 
 void PrerunGeneric::emit(EmitCtx* ctx) const {
   SHOW("Emitting prerun generic " << name.value << " and hasDefault: " << hasDefault())
-  SHOW("TypeKind for prerun param type " << (uint)expTy->type_kind());
+  SHOW("TypeKind for prerun param type " << (u32)expTy->type_kind());
   expressionType = expTy->emit(ctx);
   SHOW("Emitted type of prerun generic parameter")
   if (!expressionType->can_be_prerun_generic()) {
@@ -17,8 +17,8 @@ void PrerunGeneric::emit(EmitCtx* ctx) const {
   }
   if (hasDefault()) {
     auto* astVal = defaultValueAST.value();
-    if (astVal->hasTypeInferrance()) {
-      astVal->asTypeInferrable()->setInferenceType(expressionType);
+    if (astVal->has_type_inferrance()) {
+      astVal->as_type_inferrable()->set_inference_type(expressionType);
     }
     defaultValue = astVal->emit(ctx);
     if (defaultValue) {

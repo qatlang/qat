@@ -17,8 +17,8 @@ ir::Type* VectorType::emit(EmitCtx* ctx) {
   auto subTy       = subType->emit(ctx);
   auto usableSubTy = subTy->is_ctype() ? subTy->as_ctype()->get_subtype() : subTy;
   if (usableSubTy->is_integer() || usableSubTy->is_unsigned_integer() || usableSubTy->is_float()) {
-    if (count->hasTypeInferrance()) {
-      count->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(32u, ctx->irCtx));
+    if (count->has_type_inferrance()) {
+      count->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
     }
     auto num = count->emit(ctx);
     if (num->get_ir_type()->is_unsigned_integer() && num->get_ir_type()->as_unsigned_integer()->getBitwidth() == 32u) {

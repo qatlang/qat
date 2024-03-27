@@ -225,7 +225,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
         {}, ir::ReturnType::get(retTy), args, isVariadic, fileRange, emitCtx->getVisibInfo(visibSpec), irCtx,
         definition.has_value()
             ? None
-            : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage),
+            : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalLinkage),
         irMetaInfo);
     SHOW("Created IR function")
     return fun;

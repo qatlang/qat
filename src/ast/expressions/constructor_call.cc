@@ -8,11 +8,11 @@ namespace qat::ast {
 
 ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
   SHOW("Constructor Call - Emitting type")
-  if (!type.has_value() && !isTypeInferred()) {
+  if (!type.has_value() && !is_type_inferred()) {
     ctx->Error("No type provided for constructor call, and no type inferred from scope", fileRange);
   }
   auto* typ = type.has_value() ? type.value()->emit(ctx) : inferredType;
-  if (type.has_value() && isTypeInferred()) {
+  if (type.has_value() && is_type_inferred()) {
     if (!typ->is_same(inferredType)) {
       ctx->Error("The provided type for the constructor call is " + ctx->color(typ->to_string()) +
                      " but the inferred type is " + ctx->color(inferredType->to_string()),

@@ -87,8 +87,8 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
             ((ast::PrerunDefault*)(gen->as_prerun()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
           } else if (genericCoreTy->getGenericAt(i)->as_typed() &&
                      (genericCoreTy->getGenericAt(i)->as_prerun()->getType() != nullptr)) {
-            if (gen->as_prerun()->hasTypeInferrance()) {
-              gen->as_prerun()->asTypeInferrable()->setInferenceType(
+            if (gen->as_prerun()->has_type_inferrance()) {
+              gen->as_prerun()->as_type_inferrable()->set_inference_type(
                   genericCoreTy->getGenericAt(i)->as_prerun()->getType());
             }
           }
@@ -143,8 +143,8 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
             ((ast::PrerunDefault*)(gen->as_prerun()))->setGenericAbstract(genericTypeDef->get_generic_at(i));
           } else if (genericTypeDef->get_generic_at(i)->as_typed() &&
                      (genericTypeDef->get_generic_at(i)->as_prerun()->getType() != nullptr)) {
-            if (gen->as_prerun()->hasTypeInferrance()) {
-              gen->as_prerun()->asTypeInferrable()->setInferenceType(
+            if (gen->as_prerun()->has_type_inferrance()) {
+              gen->as_prerun()->as_type_inferrable()->set_inference_type(
                   genericTypeDef->get_generic_at(i)->as_prerun()->getType());
             }
           }

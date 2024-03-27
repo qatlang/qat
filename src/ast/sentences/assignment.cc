@@ -10,8 +10,8 @@ namespace qat::ast {
 
 ir::Value* Assignment::emit(EmitCtx* ctx) {
   auto* lhsVal = lhs->emit(ctx);
-  if (value->hasTypeInferrance()) {
-    value->asTypeInferrable()->setInferenceType(lhsVal->get_ir_type());
+  if (value->has_type_inferrance()) {
+    value->as_type_inferrable()->set_inference_type(lhsVal->get_ir_type());
   }
   SHOW("Emitted lhs of Assignment")
   if (lhsVal->is_variable() ||
@@ -73,8 +73,8 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
               // FIXME - Use zero/default value
               ctx->irCtx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expTy->get_llvm_type()), prevRef);
             }
-            SHOW("Creating store with LHS type: " << lhsVal->getType()->to_string()
-                                                  << " and RHS type: " << expVal->getType()->to_string())
+            SHOW("Creating store with LHS type: " << lhsVal->get_ir_type()->to_string()
+                                                  << " and RHS type: " << expVal->get_ir_type()->to_string())
             ctx->irCtx->builder.CreateStore(expVal->get_llvm(), lhsVal->get_llvm());
           } else {
             ctx->Error("The expression on the right hand side is of type " + ctx->color(expTy->to_string()) +

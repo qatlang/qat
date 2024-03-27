@@ -5,7 +5,7 @@ namespace qat::ast {
 
 ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
   ir::Type* floatResTy = nullptr;
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (inferredType->is_float() || (inferredType->is_ctype() && inferredType->as_ctype()->get_subtype()->is_float())) {
       if (!kind.empty() && inferredType->to_string() != kind) {
         ctx->Error("The suffix provided here is " + ctx->color(kind) + " but the inferred type is " +

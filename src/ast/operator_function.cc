@@ -183,7 +183,7 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       SHOW("Created local value for the argument")
       irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
     }
-    SHOW("Operator Return type is " << fnEmit->getType()->as_function()->get_return_type()->to_string())
+    SHOW("Operator Return type is " << fnEmit->get_ir_type()->as_function()->get_return_type()->to_string())
   }
   emit_sentences(
       sentences,

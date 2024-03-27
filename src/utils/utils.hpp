@@ -8,7 +8,6 @@
 namespace qat::utils {
 
 useit inline bool is_integer(String value) {
-  bool result = true;
   for (auto ch : value) {
     if ((ch < 48) || (ch > 57)) {
       return false;

@@ -86,7 +86,7 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
                  suffix.value().range);
     }
   }
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (suffixType.has_value() && !suffixType.value()->is_same(inferredType)) {
       ctx->Error("The type inferred from scope for this custom integer literal is " +
                      ctx->color(inferredType->to_string()) + " but the type from the provided suffix is " +
@@ -113,14 +113,14 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
   return ir::PrerunValue::get(
       llvm::ConstantInt::get(suffixType.has_value()
                                  ? llvm::cast<llvm::IntegerType>(suffixType.value()->get_llvm_type())
-                                 : (isTypeInferred() ? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
-                                                     : llvm::Type::getIntNTy(ctx->irCtx->llctx, usableBitwidth)),
+                                 : (is_type_inferred() ? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
+                                                       : llvm::Type::getIntNTy(ctx->irCtx->llctx, usableBitwidth)),
                              numberValue, radix.value_or(DEFAULT_RADIX_VALUE)),
       suffixType.has_value()
           ? suffixType.value()
-          : (isTypeInferred() ? inferredType
-                              : (numberIsUnsigned ? (ir::Type*)ir::UnsignedType::get(usableBitwidth, ctx->irCtx)
-                                                  : (ir::Type*)ir::IntegerType::get(usableBitwidth, ctx->irCtx))));
+          : (is_type_inferred() ? inferredType
+                                : (numberIsUnsigned ? (ir::Type*)ir::UnsignedType::get(usableBitwidth, ctx->irCtx)
+                                                    : (ir::Type*)ir::IntegerType::get(usableBitwidth, ctx->irCtx))));
 }
 
 String CustomIntegerLiteral::radixToString(u8 val) {

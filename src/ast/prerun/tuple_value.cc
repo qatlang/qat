@@ -11,7 +11,7 @@ void PrerunTupleValue::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depend
 
 ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
   Maybe<ir::TupleType*> expected;
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (!inferredType->is_tuple()) {
       ctx->Error("This expression should be of a tuple type, but the type inferred from scope is " +
                      ctx->color(inferredType->to_string()),
@@ -28,8 +28,8 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
   Vec<ir::PrerunValue*> memberVals;
   for (usize i = 0; i < members.size(); i++) {
     if (expected.has_value()) {
-      if (members.at(i)->hasTypeInferrance()) {
-        members.at(i)->asTypeInferrable()->setInferenceType(expected.value()->getSubtypeAt(i));
+      if (members.at(i)->has_type_inferrance()) {
+        members.at(i)->as_type_inferrable()->set_inference_type(expected.value()->getSubtypeAt(i));
       }
     }
     memberVals.push_back(members.at(i)->emit(ctx));

@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
-  if (isTypeInferred() && !inferredType->is_unsigned_integer() &&
+  if (is_type_inferred() && !inferredType->is_unsigned_integer() &&
       (inferredType->is_ctype() && !inferredType->as_ctype()->get_subtype()->is_unsigned_integer())) {
     ctx->Error("The inferred type of this expression is " + inferredType->to_string() +
                    " which is not an unsigned integer type",
@@ -26,10 +26,11 @@ ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
   // NOLINTBEGIN(readability-magic-numbers)
   return ir::PrerunValue::get(
       llvm::ConstantInt::get(
-          isTypeInferred() ? llvm::dyn_cast<llvm::IntegerType>(inferredType->get_llvm_type())
-                           : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
+          is_type_inferred() ? llvm::dyn_cast<llvm::IntegerType>(inferredType->get_llvm_type())
+                             : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
           intValue, 10u),
-      isTypeInferred() ? inferredType : ir::UnsignedType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
+      is_type_inferred() ? inferredType
+                         : ir::UnsignedType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
   // NOLINTEND(readability-magic-numbers)
 }
 

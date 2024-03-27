@@ -21,7 +21,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
     if (fs::exists(path)) {
       path = fs::canonical(path);
       if (fs::is_directory(path)) {
-        if (ir::Mod::hasFolderModule(path)) {
+        if (ir::Mod::has_folder_module(path)) {
           if (names.at(i).has_value()) {
             if (isMember) {
               // FIXME - Maybe change this
@@ -55,7 +55,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
           irCtx->Error("Couldn't find folder module for path: " + irCtx->color(path.string()), fileRange);
         }
       } else if (fs::is_regular_file(path)) {
-        if (ir::Mod::hasFileModule(path)) {
+        if (ir::Mod::has_file_module(path)) {
           if (names.at(i).has_value()) {
             if (isMember) {
               // FIXME - Maybe change this
@@ -64,7 +64,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
             emitCtx->name_check_in_module(name, "named file module", None);
-            auto* fileModule = ir::Mod::getFileModule(path);
+            auto* fileModule = ir::Mod::get_file_module(path);
             fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
             mod->entity_name_check(irCtx, name, ir::EntityType::bringEntity);
             mod->bring_module(fileModule, emitCtx->getVisibInfo(visibSpec), name);
@@ -73,15 +73,15 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
             fileEnt->updateStatus(ir::EntityStatus::complete);
           } else {
             if (isMember) {
-              if (ir::Mod::getFileModule(path)->parent) {
+              if (ir::Mod::get_file_module(path)->parent) {
                 irCtx->Error("Module at " + irCtx->color(path.string()) + " already has a parent module",
                              paths.at(i)->fileRange);
               }
-              auto* fileModule = ir::Mod::getFileModule(path);
+              auto* fileModule = ir::Mod::get_file_module(path);
               fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
               mod->addMember(fileModule);
             } else {
-              auto* fileModule = ir::Mod::getFileModule(path);
+              auto* fileModule = ir::Mod::get_file_module(path);
               fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
               mod->bring_module(fileModule, emitCtx->getVisibInfo(visibSpec));
             }

@@ -6,7 +6,7 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
   auto  reqInfo = ctx->get_access_info();
   auto* typePreEmit =
       type.has_value() ? type.value()->emit(ctx) : ir::PrerunValue::get_typed_prerun(ir::TypedType::get(inferredType));
-  if (type.has_value() && isTypeInferred()) {
+  if (type.has_value() && is_type_inferred()) {
     if (!typePreEmit->get_ir_type()->is_typed()) {
       ctx->Error("Expected a type here, but got an expression", type.value()->fileRange);
     }
@@ -16,7 +16,7 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
                      " but the type inferred from scope is " + ctx->color(inferredType->to_string()),
                  type.value()->fileRange);
     }
-  } else if (!type.has_value() && !isTypeInferred()) {
+  } else if (!type.has_value() && !is_type_inferred()) {
     ctx->Error("No type is provided for plain initialisation and no type could be inferred from scope", fileRange);
   }
   auto typeEmit = typePreEmit->get_ir_type()->as_typed()->get_subtype();

@@ -6,7 +6,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
   FnAtEnd fnObj{[&] { createIn = nullptr; }};
   // FIXME - Support heaped value
   SHOW("Mix/Choice type initialiser")
-  if (!type.has_value() && !isTypeInferred()) {
+  if (!type.has_value() && !is_type_inferred()) {
     ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
   }
   auto* typeEmit = type.has_value() ? type.value()->emit(ctx) : inferredType;
@@ -32,8 +32,8 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
         llvm::Value* exp = nullptr;
         if (subRes.second) {
           auto* typ = mixTy->get_variant_with_name(subName.value);
-          if (expression.value()->hasTypeInferrance()) {
-            expression.value()->asTypeInferrable()->setInferenceType(typ);
+          if (expression.value()->has_type_inferrance()) {
+            expression.value()->as_type_inferrable()->set_inference_type(typ);
           }
           auto* expEmit = expression.value()->emit(ctx);
           if (typ->is_same(expEmit->get_ir_type())) {

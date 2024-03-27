@@ -4,8 +4,8 @@
 namespace qat::ast {
 
 ir::PrerunValue* NoneExpression::emit(EmitCtx* ctx) {
-  if (type || isTypeInferred()) {
-    if (isTypeInferred()) {
+  if (type || is_type_inferred()) {
+    if (is_type_inferred()) {
       if (!inferredType->is_maybe()) {
         ctx->Error("The inferred type of the " + ctx->color("none") + " expression is " +
                        ctx->color(inferredType->to_string()) + " which is not a maybe type",

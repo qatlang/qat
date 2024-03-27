@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
-  if (isTypeInferred() &&
+  if (is_type_inferred() &&
       (!inferredType->is_integer() && !inferredType->is_unsigned_integer() &&
        (!bits.has_value() && !inferredType->is_float()) &&
        (!bits.has_value() && inferredType->is_ctype() && !inferredType->as_ctype()->get_subtype()->is_float()) &&
@@ -20,7 +20,7 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
           fileRange);
     }
   }
-  ir::Type* resTy = isTypeInferred()
+  ir::Type* resTy = is_type_inferred()
                         ? (inferredType->is_ctype() ? inferredType->as_ctype()->get_subtype() : inferredType)
                         : ir::IntegerType::get(32, ctx->irCtx);
   if (bits.has_value() && !ctx->mod->has_integer_bitwidth(bits.value().first)) {
@@ -43,11 +43,11 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
   } else {
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(
-            isTypeInferred() ? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
-                             : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
+            is_type_inferred() ? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
+                               : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
             numValue, 10u),
-        isTypeInferred() ? inferredType
-                         : ir::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
+        is_type_inferred() ? inferredType
+                           : ir::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
   }
   // NOLINTEND(readability-magic-numbers)
 }

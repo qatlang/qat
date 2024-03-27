@@ -4,7 +4,7 @@
 namespace qat::ast {
 
 ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (!inferredType->is_array()) {
       ctx->Error("This expression expects an array type, but the type inferred from scope is " +
                      ctx->color(inferredType->to_string()),
@@ -20,11 +20,11 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
   ir::Type*            elementType = nullptr;
   Vec<llvm::Constant*> constVals;
   for (usize i = 0; i < valuesExp.size(); i++) {
-    if (isTypeInferred() && valuesExp[i]->hasTypeInferrance()) {
-      valuesExp[i]->asTypeInferrable()->setInferenceType(inferredType->as_array()->get_element_type());
+    if (is_type_inferred() && valuesExp[i]->has_type_inferrance()) {
+      valuesExp[i]->as_type_inferrable()->set_inference_type(inferredType->as_array()->get_element_type());
     }
     auto itVal = valuesExp.at(i)->emit(ctx);
-    if (isTypeInferred()) {
+    if (is_type_inferred()) {
       if (!inferredType->as_array()->get_element_type()->is_same(itVal->get_ir_type())) {
         ctx->Error("This expression is of type " + ctx->color(itVal->get_ir_type()->to_string()) +
                        " which does not match with the expected element type of the inferred type, which is " +
@@ -46,10 +46,11 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
     constVals.push_back(itVal->get_llvm_constant());
   }
   return ir::PrerunValue::get(
-      llvm::ConstantArray::get(isTypeInferred() ? llvm::cast<llvm::ArrayType>(inferredType->get_llvm_type())
-                                                : llvm::ArrayType::get(elementType->get_llvm_type(), constVals.size()),
+      llvm::ConstantArray::get(is_type_inferred()
+                                   ? llvm::cast<llvm::ArrayType>(inferredType->get_llvm_type())
+                                   : llvm::ArrayType::get(elementType->get_llvm_type(), constVals.size()),
                                constVals),
-      isTypeInferred() ? inferredType : ir::ArrayType::get(elementType, constVals.size(), ctx->irCtx->llctx));
+      is_type_inferred() ? inferredType : ir::ArrayType::get(elementType, constVals.size(), ctx->irCtx->llctx));
 }
 
 String PrerunArrayLiteral::to_string() const {

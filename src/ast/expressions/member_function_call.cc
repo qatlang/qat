@@ -215,8 +215,8 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
     for (usize i = 0; i < arguments.size(); i++) {
       if (fnTy->get_argument_count() > (u64)i) {
         auto* argTy = fnTy->get_argument_type_at(i + 1)->get_type();
-        if (arguments.at(i)->hasTypeInferrance()) {
-          arguments.at(i)->asTypeInferrable()->setInferenceType(argTy);
+        if (arguments.at(i)->has_type_inferrance()) {
+          arguments.at(i)->as_type_inferrable()->set_inference_type(argTy);
         }
       }
       argsEmit.push_back(arguments.at(i)->emit(ctx));
@@ -266,7 +266,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
         if (currArg->is_reference()) {
           currArg->load_ghost_pointer(ctx->irCtx->builder);
         }
-        SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->getType()->to_string())
+        SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->get_ir_type()->to_string())
         auto* argTy    = fnArgsTy[i]->get_type();
         auto* argValTy = currArg->get_ir_type();
         auto  isRefVar = currArg->is_reference() ? currArg->get_ir_type()->as_reference()->isSubtypeVariable()
@@ -294,7 +294,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                      arguments[i - 1]->fileRange);
         }
       }
-      SHOW("Argument value at " << i - 1 << " is of type " << argsEmit[i - 1]->getType()->to_string()
+      SHOW("Argument value at " << i - 1 << " is of type " << argsEmit[i - 1]->get_ir_type()->to_string()
                                 << " and argtype is " << fnArgsTy.at(i)->get_type()->to_string())
       argVals.push_back(argsEmit[i - 1]->get_llvm());
     }
@@ -335,8 +335,8 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                        "one argument of type " + ctx->color(vecTy->get_non_scalable_type(ctx->irCtx)->to_string()),
                    fileRange);
       }
-      if (arguments[0]->hasTypeInferrance()) {
-        arguments[0]->asTypeInferrable()->setInferenceType(vecTy->get_non_scalable_type(ctx->irCtx));
+      if (arguments[0]->has_type_inferrance()) {
+        arguments[0]->as_type_inferrable()->set_inference_type(vecTy->get_non_scalable_type(ctx->irCtx));
       }
       auto* argVec = arguments[0]->emit(ctx);
       if (argVec->get_ir_type()->is_same(vecTy->get_non_scalable_type(ctx->irCtx)) ||

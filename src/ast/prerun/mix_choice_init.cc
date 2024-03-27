@@ -5,7 +5,7 @@ namespace qat::ast {
 
 ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
   SHOW("Prerun Mix/Choice type initialiser")
-  if (!type.has_value() && !isTypeInferred()) {
+  if (!type.has_value() && !is_type_inferred()) {
     ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
   }
   auto*     typeEmitOrig = type.has_value() ? type.value()->emit(ctx) : nullptr;
@@ -13,7 +13,7 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
   if (type.has_value()) {
     if (typeEmitOrig->get_ir_type()->is_typed()) {
       typeEmit = typeEmitOrig->get_ir_type()->as_typed()->get_subtype();
-      if (isTypeInferred() && !typeEmit->is_same(inferredType)) {
+      if (is_type_inferred() && !typeEmit->is_same(inferredType)) {
         ctx->Error("The type provided is " + ctx->color(typeEmit->to_string()) +
                        " but the type inferred from scope is " + ctx->color(inferredType->to_string()),
                    type.value()->fileRange);
@@ -23,7 +23,7 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
                      ctx->color(typeEmitOrig->get_ir_type()->to_string()),
                  type.value()->fileRange);
     }
-  } else if (isTypeInferred()) {
+  } else if (is_type_inferred()) {
     typeEmit = inferredType;
   } else {
     ctx->Error("No type provided here, and no type could be inferred from scope", fileRange);
@@ -52,8 +52,8 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
       llvm::Constant* exp = nullptr;
       if (subRes.second) {
         auto* typ = mixTy->get_variant_with_name(subName.value);
-        if (expression.value()->hasTypeInferrance()) {
-          expression.value()->asTypeInferrable()->setInferenceType(typ);
+        if (expression.value()->has_type_inferrance()) {
+          expression.value()->as_type_inferrable()->set_inference_type(typ);
         }
         auto* expEmit = expression.value()->emit(ctx);
         if (typ->is_same(expEmit->get_ir_type())) {

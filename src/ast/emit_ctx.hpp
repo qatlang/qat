@@ -4,9 +4,6 @@
 #include "../IR/prerun_function.hpp"
 #include "../IR/qat_module.hpp"
 
-#define Colored(val)        (cfg->noColorMode() ? "" : val)
-#define ColoredOr(val, rep) (cfg->noColorMode() ? rep : val)
-
 namespace qat::ast {
 
 struct VisibilitySpec;
@@ -56,14 +53,15 @@ struct EmitCtx {
   ir::MethodParent* memberParent;
   ir::OpaqueType*   parentOpaque;
   ir::Function*     fn;
-  ir::PreFnState*   preFnState;
+
+  ir::PrerunCallState* prerunCallState;
 
   Vec<LoopInfo>  loopsInfo;
   Vec<Breakable> breakables;
 
   EmitCtx(ir::Ctx* _irCtx, ir::Mod* _mod)
       : irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
-        preFnState(nullptr) {}
+        prerunCallState(nullptr) {}
 
   useit static inline EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
     return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
@@ -79,8 +77,8 @@ struct EmitCtx {
     return this;
   }
 
-  EmitCtx* with_prerun_function_state(ir::PreFnState* _preFn) {
-    preFnState = _preFn;
+  EmitCtx* with_prerun_call_state(ir::PrerunCallState* _preFn) {
+    prerunCallState = _preFn;
     return this;
   }
 
@@ -97,8 +95,8 @@ struct EmitCtx {
   useit inline bool          has_fn() const { return fn != nullptr; }
   useit inline ir::Function* get_fn() const { return fn; }
 
-  useit inline bool            has_pre_fn_state() const { return preFnState != nullptr; }
-  useit inline ir::PreFnState* get_pre_fn_state() const { return preFnState; }
+  useit inline bool                 has_pre_call_state() const { return prerunCallState != nullptr; }
+  useit inline ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
 
   useit inline bool            has_opaque_parent() const { return parentOpaque != nullptr; }
   useit inline ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
@@ -106,7 +104,7 @@ struct EmitCtx {
   useit inline bool       has_skill() const { return skill != nullptr; }
   useit inline ir::Skill* get_skill() const { return skill; }
 
-  useit String color(String const& message, const char* color = colors::bold::yellow) const;
+  useit String color(String const& message) const;
 
   void genericNameCheck(String const& name, FileRange const& range);
 

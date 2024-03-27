@@ -6,7 +6,7 @@ namespace qat::ast {
 ir::PrerunValue* FloatLiteral::emit(EmitCtx* ctx) {
   SHOW("Generating float literal for " << value)
   ir::Type* floatResTy = nullptr;
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (inferredType->is_float() || (inferredType->is_ctype() && inferredType->as_ctype()->get_subtype()->is_float())) {
       floatResTy = inferredType;
     } else {

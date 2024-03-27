@@ -6,7 +6,7 @@ namespace qat::ast {
 
 ir::Value* TupleValue::emit(EmitCtx* ctx) {
   ir::TupleType* tupleTy = nullptr;
-  if (isTypeInferred() || isLocalDecl()) {
+  if (is_type_inferred() || isLocalDecl()) {
     if (isLocalDecl() && !localValue->get_ir_type()->is_tuple()) {
       ctx->Error("Expected expression of type " + ctx->color(localValue->get_ir_type()->to_string()) +
                      ", but found a tuple",
@@ -17,7 +17,7 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
                      ", which is not a tuple type",
                  fileRange);
     }
-    tupleTy = isTypeInferred() ? inferredType->as_tuple() : localValue->get_ir_type()->as_tuple();
+    tupleTy = is_type_inferred() ? inferredType->as_tuple() : localValue->get_ir_type()->as_tuple();
     if (inferredType->as_tuple()->getSubTypeCount() != members.size()) {
       ctx->Error("Expected the type of this tuple to be " + ctx->color(inferredType->to_string()) + " with " +
                      ctx->color(std::to_string(inferredType->as_tuple()->getSubTypeCount())) + " members. But " +
@@ -32,9 +32,9 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
     auto* expMemTy = tupleTy ? tupleTy->getSubtypeAt(i) : nullptr;
     auto* mem      = members.at(i);
     if (expMemTy) {
-      if (mem->hasTypeInferrance()) {
-        mem->asTypeInferrable()->setInferenceType(expMemTy->is_reference() ? expMemTy->as_reference()->get_subtype()
-                                                                           : expMemTy);
+      if (mem->has_type_inferrance()) {
+        mem->as_type_inferrable()->set_inference_type(expMemTy->is_reference() ? expMemTy->as_reference()->get_subtype()
+                                                                               : expMemTy);
       }
     }
     auto* memRes = mem->emit(ctx);

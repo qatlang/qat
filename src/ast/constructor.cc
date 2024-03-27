@@ -244,8 +244,8 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         continue;
       }
       if (mem->defaultValue.has_value()) {
-        if (mem->defaultValue.value()->hasTypeInferrance()) {
-          mem->defaultValue.value()->asTypeInferrable()->setInferenceType(mem->type);
+        if (mem->defaultValue.value()->has_type_inferrance()) {
+          mem->defaultValue.value()->as_type_inferrable()->set_inference_type(mem->type);
         }
         auto* memVal = mem->defaultValue.value()->emit(
             EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));

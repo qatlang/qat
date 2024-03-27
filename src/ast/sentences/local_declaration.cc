@@ -33,10 +33,10 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 
   ir::Value* expVal = nullptr;
   if (value.has_value()) {
-    if (type && value.value()->hasTypeInferrance()) {
+    if (type && value.value()->has_type_inferrance()) {
       declType = type->emit(ctx);
       typeCheck();
-      value.value()->asTypeInferrable()->setInferenceType(declType);
+      value.value()->as_type_inferrable()->set_inference_type(declType);
     }
     if (value.value()->isLocalDeclCompatible()) {
       if ((type || declType)) {
@@ -56,7 +56,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
     }
     SHOW("Emitting value")
     expVal = value.value()->emit(ctx);
-    SHOW("Type of value to be assigned to local value " << name.value << " is " << expVal->getType()->to_string())
+    SHOW("Type of value to be assigned to local value " << name.value << " is " << expVal->get_ir_type()->to_string())
   } else {
     if (type) {
       declType = type->emit(ctx);

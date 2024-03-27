@@ -27,8 +27,8 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     for (usize i = 0; i < values.size(); i++) {
       if (fnTy->get_argument_count() > (u64)i) {
         auto* argTy = fnTy->get_argument_type_at(i)->get_type();
-        if (values.at(i)->hasTypeInferrance()) {
-          values.at(i)->asTypeInferrable()->setInferenceType(argTy);
+        if (values.at(i)->has_type_inferrance()) {
+          values.at(i)->as_type_inferrable()->set_inference_type(argTy);
         }
       }
       argsEmit.push_back(values.at(i)->emit(ctx));
@@ -37,7 +37,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     auto fnArgsTy = fnTy->get_argument_types();
     for (usize i = 0; i < fnArgsTy.size(); i++) {
       SHOW("FnArg type is " << fnArgsTy.at(i)->to_string() << " and arg emit type is "
-                            << argsEmit.at(i)->getType()->to_string())
+                            << argsEmit.at(i)->get_ir_type()->to_string())
       if (!fnArgsTy.at(i)->get_type()->is_same(argsEmit.at(i)->get_ir_type()) &&
           !fnArgsTy.at(i)->get_type()->isCompatible(argsEmit.at(i)->get_ir_type()) &&
           (argsEmit.at(i)->get_ir_type()->is_reference()
@@ -58,7 +58,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     }
     Vec<llvm::Value*> argValues;
     for (usize i = 0; i < fnArgsTy.size(); i++) {
-      SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->getType()->to_string())
+      SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->get_ir_type()->to_string())
       if (fnArgsTy.at(i)->get_type()->is_reference() &&
           (!argsEmit.at(i)->is_reference() && !argsEmit.at(i)->is_ghost_pointer())) {
         ctx->Error(

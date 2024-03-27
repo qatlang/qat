@@ -4,14 +4,14 @@
 namespace qat::ast {
 
 ir::Value* Negative::emit(EmitCtx* ctx) {
-  if (isTypeInferred() && value->hasTypeInferrance()) {
-    value->asTypeInferrable()->setInferenceType(inferredType);
+  if (is_type_inferred() && value->has_type_inferrance()) {
+    value->as_type_inferrable()->set_inference_type(inferredType);
   }
   auto irVal = value->emit(ctx);
   auto valTy =
       irVal->get_ir_type()->is_reference() ? irVal->get_ir_type()->as_reference()->get_subtype() : irVal->get_ir_type();
   auto typeCheck = [&](ir::Type* candTy) {
-    if (isTypeInferred()) {
+    if (is_type_inferred()) {
       if (!candTy->is_same(inferredType)) {
         ctx->Error("The expression is of type " + ctx->color(candTy->to_string()) +
                        ", but the type inferred from scope is " + ctx->color(inferredType->to_string()),

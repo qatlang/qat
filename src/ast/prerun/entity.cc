@@ -45,6 +45,12 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
   auto* mod  = ctx->mod;
   auto  name = identifiers.back();
   if (identifiers.size() == 1 && relative == 0) {
+    if (ctx->has_pre_call_state()) {
+      if (ctx->get_pre_call_state()->has_arg_with_name(name.value)) {
+        return ctx->get_pre_call_state()->get_arg_value_for(name.value);
+      }
+      // TODO - Check blocks for locals
+    }
     if (ctx->has_fn() && ctx->get_fn()->has_generic_parameter(identifiers[0].value)) {
       SHOW("PrerunEntity: Has active function and generic parameter")
       auto* genVal = ctx->get_fn()->get_generic_parameter(identifiers[0].value);

@@ -1,6 +1,7 @@
 #include "./member_access.hpp"
 #include "../../IR/types/future.hpp"
 #include "../../IR/types/string_slice.hpp"
+#include "../../utils/helpers.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/Support/Casting.h"
@@ -236,7 +237,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
             mem->type);
       } else if (inst->is_value()) {
         return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(
-                                  inst->get_llvm(), {(uint)instType->as_struct()->get_index_of(name.value).value()}),
+                                  inst->get_llvm(), {(u32)instType->as_struct()->get_index_of(name.value).value()}),
                               instType->as_struct()->get_type_of_field(name.value), true);
       } else {
         auto llVal    = ctx->irCtx->builder.CreateStructGEP(instType->as_struct()->get_llvm_type(), inst->get_llvm(),

@@ -5,14 +5,14 @@ namespace qat::ast {
 
 ir::Value* OkExpression::emit(EmitCtx* ctx) {
   FnAtEnd fnObj{[&] { createIn = nullptr; }};
-  if (isTypeInferred()) {
+  if (is_type_inferred()) {
     if (!inferredType->is_result()) {
       ctx->Error("Inferred type is " + ctx->color(inferredType->to_string()) + " cannot be the type of " +
                      ctx->color("ok") + " expression, as it expects a result type",
                  fileRange);
     }
-    if (subExpr->hasTypeInferrance()) {
-      subExpr->asTypeInferrable()->setInferenceType(inferredType->as_result()->getValidType());
+    if (subExpr->has_type_inferrance()) {
+      subExpr->as_type_inferrable()->set_inference_type(inferredType->as_result()->getValidType());
     }
     if (isLocalDecl()) {
       createIn = localValue->to_new_ir_value();
@@ -60,7 +60,7 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
         ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 0u));
     return createIn;
   }
-  if (isTypeInferred() &&
+  if (is_type_inferred() &&
       !(expr->get_ir_type()->is_same(inferredType->as_result()->getValidType()) ||
         (expr->get_ir_type()->is_reference() &&
          expr->get_ir_type()->as_reference()->get_subtype()->is_same(inferredType->as_result()->getValidType())))) {

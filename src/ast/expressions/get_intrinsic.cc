@@ -60,14 +60,14 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
                          ctx->color(twoTy->get_element_type()->to_string()),
                      fileRange);
         }
-        if (args[3]->hasTypeInferrance()) {
-          args[3]->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(32u, ctx->irCtx));
+        if (args[3]->has_type_inferrance()) {
+          args[3]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
         }
-        if (args[4]->hasTypeInferrance()) {
-          args[4]->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(32u, ctx->irCtx));
+        if (args[4]->has_type_inferrance()) {
+          args[4]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
         }
-        if (args[5]->hasTypeInferrance()) {
-          args[5]->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(32u, ctx->irCtx));
+        if (args[5]->has_type_inferrance()) {
+          args[5]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
         }
         auto thirdVal  = args[3]->emit(ctx);
         auto fourthVal = args[4]->emit(ctx);

@@ -5,11 +5,11 @@
 namespace qat::ast {
 
 ir::PrerunValue* NullPointer::emit(EmitCtx* ctx) {
-  if (!providedType.has_value() && !isTypeInferred()) {
+  if (!providedType.has_value() && !is_type_inferred()) {
     ctx->Error("No type provided for null pointer and no type inferred from scope", fileRange);
   }
   auto theType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType;
-  if (providedType.has_value() && isTypeInferred()) {
+  if (providedType.has_value() && is_type_inferred()) {
     if (!theType->is_same(inferredType)) {
       ctx->Error("The provided type for the null pointer is " + ctx->color(theType->to_string()) +
                      ", but the inferred type is " + ctx->color(inferredType->to_string()),

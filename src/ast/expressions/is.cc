@@ -29,10 +29,10 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
                    fileRange);
       }
     }
-    if (isTypeInferred()) {
+    if (is_type_inferred()) {
       if (inferredType->is_maybe()) {
-        if (subExpr->hasTypeInferrance()) {
-          subExpr->asTypeInferrable()->setInferenceType(inferredType->as_maybe()->get_subtype());
+        if (subExpr->has_type_inferrance()) {
+          subExpr->as_type_inferrable()->set_inference_type(inferredType->as_maybe()->get_subtype());
         }
       } else {
         ctx->Error("Expected type is " + ctx->color(inferredType->to_string()) + ", but an `is` expression is provided",

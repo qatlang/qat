@@ -123,8 +123,9 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
       } else if (genericFn->getGenericAt(i)->is_prerun() &&
                  (genericFn->getGenericAt(i)->as_prerun()->getType() != nullptr)) {
         SHOW("Generic abstract is prerun and has valid type")
-        if (gen->as_prerun()->hasTypeInferrance()) {
-          gen->as_prerun()->asTypeInferrable()->setInferenceType(genericFn->getGenericAt(i)->as_prerun()->getType());
+        if (gen->as_prerun()->has_type_inferrance()) {
+          gen->as_prerun()->as_type_inferrable()->set_inference_type(
+              genericFn->getGenericAt(i)->as_prerun()->getType());
         }
       }
       types.push_back(genericTypes.at(i)->toFill(ctx));

@@ -22,8 +22,8 @@ void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
   auto emitCtx = EmitCtx::get(irCtx, mod);
   emitCtx->name_check_in_module(name, "prerun global entity", None);
   ir::Type* valTy = type.has_value() ? type.value()->emit(emitCtx) : nullptr;
-  if (type.has_value() && value->hasTypeInferrance()) {
-    value->asTypeInferrable()->setInferenceType(valTy);
+  if (type.has_value() && value->has_type_inferrance()) {
+    value->as_type_inferrable()->set_inference_type(valTy);
   }
   auto resVal = value->emit(emitCtx);
   if (type.has_value()) {

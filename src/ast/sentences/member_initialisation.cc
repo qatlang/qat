@@ -116,8 +116,8 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
                          ". It is only allowed for core & mix types",
                      fileRange);
         }
-        if (value->hasTypeInferrance()) {
-          value->asTypeInferrable()->setInferenceType(memTy);
+        if (value->has_type_inferrance()) {
+          value->as_type_inferrable()->set_inference_type(memTy);
         }
         ir::Value* memRef = nullptr;
         if (parentTy->is_struct()) {

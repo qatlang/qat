@@ -15,8 +15,8 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
     if (count->nodeType() == NodeType::DEFAULT) {
       ctx->Error("Default value for usize is 0, which is an invalid value for the number of instances to allocate",
                  count->fileRange);
-    } else if (count->hasTypeInferrance()) {
-      count->asTypeInferrable()->setInferenceType(ir::CType::get_usize(ctx->irCtx));
+    } else if (count->has_type_inferrance()) {
+      count->as_type_inferrable()->set_inference_type(ir::CType::get_usize(ctx->irCtx));
     }
     countRes = count->emit(ctx);
     countRes->load_ghost_pointer(ctx->irCtx->builder);

@@ -97,7 +97,7 @@ bool Block::hasValue(const String& name) const {
   SHOW("Number of local values: " << values.size())
   for (auto* val : values) {
     SHOW("Local value name is: " << val->get_name())
-    SHOW("Local value type is: " << val->getType()->to_string())
+    SHOW("Local value type is: " << val->get_ir_type()->to_string())
     if (val->get_name() == name) {
       SHOW("Has local with name")
       return true;
@@ -284,6 +284,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
       arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
       hasVariadicArguments(_isVariadicArguments), metaInfo(_metaInfo), ctx(_ctx) //
 {
+  SHOW("ir::Function constructor")
   Maybe<String> foreignID;
   Maybe<String> linkAlias;
   if (metaInfo) {
@@ -357,7 +358,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
     // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
     if (!destMod->get_llvm_module()->getFunction(llvmFunction->getName())) {
       llvm::Function::Create((llvm::FunctionType*)get_ir_type()->get_llvm_type(),
-                             llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, llvmFunction->getAddressSpace(),
+                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
                              llvmFunction->getName(), destMod->get_llvm_module());
     }
   }
@@ -556,7 +557,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
   fun->get_block()->collect_all_local_values_so_far(locals);
   SHOW(locals.size() << " locals collected so far")
   for (auto* loc : locals) {
-    SHOW("Local name is: " << loc->get_name() << " and type is " << loc->getType()->to_string())
+    SHOW("Local name is: " << loc->get_name() << " and type is " << loc->get_ir_type()->to_string())
     if (loc->is_reference()) {
       continue;
     }

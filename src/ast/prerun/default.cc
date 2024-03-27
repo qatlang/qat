@@ -13,7 +13,7 @@ String PrerunDefault::to_string() const {
 }
 
 ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
-  if (theType.has_value() || isTypeInferred()) {
+  if (theType.has_value() || is_type_inferred()) {
     auto* type = theType.has_value() ? theType.value()->emit(ctx) : inferredType;
     if (type->is_integer()) {
       return ir::PrerunValue::get(llvm::ConstantInt::get(type->as_integer()->get_llvm_type(), 0u), type->as_integer());

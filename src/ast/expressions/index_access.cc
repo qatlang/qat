@@ -15,13 +15,13 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
   if (instType->is_reference()) {
     instType = instType->as_reference()->get_subtype();
   }
-  if (index->hasTypeInferrance()) {
+  if (index->has_type_inferrance()) {
     if (instType->is_tuple()) {
-      index->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(32u, ctx->irCtx));
+      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
     } else if (instType->is_array()) {
-      index->asTypeInferrable()->setInferenceType(ir::UnsignedType::get(64u, ctx->irCtx));
+      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(64u, ctx->irCtx));
     } else if (instType->is_pointer() || instType->is_string_slice()) {
-      index->asTypeInferrable()->setInferenceType(ir::CType::get_usize(ctx->irCtx));
+      index->as_type_inferrable()->set_inference_type(ir::CType::get_usize(ctx->irCtx));
     }
   }
   auto* ind     = index->emit(ctx);
@@ -87,7 +87,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           (inst->get_ir_type()->as_reference()->get_subtype()->is_pointer() &&
            !inst->get_ir_type()->as_reference()->get_subtype()->as_pointer()->isMulti())) {
         SHOW("Instance for member access is a Reference to: "
-             << inst->getType()->as_reference()->get_subtype()->to_string())
+             << inst->get_ir_type()->as_reference()->get_subtype()->to_string())
         inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()), instType,
                               inst->get_ir_type()->as_reference()->isSubtypeVariable());
       }

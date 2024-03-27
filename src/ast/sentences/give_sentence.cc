@@ -12,11 +12,11 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
       }
     }
     auto* retType = fun->get_ir_type()->as_function()->get_return_type()->get_type();
-    if (give_expr.value()->hasTypeInferrance()) {
-      give_expr.value()->asTypeInferrable()->setInferenceType(retType);
+    if (give_expr.value()->has_type_inferrance()) {
+      give_expr.value()->as_type_inferrable()->set_inference_type(retType);
     }
     auto* retVal = give_expr.value()->emit(ctx);
-    SHOW("RetType: " << retType->to_string() << "\nRetValType: " << retVal->getType()->to_string())
+    SHOW("RetType: " << retType->to_string() << "\nRetValType: " << retVal->get_ir_type()->to_string())
     if (retType->is_same(retVal->get_ir_type())) {
       if (retType->is_void()) {
         ir::destructor_caller(ctx->irCtx, fun);

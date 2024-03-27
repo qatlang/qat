@@ -8,10 +8,10 @@
 namespace qat::ast {
 
 ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
-  if (type.has_value() || isTypeInferred()) {
+  if (type.has_value() || is_type_inferred()) {
     auto  reqInfo  = ctx->get_access_info();
     auto* typeEmit = type.has_value() ? type.value()->emit(ctx) : inferredType;
-    if (type.has_value() && isTypeInferred()) {
+    if (type.has_value() && is_type_inferred()) {
       if (!typeEmit->is_same(inferredType)) {
         ctx->Error("The type provided is " + ctx->color(typeEmit->to_string()) +
                        " which does not match with the type inferred from scope, which is " +
@@ -108,8 +108,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
       Vec<ir::Value*> irVals;
       bool            areAllValsPrerun = true;
       for (usize i = 0; i < fieldValues.size(); i++) {
-        if (fieldValues.at(i)->hasTypeInferrance()) {
-          fieldValues.at(i)->asTypeInferrable()->setInferenceType(cTy->get_field_at(indices.at(i))->type);
+        if (fieldValues.at(i)->has_type_inferrance()) {
+          fieldValues.at(i)->as_type_inferrable()->set_inference_type(cTy->get_field_at(indices.at(i))->type);
         }
         auto* fVal  = fieldValues.at(i)->emit(ctx);
         auto* memTy = cTy->get_field_at(i)->type;
@@ -326,8 +326,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
       Vec<llvm::Constant*> constVals;
       SHOW("Handling field vals")
       for (auto val : fieldValues) {
-        if (val->hasTypeInferrance()) {
-          val->asTypeInferrable()->setInferenceType(vecTy->get_element_type());
+        if (val->has_type_inferrance()) {
+          val->as_type_inferrable()->set_inference_type(vecTy->get_element_type());
         }
         auto irVal = val->emit(ctx);
         auto irTy  = irVal->get_ir_type();
@@ -369,7 +369,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
       } else {
         SHOW("Values not constant")
         llvm::Value* lastValue =
-            ctx->irCtx->builder.CreateInsertElement(vecTy->get_llvm_type(), values[0]->get_llvm(), 0ul);
+            ctx->irCtx->builder.CreateInsertElement(vecTy->get_llvm_type(), values[0]->get_llvm(), (u64)0);
         for (usize i = 1; i < values.size(); i++) {
           lastValue = ctx->irCtx->builder.CreateInsertElement(lastValue, values[i]->get_llvm(), i);
         }

@@ -50,8 +50,8 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
     }
     fieldNames.push_back(fields.at(i).first);
     if (fields.at(i).second.has_value()) {
-      if (providedType && fields.at(i).second.value()->hasTypeInferrance()) {
-        fields.at(i).second.value()->asTypeInferrable()->setInferenceType(providedType.value());
+      if (providedType && fields.at(i).second.value()->has_type_inferrance()) {
+        fields.at(i).second.value()->as_type_inferrable()->set_inference_type(providedType.value());
       }
       auto iVal   = fields.at(i).second.value()->emit(EmitCtx::get(irCtx, mod));
       auto iValTy = iVal->get_ir_type();

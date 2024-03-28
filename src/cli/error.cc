@@ -1,5 +1,5 @@
 #include "./error.hpp"
-#include "../utils/logger.hpp"
+#include "../cli/logger.hpp"
 #include "color.hpp"
 #include "config.hpp"
 

@@ -43,7 +43,7 @@ public:
   void read();
   void change_file(fs::path newFile);
 
-  useit static Token word_to_token(const String& value, Lexer* lexInst);
+  useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
   useit Vec<Token>* get_tokens();
   useit Token       tokeniser();
 

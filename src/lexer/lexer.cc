@@ -548,7 +548,13 @@ Token Lexer::tokeniser() {
           value += current;
           read();
         }
-        return word_to_token(value, this);
+        auto wordRes = word_to_token(value, this);
+        if (wordRes.has_value()) {
+          return wordRes.value();
+        } else {
+          throw_error("Could not convert the value " + value + " to a token");
+          return Token::normal(TokenType::endOfFile, this->get_position(0));
+        }
       } else {
         throw_error("Unrecognised character found: " + String(1, current));
         return Token::normal(TokenType::endOfFile, this->get_position(0));
@@ -557,7 +563,7 @@ Token Lexer::tokeniser() {
   }
 }
 
-Token Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
+Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   // SHOW("WordToToken : string value is = " << wordValue)
   auto getPos = [&](usize len) {
     if (lexInst) {
@@ -697,6 +703,18 @@ Token Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
     return Token::valued(TokenType::floatType, F128_NAME, getPos(std::string::traits_type::length(F128_NAME)));
   }
   else {
+    if (wordValue.empty()) {
+      return None;
+    }
+    if (!((wordValue[0] >= LOWER_LETTER_FIRST && wordValue[0] <= LOWER_LETTER_LAST) ||
+          (wordValue[0] >= UPPER_LETTER_FIRST && wordValue[0] <= UPPER_LETTER_LAST))) {
+      return None;
+    }
+    for (auto current : wordValue) {
+      if (!(CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_'))) {
+        return None;
+      }
+    }
     return Token::valued(TokenType::identifier, wordValue, getPos(wordValue.length()));
   }
 }

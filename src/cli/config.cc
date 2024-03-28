@@ -26,7 +26,7 @@ Config* Config::instance = nullptr;
 Config const* Config::init(u64          count,
                            const char** args) { // NOLINT(modernize-avoid-c-arrays)
   if (!Config::instance) {
-    return std::construct_at(OwnTracked(Config), count, args);
+    return new Config(count, args);
   } else {
     return get();
   }

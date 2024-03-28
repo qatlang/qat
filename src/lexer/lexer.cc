@@ -21,7 +21,7 @@
 
 namespace qat::lexer {
 
-Lexer* Lexer::get(ir::Ctx* irCtx) { return std::construct_at(OwnTracked(Lexer), irCtx); }
+Lexer* Lexer::get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
 Lexer::~Lexer() {
   SHOW("About to delete remaining tokens")

@@ -39,7 +39,7 @@ QatSitter* QatSitter::get() {
   if (instance) {
     return instance;
   }
-  instance = std::construct_at(OwnTracked(QatSitter));
+  instance = new QatSitter();
   return instance;
 }
 

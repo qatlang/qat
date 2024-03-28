@@ -135,7 +135,7 @@ namespace qat::parser {
 
 Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx){};
 
-Parser* Parser::get(ir::Ctx* irCtx) { return std::construct_at(OwnTracked(Parser), irCtx); }
+Parser* Parser::get(ir::Ctx* irCtx) { return new Parser(irCtx); }
 
 Parser::~Parser() {
   delete tokens;

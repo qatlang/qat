@@ -113,7 +113,7 @@
 #define RangeSpan(ind1, ind2)                                                                                          \
   { tokens->at(ind1).fileRange, tokens->at(ind2).fileRange }
 
-#define ColoredOr(val, rep) (cfg->no_color_mode() ? rep : val)
+#define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(val))
 
 #define TOKEN_GENERIC_LIST_START ":["
 #define TOKEN_GENERIC_LIST_END   "]"
@@ -5231,17 +5231,19 @@ Vec<usize> Parser::primary_positions_within(lexer::TokenType candidate, usize fr
 
 void Parser::add_error(const String& message, const FileRange& fileRange) { irCtx->Error(message, fileRange); }
 
-String Parser::color_error(const String& message, const char* color) {
+String Parser::color_error(const String& message) {
   auto* cfg = cli::Config::get();
-  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`");
+  return ColoredOr(cli::Color::yellow, "`") + message + ColoredOr(cli::Color::white, "`");
 }
 
 void Parser::add_warning(const String& message, const FileRange& fileRange) {
-  Logger::get()->out << colors::highIntensityBackground::yellow << " parser warning " << colors::reset << "▌ "
-                     << colors::bold::yellow << message << colors::reset << " | " << colors::underline::green
-                     << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
-                     << colors::reset << " >> " << colors::underline::green << fileRange.file.string() << ":"
-                     << fileRange.end.line << ":" << fileRange.end.character << colors::reset << "\n";
+  Logger::get()->out << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset)
+                     << "▌ " << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset)
+                     << " | " << cli::get_color(cli::Color::green) << fileRange.file.string() << ":"
+                     << fileRange.start.line << ":" << fileRange.start.character << cli::get_color(cli::Color::reset)
+                     << " >> " << cli::get_color(cli::Color::green) << fileRange.file.string() << ":"
+                     << fileRange.end.line << ":" << fileRange.end.character << cli::get_color(cli::Color::reset)
+                     << "\n";
 }
 
 } // namespace qat::parser

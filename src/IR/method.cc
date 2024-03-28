@@ -153,11 +153,9 @@ LinkNames Method::get_link_names_from(MethodParent* parent, bool isStatic, Ident
 Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name,
                ReturnType* returnType, Vec<Argument> _args, bool is_variable_arguments, bool _is_static,
                Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* irCtx)
-    : Function(_parent->is_done_skill() ? _parent->as_done_skill()->get_module() : _parent->as_expanded()->get_module(),
-               Identifier(_name.value, _name.range),
+    : Function(_parent->get_module(), Identifier(_name.value, _name.range),
                get_link_names_from(_parent, _is_static, _name, _isVariation, _fnType, _args, returnType->get_type()),
-               {/* Generics */}, returnType, std::move(_args), is_variable_arguments, _fileRange, _visibility_info,
-               irCtx, true),
+               {/* Generics */}, returnType, _args, is_variable_arguments, _fileRange, _visibility_info, irCtx, true),
       parent(_parent), isStatic(_is_static), isVariation(_isVariation), fnType(_fnType), selfName(_name) {
   switch (fnType) {
     case MethodType::defaultConstructor: {
@@ -425,8 +423,10 @@ Method* Method::CreateFromConvertor(MethodParent* parent, FileRange nameRange, T
   SHOW("Created parent pointer argument")
   argsInfo.push_back(Argument::Create(name, sourceType, 1));
   SHOW("Created candidate type")
-  return new Method(MethodType::fromConvertor, true, parent, Identifier("from", nameRange),
-                    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, false, fileRange, visibInfo, irCtx);
+  auto result =
+      new Method(MethodType::fromConvertor, true, parent, Identifier("from", nameRange),
+                 ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, false, fileRange, visibInfo, irCtx);
+  return result;
 }
 
 Method* Method::CreateToConvertor(MethodParent* parent, FileRange nameRange, Type* destType, Maybe<FileRange> fileRange,

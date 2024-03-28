@@ -61,7 +61,7 @@ public:
                             Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
 
   void        add_error(const String& message, const FileRange& fileRange);
-  String      color_error(const String& message, const char* color = colors::bold::yellow);
+  String      color_error(const String& message);
   static void add_warning(const String& message, const FileRange& fileRange);
 
   useit bool is_previous(lexer::TokenType type, usize current);

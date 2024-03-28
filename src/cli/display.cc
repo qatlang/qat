@@ -10,7 +10,7 @@ void detailedVersion(String const& buildCommit) {
             << ((String(LLVM_HOST_TRIPLE) != LLVM_DEFAULT_TARGET_TRIPLE) ? "Host: " LLVM_HOST_TRIPLE "\n" : "")
             << "Build Type: " << BUILD_TYPE << "\n"
             << "Build Branch: " << BUILD_BRANCH << "\n"
-            << "Build Commit: " << buildCommit << std::endl;
+            << "Build Commit: " << buildCommit << (QAT_GIT_HAS_CHANGES ? " (with modifications)" : "") << std::endl;
 }
 
 void shortVersion() { std::cout << VERSION_STRING << std::endl; }

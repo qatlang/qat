@@ -13,7 +13,6 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include <chrono>
-#include <mutex>
 #include <string>
 #include <thread>
 
@@ -85,7 +84,7 @@ public:
   QatError(String message, Maybe<FileRange> fileRange);
 
   QatError& add(String value);
-  QatError& colored(String value, const char* color = colors::bold::yellow);
+  QatError& colored(String value);
   void      setRange(FileRange range);
 };
 
@@ -95,9 +94,7 @@ class Ctx {
 private:
   using IRBuilderTy = llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>;
 
-  Vec<ir::Mod*>             modulesWithErrors;
-  std::set<std::thread::id> threadsWithErrors;
-  std::recursive_mutex      ctxMut;
+  Vec<ir::Mod*> modulesWithErrors;
 
   useit inline bool module_has_errors(ir::Mod* cand) {
     for (auto* module : modulesWithErrors) {
@@ -124,7 +121,7 @@ public:
     if (instance) {
       return instance;
     }
-    instance = std::construct_at(OwnTracked(Ctx));
+    instance = new Ctx();
     return instance;
   }
 
@@ -206,11 +203,12 @@ public:
   void Errors(Vec<QatError> errors);
   void Warning(const String& message, const FileRange& fileRange);
 
-  static String color(String const& message, const char* color = colors::bold::yellow) {
+  static String color(String const& message) {
     auto* cfg = cli::Config::get();
-    return (cfg->no_color_mode() ? "`" : color) + message + (cfg->no_color_mode() ? "`" : colors::bold::white);
+    return (cfg->is_no_color_mode() ? "`" : String(colors::bold) + cli::get_color(cli::Color::yellow)) + message +
+           (cfg->is_no_color_mode() ? "`" : String(colors::reset) + cli::get_color(cli::Color::white));
   }
-  static String highlightWarning(const String& message, const char* color = colors::bold::yellow);
+  static String highlightWarning(const String& message);
   ~Ctx() = default;
 };
 

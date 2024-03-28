@@ -18,9 +18,11 @@ AccessInfo EmitCtx::get_access_info() const {
   return AccessInfo(mod, type, skill);
 }
 
-String EmitCtx::color(String const& message, const char* color) const {
+String EmitCtx::color(String const& message) const {
   auto* cfg = cli::Config::get();
-  return (cfg->no_color_mode() ? "`" : color) + message + (cfg->no_color_mode() ? "`" : colors::bold::white);
+  return (cfg->color_mode() == cli::ColorMode::none ? "`" : String(colors::bold) + cli::get_color(cli::Color::yellow)) +
+         message +
+         (cfg->color_mode() == cli::ColorMode::none ? "`" : String(colors::reset) + cli::get_color(cli::Color::white));
 }
 
 void EmitCtx::genericNameCheck(String const& name, FileRange const& range) {
@@ -267,7 +269,7 @@ VisibilityInfo EmitCtx::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
       }
       case VisibilityKind::folder: {
         auto folderPath = fs::canonical(fs::path(mod->get_file_path()).parent_path());
-        if (!mod->hasFolderModule(folderPath)) {
+        if (!mod->has_folder_module(folderPath)) {
           Error("Could not find folder module with path: " + color(folderPath.string()), spec->range);
         }
         return VisibilityInfo::folder(mod->getFolderModule(folderPath));

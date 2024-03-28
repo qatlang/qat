@@ -1,10 +1,10 @@
 #include "./context.hpp"
 #include "../cli/color.hpp"
 #include "../cli/config.hpp"
+#include "../cli/logger.hpp"
 #include "../lexer/lexer.hpp"
 #include "../parser/parser.hpp"
 #include "../sitter.hpp"
-#include "../utils/logger.hpp"
 #include "../utils/qat_region.hpp"
 #include "./value.hpp"
 #include "fstream"
@@ -21,9 +21,7 @@
 
 namespace qat::ir {
 
-#define Colored(val) (cfg->no_color_mode() ? "" : val)
-
-#define ColoredOr(val, rep) (cfg->no_color_mode() ? rep : val)
+#define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(cli::Color::yellow))
 
 CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRange> _range)
     : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
@@ -45,9 +43,9 @@ QatError& QatError::add(String value) {
   return *this;
 }
 
-QatError& QatError::colored(String value, const char* color) {
+QatError& QatError::colored(String value) {
   auto* cfg = cli::Config::get();
-  message.append(ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`"));
+  message.append(ColoredOr(cli::Color::yellow, "`") + message + ColoredOr(cli::Color::white, "`"));
   return *this;
 }
 
@@ -98,9 +96,10 @@ llvm::GlobalValue::LinkageTypes Ctx::getGlobalLinkageForVisibility(VisibilityInf
   }
 }
 
-String Ctx::highlightWarning(const String& message, const char* color) {
+String Ctx::highlightWarning(const String& message) {
   auto* cfg = cli::Config::get();
-  return ColoredOr(color, "`") + message + ColoredOr(colors::bold::white, "`");
+  return ColoredOr(cli::Color::yellow, "`") + String(cfg->is_no_color_mode() ? "" : colors::bold) + message +
+         (cfg->is_no_color_mode() ? "" : colors::reset) + ColoredOr(cli::Color::white, "`");
 }
 
 void Ctx::write_json_result(bool status) const {
@@ -171,38 +170,37 @@ GenericParameter* Ctx::get_generic_parameter_from_entity(String const& name) con
 
 void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> fileRange,
                     Maybe<Pair<String, FileRange>> pointTo) {
-  while (!ctxMut.try_lock()) {
-  }
-  threadsWithErrors.insert(std::this_thread::get_id());
   auto* cfg = cli::Config::get();
   if (has_active_generic()) {
     codeProblems.push_back(CodeProblem(true,
                                        "Errors generated while creating generic variant: " + get_active_generic().name,
                                        get_active_generic().fileRange));
     Logger::get()->errOut << "\n"
-                          << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::cyan)
-                          << " --> " << Colored(colors::reset) << get_active_generic().fileRange.file.string() << ":"
-                          << get_active_generic().fileRange.start << "\n"
+                          << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
+                          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+                          << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start
+                          << "\n"
                           << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
                           << "\n";
   }
   codeProblems.push_back(CodeProblem(
       true, (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") + message, fileRange));
   Logger::get()->errOut << "\n"
-                        << Colored(colors::highIntensityBackground::red) << " ERROR " << Colored(colors::reset) << " ";
-  Logger::get()->errOut << Colored(colors::bold::white)
+                        << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_bg_color(cli::Color::reset)
+                        << " ";
+  Logger::get()->errOut << (cfg->is_no_color_mode() ? "- " : "") << cli::get_color(cli::Color::white)
                         << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
-                        << Colored(colors::reset) << "\n";
+                        << cli::get_color(cli::Color::reset) << "\n";
   if (fileRange) {
-    Logger::get()->errOut << Colored(colors::cyan) << " --> " << Colored(colors::reset)
+    Logger::get()->errOut << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
                           << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
                           << fileRange.value().end;
     print_range_content(fileRange.value(), true, true);
   }
   if (pointTo.has_value()) {
-    Logger::get()->errOut << (fileRange.has_value() ? "" : "\n") << Colored(colors::bold::white)
-                          << pointTo.value().first << Colored(colors::reset) << "\n"
-                          << Colored(colors::cyan) << " --> " << Colored(colors::reset)
+    Logger::get()->errOut << (fileRange.has_value() ? "" : "\n") << cli::get_color(cli::Color::white)
+                          << pointTo.value().first << cli::get_color(cli::Color::reset) << "\n"
+                          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
                           << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
                           << pointTo.value().second.end;
     print_range_content(pointTo.value().second, true, false);
@@ -218,7 +216,6 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
     }
   }
   Logger::get()->finish_output();
-  ctxMut.unlock();
 }
 
 void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const {
@@ -239,7 +236,9 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
     while (lineNum.size() < lineNumSize) {
       lineNum += " ";
     }
-    (isError ? Logger::get()->errOut : Logger::get()->out) << lineNum << " | " << std::get<0>(lineInfo) << "\n";
+    (isError ? Logger::get()->errOut : Logger::get()->out)
+        << lineNum << " | " << cli::get_color(cli::Color::grey) << std::get<0>(lineInfo)
+        << cli::get_color(cli::Color::reset) << "\n";
     if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
       String spacing;
       if (std::get<1>(lineInfo) > 0) {
@@ -256,43 +255,24 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
       String indicator(indicatorCount, '^');
       (isError ? Logger::get()->errOut : Logger::get()->out)
           << String(lineNumSize, ' ') << " | " << spacing
-          << (isContentError ? Colored(colors::bold::red) : Colored(colors::bold::purple)) << indicator
-          << Colored(colors::reset) << "\n";
+          << (isContentError ? cli::get_color(cli::Color::red) : cli::get_color(cli::Color::purple)) << indicator
+          << cli::get_color(cli::Color::reset) << "\n";
     }
     lineIndex++;
   }
 }
 
-void Ctx::add_exe_path(fs::path path) {
-  while (!ctxMut.try_lock()) {
-  }
-  executablePaths.push_back(path);
-  ctxMut.unlock();
-}
+void Ctx::add_exe_path(fs::path path) { executablePaths.push_back(path); }
 
-void Ctx::add_binary_size(usize size) {
-  while (!ctxMut.try_lock()) {
-  }
-  binarySizes.push_back(size);
-  ctxMut.unlock();
-}
+void Ctx::add_binary_size(usize size) { binarySizes.push_back(size); }
 
 void Ctx::finalise_errors() {
-  while (!ctxMut.try_lock()) {
-  }
-  if (!threadsWithErrors.empty() && (sitter->mainThread == std::this_thread::get_id())) {
-    Logger::get()->out.emit();
-    Logger::get()->errOut.emit();
-    write_json_result(false);
-    sitter->destroy();
-    QatRegion::destroyAllBlocks();
-    ctxMut.unlock();
-    std::exit(0);
-  } else if (!threadsWithErrors.empty()) {
-    ctxMut.unlock();
-    pthread_exit(nullptr);
-  }
-  ctxMut.unlock();
+  Logger::get()->out.emit();
+  Logger::get()->errOut.emit();
+  write_json_result(false);
+  sitter->destroy();
+  QatRegion::destroyAllBlocks();
+  std::exit(1);
 }
 
 void Ctx::Error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
@@ -366,8 +346,6 @@ Pair<usize, Vec<std::tuple<String, u64, u64>>> Ctx::get_range_content(FileRange 
 }
 
 void Ctx::Warning(const String& message, const FileRange& fileRange) {
-  while (!ctxMut.try_lock()) {
-  }
   if (has_active_generic()) {
     get_active_generic().warningCount++;
   }
@@ -376,13 +354,13 @@ void Ctx::Warning(const String& message, const FileRange& fileRange) {
                   fileRange));
   auto* cfg = cli::Config::get();
   Logger::get()->out << "\n"
-                     << Colored(colors::highIntensityBackground::purple) << " WARNING " << Colored(colors::cyan)
-                     << " --> " << Colored(colors::reset) << fileRange.file.string() << ":" << fileRange.start.line
-                     << ":" << fileRange.start.character << Colored(colors::bold::white) << "\n"
+                     << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
+                     << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+                     << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
+                     << cli::get_color(cli::Color::white) << "\n"
                      << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
-                     << Colored(colors::reset) << "\n";
+                     << cli::get_color(cli::Color::reset) << "\n";
   print_range_content(fileRange, false, false);
-  ctxMut.unlock();
 }
 
 } // namespace qat::ir

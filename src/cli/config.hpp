@@ -3,11 +3,12 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
-#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/VersionTuple.h"
 #include <iostream>
 
 namespace qat::cli {
+
+enum class ColorMode { none, truecolor, color256 };
 
 class Config {
 private:
@@ -18,6 +19,8 @@ private:
   String   invokePath;
 
   Maybe<fs::path> stdLibPath;
+  Maybe<fs::path> helperLibsPath;
+
   Maybe<fs::path> outputPath;
 
   Vec<fs::path> paths;
@@ -28,20 +31,22 @@ private:
 
   llvm::VersionTuple versionTuple;
 
-  bool exitAfter      = false;
-  bool verbose        = false;
-  bool saveDocs       = false;
-  bool showReport     = false;
-  bool exportAST      = false;
-  bool compile        = false;
-  bool run            = false;
-  bool analyse        = false;
-  bool noColors       = false;
-  bool releaseMode    = false;
-  bool clearLLVMFiles = false;
-  bool exportCodeInfo = false;
-  bool isNoStd        = false;
-  bool diagnostic     = false;
+  bool exitAfter       = false;
+  bool verbose         = false;
+  bool saveDocs        = false;
+  bool showReport      = false;
+  bool exportAST       = false;
+  bool buildWorkflow   = false;
+  bool runWorkflow     = false;
+  bool bundleWorkflow  = false;
+  bool analyseWorkflow = false;
+  bool releaseMode     = false;
+  bool clearLLVMFiles  = false;
+  bool exportCodeInfo  = false;
+  bool isNoStd         = false;
+  bool diagnostic      = false;
+
+  ColorMode colorMode = ColorMode::color256;
 
   Maybe<bool> buildShared;
   Maybe<bool> buildStatic;
@@ -61,9 +66,11 @@ public:
 
   /** Behaviour specific functions */
 
-  useit inline bool is_workflow_compile() const { return compile; }
-  useit inline bool is_workflow_run() const { return run; }
-  useit inline bool is_workflow_analyse() const { return analyse; }
+  useit inline bool is_workflow_build() const { return buildWorkflow; }
+  useit inline bool is_workflow_run() const { return runWorkflow; }
+  useit inline bool is_workflow_analyse() const { return analyseWorkflow; }
+  useit inline bool is_workflow_bundle() const { return bundleWorkflow; }
+
   useit inline bool should_show_report() const { return showReport; }
   useit inline bool is_verbose() const { return verbose; }
   useit inline bool should_export_ast() const { return exportAST; }
@@ -72,9 +79,13 @@ public:
   useit inline bool clear_llvm() const { return clearLLVMFiles; }
   useit inline bool has_target_triple() const { return targetTriple.has_value(); }
   useit inline bool has_std_lib_path() const { return stdLibPath.has_value(); }
+  useit inline bool has_helper_libs_path() const { return helperLibsPath.has_value(); }
   useit inline bool is_no_std_enabled() const { return isNoStd; }
   useit inline bool export_code_metadata() const { return exportCodeInfo; }
-  useit inline bool no_color_mode() const { return noColors; }
+
+  useit inline ColorMode color_mode() const { return colorMode; }
+  useit inline bool      is_no_color_mode() const { return colorMode == ColorMode::none; }
+
   useit inline bool is_build_mode_debug() const { return !releaseMode; }
   useit inline bool is_build_mode_release() const { return releaseMode; }
   useit inline bool has_sysroot() const { return sysRoot.has_value(); }
@@ -91,6 +102,7 @@ public:
   useit inline String get_linker_path() const { return linkerPath.value(); }
 
   useit inline fs::path      get_std_lib_path() const { return stdLibPath.value(); }
+  useit inline fs::path      get_helper_libs_path() const { return helperLibsPath.value(); }
   useit inline fs::path      get_output_path() const { return outputPath.value_or(fs::current_path()); }
   useit inline Vec<fs::path> get_paths() const { return paths; }
 

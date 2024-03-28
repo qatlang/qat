@@ -1,6 +1,7 @@
 #include "config.hpp"
-#include "../utils/logger.hpp"
+#include "../cli/logger.hpp"
 #include "../utils/qat_region.hpp"
+#include "create.hpp"
 #include "display.hpp"
 #include "error.hpp"
 #include "version.hpp"
@@ -10,6 +11,13 @@
 #include <filesystem>
 #include <fstream>
 #include <system_error>
+
+#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+#include <SDKDDKVer.h>
+#include <Windows.h>
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+// #define DISABLE_NEWLINE_AUTO_RETURN        0x0008
+#endif
 
 namespace qat::cli {
 
@@ -77,7 +85,12 @@ Maybe<std::filesystem::path> Config::get_exe_path(String name) {
   std::error_code err;
   auto            resolvedPath = std::filesystem::canonical(hostTriple.isOSWindows() ? (name + ".exe") : name, err);
   if (err) {
+#if PlatformIsWindows
+    auto pipe = _popen((hostTriple.isOSWindows() ? ("where.exe " + name + ".exe") : ("which " + name)).c_str(), "r");
+
+#else
     auto pipe = popen((hostTriple.isOSWindows() ? ("where.exe " + name + ".exe") : ("which " + name)).c_str(), "r");
+#endif
     if (!pipe) {
       return None;
     }
@@ -89,7 +102,11 @@ Maybe<std::filesystem::path> Config::get_exe_path(String name) {
         output += buffer;
       }
     }
+#if PlatformIsWindows
+    _pclose(pipe);
+#else
     pclose(pipe);
+#endif
     if (!output.empty()) {
       String result;
       if (output.find('\n') != String::npos) {
@@ -123,7 +140,7 @@ void Config::setupEnvForQat() {
         // PathRemoveFileSpecA(selfdir);
         qatDirPath = std::filesystem::path(String(selfdir, charLen));
       } else {
-        log->error("Path to qat could not be found", None);
+        log->fatalError("Path to qat could not be found", None);
       }
 #elif PlatformIsMac
       char     path[1024] = {0};
@@ -131,7 +148,7 @@ void Config::setupEnvForQat() {
       if (_NSGetExecutablePath(path, &size) == 0) {
         qatDirPath = std::filesystem::path(String(path, size));
       } else {
-        log->error("Path to qat could not be found", None);
+        log->fatalError("Path to qat could not be found", None);
       }
 #else
       std::error_code err;
@@ -146,34 +163,38 @@ void Config::setupEnvForQat() {
       }
     }
 #if PlatformIsWindows
-    HKEY           hKey;
-    const wchar_t* keyPath = L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-    Vec<wchar_t>   pathBuffer;
+    HKEY         hKey;
+    LPCSTR       keyPath = "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+    Vec<wchar_t> pathBuffer;
     pathBuffer.reserve(2048);
     DWORD pathBufferSize = pathBuffer.size();
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-      if (RegQueryValueEx(hKey, L"Path", nullptr, nullptr, reinterpret_cast<LPBYTE>(pathBuffer.data()),
+      if (RegQueryValueEx(hKey, "Path", nullptr, nullptr, reinterpret_cast<LPBYTE>(pathBuffer.data()),
                           &pathBufferSize) != ERROR_SUCCESS) {
-        log->error(
+        log->fatalError(
             "Path could not be retrieved from the registry. Make sure that this executable is running in the administrator mode",
             None);
       }
       RegCloseKey(hKey);
       if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-        pathBuffer += L";" + std::wstring(qatPath.string());
-        if (RegSetValueEx(hKey, L"Path", 0, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(new_value),
-                          wcslen(new_value) * sizeof(wchar_t)) != ERROR_SUCCESS) {
-          log->error("Could not set " + colored("Path") +
-                         " in the registry. Make sure that this executable is running in administrator mode",
-                     None);
+        pathBuffer.push_back(L';');
+        for (auto w : qatDirPath.wstring()) {
+          pathBuffer.push_back(w);
+        }
+        if (RegSetValueEx(hKey, "Path", 0, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(pathBuffer.data()),
+                          wcslen(pathBuffer.data()) * sizeof(wchar_t)) != ERROR_SUCCESS) {
+          log->fatalError(
+              "Could not set `Path` in the registry. Make sure that this executable is running in administrator mode",
+              None);
         }
         RegCloseKey(hKey);
       } else {
-        log->error("Could not update registry key. Make sure that this executable is running in administrator mode",
-                   None);
+        log->fatalError(
+            "Could not update registry key. Make sure that this executable is running in administrator mode", None);
       }
     } else {
-      log->error("Could not open registry key. Make sure that this executable is running in administrator mode", None);
+      log->fatalError("Could not open registry key. Make sure that this executable is running in administrator mode",
+                      None);
     }
     log->warn(
         "Path has been updated in the registry. Please close and reopen this terminal for the changes to take effect",
@@ -219,7 +240,7 @@ void Config::setupEnvForQat() {
   qatDirPath = fs::canonical(qatDirPath);
   // FIXME - Update this when nostdlib feature is added
   auto stdPathCand = qatDirPath / "../std";
-  if (fs::exists(stdPathCand)) {
+  if (!isNoStd && fs::exists(stdPathCand)) {
     stdLibPath = stdPathCand / "std.lib.qat";
     if (!fs::exists(stdLibPath.value()) || !fs::is_regular_file(stdLibPath.value())) {
       if (!isNoStd) {
@@ -240,11 +261,26 @@ void Config::setupEnvForQat() {
   } else {
     stdLibPath = None;
   }
+  auto helperLibsCand = qatDirPath / "../helperLibs";
+  if (fs::exists(helperLibsCand)) {
+    if (fs::is_directory(helperLibsCand)) {
+      helperLibsPath = helperLibsCand;
+    } else {
+      log->fatalError(
+          "The path " + helperLibsCand.string() +
+              " is not a directory. The 'helperLibs' directory provided by the QAT installation is required for linking platform specific libraries used by QAT",
+          None);
+    }
+  } else {
+    log->fatalError(
+        "Could not find the 'helperLibs' directory in the QAT installation directory. This directory is required for linking platform specific dependencies required by QAT",
+        None);
+  }
 }
 
 Config::Config(u64 count, const char** args)
-    : exitAfter(false), verbose(false), saveDocs(false), showReport(false), exportAST(false), compile(false),
-      run(false), releaseMode(false) {
+    : exitAfter(false), verbose(false), saveDocs(false), showReport(false), exportAST(false), buildWorkflow(false),
+      runWorkflow(false), releaseMode(false) {
   String verNum(VERSION_NUMBER);
   versionTuple = llvm::VersionTuple(
       std::atoi(verNum.substr(0, verNum.find_first_of('.')).c_str()),
@@ -252,6 +288,14 @@ Config::Config(u64 count, const char** args)
                     .c_str()),
       std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
   if (!hasInstance()) {
+#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+    HANDLE handle      = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD  consoleMode = 0;
+    GetConsoleMode(handle, &consoleMode);
+    consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    // consoleMode |= DISABLE_NEWLINE_AUTO_RETURN;
+    SetConsoleMode(handle, consoleMode);
+#endif
     auto& log        = Logger::get();
     Config::instance = this;
     invokePath       = args[0];
@@ -270,24 +314,117 @@ Config::Config(u64 count, const char** args)
       buildCommit = res;
     }
 
+    if ((std::getenv("COLORTERM") != NULL) && ((std::strcmp(std::getenv("COLORTERM"), "truecolor") == 0) ||
+                                               (std::strcmp(std::getenv("COLORTERM"), "24bit") == 0))) {
+      colorMode = ColorMode::truecolor;
+    } else if ((std::getenv("TERM") != NULL) &&
+               ((std::strcmp(std::getenv("TERM"), "iterm") == 0) ||
+                (std::strcmp(std::getenv("TERM"), "linux-truecolor") == 0) ||
+                (std::strcmp(std::getenv("TERM"), "gnome-truecolor") == 0) ||
+                (std::strcmp(std::getenv("TERM"), "screen-truecolor") == 0) ||
+                (std::strcmp(std::getenv("TERM"), "tmux-truecolor") == 0) ||
+                (std::strcmp(std::getenv("TERM"), "xterm-truecolor") == 0) || (std::getenv("WT_SESSION") != NULL))) {
+      colorMode = ColorMode::truecolor;
+    } else if ((std::getenv("TERM") != NULL) && (std::strcmp(std::getenv("TERM"), "xterm-256color") &&
+                                                 std::strcmp(std::getenv("TERM"), "tmux-256color") &&
+                                                 std::strcmp(std::getenv("TERM"), "gnome-256color"))) {
+      colorMode = ColorMode::color256;
+    } else {
+      colorMode = ColorMode::none;
+    }
+
     String command(args[1]);
-    u64    proceed = 2;
+    u64    proceed  = 2;
+    auto   readNext = [&]() -> Maybe<String> {
+      if (proceed < count) {
+        auto result = args[proceed];
+        proceed++;
+        return String(result);
+      } else {
+        return None;
+      }
+    };
     if (command == "analyse") {
-      analyse = true;
+      analyseWorkflow = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
       }
     } else if (command == "run") {
-      compile = true;
-      run     = true;
+      buildWorkflow = true;
+      runWorkflow   = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
       }
     } else if (command == "build") {
-      compile = true;
+      buildWorkflow = true;
       if (count == 2) {
         paths.push_back(fs::current_path());
       }
+    } else if (command == "new") {
+      auto next = readNext();
+      if (next.has_value()) {
+        String        projectName = next.value();
+        bool          isLib       = false;
+        Maybe<String> candPath;
+        Maybe<String> vcs;
+        next = readNext();
+        if (next.has_value()) {
+          if (next.value() == "--lib") {
+            isLib = true;
+          } else if (next.value() == "--vcs") {
+            if (vcs.has_value()) {
+              log->fatalError("The '--vcs' argument has already been provided", None);
+            }
+            next = readNext();
+            if (next.has_value()) {
+              vcs = next;
+            } else {
+              log->fatalError("Expected a value for the '--vcs' argument. This argument determines"
+                              " which version control system should be used for the new project."
+                              " Use '--vcs=none' to disable this feature for this project",
+                              None);
+            }
+          } else if (fs::exists(next.value())) {
+            if (!fs::is_directory(next.value())) {
+              log->fatalError("The provided path " + next.value() +
+                                  " is not a directory and hence a project cannot be created in it",
+                              next.value());
+            }
+            candPath = next;
+          } else {
+            log->fatalError("The provided path " + next.value() + " for creating the new project, does not exist",
+                            next.value());
+          }
+          next = readNext();
+          while (next.has_value()) {
+            if (next.value() == "--lib") {
+              if (isLib) {
+                log->warn("The '--lib' option has already been provided", None);
+              }
+              isLib = true;
+            } else if (next.value() == "--vcs") {
+              if (vcs.has_value()) {
+                log->fatalError("The '--vcs' argument has already been provided", None);
+              }
+              next = readNext();
+              if (next.has_value()) {
+                vcs = next;
+              } else {
+                log->fatalError("Expected a value for the '--vcs' argument. This argument determines"
+                                " which version control system should be used for the new project."
+                                " Use '--vcs=none' to disable this feature for this project",
+                                None);
+              }
+            }
+            next = readNext();
+          }
+        }
+        cli::create_project(projectName, candPath.value_or(fs::current_path().string()), isLib,
+                            vcs.has_value() ? ((vcs.value() == "none") ? None : vcs) : "git");
+      } else {
+        log->fatalError("The 'new' command expects the name of the project to be created", None);
+      }
+      exitAfter = true;
     } else if (command == "help") {
       display::help();
       exitAfter = true;
@@ -301,17 +438,19 @@ Config::Config(u64 count, const char** args)
       display::shortVersion();
       exitAfter = true;
     } else if (command == "show") {
-      if (count == 2) {
-        cli::Error("Nothing to show here. Please provide name of the information to display", None);
-      } else {
-        String candidate = args[2];
-        if (candidate == "build-info") {
+      auto next = readNext();
+      if (next.has_value()) {
+        String candidate = next.value();
+        if (candidate == "build") {
           display::build_info(buildCommit);
         } else if (candidate == "web") {
           display::websites();
         }
-        proceed   = 3;
         exitAfter = true;
+      } else {
+        cli::Error("Nothing to show here. Please provide name of the information to display. The available names are\n"
+                   "build\nweb",
+                   None);
       }
     }
     for (usize i = proceed; ((i < count) && !exitAfter); i++) {
@@ -330,17 +469,23 @@ Config::Config(u64 count, const char** args)
           targetTriple = args[i + 1];
           i++;
         } else {
-          cli::Error("Expected a target after --target", None);
+          cli::Error("Expected a target triple string after '--target'", None);
         }
       } else if (String(arg).find("--sysroot=") == 0) {
         if (String(arg).length() > String::traits_type::length("--sysroot=")) {
           sysRoot = String(arg).substr(String::traits_type::length("--sysroot="));
         } else {
-          cli::Error("Expected valid path for --sysroot", None);
+          cli::Error("Expected valid path for '--sysroot'", None);
         }
       } else if (arg == "--sysroot") {
         if (i + 1 < count) {
           sysRoot = args[i + 1];
+          if (sysRoot.value().starts_with('"')) {
+            sysRoot = sysRoot.value().substr(1);
+            if (sysRoot.value().ends_with('"')) {
+              sysRoot = sysRoot.value().substr(0, sysRoot.value().size() - 1);
+            }
+          }
           i++;
         } else {
           cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
@@ -349,7 +494,7 @@ Config::Config(u64 count, const char** args)
         if (String(arg).length() > String::traits_type::length("--clang=")) {
           clangPath = String(arg.substr(String::traits_type::length("--clang=")));
           if (!fs::exists(clangPath.value())) {
-            cli::Error("Provided path for --clang does not exist: " + clangPath.value(), None);
+            cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
           }
         } else {
           cli::Error("Expected valid path after --clang=", None);
@@ -358,18 +503,18 @@ Config::Config(u64 count, const char** args)
         if ((i + 1) < count) {
           clangPath = String(args[i + 1]);
           if (!fs::exists(clangPath.value())) {
-            cli::Error("Provided path for --clang does not exist: " + clangPath.value(), None);
+            cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
           }
           i++;
         } else {
-          cli::Error("Expected argument after --clang which would be the path to the clang executable to be used",
+          cli::Error("Expected argument after '--clang' which would be the path to the clang executable to be used",
                      None);
         }
       } else if (String(arg).find("--linker=") == 0) {
         if (String(arg).length() > String::traits_type::length("--linker=")) {
           linkerPath = String(arg.substr(String::traits_type::length("--linker=")));
           if (!fs::exists(linkerPath.value())) {
-            cli::Error("Provided --linker path does not exist: " + linkerPath.value(), None);
+            cli::Error("Provided path to '--linker' does not exist: " + linkerPath.value(), None);
           }
         } else {
           cli::Error("Expected valid path after --linker=", None);
@@ -382,7 +527,7 @@ Config::Config(u64 count, const char** args)
           }
           i++;
         } else {
-          cli::Error("Expected argument after --linker which would be the path to the linker to be used", None);
+          cli::Error("Expected argument after '--linker' which would be the path to the linker to be used", None);
         }
       } else if (arg == "--export-ast") {
         exportAST = true;
@@ -397,9 +542,7 @@ Config::Config(u64 count, const char** args)
             if (fs::is_directory(out)) {
               outputPath = out;
             } else {
-              cli::Error("Provided output path is not a directory! Please "
-                         "provide path to a directory",
-                         out);
+              cli::Error("Provided output path is not a directory! Please provide path to a directory", out);
             }
           } else {
             std::error_code errorCode;
@@ -415,14 +558,14 @@ Config::Config(u64 count, const char** args)
           i++;
         } else {
           cli::Error("Output path is not provided! Please provide path to a directory "
-                     "for output, or don't mention the output flag at all.",
+                     "for output, or don't mention the output argument at all so that the compiler chooses accordingly",
                      None);
         }
       } else if (arg == "--no-colors") {
-        noColors = true;
+        colorMode = ColorMode::none;
       } else if (arg == "--report") {
         showReport = true;
-      } else if (arg == "--nostd") {
+      } else if (arg == "--no-std") {
         stdLibPath = None;
         isNoStd    = true;
       } else if (arg == "--save-docs") {
@@ -436,10 +579,11 @@ Config::Config(u64 count, const char** args)
       } else if (arg == "--clear-llvm") {
         clearLLVMFiles = true;
       } else {
-        if (fs::exists(fs::current_path() / arg)) {
+        if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
         } else {
-          log->fatalError("Provided path does not exist! Please provide path to a file or directory", arg);
+          log->fatalError(
+              "Provided path " + log->color(arg) + " does not exist! Please provide path to a file or directory", arg);
         }
       }
     }
@@ -453,8 +597,31 @@ Config::Config(u64 count, const char** args)
       }
       log->warn("Ignoring additional arguments provided: " + otherArgs, None);
     }
-    if (!outputPath.has_value()) {
-      outputPath = fs::current_path() / ".qatcache";
+    if (!outputPath.has_value() && !exitAfter) {
+      if ((is_workflow_build() || is_workflow_bundle() || is_workflow_analyse() || is_workflow_run()) &&
+          paths.size() == 1) {
+        if ((fs::is_regular_file(paths[0]) && (paths[0].extension() == ".qat")) || fs::is_directory(paths[0])) {
+          auto candParent = fs::is_directory(paths[0]) ? fs::path(paths[0]) : fs::path(paths[0]).parent_path();
+          if (fs::exists(candParent)) {
+            auto outDir = candParent / ".qatcache";
+            outputPath  = outDir;
+          } else {
+            log->fatalError("The path " + log->color(candParent.string()) + " does not exist", candParent);
+          }
+        }
+      }
+      if (!outputPath.has_value()) {
+        outputPath = fs::current_path() / ".qatcache";
+      }
+      if (!fs::exists(outputPath.value())) {
+        std::error_code err;
+        fs::create_directories(outputPath.value(), err);
+        if (err) {
+          log->fatalError("Could not create the directory " + outputPath.value().string() +
+                              " for output. The error is: " + err.message(),
+                          outputPath.value());
+        }
+      }
     }
     setupEnvForQat();
   }

@@ -6,6 +6,10 @@
 #include "types/qat_type.hpp"
 #include "value.hpp"
 
+namespace qat::ast {
+class PrerunSentence;
+}
+
 namespace qat::ir {
 
 class PrerunFunction;
@@ -35,12 +39,23 @@ public:
 class PreBlock {
   PrerunFunction*   function = nullptr;
   Vec<PrerunLocal*> locals;
+  Vec<PreBlock*>    children;
   PreBlock*         parent   = nullptr;
   PreBlock*         previous = nullptr;
   PreBlock*         next     = nullptr;
 
+  PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {
+    if (parent) {
+      parent->children.push_back(this);
+    }
+  }
+
 public:
-  PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {}
+  ~PreBlock() {
+    for (auto loc : locals) {
+      delete loc;
+    }
+  }
 
   useit static inline PreBlock* get(PrerunFunction* _function, PreBlock* _parent) {
     return new PreBlock(_function, _parent);
@@ -58,6 +73,8 @@ public:
     return false;
   }
 
+  useit PrerunFunction* get_fn() const { return function; }
+
   useit PrerunLocal* get_local(String const& name) {
     for (auto loc : locals) {
       if (loc->get_name().value == name) {
@@ -71,30 +88,59 @@ public:
   void set_next(PreBlock* _next) { next = _next; }
 };
 
-class PreFnState {
-  PrerunFunction* function = nullptr;
-  Vec<PreBlock*>  blocks;
-  usize           activeBlock = 0;
+class PrerunCallState {
+  friend class PrerunFunction;
+  PrerunFunction*   function = nullptr;
+  Vec<PrerunValue*> argumentValues;
+  Vec<PreBlock*>    blocks;
+  usize             activeBlock = 0;
 
-  PreFnState(PrerunFunction* _function) : function(_function) {}
+  Maybe<PrerunValue*> givenValue;
+
+  PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
+      : function(_function), argumentValues(_argVals) {}
 
 public:
-  useit static inline PreFnState* get(PrerunFunction* fun) { return new PreFnState(fun); }
+  ~PrerunCallState() {
+    for (auto blk : blocks) {
+      delete blk;
+    }
+  }
+
+  useit static inline PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
+    return new PrerunCallState(fun, argVals);
+  }
+
+  useit inline PrerunFunction* get_function() const { return function; }
+  useit bool                   has_arg_with_name(String const& name);
+  useit PrerunValue*           get_arg_value_for(String const& name);
+
+  void inline set_given_value(PrerunValue* _givenVal) { givenValue = _givenVal; }
+  useit bool inline has_given_value() const { return givenValue.has_value(); }
+  useit PrerunValue* get_given_value() const { return givenValue.value(); }
 };
 
 class PrerunFunction : public PrerunValue {
+  friend class PrerunCallState;
   Identifier         name;
   Type*              returnType;
   Vec<ArgumentType*> argTypes;
+  Mod*               parent;
+
+  Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
 
 public:
-  PrerunFunction(Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys, llvm::LLVMContext& ctx)
+  PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
+                 Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, llvm::LLVMContext& ctx)
       : PrerunValue(nullptr, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)), name(_name),
-        returnType(_retTy), argTypes(_argTys) {}
+        returnType(_retTy), argTypes(_argTys), parent(_parent), sentences(_sentences) {}
 
   useit Identifier    get_name() const { return name; }
   useit Type*         get_return_type() const { return returnType; }
-  useit ArgumentType* get_argument_at(usize index) { return argTypes[index]; }
+  useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
+  useit Mod*          get_module() const { return parent; }
+
+  PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRange fileRange);
 };
 
 } // namespace qat::ir

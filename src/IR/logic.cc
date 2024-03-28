@@ -336,6 +336,26 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
   return {formatString, printVals};
 }
 
+void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx) {
+  auto triple = ctx->irCtx->clangTargetInfo->getTriple();
+  if (triple.isWindowsMSVCEnvironment()) {
+    ctx->mod->link_native(NativeUnit::windowsExitThread);
+    auto exitThreadPtr  = ctx->mod->get_llvm_module()->getGlobalVariable("__imp_ExitThread");
+    auto exitThreadFnTy = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx->irCtx->llctx),
+                                                  {llvm::Type::getInt32Ty(ctx->irCtx->llctx)}, false);
+    ctx->irCtx->builder.CreateCall(
+        exitThreadFnTy, ctx->irCtx->builder.CreateLoad(llvm::PointerType::get(exitThreadFnTy, 0u), exitThreadPtr),
+        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)});
+  } else {
+    ctx->mod->link_native(NativeUnit::pthreadExit);
+    auto pthreadExitFn = ctx->mod->get_llvm_module()->getFunction("pthread_exit");
+    ctx->irCtx->builder.CreateCall(
+        pthreadExitFn->getFunctionType(), pthreadExitFn,
+        {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                                            ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()))});
+  }
+}
+
 void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
                               ast::EmitCtx* ctx) {
   fileRange.file    = fs::canonical(fileRange.file);
@@ -354,12 +374,7 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
     printVals.push_back(val);
   }
   ctx->irCtx->builder.CreateCall(printFn->getFunctionType(), printFn, printVals);
-  mod->link_native(NativeUnit::pthreadExit);
-  auto pthreadExitFn = mod->get_llvm_module()->getFunction("pthread_exit");
-  ctx->irCtx->builder.CreateCall(
-      pthreadExitFn->getFunctionType(), pthreadExitFn,
-      {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-                                          ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()))});
+  exit_thread(fun, ctx);
 }
 
 String Logic::get_generic_variant_name(String mainName, Vec<ir::GenericToFill*>& fills) {

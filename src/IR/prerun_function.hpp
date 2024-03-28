@@ -96,6 +96,7 @@ class PrerunCallState {
   usize             activeBlock = 0;
 
   Maybe<PrerunValue*> givenValue;
+  usize               emitNesting = 0;
 
   PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
       : function(_function), argumentValues(_argVals) {}
@@ -118,6 +119,10 @@ public:
   void inline set_given_value(PrerunValue* _givenVal) { givenValue = _givenVal; }
   useit bool inline has_given_value() const { return givenValue.has_value(); }
   useit PrerunValue* get_given_value() const { return givenValue.value(); }
+
+  void               increment_emit_nesting() { emitNesting++; }
+  void               decrement_emit_nesting() { emitNesting--; }
+  useit inline usize get_emit_nesting() const { return emitNesting; }
 };
 
 class PrerunFunction : public PrerunValue {

@@ -29,6 +29,7 @@ add_subdirectory(types/)
 add_subdirectory(expressions/)
 add_subdirectory(sentences/)
 add_subdirectory(prerun/)
+add_subdirectory(prerun_sentences/)
 
 target_link_directories(QAT_AST
 	PUBLIC ../utils
@@ -38,6 +39,7 @@ target_link_libraries(QAT_AST
 	QAT_AST_TYPES
 	QAT_AST_EXPRESSIONS
 	QAT_AST_SENTENCES
+	QAT_AST_PRERUN_SENTENCES
 	QAT_AST_PRERUN
 	QAT_UTILS
 	QAT_IR)

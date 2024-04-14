@@ -434,14 +434,14 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         case Op::divide: {
           llRes = ctx->irCtx->builder.CreateFDiv(lhsVal, rhsVal);
-          if (!llvm::Triple(cli::Config::get()->get_target_triple()).isOSWindows()) {
+          if (llvm::Triple(cli::Config::get()->get_target_triple()).isOSLinux()) {
             ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
           }
           break;
         }
         case Op::remainder: {
           llRes = ctx->irCtx->builder.CreateFRem(lhsVal, rhsVal);
-          if (!llvm::Triple(cli::Config::get()->get_target_triple()).isOSWindows()) {
+          if (llvm::Triple(cli::Config::get()->get_target_triple()).isOSLinux()) {
             ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
           }
           break;

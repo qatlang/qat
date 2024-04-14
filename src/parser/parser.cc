@@ -4445,8 +4445,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
   auto                    setCachedExprForSentences = [&](ast::Expression* value) {
     if (_cachedExpression_.has_value()) {
       add_error(
-          "Internal error : A cached expression is already present, and there was an attempt to cache another expression",
-          RangeAt(i));
+                             "Internal error : A cached expression is already present, and there was an attempt to cache another expression",
+                             RangeAt(i));
     } else {
       _cachedExpression_ = value;
     }
@@ -5237,13 +5237,12 @@ String Parser::color_error(const String& message) {
 }
 
 void Parser::add_warning(const String& message, const FileRange& fileRange) {
-  Logger::get()->out << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset)
-                     << "▌ " << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset)
-                     << " | " << cli::get_color(cli::Color::green) << fileRange.file.string() << ":"
-                     << fileRange.start.line << ":" << fileRange.start.character << cli::get_color(cli::Color::reset)
-                     << " >> " << cli::get_color(cli::Color::green) << fileRange.file.string() << ":"
-                     << fileRange.end.line << ":" << fileRange.end.character << cli::get_color(cli::Color::reset)
-                     << "\n";
+  std::cout << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset) << "▌ "
+            << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset) << " | "
+            << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.start.line << ":"
+            << fileRange.start.character << cli::get_color(cli::Color::reset) << " >> "
+            << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
+            << fileRange.end.character << cli::get_color(cli::Color::reset) << "\n";
 }
 
 } // namespace qat::parser

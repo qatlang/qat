@@ -175,37 +175,33 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
     codeProblems.push_back(CodeProblem(true,
                                        "Errors generated while creating generic variant: " + get_active_generic().name,
                                        get_active_generic().fileRange));
-    Logger::get()->errOut << "\n"
-                          << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
-                          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-                          << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start
-                          << "\n"
-                          << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
-                          << "\n";
+    std::cerr << "\n"
+              << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
+              << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+              << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start << "\n"
+              << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
+              << "\n";
   }
   codeProblems.push_back(CodeProblem(
       true, (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") + message, fileRange));
-  Logger::get()->errOut << "\n"
-                        << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_bg_color(cli::Color::reset)
-                        << " ";
-  Logger::get()->errOut << (cfg->is_no_color_mode() ? "- " : "") << cli::get_color(cli::Color::white)
-                        << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
-                        << cli::get_color(cli::Color::reset) << "\n";
+  std::cerr << "\n" << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_bg_color(cli::Color::reset) << " ";
+  std::cerr << (cfg->is_no_color_mode() ? "- " : "") << cli::get_color(cli::Color::white)
+            << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
+            << cli::get_color(cli::Color::reset) << "\n";
   if (fileRange) {
-    Logger::get()->errOut << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-                          << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
-                          << fileRange.value().end;
+    std::cerr << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+              << fileRange.value().file.string() << ":" << fileRange.value().start << " to " << fileRange.value().end;
     print_range_content(fileRange.value(), true, true);
   }
   if (pointTo.has_value()) {
-    Logger::get()->errOut << (fileRange.has_value() ? "" : "\n") << cli::get_color(cli::Color::white)
-                          << pointTo.value().first << cli::get_color(cli::Color::reset) << "\n"
-                          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-                          << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
-                          << pointTo.value().second.end;
+    std::cerr << (fileRange.has_value() ? "" : "\n") << cli::get_color(cli::Color::white) << pointTo.value().first
+              << cli::get_color(cli::Color::reset) << "\n"
+              << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+              << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
+              << pointTo.value().second.end;
     print_range_content(pointTo.value().second, true, false);
   }
-  Logger::get()->errOut << "\n";
+  std::cerr << "\n";
   if (activeMod && !module_has_errors(activeMod)) {
     if (has_active_generic()) {
       remove_active_generic();
@@ -215,7 +211,6 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
       add_error(modNRange.first, "Error occured in this file", modNRange.second);
     }
   }
-  Logger::get()->finish_output();
 }
 
 void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const {
@@ -230,15 +225,14 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
     lineNumSize = std::to_string(endLine).size();
   }
   usize lineIndex = 0;
-  (isError ? Logger::get()->errOut : Logger::get()->out) << "\n";
+  (isError ? std::cerr : std::cout) << "\n";
   for (auto& lineInfo : lines.second) {
     String lineNum = std::to_string(lines.first + lineIndex);
     while (lineNum.size() < lineNumSize) {
       lineNum += " ";
     }
-    (isError ? Logger::get()->errOut : Logger::get()->out)
-        << lineNum << " | " << cli::get_color(cli::Color::grey) << std::get<0>(lineInfo)
-        << cli::get_color(cli::Color::reset) << "\n";
+    (isError ? std::cerr : std::cout) << lineNum << " | " << cli::get_color(cli::Color::grey) << std::get<0>(lineInfo)
+                                      << cli::get_color(cli::Color::reset) << "\n";
     if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
       String spacing;
       if (std::get<1>(lineInfo) > 0) {
@@ -253,10 +247,10 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
       }
       auto   indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
       String indicator(indicatorCount, '^');
-      (isError ? Logger::get()->errOut : Logger::get()->out)
-          << String(lineNumSize, ' ') << " | " << spacing
-          << (isContentError ? cli::get_color(cli::Color::red) : cli::get_color(cli::Color::purple)) << indicator
-          << cli::get_color(cli::Color::reset) << "\n";
+      (isError ? std::cerr : std::cout) << String(lineNumSize, ' ') << " | " << spacing
+                                        << (isContentError ? cli::get_color(cli::Color::red)
+                                                           : cli::get_color(cli::Color::purple))
+                                        << indicator << cli::get_color(cli::Color::reset) << "\n";
     }
     lineIndex++;
   }
@@ -267,8 +261,6 @@ void Ctx::add_exe_path(fs::path path) { executablePaths.push_back(path); }
 void Ctx::add_binary_size(usize size) { binarySizes.push_back(size); }
 
 void Ctx::finalise_errors() {
-  Logger::get()->out.emit();
-  Logger::get()->errOut.emit();
   write_json_result(false);
   sitter->destroy();
   QatRegion::destroyAllBlocks();
@@ -353,13 +345,13 @@ void Ctx::Warning(const String& message, const FileRange& fileRange) {
       CodeProblem(false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
                   fileRange));
   auto* cfg = cli::Config::get();
-  Logger::get()->out << "\n"
-                     << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
-                     << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-                     << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
-                     << cli::get_color(cli::Color::white) << "\n"
-                     << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
-                     << cli::get_color(cli::Color::reset) << "\n";
+  std::cout << "\n"
+            << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
+            << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+            << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
+            << cli::get_color(cli::Color::white) << "\n"
+            << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+            << cli::get_color(cli::Color::reset) << "\n";
   print_range_content(fileRange, false, false);
 }
 

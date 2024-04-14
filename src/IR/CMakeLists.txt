@@ -15,7 +15,7 @@ add_library(QAT_IR
 	stdlib.cc
 	value.cc)
 
-target_include_directories(QAT_IR PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_IR PUBLIC "${LLVM_ROOT_DIR}/include" "${BOOST_INCLUDE_DIR}")
 
 add_subdirectory(types/)
 
@@ -24,4 +24,4 @@ target_link_directories(QAT_IR
 	PUBLIC ../utils
 	PUBLIC ../ast)
 
-target_link_libraries(QAT_IR QAT_LEXER QAT_UTILS QAT_AST QAT_IR_TYPES)
+target_link_libraries(QAT_IR QAT_LEXER QAT_UTILS QAT_AST QAT_IR_TYPES QAT_AST_PRERUN_SENTENCES)

@@ -4,6 +4,7 @@
 #include "../utils/run_command.hpp"
 #include "boost/process/search_path.hpp"
 #include <fstream>
+#include <iostream>
 
 #define AUTO_GENERATED_STUB                                                                                            \
   "/**   -----  QAT  -----\n"                                                                                          \
@@ -19,8 +20,9 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
   auto& log    = Logger::get();
   auto  lexRes = lexer::Lexer::word_to_token(name, nullptr);
   if (lexRes.has_value() && lexRes->type != lexer::TokenType::identifier) {
-    log->fatalError(
-        "'" + name + "' cannot be the name of the new project, as it is not a valid identifier in the language", None);
+    log->fatalError(log->color(name) +
+                        " cannot be the name of the new project, as it is not a valid identifier in the language",
+                    None);
   }
   auto projDir = path / name;
   if (fs::exists(projDir)) {
@@ -45,7 +47,7 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
         << "\tmeta:todo.\n"
         << "]\n";
     out.close();
-    log->out << "✓ Created a qat library project in " + projDir.string() + "\n";
+    std::cout << "✓ Created a qat library project in " + log->color(projDir.string()) + "\n";
   } else {
     auto          mainPath = projDir / (name + ".qat");
     std::ofstream out(mainPath);
@@ -53,7 +55,7 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
         << "\tsay \"Hello, World!\".\n"
         << "]\n";
     out.close();
-    log->out << "✓ Created a qat executable project in " + projDir.string() + "\n";
+    std::cout << "✓ Created a qat executable project in " + log->color(projDir.string()) + "\n";
   }
   if (vcs.has_value() && (vcs.value() == "git")) {
     auto gitPath = boost::process::search_path("git");
@@ -71,7 +73,7 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
                             std::to_string(initRes.first) + " and error message: " + initRes.second,
                         projDir);
       } else {
-        log->out << "✓ Successfully initialised a git repository" << std::endl;
+        std::cout << "✓ Successfully initialised a git repository" << std::endl;
       }
     } else {
       log->warn("The project directory " + projDir.string() +

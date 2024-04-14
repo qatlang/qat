@@ -3,7 +3,7 @@
 
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
-#include <syncstream>
+#include <iostream>
 #include <variant>
 
 #define EraseLineAndGoToStartOfLine "\33[2K\r"
@@ -36,31 +36,23 @@ class Logger {
   LogLevel logLevel = LogLevel::NONE;
 
 public:
-  mutable std::osyncstream out;
-  mutable std::osyncstream errOut;
-
   Logger();
   ~Logger() = default;
   useit static Unique<Logger> const& get();
-
-  inline void finish_output() const {
-    out.emit();
-    errOut.emit();
-  }
 
   inline void say(String message) const {
     if (logLevel == LogLevel::NONE) {
       return;
     }
-    out << message.append("\n");
+    std::cout << message.append("\n");
   }
-
-  void diagnostic(String message) const;
-  void warn(String message, Maybe<ErrorLocation> range) const;
 
   String color(String const& message) const;
 
-  exitFn void fatalError(String message, Maybe<ErrorLocation> range) const;
+  void diagnostic(String message) const;
+  void warn(String message, Maybe<ErrorLocation> range);
+
+  exitFn void fatalError(String message, Maybe<ErrorLocation> range);
 };
 
 } // namespace qat

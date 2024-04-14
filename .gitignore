@@ -10,6 +10,7 @@ src/cmake-build-debug/
 rebuild.sh
 rebuild.bat
 release.sh
+release_silicon.sh
 release.bat
 refresh.sh
 refresh.bat
@@ -19,5 +20,6 @@ run.sh
 build/
 test/
 todo.md
+scripts.md
 compile_commands.json
 src/CMakeSettings.json

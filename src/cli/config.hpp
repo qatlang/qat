@@ -10,6 +10,8 @@ namespace qat::cli {
 
 enum class ColorMode { none, truecolor, color256 };
 
+enum class BuildMode { debug, release, releaseWithDebugInfo };
+
 class Config {
 private:
   static Config* instance;
@@ -19,7 +21,7 @@ private:
   String   invokePath;
 
   Maybe<fs::path> stdLibPath;
-  Maybe<fs::path> helperLibsPath;
+  Maybe<fs::path> toolchainPath;
 
   Maybe<fs::path> outputPath;
 
@@ -40,13 +42,13 @@ private:
   bool runWorkflow     = false;
   bool bundleWorkflow  = false;
   bool analyseWorkflow = false;
-  bool releaseMode     = false;
   bool clearLLVMFiles  = false;
   bool exportCodeInfo  = false;
   bool isNoStd         = false;
   bool diagnostic      = false;
 
   ColorMode colorMode = ColorMode::color256;
+  BuildMode buildMode = BuildMode::debug;
 
   Maybe<bool> buildShared;
   Maybe<bool> buildStatic;
@@ -61,6 +63,7 @@ public:
 
   static Maybe<std::filesystem::path> get_exe_path_from_env(String name);
   static Maybe<std::filesystem::path> get_exe_path(String name);
+  static String                       filter_quotes(String value);
 
   void setupEnvForQat();
 
@@ -79,15 +82,19 @@ public:
   useit inline bool clear_llvm() const { return clearLLVMFiles; }
   useit inline bool has_target_triple() const { return targetTriple.has_value(); }
   useit inline bool has_std_lib_path() const { return stdLibPath.has_value(); }
-  useit inline bool has_helper_libs_path() const { return helperLibsPath.has_value(); }
+  useit inline bool has_toolchain_path() const { return toolchainPath.has_value(); }
   useit inline bool is_no_std_enabled() const { return isNoStd; }
   useit inline bool export_code_metadata() const { return exportCodeInfo; }
 
   useit inline ColorMode color_mode() const { return colorMode; }
   useit inline bool      is_no_color_mode() const { return colorMode == ColorMode::none; }
 
-  useit inline bool is_build_mode_debug() const { return !releaseMode; }
-  useit inline bool is_build_mode_release() const { return releaseMode; }
+  useit inline bool is_build_mode_debug() const { return buildMode == BuildMode::debug; }
+  useit inline bool is_build_mode_release() const { return buildMode == BuildMode::release; }
+  useit inline bool should_have_debug_info() const {
+    return (buildMode == BuildMode::releaseWithDebugInfo) || (buildMode == BuildMode::debug);
+  }
+
   useit inline bool has_sysroot() const { return sysRoot.has_value(); }
   useit inline bool has_clang_path() const { return clangPath.has_value(); }
   useit inline bool has_linker_path() const { return linkerPath.has_value(); }
@@ -102,7 +109,7 @@ public:
   useit inline String get_linker_path() const { return linkerPath.value(); }
 
   useit inline fs::path      get_std_lib_path() const { return stdLibPath.value(); }
-  useit inline fs::path      get_helper_libs_path() const { return helperLibsPath.value(); }
+  useit inline fs::path      get_toolchain_path() const { return toolchainPath.value(); }
   useit inline fs::path      get_output_path() const { return outputPath.value_or(fs::current_path()); }
   useit inline Vec<fs::path> get_paths() const { return paths; }
 

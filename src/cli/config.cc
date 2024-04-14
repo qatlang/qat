@@ -12,6 +12,10 @@
 #include <fstream>
 #include <system_error>
 
+#if PlatformIsMac
+#include <mach-o/dyld.h>
+#endif
+
 #if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
 #include <SDKDDKVer.h>
 #include <Windows.h>
@@ -261,26 +265,37 @@ void Config::setupEnvForQat() {
   } else {
     stdLibPath = None;
   }
-  auto helperLibsCand = qatDirPath / "../helperLibs";
-  if (fs::exists(helperLibsCand)) {
-    if (fs::is_directory(helperLibsCand)) {
-      helperLibsPath = helperLibsCand;
+  auto toolchainCand = qatDirPath / "../toolchain";
+  if (fs::exists(toolchainCand)) {
+    if (fs::is_directory(toolchainCand)) {
+      toolchainPath = toolchainCand;
     } else {
       log->fatalError(
-          "The path " + helperLibsCand.string() +
-              " is not a directory. The 'helperLibs' directory provided by the QAT installation is required for linking platform specific libraries used by QAT",
+          "The path " + toolchainCand.string() + " is not a directory. The " + log->color("toolchain") +
+              " directory provided by the QAT installation is required for linking platform specific libraries used by QAT",
           None);
     }
   } else {
     log->fatalError(
-        "Could not find the 'helperLibs' directory in the QAT installation directory. This directory is required for linking platform specific dependencies required by QAT",
+        "Could not find the " + log->color("toolchain") +
+            " directory in the QAT installation directory. This directory is required for linking platform specific dependencies required by QAT",
         None);
   }
 }
 
+String Config::filter_quotes(String value) {
+  if (value.starts_with('"')) {
+    value = value.substr(1);
+    if (value.ends_with('"')) {
+      value = value.substr(0, value.size() - 1);
+    }
+  }
+  return value;
+}
+
 Config::Config(u64 count, const char** args)
     : exitAfter(false), verbose(false), saveDocs(false), showReport(false), exportAST(false), buildWorkflow(false),
-      runWorkflow(false), releaseMode(false) {
+      runWorkflow(false) {
   String verNum(VERSION_NUMBER);
   versionTuple = llvm::VersionTuple(
       std::atoi(verNum.substr(0, verNum.find_first_of('.')).c_str()),
@@ -454,45 +469,42 @@ Config::Config(u64 count, const char** args)
       }
     }
     for (usize i = proceed; ((i < count) && !exitAfter); i++) {
-      String arg = args[i];
+      String arg     = args[i];
+      auto   hasNext = [&]() { return (i + 1) < count; };
+      auto   getNext = [&]() {
+        i++;
+        return String(args[i]);
+      };
       if (arg == "-v" || arg == "--verbose") {
         verbose                 = true;
         Logger::get()->logLevel = LogLevel::VERBOSE;
-      } else if (String(arg).find("--target=") == 0) {
-        if (String(arg).length() > std::string::traits_type::length("--target=")) {
-          targetTriple = String(arg).substr(std::string::traits_type::length("--target="));
+      } else if (arg.find("--target=") == 0) {
+        if (arg.length() > String::traits_type::length("--target=")) {
+          targetTriple = filter_quotes(arg.substr(String::traits_type::length("--target=")));
         } else {
           cli::Error("Expected a valid path after --target=", None);
         }
       } else if (arg == "--target") {
-        if ((i + 1) < count) {
-          targetTriple = args[i + 1];
-          i++;
+        if (hasNext()) {
+          targetTriple = filter_quotes(getNext());
         } else {
-          cli::Error("Expected a target triple string after '--target'", None);
+          log->fatalError("Expected a target triple string after " + log->color("--target"), None);
         }
-      } else if (String(arg).find("--sysroot=") == 0) {
-        if (String(arg).length() > String::traits_type::length("--sysroot=")) {
-          sysRoot = String(arg).substr(String::traits_type::length("--sysroot="));
+      } else if (arg.find("--sysroot=") == 0) {
+        if (arg.length() > String::traits_type::length("--sysroot=")) {
+          sysRoot = filter_quotes(arg.substr(String::traits_type::length("--sysroot=")));
         } else {
-          cli::Error("Expected valid path for '--sysroot'", None);
+          log->fatalError("Expected valid path for " + log->color("--sysroot"), None);
         }
       } else if (arg == "--sysroot") {
-        if (i + 1 < count) {
-          sysRoot = args[i + 1];
-          if (sysRoot.value().starts_with('"')) {
-            sysRoot = sysRoot.value().substr(1);
-            if (sysRoot.value().ends_with('"')) {
-              sysRoot = sysRoot.value().substr(0, sysRoot.value().size() - 1);
-            }
-          }
-          i++;
+        if (hasNext()) {
+          sysRoot = filter_quotes(getNext());
         } else {
           cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
         }
-      } else if (String(arg).find("--clang=") == 0) {
-        if (String(arg).length() > String::traits_type::length("--clang=")) {
-          clangPath = String(arg.substr(String::traits_type::length("--clang=")));
+      } else if (arg.find("--clang=") == 0) {
+        if (arg.length() > String::traits_type::length("--clang=")) {
+          clangPath = arg.substr(String::traits_type::length("--clang="));
           if (!fs::exists(clangPath.value())) {
             cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
           }
@@ -500,19 +512,18 @@ Config::Config(u64 count, const char** args)
           cli::Error("Expected valid path after --clang=", None);
         }
       } else if (String(arg) == "--clang") {
-        if ((i + 1) < count) {
-          clangPath = String(args[i + 1]);
+        if (hasNext()) {
+          clangPath = (getNext());
           if (!fs::exists(clangPath.value())) {
             cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
           }
-          i++;
         } else {
           cli::Error("Expected argument after '--clang' which would be the path to the clang executable to be used",
                      None);
         }
-      } else if (String(arg).find("--linker=") == 0) {
-        if (String(arg).length() > String::traits_type::length("--linker=")) {
-          linkerPath = String(arg.substr(String::traits_type::length("--linker=")));
+      } else if (arg.find("--linker=") == 0) {
+        if (arg.length() > String::traits_type::length("--linker=")) {
+          linkerPath = filter_quotes(arg.substr(String::traits_type::length("--linker=")));
           if (!fs::exists(linkerPath.value())) {
             cli::Error("Provided path to '--linker' does not exist: " + linkerPath.value(), None);
           }
@@ -520,12 +531,11 @@ Config::Config(u64 count, const char** args)
           cli::Error("Expected valid path after --linker=", None);
         }
       } else if (String(arg) == "--linker") {
-        if ((i + 1) < count) {
-          linkerPath = String(args[i + 1]);
+        if (hasNext()) {
+          linkerPath = filter_quotes(getNext());
           if (!fs::exists(linkerPath.value())) {
             cli::Error("Provided --linker path does not exist: " + linkerPath.value(), None);
           }
-          i++;
         } else {
           cli::Error("Expected argument after '--linker' which would be the path to the linker to be used", None);
         }
@@ -536,8 +546,8 @@ Config::Config(u64 count, const char** args)
       } else if (arg == "--export-code-info") {
         exportCodeInfo = true;
       } else if (arg == "-o" || arg == "--output") {
-        if ((i + 1) < count) {
-          String out(args[i + 1]);
+        if (hasNext()) {
+          String out(filter_quotes(getNext()));
           if (fs::exists(out)) {
             if (fs::is_directory(out)) {
               outputPath = out;
@@ -555,7 +565,6 @@ Config::Config(u64 count, const char** args)
             }
             outputPath = out;
           }
-          i++;
         } else {
           cli::Error("Output path is not provided! Please provide path to a directory "
                      "for output, or don't mention the output argument at all so that the compiler chooses accordingly",
@@ -570,8 +579,26 @@ Config::Config(u64 count, const char** args)
         isNoStd    = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
+      } else if (arg.starts_with("--mode=")) {
+        auto modeVal = filter_quotes(arg.substr(String::traits_type::length("--mode=")));
+        if (modeVal == "debug") {
+          buildMode = BuildMode::debug;
+        } else if (modeVal == "release") {
+          buildMode = BuildMode::release;
+        } else if (modeVal == "releaseWithDebugInfo") {
+          buildMode = BuildMode::releaseWithDebugInfo;
+        } else {
+          log->fatalError("Invalid value for the argument " + log->color("--mode") + ". The possible values are " +
+                              log->color("debug") + ", " + log->color("release") + " and " +
+                              log->color("releaseWithDebugInfo"),
+                          None);
+        }
+      } else if (arg == "--debug") {
+        buildMode = BuildMode::debug;
       } else if (arg == "--release") {
-        releaseMode = true;
+        buildMode = BuildMode::release;
+      } else if (arg == "--releaseWithDebugInfo") {
+        buildMode = BuildMode::releaseWithDebugInfo;
       } else if (arg == "--static") {
         buildStatic = true;
       } else if (arg == "--shared") {
@@ -582,6 +609,10 @@ Config::Config(u64 count, const char** args)
         if (fs::exists(arg)) {
           paths.push_back(fs::path(arg));
         } else {
+          if (arg.starts_with("--")) {
+            log->fatalError(
+                "Unrecognised argument " + log->color(arg) + " and it is also not an existing file or directory", arg);
+          }
           log->fatalError(
               "Provided path " + log->color(arg) + " does not exist! Please provide path to a file or directory", arg);
         }

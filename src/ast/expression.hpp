@@ -45,6 +45,7 @@ public:
 
 struct FnAtEnd {
   std::function<void()> fn;
+  FnAtEnd(std::function<void()> _fn) : fn(_fn) {}
 
   ~FnAtEnd() { fn(); }
 };

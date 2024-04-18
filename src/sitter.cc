@@ -4,14 +4,15 @@
 #include "IR/qat_module.hpp"
 #include "IR/value.hpp"
 #include "ast/types/qat_type.hpp"
+#include "boost/process/search_path.hpp"
 #include "cli/config.hpp"
+#include "cli/logger.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token_type.hpp"
 #include "parser/parser.hpp"
 #include "utils/identifier.hpp"
-#include "utils/logger.hpp"
-#include "utils/pstream/pstream.h"
 #include "utils/qat_region.hpp"
+#include "utils/run_command.hpp"
 #include "utils/visibility.hpp"
 #include <chrono>
 #include <filesystem>
@@ -19,8 +20,9 @@
 #include <system_error>
 #include <thread>
 
-#if PlatformIsWindows
-#include "windows.h"
+#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+#include <SDKDDKVer.h>
+#include <Windows.h>
 #endif
 
 #define OUTPUT_OBJECT_NAME "output"
@@ -77,7 +79,6 @@ void QatSitter::display_stats() {
     log->diagnostic("Compile time  -> " + timeToString(ctx->qatCompileTimeInMs.value()));
     log->diagnostic("clang & lld   -> " + timeToString(ctx->clangAndLinkTimeInMs.value()));
   }
-  log->finish_output();
 }
 
 void QatSitter::initialise() {
@@ -89,11 +90,11 @@ void QatSitter::initialise() {
   }
   if (config->has_std_lib_path() && ctx->stdLibRequired) {
     handle_path(config->get_std_lib_path(), ctx);
-    if (ir::Mod::hasFileModule(config->get_std_lib_path())) {
-      ir::StdLib::stdLib = ir::Mod::getFileModule(config->get_std_lib_path());
+    if (ir::Mod::has_file_module(config->get_std_lib_path())) {
+      ir::StdLib::stdLib = ir::Mod::get_file_module(config->get_std_lib_path());
     }
   }
-  if (config->is_workflow_compile() || config->is_workflow_analyse()) {
+  if (config->is_workflow_build() || config->is_workflow_analyse()) {
     auto qatStartTime = std::chrono::high_resolution_clock::now();
     for (auto* entity : fileEntities) {
       entity->node_handle_fs_brings(ctx);
@@ -252,7 +253,7 @@ void QatSitter::initialise() {
     }
     //
     //
-    SHOW(cfg->shouldExportAST())
+    SHOW(cfg->should_export_ast())
     if (cfg->should_export_ast()) {
       for (auto* entity : fileEntities) {
         entity->export_json_from_ast(ctx);
@@ -270,56 +271,45 @@ void QatSitter::initialise() {
       }
     };
     auto clangStartTime = std::chrono::high_resolution_clock::now();
-    if (cfg->is_workflow_compile()) {
+    if (cfg->is_workflow_build()) {
       SHOW("Checking whether clang exists or not")
-      if (checkExecutableExists("clang") || checkExecutableExists("clang++")) {
+      if (check_exe_exists("clang") || check_exe_exists("clang++")) {
+        SHOW("Executable paths count: " << ctx->executablePaths.size())
         for (auto* entity : fileEntities) {
           entity->compile_to_object(ctx);
         }
-        ctx->finalise_errors();
+        SHOW("Compiled to object")
         ir::Mod::find_native_library_paths();
+        SHOW("Handling native libs")
         for (auto* entity : fileEntities) {
           entity->handle_native_libs(ctx);
         }
-        ctx->finalise_errors();
+        SHOW("Bundling modules")
         for (auto* entity : fileEntities) {
           entity->bundle_modules(ctx);
         }
         ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
                                         std::chrono::high_resolution_clock::now() - clangStartTime)
                                         .count();
-        ctx->finalise_errors();
         display_stats();
         ctx->write_json_result(true);
         clear_llvm_files();
+        SHOW("Executable paths count: " << ctx->executablePaths.size())
         if (cfg->is_workflow_run() && !ctx->executablePaths.empty()) {
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.string())
-            redi::ipstream proc(exePath.string(), redi::pstreams::pstdout);
-            String         output;
-            String         errOut;
-            String         line;
-            while (std::getline(proc.out(), line)) {
-              output += line + "\n";
+            auto cmdRes = run_command_get_output(fs::absolute(exePath).string(), {});
+            std::cout << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
+                             cmdRes.second + "===== Status Code: " + std::to_string(cmdRes.first) + "\n";
+            if (cmdRes.first) {
+              std::cout << "\nThe built executable at " + ctx->color(exePath.string()) + " exited with error";
             }
-            while (std::getline(proc.err(), line)) {
-              errOut += line + "\n";
-            }
-            while (!proc.rdbuf()->exited()) {
-            }
-            log->out << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
-                            output + "===== Status Code: " + std::to_string(proc.rdbuf()->status()) + "\n";
-            if (proc.rdbuf()->status()) {
-              ctx->Error("\nThe built executable at " + ctx->color(exePath.string()) + " exited with error\n" + errOut,
-                         None);
-            }
-            proc.close();
           }
           SHOW("Ran all compiled executables")
         }
       } else {
-        ctx->Error("qat cannot find clang on path. Please make sure that you have clang installed and the "
-                   "path to clang is available in the environment",
+        ctx->Error("Cannot find clang on path. Please make sure that you have clang with version 17 "
+                   "or later installed and the path to clang is available in the system environment",
                    None);
       }
     } else {
@@ -341,7 +331,7 @@ void QatSitter::remove_entity_with_path(const fs::path& path) {
   }
 }
 
-Maybe<Pair<String, fs::path>> QatSitter::detectLibFile(const fs::path& path) {
+Maybe<Pair<String, fs::path>> QatSitter::detect_lib_file(const fs::path& path) {
   if (fs::is_directory(path)) {
     SHOW("Path is a directory: " << fs::absolute(path).string())
     for (const auto& item : fs::directory_iterator(path)) {
@@ -364,8 +354,9 @@ Maybe<Pair<String, fs::path>> QatSitter::detectLibFile(const fs::path& path) {
   return None;
 }
 
-bool QatSitter::isNameValid(const String& name) {
-  return (lexer::Lexer::word_to_token(name, nullptr).type == lexer::TokenType::identifier);
+bool QatSitter::is_name_valid(const String& name) {
+  auto lexRes = lexer::Lexer::word_to_token(name, nullptr);
+  return (lexRes.has_value() && lexRes.value().type == lexer::TokenType::identifier);
 }
 
 void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
@@ -376,10 +367,11 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
   std::function<void(ir::Mod*, const fs::path&)> recursiveModuleCreator = [&](ir::Mod*        parentMod,
                                                                               const fs::path& path) {
     for (auto const& item : fs::directory_iterator(path)) {
-      if (fs::is_directory(item) && !fs::equivalent(item, cfg->get_output_path()) && !ir::Mod::hasFolderModule(item)) {
-        auto libCheckRes = detectLibFile(item);
+      if (fs::is_directory(item) && !fs::equivalent(item, cfg->get_output_path()) &&
+          !ir::Mod::has_folder_module(item)) {
+        auto libCheckRes = detect_lib_file(item);
         if (libCheckRes.has_value()) {
-          if (!isNameValid(libCheckRes->first)) {
+          if (!is_name_valid(libCheckRes->first)) {
             irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
                              irCtx->color(libCheckRes->first) + " which is illegal",
                          None);
@@ -396,9 +388,9 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
           }
           Parser->clear_brought_paths();
           Parser->clear_member_paths();
-          fileEntities.push_back(ir::Mod::CreateRootLib(parentMod, fs::absolute(libCheckRes->second), path,
-                                                        Identifier(libCheckRes->first, libCheckRes->second),
-                                                        std::move(parseRes), VisibilityInfo::pub(), irCtx));
+          fileEntities.push_back(ir::Mod::create_root_lib(parentMod, fs::absolute(libCheckRes->second), path,
+                                                          Identifier(libCheckRes->first, libCheckRes->second),
+                                                          std::move(parseRes), VisibilityInfo::pub(), irCtx));
         } else {
           auto dirQatChecker = [](const fs::directory_entry& entry) {
             bool foundQatFile = false;
@@ -411,7 +403,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
             return foundQatFile;
           };
           if (dirQatChecker(item)) {
-            auto* subfolder = ir::Mod::CreateSubmodule(
+            auto* subfolder = ir::Mod::create_submodule(
                 parentMod, item.path(), path, Identifier(fs::absolute(item.path().filename()).string(), item.path()),
                 ir::ModuleType::folder, VisibilityInfo::pub(), irCtx);
             fileEntities.push_back(subfolder);
@@ -420,9 +412,9 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
             recursiveModuleCreator(parentMod, item);
           }
         }
-      } else if (fs::is_regular_file(item) && !ir::Mod::hasFileModule(item) && (item.path().extension() == ".qat")) {
-        auto libCheckRes = detectLibFile(item);
-        if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
+      } else if (fs::is_regular_file(item) && !ir::Mod::has_file_module(item) && (item.path().extension() == ".qat")) {
+        auto libCheckRes = detect_lib_file(item);
+        if (libCheckRes.has_value() && !is_name_valid(libCheckRes.value().first)) {
           irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
                            irCtx->color(libCheckRes->first) + " which is illegal",
                        None);
@@ -440,13 +432,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
         Parser->clear_brought_paths();
         Parser->clear_member_paths();
         if (libCheckRes.has_value()) {
-          fileEntities.push_back(ir::Mod::CreateRootLib(parentMod, fs::absolute(item), path,
-                                                        Identifier(libCheckRes->first, libCheckRes->second),
-                                                        std::move(parseRes), VisibilityInfo::pub(), irCtx));
+          fileEntities.push_back(ir::Mod::create_root_lib(parentMod, fs::absolute(item), path,
+                                                          Identifier(libCheckRes->first, libCheckRes->second),
+                                                          std::move(parseRes), VisibilityInfo::pub(), irCtx));
         } else {
-          fileEntities.push_back(ir::Mod::CreateFileMod(parentMod, fs::absolute(item), path,
-                                                        Identifier(item.path().filename().string(), item.path()),
-                                                        std::move(parseRes), VisibilityInfo::pub(), irCtx));
+          fileEntities.push_back(ir::Mod::create_file_mod(parentMod, fs::absolute(item), path,
+                                                          Identifier(item.path().filename().string(), item.path()),
+                                                          std::move(parseRes), VisibilityInfo::pub(), irCtx));
         }
       }
     }
@@ -454,11 +446,11 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
   // FIXME - Check if modules are already part of another module
   SHOW("Created recursive module creator")
   if (fs::is_directory(mainPath) && !fs::equivalent(mainPath, cfg->get_output_path()) &&
-      !ir::Mod::hasFolderModule(mainPath)) {
+      !ir::Mod::has_folder_module(mainPath)) {
     SHOW("Is directory")
-    auto libCheckRes = detectLibFile(mainPath);
+    auto libCheckRes = detect_lib_file(mainPath);
     if (libCheckRes.has_value()) {
-      if (!isNameValid(libCheckRes.value().first)) {
+      if (!is_name_valid(libCheckRes.value().first)) {
         irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
                          irCtx->color(libCheckRes->first) + " which is illegal",
                      None);
@@ -475,18 +467,18 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
       }
       Parser->clear_brought_paths();
       Parser->clear_member_paths();
-      fileEntities.push_back(ir::Mod::CreateFileMod(nullptr, libCheckRes->second, mainPath,
-                                                    Identifier(libCheckRes->first, libCheckRes->second),
-                                                    std::move(parseRes), VisibilityInfo::pub(), irCtx));
+      fileEntities.push_back(ir::Mod::create_file_mod(nullptr, libCheckRes->second, mainPath,
+                                                      Identifier(libCheckRes->first, libCheckRes->second),
+                                                      std::move(parseRes), VisibilityInfo::pub(), irCtx));
     } else {
-      auto* subfolder = ir::Mod::Create(Identifier(mainPath.filename().string(), mainPath), mainPath,
+      auto* subfolder = ir::Mod::create(Identifier(mainPath.filename().string(), mainPath), mainPath,
                                         mainPath.parent_path(), ir::ModuleType::folder, VisibilityInfo::pub(), irCtx);
       fileEntities.push_back(subfolder);
       recursiveModuleCreator(subfolder, mainPath);
     }
-  } else if (fs::is_regular_file(mainPath) && !ir::Mod::hasFileModule(mainPath)) {
-    auto libCheckRes = detectLibFile(mainPath);
-    if (libCheckRes.has_value() && !isNameValid(libCheckRes.value().first)) {
+  } else if (fs::is_regular_file(mainPath) && !ir::Mod::has_file_module(mainPath)) {
+    auto libCheckRes = detect_lib_file(mainPath);
+    if (libCheckRes.has_value() && !is_name_valid(libCheckRes.value().first)) {
       irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
                        irCtx->color(libCheckRes->first) + " which is illegal",
                    None);
@@ -505,13 +497,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
     Parser->clear_brought_paths();
     Parser->clear_member_paths();
     if (libCheckRes.has_value()) {
-      fileEntities.push_back(ir::Mod::CreateRootLib(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
-                                                    Identifier(libCheckRes->first, libCheckRes->second),
-                                                    std::move(parseRes), VisibilityInfo::pub(), irCtx));
+      fileEntities.push_back(ir::Mod::create_root_lib(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
+                                                      Identifier(libCheckRes->first, libCheckRes->second),
+                                                      std::move(parseRes), VisibilityInfo::pub(), irCtx));
     } else {
-      fileEntities.push_back(ir::Mod::CreateFileMod(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
-                                                    Identifier(mainPath.filename().string(), mainPath),
-                                                    std::move(parseRes), VisibilityInfo::pub(), irCtx));
+      fileEntities.push_back(ir::Mod::create_file_mod(nullptr, fs::absolute(mainPath), mainPath.parent_path(),
+                                                      Identifier(mainPath.filename().string(), mainPath),
+                                                      std::move(parseRes), VisibilityInfo::pub(), irCtx));
     }
   }
   for (const auto& bPath : broughtPaths) {
@@ -524,29 +516,28 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
   memberPaths.clear();
 }
 
-bool QatSitter::checkExecutableExists(const String& name) {
-#if PlatformIsWindows
-  if (name.ends_with(".exe")) {
-    if (system(("where " + name + " > nul").c_str())) {
-      return false;
-    }
-    return true;
-  } else {
-    if (system(("where " + name + " > nul").c_str()) && system(("where " + name + ".exe > nul").c_str())) {
-      return false;
-    }
+bool QatSitter::check_exe_exists(const String& name) {
+  if (boost::process::search_path(name).string() != "") {
     return true;
   }
-#else
-  if (std::system(("which " + name + " > /dev/null").c_str())) {
+  if (llvm::Triple(LLVM_HOST_TRIPLE).isOSWindows()) {
+    auto wherePath = boost::process::search_path("where");
+    if (wherePath.string() != "") {
+      return run_command_get_code(wherePath.string(), {name}) != 0;
+    }
     return false;
   } else {
-    return true;
+    auto whichPath = boost::process::search_path("which");
+    if (whichPath.string() != "") {
+      return run_command_get_code(whichPath.string(), {name}) != 0;
+    }
+    return false;
   }
-#endif
 }
 
 void QatSitter::destroy() {
+  delete Lexer;
+  delete Parser;
   ir::Value::replace_uses_for_all();
   ir::Mod::clear_all();
   ast::Node::clear_all();

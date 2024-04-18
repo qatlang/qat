@@ -1,9 +1,10 @@
 #include "./qat_module.hpp"
 #include "../ast/node.hpp"
 #include "../cli/config.hpp"
+#include "../cli/logger.hpp"
 #include "../show.hpp"
-#include "../utils/logger.hpp"
-#include "../utils/pstream/pstream.h"
+#include "../utils/run_command.hpp"
+#include "../utils/utils.hpp"
 #include "brought.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
@@ -26,15 +27,30 @@
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Triple.h"
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <system_error>
 
+#include "boost/process/search_path.hpp"
+
+#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+#include <SDKDDKVer.h>
+#include <Windows.h>
+#endif
+
+#define MACOS_DEFAULT_SDK_PATH "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+
 namespace qat::ir {
 
-Vec<Mod*>     Mod::allModules{};
-Vec<fs::path> Mod::usableNativeLibPaths{};
+Vec<Mod*>       Mod::allModules{};
+Vec<fs::path>   Mod::usableNativeLibPaths{};
+Maybe<String>   Mod::usableClangPath      = None;
+Maybe<fs::path> Mod::windowsMSVCLibPath   = None;
+Maybe<fs::path> Mod::windowsATLMFCLibPath = None;
+Maybe<fs::path> Mod::windowsUCRTLibPath   = None;
+Maybe<fs::path> Mod::windowsUMLibPath     = None;
 
 void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
   SHOW("EntityState::do_next_phase " << (name.has_value() ? name.value().value : ""))
@@ -49,7 +65,7 @@ void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
       status = EntityStatus::partial;
     } else if (phaseToCompletion.has_value() && phaseToCompletion.value() == nextPhase) {
       status = EntityStatus::complete;
-    } else if (phaseToChildrenPartial.has_value() && phaseToCompletion.value() == nextPhase) {
+    } else if (phaseToChildrenPartial.has_value() && phaseToChildrenPartial.value() == nextPhase) {
       status = EntityStatus::childrenPartial;
     } else if ((nextPhase == maxPhase) && (nextPhase != ir::EmitPhase::phase_last)) {
       status = supportsChildren ? EntityStatus::childrenPartial : EntityStatus::complete;
@@ -63,7 +79,7 @@ void Mod::clear_all() {
   }
 }
 
-bool Mod::hasFileModule(const fs::path& fPath) {
+bool Mod::has_file_module(const fs::path& fPath) {
   for (auto* mod : allModules) {
     if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
       if (fs::equivalent(mod->filePath, fPath)) {
@@ -74,7 +90,7 @@ bool Mod::hasFileModule(const fs::path& fPath) {
   return false;
 }
 
-bool Mod::hasFolderModule(const fs::path& fPath) {
+bool Mod::has_folder_module(const fs::path& fPath) {
   for (auto* mod : allModules) {
     if (mod->moduleType == ModuleType::folder) {
       if (fs::equivalent(mod->filePath, fPath)) {
@@ -85,7 +101,7 @@ bool Mod::hasFolderModule(const fs::path& fPath) {
   return false;
 }
 
-Mod* Mod::getFileModule(const fs::path& fPath) {
+Mod* Mod::get_file_module(const fs::path& fPath) {
   for (auto* mod : allModules) {
     if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
       if (fs::equivalent(mod->filePath, fPath)) {
@@ -155,7 +171,7 @@ void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
   }
 }
 
-Mod* Mod::Create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
+Mod* Mod::create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
                  const VisibilityInfo& visib_info, Ctx* ctx) {
   return new Mod(name, filepath, basePath, type, visib_info, ctx);
 }
@@ -297,8 +313,8 @@ bool Mod::triple_is_equivalent(const llvm::Triple& first, const llvm::Triple& se
   }
 }
 
-Mod* Mod::CreateSubmodule(Mod* parent, fs::path filepath, fs::path basePath, Identifier sname, ModuleType type,
-                          const VisibilityInfo& visibilityInfo, Ctx* ctx) {
+Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Identifier sname, ModuleType type,
+                           const VisibilityInfo& visibilityInfo, Ctx* ctx) {
   SHOW("Creating submodule: " << sname.value)
   auto* sub = new Mod(std::move(sname), std::move(filepath), std::move(basePath), type, visibilityInfo, ctx);
   if (parent) {
@@ -309,8 +325,8 @@ Mod* Mod::CreateSubmodule(Mod* parent, fs::path filepath, fs::path basePath, Ide
   return sub;
 }
 
-Mod* Mod::CreateFileMod(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
-                        VisibilityInfo visibilityInfo, Ctx* ctx) {
+Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
+                          VisibilityInfo visibilityInfo, Ctx* ctx) {
   auto* sub =
       new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
   if (parent) {
@@ -321,8 +337,8 @@ Mod* Mod::CreateFileMod(Mod* parent, fs::path filepath, fs::path basePath, Ident
   return sub;
 }
 
-Mod* Mod::CreateRootLib(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
-                        const VisibilityInfo& visibilityInfo, Ctx* ctx) {
+Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
+                          const VisibilityInfo& visibilityInfo, Ctx* ctx) {
   auto* sub = new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
   sub->rootLib = true;
   if (parent) {
@@ -522,7 +538,7 @@ bool Mod::should_call_initialiser() const { return nonConstantGlobals != 0; }
 void Mod::addNamedSubmodule(const Identifier& sname, const String& filename, ModuleType type,
                             const VisibilityInfo& visib_info, Ctx* ctx) {
   SHOW("Creating submodule: " << sname.value)
-  active = CreateSubmodule(this, filename, basePath.string(), sname, type, visib_info, ctx);
+  active = create_submodule(this, filename, basePath.string(), sname, type, visib_info, ctx);
 }
 
 void Mod::closeSubmodule() { active = nullptr; }
@@ -1895,7 +1911,7 @@ void Mod::setup_llvm_file(Ctx* ctx) {
       SHOW("Number of llvm output paths is: " << ctx->llvmOutputPaths.size())
     } else {
       SHOW("Could not open file for writing")
-      ctx->Error("Error while writing the LLVM IR to the file " + ctx->color(llPath), None);
+      ctx->Error("Error while writing the LLVM IR to the file " + ctx->color(llPath.string()), None);
     }
     fStream.flush();
     SHOW("Flushed llvm IR file stream")
@@ -1909,27 +1925,113 @@ void Mod::setup_llvm_file(Ctx* ctx) {
   }
 }
 
+bool Mod::find_clang_path(Ctx* ctx) {
+  if (usableClangPath.has_value()) {
+    return true;
+  }
+  auto cfg = cli::Config::get();
+  if (!cfg->has_clang_path()) {
+    auto clangPath   = boost::process::search_path("clang");
+    auto clang17Path = boost::process::search_path("clang-17");
+    SHOW("clang path from boost is " << clangPath)
+    SHOW("clang-17 path from boost is " << clang17Path)
+    if (clangPath.empty() && clang17Path.empty()) {
+      ctx->Error(
+          ctx->color("clang") + " could not be found in PATH. Tried using " + ctx->color("clang-17") +
+              " which is the compatible version of clang, also bundled with qat, but that executable also could not be found."
+              " Please check your installation of qat. Make sure that clang is installed and is added to the system PATH variable."
+              " If you want clang from a custom path to be used, provide path to clang using " +
+              ctx->color("--clang=\"/path/of/clang/exe\""),
+          None);
+    } else if (clang17Path.empty() && !clangPath.empty()) {
+      auto clangRes = run_command_get_stdout(clangPath.string(), {"--version"});
+      if (clangRes.first == 0) {
+        Maybe<String> versionString;
+        if (clangRes.second.find("\n") != String::npos) {
+          auto firstLine = clangRes.second.substr(0, clangRes.second.find("\n"));
+          if (firstLine.find("version ") != String::npos) {
+            versionString = firstLine.substr(firstLine.find("version ") + String::traits_type::length("version "));
+          }
+        } else if (clangRes.second.find("version ") != String::npos) {
+          versionString =
+              clangRes.second.substr(clangRes.second.find("version ") + String::traits_type::length("version "));
+        }
+        if (versionString.has_value() && versionString.value().find(' ') != String::npos) {
+          versionString = versionString.value().substr(versionString.value().find(' '));
+        }
+        Maybe<int> majorVersion;
+        if (versionString.has_value()) {
+          if (versionString.value().find('.') != String::npos) {
+            auto majorStr = versionString.value().substr(0, versionString.value().find('.'));
+            if (utils::is_integer(majorStr)) {
+              majorVersion = std::stoi(majorStr);
+            }
+          } else if (utils::is_integer(versionString.value())) {
+            majorVersion = std::stoi(versionString.value());
+          }
+        }
+        if (majorVersion.has_value()) {
+          if (majorVersion.value() < 17) {
+            ctx->Error(
+                "qat requires a clang installation of version 17 or later. The clang compiler found at " +
+                    clangPath.string() + " has a version of " + ctx->color(versionString.value()) +
+                    ". Also tried using the " + ctx->color("clang-17") +
+                    " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+                None);
+          }
+          usableClangPath = clangPath.string();
+        } else {
+          ctx->Error(
+              "Could not determine the version of the clang compiler found at " + ctx->color(clangPath.string()) +
+                  ". Also tried using the " + ctx->color("clang-17") +
+                  " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+              None);
+        }
+      } else {
+        ctx->Error(
+            "Tried to run " + ctx->color("clang --version") +
+                " to determine the version of the clang compiler. But the command failed with the status code " +
+                ctx->color(std::to_string(clangRes.first)) + ". Also tried using the " + ctx->color("clang-17") +
+                " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+            None);
+      }
+    } else if (!clang17Path.empty()) {
+      usableClangPath = clang17Path.string();
+    }
+  } else {
+    usableClangPath = cfg->get_clang_path();
+  }
+  return usableClangPath.has_value();
+}
+
 void Mod::compile_to_object(Ctx* ctx) {
   if (!isCompiledToObject) {
     auto& log = Logger::get();
     log->say("Compiling module `" + name.value + "` from file " + filePath.string());
-    auto*  cfg = cli::Config::get();
-    String compileCommand(cfg->has_clang_path() ? (fs::absolute(cfg->get_clang_path()).string() + " ") : "clang ");
+    auto*       cfg = cli::Config::get();
+    Vec<String> compileArgs;
     if (cfg->should_build_shared()) {
-      compileCommand.append("-fPIC -c -mllvm -enable-matrix ");
+      compileArgs.push_back("-fPIC");
+      compileArgs.push_back("-c");
+      compileArgs.push_back("-mllvm");
+      compileArgs.push_back("-enable-matrix");
     } else {
-      compileCommand.append("-c -mllvm -enable-matrix ");
+      compileArgs.push_back("-c");
+      compileArgs.push_back("-mllvm");
+      compileArgs.push_back("-enable-matrix");
     }
     if (linkPthread) {
-      compileCommand += "-pthread ";
+      compileArgs.push_back("-pthread");
     }
-    compileCommand.append("--target=").append(ctx->clangTargetInfo->getTriple().getTriple()).append(" ");
+    compileArgs.push_back("--target=" + ctx->clangTargetInfo->getTriple().getTriple());
     if (cfg->has_sysroot()) {
-      compileCommand.append("--sysroot=").append(cfg->get_sysroot()).append(" ");
+      compileArgs.push_back("--sysroot=" + cfg->get_sysroot());
     }
     if (ctx->clangTargetInfo->getTriple().isWasm()) {
       // -Wl,--import-memory
-      compileCommand.append("-nostartfiles -Wl,--no-entry -Wl,--export-all ");
+      compileArgs.push_back("-nostartfiles");
+      compileArgs.push_back("-Wl,--no-entry");
+      compileArgs.push_back("-Wl,--export-all");
     }
     for (auto* sub : submodules) {
       sub->compile_to_object(ctx);
@@ -1952,19 +2054,17 @@ void Mod::compile_to_object(Ctx* ctx) {
                    None);
       }
     }
-    compileCommand.append(llPath.string()).append(" -o ").append(objectFilePath.value().string());
-    SHOW("Compile command is " << compileCommand)
-    log->say("Compile command is: " + compileCommand);
-    redi::ipstream proc(compileCommand, redi::pstreams::pstderr);
-    String         errMessage;
-    String         line;
-    while (std::getline(proc.err(), line)) {
-      errMessage += line += "\n";
-    }
-    while (!proc.rdbuf()->exited()) {
-    }
-    if (proc.rdbuf()->status()) {
-      ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + "\n" + errMessage, None);
+    compileArgs.push_back(llPath.string());
+    compileArgs.push_back("-o");
+    compileArgs.push_back(objectFilePath.value().string());
+    auto clangFound = find_clang_path(ctx);
+    SHOW("Clang is found: " << clangFound)
+    // TODO - ?? Check if the provided clang compiler is above version 17
+    auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
+    if (cmdRes.first) {
+      ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
+                     cmdRes.second,
+                 None);
     }
     isCompiledToObject = true;
   }
@@ -1975,7 +2075,7 @@ std::set<String> Mod::getAllObjectPaths() const {
   std::set<String> result;
   if (objectFilePath.has_value()) {
     SHOW("Object path has value")
-    result.insert(objectFilePath.value());
+    result.insert(objectFilePath.value().string());
   }
   auto moduleHandler = [&](Mod* modVal) {
     auto objList = modVal->getAllObjectPaths();
@@ -2047,6 +2147,9 @@ std::set<String> Mod::getAllLinkableLibs() const {
     auto libList = modVal->getAllLinkableLibs();
     for (auto& lib : libList) {
       result.insert(lib);
+    }
+    if (modVal->linkPthread) {
+      linkPthread = true;
     }
   };
   for (auto dep : dependencies) {
@@ -2224,44 +2327,425 @@ void Mod::handle_native_libs(Ctx* ctx) {
   }
 }
 
+bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
+                                      bool findUCRTLibPath, bool findUMLibPath) {
+  auto cfg    = cli::Config::get();
+  auto target = irCtx->clangTargetInfo->getTriple();
+  if (cfg->has_toolchain_path()) {
+    const auto windowsPath = cfg->get_toolchain_path() / "windows";
+    if (fs::exists(windowsPath) && fs::is_directory(windowsPath)) {
+      if (findMSVCLibPath || findATLMFCLibPath) {
+        const auto msvcMainPath = windowsPath / "MSVC";
+        if (fs::exists(msvcMainPath) && fs::is_directory(msvcMainPath)) {
+          Maybe<int> version;
+          for (auto it : fs::directory_iterator(msvcMainPath)) {
+            if (it.is_directory()) {
+              if (utils::is_integer(it.path().filename())) {
+                if (version.has_value()) {
+                  if (version.value() < std::stoi(it.path().filename())) {
+                    version = std::stoi(it.path().filename());
+                  }
+                } else {
+                  version = std::stoi(it.path().filename());
+                }
+              }
+            }
+          }
+          if (version.has_value()) {
+            auto            versionPath = msvcMainPath / std::to_string(version.value());
+            Maybe<fs::path> candidateMSVCLibPath;
+            Maybe<fs::path> candidateATLMFCLibPath;
+            if (target.isX86() && target.isArch64Bit()) {
+              candidateMSVCLibPath   = versionPath / "lib" / "x64";
+              candidateATLMFCLibPath = versionPath / "atlmfc" / "lib" / "x64";
+            } else if (target.isX86() && target.isArch32Bit()) {
+              candidateMSVCLibPath   = versionPath / "lib" / "x86";
+              candidateATLMFCLibPath = versionPath / "atlmfc" / "lib" / "x86";
+            } else if (target.isAArch64()) {
+              candidateMSVCLibPath = versionPath / "lib" / "arm64";
+            } else if (target.isARM()) {
+              candidateMSVCLibPath = versionPath / "lib" / "arm";
+            } else if (target.isWindowsCoreCLREnvironment()) {
+              if (target.isArch64Bit()) {
+                candidateMSVCLibPath = versionPath / "lib" / "opencore" / "x64";
+              } else {
+                candidateMSVCLibPath = versionPath / "lib" / "opencore" / "x86";
+              }
+            }
+            if (candidateMSVCLibPath.has_value() && fs::exists(candidateMSVCLibPath.value()) &&
+                fs::is_directory(candidateMSVCLibPath.value())) {
+              SHOW("Found MSVC Lib Path")
+              windowsMSVCLibPath = candidateMSVCLibPath;
+            }
+            if (candidateATLMFCLibPath.has_value() && fs::exists(candidateATLMFCLibPath.value()) &&
+                fs::is_directory(candidateATLMFCLibPath.value())) {
+              SHOW("Found ATLMFC Lib Path")
+              windowsATLMFCLibPath = candidateATLMFCLibPath;
+            }
+          } else {
+            irCtx->Error("Could not find any versions of MSVC in the directory " + irCtx->color(msvcMainPath.string()),
+                         None);
+          }
+        } else {
+          irCtx->Error("Could not find the directory " + irCtx->color((windowsPath / "MSVC").string()) +
+                           ", which is required for finding platform-specific libraries for the target " +
+                           irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
+                       None);
+        }
+      } else if (findUCRTLibPath || findUMLibPath) {
+        auto windowsKitPath = windowsPath / "SDK";
+        if (fs::exists(windowsKitPath) && fs::is_directory(windowsKitPath)) {
+          Maybe<fs::path> osVerPath;
+          Maybe<float>    osVer;
+          for (auto it : fs::directory_iterator(windowsKitPath)) {
+            if (fs::is_directory(it)) {
+              // FIXME - Rethink for future Windows SDK versions
+              if (it.path().filename().string() == "10") {
+                if (osVer.has_value() ? (osVer.value() < 10) : true) {
+                  osVerPath = windowsKitPath / "10";
+                  osVer     = 10;
+                }
+              } else if (it.path().filename().string() == "8.1") {
+                if (osVer.has_value() ? (osVer.value() < 8.1) : true) {
+                  osVerPath = windowsKitPath / "8.1";
+                  osVer     = 8.1;
+                }
+              } else if (it.path().filename().string() == "7.1") {
+                if (osVer.has_value() ? (osVer.value() < 7.1) : true) {
+                  osVerPath = windowsKitPath / "7.1";
+                  osVer     = 7.1;
+                }
+              }
+            }
+          }
+          if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
+            SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
+            std::array<u64, 4> verNums = {0, 0, 0, 0};
+            fs::path           osVerSDKPath;
+            for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
+              if (fs::is_directory(it)) {
+                SHOW("In OS Ver main path, iterating " << it.path().string())
+                auto  osVersionStr = it.path().filename().string();
+                usize dotCount     = 0;
+                for (char ch : osVersionStr) {
+                  if (ch == '.') {
+                    dotCount++;
+                  }
+                }
+                SHOW("Dot count is " << dotCount)
+                if (dotCount == 3) {
+                  auto               firstDot  = osVersionStr.find('.');
+                  auto               secondDot = osVersionStr.find('.', firstDot + 1);
+                  auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
+                  std::array<u64, 4> newVerNum = {std::stoul(osVersionStr.substr(0, firstDot - 1)),
+                                                  std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
+                                                  std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
+                                                  std::stoul(osVersionStr.substr(thirdDot + 1))};
+                  for (usize i = 0; i < 4; i++) {
+                    if (newVerNum[i] > verNums[i]) {
+                      verNums      = newVerNum;
+                      osVerSDKPath = it.path();
+                      break;
+                    } else if (newVerNum[i] == verNums[i]) {
+                      continue;
+                    } else {
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+            SHOW("OS Ver SDK Path is: " << osVerSDKPath.string())
+            if (fs::exists(osVerSDKPath)) {
+              SHOW("Found OS Ver SDK Path: " << osVerSDKPath.string())
+              if (fs::exists(osVerSDKPath / "ucrt")) {
+                Maybe<fs::path> candidateUCRTPath;
+                if (target.isX86() && target.isArch64Bit()) {
+                  candidateUCRTPath = osVerSDKPath / "ucrt" / "x64";
+                } else if (target.isX86() && target.isArch32Bit()) {
+                  candidateUCRTPath = osVerSDKPath / "ucrt" / "x86";
+                } else if (target.isAArch64()) {
+                  candidateUCRTPath = osVerSDKPath / "ucrt" / "arm64";
+                } else if (target.isARM()) {
+                  candidateUCRTPath = osVerSDKPath / "ucrt" / "arm";
+                }
+                windowsUCRTLibPath = candidateUCRTPath;
+              }
+              if (fs::exists(osVerSDKPath / "um")) {
+                Maybe<fs::path> candidateUMPath;
+                if (target.isX86() && target.isArch64Bit()) {
+                  candidateUMPath = osVerSDKPath / "um" / "x64";
+                } else if (target.isX86() && target.isArch32Bit()) {
+                  candidateUMPath = osVerSDKPath / "um" / "x86";
+                } else if (target.isAArch64()) {
+                  candidateUMPath = osVerSDKPath / "um" / "arm64";
+                } else if (target.isARM()) {
+                  candidateUMPath = osVerSDKPath / "um" / "arm";
+                }
+                windowsUMLibPath = candidateUMPath;
+              }
+            }
+          }
+        }
+      }
+    } else {
+      irCtx->Error("Could not find the directory " + irCtx->color(windowsPath) +
+                       " which is required for finding platform-specific libraries for the target " +
+                       irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
+                   None);
+    }
+  } else {
+    irCtx->Error("Could not find the " + irCtx->color("toolchain") + " directory. Expected to find the " +
+                     irCtx->color("toolchain") + " directory in the directory of installation of qat",
+                 None);
+  }
+  return (findMSVCLibPath ? windowsMSVCLibPath.has_value() : true) &&
+         (findATLMFCLibPath ? windowsATLMFCLibPath.has_value() : true) &&
+         (findUCRTLibPath ? windowsUCRTLibPath.has_value() : true) &&
+         (findUMLibPath ? windowsUMLibPath.has_value() : true);
+}
+
+bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
+  SHOW("Finding MSVC SDK Path")
+  if (windowsMSVCLibPath.has_value() || windowsATLMFCLibPath.has_value() || windowsUCRTLibPath.has_value() ||
+      windowsUMLibPath.has_value()) {
+    SHOW("Already found MSVC paths")
+    return true;
+  }
+  if (!llvm::Triple(LLVM_HOST_TRIPLE).isOSWindows()) {
+    return find_windows_toolchain_libs(irCtx, true, true, true, true);
+  }
+  Maybe<String> vsWherePath;
+  if (fs::exists("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe")) {
+    vsWherePath = "C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe";
+  }
+  if (!vsWherePath.has_value()) {
+    auto pathRes = boost::process::search_path("vswhere");
+    if (pathRes.string() != "") {
+      vsWherePath = pathRes.string();
+    }
+  }
+  auto target = irCtx->clangTargetInfo->getTriple();
+  if (!vsWherePath.has_value()) {
+    (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
+  } else {
+    auto vsWhereRes = run_command_get_output(vsWherePath.value(), {"-latest", "-property", "installationPath"});
+    if (vsWhereRes.first) {
+      irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes.first) +
+                       ". The error output is: " + vsWhereRes.second,
+                   None);
+    }
+    Maybe<String> vsPath;
+    if (!vsWhereRes.second.empty()) {
+      if (vsWhereRes.second.find('\n') != String::npos) {
+        vsPath = vsWhereRes.second.substr(0, vsWhereRes.second.find('\n') - 1);
+      } else {
+        vsPath = vsWhereRes.second;
+      }
+    }
+    if (!vsPath.has_value()) {
+      (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
+    } else {
+      auto msvcMainPath = fs::path(vsPath.value()) / "VC" / "Tools" / "MSVC";
+      // / "14.32.31326" / "bin" / "Hostx64" / "x64";
+
+      if (!fs::exists(msvcMainPath)) {
+        (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
+      } else {
+        // irCtx->Error("The path " + irCtx->color(msvcMainPath.string()) +
+        //                  " do not exist. Could not find path of the MSVC SDK",
+        //              None);
+        SHOW("Found MSVC Root path: " << msvcMainPath.string())
+        Maybe<int>      versionMajor;
+        Maybe<fs::path> versionPath;
+        for (auto it : fs::directory_iterator(msvcMainPath)) {
+          if (fs::is_directory(it)) {
+            auto dirName = it.path().filename().string();
+            if (dirName.find('.') != String::npos) {
+              auto majStr = dirName.substr(0, dirName.find('.') - 1);
+              if (utils::is_integer(majStr)) {
+                auto newVersion = std::stoi(majStr);
+                if (versionMajor.has_value() ? (versionMajor.value() < newVersion) : true) {
+                  versionMajor = newVersion;
+                  versionPath  = it.path();
+                }
+              }
+            }
+          }
+        }
+        if (!versionMajor.has_value()) {
+          //   irCtx->Error("Could not find the a version of MSVC in the folder " + irCtx->color(msvcMainPath.string()),
+          //                None);
+          (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
+        } else {
+          SHOW("Found MSVC Version path")
+          Maybe<fs::path> candidateMSVCLibPath;
+          Maybe<fs::path> candidateATLMFCLibPath;
+          if (target.isX86() && target.isArch64Bit()) {
+            candidateMSVCLibPath   = versionPath.value() / "lib" / "x64";
+            candidateATLMFCLibPath = versionPath.value() / "atlmfc" / "lib" / "x64";
+          } else if (target.isX86() && target.isArch32Bit()) {
+            candidateMSVCLibPath   = versionPath.value() / "lib" / "x86";
+            candidateATLMFCLibPath = versionPath.value() / "atlmfc" / "lib" / "x86";
+          } else if (target.isAArch64()) {
+            candidateMSVCLibPath = versionPath.value() / "lib" / "arm64";
+          } else if (target.isARM()) {
+            candidateMSVCLibPath = versionPath.value() / "lib" / "arm";
+          } else if (target.isWindowsCoreCLREnvironment()) {
+            if (target.isArch64Bit()) {
+              candidateMSVCLibPath = versionPath.value() / "lib" / "opencore" / "x64";
+            } else {
+              candidateMSVCLibPath = versionPath.value() / "lib" / "opencore" / "x86";
+            }
+          }
+          if (candidateMSVCLibPath.has_value() && fs::exists(candidateMSVCLibPath.value()) &&
+              fs::is_directory(candidateMSVCLibPath.value())) {
+            SHOW("Found MSVC Lib Path")
+            windowsMSVCLibPath = candidateMSVCLibPath;
+          }
+          if (candidateATLMFCLibPath.has_value() && fs::exists(candidateATLMFCLibPath.value()) &&
+              fs::is_directory(candidateATLMFCLibPath.value())) {
+            SHOW("Found ATLMFC Lib Path")
+            windowsATLMFCLibPath = candidateATLMFCLibPath;
+          }
+        }
+      }
+      //   irCtx->Error("Could not find installation path of the latest MSVC version", None);
+    }
+  }
+  auto windowsKitPath = fs::path("C:/Program Files (x86)/Windows Kits");
+  if (!fs::exists(windowsKitPath)) {
+    (void)find_windows_toolchain_libs(irCtx, false, false, true, true);
+  } else {
+    Maybe<fs::path> osVerPath;
+    Maybe<float>    osVer;
+    for (auto it : fs::directory_iterator(windowsKitPath)) {
+      if (fs::is_directory(it)) {
+        // FIXME - Rethink for future Windows SDK versions
+        if (it.path().filename().string() == "10") {
+          if (osVer.has_value() ? (osVer.value() < 10) : true) {
+            osVerPath = windowsKitPath / "10";
+            osVer     = 10;
+          }
+        } else if (it.path().filename().string() == "8.1") {
+          if (osVer.has_value() ? (osVer.value() < 8.1) : true) {
+            osVerPath = windowsKitPath / "8.1";
+            osVer     = 8.1;
+          }
+        } else if (it.path().filename().string() == "7.1") {
+          if (osVer.has_value() ? (osVer.value() < 7.1) : true) {
+            osVerPath = windowsKitPath / "7.1";
+            osVer     = 7.1;
+          }
+        }
+      }
+    }
+    if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
+      SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
+      std::array<u64, 4> verNums = {0, 0, 0, 0};
+      fs::path           osVerSDKPath;
+      for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
+        if (fs::is_directory(it)) {
+          SHOW("In OS Ver main path, iterating " << it.path().string())
+          auto  osVersionStr = it.path().filename().string();
+          usize dotCount     = 0;
+          for (char ch : osVersionStr) {
+            if (ch == '.') {
+              dotCount++;
+            }
+          }
+          SHOW("Dot count is " << dotCount)
+          if (dotCount == 3) {
+            auto               firstDot  = osVersionStr.find('.');
+            auto               secondDot = osVersionStr.find('.', firstDot + 1);
+            auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
+            std::array<u64, 4> newVerNum = {std::stoul(osVersionStr.substr(0, firstDot - 1)),
+                                            std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
+                                            std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
+                                            std::stoul(osVersionStr.substr(thirdDot + 1))};
+            for (usize i = 0; i < 4; i++) {
+              if (newVerNum[i] > verNums[i]) {
+                verNums      = newVerNum;
+                osVerSDKPath = it.path();
+                break;
+              } else if (newVerNum[i] == verNums[i]) {
+                continue;
+              } else {
+                break;
+              }
+            }
+          }
+        }
+      }
+      SHOW("OS Ver SDK Path is: " << osVerSDKPath.string())
+      if (fs::exists(osVerSDKPath)) {
+        SHOW("Found OS Ver SDK Path: " << osVerSDKPath.string())
+        if (fs::exists(osVerSDKPath / "ucrt")) {
+          Maybe<fs::path> candidateUCRTPath;
+          if (target.isX86() && target.isArch64Bit()) {
+            candidateUCRTPath = osVerSDKPath / "ucrt" / "x64";
+          } else if (target.isX86() && target.isArch32Bit()) {
+            candidateUCRTPath = osVerSDKPath / "ucrt" / "x86";
+          } else if (target.isAArch64()) {
+            candidateUCRTPath = osVerSDKPath / "ucrt" / "arm64";
+          } else if (target.isARM()) {
+            candidateUCRTPath = osVerSDKPath / "ucrt" / "arm";
+          }
+          windowsUCRTLibPath = candidateUCRTPath;
+        }
+        if (fs::exists(osVerSDKPath / "um")) {
+          Maybe<fs::path> candidateUMPath;
+          if (target.isX86() && target.isArch64Bit()) {
+            candidateUMPath = osVerSDKPath / "um" / "x64";
+          } else if (target.isX86() && target.isArch32Bit()) {
+            candidateUMPath = osVerSDKPath / "um" / "x86";
+          } else if (target.isAArch64()) {
+            candidateUMPath = osVerSDKPath / "um" / "arm64";
+          } else if (target.isARM()) {
+            candidateUMPath = osVerSDKPath / "um" / "arm";
+          }
+          windowsUMLibPath = candidateUMPath;
+        }
+      } else {
+        (void)find_windows_toolchain_libs(irCtx, false, false, true, true);
+      }
+    } else {
+      (void)find_windows_toolchain_libs(irCtx, false, false, true, true);
+    }
+  }
+  return windowsMSVCLibPath.has_value() || windowsATLMFCLibPath.has_value() || windowsUCRTLibPath.has_value() ||
+         windowsUMLibPath.has_value();
+}
+
 void Mod::bundle_modules(Ctx* ctx) {
   if (!isBundled && (hasMain || ((moduleType == ModuleType::lib) && !parent))) {
     auto& log = Logger::get();
     log->say("Bundling library for module `" + name.value + "` in file " + filePath.string());
     SHOW("Bundling submodules of lib `" << name.value << "`"
                                         << " in file " << filePath.string())
-    log->finish_output();
     for (auto* sub : submodules) {
       sub->bundle_modules(ctx);
     }
     SHOW("Getting linkable libs")
     auto linkableLibs = getAllLinkableLibs();
     SHOW("Linkable lib count for module " << name.value << " is " << linkableLibs.size())
-    auto*  cfg = cli::Config::get();
-    String cmdOne;
-    String targetCMD;
-    if (linkPthread) {
-      cmdOne.append("-pthread ");
-    }
-    auto hostTriplet = llvm::Triple(LLVM_HOST_TRIPLE);
-    SHOW("Created triple")
+    auto*       cfg = cli::Config::get();
+    Vec<String> cmdOne;
+    Vec<String> targetCMD;
+    auto        hostTriplet = llvm::Triple(LLVM_HOST_TRIPLE);
     for (auto& lib : linkableLibs) {
-      cmdOne.append(" ").append(lib).append(" ");
+      cmdOne.push_back(lib);
     }
-    SHOW("Appended all linkable libs")
-    targetCMD.append("--target=").append(cfg->get_target_triple()).append(" ");
-
-#define MACOS_DEFAULT_SDK_PATH "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
-
+    targetCMD.push_back("--target=" + cfg->get_target_triple());
     if (cfg->has_sysroot()) {
-      targetCMD.append("--sysroot=").append(cfg->get_sysroot()).append(" ");
+      targetCMD.push_back("--sysroot=" + cfg->get_sysroot());
     } else if (ctx->clangTargetInfo->getTriple().isTargetMachineMac()) {
       if (hostTriplet.isTargetMachineMac() && fs::exists(MACOS_DEFAULT_SDK_PATH)) {
-        targetCMD.append("--sysroot=").append("\"" MACOS_DEFAULT_SDK_PATH "\" ");
+        targetCMD.push_back("--sysroot=" MACOS_DEFAULT_SDK_PATH);
       } else {
         ctx->Error(
             "The host triplet of the compiler is " + ctx->color(LLVM_HOST_TRIPLE) +
-                (hostTriplet.isMacOSX() ? "" : " which is not MacOS") + ", but the target triplet is " +
+                (hostTriplet.isMacOSX() ? ", and " : " which is not MacOS, but ") + "the target triplet is " +
                 ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
                 " which is identified to be for a MacOS platform. Please provide the --sysroot parameter." +
                 (hostTriplet.isTargetMachineMac()
@@ -2275,16 +2759,16 @@ void Mod::bundle_modules(Ctx* ctx) {
     }
     if (ctx->clangTargetInfo->getTriple().isWasm()) {
       // -Wl,--import-memory
-      targetCMD.append("-nostartfiles -Wl,--no-entry -Wl,--export-all ");
+      targetCMD.push_back("-nostartfiles");
+      targetCMD.push_back("-Wl,--no-entry");
+      targetCMD.push_back("-Wl,--export-all");
     }
     std::set<String> objectFiles = getAllObjectPaths();
-    String           inputFiles  = "";
+    Vec<String>      inputFiles;
     for (auto& objPath : objectFiles) {
-      inputFiles.append(objPath);
-      inputFiles.append(" ");
+      inputFiles.push_back(objPath);
     }
     SHOW("Finished input files")
-    // log->finish_output();
     auto          outNameVal = get_meta_info_for_key("outputName");
     Maybe<String> outputNameValue;
     if (outNameVal.has_value() && outNameVal.value()->get_ir_type()->is_string_slice()) {
@@ -2292,14 +2776,21 @@ void Mod::bundle_modules(Ctx* ctx) {
     }
     SHOW("Added ll paths of all brought modules")
     if (hasMain) {
-      auto outPath = ((cfg->has_output_path() ? cfg->get_output_path() : basePath) /
+      auto outPath = ((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "bin" /
                       filePath.lexically_relative(basePath)
                           .replace_filename(outputNameValue.value_or(name.value))
                           .replace_extension(ctx->clangTargetInfo->getTriple().isOSWindows()
                                                  ? "exe"
                                                  : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
                          .string();
-      ctx->add_exe_path(fs::absolute(outPath).lexically_normal());
+      std::error_code err;
+      fs::create_directories(fs::path(outPath).parent_path(), err);
+      if (err) {
+        ctx->Error("Could not create the parent directories in the path " +
+                       ctx->color(fs::path(outPath).parent_path().string()) +
+                       ". The error message was: " + ctx->color(err.message()),
+                   None);
+      }
       // FIXME - LIB_LINKING
       //   String staticLibStr;
       //   String sharedLibStr;
@@ -2309,53 +2800,51 @@ void Mod::bundle_modules(Ctx* ctx) {
       //   for (auto const& sharedLib : sharedLibsToLink) {
       //     sharedLibStr.append("-l").append(sharedLib).append(" ");
       //   }
-      auto staticCommand = String(cfg->has_clang_path() ? cfg->get_clang_path() : "clang")
-                               .append(" -o ")
-                               .append(outPath)
-                               .append(" ")
-                               .append(cmdOne)
-                               // FIXME - LIB_LINKING
-                               //    .append(staticLibStr)
-                               .append(targetCMD)
-                               .append(inputFiles);
-      auto sharedCommand = String(cfg->has_clang_path() ? cfg->get_clang_path() : "clang")
-                               .append(" -o ")
-                               .append(outPath)
-                               .append(" ")
-                               .append(cmdOne)
-                               // FIXME - LIB_LINKING
-                               //    .append(sharedLibStr)
-                               .append(targetCMD)
-                               .append(inputFiles);
+      (void)find_clang_path(ctx);
+
+      Vec<String> staticArgs;
+      staticArgs.push_back("--verbose");
+      if (linkPthread) {
+        if (ctx->clangTargetInfo->getTriple().isOSLinux() || ctx->clangTargetInfo->getTriple().isOSCygMing()) {
+          staticArgs.push_back("-pthread");
+        }
+      }
+      staticArgs.push_back("-o");
+      staticArgs.push_back(outPath);
+      staticArgs.insert(staticArgs.end(), cmdOne.begin(), cmdOne.end());
+      // FIXME - LIB_LINKING .append(staticLibStr)
+      staticArgs.insert(staticArgs.end(), targetCMD.begin(), targetCMD.end());
+      staticArgs.insert(staticArgs.end(), inputFiles.begin(), inputFiles.end());
+
+      Vec<String> sharedArgs;
+      if (linkPthread) {
+        if (!ctx->clangTargetInfo->getTriple().isWindowsMSVCEnvironment()) {
+          sharedArgs.push_back("-pthread");
+        }
+      }
+      sharedArgs.push_back("-o");
+      sharedArgs.push_back(outPath);
+      sharedArgs.insert(sharedArgs.end(), cmdOne.begin(), cmdOne.end());
+      // FIXME - LIB_LINKING .append(sharedLibStr)
+      sharedArgs.insert(sharedArgs.end(), targetCMD.begin(), targetCMD.end());
+      sharedArgs.insert(sharedArgs.end(), inputFiles.begin(), inputFiles.end());
+
       if (cfg->should_build_static()) {
-        SHOW("Static Build Command :: " << staticCommand)
-        redi::ipstream proc(staticCommand, redi::pstreams::pstderr);
-        String         errMessage;
-        String         line;
-        while (std::getline(proc.err(), line)) {
-          errMessage += line += "\n";
-        }
-        while (!proc.rdbuf()->exited()) {
-        }
-        if (proc.rdbuf()->status()) {
-          ctx->Error("Statically linking & compiling executable failed: " + filePath.string() + "\n" + errMessage,
+        auto cmdRes = run_command_get_stderr(usableClangPath.value(), staticArgs);
+        if (cmdRes.first) {
+          ctx->Error("Statically compiling & linking executable failed: " + ctx->color(filePath.string()) +
+                         ". The error output is\n" + cmdRes.second,
                      None);
         }
       } else if (cfg->should_build_shared()) {
-        SHOW("Dynamic Build Command :: " << sharedCommand)
-        redi::ipstream proc(sharedCommand, redi::pstreams::pstderr);
-        String         errMessage;
-        String         line;
-        while (std::getline(proc.err(), line)) {
-          errMessage += line += "\n";
-        }
-        while (!proc.rdbuf()->exited()) {
-        }
-        if (proc.rdbuf()->status()) {
-          ctx->Error("Dynamically linking & compiling executable failed: " + filePath.string() + "\n" + errMessage,
+        auto cmdRes = run_command_get_stderr(usableClangPath.value(), sharedArgs);
+        if (cmdRes.first) {
+          ctx->Error("Dynamically compiling & linking executable failed: " + ctx->color(filePath.string()) +
+                         ". The error output is\n" + cmdRes.second,
                      None);
         }
       }
+      ctx->add_exe_path(fs::absolute(outPath).lexically_normal());
       if (cfg->export_code_metadata()) {
         std::ifstream file(filePath, std::ios::binary);
         auto          fsize = file.tellg();
@@ -2390,6 +2879,14 @@ void Mod::bundle_modules(Ctx* ctx) {
           return ".a";
         }
       };
+      auto getNameForLib = [&](Maybe<String> outName) {
+        auto triple = ctx->clangTargetInfo->getTriple();
+        if (triple.isOSWindows()) {
+          return outName.value_or(name.value);
+        } else {
+          return "lib" + outName.value_or(name.value);
+        }
+      };
       auto getExtensionShared = [&]() {
         auto triplet = ctx->clangTargetInfo->getTriple();
         if (triplet.isOSWindows()) {
@@ -2402,14 +2899,23 @@ void Mod::bundle_modules(Ctx* ctx) {
           return ".so";
         }
       };
-      auto outPath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) /
+      auto outPath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "libs" /
                                   filePath.lexically_relative(basePath).replace_filename(
-                                      outputNameValue.value_or(get_writable_name()).append(getExtension())))
+                                      getNameForLib(outputNameValue).append(getExtension())))
                          .string();
-      auto outPathShared = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) /
+      auto outPathShared = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "libs" /
                                         filePath.lexically_relative(basePath).replace_filename(
-                                            outputNameValue.value_or(get_writable_name()).append(getExtensionShared())))
+                                            getNameForLib(outputNameValue).append(getExtensionShared())))
                                .string();
+      // NOTE - Assuming both static and shared libraries live in the same directory
+      std::error_code err;
+      fs::create_directories(fs::path(outPath).parent_path(), err);
+      if (err) {
+        ctx->Error("Could not create the parent directories in the path " +
+                       ctx->color(fs::path(outPath).parent_path().string()) +
+                       ". The error message was: " + ctx->color(err.message()),
+                   None);
+      }
       String                   stdOutStr;
       String                   stdErrStr;
       llvm::raw_string_ostream linkerStdOut(stdOutStr);
@@ -2420,17 +2926,10 @@ void Mod::bundle_modules(Ctx* ctx) {
          */
         Vec<const char*> allArgs{"ld.lld", "-flavor", "gnu MinGW", "-r", "-o", outPath.c_str()};
         Vec<const char*> allArgsShared{"lld.lld", "-flavor", "gnu MinGW", "-r", "-o", outPathShared.c_str()};
-        Vec<String>      staticCmdList;
-        Vec<String>      sharedCmdList;
-        // FIXME - LIB_LINKING
-        // for (auto& statLib : staticLibsToLink) {
-        //   staticCmdList.push_back("-l" + statLib);
-        //   allArgs.push_back(staticCmdList.back().c_str());
-        // }
-        // for (auto& sharedLib : sharedLibsToLink) {
-        //   sharedCmdList.push_back("-l" + sharedLib);
-        //   allArgsShared.push_back(sharedCmdList.back().c_str());
-        // }
+        if (linkPthread) {
+          allArgs.push_back("-pthread");
+          allArgsShared.push_back("-pthread");
+        }
         if (cfg->is_build_mode_release()) {
           allArgs.push_back("--strip-debug");
           allArgsShared.push_back("--strip-debug");
@@ -2456,9 +2955,13 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::MinGW, &lld::mingw::link}});
           if (result.retCode != 0) {
+            String staticCmdStr;
+            for (auto arg : allArgs) {
+              staticCmdStr += String(arg) + " ";
+            }
             ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-                           " failed with return code " + std::to_string(result.retCode) +
-                           ". The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM MinGW' linker failed with status code " + std::to_string(result.retCode) +
+                           "\nThe command was: " + staticCmdStr + "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2469,9 +2972,14 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut, linkerStdErr,
                                            {{lld::MinGW, &lld::mingw::link}});
           if (resultShared.retCode != 0) {
+            String sharedCmdStr;
+            for (auto arg : allArgsShared) {
+              sharedCmdStr += String(arg) + " ";
+            }
             ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-                           " failed with return code " + std::to_string(resultShared.retCode) +
-                           ". The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM MinGW' linker failed with status code " +
+                           std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+                           "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2479,50 +2987,82 @@ void Mod::bundle_modules(Ctx* ctx) {
         /**
          *  Windows Linker
          */
-        Vec<const char*> allArgs{"lld.link", "-flavor", "link", "/SUBSYSTEM:CONSOLE", ("/OUT:" + outPath).c_str()};
-        Vec<const char*> allArgsShared{"lld.link", "-flavor", "link", "/SUBSYSTEM:CONSOLE",
-                                       ("/OUT:" + outPathShared).c_str()};
+        auto msvcRes      = find_windows_sdk_paths(ctx);
+        auto outSharedArg = "/OUT:" + outPathShared;
+
+        Vec<String>      allArgs{"/OUT:" + outPath};
+        Vec<const char*> allArgsShared{
+            "lld.link", "-flavor", "link", "/DLL", outSharedArg.c_str(),
+        };
+
+        String libPathMSVC;
+        String libPathATLMFC;
+        String libPathUCRT;
+        String libPathUM;
+        if (windowsMSVCLibPath.has_value()) {
+          libPathMSVC = "/LIBPATH:\"" + windowsMSVCLibPath.value().string() + "\"";
+          allArgs.push_back(libPathMSVC);
+          allArgsShared.push_back(libPathMSVC.c_str());
+        }
+        if (windowsATLMFCLibPath.has_value()) {
+          libPathATLMFC = "/LIBPATH:\"" + windowsATLMFCLibPath.value().string() + "\"";
+          allArgs.push_back(libPathATLMFC);
+          allArgsShared.push_back(libPathATLMFC.c_str());
+        }
+        if (windowsUCRTLibPath.has_value()) {
+          libPathUCRT = "/LIBPATH:\"" + windowsUCRTLibPath.value().string() + "\"";
+          allArgs.push_back(libPathUCRT);
+          allArgsShared.push_back(libPathUCRT.c_str());
+        }
+        if (windowsUMLibPath.has_value()) {
+          libPathUM = "/LIBPATH:\"" + windowsUMLibPath.value().string() + "\"";
+          allArgs.push_back(libPathUM);
+          allArgsShared.push_back(libPathUM.c_str());
+        }
+
         if (cfg->is_build_mode_release()) {
-          allArgs.push_back("/RELEASE");
           allArgsShared.push_back("/RELEASE");
         } else {
-          allArgs.push_back("/DEBUG");
           allArgsShared.push_back("/DEBUG");
         }
-        allArgsShared.push_back("/DLL");
         auto machineStr = "/MACHINE:" + windowsTripleToMachine(ctx->clangTargetInfo->getTriple());
         if (cfg->has_target_triple()) {
-          allArgs.push_back(machineStr.c_str());
+          allArgs.push_back(machineStr);
           allArgsShared.push_back(machineStr.c_str());
         }
         auto libPathStr = "/LIBPATH:\"" + (cfg->has_sysroot() ? cfg->get_sysroot() : "") + "\"";
         if (cfg->has_sysroot()) {
-          allArgs.push_back(libPathStr.c_str());
+          allArgs.push_back(libPathStr);
           allArgsShared.push_back(libPathStr.c_str());
         } else if (!triple_is_equivalent(hostTriplet, ctx->clangTargetInfo->getTriple())) {
           ctx->Error("The target triplet " + ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
                          " is not compatible with the compiler's host triplet " + ctx->color(hostTriplet.getTriple()) +
-                         ". Please provide the --sysroot parameter with the path to the SDK for the target platform",
+                         ". Please provide the " + ctx->color("--sysroot") +
+                         " parameter with the path to the SDK for the target platform",
                      None);
         }
         for (auto& obj : objectFiles) {
-          allArgs.push_back(obj.c_str());
+          allArgs.push_back(obj);
           allArgsShared.push_back(obj.c_str());
         }
-        // FIXME - LIB_LINKING
-        // for (auto& statLib : staticLibsToLink) {
-        //   allArgs.push_back(statLib.c_str());
-        // }
-        // for (auto& sharedLib : sharedLibsToLink) {
-        //   allArgsShared.push_back(sharedLib.c_str());
-        // }
         if (cfg->should_build_static()) {
+          auto llvmLibPath = boost::process::search_path("llvm-ar-17");
+          if (llvmLibPath.string() == "") {
+            ctx->Error("Could not find " + ctx->color("llvm-ar-17") + " on the PATH. " + ctx->color("llvm-ar-17") +
+                           " is the renamed version of " + ctx->color("llvm-ar") +
+                           " utility, bundled with the QAT installation. Please check your installation of qat",
+                       None);
+          }
           SHOW("Linking Static Library Windows")
-          auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
-                                     {{lld::WinLink, &lld::coff::link}});
-          if (result.retCode != 0) {
+          auto llvmLibRes = run_command_get_stderr(llvmLibPath.string(), allArgs);
+          if (llvmLibRes.first) {
+            auto staticCmdStr = llvmLibPath.string() + " ";
+            for (auto arg : allArgs) {
+              staticCmdStr += arg + " ";
+            }
             ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-                           " failed. The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM Lib' program failed with status code " + std::to_string(llvmLibRes.first) +
+                           "\nThe command was: " + staticCmdStr + "\nThe error output is: " + llvmLibRes.second,
                        None);
           }
         }
@@ -2533,9 +3073,14 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut, linkerStdErr,
                                            {{lld::WinLink, &lld::coff::link}});
           if (resultShared.retCode != 0) {
+            String sharedCmdStr;
+            for (auto arg : allArgsShared) {
+              sharedCmdStr += String(arg) + " ";
+            }
             ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-                           " failed with return code " + std::to_string(resultShared.retCode) +
-                           ". The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM Link (MSVC)' linker failed with status code " +
+                           std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+                           "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2546,39 +3091,12 @@ void Mod::bundle_modules(Ctx* ctx) {
         SHOW("Outpath is " << outPath)
         Vec<const char*> allArgs{"ld.lld", "-flavor", "gnu", "-r", "-o", outPath.c_str()};
         Vec<const char*> allArgsShared{"ld.lld", "-flavor", "gnu", "-r", "-o", outPathShared.c_str()};
-        // Vec<String>      staticCmdList;
-        // Vec<String>      sharedCmdList;
-
-        Vec<String> folderPaths;
-        Vec<String> staticPaths;
-        // FIXME - LIB_LINKING
-        // for (auto& statLib : staticLibsToLink) {
-        //   staticCmdList.push_back("-l" + statLib);
-        //   allArgs.push_back(staticCmdList.back().c_str());
-        // }
-        // for (auto& sharedLib : sharedLibsToLink) {
-        //   sharedCmdList.push_back("-l" + sharedLib);
-        //   allArgsShared.push_back(sharedCmdList.back().c_str());
-        // }
+        Vec<String>      folderPaths;
+        Vec<String>      staticPaths;
         if (cfg->is_build_mode_release()) {
           allArgs.push_back("--strip-debug");
           allArgsShared.push_back("--strip-debug");
         }
-        // for (auto folder : usableNativeLibPaths) {
-        //   folderPaths.push_back("-L" + folder.string());
-        //   allArgs.push_back(folderPaths.back().c_str());
-        //   allArgsShared.push_back(folderPaths.back().c_str());
-        // }
-        // for (auto linkLib : linkableLibs) {
-        //   auto staticPath = findStaticLibraryPath(linkLib.substr(2));
-        //   if (staticPath.has_value()) {
-        //     staticPaths.push_back("-l" + staticPath.value().string());
-        //     allArgs.push_back(staticPaths.back().c_str());
-        //   } else {
-        //     allArgs.push_back(linkLib.c_str());
-        //   }
-        //   allArgsShared.push_back(linkLib.c_str());
-        // }
         allArgsShared.push_back("-Bdynamic");
         String libPathStr =
             String("--library-path=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
@@ -2600,9 +3118,15 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Gnu, &lld::elf::link}});
           if (result.retCode != 0 || !stdErrStr.empty()) {
+            String staticCmdStr;
+            for (auto arg : allArgs) {
+              staticCmdStr += String(arg) + " ";
+            }
             SHOW("Linker failed")
             ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-                           " failed. The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM lld (ELF)' linker failed with status code " +
+                           std::to_string(result.retCode) + "\nThe command was: " + staticCmdStr +
+                           "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
           SHOW("Linker done for " << name.value)
@@ -2614,8 +3138,14 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut, linkerStdErr,
                                            {{lld::Gnu, &lld::elf::link}});
           if (resultShared.retCode != 0) {
+            String sharedCmdStr;
+            for (auto arg : allArgsShared) {
+              sharedCmdStr += String(arg) + " ";
+            }
             ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-                           " failed. The linker's error can be found in " + stdErrStr,
+                           " using the 'LLVM lld (ELF)' linker failed with status code " +
+                           std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+                           "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2632,11 +3162,6 @@ void Mod::bundle_modules(Ctx* ctx) {
                      None);
         }
         Vec<String> staticCmdList;
-        // FIXME - LIB_LINKING
-        // for (auto& statLib : staticLibsToLink) {
-        //   staticCmdList.push_back("-l" + statLib);
-        //   allArgs.push_back(staticCmdList.back().c_str());
-        // }
         for (auto& obj : objectFiles) {
           allArgs.push_back(obj.c_str());
         }
@@ -2645,8 +3170,13 @@ void Mod::bundle_modules(Ctx* ctx) {
           auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
                                      {{lld::Wasm, &lld::wasm::link}});
           if (result.retCode != 0) {
+            String staticCmdStr;
+            for (auto arg : allArgs) {
+              staticCmdStr += String(arg) + " ";
+            }
             ctx->Error("Building static WASM library for module " + ctx->color(filePath.string()) +
-                           " failed. The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM WASM' linker failed with status code " + std::to_string(result.retCode) +
+                           +"\nThe command was: " + staticCmdStr + "\nThe linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2663,28 +3193,26 @@ void Mod::bundle_modules(Ctx* ctx) {
         Vec<const char*> allArgsShared{"ld64.lld", "-flavor", "darwin", "-o", outPathShared.c_str()};
         Vec<String>      staticCmdList;
         Vec<String>      sharedCmdList;
-        // FIXME - LIB_LINKING
-        // for (auto& statLib : staticLibsToLink) {
-        //   staticCmdList.push_back("-l" + statLib);
-        //   allArgs.push_back(staticCmdList.back().c_str());
-        // }
-        // for (auto& sharedLib : sharedLibsToLink) {
-        //   sharedCmdList.push_back("-l" + sharedLib);
-        //   allArgsShared.push_back(sharedCmdList.back().c_str());
-        // }
         allArgsShared.push_back("-dynamic");
-        if (cfg->has_target_triple()) {
-          allArgs.push_back(("-arch=" + ctx->clangTargetInfo->getTriple().getArchName().str()).c_str());
-          allArgsShared.push_back(("-arch=" + ctx->clangTargetInfo->getTriple().getArchName().str()).c_str());
-        }
-        auto sysrootStr = String("-syslibroot=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
+        allArgs.push_back("-arch");
+        allArgsShared.push_back("-arch");
+        auto archStr = (cfg->has_target_triple() ? ctx->clangTargetInfo->getTriple() : llvm::Triple(LLVM_HOST_TRIPLE))
+                           .getArchName()
+                           .str();
+        allArgs.push_back(archStr.c_str());
+        allArgsShared.push_back(archStr.c_str());
+        auto sysrootStr = cfg->has_sysroot() ? cfg->get_sysroot() : "";
         if (cfg->has_sysroot()) {
+          allArgs.push_back("-syslibroot");
           allArgs.push_back(sysrootStr.c_str());
+          allArgsShared.push_back("-syslibroot");
           allArgsShared.push_back(sysrootStr.c_str());
         } else if (ctx->clangTargetInfo->getTriple().isMacOSX()) {
           if (hostTriplet.isTargetMachineMac() && fs::exists(MACOS_DEFAULT_SDK_PATH)) {
-            sysrootStr = String("-syslibroot=").append("\"" MACOS_DEFAULT_SDK_PATH "\"");
+            sysrootStr = String(MACOS_DEFAULT_SDK_PATH);
+            allArgs.push_back("-syslibroot");
             allArgs.push_back(sysrootStr.c_str());
+            allArgsShared.push_back("-syslibroot");
             allArgsShared.push_back(sysrootStr.c_str());
           } else {
             ctx->Error("The compiler's host triplet is " + ctx->color(LLVM_HOST_TRIPLE) +
@@ -2707,8 +3235,8 @@ void Mod::bundle_modules(Ctx* ctx) {
                                      {{lld::Darwin, &lld::macho::link}});
           if (result.retCode != 0) {
             ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-                           " failed with return code " + ctx->color(std::to_string(result.retCode)) +
-                           ". The linker's error output is: " + stdErrStr,
+                           " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
+                           ctx->color(std::to_string(result.retCode)) + ". The linker's error output is: " + stdErrStr,
                        None);
           }
         }
@@ -2720,28 +3248,23 @@ void Mod::bundle_modules(Ctx* ctx) {
                                            {{lld::Darwin, &lld::macho::link}});
           if (resultShared.retCode != 0) {
             ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-                           " failed with return code " + ctx->color(std::to_string(resultShared.retCode)) +
+                           " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
+                           ctx->color(std::to_string(resultShared.retCode)) +
                            ". The linker's error output is: " + stdErrStr,
                        None);
           }
         }
       } else {
         if (cfg->has_linker_path()) {
-          auto cmd = String(cfg->get_linker_path()).append(" -o ").append(outPath).append(" ");
-          for (auto& obj : objectFiles) {
-            cmd.append(obj).append(" ");
-          }
-          redi::ipstream proc(cmd, redi::pstreams::pstderr);
-          String         errMessage;
-          String         line;
-          while (std::getline(proc.err(), line)) {
-            errMessage += line += "\n";
-          }
-          while (!proc.rdbuf()->exited()) {
-          }
-          if (proc.rdbuf()->status()) {
-            ctx->Error("Building library for module " + ctx->color(name.value) + "" + ctx->color(filePath.string()) +
-                           " failed\n" + errMessage,
+          auto        cmd = cfg->get_linker_path();
+          Vec<String> cmdArgs;
+          cmdArgs.push_back("-o");
+          cmdArgs.push_back(outPath);
+          cmdArgs.insert(cmdArgs.end(), objectFiles.begin(), objectFiles.end());
+          auto cmdRes = run_command_get_output(cmd, cmdArgs);
+          if (cmdRes.first) {
+            ctx->Error("Building library failed for module " + ctx->color(name.value) + " in " +
+                           ctx->color(filePath.string()) + ". The output is\n" + cmdRes.second,
                        None);
           }
         } else {
@@ -2844,7 +3367,7 @@ void Mod::link_native(NativeUnit nval) {
       if (!llvmModule->getFunction("printf")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
-                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "printf", llvmModule);
+                               llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
       }
       break;
     }
@@ -2853,7 +3376,7 @@ void Mod::link_native(NativeUnit nval) {
         SHOW("Creating malloc function")
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
                                                        {llvm::Type::getInt64Ty(llCtx)}, false),
-                               llvm::GlobalValue::ExternalWeakLinkage, "malloc", llvmModule);
+                               llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
       }
       break;
     }
@@ -2861,7 +3384,7 @@ void Mod::link_native(NativeUnit nval) {
       if (!llvmModule->getFunction("free")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
-                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "free", llvmModule);
+                               llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
       }
       break;
     }
@@ -2871,7 +3394,7 @@ void Mod::link_native(NativeUnit nval) {
             llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
                                     {llvm::Type::getInt8Ty(llCtx)->getPointerTo(), llvm::Type::getInt64Ty(llCtx)},
                                     false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "realloc", llvmModule);
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
       }
       break;
     }
@@ -2891,7 +3414,7 @@ void Mod::link_native(NativeUnit nval) {
                                      llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo(),
                                      pthreadFnTy->getPointerTo(), voidPtrTy},
                                     false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_create", llvmModule);
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
         linkPthread = true;
       }
       break;
@@ -2902,7 +3425,7 @@ void Mod::link_native(NativeUnit nval) {
         llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
         llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx), {pthreadTy, voidPtrTy->getPointerTo()}, false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_join", llvmModule);
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
         linkPthread = true;
       }
       break;
@@ -2911,8 +3434,19 @@ void Mod::link_native(NativeUnit nval) {
       if (!llvmModule->getFunction("pthread_exit")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
-                               llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_exit", llvmModule);
+                               llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
         linkPthread = true;
+      }
+      break;
+    }
+    case NativeUnit::windowsExitThread: {
+      if (!llvmModule->getGlobalVariable("__imp_ExitThread")) {
+        new llvm::GlobalVariable(
+            *llvmModule,
+            llvm::PointerType::get(
+                llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt32Ty(llCtx)}, false), 0u),
+            true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, "__imp_ExitThread", nullptr,
+            llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
       }
       break;
     }
@@ -2926,7 +3460,7 @@ void Mod::link_native(NativeUnit nval) {
         llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
                                     {llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()}, false),
-            llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, "pthread_attr_init", llvmModule);
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
         linkPthread = true;
       }
       break;

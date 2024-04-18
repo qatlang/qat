@@ -50,7 +50,17 @@ namespace qat::ir {
 class Ctx;
 
 enum class ModuleType { lib, file, folder };
-enum class NativeUnit { printf, malloc, free, realloc, pthreadCreate, pthreadJoin, pthreadExit, pthreadAttrInit };
+enum class NativeUnit {
+  printf,
+  malloc,
+  free,
+  realloc,
+  pthreadCreate,
+  pthreadJoin,
+  pthreadExit,
+  pthreadAttrInit,
+  windowsExitThread
+};
 enum class IntrinsicID { vaStart, vaEnd, vaCopy };
 
 enum class LibToLinkType {
@@ -338,13 +348,19 @@ public:
 
   static Vec<Mod*>     allModules;
   static Vec<fs::path> usableNativeLibPaths;
+  static Maybe<String> usableClangPath;
+
+  static Maybe<fs::path> windowsMSVCLibPath;
+  static Maybe<fs::path> windowsATLMFCLibPath;
+  static Maybe<fs::path> windowsUCRTLibPath;
+  static Maybe<fs::path> windowsUMLibPath;
 
   static void clear_all();
 
-  useit static bool hasFileModule(const fs::path& fPath);
-  useit static bool hasFolderModule(const fs::path& fPath);
+  useit static bool has_file_module(const fs::path& fPath);
+  useit static bool has_folder_module(const fs::path& fPath);
 
-  useit static Mod* getFileModule(const fs::path& fPath);
+  useit static Mod* get_file_module(const fs::path& fPath);
   useit static Mod* getFolderModule(const fs::path& fPath);
 
 private:
@@ -352,7 +368,6 @@ private:
   ModuleType                          moduleType;
   bool                                rootLib = false;
   Maybe<MetaInfo>                     metaInfo;
-  bool                                linkPthread = false;
   Deque<LibToLink>                    nativeLibsToLink;
   fs::path                            filePath;
   fs::path                            basePath;
@@ -401,42 +416,43 @@ private:
 
   Vec<Pair<Mod*, FileRange>> fsBroughtMentions;
 
-  Vec<ast::Node*>       nodes;
+  Vec<ast::Node*> nodes;
+  bool            hasMain = false;
+  fs::path        llPath;
+  Maybe<fs::path> objectFilePath;
+
   mutable llvm::Module* llvmModule;
   mutable Maybe<String> moduleForeignID;
-  bool                  hasMain = false;
-  fs::path              llPath;
-  Maybe<fs::path>       objectFilePath;
-  mutable bool          hasCreatedModules            = false;
-  mutable bool          hasHandledFilesystemBrings   = false;
-  mutable bool          hasCreatedEntities           = false;
-  mutable bool          hasUpdatedEntityDependencies = false;
-  //   mutable bool          hasHandledBrings           = false;
-  //   mutable bool          hasDefinedTypes            = false;
-  //   mutable bool          hasDefinedNodes            = false;
-  //   mutable bool          isEmitted                  = false;
-  mutable bool isOverviewOutputted = false;
-  bool         isCompiledToObject  = false;
-  bool         isBundled           = false;
+
+  mutable bool linkPthread                  = false;
+  mutable bool hasCreatedModules            = false;
+  mutable bool hasHandledFilesystemBrings   = false;
+  mutable bool hasCreatedEntities           = false;
+  mutable bool hasUpdatedEntityDependencies = false;
+  mutable bool isOverviewOutputted          = false;
+
+  bool isCompiledToObject = false;
+  bool isBundled          = false;
 
   void addMember(Mod* mod);
 
-  void       addNamedSubmodule(const Identifier& name, const String& _filename, ModuleType type,
-                               const VisibilityInfo& visib_info, ir::Ctx* irCtx);
-  void       closeSubmodule();
+  void addNamedSubmodule(const Identifier& name, const String& _filename, ModuleType type,
+                         const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+  void closeSubmodule();
+
   useit bool should_be_named() const;
 
 public:
   ~Mod();
 
-  useit static Mod* Create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
+  useit static Mod* create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
                            const VisibilityInfo& visib_info, ir::Ctx* irCtx);
-  useit static Mod* CreateSubmodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
-                                    ModuleType type, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
-  useit static Mod* CreateFileMod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name, Vec<ast::Node*>,
-                                  VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
-  useit static Mod* CreateRootLib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
-                                  Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+  useit static Mod* create_submodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
+                                     ModuleType type, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
+  useit static Mod* create_file_mod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
+                                    Vec<ast::Node*>, VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
+  useit static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
+                                    Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
   static bool triple_is_equivalent(llvm::Triple const& first, llvm::Triple const& second);
 
@@ -694,6 +710,11 @@ public:
   useit fs::path get_resolved_output_path(const String& extension, ir::Ctx* irCtx);
   useit llvm::Module* get_llvm_module() const;
   useit Maybe<fs::path> find_static_library_path(String libName) const;
+
+  useit bool find_clang_path(ir::Ctx* irCtx);
+  useit bool find_windows_sdk_paths(ir::Ctx* irCtx);
+  useit bool find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
+                                         bool findUCRTLibPath, bool findUMLibPath);
 
   static void find_native_library_paths();
 

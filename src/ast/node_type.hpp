@@ -97,6 +97,7 @@ enum class NodeType {
   DEFINE_SKILL,
   DO_SKILL,
   GET_INTRINSIC,
+  META_TODO,
 };
 
 } // namespace qat::ast

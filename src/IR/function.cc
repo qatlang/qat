@@ -761,6 +761,9 @@ void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange&
   SHOW("Starting function return handle for: " << fun->get_full_name())
   // FIXME - Support destructors for types besides core types
   auto* block = fun->get_block();
+  if (block->has_todo()) {
+    return;
+  }
   auto* retTy = fun->get_ir_type()->as_function()->get_return_type();
   if (block->get_bb()->empty()) {
     SHOW("Empty instruction list in block")

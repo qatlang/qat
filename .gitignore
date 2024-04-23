@@ -10,6 +10,7 @@ src/cmake-build-debug/
 rebuild.sh
 rebuild.bat
 release.sh
+package.sh
 release_silicon.sh
 release.bat
 refresh.sh

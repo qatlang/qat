@@ -78,6 +78,7 @@ private:
   mutable Vec<String>                   movedValues;
   mutable bool                          isGhost = false;
   mutable bool                          hasGive = false;
+  mutable bool                          hasTodo = false;
   mutable Vec<Pair<String, ir::Value*>> aliases;
 
   Block* prevBlock = nullptr;
@@ -107,12 +108,14 @@ public:
   useit LocalValue* new_value(const String& name, ir::Type* type, bool isVar, FileRange fileRange);
   useit bool        is_moved(const String& locID) const;
   useit bool        has_give_in_all_control_paths() const;
+  useit bool        has_todo() const { return hasTodo; }
   useit Block*      getActive();
   useit Vec<LocalValue*>& get_locals();
   useit Maybe<FileRange> get_file_range() const;
 
   void setFileRange(FileRange _fileRange);
   void set_has_give() const;
+  void set_has_todo() const { hasTodo = true; }
   void addMovedValue(String locID) const;
   void set_active(llvm::IRBuilder<>& builder);
   void collect_all_local_values_so_far(Vec<LocalValue*>& vals) const;

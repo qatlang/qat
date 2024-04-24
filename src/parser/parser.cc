@@ -40,6 +40,7 @@
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/member_function.hpp"
+#include "../ast/meta/todo.hpp"
 #include "../ast/mod_info.hpp"
 #include "../ast/operator_function.hpp"
 #include "../ast/prerun/array_literal.hpp"
@@ -4445,8 +4446,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
   auto                    setCachedExprForSentences = [&](ast::Expression* value) {
     if (_cachedExpression_.has_value()) {
       add_error(
-                             "Internal error : A cached expression is already present, and there was an attempt to cache another expression",
-                             RangeAt(i));
+          "Internal error : A cached expression is already present, and there was an attempt to cache another expression",
+          RangeAt(i));
     } else {
       _cachedExpression_ = value;
     }
@@ -4475,6 +4476,45 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
     switch (token.type) {
       case TokenType::comment: {
         addComment({i, token.value, token.fileRange});
+        break;
+      }
+      case TokenType::meta: {
+        if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1) && ValueAt(i + 2) == "todo") {
+          if (is_next(TokenType::parenthesisOpen, i + 2)) {
+            if (is_next(TokenType::parenthesisClose, i + 3)) {
+              if (is_next(TokenType::stop, i + 4)) {
+                result.push_back(ast::MetaTodo::create(None, RangeSpan(i, i + 5)));
+                i = i + 5;
+              } else {
+                add_error("Expected . after this to end the sentence", RangeSpan(i, i + 4));
+              }
+            } else if (is_next(TokenType::StringLiteral, i + 3)) {
+              if (is_next(TokenType::parenthesisClose, i + 4)) {
+                if (is_next(TokenType::stop, i + 5)) {
+                  result.push_back(ast::MetaTodo::create(ValueAt(i + 4), RangeSpan(i, i + 6)));
+                  i = i + 6;
+                } else {
+                  add_error("Expected . after this to end the sentence", RangeSpan(i, i + 5));
+                }
+              } else {
+                add_error("Expected ) to enclose the meta:todo message", RangeSpan(i, i + 4));
+              }
+            } else {
+              add_error("Expected either meta:todo() or meta:todo(\"message\")", RangeSpan(i, i + 3));
+            }
+          } else {
+            add_error("Expected either meta:todo() or meta:todo(\"message\")", RangeSpan(i, i + 2));
+          }
+        } else {
+          auto expRes = do_expression(preCtx, None, i - 1, None);
+          if (tokens->at(expRes.second + 1).type == TokenType::stop) {
+            result.push_back(ast::ExpressionSentence::create(expRes.first, RangeSpan(i, expRes.second + 1)));
+            i = expRes.second + 1;
+          } else {
+            setCachedExprForSentences(expRes.first);
+            i = expRes.second;
+          }
+        }
         break;
       }
       case TokenType::super:

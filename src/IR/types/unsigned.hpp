@@ -10,20 +10,20 @@ namespace qat::ir {
 class UnsignedType : public Type {
 private:
   u64  bitWidth;
-  bool is_bool;
+  bool isTypeBool;
 
   ir::Ctx* irCtx;
 
-  UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool = false);
+  UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool);
 
 public:
   useit static UnsignedType* get(u64 bits, ir::Ctx* llctx);
   useit static UnsignedType* getBool(ir::Ctx* llctx);
   useit inline u64           getBitwidth() const { return bitWidth; }
   useit inline bool          isBitWidth(u64 width) const { return bitWidth == width; }
-  useit inline bool          isBoolean() const { return is_bool; }
+  useit inline bool          isBoolean() const { return isTypeBool; }
   useit inline TypeKind      type_kind() const final { return TypeKind::unsignedInteger; }
-  useit inline String        to_string() const final { return is_bool ? "bool" : ("u" + std::to_string(bitWidth)); }
+  useit inline String        to_string() const final { return isTypeBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
   useit inline bool is_type_sized() const final { return true; }
   useit inline bool is_trivially_copyable() const final { return true; }

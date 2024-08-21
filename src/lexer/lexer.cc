@@ -633,6 +633,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("ok", ok);
   else Check_Normal_Keyword("range", range);
   else Check_Normal_Keyword("result", result);
+  else Check_Normal_Keyword("integer", genericIntegerType);
   else Check_Normal_Keyword("opaque", opaque);
   else Check_VALUED_Keyword("int", cType);
   else Check_VALUED_Keyword("uint", cType);

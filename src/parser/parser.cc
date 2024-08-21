@@ -83,6 +83,7 @@
 #include "../ast/types/float.hpp"
 #include "../ast/types/function.hpp"
 #include "../ast/types/future.hpp"
+#include "../ast/types/generic_integer.hpp"
 #include "../ast/types/generic_named_type.hpp"
 #include "../ast/types/integer.hpp"
 #include "../ast/types/linked_generic.hpp"
@@ -679,14 +680,6 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
         if (is_next(TokenType::curlybraceOpen, i)) {
           auto cEndRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
           if (cEndRes.has_value()) {
-            //   if (isNotPartOfExpression(i, cEndRes.value())) {
-            //     if (hasCachedExp()) {
-            //       return {consumeCachedExp(), i - 1};
-            //     } else {
-            //       Error("{ found here but no expression has been parsed yet", RangeAt(i));
-            //     }
-            //   } else {
-            //   }
             const auto cEnd = cEndRes.value();
             if (hasCachedExp()) {
               Vec<Identifier>             fields;
@@ -943,8 +936,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
         break;
       }
       case TokenType::cType: {
+        auto start = i;
         if (ValueAt(i) == "cPtr") {
-          auto start = i;
           if (is_next(TokenType::genericTypeStart, i)) {
             auto gEnd = first_primary_position(TokenType::genericTypeEnd, i + 1);
             if (gEnd.has_value()) {
@@ -964,6 +957,15 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                 "Expected subtype for cPtr. Did you forget to provide the subtype like cPtr" TOKEN_GENERIC_LIST_START
                 "subtype" TOKEN_GENERIC_LIST_END " ?",
                 RangeAt(i));
+          }
+        } else if (((ValueAt(i) == "int") || (ValueAt(i) == "uint")) && is_next(TokenType::genericTypeStart, i)) {
+          auto bitVal = do_prerun_expression(preCtx, i + 1, None);
+          i           = bitVal.second;
+          if (is_next(TokenType::genericTypeEnd, i)) {
+            cacheTy = ast::GenericIntegerType::create_specific(bitVal.first, ValueAt(start) == "uint",
+                                                               RangeSpan(start, i + 1));
+          } else {
+            add_error("Expected ] after this to end the type", RangeSpan(start, i));
           }
         } else {
           auto cTypeKind = ir::ctype_kind_from_string(ValueAt(i));
@@ -1185,6 +1187,31 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
           return {cacheTy.value(), i - 1};
         }
         cacheTy = ast::IntegerType::create(std::stoul(token.value), token.fileRange);
+        break;
+      }
+      case TokenType::genericIntegerType: {
+        if (cacheTy.has_value()) {
+          return {cacheTy.value(), i - 1};
+        }
+        auto start = i;
+        if (is_next(TokenType::genericTypeStart, i)) {
+          auto isUnsigned = do_prerun_expression(preCtx, i + 1, None);
+          i               = isUnsigned.second;
+          if (is_next(TokenType::separator, i)) {
+            auto bitVal = do_prerun_expression(preCtx, i + 1, None);
+            i           = bitVal.second;
+            if (is_next(TokenType::genericTypeEnd, i)) {
+              i++;
+              cacheTy = ast::GenericIntegerType::create(bitVal.first, isUnsigned.first, RangeSpan(start, i));
+            } else {
+              add_error("Expected ] after this to end the type", RangeSpan(start, i));
+            }
+          } else {
+            add_error("Expected , after this expression", isUnsigned.first->fileRange);
+          }
+        } else {
+          add_error("Expected :[ after " + color_error("integer"), RangeAt(i));
+        }
         break;
       }
       case TokenType::floatType: {

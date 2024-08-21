@@ -112,7 +112,7 @@ Mod* Mod::get_file_module(const fs::path& fPath) {
   return nullptr;
 }
 
-Mod* Mod::getFolderModule(const fs::path& fPath) {
+Mod* Mod::get_folder_module(const fs::path& fPath) {
   for (auto* mod : allModules) {
     if (mod->moduleType == ModuleType::folder) {
       if (fs::equivalent(mod->filePath, fPath)) {
@@ -2721,8 +2721,7 @@ void Mod::bundle_modules(Ctx* ctx) {
   if (!isBundled && (hasMain || ((moduleType == ModuleType::lib) && !parent))) {
     auto& log = Logger::get();
     log->say("Bundling library for module `" + name.value + "` in file " + filePath.string());
-    SHOW("Bundling submodules of lib `" << name.value << "`"
-                                        << " in file " << filePath.string())
+    SHOW("Bundling submodules of lib `" << name.value << "`" << " in file " << filePath.string())
     for (auto* sub : submodules) {
       sub->bundle_modules(ctx);
     }

@@ -361,7 +361,7 @@ public:
   useit static bool has_folder_module(const fs::path& fPath);
 
   useit static Mod* get_file_module(const fs::path& fPath);
-  useit static Mod* getFolderModule(const fs::path& fPath);
+  useit static Mod* get_folder_module(const fs::path& fPath);
 
 private:
   Identifier                          name;

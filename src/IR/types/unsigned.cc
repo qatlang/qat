@@ -9,7 +9,7 @@
 namespace qat::ir {
 
 UnsignedType::UnsignedType(u64 _bitWidth, ir::Ctx* _ctx, bool _isBool)
-    : irCtx(_ctx), bitWidth(_bitWidth), is_bool(_isBool) {
+    : bitWidth(_bitWidth), isTypeBool(_isBool), irCtx(_ctx) {
   llvmType    = llvm::IntegerType::get(irCtx->llctx, bitWidth);
   linkingName = "qat'" + to_string();
 }
@@ -17,7 +17,8 @@ UnsignedType::UnsignedType(u64 _bitWidth, ir::Ctx* _ctx, bool _isBool)
 UnsignedType* UnsignedType::get(u64 bits, ir::Ctx* irCtx) {
   for (auto* typ : allTypes) {
     if (typ->is_unsigned_integer()) {
-      if (typ->as_unsigned_integer()->isBitWidth(bits) && !typ->as_unsigned_integer()->is_bool) {
+      auto candidate = typ->as_unsigned_integer();
+      if (candidate->isBitWidth(bits) && !candidate->isTypeBool) {
         return typ->as_unsigned_integer();
       }
     }
@@ -28,7 +29,7 @@ UnsignedType* UnsignedType::get(u64 bits, ir::Ctx* irCtx) {
 UnsignedType* UnsignedType::getBool(ir::Ctx* irCtx) {
   for (auto* typ : allTypes) {
     if (typ->is_unsigned_integer()) {
-      if (typ->as_unsigned_integer()->is_bool) {
+      if (typ->as_unsigned_integer()->isTypeBool) {
         return typ->as_unsigned_integer();
       }
     }

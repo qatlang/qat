@@ -17,6 +17,7 @@ enum class TokenType {
   referenceType,
   unsignedIntegerType,
   integerType,
+  genericIntegerType,
   floatType,
   stringSliceType,
   bring,

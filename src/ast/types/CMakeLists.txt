@@ -4,8 +4,9 @@ add_library(QAT_AST_TYPES
 	float.cc
 	function.cc
 	future.cc
-	generic_named_type.cc
 	generic_abstract.cc
+	generic_named_type.cc
+	generic_integer.cc
 	integer.cc
 	linked_generic.cc
 	maybe.cc

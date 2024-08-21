@@ -30,6 +30,7 @@ enum class AstTypeKind {
   RESULT,
   SELF_TYPE,
   VECTOR,
+  GENERIC_INTEGER,
 };
 
 } // namespace qat::ast

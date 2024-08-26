@@ -253,7 +253,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
   }
 }
 
-VisibilityInfo EmitCtx::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
+VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
   if (spec.has_value() && (spec.value().kind != VisibilityKind::parent)) {
     SHOW("Visibility kind has value")
     switch (spec->kind) {
@@ -272,7 +272,7 @@ VisibilityInfo EmitCtx::getVisibInfo(Maybe<ast::VisibilitySpec> spec) {
         if (!mod->has_folder_module(folderPath)) {
           Error("Could not find folder module with path: " + color(folderPath.string()), spec->range);
         }
-        return VisibilityInfo::folder(mod->getFolderModule(folderPath));
+        return VisibilityInfo::folder(mod->get_folder_module(folderPath));
       }
       case VisibilityKind::skill: {
         if (has_member_parent() && get_member_parent()->is_expanded()) {

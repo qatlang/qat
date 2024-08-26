@@ -95,7 +95,7 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
     setOpaque(ir::OpaqueType::get(
         name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::core, mod,
         eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-        EmitCtx::get(irCtx, mod)->getVisibInfo(visibSpec), irCtx->llctx, irMeta));
+        EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
   }
 }
 
@@ -121,7 +121,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
     genericsIR.push_back(gen->toIRGenericType());
   }
   auto globalEmitCtx  = EmitCtx::get(irCtx, mod);
-  auto mainVisibility = globalEmitCtx->getVisibInfo(visibSpec);
+  auto mainVisibility = globalEmitCtx->get_visibility_info(visibSpec);
   if (isGeneric()) {
     bool             hasAllMems = true;
     Vec<llvm::Type*> allMemEqTys;
@@ -184,7 +184,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
       needsDestructor = true;
     }
     mems.push_back(new ir::StructType::Member(mem->name, memTy, mem->variability, mem->expression,
-                                              typeEmitCtx->getVisibInfo(mem->visibSpec)));
+                                              typeEmitCtx->get_visibility_info(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
   *resultTy = new ir::StructType(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
@@ -217,7 +217,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
   for (auto* stm : staticMembers) {
     (*resultTy)->addStaticMember(stm->name, stm->type->emit(emitCtx), stm->variability,
                                  stm->value ? stm->value->emit(emitCtx) : nullptr,
-                                 emitCtx->getVisibInfo(stm->visibSpec), irCtx->llctx);
+                                 emitCtx->get_visibility_info(stm->visibSpec), irCtx->llctx);
   }
   if (copyConstructor && !copyAssignment) {
     irCtx->Error("Copy constructor is defined for the type " + irCtx->color((*resultTy)->to_string()) +
@@ -250,7 +250,8 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
     for (auto* gen : generics) {
       gen->emit(emitCtx);
     }
-    genericCoreType = new ir::GenericCoreType(name, generics, constraint, this, mod, emitCtx->getVisibInfo(visibSpec));
+    genericCoreType =
+        new ir::GenericCoreType(name, generics, constraint, this, mod, emitCtx->get_visibility_info(visibSpec));
   }
 }
 

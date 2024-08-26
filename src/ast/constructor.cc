@@ -127,7 +127,7 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     }
     SHOW("About to create function")
     state.result = ir::Method::CreateConstructor(state.parent, nameRange, args, false, fileRange,
-                                                 emitCtx->getVisibInfo(visibSpec), irCtx);
+                                                 emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
     if (state.parent->is_done_skill() && state.parent->get_parent_type()->is_expanded() &&
@@ -136,8 +136,8 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                        " constructor, so it cannot be defined again",
                    fileRange);
     }
-    state.result =
-        ir::Method::DefaultConstructor(state.parent, nameRange, emitCtx->getVisibInfo(visibSpec), fileRange, irCtx);
+    state.result = ir::Method::DefaultConstructor(state.parent, nameRange, emitCtx->get_visibility_info(visibSpec),
+                                                  fileRange, irCtx);
   } else if (type == ConstructorType::copy) {
     state.result = ir::Method::CopyConstructor(state.parent, nameRange, argName.value(), fileRange, irCtx);
   } else if (type == ConstructorType::move) {

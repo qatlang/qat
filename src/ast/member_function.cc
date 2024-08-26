@@ -205,19 +205,19 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   if (fnTy == AstMemberFnType::Static) {
     SHOW("MemberFn :: " << name.value << " Static Method")
     state.result = ir::Method::CreateStatic(state.parent, name, retTy, args, isVariadic, fileRange,
-                                            emitCtx->getVisibInfo(visibSpec), irCtx);
+                                            emitCtx->get_visibility_info(visibSpec), irCtx);
   } else if (fnTy == AstMemberFnType::valued) {
     SHOW("MemberFn :: " << name.value << " Valued Method")
     if (!parentType->is_trivially_copyable()) {
       irCtx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
     }
     state.result = ir::Method::CreateValued(state.parent, name, retTy, args, isVariadic, fileRange,
-                                            emitCtx->getVisibInfo(visibSpec), irCtx);
+                                            emitCtx->get_visibility_info(visibSpec), irCtx);
   } else {
     SHOW("MemberFn :: " << name.value << " Method or Variation")
     state.result = ir::Method::Create(state.parent, fnTy == AstMemberFnType::variation, name,
                                       ir::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
-                                      emitCtx->getVisibInfo(visibSpec), irCtx);
+                                      emitCtx->get_visibility_info(visibSpec), irCtx);
   }
 }
 

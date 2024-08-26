@@ -35,7 +35,8 @@ void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
   } else {
     valTy = resVal->get_ir_type();
   }
-  new ir::PrerunGlobal(mod, name, valTy, resVal->get_llvm_constant(), emitCtx->getVisibInfo(visibSpec), name.range);
+  new ir::PrerunGlobal(mod, name, valTy, resVal->get_llvm_constant(), emitCtx->get_visibility_info(visibSpec),
+                       name.range);
 }
 
 Json PrerunGlobal::to_json() const {

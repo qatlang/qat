@@ -83,7 +83,7 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
         ent->entityState = currMod->add_entity(entName, ir::EntityType::bringEntity, this, ir::EmitPhase::phase_1);
         entityState->addDependency(
             ir::EntityDependency{ent->entityState, ir::DependType::complete, ir::EmitPhase::phase_1});
-        currMod->bring_module(mod, ctx->getVisibInfo(visibSpec));
+        currMod->bring_module(mod, ctx->get_visibility_info(visibSpec));
         mod->add_bring_mention(currMod, ent->fileRange);
         ent->bring();
       } else {
@@ -101,7 +101,7 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
         ent->entityState = currMod->add_entity(entName, ir::EntityType::bringEntity, this, ir::EmitPhase::phase_1);
         entityState->addDependency(
             ir::EntityDependency{ent->entityState, ir::DependType::complete, ir::EmitPhase::phase_1});
-        currMod->bring_module(mod, ctx->getVisibInfo(visibSpec));
+        currMod->bring_module(mod, ctx->get_visibility_info(visibSpec));
         mod->add_bring_mention(currMod, ent->fileRange);
         ent->bring();
       } else {
@@ -277,7 +277,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
         irCtx->Error("Lib " + irCtx->color(entName.value) + " is not accessible in the current scope", entName.range);
       }
       if (ent->isAllBrought()) {
-        currentMod->bring_module(mod, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_module(mod, emitCtx->get_visibility_info(visibSpec));
         mod->add_bring_mention(currentMod, ent->fileRange);
         ent->bring();
       } else {
@@ -292,7 +292,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
                      entName.range);
       }
       if (ent->isAllBrought()) {
-        currentMod->bring_module(mod, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_module(mod, emitCtx->get_visibility_info(visibSpec));
         mod->add_bring_mention(currentMod, ent->fileRange);
         ent->bring();
       } else {
@@ -312,7 +312,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Opaque type " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_opaque_type(oTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_opaque_type(oTy, emitCtx->get_visibility_info(visibSpec));
         oTy->add_bring_mention(currentMod, ent->fileRange);
         ent->bring();
       } else if (mod->has_struct_type(entName.value, reqInfo) || mod->has_brought_struct_type(entName.value, reqInfo) ||
@@ -323,7 +323,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Core type " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_struct_type(cTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_struct_type(cTy, emitCtx->get_visibility_info(visibSpec));
         cTy->add_bring_mention(currentMod, ent->fileRange);
         ent->bring();
       } else if (mod->has_choice_type(entName.value, reqInfo) || mod->has_brought_choice_type(entName.value, reqInfo) ||
@@ -333,7 +333,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Choice type " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_choice_type(chTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_choice_type(chTy, emitCtx->get_visibility_info(visibSpec));
         chTy->add_bring_mention(currentMod, ent->fileRange);
         ent->bring();
       } else if (mod->has_mix_type(entName.value, reqInfo) || mod->has_brought_mix_type(entName.value, reqInfo) ||
@@ -343,7 +343,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Mix type " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_mix_type(mTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_mix_type(mTy, emitCtx->get_visibility_info(visibSpec));
         mTy->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_type_definition(entName.value, reqInfo) ||
@@ -354,7 +354,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Type definition " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_type_definition(dTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_type_definition(dTy, emitCtx->get_visibility_info(visibSpec));
         dTy->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_region(entName.value, reqInfo) || mod->has_brought_region(entName.value, reqInfo) ||
@@ -364,7 +364,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Region " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_region(rTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_region(rTy, emitCtx->get_visibility_info(visibSpec));
         rTy->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_function(entName.value, reqInfo) || mod->has_brought_function(entName.value, reqInfo) ||
@@ -374,7 +374,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Function " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_function(otherFn, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_function(otherFn, emitCtx->get_visibility_info(visibSpec));
         otherFn->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_generic_function(entName.value, reqInfo) ||
@@ -385,7 +385,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Generic function " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_generic_function(gnFn, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_generic_function(gnFn, emitCtx->get_visibility_info(visibSpec));
         gnFn->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_generic_struct_type(entName.value, reqInfo) ||
@@ -396,7 +396,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Generic core type " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_generic_struct_type(gnCTy, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_generic_struct_type(gnCTy, emitCtx->get_visibility_info(visibSpec));
         gnCTy->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_global(entName.value, reqInfo) || mod->has_brought_global(entName.value, reqInfo) ||
@@ -406,7 +406,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
           irCtx->Error("Global entity " + irCtx->color(entName.value) + " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_global(gEnt, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_global(gEnt, emitCtx->get_visibility_info(visibSpec));
         gEnt->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (mod->has_prerun_global(entName.value, reqInfo) ||
@@ -418,7 +418,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
                            " is not accessible in the current scope",
                        entName.range);
         }
-        currentMod->bring_prerun_global(gEnt, emitCtx->getVisibInfo(visibSpec));
+        currentMod->bring_prerun_global(gEnt, emitCtx->get_visibility_info(visibSpec));
         gEnt->add_bring_mention(currentMod, entName.range);
         ent->bring();
       } else if (throwErrorsWhenUnfound) {

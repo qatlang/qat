@@ -13,7 +13,7 @@ void DefineRegion::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 }
 
 void DefineRegion::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
-  (void)ir::Region::get(name, mod, EmitCtx::get(irCtx, mod)->getVisibInfo(visibSpec), irCtx, fileRange);
+  (void)ir::Region::get(name, mod, EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx, fileRange);
 }
 
 Json DefineRegion::to_json() const {

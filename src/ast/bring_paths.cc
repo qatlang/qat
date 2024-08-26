@@ -25,30 +25,31 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
           if (names.at(i).has_value()) {
             if (isMember) {
               // FIXME - Maybe change this
-              irCtx->Error("This is a bring'member sentence and names are not allowed", names.at(i).value()->fileRange);
+              irCtx->Error("This is a " + irCtx->color("bring:member") + " sentence and names are not allowed",
+                           names.at(i).value()->fileRange);
             }
             auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
             emitCtx->name_check_in_module(name, "named folder module", None);
-            auto* folderModule = ir::Mod::getFolderModule(path);
+            auto* folderModule = ir::Mod::get_folder_module(path);
             folderModule->add_bring_mention(mod, paths.at(i)->fileRange);
             mod->entity_name_check(irCtx, name, ir::EntityType::bringEntity);
-            mod->bring_module(folderModule, emitCtx->getVisibInfo(visibSpec), name);
+            mod->bring_module(folderModule, emitCtx->get_visibility_info(visibSpec), name);
             auto foldEnt          = mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
             foldEnt->currentPhase = ir::EmitPhase::phase_1;
             foldEnt->updateStatus(ir::EntityStatus::complete);
           } else {
             if (isMember) {
-              if (ir::Mod::getFolderModule(path)->parent) {
+              if (ir::Mod::get_folder_module(path)->parent) {
                 irCtx->Error("Module at " + irCtx->color(path.string()) + " already has a parent module",
                              paths.at(i)->fileRange);
               }
-              auto* folderModule = ir::Mod::getFolderModule(path);
+              auto* folderModule = ir::Mod::get_folder_module(path);
               folderModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
               mod->addMember(folderModule);
             } else {
-              auto* folderModule = ir::Mod::getFolderModule(path);
+              auto* folderModule = ir::Mod::get_folder_module(path);
               folderModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
-              mod->bring_module(folderModule, emitCtx->getVisibInfo(visibSpec));
+              mod->bring_module(folderModule, emitCtx->get_visibility_info(visibSpec));
             }
           }
         } else {
@@ -67,7 +68,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
             auto* fileModule = ir::Mod::get_file_module(path);
             fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
             mod->entity_name_check(irCtx, name, ir::EntityType::bringEntity);
-            mod->bring_module(fileModule, emitCtx->getVisibInfo(visibSpec), name);
+            mod->bring_module(fileModule, emitCtx->get_visibility_info(visibSpec), name);
             auto fileEnt          = mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
             fileEnt->currentPhase = ir::EmitPhase::phase_1;
             fileEnt->updateStatus(ir::EntityStatus::complete);
@@ -83,7 +84,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
             } else {
               auto* fileModule = ir::Mod::get_file_module(path);
               fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
-              mod->bring_module(fileModule, emitCtx->getVisibInfo(visibSpec));
+              mod->bring_module(fileModule, emitCtx->get_visibility_info(visibSpec));
             }
           }
         } else {

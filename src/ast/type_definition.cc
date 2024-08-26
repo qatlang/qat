@@ -51,7 +51,7 @@ void TypeDefinition::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
   }
   if (isGeneric()) {
     genericTypeDefinition =
-        new ir::GenericDefinitionType(name, generics, constraint, this, mod, emitCtx->getVisibInfo(visibSpec));
+        new ir::GenericDefinitionType(name, generics, constraint, this, mod, emitCtx->get_visibility_info(visibSpec));
   } else {
     create_type(mod, irCtx);
   }
@@ -93,7 +93,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
   }
   SHOW("Type definition " << dTyName.value)
   typeDefinition =
-      new ir::DefinitionType(dTyName, subType->emit(emitCtx), genericsIR, mod, emitCtx->getVisibInfo(visibSpec));
+      new ir::DefinitionType(dTyName, subType->emit(emitCtx), genericsIR, mod, emitCtx->get_visibility_info(visibSpec));
 }
 
 ir::DefinitionType* TypeDefinition::getDefinition() const { return typeDefinition; }

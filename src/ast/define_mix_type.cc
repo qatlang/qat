@@ -46,7 +46,7 @@ void DefineMixType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
                 {llvm::Type::getIntNTy(irCtx->llctx, tagBitwidth), llvm::Type::getIntNTy(irCtx->llctx, maxSubtypeSize)},
                 isPacked)))
           : None,
-      EmitCtx::get(irCtx, mod)->getVisibInfo(visibSpec), irCtx->llctx, None);
+      EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, None);
 }
 
 void DefineMixType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
@@ -108,7 +108,7 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
                  fileRange);
   }
   new ir::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, irCtx, isPacked,
-                  EmitCtx::get(irCtx, mod)->getVisibInfo(visibSpec), fileRange, None);
+                  EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
 }
 
 Json DefineMixType::to_json() const {

@@ -158,7 +158,7 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
   }
   SHOW("Creating choice type in the IR")
   new ir::ChoiceType(name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned,
-                     defaultVal, emitCtx->getVisibInfo(visibSpec), irCtx, fileRange, None);
+                     defaultVal, emitCtx->get_visibility_info(visibSpec), irCtx, fileRange, None);
   SHOW("Created choice type")
 }
 

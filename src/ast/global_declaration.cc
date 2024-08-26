@@ -26,7 +26,7 @@ void GlobalDeclaration::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* 
 void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
   auto emitCtx = EmitCtx::get(irCtx, mod);
   emitCtx->name_check_in_module(name, "global entity", None);
-  auto visibInfo = emitCtx->getVisibInfo(visibSpec);
+  auto visibInfo = emitCtx->get_visibility_info(visibSpec);
   if (!type) {
     irCtx->Error("Expected a type for global declaration", fileRange);
   }

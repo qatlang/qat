@@ -38,8 +38,8 @@ void DefineOpaqueType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* i
   if (metaInfo.has_value()) {
     irMeta = metaInfo.value().toIR(emitCtx);
   }
-  (void)ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::core, parent, None, emitCtx->getVisibInfo(visibSpec),
-                            irCtx->llctx, irMeta);
+  (void)ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::core, parent, None,
+                            emitCtx->get_visibility_info(visibSpec), irCtx->llctx, irMeta);
 }
 
 Json DefineOpaqueType::to_json() const {

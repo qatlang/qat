@@ -129,7 +129,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Operator " + operator_to_string(opr) + " isVar: " << isVariationFn << " return type is " << retTy->to_string())
   state.result = ir::Method::CreateOperator(state.parent, nameRange, !is_unary_operator(opr), isVariationFn,
                                             operator_to_string(opr), ir::ReturnType::get(retTy, isSelfReturn), args,
-                                            fileRange, emitCtx->getVisibInfo(visibSpec), irCtx);
+                                            fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   SHOW("Created IR operator")
 }
 

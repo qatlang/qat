@@ -49,15 +49,15 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
   if (isFrom) {
     SHOW("Convertor is FROM for " << state.parent->get_parent_type()->to_string())
-    state.result =
-        ir::Method::CreateFromConvertor(state.parent, nameRange, candidate, argName.value(),
-                                        definitionRange.value_or(fileRange), emitCtx->getVisibInfo(visibSpec), irCtx);
+    state.result = ir::Method::CreateFromConvertor(state.parent, nameRange, candidate, argName.value(),
+                                                   definitionRange.value_or(fileRange),
+                                                   emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Convertor IR created")
   } else {
     SHOW("Convertor is TO")
     state.result =
         ir::Method::CreateToConvertor(state.parent, nameRange, candidate, definitionRange.value_or(fileRange),
-                                      emitCtx->getVisibInfo(visibSpec), irCtx);
+                                      emitCtx->get_visibility_info(visibSpec), irCtx);
   }
 }
 

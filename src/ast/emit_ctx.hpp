@@ -113,7 +113,7 @@ struct EmitCtx {
 
   void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
 
-  VisibilityInfo getVisibInfo(Maybe<VisibilitySpec> spec);
+  VisibilityInfo get_visibility_info(Maybe<VisibilitySpec> spec);
 };
 
 } // namespace qat::ast

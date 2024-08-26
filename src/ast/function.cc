@@ -80,7 +80,8 @@ void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irC
     for (auto* gen : generics) {
       gen->emit(EmitCtx::get(irCtx, mod));
     }
-    genericFn = new ir::GenericFunction(name, generics, genericConstraint, this, mod, emitCtx->getVisibInfo(visibSpec));
+    genericFn =
+        new ir::GenericFunction(name, generics, genericConstraint, this, mod, emitCtx->get_visibility_info(visibSpec));
   } else {
     if (phase == ir::EmitPhase::phase_1) {
       function = create_function(mod, irCtx);
@@ -210,7 +211,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
     SHOW("About to create generic function")
     auto* fun = ir::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes),
                                      ir::ReturnType::get(retTy), args, isVariadic, fileRange,
-                                     emitCtx->getVisibInfo(visibSpec), irCtx, None, irMetaInfo);
+                                     emitCtx->get_visibility_info(visibSpec), irCtx, None, irMetaInfo);
     SHOW("Created IR function")
     return fun;
   } else {
@@ -222,7 +223,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                                                        LinkUnitType::function)},
                                          "C", nullptr))
             : None,
-        {}, ir::ReturnType::get(retTy), args, isVariadic, fileRange, emitCtx->getVisibInfo(visibSpec), irCtx,
+        {}, ir::ReturnType::get(retTy), args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx,
         definition.has_value()
             ? None
             : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalLinkage),

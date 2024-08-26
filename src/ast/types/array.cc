@@ -62,7 +62,7 @@ AstTypeKind ArrayType::type_kind() const { return AstTypeKind::ARRAY; }
 
 Json ArrayType::to_json() const {
   return Json()
-      ._("type_kind", "array")
+      ._("typeKind", "array")
       ._("subType", elementType->to_json())
       ._("length", lengthExp->to_json())
       ._("fileRange", fileRange);

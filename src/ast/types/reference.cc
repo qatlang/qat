@@ -26,7 +26,7 @@ AstTypeKind ReferenceType::type_kind() const { return AstTypeKind::REFERENCE; }
 
 Json ReferenceType::to_json() const {
   return Json()
-      ._("type_kind", "reference")
+      ._("typeKind", "reference")
       ._("subType", type->to_json())
       ._("isSubtypeVariable", isSubtypeVar)
       ._("fileRange", fileRange);

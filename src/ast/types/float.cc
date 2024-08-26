@@ -60,7 +60,7 @@ String FloatType::kindToString(ir::FloatTypeKind kind) {
 AstTypeKind FloatType::type_kind() const { return AstTypeKind::FLOAT; }
 
 Json FloatType::to_json() const {
-  return Json()._("type_kind", "float")._("floatTypeKind", kindToString(kind))._("fileRange", fileRange);
+  return Json()._("typeKind", "float")._("floatTypeKind", kindToString(kind))._("fileRange", fileRange);
 }
 
 String FloatType::to_string() const { return kindToString(kind); }

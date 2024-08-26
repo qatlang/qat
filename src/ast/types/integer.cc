@@ -29,7 +29,7 @@ bool IntegerType::isBitWidth(const u32 width) const { return bitWidth == width; 
 AstTypeKind IntegerType::type_kind() const { return AstTypeKind::INTEGER; }
 
 Json IntegerType::to_json() const {
-  return Json()._("type_kind", "integer")._("bitWidth", bitWidth)._("fileRange", fileRange);
+  return Json()._("typeKind", "integer")._("bitWidth", bitWidth)._("fileRange", fileRange);
 }
 
 String IntegerType::to_string() const { return "i" + std::to_string(bitWidth); }

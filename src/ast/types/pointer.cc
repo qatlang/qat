@@ -117,7 +117,7 @@ AstTypeKind PointerType::type_kind() const { return AstTypeKind::POINTER; }
 
 Json PointerType::to_json() const {
   return Json()
-      ._("type_kind", "pointer")
+      ._("typeKind", "pointer")
       ._("isMulti", isMultiPtr)
       ._("isSubtypeVariable", isSubtypeVar)
       ._("subType", type->to_json())

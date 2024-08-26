@@ -37,7 +37,7 @@ Json FunctionType::to_json() const {
   for (auto argTy : argTypes) {
     args.push_back(argTy->to_json());
   }
-  return Json()._("type_kind", "function")._("returnType", returnType->to_json())._("arguments", args);
+  return Json()._("typeKind", "function")._("returnType", returnType->to_json())._("arguments", args);
 }
 
 } // namespace qat::ast

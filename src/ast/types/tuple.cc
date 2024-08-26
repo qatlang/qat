@@ -42,7 +42,7 @@ Json TupleType::to_json() const {
   for (auto* mem : types) {
     mems.push_back(mem->to_json());
   }
-  return Json()._("type_kind", "tuple")._("members", mems)._("isPacked", isPacked)._("fileRange", fileRange);
+  return Json()._("typeKind", "tuple")._("members", mems)._("isPacked", isPacked)._("fileRange", fileRange);
 }
 
 String TupleType::to_string() const {

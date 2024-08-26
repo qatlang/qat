@@ -259,7 +259,7 @@ Json NamedType::to_json() const {
   for (auto const& nam : names) {
     nameJs.push_back(JsonValue(nam));
   }
-  return Json()._("type_kind", "named")._("names", nameJs)._("fileRange", fileRange);
+  return Json()._("typeKind", "named")._("names", nameJs)._("fileRange", fileRange);
 }
 
 String NamedType::to_string() const { return Identifier::fullName(names).value; }

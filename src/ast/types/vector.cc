@@ -45,7 +45,7 @@ ir::Type* VectorType::emit(EmitCtx* ctx) {
 
 Json VectorType::to_json() const {
   return Json()
-      ._("type_kind", "vector")
+      ._("typeKind", "vector")
       ._("subType", subType->to_json())
       ._("count", count->to_json())
       ._("isScalable", scalable.has_value())

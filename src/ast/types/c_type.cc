@@ -133,7 +133,7 @@ Maybe<usize> CType::getTypeSizeInBits(EmitCtx* ctx) const {
 }
 
 Json CType::to_json() const {
-  return Json()._("type_kind", "cType")._("cTypeKind", ir::ctype_kind_to_string(cTypeKind))._("fileRange", fileRange);
+  return Json()._("typeKind", "cType")._("cTypeKind", ir::ctype_kind_to_string(cTypeKind))._("fileRange", fileRange);
 }
 
 String CType::to_string() const { return ir::ctype_kind_to_string(cTypeKind); }

@@ -33,7 +33,7 @@ ir::Type* MaybeType::emit(EmitCtx* ctx) {
 
 Json MaybeType::to_json() const {
   return Json()
-      ._("type_kind", "maybe")
+      ._("typeKind", "maybe")
       ._("isPacked", isPacked)
       ._("subType", subTyp->to_json())
       ._("fileRange", fileRange);

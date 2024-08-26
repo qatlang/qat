@@ -31,7 +31,7 @@ AstTypeKind UnsignedType::type_kind() const { return AstTypeKind::UNSIGNED_INTEG
 
 Json UnsignedType::to_json() const {
   return Json()
-      ._("type_kind", "unsignedInteger")
+      ._("typeKind", "unsignedInteger")
       ._("is_bool", is_bool)
       ._("bitWidth", bitWidth)
       ._("fileRange", fileRange);

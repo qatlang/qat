@@ -16,7 +16,7 @@ ir::Type* StringSliceType::emit(EmitCtx* ctx) { return ir::StringSliceType::get(
 
 AstTypeKind StringSliceType::type_kind() const { return AstTypeKind::STRING_SLICE; }
 
-Json StringSliceType::to_json() const { return Json()._("type_kind", "stringSlice")._("fileRange", fileRange); }
+Json StringSliceType::to_json() const { return Json()._("typeKind", "stringSlice")._("fileRange", fileRange); }
 
 String StringSliceType::to_string() const { return "str"; }
 

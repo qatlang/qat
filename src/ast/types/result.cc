@@ -40,7 +40,7 @@ String ResultType::to_string() const {
 
 Json ResultType::to_json() const {
   return Json()
-      ._("type_kind", "result")
+      ._("typeKind", "result")
       ._("validType", validType->to_json())
       ._("errorType", errorType->to_json())
       ._("isPacked", isPacked)

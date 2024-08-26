@@ -43,6 +43,7 @@ ir::Type* GenericIntegerType::emit(EmitCtx* ctx) {
 
 Json GenericIntegerType::to_json() const {
   return Json()
+      ._("typeKind", "genericInteger")
       ._("bits", bitValue->to_json())
       ._("hasUnsignedValue", isUnsigned.has_value())
       ._("isUnsignedValue", isUnsigned.has_value() ? isUnsigned.value() : JsonValue())

@@ -220,7 +220,7 @@ Json GenericNamedType::to_json() const {
   for (auto* typ : genericTypes) {
     typs.push_back(typ->to_json());
   }
-  return Json()._("type_kind", "genericNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
+  return Json()._("typeKind", "genericNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
 }
 
 String GenericNamedType::to_string() const {

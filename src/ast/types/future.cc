@@ -22,7 +22,7 @@ AstTypeKind FutureType::type_kind() const { return AstTypeKind::FUTURE; }
 
 Json FutureType::to_json() const {
   return Json()
-      ._("type_kind", "future")
+      ._("typeKind", "future")
       ._("isPacked", isPacked)
       ._("subType", subType->to_json())
       ._("fileRange", fileRange);

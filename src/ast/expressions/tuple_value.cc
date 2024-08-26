@@ -46,72 +46,11 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
       memRes->load_ghost_pointer(ctx->irCtx->builder);
     }
     if (expMemTy) {
-      if (expMemTy->is_same(memRes->get_ir_type())) {
-        if (memRes->is_ghost_pointer()) {
-          auto memType = memRes->get_ir_type();
-          if (memType->is_trivially_copyable() || memType->is_trivially_movable()) {
-            auto* loadRes = ctx->irCtx->builder.CreateLoad(memType->get_llvm_type(), memRes->get_llvm());
-            if (!memType->is_trivially_copyable()) {
-              if (!memRes->is_variable()) {
-                ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
-                           mem->fileRange);
-              }
-              ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memType->get_llvm_type()),
-                                              memRes->get_llvm());
-            }
-            isAllMemsPre = false;
-            tupleMemVals.push_back(ir::Value::get(loadRes, memType, false));
-          } else {
-            ctx->Error("This expression is of type " + ctx->color(memType->to_string()) +
-                           " which is trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
-                           ctx->color("'move") + " accordingly",
-                       mem->fileRange);
-          }
-        } else {
-          if (!memRes->is_prerun_value()) {
-            isAllMemsPre = false;
-          }
-          tupleMemVals.push_back(memRes);
-        }
-      } else if ((expMemTy->is_reference() && expMemTy->as_reference()->is_same(memRes->get_ir_type()) &&
-                  (memRes->is_ghost_pointer() &&
-                   (expMemTy->as_reference()->isSubtypeVariable() ? memRes->is_variable() : true))) ||
-                 (expMemTy->is_reference() && memRes->is_reference() &&
-                  expMemTy->as_reference()->get_subtype()->is_same(
-                      memRes->get_ir_type()->as_reference()->get_subtype()) &&
-                  (expMemTy->as_reference()->isSubtypeVariable()
-                       ? memRes->get_ir_type()->as_reference()->isSubtypeVariable()
-                       : true))) {
-        if (memRes->is_reference()) {
-          memRes->load_ghost_pointer(ctx->irCtx->builder);
-        }
+      auto valRes = ir::Logic::handle_pass_semantics(ctx, expMemTy, memRes, mem->fileRange);
+      if (!valRes->is_prerun_value()) {
         isAllMemsPre = false;
-        tupleMemVals.push_back(memRes);
-      } else if (memRes->is_reference() && memRes->get_ir_type()->as_reference()->get_subtype()->is_same(expMemTy)) {
-        memRes->load_ghost_pointer(ctx->irCtx->builder);
-        auto memType = memRes->get_ir_type()->as_reference()->get_subtype();
-        if (memType->is_trivially_copyable() || memType->is_trivially_movable()) {
-          auto* loadRes = ctx->irCtx->builder.CreateLoad(memType->get_llvm_type(), memRes->get_llvm());
-          if (!memType->is_trivially_copyable()) {
-            if (!memRes->get_ir_type()->as_reference()->isSubtypeVariable()) {
-              ctx->Error("This expression is of type " + ctx->color(memRes->get_ir_type()->to_string()) +
-                             " which is a reference without variability and hence cannot be trivially moved from",
-                         mem->fileRange);
-            }
-          }
-          isAllMemsPre = false;
-          tupleMemVals.push_back(ir::Value::get(loadRes, memType, false));
-        } else {
-          ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +
-                         " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
-                         ctx->color("'move") + " accordingly",
-                     mem->fileRange);
-        }
-      } else {
-        ctx->Error("Expected expression of type " + ctx->color(expMemTy->to_string()) +
-                       ", but the provided expression is of type " + ctx->color(memRes->get_ir_type()->to_string()),
-                   mem->fileRange);
       }
+      tupleMemVals.push_back(valRes);
     } else {
       if (!memRes->is_prerun_value()) {
         isAllMemsPre = false;

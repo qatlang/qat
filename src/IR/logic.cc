@@ -23,6 +23,70 @@
 
 namespace qat::ir {
 
+ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
+                                        FileRange valueRange) {
+  if (expectedType->is_same(value->get_ir_type())) {
+    if (value->is_ghost_pointer()) {
+      auto valueType = value->get_ir_type();
+      if (valueType->is_trivially_copyable() || valueType->is_trivially_movable()) {
+        auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
+        if (!valueType->is_trivially_copyable()) {
+          if (!value->is_variable()) {
+            ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+                       valueRange);
+          }
+          ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()), value->get_llvm());
+        }
+        return ir::Value::get(loadRes, valueType, false);
+      } else {
+        ctx->Error("This expression is of type " + ctx->color(valueType->to_string()) +
+                       " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
+                       ctx->color("'move") + " accordingly",
+                   valueRange);
+      }
+    } else {
+      return value;
+    }
+  } else if ((expectedType->is_reference() && expectedType->as_reference()->is_same(value->get_ir_type()) &&
+              (value->is_ghost_pointer() &&
+               (expectedType->as_reference()->isSubtypeVariable() ? value->is_variable() : true))) ||
+             (expectedType->is_reference() && value->is_reference() &&
+              expectedType->as_reference()->get_subtype()->is_same(
+                  value->get_ir_type()->as_reference()->get_subtype()) &&
+              (expectedType->as_reference()->isSubtypeVariable()
+                   ? value->get_ir_type()->as_reference()->isSubtypeVariable()
+                   : true))) {
+    if (value->is_reference()) {
+      value->load_ghost_pointer(ctx->irCtx->builder);
+    }
+    return value;
+  } else if (value->is_reference() && value->get_ir_type()->as_reference()->get_subtype()->is_same(expectedType)) {
+    value->load_ghost_pointer(ctx->irCtx->builder);
+    auto memType = value->get_ir_type()->as_reference()->get_subtype();
+    if (memType->is_trivially_copyable() || memType->is_trivially_movable()) {
+      auto* loadRes = ctx->irCtx->builder.CreateLoad(memType->get_llvm_type(), value->get_llvm());
+      if (!memType->is_trivially_copyable()) {
+        if (!value->get_ir_type()->as_reference()->isSubtypeVariable()) {
+          ctx->Error("This expression is of type " + ctx->color(value->get_ir_type()->to_string()) +
+                         " which is a reference without variability and hence cannot be trivially moved from",
+                     valueRange);
+        }
+      }
+      return ir::Value::get(loadRes, memType, false);
+    } else {
+      ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +
+                     " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
+                     ctx->color("'move") + " accordingly",
+                 valueRange);
+    }
+  } else {
+    ctx->Error("Expected expression of type " + ctx->color(expectedType->to_string()) +
+                   ", but the provided expression is of type " + ctx->color(value->get_ir_type()->to_string()),
+               valueRange);
+  }
+  return nullptr;
+}
+
 ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange) {
   if (ir::StdLib::is_std_lib_found() &&
       ir::StdLib::stdLib->has_generic_function(isSigned ? "signed_to_string" : "unsigned_to_string",
@@ -177,7 +241,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
         formatString += valStr;
       } else {
         if (valTy->as_pointer()->isMulti()) {
-          auto usizeTy = ir::CType::get_usize(ctx->irCtx);
+          //   auto usizeTy = ir::CType::get_usize(ctx->irCtx);
           if (val->is_reference() || val->is_ghost_pointer()) {
             if (val->is_reference()) {
               val->load_ghost_pointer(ctx->irCtx->builder);

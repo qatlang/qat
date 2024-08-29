@@ -8,13 +8,24 @@ namespace qat::ir {
 
 class VoidType : public Type {
 private:
-  VoidType(llvm::LLVMContext& llctx);
+  VoidType(llvm::LLVMContext& llctx) {
+    llvmType    = llvm::Type::getVoidTy(llctx);
+    linkingName = "qat'void";
+  }
 
 public:
-  useit static VoidType* get(llvm::LLVMContext& llctx);
-
-  useit TypeKind type_kind() const override;
-  useit String   to_string() const override;
+  useit static VoidType* get(llvm::LLVMContext& llctx) {
+    for (auto* typ : allTypes) {
+      if (typ->type_kind() == TypeKind::Void) {
+	return (VoidType*)typ;
+      }
+    }
+    return new VoidType(llctx);
+  }
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
+  useit TypeKind type_kind() const final { return TypeKind::Void; }
+  useit String   to_string() const final { return "void"; }
 };
 
 } // namespace qat::ir

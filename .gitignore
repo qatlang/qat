@@ -24,3 +24,6 @@ todo.md
 scripts.md
 compile_commands.json
 src/CMakeSettings.json
+
+#Emacs
+*~

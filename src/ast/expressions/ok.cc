@@ -1,126 +1,136 @@
 #include "./ok.hpp"
 #include "../../IR/types/result.hpp"
+#include "../types/qat_type.hpp"
+#include "../../IR/logic.hpp"
 
 namespace qat::ast {
 
+  void OkExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+    if (subExpr) {
+      UPDATE_DEPS(subExpr);
+    }
+    if (isPacked.has_value() && isPacked.value().second) {
+      UPDATE_DEPS(isPacked.value().second);
+    }
+    if (providedType) {
+      UPDATE_DEPS(providedType.value().first);
+      UPDATE_DEPS(providedType.value().second);
+    }
+  }
+  
 ir::Value* OkExpression::emit(EmitCtx* ctx) {
+  if (!ctx->has_fn()) {
+    ctx->Error("Expected this expression to be inside a function", fileRange);
+  }
   FnAtEnd fnObj{[&] { createIn = nullptr; }};
-  if (is_type_inferred()) {
-    if (!inferredType->is_result()) {
-      ctx->Error("Inferred type is " + ctx->color(inferredType->to_string()) + " cannot be the type of " +
+  auto usableType = inferredType;
+  bool packValue = false;
+  if (isPacked.has_value()) {
+    if (isPacked.value().second) {
+      auto packExp = isPacked.value().second->emit(ctx);
+      if (!packExp->get_ir_type()->is_bool()) {
+	ctx->Error("The condition for packing the " + ctx->color("result") + " datatype is expected to be of "
+		   + ctx->color("bool") + " type. Got an expression of type "
+		   + ctx->color(packExp->get_ir_type()->to_string()), isPacked.value().second->fileRange);
+      }
+      packValue = llvm::cast<llvm::ConstantInt>(packExp->get_llvm_constant())->getValue().getBoolValue();
+    } else {
+      packValue = true;
+    }
+  }
+  if (providedType.has_value()) {
+    auto provResTy = providedType.value().first->emit(ctx);
+    auto provErrTy = providedType.value().second->emit(ctx);
+    auto provTy = ir::ResultType::get(provResTy, provErrTy, packValue, ctx->irCtx);
+    check_inferred_type(provTy, ctx, fileRange);
+    usableType = provTy;
+  }
+  if (usableType) {
+    if (!usableType->is_result()) {
+      ctx->Error("Inferred type is " + ctx->color(usableType->to_string()) + " cannot be the type of " +
                      ctx->color("ok") + " expression, as it expects a result type",
                  fileRange);
     }
-    if (subExpr->has_type_inferrance()) {
-      subExpr->as_type_inferrable()->set_inference_type(inferredType->as_result()->getValidType());
+    auto *resTy = usableType->as_result();
+    auto *valTy = resTy->getValidType();
+    if (isPacked.has_value() && (resTy->isTypePacked() != packValue)) {
+        ctx->Error(ctx->color(resTy->to_string()) + (resTy->isTypePacked() ? " is" : " is not")
+		   + " a packed datatype, which does not match with the provided condition, which evaluates to "
+		   + ctx->color(packValue ? "true" : "false"), isPacked.value().first);
+    } 
+    if (!subExpr) {
+      if (!valTy->is_void()) {
+	ctx->Error("The inferred " + ctx->color("result") + " type for this expression is "
+		   + ctx->color(resTy->to_string())
+		   + ", so expected an expression that is compatible with the valid type "
+		   + ctx->color(valTy->to_string()) + " to be provided", fileRange);
+      }
+    } else if (subExpr->has_type_inferrance()) {
+      subExpr->as_type_inferrable()->set_inference_type(usableType->as_result()->getValidType());
     }
+    llvm::Value* newAlloc = nullptr;
     if (isLocalDecl()) {
-      createIn = localValue->to_new_ir_value();
+      newAlloc = localValue->get_llvm();
     } else if (canCreateIn()) {
       if (createIn->is_reference() || createIn->is_ghost_pointer()) {
         auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
                                                   : createIn->get_ir_type()->as_reference()->get_subtype();
-        if (!expTy->is_same(inferredType)) {
-          ctx->Error("Trying to optimise the ok expression by creating in-place, but the expression type is " +
-                         ctx->color(inferredType->to_string()) +
+        if (!expTy->is_same(usableType)) {
+          ctx->Error("Trying to optimise the " + ctx->color("ok")
+		     + " expression by creating in-place, but the expression type is " +
+                         ctx->color(usableType->to_string()) +
                          " which does not match with the underlying type for in-place creation which is " +
                          ctx->color(expTy->to_string()),
                      fileRange);
         }
       } else {
-        ctx->Error(
-            "Trying to optimise the ok expression by creating in-place, but the containing type is not a reference",
+        ctx->Error("Trying to optimise the " + ctx->color("ok")
+	    + " expression by creating in-place, but the underlying type for in-place creation is "
+	    + ctx->color(createIn->get_ir_type()->to_string()) + ", which is not a reference",
             fileRange);
       }
+    } else if (irName.has_value()) {
+      newAlloc = ctx->get_fn()->get_block()->new_value(irName.value().value, resTy, isVar,
+						       irName.value().range)->get_llvm();
     } else {
-      createIn =
-          ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::unique_id(), inferredType,
-                                                isVar, irName.has_value() ? irName->range : fileRange);
+      newAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, usableType->get_llvm_type());
     }
-    if (subExpr->isInPlaceCreatable()) {
-      auto refTy = ir::ReferenceType::get(createIn->get_ir_type()->is_reference()
-                                              ? createIn->get_ir_type()->as_reference()->isSubtypeVariable()
-                                              : createIn->is_variable(),
-                                          inferredType->as_result()->getValidType(), ctx->irCtx);
+    const auto shouldCreateIn = !resTy->is_void() && subExpr && subExpr->isInPlaceCreatable();
+    if (shouldCreateIn) {
       subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
-          ctx->irCtx->builder.CreatePointerCast(
-              ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 1u),
-              refTy->get_llvm_type()),
-          refTy, false));
-    }
-  } else {
-    ctx->Error(ctx->color("ok") + " expression expects the type to be inferred from scope", fileRange);
-  }
-  auto* expr = subExpr->emit(ctx);
-  SHOW("Sub expression emitted")
-  if (subExpr->isInPlaceCreatable()) {
-    subExpr->asInPlaceCreatable()->unsetCreateIn();
-    ctx->irCtx->builder.CreateStore(
-        llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->irCtx->llctx)),
-        ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 0u));
-    return createIn;
-  }
-  if (is_type_inferred() &&
-      !(expr->get_ir_type()->is_same(inferredType->as_result()->getValidType()) ||
-        (expr->get_ir_type()->is_reference() &&
-         expr->get_ir_type()->as_reference()->get_subtype()->is_same(inferredType->as_result()->getValidType())))) {
-    ctx->Error("Provided expression is of incompatible type " + ctx->color(expr->get_ir_type()->to_string()) +
-                   ". Expected an expression of type " +
-                   ctx->color(inferredType->as_result()->getValidType()->to_string()),
-               subExpr->fileRange);
-  }
-  if ((expr->get_ir_type()->is_same(inferredType->as_result()->getValidType()) && expr->is_ghost_pointer()) ||
-      expr->get_ir_type()->is_reference()) {
-    if (!expr->get_ir_type()->is_same(inferredType->as_result()->getValidType())) {
-      expr->load_ghost_pointer(ctx->irCtx->builder);
-    }
-    auto validTy = inferredType->as_result()->getValidType();
-    if (validTy->is_trivially_copyable() || validTy->is_trivially_movable()) {
-      ctx->irCtx->builder.CreateStore(
-          ctx->irCtx->builder.CreateLoad(validTy->get_llvm_type(), expr->get_llvm()),
-          ctx->irCtx->builder.CreatePointerCast(
-              ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 1u),
-              llvm::PointerType::get(validTy->get_llvm_type(), ctx->irCtx->dataLayout->getProgramAddressSpace())));
-      ctx->irCtx->builder.CreateStore(
-          llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->irCtx->llctx)),
-          ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 0u));
-      if (!validTy->is_trivially_copyable()) {
-        if (expr->get_ir_type()->is_same(inferredType->as_result()->getValidType())) {
-          if (!expr->is_variable()) {
-            ctx->Error("This is an expression without variability and hence cannot be moved from", fileRange);
-          }
-        } else if (!expr->get_ir_type()->as_reference()->isSubtypeVariable()) {
-          ctx->Error("This expression is of type " + ctx->color(expr->get_ir_type()->to_string()) +
-                         " which is a reference without variability and hence cannot be trivially moved from",
-                     fileRange);
-        }
-        // MOVE WARNING
-        ctx->irCtx->Warning("There is a trivial move occuring here. Do you want to use " +
-                                ctx->irCtx->highlightWarning("'move") + " to make it explicit and clear?",
-                            subExpr->fileRange);
-        ctx->irCtx->builder.CreateStore(llvm::ConstantExpr::getNullValue(validTy->get_llvm_type()), expr->get_llvm());
-        if (expr->is_local_value()) {
-          ctx->get_fn()->get_block()->addMovedValue(expr->get_local_id().value());
-        }
-      }
-      return createIn;
-    } else {
-      // NON-TRIVIAL COPY & MOVE ERROR
-      ctx->Error("The expression provided is of type " + ctx->color(expr->get_ir_type()->to_string()) + ". Type " +
-                     ctx->color(validTy->to_string()) + " cannot be trivially copied or moved. Please do " +
-                     ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
-                 subExpr->fileRange);
-    }
-  } else if (expr->get_ir_type()->is_same(inferredType->as_result()->getValidType())) {
-    auto validTy = inferredType->as_result()->getValidType();
-    ctx->irCtx->builder.CreateStore(
-        expr->get_llvm(),
         ctx->irCtx->builder.CreatePointerCast(
-            ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 1u),
-            llvm::PointerType::get(validTy->get_llvm_type(), ctx->irCtx->dataLayout->getProgramAddressSpace())));
-    ctx->irCtx->builder.CreateStore(
-        llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(ctx->irCtx->llctx)),
-        ctx->irCtx->builder.CreateStructGEP(inferredType->get_llvm_type(), createIn->get_llvm(), 0u));
+          ctx->irCtx->builder.CreateStructGEP(usableType->get_llvm_type(), newAlloc, 1u),
+          valTy->get_llvm_type()->getPointerTo(0u)),
+        ir::ReferenceType::get(true, valTy, ctx->irCtx), false));
+    }
+    auto* validVal = subExpr ? subExpr->emit(ctx) : nullptr;
+    if (valTy->is_void()) {
+      if (validVal && !validVal->get_ir_type()->is_void()) {
+	ctx->Error("Type of this expression is " + ctx->color(validVal->get_ir_type()->to_string())
+		   + " which does not match with the value type of " + ctx->color(resTy->to_string())
+		   + ", which is " + ctx->color(valTy->to_string()), subExpr->fileRange);
+      }
+      resTy->handle_tag_store(newAlloc, true, ctx->irCtx);
+      return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, true);
+    }
+    SHOW("Sub expression emitted")
+    if (shouldCreateIn) {
+      // NOTE - Condition means that the sub-expression has already been created in-place
+      resTy->hangle_tag_store(newAlloc, true, ctx->irCtx);
+      subExpr->asInPlaceCreatable()->unsetCreateIn();
+      return createIn;
+    }
+    // NOTE - The following function does further type checking
+    auto* finalVal = ir::Logic::handle_pass_semantics(ctx, valTy, validVal, subExpr->fileRange);
+    resTy->hangle_tag_store(newAlloc, true, ctx->irCtx);
+    ctx->irCtx->builder.CreateStore(finalVal->get_llvm(),
+      ctx->irCtx->builder.CreatePointerCast(
+        ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
+        valTy->get_llvm_type()->getPointerTo(0u)));
+    return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, false);
+  } else {
+    ctx->Error("No inferred type found for this expression, and no type were provided. "
+	       "You can provide a type for ok expression like " + ctx->color("ok:[validType, errorType](expression)"), fileRange);
   }
   return createIn;
 }

@@ -3,7 +3,6 @@
 
 #include "../IR/types/typed.hpp"
 #include "../utils/file_range.hpp"
-#include "../utils/qat_region.hpp"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IRBuilder.h"
@@ -26,17 +25,17 @@ class Mod;
 class Function;
 
 class Value {
-private:
-  static Vec<ir::Value*> allValues;
-
 protected:
-  ir::Type*     type;
-  bool          variable;
-  llvm::Value*  ll;
-  Maybe<String> localID;
-  bool          isSelf = false;
+  ir::Type*        type;
+  bool             variable;
+  llvm::Value*     ll;
+  Maybe<String>    localID;
+  bool             isSelf = false;
+  Maybe<FileRange> associatedRange;
 
 public:
+  static Vec<ir::Value*> allValues;
+
   Value(llvm::Value* _llValue, ir::Type* _type, bool _isVariable);
 
   useit static inline Value* get(llvm::Value* ll, ir::Type* type, bool isVar) { return new Value(ll, type, isVar); }
@@ -66,6 +65,13 @@ public:
                     llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == get_ir_type()->get_llvm_type())) &&
                   !is_prerun_value());
   }
+
+  useit inline ir::Value* with_range(FileRange rangeVal) {
+    associatedRange = rangeVal;
+    return this;
+  }
+  useit inline bool      has_associated_range() const { return associatedRange.has_value(); }
+  useit inline FileRange get_associated_range() const { return associatedRange.value(); }
 
   inline void set_self() { isSelf = true; }
   inline void set_local_id(const String& locID) { localID = locID; }

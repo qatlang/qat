@@ -99,16 +99,16 @@ String GenericToFill::to_string() const {
   }
 }
 
-GenericParameter::GenericParameter(Identifier _name, GenericKind _kind, FileRange _range)
+GenericArgument::GenericArgument(Identifier _name, GenericKind _kind, FileRange _range)
     : name(std::move(_name)), kind(_kind), range(std::move(_range)) {}
 
-Identifier GenericParameter::get_name() const { return name; }
+Identifier GenericArgument::get_name() const { return name; }
 
-FileRange GenericParameter::get_range() const { return range; }
+FileRange GenericArgument::get_range() const { return range; }
 
-bool GenericParameter::is_same(const String& cName) const { return name.value == cName; }
+bool GenericArgument::is_same(const String& cName) const { return name.value == cName; }
 
-bool GenericParameter::is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const {
+bool GenericArgument::is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const {
   if (is_typed()) {
     if (fill->is_type()) {
       return as_typed()->get_type()->is_same(fill->as_type());
@@ -132,15 +132,15 @@ bool GenericParameter::is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const {
   }
 }
 
-bool GenericParameter::is_typed() const { return kind == GenericKind::typedGeneric; }
+bool GenericArgument::is_typed() const { return kind == GenericKind::typedGeneric; }
 
-TypedGeneric* GenericParameter::as_typed() const { return (TypedGeneric*)this; }
+TypedGeneric* GenericArgument::as_typed() const { return (TypedGeneric*)this; }
 
-bool GenericParameter::is_prerun() const { return kind == GenericKind::prerunGeneric; }
+bool GenericArgument::is_prerun() const { return kind == GenericKind::prerunGeneric; }
 
-PrerunGeneric* GenericParameter::as_prerun() const { return (PrerunGeneric*)this; }
+PrerunGeneric* GenericArgument::as_prerun() const { return (PrerunGeneric*)this; }
 
-String GenericParameter::to_string() const {
+String GenericArgument::to_string() const {
   if (is_prerun()) {
     return as_prerun()
         ->get_expression()
@@ -155,7 +155,7 @@ String GenericParameter::to_string() const {
 }
 
 TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRange _range)
-    : GenericParameter(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
+    : GenericArgument(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
 
 TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRange range) {
   return new TypedGeneric(std::move(name), type, std::move(range));
@@ -164,11 +164,16 @@ TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRange range
 ir::Type* TypedGeneric::get_type() const { return type; }
 
 Json TypedGeneric::to_json() const {
-  return Json()._("name", name)._("genericKind", "typedGeneric")._("type", type->get_id())._("range", range);
+  return Json()
+      ._("name", name)
+      ._("genericKind", "typedGeneric")
+      ._("typeID", type->get_id())
+      ._("valueString", type->to_string())
+      ._("range", range);
 }
 
 PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRange _range)
-    : GenericParameter(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
+    : GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
 
 PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRange range) {
   return new PrerunGeneric(std::move(name), val, std::move(range));
@@ -182,10 +187,10 @@ Json PrerunGeneric::to_json() const {
   return Json()
       ._("name", name)
       ._("genericKind", "prerunGeneric")
-      ._("type", constant->get_ir_type()->get_id())
-      ._("value", constant->get_ir_type()->can_be_prerun_generic()
-                      ? constant->get_ir_type()->to_prerun_generic_string(constant).value_or("")
-                      : "")
+      ._("typeID", constant->get_ir_type()->get_id())
+      ._("valueString", constant->get_ir_type()->can_be_prerun_generic()
+                            ? constant->get_ir_type()->to_prerun_generic_string(constant).value_or("")
+                            : "")
       ._("range", range);
 }
 

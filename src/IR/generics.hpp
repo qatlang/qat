@@ -45,13 +45,13 @@ public:
   useit String to_string() const;
 };
 
-class GenericParameter {
+class GenericArgument {
 protected:
   Identifier  name;
   GenericKind kind;
   FileRange   range;
 
-  GenericParameter(Identifier name, GenericKind kind, FileRange range);
+  GenericArgument(Identifier name, GenericKind kind, FileRange range);
 
 public:
   useit Identifier get_name() const;
@@ -68,10 +68,10 @@ public:
 
   useit String       to_string() const;
   useit virtual Json to_json() const = 0;
-  virtual ~GenericParameter()        = default;
+  virtual ~GenericArgument()         = default;
 };
 
-class TypedGeneric : public GenericParameter {
+class TypedGeneric : public GenericArgument {
   ir::Type* type;
 
   TypedGeneric(Identifier name, ir::Type* type, FileRange range);
@@ -84,7 +84,7 @@ public:
   useit Json to_json() const final;
 };
 
-class PrerunGeneric : public GenericParameter {
+class PrerunGeneric : public GenericArgument {
   ir::PrerunValue* constant;
 
   PrerunGeneric(Identifier name, ir::PrerunValue* constant, FileRange range);

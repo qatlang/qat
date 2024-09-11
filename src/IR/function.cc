@@ -34,7 +34,7 @@ LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun
                                                         ._("name", _name)
                                                         ._("typeID", _type->get_id())
                                                         ._("type", _type->to_string())
-                                                        ._("is_variable", _isVar)
+                                                        ._("isVariable", _isVar)
                                                         ._("functionID", fun->get_id()),
                                                     _fileRange),
       name(std::move(_name)), fileRange(std::move(_fileRange)) {
@@ -47,7 +47,7 @@ LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun
 
 String LocalValue::get_name() const { return name; }
 
-llvm::AllocaInst* LocalValue::getAlloca() const { return (llvm::AllocaInst*)ll; }
+llvm::AllocaInst* LocalValue::get_alloca() const { return (llvm::AllocaInst*)ll; }
 
 FileRange LocalValue::get_file_range() const { return fileRange; }
 
@@ -70,30 +70,7 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
   SHOW("Created llvm::BasicBlock " << name)
 }
 
-String Block::get_name() const { return name; }
-
-llvm::BasicBlock* Block::get_bb() const { return bb; }
-
-bool Block::has_parent() const { return (parent != nullptr); }
-
-bool Block::has_previous_block() const { return prevBlock != nullptr; }
-
-Block* Block::get_previous_block() const { return prevBlock; }
-
-bool Block::has_next_block() const { return nextBlock != nullptr; }
-
-Block* Block::get_next_block() const { return nextBlock; }
-
-void Block::link_previous_block(Block* block) {
-  prevBlock        = block;
-  block->nextBlock = this;
-}
-
-Block* Block::getParent() const { return parent; }
-
-Function* Block::getFn() const { return fn; }
-
-bool Block::hasValue(const String& name) const {
+bool Block::has_value(const String& name) const {
   SHOW("Number of local values: " << values.size())
   for (auto* val : values) {
     SHOW("Local value name is: " << val->get_name())
@@ -104,39 +81,32 @@ bool Block::hasValue(const String& name) const {
     }
   }
   if (prevBlock) {
-    if (prevBlock->hasValue(name)) {
+    if (prevBlock->has_value(name)) {
       return true;
     }
   }
   if (has_parent()) {
     SHOW("Has parent block")
-    return parent->hasValue(name);
+    return parent->has_value(name);
   }
   SHOW("No local with name")
   return false;
 }
 
-LocalValue* Block::getValue(const String& name) const {
+LocalValue* Block::get_value(const String& name) const {
   for (auto* val : values) {
     if (val->get_name() == name) {
       return val;
     }
   }
-  if (prevBlock && prevBlock->hasValue(name)) {
-    return prevBlock->getValue(name);
+  if (prevBlock && prevBlock->has_value(name)) {
+    return prevBlock->get_value(name);
   }
   if (has_parent()) {
-    return parent->getValue(name);
+    return parent->get_value(name);
   }
   return nullptr;
 }
-
-LocalValue* Block::new_value(const String& name, ir::Type* type, bool isVar, FileRange _fileRange) {
-  values.push_back(LocalValue::get(name, type, isVar, fn, _fileRange));
-  return values.back();
-}
-
-void Block::set_has_give() const { hasGive = true; }
 
 bool Block::has_give_in_all_control_paths() const {
   if (isGhost) {
@@ -206,8 +176,6 @@ void Block::collect_locals_from(Vec<LocalValue*>& vals) const {
   }
 }
 
-Vec<LocalValue*>& Block::get_locals() { return values; }
-
 bool Block::is_moved(const String& locID) const {
   if (prevBlock) {
     return prevBlock->is_moved(locID);
@@ -226,27 +194,7 @@ bool Block::is_moved(const String& locID) const {
   return false;
 }
 
-Maybe<FileRange> Block::get_file_range() const {
-  if (fileRange.has_value()) {
-    return fileRange;
-  }
-  if (parent && parent->fileRange.has_value()) {
-    return parent->fileRange;
-  }
-  return None;
-}
-
-void Block::addMovedValue(String locID) const { movedValues.push_back(std::move(locID)); }
-
-Block* Block::getActive() {
-  if (active) {
-    return children.at(active.value())->getActive();
-  } else {
-    return this;
-  }
-}
-
-void Block::destroyLocals(ast::EmitCtx* ctx) {
+void Block::destroy_locals(ast::EmitCtx* ctx) {
   SHOW("Locals being destroyed for " << name)
   for (auto* loc : values) {
     if (loc->get_ir_type()->is_destructible()) {
@@ -260,29 +208,27 @@ void Block::destroyLocals(ast::EmitCtx* ctx) {
     }
   }
   if (nextBlock) {
-    nextBlock->destroyLocals(ctx);
+    nextBlock->destroy_locals(ctx);
   }
 }
 
-void Block::outputLocalOverview(Vec<JsonValue>& jsonVals) {
+void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
   for (auto* loc : values) {
     jsonVals.push_back(loc->overviewToJson());
   }
   for (auto* child : children) {
-    child->outputLocalOverview(jsonVals);
+    child->output_local_overview(jsonVals);
   }
 }
 
-void Block::setFileRange(FileRange _fileRange) { fileRange = _fileRange; }
-
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
-                   ReturnType* returnType, Vec<Argument> _args, bool _isVariadicArguments, Maybe<FileRange> _fileRange,
-                   const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
+                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, bool _isVariadicArguments,
+                   Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
                    Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
     : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
       namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
-      arguments(std::move(_args)), visibility_info(_visibility_info), fileRange(std::move(_fileRange)),
-      hasVariadicArguments(_isVariadicArguments), metaInfo(_metaInfo), ctx(_ctx) //
+      arguments(std::move(_args)), visibilityInfo(_visibility_info), fileRange(std::move(_fileRange)),
+      hasVariadicArguments(_isVariadicArguments), isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
 {
   SHOW("ir::Function constructor")
   Maybe<String> foreignID;
@@ -296,7 +242,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
   }
   if (!_namingInfo.has_value()) {
     namingInfo = mod->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
-    if (isGeneric()) {
+    if (is_generic()) {
       Vec<LinkNames> genericLinkNames;
       for (auto* param : generics) {
         if (param->is_typed()) {
@@ -331,7 +277,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
         llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName, mod->get_llvm_module());
   }
-  if (!is_method() && !isGeneric()) {
+  if (!is_method() && !is_generic()) {
     mod->functions.push_back(this);
   }
 }
@@ -344,12 +290,6 @@ Function::~Function() {
     delete gen;
   }
 }
-
-bool Function::isGeneric() const { return !generics.empty(); }
-
-bool Function::hasDefinitionRange() const { return fileRange.has_value(); }
-
-FileRange Function::getDefinitionRange() const { return fileRange.value(); }
 
 ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Maybe<String> localID, Mod* destMod) {
   SHOW("Linking function if it is external")
@@ -381,102 +321,75 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 }
 
 Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericParameter*> _generics,
-                           ReturnType* returnTy, Vec<Argument> args, const bool hasVariadicArgs,
+                           bool isInline, ReturnType* returnTy, Vec<Argument> args, const bool hasVariadicArgs,
                            Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
-  return new Function(mod, std::move(name), namingInfo, std::move(_generics), returnTy, std::move(args),
+  return new Function(mod, std::move(name), namingInfo, std::move(_generics), isInline, returnTy, std::move(args),
                       hasVariadicArgs, std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
 }
 
 void Function::update_overview() {
   Vec<JsonValue> localsJson;
   for (auto* block : blocks) {
-    block->outputLocalOverview(localsJson);
+    block->output_local_overview(localsJson);
   }
-  ovInfo._("fullName", get_full_name())
+  Vec<JsonValue> argsJSON;
+  for (auto arg : arguments) {
+    if (arg.get_type() != nullptr) {
+      argsJSON.push_back(Json()
+                             ._("isVar", arg.get_variability())
+                             ._("name", arg.get_name().value != "" ? arg.get_name() : JsonValue())
+                             ._("typeID", arg.get_type()->get_id()));
+    }
+  }
+  Vec<JsonValue> genericArgsJSON;
+  for (auto* param : generics) {
+    genericArgsJSON.push_back(param->to_json());
+  }
+  ovInfo._("name", name.value)
+      ._("fullName", get_full_name())
+      ._("genericArguments", genericArgsJSON)
+      ._("arguments", argsJSON)
       ._("functionID", get_id())
       ._("moduleID", mod->get_id())
-      ._("visibility", visibility_info)
+      ._("visibility", visibilityInfo)
       ._("isVariadic", hasVariadicArguments)
       ._("locals", localsJson);
 }
 
-bool Function::has_variadic_args() const { return hasVariadicArguments; }
-
-Identifier Function::arg_name_at(u32 index) const { return arguments.at(index).get_name(); }
-
-Identifier Function::get_name() const { return name; }
-
-ir::Mod* Function::get_module() const { return mod; }
-
-bool Function::has_generic_parameter(const String& name) const {
-  for (auto* gen : generics) {
-    if (gen->get_name().value == name) {
-      return true;
-    }
-  }
-  return false;
-}
-
-String Function::get_random_alloca_name() const {
-  localNameCounter++;
-  return std::to_string(localNameCounter) + "_new";
-}
-
-GenericParameter* Function::get_generic_parameter(const String& name) const {
-  for (auto* gen : generics) {
-    if (gen->get_name().value == name) {
-      return gen;
-    }
-  }
-  return nullptr;
-}
-
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
 
-bool Function::is_accessible(const AccessInfo& req_info) const {
-  return Visibility::is_accessible(visibility_info, req_info);
-}
-
-ir::LocalValue* Function::get_function_common_index() {
+ir::LocalValue* Function::get_str_comparison_index() {
   if (!strComparisonIndex) {
-    strComparisonIndex = get_first_block()->new_value("qat'function'commonIndex",
+    strComparisonIndex = get_first_block()->new_value("qat'strCmpInd",
                                                       // NOLINTNEXTLINE(readability-magic-numbers)
                                                       ir::UnsignedType::get(64u, ctx), true, name.range);
   }
   return strComparisonIndex;
 }
 
-VisibilityInfo Function::get_visibility() const { return visibility_info; }
-
-bool Function::is_method() const { return false; }
-
-llvm::Function* Function::get_llvm_function() { return (llvm::Function*)ll; }
-
-void Function::set_active_block(usize index) const { activeBlock = index; }
-
-Block* Function::get_block() const { return blocks.at(activeBlock)->getActive(); }
-
-Block* Function::get_first_block() const { return blocks.at(0); };
-
-usize Function::get_block_count() const { return blocks.size(); }
-
-usize& Function::get_copied_counter() { return copiedCounter; }
-
-usize& Function::get_moved_counter() { return movedCounter; }
-
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
                                  Mod* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
+                         ._("name", _name.value)
                          ._("fullName", _parent->get_fullname_with_child(_name.value))
+                         ._("functionID", get_id())
                          ._("moduleID", _parent->get_id())
                          ._("visibility", _visibInfo),
                      _name.range),
       name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
       parent(_parent), visibInfo(_visibInfo) {
   parent->genericFunctions.push_back(this);
+}
+
+void GenericFunction::update_overview() {
+  Vec<JsonValue> genericParamsJSON;
+  for (auto* param : generics) {
+    genericParamsJSON.push_back(param->to_json());
+  }
+  ovInfo._("genericParameters", genericParamsJSON);
 }
 
 Identifier GenericFunction::get_name() const { return name; }
@@ -502,8 +415,7 @@ useit bool GenericFunction::all_generics_have_default() const {
 
 Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx* irCtx, const FileRange& fileRange) {
   for (auto var : variants) {
-    if (var.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
+    if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }
@@ -564,7 +476,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
     if (loc->get_ir_type()->is_expanded() && loc->get_ir_type()->as_expanded()->has_destructor()) {
       auto* eTy        = loc->get_ir_type()->as_expanded();
       auto* destructor = eTy->get_destructor();
-      (void)destructor->call(irCtx, {loc->getAlloca()}, None, fun->get_module());
+      (void)destructor->call(irCtx, {loc->get_alloca()}, None, fun->get_module());
     } else if (loc->get_ir_type()->is_destructible()) {
       loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
       SHOW("Destroyed value using type level feature")
@@ -668,7 +580,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
           auto* ptrTy  = mem->type->as_pointer();
           auto* memPtr = irCtx->builder.CreateStructGEP(
               ptrTy->get_llvm_type(),
-              irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), mFn->get_first_block()->getValue("''")->get_llvm(),
+              irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), mFn->get_first_block()->get_value("''")->get_llvm(),
                                              i),
               0u);
           if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
@@ -746,10 +658,10 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
                                                       llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
         }
       }
-      if (fun->get_block_count() >= 1 && fun->get_first_block()->hasValue("''")) {
+      if (fun->get_block_count() >= 1 && fun->get_first_block()->has_value("''")) {
         SHOW("Destructor self value is zero assigned")
-        auto* selfVal = fun->get_first_block()->getValue("''");
-        irCtx->builder.CreateStore(llvm::Constant::getNullValue(cTy->get_llvm_type()), selfVal->getAlloca());
+        auto* selfVal = fun->get_first_block()->get_value("''");
+        irCtx->builder.CreateStore(llvm::Constant::getNullValue(cTy->get_llvm_type()), selfVal->get_alloca());
       } else {
         SHOW("Destructor has no self value")
       }
@@ -811,9 +723,9 @@ void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
       if (loc->get_ir_type()->is_pointer()
               ? (loc->get_ir_type()->as_pointer()->getOwner().is_parent_function() &&
                  (loc->get_ir_type()->as_pointer()->getOwner().owner_as_parent_function()->get_id() ==
-                  block->getFn()->get_id()))
+                  block->get_fn()->get_id()))
               : true) {
-        loc->get_ir_type()->destroy_value(irCtx, loc, block->getFn());
+        loc->get_ir_type()->destroy_value(irCtx, loc, block->get_fn());
       }
     }
   }

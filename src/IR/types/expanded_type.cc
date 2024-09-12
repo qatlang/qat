@@ -6,7 +6,7 @@
 
 namespace qat::ir {
 
-ExpandedType::ExpandedType(Identifier _name, Vec<GenericParameter*> _generics, ir::Mod* _parent,
+ExpandedType::ExpandedType(Identifier _name, Vec<GenericArgument*> _generics, ir::Mod* _parent,
                            const VisibilityInfo& _visib)
     : name(std::move(_name)), generics(_generics), parent(_parent), visibility(_visib) {}
 
@@ -21,7 +21,7 @@ bool ExpandedType::has_generic_parameter(const String& name) const {
   return false;
 }
 
-GenericParameter* ExpandedType::get_generic_parameter(const String& name) const {
+GenericArgument* ExpandedType::get_generic_parameter(const String& name) const {
   for (auto* gen : generics) {
     if (gen->is_same(name)) {
       return gen;

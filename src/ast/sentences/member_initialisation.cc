@@ -24,7 +24,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
         ir::Type*    memTy    = nullptr;
         Maybe<usize> memIndex;
         // FIXME - Support tuple types with named member fields?
-        auto selfRef = memFn->get_first_block()->getValue("''");
+        auto selfRef = memFn->get_first_block()->get_value("''");
         if (parentTy->is_struct()) {
           if (parentTy->as_struct()->has_field_with_name(memName.value)) {
             memTy            = parentTy->as_struct()->get_type_of_field(memName.value);
@@ -78,7 +78,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
           } else {
             memTy = parentTy->as_mix()->get_variant_with_name(memName.value);
             if (isInitOfMixVariantWithoutValue) {
-              auto selfVal = memFn->get_first_block()->getValue("''");
+              auto selfVal = memFn->get_first_block()->get_value("''");
               if (memTy->has_prerun_default_value()) {
                 ctx->irCtx->builder.CreateStore(
                     memTy->get_prerun_default_value(ctx->irCtx)->get_llvm(),

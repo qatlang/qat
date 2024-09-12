@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class PrerunGeneric final : public GenericAbstractType {
+class PrerunGenericAbstract final : public GenericAbstractType {
   Type*                         expTy;
   Maybe<ast::PrerunExpression*> defaultValueAST;
 
@@ -16,14 +16,14 @@ class PrerunGeneric final : public GenericAbstractType {
   mutable Vec<ir::PrerunValue*> expressionValue;
 
 public:
-  PrerunGeneric(usize _index, Identifier _name, Type* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                FileRange _range)
+  PrerunGenericAbstract(usize _index, Identifier _name, Type* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+                        FileRange _range)
       : GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
         defaultValueAST(_defaultVal) {}
 
-  useit static inline PrerunGeneric* get(usize _index, Identifier _name, Type* _expTy,
-                                         Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
-    return std::construct_at(OwnNormal(PrerunGeneric), _index, std::move(_name), _expTy, _defaultVal,
+  useit static inline PrerunGenericAbstract* get(usize _index, Identifier _name, Type* _expTy,
+                                                 Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
+    return std::construct_at(OwnNormal(PrerunGenericAbstract), _index, std::move(_name), _expTy, _defaultVal,
                              std::move(_range));
   }
 
@@ -50,7 +50,7 @@ public:
   void       unset() const final;
   useit Json to_json() const final;
 
-  ~PrerunGeneric() final;
+  ~PrerunGenericAbstract() final;
 };
 
 } // namespace qat::ast

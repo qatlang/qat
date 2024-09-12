@@ -40,7 +40,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
             ctx->Error("The type provided in the local declaration does not match the type of the value to be moved",
                        fileRange);
           }
-          createIn = ir::Value::get(localValue->getAlloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+          createIn = ir::Value::get(localValue->get_alloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
         } else if (canCreateIn()) {
           if (createIn->is_reference() || createIn->is_ghost_pointer()) {
             auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
@@ -67,7 +67,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
         }
         (void)candTy->move_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
         if (expEmit->is_local_value()) {
-          ctx->get_fn()->get_block()->addMovedValue(expEmit->get_local_id().value());
+          ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
         }
         if (shouldLoadValue) {
           return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), createIn->get_llvm()), candTy,
@@ -81,7 +81,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
             ctx->Error("The type provided in the local declaration does not match the type of the value to be moved",
                        fileRange);
           }
-          createIn = ir::Value::get(localValue->getAlloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+          createIn = ir::Value::get(localValue->get_alloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
         }
         if (canCreateIn()) {
           if (createIn->is_reference() || createIn->is_ghost_pointer()) {
@@ -102,7 +102,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
                                           createIn->get_llvm());
           ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(candTy->get_llvm_type()), expEmit->get_llvm());
           if (expEmit->is_local_value()) {
-            ctx->get_fn()->get_block()->addMovedValue(expEmit->get_local_id().value());
+            ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
           }
           return createIn;
         } else {
@@ -128,13 +128,13 @@ ir::Value* Move::emit(EmitCtx* ctx) {
                                           createIn->get_llvm());
           ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(candTy->get_llvm_type()), expEmit->get_llvm());
           if (expEmit->is_local_value()) {
-            ctx->get_fn()->get_block()->addMovedValue(expEmit->get_local_id().value());
+            ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
           }
           return createIn;
         } else if (candTy->is_move_assignable()) {
           (void)candTy->move_assign_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
           if (expEmit->is_local_value()) {
-            ctx->get_fn()->get_block()->addMovedValue(expEmit->get_local_id().value());
+            ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
           }
           return createIn;
         } else {

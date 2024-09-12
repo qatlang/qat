@@ -5,7 +5,7 @@
 
 namespace qat::ir {
 
-OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
+OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
                        Maybe<OpaqueSubtypeKind> _subtypeKind, ir::Mod* _parent, Maybe<usize> _size,
                        VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
     : EntityOverview(
@@ -61,7 +61,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe
   }
 }
 
-OpaqueType* OpaqueType::get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
+OpaqueType* OpaqueType::get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
                             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
   return new OpaqueType(name, generics, genericID, subtypeKind, parent, size, visibility, llCtx, metaInfo);
@@ -99,7 +99,7 @@ bool OpaqueType::has_generic_parameter(const String& name) const {
   return false;
 }
 
-GenericParameter* OpaqueType::get_generic_parameter(const String& name) const {
+GenericArgument* OpaqueType::get_generic_parameter(const String& name) const {
   for (auto* gen : generics) {
     if (gen->is_same(name)) {
       return gen;

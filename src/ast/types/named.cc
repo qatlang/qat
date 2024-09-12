@@ -99,7 +99,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
       }
     } else if (ctx->has_member_parent()) {
       SHOW("Checking member parent generic params")
-      ir::GenericParameter* genVal = nullptr;
+      ir::GenericArgument* genVal = nullptr;
       if (ctx->get_member_parent()->is_expanded() && ctx->get_member_parent()->as_expanded()->is_generic() &&
           ctx->get_member_parent()->as_expanded()->has_generic_parameter(entityName.value)) {
         genVal = ctx->get_member_parent()->as_expanded()->get_generic_parameter(entityName.value);

@@ -7,7 +7,7 @@ namespace qat::ast {
 
 ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
   auto* block = ctx->get_fn()->get_block();
-  if (block->hasValue(name.value)) {
+  if (block->has_value(name.value)) {
     ctx->Error("A local value named " + ctx->color(name.value) +
                    " already exists in this scope. Please change name of this "
                    "declaration or check the logic",
@@ -152,7 +152,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
           ctx->irCtx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expValTy->get_llvm_type()),
                                           expVal->get_llvm());
           if (expVal->is_local_value()) {
-            ctx->get_fn()->get_block()->addMovedValue(expVal->get_local_id().value());
+            ctx->get_fn()->get_block()->add_moved_value(expVal->get_local_id().value());
           }
         }
       } else {
@@ -168,7 +168,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
                        " and does not match the type of the declaration which is " + ctx->color(declType->to_string()),
                    value.value()->fileRange);
       }
-      ctx->irCtx->builder.CreateStore(expVal->get_llvm(), new_value->getAlloca());
+      ctx->irCtx->builder.CreateStore(expVal->get_llvm(), new_value->get_alloca());
     }
     return nullptr;
   } else {
@@ -176,13 +176,13 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
       if (declType->as_maybe()->has_sized_sub_type(ctx->irCtx)) {
         ctx->irCtx->builder.CreateStore(
             llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u),
-            ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->getAlloca(), 0u));
+            ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->get_alloca(), 0u));
         ctx->irCtx->builder.CreateStore(
             llvm::Constant::getNullValue(declType->as_maybe()->get_subtype()->get_llvm_type()),
-            ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->getAlloca(), 1u));
+            ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->get_alloca(), 1u));
       } else {
         ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u),
-                                        new_value->getAlloca(), 0u);
+                                        new_value->get_alloca(), 0u);
       }
     } else {
       ctx->Error("Expected an expression to be initialised for the declaration. Only declaration with " +
@@ -197,7 +197,7 @@ Json LocalDeclaration::to_json() const {
   return Json()
       ._("nodeType", "localDeclaration")
       ._("name", name)
-      ._("is_variable", variability)
+      ._("isVariable", variability)
       ._("hasType", (type != nullptr))
       ._("type", (type != nullptr) ? type->to_json() : Json())
       ._("hasValue", value.has_value())

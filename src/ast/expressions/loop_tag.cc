@@ -10,7 +10,7 @@ ir::Value* TagOfLoop::emit(EmitCtx* ctx) {
       for (const auto& info : ctx->loopsInfo) {
         if (info.isTimes() && info.name == indexName) {
           return ir::Value::get(
-              ctx->irCtx->builder.CreateLoad(info.index->get_ir_type()->get_llvm_type(), info.index->getAlloca()),
+              ctx->irCtx->builder.CreateLoad(info.index->get_ir_type()->get_llvm_type(), info.index->get_alloca()),
               info.index->get_ir_type(), false);
         }
       }
@@ -19,7 +19,7 @@ ir::Value* TagOfLoop::emit(EmitCtx* ctx) {
       const auto& info = ctx->loopsInfo.back();
       if (info.type == LoopType::nTimes) {
         return ir::Value::get(
-            ctx->irCtx->builder.CreateLoad(info.index->get_ir_type()->get_llvm_type(), info.index->getAlloca()),
+            ctx->irCtx->builder.CreateLoad(info.index->get_ir_type()->get_llvm_type(), info.index->get_alloca()),
             info.index->get_ir_type(), false);
       } else {
         // FIXME - Support "loop over"

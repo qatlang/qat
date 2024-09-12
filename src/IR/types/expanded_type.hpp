@@ -19,14 +19,14 @@ class ExpandedType : public Type {
   friend class ast::DefineMixType;
 
 protected:
-  Identifier             name;
-  Vec<GenericParameter*> generics;
-  Mod*                   parent             = nullptr;
-  Method*                defaultConstructor = nullptr;
-  Vec<Method*>           memberFunctions;          // Normal
-  Vec<Method*>           valuedMemberFunctions;    // Valued parent
-  Vec<Method*>           normalBinaryOperators;    // Normal
-  Vec<Method*>           variationBinaryOperators; // Variation
+  Identifier            name;
+  Vec<GenericArgument*> generics;
+  Mod*                  parent             = nullptr;
+  Method*               defaultConstructor = nullptr;
+  Vec<Method*>          memberFunctions;          // Normal
+  Vec<Method*>          valuedMemberFunctions;    // Valued parent
+  Vec<Method*>          normalBinaryOperators;    // Normal
+  Vec<Method*>          variationBinaryOperators; // Variation
 
   Vec<Method*>   unaryOperators;  //
   Vec<Method*>   constructors;    // Constructors
@@ -49,12 +49,12 @@ protected:
 
   VisibilityInfo visibility;
 
-  ExpandedType(Identifier _name, Vec<GenericParameter*> _generics, Mod* _parent, const VisibilityInfo& _visib);
+  ExpandedType(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, const VisibilityInfo& _visib);
 
 public:
-  useit bool              is_generic() const;
-  useit bool              has_generic_parameter(const String& name) const;
-  useit GenericParameter* get_generic_parameter(const String& name) const;
+  useit bool             is_generic() const;
+  useit bool             has_generic_parameter(const String& name) const;
+  useit GenericArgument* get_generic_parameter(const String& name) const;
 
   useit String     get_full_name() const;
   useit Identifier get_name() const;

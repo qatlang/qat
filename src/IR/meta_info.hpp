@@ -8,9 +8,11 @@
 namespace qat::ir {
 
 struct MetaInfo {
-  static constexpr auto linkAsKey = "linkAs";
-  static constexpr auto unionKey  = "union";
-  static constexpr auto packedKey = "packed";
+  static constexpr auto foreignKey = "foreign";
+  static constexpr auto linkAsKey  = "linkAs";
+  static constexpr auto unionKey   = "union";
+  static constexpr auto packedKey  = "packed";
+  static constexpr auto inlineKey  = "inline";
 
   MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
       : valueRanges(_valueRanges), fileRange(_fileRange) {
@@ -68,6 +70,14 @@ struct MetaInfo {
       return ir::StringSliceType::value_to_string(get_value_for(key));
     } else {
       return None;
+    }
+  }
+
+  useit Maybe<bool> get_value_as_bool(String key) const {
+    if (has_key(key)) {
+      return llvm::cast<llvm::ConstantInt>(get_value_for(key)->get_llvm_constant())->getValue().getBoolValue();
+    } else {
+      return false;
     }
   }
 };

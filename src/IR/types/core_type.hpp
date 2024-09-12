@@ -22,7 +22,7 @@ namespace qat::ir {
 
 class StructType final : public ExpandedType, public EntityOverview {
   friend class Method;
-  friend class GenericParameter;
+  friend class GenericArgument;
 
 public:
   class Member final : public EntityOverview, public Uniq {
@@ -34,7 +34,7 @@ public:
                              ._("name", _name.value)
                              ._("type", _type->to_string())
                              ._("typeID", _type->get_id())
-                             ._("is_variable", _variability)
+                             ._("isVariable", _variability)
                              ._("visibility", _visibility),
                          _name.range),
           name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
@@ -56,7 +56,7 @@ private:
   Maybe<MetaInfo>    metaInfo;
 
 public:
-  StructType(Mod* mod, Identifier _name, Vec<GenericParameter*> _generics, ir::OpaqueType* _opaqued,
+  StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
              Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
              Maybe<MetaInfo> metaInfo, bool isPacked);
 
@@ -135,7 +135,7 @@ public:
   void            update_overview() final;
 };
 
-class GenericCoreType : public Uniq, public EntityOverview {
+class GenericStructType : public Uniq, public EntityOverview {
   friend ast::DefineCoreType;
 
 private:
@@ -152,10 +152,10 @@ private:
   mutable Deque<GenericVariant<OpaqueType>> opaqueVariants;
 
 public:
-  GenericCoreType(Identifier name, Vec<ast::GenericAbstractType*> generics, Maybe<ast::PrerunExpression*> _constraint,
-                  ast::DefineCoreType* defineCoreType, Mod* parent, const VisibilityInfo& visibInfo);
+  GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics, Maybe<ast::PrerunExpression*> _constraint,
+                    ast::DefineCoreType* defineCoreType, Mod* parent, const VisibilityInfo& visibInfo);
 
-  ~GenericCoreType() = default;
+  ~GenericStructType() = default;
 
   useit Identifier get_name() const;
   useit usize      getTypeCount() const;
@@ -166,6 +166,7 @@ public:
 
   useit ast::GenericAbstractType* getGenericAt(usize index) const;
   useit VisibilityInfo            get_visibility() const;
+  void                            update_overview() final;
 };
 
 } // namespace qat::ir

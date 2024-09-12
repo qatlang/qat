@@ -23,8 +23,8 @@ public:
   useit bool has_prerun_generic(const String& name) const;
   void       add_abstract_generic(ast::GenericAbstractType* type);
   void       remove_named_generic_abstract(const String& name);
-  useit ast::TypedGeneric* get_typed_generic(const String& name);
-  useit ast::PrerunGeneric* get_prerun_generic(const String& name);
+  useit ast::TypedGenericAbstract* get_typed_generic(const String& name);
+  useit ast::PrerunGenericAbstract* get_prerun_generic(const String& name);
 
 private:
   // All generic abstracts available in the current scope

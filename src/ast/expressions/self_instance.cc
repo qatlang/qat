@@ -8,8 +8,8 @@ ir::Value* SelfInstance::emit(EmitCtx* ctx) {
     if (mFn->get_method_type() == ir::MethodType::staticFn) {
       ctx->Error("This is a static method and hence the parent instance cannot be retrieved", fileRange);
     }
-    if (mFn->get_first_block()->hasValue("''")) {
-      auto selfVal = mFn->get_first_block()->getValue("''");
+    if (mFn->get_first_block()->has_value("''")) {
+      auto selfVal = mFn->get_first_block()->get_value("''");
       return ir::Value::get(selfVal->get_llvm(), selfVal->get_ir_type(),
                             mFn->get_method_type() == ir::MethodType::value_method);
     } else {

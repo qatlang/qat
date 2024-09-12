@@ -48,7 +48,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
     isExpVariable = expEmit->is_variable();
   }
   auto* curr      = ctx->get_fn()->get_block();
-  auto* restBlock = new ir::Block(ctx->get_fn(), curr->getParent());
+  auto* restBlock = new ir::Block(ctx->get_fn(), curr->get_parent());
   restBlock->link_previous_block(curr);
   bool elseNotRequired = false;
   if (expTy->is_mix()) {
@@ -140,7 +140,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
       if ((section.first.size() == 1) && section.first.front()->asMixOrChoice()->hasValueName()) {
         auto* uMatch = section.first.front()->asMixOrChoice();
         SHOW("Match case has value name: " << uMatch->getValueName().value)
-        if (trueBlock->hasValue(uMatch->getValueName().value)) {
+        if (trueBlock->has_value(uMatch->getValueName().value)) {
           SHOW("Local entity with match case value name exists")
           ctx->Error("Local entity named " + ctx->color(uMatch->getValueName().value) + " exists already in this scope",
                      uMatch->getValueName().range);
@@ -160,11 +160,11 @@ ir::Value* Match::emit(EmitCtx* ctx) {
                   : ctx->irCtx->builder.CreatePointerCast(
                         ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expEmit->get_llvm(), 1),
                         mTy->get_variant_with_name(uMatch->get_name().value)->get_llvm_type()->getPointerTo()),
-              loc->getAlloca());
+              loc->get_alloca());
         }
       }
       emit_sentences(section.second, ctx);
-      trueBlock->destroyLocals(ctx);
+      trueBlock->destroy_locals(ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
@@ -275,7 +275,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
       }
       trueBlock->set_active(ctx->irCtx->builder);
       emit_sentences(section.second, ctx);
-      trueBlock->destroyLocals(ctx);
+      trueBlock->destroy_locals(ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
         // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
@@ -366,7 +366,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
           (void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
           trueBlock->set_active(ctx->irCtx->builder);
           emit_sentences(section.second, ctx);
-          trueBlock->destroyLocals(ctx);
+          trueBlock->destroy_locals(ctx);
           (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
           break;
         } else {
@@ -398,7 +398,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
         // FIXME - Add optimisation for constant strings
         if (caseIR->get_ir_type()->is_string_slice() ||
             (caseIR->is_reference() && caseIR->get_ir_type()->as_reference()->get_subtype()->is_string_slice())) {
-          auto* elemIter = ctx->get_fn()->get_function_common_index();
+          auto* elemIter = ctx->get_fn()->get_str_comparison_index();
           if (caseIR->is_prerun_value()) {
             caseStrBuff  = caseIR->get_llvm_constant()->getAggregateElement(0u);
             caseStrCount = caseIR->get_llvm_constant()->getAggregateElement(1u);
@@ -469,7 +469,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
       }
       caseTrueBlock->set_active(ctx->irCtx->builder);
       emit_sentences(section.second, ctx);
-      caseTrueBlock->destroyLocals(ctx);
+      caseTrueBlock->destroy_locals(ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       checkFalseBlock->set_active(ctx->irCtx->builder);
     }
@@ -487,12 +487,12 @@ ir::Value* Match::emit(EmitCtx* ctx) {
         (void)ir::add_branch(ctx->irCtx->builder, elseBlock->get_bb());
         elseBlock->set_active(ctx->irCtx->builder);
         emit_sentences(elseCase.value().first, ctx);
-        elseBlock->destroyLocals(ctx);
+        elseBlock->destroy_locals(ctx);
         (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       } else if (!isTrueForACase()) {
         auto* activeBlock = ctx->get_fn()->get_block();
         emit_sentences(elseCase.value().first, ctx);
-        activeBlock->destroyLocals(ctx);
+        activeBlock->destroy_locals(ctx);
         (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       }
     }

@@ -19,7 +19,7 @@ namespace qat::ir {
 #define TWO_POWER_16 65536ULL
 #define TWO_POWER_32 4294967296ULL
 
-MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericParameter*> _generics, Mod* _parent,
+MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgument*> _generics, Mod* _parent,
                  Vec<Pair<Identifier, Maybe<Type*>>> _subtypes, Maybe<usize> _defaultVal, ir::Ctx* irCtx,
                  bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange, Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
@@ -231,7 +231,7 @@ void MixType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
     auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
     ir::Block* trueBlock   = nullptr;
     ir::Block* falseBlock  = nullptr;
-    ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->getParent());
+    ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->get_parent());
     restBlock->link_previous_block(fun->get_block());
     for (usize i = 0; i < subtypes.size(); i++) {
       if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_constructible()) {
@@ -275,7 +275,7 @@ void MixType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
     auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
     ir::Block* trueBlock   = nullptr;
     ir::Block* falseBlock  = nullptr;
-    ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->getParent());
+    ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->get_parent());
     restBlock->link_previous_block(fun->get_block());
     for (usize i = 0; i < subtypes.size(); i++) {
       if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_move_constructible()) {
@@ -323,7 +323,7 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
     auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
     auto* sameTagTrueBlock  = new ir::Block(fun, fun->get_block());
     auto* sameTagFalseBlock = new ir::Block(fun, fun->get_block());
-    auto* restBlock         = new ir::Block(fun, fun->get_block()->getParent());
+    auto* restBlock         = new ir::Block(fun, fun->get_block()->get_parent());
     restBlock->link_previous_block(fun->get_block());
     irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->get_bb(),
                                 sameTagFalseBlock->get_bb());
@@ -430,7 +430,7 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
     auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
     auto* sameTagTrueBlock  = new ir::Block(fun, fun->get_block());
     auto* sameTagFalseBlock = new ir::Block(fun, fun->get_block());
-    auto* restBlock         = new ir::Block(fun, fun->get_block()->getParent());
+    auto* restBlock         = new ir::Block(fun, fun->get_block()->get_parent());
     restBlock->link_previous_block(fun->get_block());
     irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->get_bb(),
                                 sameTagFalseBlock->get_bb());
@@ -541,7 +541,7 @@ void MixType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* f
     auto*      dataPtr    = irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), 1u);
     ir::Block* trueBlock  = nullptr;
     ir::Block* falseBlock = nullptr;
-    ir::Block* restBlock  = new ir::Block(fun, fun->get_block()->getParent());
+    ir::Block* restBlock  = new ir::Block(fun, fun->get_block()->get_parent());
     restBlock->link_previous_block(fun->get_block());
     for (usize i = 0; i < subtypes.size(); i++) {
       if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_destructible()) {

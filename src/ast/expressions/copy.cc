@@ -40,7 +40,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
             ctx->Error("The type provided in the local declaration does not match the type of the value to be copied",
                        fileRange);
           }
-          createIn = ir::Value::get(localValue->getAlloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+          createIn = ir::Value::get(localValue->get_alloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
         } else if (canCreateIn()) {
           if (createIn->is_reference() || createIn->is_ghost_pointer()) {
             auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
@@ -78,7 +78,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
             ctx->Error("The type provided in the local declaration does not match the type of the value to be copied",
                        fileRange);
           }
-          createIn = ir::Value::get(localValue->getAlloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+          createIn = ir::Value::get(localValue->get_alloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
         }
         if (canCreateIn()) {
           if (!isLocalDecl()) {

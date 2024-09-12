@@ -99,11 +99,11 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
       }
     }
     SHOW("Checking block " << fun->get_block()->get_name())
-    if (fun->get_block()->hasValue(singleName.value)) {
+    if (fun->get_block()->has_value(singleName.value)) {
       SHOW("Found local value: " << singleName.value)
-      auto* local = fun->get_block()->getValue(singleName.value);
+      auto* local = fun->get_block()->get_value(singleName.value);
       local->add_mention(singleName.range);
-      auto* alloca = local->getAlloca();
+      auto* alloca = local->get_alloca();
       auto* val    = ir::Value::get(alloca, local->get_ir_type(), local->is_variable());
       SHOW("Returning local value with alloca name: " << alloca->getName().str())
       val->set_local_id(local->get_id());

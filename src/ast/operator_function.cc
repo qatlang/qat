@@ -181,7 +181,7 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
       auto* argVal = block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true,
                                       prototype->arguments.at(i - 1)->get_name().range);
       SHOW("Created local value for the argument")
-      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
+      irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
     }
     SHOW("Operator Return type is " << fnEmit->get_ir_type()->as_function()->get_return_type()->to_string())
   }

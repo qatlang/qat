@@ -24,7 +24,7 @@ private:
   Type* subType;
 
 public:
-  DefinitionType(Identifier _name, Type* _actualType, Vec<GenericParameter*> _generics, Mod* mod,
+  DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
                  const VisibilityInfo& _visibInfo);
 
   void setSubType(Type* _subType);

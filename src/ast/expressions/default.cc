@@ -12,23 +12,23 @@ ir::Value* Default::emit(EmitCtx* ctx) {
     if (theType->is_integer()) {
       if (isLocalDecl()) {
         ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u, true),
-                                        localValue->getAlloca());
+                                        localValue->get_alloca());
         return nullptr;
       } else if (irName.has_value()) {
         auto* block = ctx->get_fn()->get_block();
         auto* loc   = block->new_value(irName->value, theType, isVar, irName->range);
-        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u, true), loc->getAlloca());
+        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u, true), loc->get_alloca());
         return loc->to_new_ir_value();
       } else {
         return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_integer()->get_llvm_type(), 0u, true), theType);
       }
     } else if (theType->is_unsigned_integer()) {
       if (isLocalDecl()) {
-        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u), localValue->getAlloca());
+        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u), localValue->get_alloca());
         return nullptr;
       } else if (irName.has_value()) {
         auto* loc = ctx->get_fn()->get_block()->new_value(irName->value, theType, isVar, irName->range);
-        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u), loc->getAlloca());
+        ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u), loc->get_alloca());
         return loc->to_new_ir_value();
       } else {
         return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_unsigned_integer()->get_llvm_type(), 0u),
@@ -58,12 +58,12 @@ ir::Value* Default::emit(EmitCtx* ctx) {
         auto* block = ctx->get_fn()->get_block();
         SHOW("Got current function block")
         if (isLocalDecl()) {
-          (void)defFn->call(ctx->irCtx, {localValue->getAlloca()}, None, ctx->mod);
+          (void)defFn->call(ctx->irCtx, {localValue->get_alloca()}, None, ctx->mod);
           return nullptr;
         } else {
           SHOW("Creating value for default constructor call")
           auto* loc = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), eTy, true, fileRange);
-          (void)defFn->call(ctx->irCtx, {loc->getAlloca()}, None, ctx->mod);
+          (void)defFn->call(ctx->irCtx, {loc->get_alloca()}, None, ctx->mod);
           return loc->to_new_ir_value();
         }
       } else {

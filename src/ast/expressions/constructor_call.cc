@@ -110,7 +110,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
     SHOW("About to create llAlloca")
     llvm::Value* llAlloca;
     if (isLocalDecl()) {
-      llAlloca = localValue->getAlloca();
+      llAlloca = localValue->get_alloca();
     } else {
       auto newAlloca = ctx->get_fn()->get_block()->new_value(
           irName.has_value() ? irName.value().value : ctx->get_fn()->get_random_alloca_name(), eTy, isVar,
@@ -124,7 +124,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
     }
     (void)cons->call(ctx->irCtx, valsLLVM, None, ctx->mod);
     if (isLocalDecl()) {
-      return localValue->to_new_ir_value();
+      return localValue->to_new_ir_value()->with_range(fileRange);
     } else {
       auto* res = ir::Value::get(llAlloca, eTy, irName.has_value() ? isVar : true);
       if (isLocalDecl()) {

@@ -30,7 +30,7 @@ ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
   ctx->loopsInfo.push_back(LoopInfo(uniqueName, trueBlock, nullptr, restBlock, nullptr, LoopType::infinite));
   ctx->breakables.push_back(Breakable(tag.has_value() ? Maybe<String>(uniqueName) : None, restBlock, trueBlock));
   emit_sentences(sentences, ctx);
-  trueBlock->destroyLocals(ctx);
+  trueBlock->destroy_locals(ctx);
   ctx->loopsInfo.pop_back();
   ctx->breakables.pop_back();
   (void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());

@@ -1,4 +1,4 @@
--![Qat cover image](./media/cover_wide.png)
+![Qat cover image](./media/cover_wide.png)
 
 <div><center>
 <a href="https://qat.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/qat.dev-444444?style=for-the-badge&logoColor=white"/></a>

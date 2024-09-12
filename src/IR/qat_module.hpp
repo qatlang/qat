@@ -332,7 +332,7 @@ class Mod final : public Uniq, public EntityOverview {
   friend class ast::ModInfo;
   friend class ast::BringPaths;
   friend class GenericFunction;
-  friend class GenericCoreType;
+  friend class GenericStructType;
   friend class GenericDefinitionType;
   friend class Function;
   friend class ast::BinaryExpression;
@@ -392,8 +392,8 @@ private:
   Vec<Brought<Function>>              broughtFunctions;
   Vec<GenericFunction*>               genericFunctions;
   Vec<Brought<GenericFunction>>       broughtGenericFunctions;
-  Vec<GenericCoreType*>               genericCoreTypes;
-  Vec<Brought<GenericCoreType>>       broughtGenericCoreTypes;
+  Vec<GenericStructType*>             genericCoreTypes;
+  Vec<Brought<GenericStructType>>     broughtGenericCoreTypes;
   Vec<GenericDefinitionType*>         genericTypeDefinitions;
   Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
   Vec<GlobalEntity*>                  globalEntities;
@@ -547,8 +547,8 @@ public:
 
   useit const VisibilityInfo& get_visibility() const;
 
-  useit Function* create_function(const Identifier& name, Type* returnType, Vec<Argument> args, bool isVariadic,
-                                  const FileRange& fileRange, const VisibilityInfo& visibility,
+  useit Function* create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
+                                  bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
                                   Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
   useit inline bool is_submodule() const { return parent != nullptr; }
@@ -654,7 +654,7 @@ public:
   useit bool has_generic_struct_type(const String& name, AccessInfo reqInfo) const;
   useit bool has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
   useit Pair<bool, String> has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-  useit GenericCoreType*   get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
+  useit GenericStructType* get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
 
   // GENERIC TYPEDEFS
 
@@ -702,7 +702,7 @@ public:
   void bring_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-  void bring_generic_struct_type(GenericCoreType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,
                                      Maybe<Identifier> bName = None);

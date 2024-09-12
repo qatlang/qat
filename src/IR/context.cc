@@ -17,7 +17,6 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
-#include <thread>
 
 namespace qat::ir {
 
@@ -153,7 +152,7 @@ bool Ctx::has_generic_parameter_in_entity(String const& name) const {
   }
 }
 
-GenericParameter* Ctx::get_generic_parameter_from_entity(String const& name) const {
+GenericArgument* Ctx::get_generic_parameter_from_entity(String const& name) const {
   if (lastMainActiveGeneric.empty()) {
     if (allActiveGenerics.back().hasGenericParameter(name)) {
       return allActiveGenerics.back().getGenericParameter(name);
@@ -214,7 +213,6 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
 }
 
 void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const {
-  auto cfg = cli::Config::get();
   if (!fs::is_regular_file(fileRange.file)) {
     return;
   }

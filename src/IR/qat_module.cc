@@ -291,14 +291,14 @@ void Mod::addMember(Mod* mod) {
   submodules.push_back(mod);
 }
 
-Function* Mod::create_function(const Identifier& name, Type* returnType, Vec<Argument> args, bool isVariadic,
-                               const FileRange& fileRange, const VisibilityInfo& visibility,
+Function* Mod::create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
+                               bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
   SHOW("Creating IR function")
   auto nmUnits = get_link_names();
   nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, {}), None);
-  auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, ir::ReturnType::get(returnType), std::move(args),
-                               isVariadic, fileRange, visibility, ctx, linkage);
+  auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, isInline, ir::ReturnType::get(returnType),
+                               std::move(args), isVariadic, fileRange, visibility, ctx, linkage);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -522,10 +522,10 @@ bool Mod::should_be_named() const { return moduleType == ModuleType::lib; }
 
 Function* Mod::get_mod_initialiser(Ctx* ctx) {
   if (!moduleInitialiser) {
-    moduleInitialiser = ir::Function::Create(this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}),
-                                             None, {/* Generics */}, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)),
-                                             {}, false, name.range, VisibilityInfo::pub(), ctx);
-    auto* entry       = new ir::Block(moduleInitialiser, nullptr);
+    moduleInitialiser = ir::Function::Create(
+        this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), None, {/* Generics */}, false,
+        ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, false, name.range, VisibilityInfo::pub(), ctx);
+    auto* entry = new ir::Block(moduleInitialiser, nullptr);
     entry->set_active(ctx->builder);
   }
   return moduleInitialiser;
@@ -730,11 +730,11 @@ void Mod::bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<
   }
 }
 
-void Mod::bring_generic_struct_type(GenericCoreType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
-    broughtGenericCoreTypes.push_back(Brought<GenericCoreType>(bName.value(), gCTy, visib));
+    broughtGenericCoreTypes.push_back(Brought<GenericStructType>(bName.value(), gCTy, visib));
   } else {
-    broughtGenericCoreTypes.push_back(Brought<GenericCoreType>(gCTy, visib));
+    broughtGenericCoreTypes.push_back(Brought<GenericStructType>(gCTy, visib));
   }
 }
 
@@ -1432,7 +1432,7 @@ Pair<bool, String> Mod::has_generic_struct_type_in_imports(const String& name, c
   return {false, ""};
 }
 
-GenericCoreType* Mod::get_generic_struct_type(const String& name, const AccessInfo& reqInfo) {
+GenericStructType* Mod::get_generic_struct_type(const String& name, const AccessInfo& reqInfo) {
   for (auto* tempCore : genericCoreTypes) {
     if ((tempCore->get_name().value == name) && tempCore->get_visibility().is_accessible(reqInfo)) {
       return tempCore;

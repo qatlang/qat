@@ -171,7 +171,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
                 ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memTy->get_llvm_type()),
                                                 irVal->get_llvm());
                 if (irVal->is_local_value()) {
-                  ctx->get_fn()->get_block()->addMovedValue(irVal->get_local_id().value());
+                  ctx->get_fn()->get_block()->add_moved_value(irVal->get_local_id().value());
                 }
               }
               ctx->irCtx->builder.CreateStore(irOrigVal, memPtr);

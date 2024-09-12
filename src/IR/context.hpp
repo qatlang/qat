@@ -39,11 +39,11 @@ enum class GenericEntityType {
 };
 
 struct GenericEntityMarker {
-  String                     name;
-  GenericEntityType          type;
-  FileRange                  fileRange;
-  u64                        warningCount = 0;
-  Vec<ir::GenericParameter*> generics{};
+  String                    name;
+  GenericEntityType         type;
+  FileRange                 fileRange;
+  u64                       warningCount = 0;
+  Vec<ir::GenericArgument*> generics{};
 
   bool hasGenericParameter(const String& name) const {
     for (auto* gen : generics) {
@@ -54,7 +54,7 @@ struct GenericEntityMarker {
     return false;
   }
 
-  ir::GenericParameter* getGenericParameter(const String& name) const {
+  ir::GenericArgument* getGenericParameter(const String& name) const {
     for (auto* gen : generics) {
       if (gen->is_same(name)) {
         return gen;
@@ -147,7 +147,7 @@ public:
   useit inline bool                 has_active_generic() const { return !allActiveGenerics.empty(); }
   useit inline GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
   useit bool                        has_generic_parameter_in_entity(String const& name) const;
-  useit GenericParameter*           get_generic_parameter_from_entity(String const& name) const;
+  useit GenericArgument*            get_generic_parameter_from_entity(String const& name) const;
 
   inline void add_active_generic(GenericEntityMarker marker, bool main) {
     if (main) {

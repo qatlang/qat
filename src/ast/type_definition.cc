@@ -71,7 +71,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
   if (isGeneric()) {
     dTyName = Identifier(variantName.value(), name.range);
   }
-  Vec<ir::GenericParameter*> genericsIR;
+  Vec<ir::GenericArgument*> genericsIR;
   for (auto* gen : generics) {
     if (!gen->isSet()) {
       if (gen->is_typed()) {

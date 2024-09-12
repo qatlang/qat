@@ -33,7 +33,7 @@ private:
   void findTagBitWidth();
 
 public:
-  MixType(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericParameter*> _generics, Mod* parent,
+  MixType(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics, Mod* parent,
           Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool isPacked,
           const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 

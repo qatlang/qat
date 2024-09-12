@@ -10,7 +10,7 @@
 
 namespace qat::ir {
 
-DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericParameter*> _generics, Mod* _mod,
+DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgument*> _generics, Mod* _mod,
                                const VisibilityInfo& _visibInfo)
     : ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
       subType(_subType) {
@@ -153,8 +153,7 @@ ast::GenericAbstractType* GenericDefinitionType::get_generic_at(usize index) con
 
 DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types, ir::Ctx* irCtx, FileRange range) {
   for (auto var : variants) {
-    if (var.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
+    if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
       return var.get();
     }
   }
@@ -172,7 +171,7 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
                    constraint.value()->fileRange);
     }
   }
-  Vec<ir::GenericParameter*> genParams;
+  Vec<ir::GenericArgument*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }

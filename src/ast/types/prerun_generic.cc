@@ -3,11 +3,11 @@
 
 namespace qat::ast {
 
-bool PrerunGeneric::hasDefault() const { return defaultValueAST.has_value(); }
+bool PrerunGenericAbstract::hasDefault() const { return defaultValueAST.has_value(); }
 
-ir::PrerunValue* PrerunGeneric::getDefault() const { return defaultValue; }
+ir::PrerunValue* PrerunGenericAbstract::getDefault() const { return defaultValue; }
 
-void PrerunGeneric::emit(EmitCtx* ctx) const {
+void PrerunGenericAbstract::emit(EmitCtx* ctx) const {
   SHOW("Emitting prerun generic " << name.value << " and hasDefault: " << hasDefault())
   SHOW("TypeKind for prerun param type " << (u32)expTy->type_kind());
   expressionType = expTy->emit(ctx);
@@ -34,30 +34,31 @@ void PrerunGeneric::emit(EmitCtx* ctx) const {
   }
 }
 
-ir::Type* PrerunGeneric::getType() const { return expressionType; }
+ir::Type* PrerunGenericAbstract::getType() const { return expressionType; }
 
-ir::PrerunValue* PrerunGeneric::getPrerun() const {
+ir::PrerunValue* PrerunGenericAbstract::getPrerun() const {
   return !expressionValue.empty() ? expressionValue.back() : defaultValue;
 }
 
-bool PrerunGeneric::isSet() const { return !expressionValue.empty() || (defaultValue != nullptr); }
+bool PrerunGenericAbstract::isSet() const { return !expressionValue.empty() || (defaultValue != nullptr); }
 
-void PrerunGeneric::setExpression(ir::PrerunValue* exp) const { expressionValue.push_back(exp); }
+void PrerunGenericAbstract::setExpression(ir::PrerunValue* exp) const { expressionValue.push_back(exp); }
 
-void PrerunGeneric::unset() const { expressionValue.pop_back(); }
+void PrerunGenericAbstract::unset() const { expressionValue.pop_back(); }
 
-ir::PrerunGeneric* PrerunGeneric::toIR() const { return ir::PrerunGeneric::get(name, getPrerun(), range); }
+ir::PrerunGeneric* PrerunGenericAbstract::toIR() const { return ir::PrerunGeneric::get(name, getPrerun(), range); }
 
-Json PrerunGeneric::to_json() const {
+Json PrerunGenericAbstract::to_json() const {
   return Json()
       ._("genericKind", "prerunGeneric")
       ._("index", index)
       ._("name", name)
       ._("hasDefault", defaultValueAST.has_value())
-      ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : Json())
+      ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : JsonValue())
+      ._("defaultValueString", defaultValueAST.has_value() ? defaultValueAST.value()->to_string() : JsonValue())
       ._("range", range);
 }
 
-PrerunGeneric::~PrerunGeneric() {}
+PrerunGenericAbstract::~PrerunGenericAbstract() {}
 
 } // namespace qat::ast

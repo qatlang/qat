@@ -45,7 +45,7 @@ ir::Value* LoopWhile::emit(EmitCtx* ctx) {
     ctx->breakables.push_back(Breakable(tag.has_value() ? Maybe<String>(uniq) : None, restBlock, trueBlock));
     trueBlock->set_active(ctx->irCtx->builder);
     emit_sentences(sentences, ctx);
-    trueBlock->destroyLocals(ctx);
+    trueBlock->destroy_locals(ctx);
     ctx->loopsInfo.pop_back();
     ctx->breakables.pop_back();
     (void)ir::add_branch(ctx->irCtx->builder, condBlock->get_bb());

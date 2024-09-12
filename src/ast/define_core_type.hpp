@@ -11,7 +11,7 @@
 namespace qat::ast {
 
 class DefineCoreType final : public IsEntity, public Commentable, public MemberParentLike {
-  friend class ir::GenericCoreType;
+  friend class ir::GenericStructType;
 
 public:
   struct Member {
@@ -76,7 +76,7 @@ private:
   void                           setOpaque(ir::OpaqueType* opq) const;
   useit ir::OpaqueType*           get_opaque() const;
   void                            unsetOpaque() const;
-  mutable ir::GenericCoreType*    genericCoreType = nullptr;
+  mutable ir::GenericStructType*  genericCoreType = nullptr;
   mutable Vec<ir::GenericToFill*> genericsToFill;
   mutable Maybe<bool>             checkResult;
   mutable Maybe<bool>             isPackedStruct;

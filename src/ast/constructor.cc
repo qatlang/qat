@@ -169,7 +169,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   SHOW("FNemit is " << fnEmit)
   SHOW("Set active contructor: " << fnEmit->get_full_name())
   auto* block = new ir::Block(fnEmit, nullptr);
-  block->setFileRange(fileRange);
+  block->set_file_range(fileRange);
   SHOW("Created entry block")
   block->set_active(irCtx->builder);
   SHOW("Set new block as the active block")
@@ -187,7 +187,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         prototype->argName->value,
         ir::ReferenceType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(), irCtx), false,
         prototype->argName->range);
-    irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->getAlloca(), false);
+    irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_alloca(), false);
     argVal->load_ghost_pointer(irCtx->builder);
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -223,7 +223,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
                                         prototype->arguments.at(i - 1)->is_variable(),
                                         prototype->arguments.at(i - 1)->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
       }
     }
   }

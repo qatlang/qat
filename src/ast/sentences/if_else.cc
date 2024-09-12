@@ -60,17 +60,17 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
       if (hasValueAt(i) && isFalseTill(i)) {
         if (getKnownValue(i)) {
           auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
-          trueBlock->setFileRange(std::get<2>(section));
+          trueBlock->set_file_range(std::get<2>(section));
           (void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
           trueBlock->set_active(ctx->irCtx->builder);
           emit_sentences(std::get<1>(section), ctx);
-          trueBlock->destroyLocals(ctx);
+          trueBlock->destroy_locals(ctx);
           (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
           break;
         }
       } else {
         auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
-        trueBlock->setFileRange(std::get<2>(section));
+        trueBlock->set_file_range(std::get<2>(section));
         ir::Block* falseBlock = nullptr;
         if (exp->is_ghost_pointer() || exp->is_reference()) {
           exp = ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), exp->get_llvm()), expTy, false);
@@ -78,9 +78,9 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
           falseBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
           if (i == (chain.size() - 1)) {
-            falseBlock->setFileRange(elseCase.value().second);
+            falseBlock->set_file_range(elseCase.value().second);
           } else {
-            falseBlock->setFileRange(std::get<2>(chain.at(i + 1)));
+            falseBlock->set_file_range(std::get<2>(chain.at(i + 1)));
           }
           ctx->irCtx->builder.CreateCondBr(exp->get_llvm(), trueBlock->get_bb(), falseBlock->get_bb());
         } else {
@@ -88,7 +88,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
         }
         trueBlock->set_active(ctx->irCtx->builder);
         emit_sentences(std::get<1>(section), ctx);
-        trueBlock->destroyLocals(ctx);
+        trueBlock->destroy_locals(ctx);
         (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
           // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
@@ -103,11 +103,11 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
       (void)ir::add_branch(ctx->irCtx->builder, elseBlock->get_bb());
       elseBlock->set_active(ctx->irCtx->builder);
       emit_sentences(elseCase.value().first, ctx);
-      elseBlock->destroyLocals(ctx);
+      elseBlock->destroy_locals(ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
     } else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !trueKnownValueBefore(knownVals.size()).first)) {
       emit_sentences(elseCase.value().first, ctx);
-      ctx->get_fn()->get_block()->destroyLocals(ctx);
+      ctx->get_fn()->get_block()->destroy_locals(ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
     }
   } else {
@@ -115,7 +115,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
   }
   restBlock->set_active(ctx->irCtx->builder);
   if (ctx->get_fn()->hasDefinitionRange()) {
-    restBlock->setFileRange(FileRange(fileRange.file, fileRange.end, ctx->get_fn()->getDefinitionRange().end));
+    restBlock->set_file_range(FileRange(fileRange.file, fileRange.end, ctx->get_fn()->getDefinitionRange().end));
   }
   return nullptr;
 }

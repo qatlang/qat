@@ -51,7 +51,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
             auto  fun           = ctx->get_fn();
             auto* currBlock     = fun->get_block();
             auto* nullTrueBlock = new ir::Block(fun, currBlock);
-            auto* restBlock     = new ir::Block(fun, currBlock->getParent());
+            auto* restBlock     = new ir::Block(fun, currBlock->get_parent());
             restBlock->link_previous_block(currBlock);
             ctx->irCtx->builder.CreateCondBr(
                 ctx->irCtx->builder.CreateICmpEQ(

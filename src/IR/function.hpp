@@ -151,20 +151,20 @@ class Function : public Value, public Uniq, public EntityOverview {
   friend class Block;
 
 protected:
-  Identifier             name;
-  LinkNames              namingInfo;
-  String                 linkingName;
-  Vec<GenericParameter*> generics;
-  Mod*                   mod;
-  Vec<Argument>          arguments;
-  VisibilityInfo         visibilityInfo;
-  Maybe<FileRange>       fileRange;
-  bool                   hasVariadicArguments;
-  bool                   isInline;
-  Vec<Block*>            blocks;
-  ir::LocalValue*        strComparisonIndex = nullptr;
-  Maybe<MetaInfo>        metaInfo;
-  ir::Ctx*               ctx;
+  Identifier            name;
+  LinkNames             namingInfo;
+  String                linkingName;
+  Vec<GenericArgument*> generics;
+  Mod*                  mod;
+  Vec<Argument>         arguments;
+  VisibilityInfo        visibilityInfo;
+  Maybe<FileRange>      fileRange;
+  bool                  hasVariadicArguments;
+  bool                  isInline;
+  Vec<Block*>           blocks;
+  ir::LocalValue*       strComparisonIndex = nullptr;
+  Maybe<MetaInfo>       metaInfo;
+  ir::Ctx*              ctx;
 
   mutable u64   localNameCounter = 0;
   mutable usize activeBlock      = 0;
@@ -173,12 +173,12 @@ protected:
   mutable u64 refers = 0;
 
 public:
-  Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics, bool isInline,
+  Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
            ReturnType* returnType, Vec<Argument> _args, bool _hasVariadicArguments, Maybe<FileRange> fileRange,
            const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
            Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
-  static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
+  static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
                           bool isInline, ReturnType* return_type, Vec<Argument> args, bool has_variadic_args,
                           Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                           Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
@@ -207,7 +207,7 @@ public:
     }
     return false;
   }
-  useit inline GenericParameter* get_generic_parameter(const String& name) const {
+  useit inline GenericArgument* get_generic_parameter(const String& name) const {
     for (auto* gen : generics) {
       if (gen->get_name().value == name) {
         return gen;

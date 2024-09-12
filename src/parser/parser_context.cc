@@ -34,7 +34,7 @@ void ParserContext::remove_named_generic_abstract(const String& name) {
   }
 }
 
-ast::TypedGeneric* ParserContext::get_typed_generic(const String& name) {
+ast::TypedGenericAbstract* ParserContext::get_typed_generic(const String& name) {
   for (auto* temp : generics) {
     if (temp->is_typed() && temp->get_name().value == name) {
       return temp->as_typed();
@@ -43,7 +43,7 @@ ast::TypedGeneric* ParserContext::get_typed_generic(const String& name) {
   return nullptr;
 }
 
-ast::PrerunGeneric* ParserContext::get_prerun_generic(const String& name) {
+ast::PrerunGenericAbstract* ParserContext::get_prerun_generic(const String& name) {
   for (auto* temp : generics) {
     if (temp->is_prerun() && temp->get_name().value == name) {
       return temp->as_prerun();

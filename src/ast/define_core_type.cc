@@ -103,7 +103,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
   bool needsDestructor = false;
   auto cTyName         = name;
   SHOW("Creating IR generics")
-  Vec<ir::GenericParameter*> genericsIR;
+  Vec<ir::GenericArgument*> genericsIR;
   for (auto* gen : generics) {
     if (!gen->isSet()) {
       if (gen->is_typed()) {
@@ -251,7 +251,7 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
       gen->emit(emitCtx);
     }
     genericCoreType =
-        new ir::GenericCoreType(name, generics, constraint, this, mod, emitCtx->get_visibility_info(visibSpec));
+        new ir::GenericStructType(name, generics, constraint, this, mod, emitCtx->get_visibility_info(visibSpec));
   }
 }
 

@@ -221,7 +221,7 @@ void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
   }
 }
 
-Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericParameter*> _generics,
+Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
                    bool _isInline, ReturnType* returnType, Vec<Argument> _args, bool _isVariadicArguments,
                    Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
                    Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
@@ -320,7 +320,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
   return result;
 }
 
-Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericParameter*> _generics,
+Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> _generics,
                            bool isInline, ReturnType* returnTy, Vec<Argument> args, const bool hasVariadicArgs,
                            Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
@@ -436,7 +436,7 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx*
   }
   auto variantName = ir::Logic::get_generic_variant_name(name.value, types);
   functionDefinition->set_variant_name(variantName);
-  Vec<ir::GenericParameter*> genParams;
+  Vec<ir::GenericArgument*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }

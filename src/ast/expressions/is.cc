@@ -75,16 +75,16 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
         ir::Value*   returnValue   = nullptr;
         if (isLocalDecl()) {
           maybeValuePtr = ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
-                                                              localValue->getAlloca(), 1u);
+                                                              localValue->get_alloca(), 1u);
           maybeTagPtr   = ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
-                                                              localValue->getAlloca(), 0u);
+                                                              localValue->get_alloca(), 0u);
         } else {
           auto* maybeTy = ir::MaybeType::get(subType, false, ctx->irCtx);
           auto* block   = ctx->get_fn()->get_block();
           auto* loc     = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), maybeTy, isVar,
                                        irName.has_value() ? irName->range : fileRange);
-          maybeTagPtr   = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->getAlloca(), 0u);
-          maybeValuePtr = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->getAlloca(), 1u);
+          maybeTagPtr   = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->get_alloca(), 0u);
+          maybeValuePtr = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->get_alloca(), 1u);
           returnValue   = loc->to_new_ir_value();
         }
         (void)mFn->call(ctx->irCtx, {maybeValuePtr, subIR->get_llvm()}, None, ctx->mod);
@@ -96,20 +96,20 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
         auto* maybeTy  = ir::MaybeType::get(expectSubTy, false, ctx->irCtx);
         if (isLocalDecl()) {
           ctx->irCtx->builder.CreateStore(
-              subValue, ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), localValue->getAlloca(), 1u));
+              subValue, ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), localValue->get_alloca(), 1u));
           ctx->irCtx->builder.CreateStore(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-              ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), localValue->getAlloca(), 0u));
+              ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), localValue->get_alloca(), 0u));
           return nullptr;
         } else {
           auto* block  = ctx->get_fn()->get_block();
           auto* newLoc = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), maybeTy, isVar,
                                           irName.has_value() ? irName->range : fileRange);
           ctx->irCtx->builder.CreateStore(
-              subValue, ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), newLoc->getAlloca(), 1u));
+              subValue, ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), newLoc->get_alloca(), 1u));
           ctx->irCtx->builder.CreateStore(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-              ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), newLoc->getAlloca(), 0u));
+              ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), newLoc->get_alloca(), 0u));
           return newLoc->to_new_ir_value();
         }
       }
@@ -124,16 +124,17 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
                 ctx->irCtx->builder.CreatePointerCast(
                     subIR->get_llvm(),
                     llvm::Type::getInt8PtrTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace())),
-                ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(), localValue->getAlloca(),
-                                                    1u));
+                ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
+                                                    localValue->get_alloca(), 1u));
           } else {
             ctx->irCtx->builder.CreateStore(
                 subIR->get_llvm(), ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
-                                                                       localValue->getAlloca(), 1u));
+                                                                       localValue->get_alloca(), 1u));
           }
-          ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                          ctx->irCtx->builder.CreateStructGEP(
-                                              localValue->get_ir_type()->get_llvm_type(), localValue->getAlloca(), 0u));
+          ctx->irCtx->builder.CreateStore(
+              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
+              ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(), localValue->get_alloca(),
+                                                  0u));
           return nullptr;
         } else {
           auto maybeTy = ir::MaybeType::get(expectSubTy, false, ctx->irCtx);
@@ -145,11 +146,11 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
                 ctx->irCtx->builder.CreatePointerCast(
                     subIR->get_llvm(),
                     llvm::Type::getInt8PtrTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace())),
-                ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->getAlloca(), 1u));
+                ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->get_alloca(), 1u));
           } else {
             ctx->irCtx->builder.CreateStore(
                 subIR->get_llvm(),
-                ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->getAlloca(), 1u));
+                ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->get_alloca(), 1u));
           }
           return new_value->to_new_ir_value();
         }
@@ -161,15 +162,16 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
       if (isLocalDecl()) {
         if (expectSubTy->is_type_sized()) {
           subIR->load_ghost_pointer(ctx->irCtx->builder);
-          ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                          ctx->irCtx->builder.CreateStructGEP(
-                                              localValue->get_ir_type()->get_llvm_type(), localValue->getAlloca(), 0u));
+          ctx->irCtx->builder.CreateStore(
+              llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
+              ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(), localValue->get_alloca(),
+                                                  0u));
           ctx->irCtx->builder.CreateStore(
               subIR->get_llvm(), ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
-                                                                     localValue->getAlloca(), 1u));
+                                                                     localValue->get_alloca(), 1u));
         } else {
           ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                          localValue->getAlloca());
+                                          localValue->get_alloca());
         }
         return nullptr;
       } else {
@@ -179,17 +181,17 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
               ir::MaybeType::get(expectSubTy, false, ctx->irCtx), irName.has_value() ? isVar : true, fileRange);
           ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
                                           ctx->irCtx->builder.CreateStructGEP(new_value->get_ir_type()->get_llvm_type(),
-                                                                              new_value->getAlloca(), 0u));
+                                                                              new_value->get_alloca(), 0u));
           ctx->irCtx->builder.CreateStore(subIR->get_llvm(),
                                           ctx->irCtx->builder.CreateStructGEP(new_value->get_ir_type()->get_llvm_type(),
-                                                                              new_value->getAlloca(), 1u));
+                                                                              new_value->get_alloca(), 1u));
           return new_value->to_new_ir_value();
         } else {
           auto* new_value = ctx->get_fn()->get_block()->new_value(
               irName.has_value() ? irName->value : utils::unique_id(),
               ir::MaybeType::get(expectSubTy, false, ctx->irCtx), irName.has_value() ? isVar : true, fileRange);
           ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                          new_value->getAlloca());
+                                          new_value->get_alloca());
           return new_value->to_new_ir_value();
         }
       }
@@ -204,7 +206,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
                      fileRange);
         } else {
           ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                          localValue->getAlloca(), false);
+                                          localValue->get_alloca(), false);
           return nullptr;
         }
       } else {
@@ -217,7 +219,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
       auto* block     = ctx->get_fn()->get_block();
       auto* newAlloca = block->new_value(irName->value, resMTy, isVar, irName->range);
       ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
-                                      newAlloca->getAlloca(), false);
+                                      newAlloca->get_alloca(), false);
       return newAlloca->to_new_ir_value();
     } else {
       return ir::Value::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),

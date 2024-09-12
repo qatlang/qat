@@ -12,8 +12,8 @@ enum class GenericKind {
   prerunGeneric,
 };
 
-class TypedGeneric;
-class PrerunGeneric;
+class TypedGenericAbstract;
+class PrerunGenericAbstract;
 
 class GenericAbstractType {
 protected:
@@ -32,10 +32,10 @@ public:
   useit Identifier get_name() const;
   useit FileRange  get_range() const;
 
-  useit bool           is_typed() const;
-  useit TypedGeneric*  as_typed() const;
-  useit bool           is_prerun() const;
-  useit PrerunGeneric* as_prerun() const;
+  useit bool                   is_typed() const;
+  useit TypedGenericAbstract*  as_typed() const;
+  useit bool                   is_prerun() const;
+  useit PrerunGenericAbstract* as_prerun() const;
 
   virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
                                    EmitCtx* ctx) = 0;
@@ -46,7 +46,7 @@ public:
   virtual void       unset() const            = 0;
   useit virtual Json to_json() const          = 0;
 
-  useit ir::GenericParameter* toIRGenericType() const;
+  useit ir::GenericArgument* toIRGenericType() const;
 
   virtual ~GenericAbstractType() = default;
 };

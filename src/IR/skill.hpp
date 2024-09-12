@@ -81,12 +81,12 @@ public:
 
 class DoneSkill : public Uniq {
   friend class Method;
-  Mod*                       parent;
-  Maybe<Skill*>              skill;
-  Vec<ir::GenericParameter*> generics;
-  FileRange                  fileRange;
-  Type*                      candidateType;
-  FileRange                  typeRange;
+  Mod*                      parent;
+  Maybe<Skill*>             skill;
+  Vec<ir::GenericArgument*> generics;
+  FileRange                 fileRange;
+  Type*                     candidateType;
+  FileRange                 typeRange;
 
   Maybe<Method*> defaultConstructor;
   Vec<Method*>   staticFunctions;
@@ -120,7 +120,7 @@ public:
     }
     return false;
   }
-  useit inline GenericParameter* get_generic_parameter(String const& name) {
+  useit inline GenericArgument* get_generic_parameter(String const& name) {
     for (auto gen : generics) {
       if (gen->get_name().value == name) {
         return gen;

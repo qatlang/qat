@@ -13,13 +13,13 @@ FileRange GenericAbstractType::get_range() const { return range; }
 
 bool GenericAbstractType::is_prerun() const { return kind == GenericKind::prerunGeneric; }
 
-TypedGeneric* GenericAbstractType::as_typed() const { return (TypedGeneric*)this; }
+TypedGenericAbstract* GenericAbstractType::as_typed() const { return (TypedGenericAbstract*)this; }
 
 bool GenericAbstractType::is_typed() const { return kind == GenericKind::typedGeneric; }
 
-PrerunGeneric* GenericAbstractType::as_prerun() const { return (PrerunGeneric*)this; }
+PrerunGenericAbstract* GenericAbstractType::as_prerun() const { return (PrerunGenericAbstract*)this; }
 
-ir::GenericParameter* GenericAbstractType::toIRGenericType() const {
+ir::GenericArgument* GenericAbstractType::toIRGenericType() const {
   if (is_typed()) {
     return as_typed()->toIR();
   } else {

@@ -20,7 +20,7 @@ ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
                    fileRange);
       }
     }
-    if (ctx->get_fn()->get_block()->hasValue(tag->value)) {
+    if (ctx->get_fn()->get_block()->has_value(tag->value)) {
       ctx->Error("There already exists another local value with the same name as this tag", tag->range);
     }
   }
@@ -42,49 +42,49 @@ ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
     auto  uniq = hasTag() ? tag.value().value : utils::unique_id();
     auto* loopIndex =
         ctx->get_fn()->get_block()->new_value(uniq, originalLimitTy, false, tag.has_value() ? tag->range : fileRange);
-    ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->getAlloca());
+    ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->get_alloca());
     auto* loopBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
     auto* trueBlock = new ir::Block(ctx->get_fn(), loopBlock);
     SHOW("loop times true block " << ctx->get_fn()->get_full_name() << "." << trueBlock->get_name())
     auto* condBlock = new ir::Block(ctx->get_fn(), loopBlock);
     SHOW("loop times cond block " << ctx->get_fn()->get_full_name() << "." << condBlock->get_name())
-    auto* restBlock = new ir::Block(ctx->get_fn(), loopBlock->getParent()->getParent());
-    restBlock->link_previous_block(loopBlock->getParent());
+    auto* restBlock = new ir::Block(ctx->get_fn(), loopBlock->get_parent()->get_parent());
+    restBlock->link_previous_block(loopBlock->get_parent());
     SHOW("loop times rest block " << ctx->get_fn()->get_full_name() << "." << restBlock->get_name())
     (void)ir::add_branch(ctx->irCtx->builder, loopBlock->get_bb());
     loopBlock->set_active(ctx->irCtx->builder);
     ctx->irCtx->builder.CreateCondBr(
         (countTy->is_unsigned_integer()
              ? ctx->irCtx->builder.CreateICmpULT(
-                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->getAlloca()),
+                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->get_alloca()),
                    llCount)
              : ctx->irCtx->builder.CreateAnd(
                    ctx->irCtx->builder.CreateICmpSGT(llCount,
                                                      llvm::ConstantInt::get(limit->get_ir_type()->get_llvm_type(), 0u)),
                    ctx->irCtx->builder.CreateICmpSLT(
                        ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
-                                                      loopIndex->getAlloca()),
+                                                      loopIndex->get_alloca()),
                        llCount))),
         trueBlock->get_bb(), restBlock->get_bb());
     ctx->loopsInfo.push_back(LoopInfo(uniq, trueBlock, condBlock, restBlock, loopIndex, LoopType::nTimes));
     ctx->breakables.push_back(Breakable(uniq, restBlock, trueBlock));
     trueBlock->set_active(ctx->irCtx->builder);
     emit_sentences(sentences, ctx);
-    trueBlock->destroyLocals(ctx);
+    trueBlock->destroy_locals(ctx);
     (void)ir::add_branch(ctx->irCtx->builder, condBlock->get_bb());
     condBlock->set_active(ctx->irCtx->builder);
     ctx->irCtx->builder.CreateStore(
         ctx->irCtx->builder.CreateAdd(
-            ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->getAlloca()),
+            ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->get_alloca()),
             llvm::ConstantInt::get(loopIndex->get_ir_type()->get_llvm_type(), 1u)),
-        loopIndex->getAlloca());
+        loopIndex->get_alloca());
     ctx->irCtx->builder.CreateCondBr(
         (countTy->is_unsigned_integer()
              ? ctx->irCtx->builder.CreateICmpULT(
-                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->getAlloca()),
+                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->get_alloca()),
                    llCount)
              : ctx->irCtx->builder.CreateICmpSLT(
-                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->getAlloca()),
+                   ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(), loopIndex->get_alloca()),
                    llCount)),
         trueBlock->get_bb(), restBlock->get_bb());
     ctx->loopsInfo.pop_back();

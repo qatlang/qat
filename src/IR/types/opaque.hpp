@@ -27,7 +27,7 @@ class OpaqueType : public Type, public EntityOverview {
   friend class ir::StructType;
 
   Identifier               name;
-  Vec<GenericParameter*>   generics;
+  Vec<GenericArgument*>    generics;
   Maybe<String>            genericID;
   Maybe<OpaqueSubtypeKind> subtypeKind;
   ir::Mod*                 parent;
@@ -36,12 +36,12 @@ class OpaqueType : public Type, public EntityOverview {
   VisibilityInfo           visibility;
   Maybe<MetaInfo>          metaInfo;
 
-  OpaqueType(Identifier _name, Vec<GenericParameter*> _generics, Maybe<String> _genericID,
+  OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
              Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
              llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
 public:
-  useit static OpaqueType* get(Identifier name, Vec<GenericParameter*> generics, Maybe<String> genericID,
+  useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
                                Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
                                VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
@@ -50,9 +50,9 @@ public:
   useit ir::Mod*              get_module() const;
   useit VisibilityInfo const& get_visibility() const;
   useit bool                  is_generic() const;
-  useit Maybe<String>     get_generic_id() const;
-  useit bool              has_generic_parameter(String const& name) const;
-  useit GenericParameter* get_generic_parameter(String const& name) const;
+  useit Maybe<String>    get_generic_id() const;
+  useit bool             has_generic_parameter(String const& name) const;
+  useit GenericArgument* get_generic_parameter(String const& name) const;
 
   useit bool  is_subtype_struct() const;
   useit bool  is_subtype_mix() const;

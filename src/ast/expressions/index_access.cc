@@ -100,7 +100,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           ctx->Error("Only multi pointers can be indexed into", fileRange);
         }
         auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
-        auto* restBlock          = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block()->getParent());
+        auto* restBlock          = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block()->get_parent());
         restBlock->link_previous_block(ctx->get_fn()->get_block());
         auto ptrLen = ctx->irCtx->builder.CreateLoad(
             ir::CType::get_usize(ctx->irCtx)->get_llvm_type(),
@@ -190,7 +190,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           usizeTy->get_llvm_type(), ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), inst->get_llvm(), 1u));
       auto* currBlock          = ctx->get_fn()->get_block();
       auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), currBlock);
-      auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->getParent());
+      auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->get_parent());
       restBlock->link_previous_block(currBlock);
       ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
                                        lenExceedTrueBlock->get_bb(), restBlock->get_bb());
@@ -248,7 +248,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       auto* strLen             = ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {1u});
       auto* currBlock          = ctx->get_fn()->get_block();
       auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), currBlock);
-      auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->getParent());
+      auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->get_parent());
       restBlock->link_previous_block(currBlock);
       ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
                                        lenExceedTrueBlock->get_bb(), restBlock->get_bb());

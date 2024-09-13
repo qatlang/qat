@@ -10,9 +10,10 @@ namespace qat::ast {
 
 MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
                                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                 Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
     : fnTy(_fnTy), name(std::move(_name)), condition(_condition), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange) {}
+      isVariadic(_isVariadic), returnType(_returnType), metaInfo(_metaInfo), visibSpec(_visibSpec),
+      fileRange(_fileRange) {}
 
 MemberPrototype::~MemberPrototype() {
   for (auto* arg : arguments) {
@@ -22,25 +23,27 @@ MemberPrototype::~MemberPrototype() {
 
 MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name,
                                          Maybe<PrerunExpression*> _condition, const Vec<Argument*>& _arguments,
-                                         bool _isVariadic, Maybe<Type*> _returnType, Maybe<VisibilitySpec> visibSpec,
-                                         const FileRange& _fileRange) {
+                                         bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+                                         Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange) {
   return std::construct_at(OwnNormal(MemberPrototype),
                            _isVariationFn ? AstMemberFnType::variation : AstMemberFnType::normal, _name, _condition,
-                           _arguments, _isVariadic, _returnType, visibSpec, _fileRange);
+                           _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
 MemberPrototype* MemberPrototype::Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                         Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange) {
+                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
+                                         const FileRange& _fileRange) {
   return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::Static, _name, _condition, _arguments,
-                           _isVariadic, _returnType, visibSpec, _fileRange);
+                           _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
 MemberPrototype* MemberPrototype::Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                        Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange) {
+                                        Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
+                                        const FileRange& _fileRange) {
   return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::valued, _name, _condition, _arguments,
-                           _isVariadic, _returnType, visibSpec, _fileRange);
+                           _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
 void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
@@ -260,7 +263,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     coreRefTy = argIRTypes.at(0)->get_type()->as_reference();
     self      = block->new_value("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
     irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
-    self->load_ghost_pointer(irCtx->builder);
+    self->load_ghost_reference(irCtx->builder);
   }
   SHOW("Arguments size is " << argIRTypes.size())
   for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -281,7 +284,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
             block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
                              argIRTypes.at(i)->is_variable(), prototype->arguments.at(i - 1)->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
       }
     }
   }

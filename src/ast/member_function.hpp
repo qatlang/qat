@@ -8,6 +8,7 @@
 #include "./types/qat_type.hpp"
 #include "expression.hpp"
 #include "member_parent_like.hpp"
+#include "meta_info.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 
@@ -42,25 +43,29 @@ class MemberPrototype {
   Vec<Argument*>           arguments;
   bool                     isVariadic;
   Maybe<Type*>             returnType;
+  Maybe<MetaInfo>          metaInfo;
   Maybe<VisibilitySpec>    visibSpec;
   FileRange                fileRange;
 
 public:
   MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
-                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
                   Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
   static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, Maybe<PrerunExpression*> _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+                                 const FileRange& _fileRange);
 
   static MemberPrototype* Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+                                 const FileRange& _fileRange);
 
   static MemberPrototype* Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
                                 const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
+                                Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+                                const FileRange& _fileRange);
 
   ir::EntityChildType fn_type_to_child_type() {
     switch (fnTy) {

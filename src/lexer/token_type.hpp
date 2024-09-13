@@ -111,6 +111,9 @@ enum class TokenType {
   opaque,
   vectorType,
   skill,
+  assembly,
+  Volatile,
+  Inline,
   error,
 };
 

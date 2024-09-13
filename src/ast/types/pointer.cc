@@ -5,73 +5,73 @@
 
 namespace qat::ast {
 
-void PointerType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-                                      EmitCtx* ctx) {
+void MarkType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                                   EmitCtx* ctx) {
   type->update_dependencies(phase, ir::DependType::partial, ent, ctx);
   if (ownerTyTy.has_value()) {
     ownerTyTy.value()->update_dependencies(phase, ir::DependType::partial, ent, ctx);
   }
 }
 
-Maybe<usize> PointerType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> MarkType::getTypeSizeInBits(EmitCtx* ctx) const {
   return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-      isMultiPtr ? llvm::cast<llvm::Type>(llvm::StructType::create(
-                       {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-                                               ctx->irCtx->dataLayout->getProgramAddressSpace()),
-                        llvm::Type::getInt64Ty(ctx->irCtx->llctx)}))
-                 : llvm::cast<llvm::Type>(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-                                                                 ctx->irCtx->dataLayout->getProgramAddressSpace()))));
+      isSlice ? llvm::cast<llvm::Type>(
+                    llvm::StructType::create({llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+                                                                     ctx->irCtx->dataLayout->getProgramAddressSpace()),
+                                              llvm::Type::getInt64Ty(ctx->irCtx->llctx)}))
+              : llvm::cast<llvm::Type>(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+                                                              ctx->irCtx->dataLayout->getProgramAddressSpace()))));
 }
 
-String PointerType::pointerOwnerToString() const {
+String MarkType::pointerOwnerToString() const {
   switch (ownTyp) {
-    case PtrOwnType::type:
+    case MarkOwnType::type:
       return "type";
-    case PtrOwnType::typeParent:
+    case MarkOwnType::typeParent:
       return "typeParent";
-    case PtrOwnType::function:
+    case MarkOwnType::function:
       return "function";
-    case PtrOwnType::anonymous:
+    case MarkOwnType::anonymous:
       return "anonymous";
-    case PtrOwnType::heap:
+    case MarkOwnType::heap:
       return "heap";
-    case PtrOwnType::region:
+    case MarkOwnType::region:
       return "region";
-    case PtrOwnType::anyRegion:
+    case MarkOwnType::anyRegion:
       return "anyRegion";
   }
 }
 
-ir::PointerOwner PointerType::getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const {
+ir::MarkOwner MarkType::getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const {
   switch (ownTyp) {
-    case PtrOwnType::type:
-      return ir::PointerOwner::OfType(ownerVal.value());
-    case PtrOwnType::typeParent: {
+    case MarkOwnType::type:
+      return ir::MarkOwner::OfType(ownerVal.value());
+    case MarkOwnType::typeParent: {
       if (ctx->has_member_parent()) {
-        return ir::PointerOwner::OfParentInstance(ctx->get_member_parent()->get_parent_type());
+        return ir::MarkOwner::OfParentInstance(ctx->get_member_parent()->get_parent_type());
       } else {
         ctx->Error("No parent type or skill found", fileRange);
       }
     }
-    case PtrOwnType::anonymous:
-      return ir::PointerOwner::OfAnonymous();
-    case PtrOwnType::heap:
-      return ir::PointerOwner::OfHeap();
-    case PtrOwnType::function:
-      return ir::PointerOwner::OfParentFunction(ctx->get_fn());
-    case PtrOwnType::region:
-      return ir::PointerOwner::OfRegion(ownerVal.value()->as_region());
-    case PtrOwnType::anyRegion:
-      return ir::PointerOwner::OfAnyRegion();
+    case MarkOwnType::anonymous:
+      return ir::MarkOwner::OfAnonymous();
+    case MarkOwnType::heap:
+      return ir::MarkOwner::OfHeap();
+    case MarkOwnType::function:
+      return ir::MarkOwner::OfParentFunction(ctx->get_fn());
+    case MarkOwnType::region:
+      return ir::MarkOwner::OfRegion(ownerVal.value()->as_region());
+    case MarkOwnType::anyRegion:
+      return ir::MarkOwner::OfAnyRegion();
   }
 }
 
-ir::Type* PointerType::emit(EmitCtx* ctx) {
-  if (ownTyp == PtrOwnType::function) {
+ir::Type* MarkType::emit(EmitCtx* ctx) {
+  if (ownTyp == MarkOwnType::function) {
     if (!ctx->get_fn()) {
       ctx->Error("This pointer type is not inside a function and hence cannot have function ownership", fileRange);
     }
-  } else if (ownTyp == PtrOwnType::typeParent) {
+  } else if (ownTyp == MarkOwnType::typeParent) {
     if (!(ctx->has_member_parent())) {
       ctx->Error("No parent type found in scope and hence the pointer "
                  "cannot be owned by the parent type instance",
@@ -79,7 +79,7 @@ ir::Type* PointerType::emit(EmitCtx* ctx) {
     }
   }
   Maybe<ir::Type*> ownerVal;
-  if (ownTyp == PtrOwnType::type) {
+  if (ownTyp == MarkOwnType::type) {
     if (!ownerTyTy) {
       ctx->Error("Expected a type to be provided for pointer ownership", fileRange);
     }
@@ -90,7 +90,7 @@ ir::Type* PointerType::emit(EmitCtx* ctx) {
                  fileRange);
     }
     ownerVal = typVal;
-  } else if (ownTyp == PtrOwnType::region) {
+  } else if (ownTyp == MarkOwnType::region) {
     if (ownerTyTy) {
       auto* regTy = ownerTyTy.value()->emit(ctx);
       if (!regTy->is_region()) {
@@ -109,16 +109,15 @@ ir::Type* PointerType::emit(EmitCtx* ctx) {
             ctx->color("var"),
         fileRange);
   }
-  return ir::PointerType::get(isSubtypeVar, subTy, isNonNullable, getPointerOwner(ctx, ownerVal), isMultiPtr,
-                              ctx->irCtx);
+  return ir::MarkType::get(isSubtypeVar, subTy, isNonNullable, getPointerOwner(ctx, ownerVal), isSlice, ctx->irCtx);
 }
 
-AstTypeKind PointerType::type_kind() const { return AstTypeKind::POINTER; }
+AstTypeKind MarkType::type_kind() const { return AstTypeKind::POINTER; }
 
-Json PointerType::to_json() const {
+Json MarkType::to_json() const {
   return Json()
       ._("typeKind", "pointer")
-      ._("isMulti", isMultiPtr)
+      ._("isSlice", isSlice)
       ._("isSubtypeVariable", isSubtypeVar)
       ._("subType", type->to_json())
       ._("ownerKind", pointerOwnerToString())
@@ -127,36 +126,36 @@ Json PointerType::to_json() const {
       ._("fileRange", fileRange);
 }
 
-String PointerType::to_string() const {
+String MarkType::to_string() const {
   Maybe<String> ownerStr;
   switch (ownTyp) {
-    case PtrOwnType::type: {
+    case MarkOwnType::type: {
       ownerStr = String("type(") + ownerTyTy.value()->to_string() + ")";
       break;
     }
-    case PtrOwnType::typeParent: {
+    case MarkOwnType::typeParent: {
       ownerStr = "''";
       break;
     }
-    case PtrOwnType::heap: {
+    case MarkOwnType::heap: {
       ownerStr = "heap";
       break;
     }
-    case PtrOwnType::function: {
+    case MarkOwnType::function: {
       ownerStr = "own";
       break;
     }
-    case PtrOwnType::region: {
+    case MarkOwnType::region: {
       ownerStr = String("region(") + ownerTyTy.value()->to_string() + ")";
       break;
     }
-    case PtrOwnType::anyRegion: {
+    case MarkOwnType::anyRegion: {
       ownerStr = "region";
       break;
     }
     default:;
   }
-  return (isMultiPtr ? "multiptr:[" : "ptr:[") + String(isSubtypeVar ? "var " : "") + type->to_string() +
+  return (isSlice ? "slice:[" : "mark:[") + String(isSubtypeVar ? "var " : "") + type->to_string() +
          (ownerStr.has_value() ? (", " + ownerStr.value()) : "") + "]";
 }
 

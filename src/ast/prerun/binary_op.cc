@@ -532,9 +532,9 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
                      ctx->color(operator_to_string(opr)) + " is not supported for these operands",
                  fileRange);
     }
-  } else if (lhsValTy->is_pointer() && rhsValTy->is_pointer()) {
-    if (lhsValTy->as_pointer()->get_subtype()->is_same(rhsValTy->as_pointer()->get_subtype()) &&
-        (lhsValTy->as_pointer()->isMulti() == rhsValTy->as_pointer()->isMulti())) {
+  } else if (lhsValTy->is_mark() && rhsValTy->is_mark()) {
+    if (lhsValTy->as_mark()->get_subtype()->is_same(rhsValTy->as_mark()->get_subtype()) &&
+        (lhsValTy->as_mark()->isSlice() == rhsValTy->as_mark()->isSlice())) {
       llvm::Constant* finalCondition = nullptr;
       if (opr != Op::equalTo && opr != Op::notEqualTo) {
         ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for expressions of type " +
@@ -543,16 +543,15 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
       }
       finalCondition = llvm::ConstantExpr::getICmp(
           opr == Op::equalTo ? llvm::CmpInst::Predicate::ICMP_EQ : llvm::CmpInst::Predicate::ICMP_NE,
-          llvm::ConstantExpr::getSub(llvm::ConstantExpr::getPtrToInt(lhsValTy->as_pointer()->isMulti()
-                                                                         ? lhsEmit->get_llvm()->getAggregateElement(0u)
-                                                                         : lhsEmit->get_llvm(),
-                                                                     llvm::Type::getInt64Ty(ctx->irCtx->llctx)),
-                                     llvm::ConstantExpr::getPtrToInt(lhsValTy->as_pointer()->isMulti()
-                                                                         ? rhsEmit->get_llvm()->getAggregateElement(0u)
-                                                                         : rhsEmit->get_llvm(),
-                                                                     llvm::Type::getInt64Ty(ctx->irCtx->llctx))),
+          llvm::ConstantExpr::getSub(
+              llvm::ConstantExpr::getPtrToInt(
+                  lhsValTy->as_mark()->isSlice() ? lhsEmit->get_llvm()->getAggregateElement(0u) : lhsEmit->get_llvm(),
+                  llvm::Type::getInt64Ty(ctx->irCtx->llctx)),
+              llvm::ConstantExpr::getPtrToInt(
+                  lhsValTy->as_mark()->isSlice() ? rhsEmit->get_llvm()->getAggregateElement(0u) : rhsEmit->get_llvm(),
+                  llvm::Type::getInt64Ty(ctx->irCtx->llctx))),
           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
-      if (lhsValTy->as_pointer()->isMulti()) {
+      if (lhsValTy->as_mark()->isSlice()) {
         finalCondition = llvm::ConstantExpr::getAnd(
             llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, lhsEmit->get_llvm()->getAggregateElement(1u),
                                         rhsEmit->get_llvm()->getAggregateElement(1u)),

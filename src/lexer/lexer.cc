@@ -626,8 +626,8 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("meta", meta);
   else Check_Normal_Keyword("region", region);
   else Check_VALUED_Keyword("bool", unsignedIntegerType);
-  else Check_Normal_Keyword("ptr", pointerType);
-  else Check_Normal_Keyword("multiptr", multiPointerType);
+  else Check_Normal_Keyword("mark", markType);
+  else Check_Normal_Keyword("slice", sliceType);
   else Check_Normal_Keyword("vec", vectorType);
   else Check_Normal_Keyword("is", is);
   else Check_Normal_Keyword("ok", ok);
@@ -635,6 +635,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("result", result);
   else Check_Normal_Keyword("integer", genericIntegerType);
   else Check_Normal_Keyword("opaque", opaque);
+  else Check_Normal_Keyword("inline", Inline);
   else Check_VALUED_Keyword("int", cType);
   else Check_VALUED_Keyword("uint", cType);
   else Check_VALUED_Keyword("char", cType);

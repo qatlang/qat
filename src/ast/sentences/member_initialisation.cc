@@ -142,7 +142,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
         } else {
           auto* irVal = value->emit(ctx);
           if (memTy->is_same(irVal->get_ir_type())) {
-            if (!memTy->is_reference() && irVal->is_ghost_pointer()) {
+            if (!memTy->is_reference() && irVal->is_ghost_reference()) {
               if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
                 ctx->irCtx->builder.CreateStore(
                     ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm()), memRef->get_llvm());

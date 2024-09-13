@@ -17,9 +17,9 @@ ir::PrerunValue* NullPointer::emit(EmitCtx* ctx) {
     }
   }
   ir::Type* finalTy = theType;
-  if (theType->is_pointer() || (theType->is_ctype() && theType->as_ctype()->get_subtype()->is_pointer())) {
-    if (theType->is_ctype() ? theType->as_ctype()->get_subtype()->as_pointer()->isNonNullable()
-                            : theType->as_pointer()->isNonNullable()) {
+  if (theType->is_mark() || (theType->is_ctype() && theType->as_ctype()->get_subtype()->is_mark())) {
+    if (theType->is_ctype() ? theType->as_ctype()->get_subtype()->as_mark()->isNonNullable()
+                            : theType->as_mark()->isNonNullable()) {
       ctx->Error("The inferred type is " + ctx->color(theType->to_string()) + " which is not a nullable pointer type",
                  fileRange);
     }
@@ -30,11 +30,11 @@ ir::PrerunValue* NullPointer::emit(EmitCtx* ctx) {
     ctx->Error("The inferred type for null is " + ctx->color(theType->to_string()) + " which is not a pointer type",
                fileRange);
   }
-  auto llPtrTy = llvm::PointerType::get(
-      llvm::PointerType::isValidElementType(finalTy->as_pointer()->get_subtype()->get_llvm_type())
-          ? finalTy->as_pointer()->get_subtype()->get_llvm_type()
-          : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-      ctx->irCtx->dataLayout->getProgramAddressSpace());
+  auto llPtrTy =
+      llvm::PointerType::get(llvm::PointerType::isValidElementType(finalTy->as_mark()->get_subtype()->get_llvm_type())
+                                 ? finalTy->as_mark()->get_subtype()->get_llvm_type()
+                                 : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+                             ctx->irCtx->dataLayout->getProgramAddressSpace());
   return ir::PrerunValue::get(
       finalTy->as_pointer()->isMulti()
           ? llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(finalTy->get_llvm_type()),

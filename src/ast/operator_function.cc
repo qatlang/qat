@@ -168,7 +168,7 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto* self       = block->new_value("''", coreRefTy, prototype->isVariationFn,
                                       coreRefTy->get_subtype()->as_struct()->get_name().range);
   irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
-  self->load_ghost_pointer(irCtx->builder);
+  self->load_ghost_reference(irCtx->builder);
   if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
     auto* argVal =
         block->new_value(prototype->argName->value,

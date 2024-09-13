@@ -88,7 +88,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto* parentRefType = ir::ReferenceType::get(prototype->isFrom, state.parent->get_parent_type(), irCtx);
   auto* self          = block->new_value("''", parentRefType, false, state.parent->get_type_range());
   irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
-  self->load_ghost_pointer(irCtx->builder);
+  self->load_ghost_reference(irCtx->builder);
   if (prototype->isFrom) {
     if (prototype->is_member_argumentument) {
       llvm::Value* memPtr = nullptr;
@@ -148,7 +148,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
           auto* memVal = mem->defaultValue.value()->emit(
               EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));
           if (memVal->get_ir_type()->is_same(mem->type)) {
-            if (memVal->is_ghost_pointer()) {
+            if (memVal->is_ghost_reference()) {
               if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
                 irCtx->builder.CreateStore(
                     irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
@@ -193,7 +193,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
             }
           } else if (mem->type->is_reference() &&
                      mem->type->as_reference()->get_subtype()->is_same(memVal->get_ir_type()) &&
-                     memVal->is_ghost_pointer() &&
+                     memVal->is_ghost_reference() &&
                      (mem->type->as_reference()->isSubtypeVariable() ? memVal->is_variable() : true)) {
             irCtx->builder.CreateStore(memVal->get_llvm(),
                                        irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));

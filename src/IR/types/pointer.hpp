@@ -19,18 +19,18 @@ enum class PointerOwnerType {
   Static,
 };
 
-class PointerOwner {
+class MarkOwner {
 public:
   void*            owner;
   PointerOwnerType ownerTy;
 
-  useit static PointerOwner OfHeap();
-  useit static PointerOwner OfAnonymous();
-  useit static PointerOwner OfType(Type* type);
-  useit static PointerOwner OfParentFunction(Function* fun);
-  useit static PointerOwner OfParentInstance(Type* type);
-  useit static PointerOwner OfRegion(Region* region);
-  useit static PointerOwner OfAnyRegion();
+  useit static MarkOwner OfHeap();
+  useit static MarkOwner OfAnonymous();
+  useit static MarkOwner OfType(Type* type);
+  useit static MarkOwner OfParentFunction(Function* fun);
+  useit static MarkOwner OfParentInstance(Type* type);
+  useit static MarkOwner OfRegion(Region* region);
+  useit static MarkOwner OfAnyRegion();
 
   useit inline Type*     ownerAsType() const { return (Type*)owner; }
   useit inline Region*   ownerAsRegion() const { return ((Type*)owner)->as_region(); }
@@ -46,30 +46,30 @@ public:
   useit inline bool isParentInstance() const { return ownerTy == PointerOwnerType::parentInstance; }
   useit inline bool isStatic() const { return ownerTy == PointerOwnerType::Static; }
 
-  useit bool is_same(const PointerOwner& other) const;
+  useit bool is_same(const MarkOwner& other) const;
 
   useit String to_string() const;
 };
 
-class PointerType : public Type {
+class MarkType : public Type {
 private:
-  Type*        subType;
-  bool         isSubtypeVar;
-  PointerOwner owner;
-  bool         hasMulti;
-  bool         nonNullable;
+  Type*     subType;
+  bool      isSubtypeVar;
+  MarkOwner owner;
+  bool      hasMulti;
+  bool      nonNullable;
 
-  PointerType(bool _isSubVar, Type* _subtype, bool nonNullable, PointerOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
+  MarkType(bool _isSubVar, Type* _subtype, bool nonNullable, MarkOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
 
 public:
-  useit static PointerType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PointerOwner _owner,
-                                bool _hasMulti, ir::Ctx* irCtx);
+  useit static MarkType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner, bool _hasMulti,
+                             ir::Ctx* irCtx);
 
-  useit Type*        get_subtype() const;
-  useit PointerOwner getOwner() const;
+  useit Type*     get_subtype() const;
+  useit MarkOwner getOwner() const;
 
   useit bool isSubtypeVariable() const;
-  useit bool isMulti() const;
+  useit bool isSlice() const;
   useit bool isNullable() const;
   useit bool isNonNullable() const;
   useit bool can_be_prerun() const final { return subType->is_function(); }

@@ -41,7 +41,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
   auto* expTy         = expEmit->get_ir_type();
   bool  isExpVariable = false;
   if (expTy->is_reference()) {
-    expEmit->load_ghost_pointer(ctx->irCtx->builder);
+    expEmit->load_ghost_reference(ctx->irCtx->builder);
     isExpVariable = expTy->as_reference()->isSubtypeVariable();
     expTy         = expTy->as_reference()->get_subtype();
   } else {
@@ -196,7 +196,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
     auto* chTy = expTy->as_choice();
     SHOW("Got choice type")
     llvm::Value* choiceVal;
-    if (expEmit->is_reference() || expEmit->is_ghost_pointer()) {
+    if (expEmit->is_reference() || expEmit->is_ghost_reference()) {
       choiceVal = ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), expEmit->get_llvm());
     } else {
       choiceVal = expEmit->get_llvm();
@@ -239,11 +239,11 @@ ir::Value* Match::emit(EmitCtx* ctx) {
           if (caseExp->get_ir_type()->is_choice() ||
               (caseExp->get_ir_type()->is_reference() &&
                caseExp->get_ir_type()->as_reference()->get_subtype()->is_choice())) {
-            if (caseExp->get_ir_type()->is_choice() && caseExp->is_ghost_pointer()) {
+            if (caseExp->get_ir_type()->is_choice() && caseExp->is_ghost_reference()) {
               caseComparisons.push_back(ctx->irCtx->builder.CreateICmpEQ(
                   choiceVal, ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), caseExp->get_llvm())));
             } else if (caseExp->get_ir_type()->is_reference()) {
-              caseExp->load_ghost_pointer(ctx->irCtx->builder);
+              caseExp->load_ghost_reference(ctx->irCtx->builder);
               caseComparisons.push_back(ctx->irCtx->builder.CreateICmpEQ(
                   choiceVal, ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), caseExp->get_llvm())));
             }
@@ -310,9 +310,9 @@ ir::Value* Match::emit(EmitCtx* ctx) {
       strBuff            = expEmit->as_prerun()->get_llvm_constant()->getAggregateElement(0u);
       strCount           = expEmit->as_prerun()->get_llvm_constant()->getAggregateElement(1u);
     } else {
-      if (expEmit->is_ghost_pointer() || expEmit->is_reference()) {
+      if (expEmit->is_ghost_reference() || expEmit->is_reference()) {
         if (expEmit->is_reference()) {
-          expEmit->load_ghost_pointer(ctx->irCtx->builder);
+          expEmit->load_ghost_reference(ctx->irCtx->builder);
         }
       }
       strBuff  = expEmit->is_value()
@@ -404,7 +404,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
             caseStrCount = caseIR->get_llvm_constant()->getAggregateElement(1u);
           } else {
             if (caseIR->is_reference()) {
-              caseIR->load_ghost_pointer(ctx->irCtx->builder);
+              caseIR->load_ghost_reference(ctx->irCtx->builder);
             }
             caseStrBuff  = caseIR->is_value()
                                ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})

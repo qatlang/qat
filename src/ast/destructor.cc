@@ -21,7 +21,7 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Storing self")
   irCtx->builder.CreateStore(memberFn->get_llvm_function()->getArg(0u), self->get_llvm());
   SHOW("Loading self")
-  self->load_ghost_pointer(irCtx->builder);
+  self->load_ghost_reference(irCtx->builder);
   SHOW("Emitting sentences")
   emit_sentences(
       sentences,

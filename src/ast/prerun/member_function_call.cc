@@ -184,14 +184,14 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
   } else if (memberName.value == "is_pointer_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
-        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_pointer() ? 1u : 0u),
+        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_mark() ? 1u : 0u),
         ir::UnsignedType::getBool(ctx->irCtx));
   } else if (memberName.value == "is_multi_pointer_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
-        llvm::ConstantInt::get(
-            llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-            (typed->get_subtype()->is_pointer() && typed->get_subtype()->as_pointer()->isMulti()) ? 1u : 0u),
+        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+                               (typed->get_subtype()->is_mark() && typed->get_subtype()->as_mark()->isSlice()) ? 1u
+                                                                                                               : 0u),
         ir::UnsignedType::getBool(ctx->irCtx));
   } else if (memberName.value == "is_trivially_copyable") {
     zeroArgCheck();

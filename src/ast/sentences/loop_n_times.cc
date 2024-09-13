@@ -28,7 +28,7 @@ ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
   auto* countTy =
       limit->get_ir_type()->is_reference() ? limit->get_ir_type()->as_reference()->get_subtype() : limit->get_ir_type();
   auto* originalLimitTy = countTy;
-  limit->load_ghost_pointer(ctx->irCtx->builder);
+  limit->load_ghost_reference(ctx->irCtx->builder);
   if (countTy->is_unsigned_integer() || countTy->is_integer() ||
       (countTy->is_ctype() && (countTy->as_ctype()->get_subtype()->is_integer() ||
                                countTy->as_ctype()->get_subtype()->is_unsigned_integer()))) {

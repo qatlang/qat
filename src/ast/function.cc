@@ -112,7 +112,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
               irCtx->color("i32") +
               " to indicate the resultant status of the program to the underlying operating system. Give a " +
               irCtx->color("0") +
-              " value at the end of the main function to indicate success, if you don't care much about the status",
+              " value at the end of the main function to indicate success, if you don't care about the status of the program for now",
           fileRange);
     }
   } else if (fnName == "main") {
@@ -143,20 +143,20 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                    fileRange);
     } else {
       if (generatedTypes.size() == 1) {
-        if (generatedTypes.at(0)->is_pointer() && generatedTypes.at(0)->as_pointer()->isMulti() &&
-            generatedTypes.at(0)->as_pointer()->getOwner().isAnonymous()) {
-          if (generatedTypes.at(0)->as_pointer()->isSubtypeVariable()) {
+        if (generatedTypes.at(0)->is_mark() && generatedTypes.at(0)->as_mark()->isSlice() &&
+            generatedTypes.at(0)->as_mark()->getOwner().isAnonymous()) {
+          if (generatedTypes.at(0)->as_mark()->isSubtypeVariable()) {
             irCtx->Error("Type of the first argument of the " + irCtx->color("main") +
                              " function, cannot be a pointer with variability. "
                              "It should be of " +
-                             irCtx->color("multiptr:[cstring ?]") + " type",
+                             irCtx->color("slice![cStr]") + " type",
                          arguments.at(0)->get_type()->fileRange);
           }
           mod->set_has_main_function();
           irCtx->hasMain = true;
         } else {
           irCtx->Error("Type of the first argument of the " + irCtx->color("main") + " function should be " +
-                           irCtx->color("multiptr:[cstring ?]"),
+                           irCtx->color("slice![cStr]"),
                        arguments.at(0)->get_type()->fileRange);
         }
       } else if (generatedTypes.empty()) {
@@ -180,8 +180,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
               ir::UnsignedType::get(32u, irCtx), 0u));
       args.push_back(ir::Argument::Create(
           Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
-          ir::PointerType::get(false, ir::CType::get_cstr(irCtx), true, ir::PointerOwner::OfAnonymous(), false, irCtx),
-          1u));
+          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), true, ir::MarkOwner::OfAnonymous(), false, irCtx), 1u));
     }
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
@@ -200,16 +199,21 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
     }
   }
   Maybe<ir::MetaInfo> irMetaInfo;
+  bool                inlineFunction = false;
   if (metaInfo.has_value()) {
+    metaInfo.value().set_parent_as_function();
     irMetaInfo = metaInfo.value().toIR(emitCtx);
+    if (irMetaInfo.value().has_key(ir::MetaInfo::inlineKey)) {
+      inlineFunction = irMetaInfo.value().get_value_as_bool(ir::MetaInfo::inlineKey).value();
+    }
   }
   if (isGeneric()) {
-    Vec<ir::GenericParameter*> genericTypes;
+    Vec<ir::GenericArgument*> genericTypes;
     for (auto* gen : generics) {
       genericTypes.push_back(gen->toIRGenericType());
     }
     SHOW("About to create generic function")
-    auto* fun = ir::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes),
+    auto* fun = ir::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes), inlineFunction,
                                      ir::ReturnType::get(retTy), args, isVariadic, fileRange,
                                      emitCtx->get_visibility_info(visibSpec), irCtx, None, irMetaInfo);
     SHOW("Created IR function")
@@ -223,7 +227,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                                                        LinkUnitType::function)},
                                          "C", nullptr))
             : None,
-        {}, ir::ReturnType::get(retTy), args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx,
+        {}, inlineFunction, ir::ReturnType::get(retTy), args, isVariadic, fileRange,
+        emitCtx->get_visibility_info(visibSpec), irCtx,
         definition.has_value()
             ? None
             : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalLinkage),
@@ -251,8 +256,8 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
     if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
       auto* cmdArgsVal = block->new_value(
           fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
-          ir::PointerType::get(false, ir::CType::get_cstr(irCtx), false, ir::PointerOwner::OfAnonymous(), true, irCtx),
-          false, fnEmit->arg_name_at(0).range);
+          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), false, ir::MarkOwner::OfAnonymous(), true, irCtx), false,
+          fnEmit->arg_name_at(0).range);
       SHOW("Storing argument pointer")
       irCtx->builder.CreateStore(
           fnEmit->get_llvm_function()->getArg(1u),
@@ -275,7 +280,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
         auto* argVal = block->new_value(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),
                                         arguments[i]->get_name().range);
         SHOW("Created local value for the argument")
-        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->getAlloca(), false);
+        irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
       }
     }
   }

@@ -82,12 +82,12 @@ bool Type::is_type_sized() const { return false; }
 Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const { return None; }
 
 bool Type::isCompatible(Type* other) {
-  if (is_pointer() && other->is_pointer()) {
-    if ((as_pointer()->get_subtype()->is_same(other->as_pointer()->get_subtype())) &&
-        (as_pointer()->getOwner().is_same(other->as_pointer()->getOwner()) || as_pointer()->getOwner().isAnonymous() ||
-         (as_pointer()->getOwner().isAnyRegion() && other->as_pointer()->getOwner().isRegion())) &&
-        (as_pointer()->isNonNullable() ? other->as_pointer()->isNonNullable() : true) &&
-        (as_pointer()->isMulti() == other->as_pointer()->isMulti())) {
+  if (is_mark() && other->is_mark()) {
+    if ((as_mark()->get_subtype()->is_same(other->as_mark()->get_subtype())) &&
+        (as_mark()->getOwner().is_same(other->as_mark()->getOwner()) || as_mark()->getOwner().isAnonymous() ||
+         (as_mark()->getOwner().isAnyRegion() && other->as_mark()->getOwner().isRegion())) &&
+        (as_mark()->isNonNullable() ? other->as_mark()->isNonNullable() : true) &&
+        (as_mark()->isSlice() == other->as_mark()->isSlice())) {
       return true;
     } else {
       return is_same(other);
@@ -132,10 +132,10 @@ bool Type::is_same(Type* other) {
         }
       }
       case TypeKind::pointer: {
-        return (((PointerType*)this)->isSubtypeVariable() == ((PointerType*)other)->isSubtypeVariable()) &&
-               (((PointerType*)this)->isNullable() == ((PointerType*)other)->isNullable()) &&
-               (((PointerType*)this)->get_subtype()->is_same(((PointerType*)other)->get_subtype())) &&
-               (((PointerType*)this)->getOwner().is_same(((PointerType*)other)->getOwner()));
+        return (((MarkType*)this)->isSubtypeVariable() == ((MarkType*)other)->isSubtypeVariable()) &&
+               (((MarkType*)this)->isNullable() == ((MarkType*)other)->isNullable()) &&
+               (((MarkType*)this)->get_subtype()->is_same(((MarkType*)other)->get_subtype())) &&
+               (((MarkType*)this)->getOwner().is_same(((MarkType*)other)->getOwner()));
       }
       case TypeKind::reference: {
         return (((ReferenceType*)this)->isSubtypeVariable() == ((ReferenceType*)other)->isSubtypeVariable()) &&
@@ -453,16 +453,16 @@ ReferenceType* Type::as_reference() const {
              : (is_opaque() ? as_opaque()->get_subtype()->as_reference() : (ReferenceType*)this);
 }
 
-bool Type::is_pointer() const {
+bool Type::is_mark() const {
   return (type_kind() == TypeKind::pointer) ||
-         (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_pointer()) ||
-         (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_pointer());
+         (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_mark()) ||
+         (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_mark());
 }
 
-PointerType* Type::as_pointer() const {
+MarkType* Type::as_mark() const {
   return (type_kind() == TypeKind::definition)
-             ? ((DefinitionType*)this)->get_subtype()->as_pointer()
-             : (is_opaque() ? as_opaque()->get_subtype()->as_pointer() : (PointerType*)this);
+             ? ((DefinitionType*)this)->get_subtype()->as_mark()
+             : (is_opaque() ? as_opaque()->get_subtype()->as_mark() : (MarkType*)this);
 }
 
 bool Type::is_array() const {

@@ -12,8 +12,8 @@ enum class TokenType {
   Public,
   stop,
   voidType,
-  pointerType,
-  multiPointerType,
+  markType,
+  sliceType,
   referenceType,
   unsignedIntegerType,
   integerType,
@@ -111,6 +111,7 @@ enum class TokenType {
   opaque,
   vectorType,
   skill,
+  error,
 };
 
 } // namespace qat::lexer

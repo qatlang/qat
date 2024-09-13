@@ -72,7 +72,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
         auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
         trueBlock->set_file_range(std::get<2>(section));
         ir::Block* falseBlock = nullptr;
-        if (exp->is_ghost_pointer() || exp->is_reference()) {
+        if (exp->is_ghost_reference() || exp->is_reference()) {
           exp = ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), exp->get_llvm()), expTy, false);
         }
         if (i == (chain.size() - 1) ? elseCase.has_value() : true) {

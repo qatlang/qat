@@ -104,7 +104,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
       ctx->Error("Type inference for declarations require a value", fileRange);
     }
   }
-  if (declType->is_reference() && ((!expVal->get_ir_type()->is_reference()) && expVal->is_ghost_pointer())) {
+  if (declType->is_reference() && ((!expVal->get_ir_type()->is_reference()) && expVal->is_ghost_reference())) {
     if (declType->as_reference()->isSubtypeVariable() && (!expVal->is_variable())) {
       ctx->Error("The referred type of the left hand side has variability, but the "
                  "value provided for initialisation do not have variability",
@@ -122,9 +122,9 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
   SHOW("Creating new value")
   auto* new_value = block->new_value(name.value, declType, variability, name.range);
   if (expVal) {
-    if (expVal->get_ir_type()->is_reference() || expVal->is_ghost_pointer()) {
+    if (expVal->get_ir_type()->is_reference() || expVal->is_ghost_reference()) {
       if (expVal->get_ir_type()->is_reference()) {
-        expVal->load_ghost_pointer(ctx->irCtx->builder);
+        expVal->load_ghost_reference(ctx->irCtx->builder);
       }
       auto* expValTy = expVal->get_ir_type()->is_reference() ? expVal->get_ir_type()->as_reference()->get_subtype()
                                                              : expVal->get_ir_type();

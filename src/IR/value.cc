@@ -17,7 +17,7 @@ Value::Value(llvm::Value* _llvmValue, ir::Type* _type, bool _isVariable)
 Vec<Value*> Value::allValues = {};
 
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange) {
-  if (!is_ghost_pointer()) {
+  if (!is_ghost_reference()) {
     auto result = ctx->get_fn()->get_block()->new_value(name.value_or(ctx->get_fn()->get_random_alloca_name()), type,
                                                         true, fileRange);
     ctx->irCtx->builder.CreateStore(get_llvm(), result->get_llvm());
@@ -31,18 +31,17 @@ Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> 
                    Mod* mod) { // NOLINT(misc-unused-parameters)
   llvm::FunctionType* fnTy  = nullptr;
   ir::FunctionType*   funTy = nullptr;
-  if (type->is_pointer() && type->as_pointer()->get_subtype()->is_function()) {
-    fnTy  = llvm::dyn_cast<llvm::FunctionType>(type->as_pointer()->get_subtype()->get_llvm_type());
-    funTy = type->as_pointer()->get_subtype()->as_function();
+  if (type->is_mark() && type->as_mark()->get_subtype()->is_function()) {
+    fnTy  = llvm::dyn_cast<llvm::FunctionType>(type->as_mark()->get_subtype()->get_llvm_type());
+    funTy = type->as_mark()->get_subtype()->as_function();
   } else {
     fnTy  = llvm::dyn_cast<llvm::FunctionType>(get_ir_type()->get_llvm_type());
     funTy = type->as_function();
   }
-  auto result =
-      new Value(irCtx->builder.CreateCall(fnTy, ll, args),
-                type->is_pointer() ? type->as_pointer()->get_subtype()->as_function()->get_return_type()->get_type()
-                                   : type->as_function()->get_return_type()->get_type(),
-                false);
+  auto result = new Value(irCtx->builder.CreateCall(fnTy, ll, args),
+                          type->is_mark() ? type->as_mark()->get_subtype()->as_function()->get_return_type()->get_type()
+                                          : type->as_function()->get_return_type()->get_type(),
+                          false);
   if (_localID && funTy->get_return_type()->is_return_self()) {
     result->set_local_id(_localID.value());
   }

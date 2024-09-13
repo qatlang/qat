@@ -1296,9 +1296,9 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
         cacheTy     = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, i));
         break;
       }
-      case TokenType::multiPointerType:
-      case TokenType::pointerType: {
-        const bool isMultiPtr = token.type == TokenType::multiPointerType;
+      case TokenType::sliceType:
+      case TokenType::markType: {
+        const bool isSlice = token.type == TokenType::sliceType;
         if (cacheTy.has_value()) {
           return {cacheTy.value(), i - 1};
         }
@@ -1314,7 +1314,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
               endTy         = TokenType::bracketClose;
               i++;
             } else {
-              add_error("Expected [ to start the subtype of the pointer", RangeSpan(i, i + 1));
+              add_error("Expected [ to start the subtype of the mark type", RangeSpan(i, i + 1));
             }
           }
           if (is_next(TokenType::var, i + 1)) {
@@ -1331,14 +1331,14 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                 if (sepPos + 2 != bClose) {
                   add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
-                cacheTy = ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::function,
-                                                   isNonNullable, None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::function,
+                                                isNonNullable, None, isSlice, {token.fileRange, RangeAt(bClose)});
               } else if (is_next(TokenType::heap, sepPos)) {
                 if (sepPos + 2 != bClose) {
                   add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
-                cacheTy = ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::heap, isNonNullable,
-                                                   None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::heap, isNonNullable,
+                                                None, isSlice, {token.fileRange, RangeAt(bClose)});
               } else if (is_next(TokenType::Type, sepPos)) {
                 if (is_next(TokenType::parenthesisOpen, sepPos + 1)) {
                   auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, sepPos + 2);
@@ -1351,15 +1351,15 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                       add_error("Owner type did not span till )", RangeSpan(ownTy.second + 1, pCloseRes.value()));
                     }
                     cacheTy =
-                        ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::type, isNonNullable,
-                                                 ownTy.first, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                        ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::type, isNonNullable,
+                                              ownTy.first, isSlice, {token.fileRange, RangeAt(bClose)});
                   } else {
                     add_error("Expected end for (", RangeAt(sepPos + 2));
                   }
                 } else {
                   add_error("Expected a type to be provided to be the owner of this pointer type like " +
-                                color_error(String(isMultiPtr ? "multiptr:[" : "ptr:[") +
-                                            subTypeRes.first->to_string() + ", type(OwnerType)]"),
+                                color_error(String(isSlice ? "slice:[" : "mark:[") + subTypeRes.first->to_string() +
+                                            ", type(OwnerType)]"),
                             RangeSpan(sepPos, bClose));
                 }
               } else if (is_next(TokenType::region, sepPos)) {
@@ -1375,22 +1375,21 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                                 RangeSpan(regTy.second + 1, pCloseRes.value()));
                     }
                     cacheTy =
-                        ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::region, isNonNullable,
-                                                 regTy.first, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                        ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::region, isNonNullable,
+                                              regTy.first, isSlice, {token.fileRange, RangeAt(bClose)});
                   } else {
                     add_error("Expected end for (", RangeAt(sepPos + 2));
                   }
                 } else {
-                  cacheTy =
-                      ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anyRegion,
-                                               isNonNullable, nullptr, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                  cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::anyRegion,
+                                                  isNonNullable, nullptr, isSlice, {token.fileRange, RangeAt(bClose)});
                 }
               } else if (is_next(TokenType::self_instance, sepPos)) {
                 if (sepPos + 2 != bClose) {
                   add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
-                cacheTy = ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::typeParent,
-                                                   isNonNullable, None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+                cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::typeParent,
+                                                isNonNullable, None, isSlice, {token.fileRange, RangeAt(bClose)});
               } else {
                 add_error("Invalid ownership of the pointer", {token.fileRange, RangeAt(sepPos)});
               }
@@ -1399,8 +1398,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
               if (subTypeRes.second + 1 != bClose) {
                 add_error("Subtype of the pointer did not span till ]", RangeSpan(subTypeRes.second + 1, bClose));
               }
-              cacheTy = ast::PointerType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anonymous,
-                                                 isNonNullable, None, isMultiPtr, {token.fileRange, RangeAt(bClose)});
+              cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::anonymous,
+                                              isNonNullable, None, isSlice, {token.fileRange, RangeAt(bClose)});
             }
             i = bClose;
             break;
@@ -1409,14 +1408,14 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
           }
         } else {
           if (is_next(TokenType::bracketOpen, i)) {
-            add_error("Found [ after " + color_error("ptr") +
+            add_error("Found [ after " + color_error("mark") +
                           " which is not the correct syntax. The syntax for pointer type is " +
-                          color_error("ptr:[subtype]"),
+                          color_error("mark:[subtype]"),
                       RangeSpan(i, i + 1));
           } else {
-            add_error("Type of the pointer not specified. The syntax for a pointer type is " +
-                          color_error("ptr:[subtype]") + " for nullable pointers and " + color_error("ptr![subtype]") +
-                          " for non-nullable pointers",
+            add_error("Subtype of the mark not specified. The syntax for a mark type is " +
+                          color_error("mark:[subtype]") + " for nullable mark and " + color_error("mark![subtype]") +
+                          " for non-nullable mark",
                       token.fileRange);
           }
         }
@@ -1463,11 +1462,11 @@ Vec<ast::GenericAbstractType*> Parser::do_generic_abstracts(ParserContext& preCt
     if (token.type == TokenType::identifier) {
       if (is_next(TokenType::assignment, i)) {
         auto typRes = do_type(preCtx, i + 1, None);
-        result.push_back(
-            ast::TypedGeneric::create(result.size(), IdentifierAt(i), typRes.first, RangeSpan(i, typRes.second)));
+        result.push_back(ast::TypedGenericAbstract::create(result.size(), IdentifierAt(i), typRes.first,
+                                                           RangeSpan(i, typRes.second)));
         i = typRes.second;
       } else {
-        result.push_back(ast::TypedGeneric::create(result.size(), IdentifierAt(i), None, token.fileRange));
+        result.push_back(ast::TypedGenericAbstract::create(result.size(), IdentifierAt(i), None, token.fileRange));
       }
       if (is_next(TokenType::separator, i)) {
         i++;
@@ -1508,8 +1507,8 @@ Vec<ast::GenericAbstractType*> Parser::do_generic_abstracts(ParserContext& preCt
             defaultValue = constRes.first;
             i            = constRes.second;
           }
-          result.push_back(
-              ast::PrerunGeneric::get(result.size(), constGenName, typeRes.first, defaultValue, RangeSpan(start, i)));
+          result.push_back(ast::PrerunGenericAbstract::get(result.size(), constGenName, typeRes.first, defaultValue,
+                                                           RangeSpan(start, i)));
           if (is_next(TokenType::separator, i)) {
             i++;
           } else if (is_next(TokenType::genericTypeEnd, i)) {
@@ -4226,7 +4225,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             } else {
               add_error("Expected ( to start the destructor call", RangeAt(i));
             }
-          } else if (is_next(TokenType::pointerType, i)) {
+          } else if (is_next(TokenType::markType, i)) {
             setCachedExpr(ast::AddressOf::create(exp, {exp->fileRange, RangeAt(i + 1)}), i + 1);
             i += 1;
           } else {

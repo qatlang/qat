@@ -23,7 +23,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
         ir::method_handler(ctx->irCtx, fun);
         return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), retType, false);
       } else {
-        if (retVal->is_ghost_pointer()) {
+        if (retVal->is_ghost_reference()) {
           if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
             auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
             if (!retType->is_trivially_copyable()) {
@@ -55,7 +55,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
                    retVal->is_reference() ? retVal->get_ir_type()->as_reference()->get_subtype()
                                           : retVal->get_ir_type()) &&
                (retType->as_reference()->isSubtypeVariable()
-                    ? (retVal->is_ghost_pointer()
+                    ? (retVal->is_ghost_reference()
                            ? retVal->is_variable()
                            : (retVal->is_reference() && retVal->get_ir_type()->as_reference()->isSubtypeVariable()))
                     : true)) {
@@ -66,7 +66,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
             fileRange);
       }
       if (retVal->is_reference()) {
-        retVal->load_ghost_pointer(ctx->irCtx->builder);
+        retVal->load_ghost_reference(ctx->irCtx->builder);
       }
       ir::destructor_caller(ctx->irCtx, fun);
       ir::method_handler(ctx->irCtx, fun);
@@ -74,7 +74,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
     } else if (retVal->get_ir_type()->is_reference() &&
                retVal->get_ir_type()->as_reference()->get_subtype()->is_same(retType)) {
       if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
-        retVal->load_ghost_pointer(ctx->irCtx->builder);
+        retVal->load_ghost_reference(ctx->irCtx->builder);
         auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
         if (!retType->is_trivially_copyable()) {
           if (!retVal->get_ir_type()->as_reference()->isSubtypeVariable()) {

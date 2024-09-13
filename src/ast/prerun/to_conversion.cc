@@ -55,20 +55,20 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
   } else if (valTy->is_string_slice()) {
     if (usableTarget->is_ctype() && usableTarget->as_ctype()->is_cstring()) {
       return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
-    } else if (valTy->is_pointer() &&
-               (valTy->as_pointer()->get_subtype()->is_unsigned_integer() ||
-                (valTy->as_pointer()->get_subtype()->is_ctype() &&
-                 valTy->as_pointer()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
-               (valTy->as_pointer()->get_subtype()->is_unsigned_integer()
-                    ? (valTy->as_pointer()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
-                    : (valTy->as_pointer()
+    } else if (valTy->is_mark() &&
+               (valTy->as_mark()->get_subtype()->is_unsigned_integer() ||
+                (valTy->as_mark()->get_subtype()->is_ctype() &&
+                 valTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
+               (valTy->as_mark()->get_subtype()->is_unsigned_integer()
+                    ? (valTy->as_mark()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
+                    : (valTy->as_mark()
                            ->get_subtype()
                            ->as_ctype()
                            ->get_subtype()
                            ->as_unsigned_integer()
                            ->getBitwidth() == 8u)) &&
-               (valTy->as_pointer()->getOwner().isAnonymous()) && (!valTy->as_pointer()->isSubtypeVariable())) {
-      if (valTy->as_pointer()->isMulti()) {
+               (valTy->as_mark()->getOwner().isAnonymous()) && (!valTy->as_mark()->isSubtypeVariable())) {
+      if (valTy->as_mark()->isMulti()) {
         return ir::PrerunValue::get(
             llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()), usableTarget);
       } else {

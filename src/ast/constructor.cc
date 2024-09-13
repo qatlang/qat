@@ -180,7 +180,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Storing self instance")
   irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
   SHOW("Loading implicit ptr")
-  self->load_ghost_pointer(irCtx->builder);
+  self->load_ghost_reference(irCtx->builder);
   SHOW("Loaded self instance")
   if ((prototype->type == ConstructorType::copy) || (prototype->type == ConstructorType::move)) {
     auto* argVal = block->new_value(
@@ -188,7 +188,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         ir::ReferenceType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(), irCtx), false,
         prototype->argName->range);
     irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_alloca(), false);
-    argVal->load_ghost_pointer(irCtx->builder);
+    argVal->load_ghost_reference(irCtx->builder);
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
       SHOW("Argument type is " << argIRTypes.at(i)->get_type()->to_string())
@@ -250,7 +250,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         auto* memVal = mem->defaultValue.value()->emit(
             EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));
         if (memVal->get_ir_type()->is_same(mem->type)) {
-          if (memVal->is_ghost_pointer()) {
+          if (memVal->is_ghost_reference()) {
             if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
               irCtx->builder.CreateStore(irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
                                          irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
@@ -292,7 +292,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
           }
         } else if (mem->type->is_reference() &&
                    mem->type->as_reference()->get_subtype()->is_same(memVal->get_ir_type()) &&
-                   memVal->is_ghost_pointer() &&
+                   memVal->is_ghost_reference() &&
                    (mem->type->as_reference()->isSubtypeVariable() ? memVal->is_variable() : true)) {
           irCtx->builder.CreateStore(memVal->get_llvm(),
                                      irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));

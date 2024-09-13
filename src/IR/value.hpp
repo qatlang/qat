@@ -54,11 +54,11 @@ public:
   useit inline bool is_self_value() const { return isSelf; }
   useit inline bool is_variable() const { return variable; }
   useit inline bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
-  useit inline bool is_value() const { return !is_reference() && !is_prerun_value() && !is_ghost_pointer(); }
+  useit inline bool is_value() const { return !is_reference() && !is_prerun_value() && !is_ghost_reference(); }
   useit inline bool is_local_value() const { return localID.has_value(); }
   useit inline bool is_reference() const { return type->is_reference(); }
-  useit inline bool is_pointer() const { return type->is_pointer(); }
-  useit inline bool is_ghost_pointer() const {
+  useit inline bool is_mark() const { return type->is_mark(); }
+  useit inline bool is_ghost_reference() const {
     return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
                     llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == get_ir_type()->get_llvm_type()) ||
                    (llvm::isa<llvm::GlobalVariable>(ll) &&
@@ -76,8 +76,8 @@ public:
   inline void set_self() { isSelf = true; }
   inline void set_local_id(const String& locID) { localID = locID; }
 
-  inline void load_ghost_pointer(llvm::IRBuilder<>& builder) {
-    if (is_ghost_pointer()) {
+  inline void load_ghost_reference(llvm::IRBuilder<>& builder) {
+    if (is_ghost_reference()) {
       ll = builder.CreateLoad(get_ir_type()->get_llvm_type(), ll);
     }
   }

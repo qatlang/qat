@@ -17,9 +17,9 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
   if (lhsVal->is_variable() ||
       (lhsVal->get_ir_type()->is_reference() && lhsVal->get_ir_type()->as_reference()->isSubtypeVariable())) {
     SHOW("Is variable nature")
-    if (lhsVal->get_ir_type()->is_reference() || lhsVal->is_ghost_pointer()) {
+    if (lhsVal->get_ir_type()->is_reference() || lhsVal->is_ghost_reference()) {
       if (lhsVal->is_reference()) {
-        lhsVal->load_ghost_pointer(ctx->irCtx->builder);
+        lhsVal->load_ghost_reference(ctx->irCtx->builder);
       }
       if (value->nodeType() == NodeType::COPY) {
         auto copyExp          = (ast::Copy*)value;
@@ -46,14 +46,14 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
           (expTy->is_reference() && expTy->as_reference()->get_subtype()->is_same(
                                         lhsTy->is_reference() ? lhsTy->as_reference()->get_subtype() : lhsTy))) {
         SHOW("The general types are the same")
-        if (lhsVal->is_ghost_pointer() && lhsTy->is_reference()) {
+        if (lhsVal->is_ghost_reference() && lhsTy->is_reference()) {
           SHOW("LHS is implicit pointer")
-          lhsVal->load_ghost_pointer(ctx->irCtx->builder);
+          lhsVal->load_ghost_reference(ctx->irCtx->builder);
           SHOW("Loaded implicit pointer")
         }
-        if (expTy->is_reference() || expVal->is_ghost_pointer()) {
+        if (expTy->is_reference() || expVal->is_ghost_reference()) {
           if (expTy->is_reference()) {
-            expVal->load_ghost_pointer(ctx->irCtx->builder);
+            expVal->load_ghost_reference(ctx->irCtx->builder);
             SHOW("Expression for assignment is of type " << expTy->as_reference()->get_subtype()->to_string())
             expTy = expTy->as_reference()->get_subtype();
           }
@@ -100,7 +100,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
       ctx->Error(
           "Left hand side of the assignment cannot be assigned to because the reference does not have variability",
           lhs->fileRange);
-    } else if (lhsVal->get_ir_type()->is_pointer()) {
+    } else if (lhsVal->get_ir_type()->is_mark()) {
       ctx->Error(
           "Left hand side of the assignment cannot be assigned to because it is of pointer type. If you intend to change the "
           "value pointed to by this pointer, consider dereferencing it before assigning",

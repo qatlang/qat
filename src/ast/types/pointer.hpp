@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-enum class PtrOwnType {
+enum class MarkOwnType {
   heap,
   type,
   typeParent,
@@ -16,27 +16,27 @@ enum class PtrOwnType {
   anyRegion,
 };
 
-class PointerType final : public Type {
+class MarkType final : public Type {
   Type*             type;
-  PtrOwnType        ownTyp;
+  MarkOwnType       ownTyp;
   Maybe<ast::Type*> ownerTyTy;
-  bool              isMultiPtr;
+  bool              isSlice;
   bool              isSubtypeVar;
   bool              isNonNullable;
 
-  useit ir::PointerOwner getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const;
-  useit String           pointerOwnerToString() const;
+  useit ir::MarkOwner getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const;
+  useit String        pointerOwnerToString() const;
 
 public:
-  PointerType(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,
-              bool _isMultiPtr, FileRange _fileRange)
-      : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isMultiPtr(_isMultiPtr),
+  MarkType(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,
+           bool _isSlice, FileRange _fileRange)
+      : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isSlice(_isSlice),
         isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNullable) {}
 
-  useit static inline PointerType* create(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable,
-                                          Maybe<Type*> _ownerTyTy, bool _isMultiPtr, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(PointerType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy,
-                             _isMultiPtr, _fileRange);
+  useit static inline MarkType* create(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable,
+                                       Maybe<Type*> _ownerTyTy, bool _isSlice, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(MarkType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy, _isSlice,
+                             _fileRange);
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;

@@ -32,9 +32,9 @@ ir::Value* LoopWhile::emit(EmitCtx* ctx) {
       (void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
     } else {
       llCond = cond->get_llvm();
-      cond->load_ghost_pointer(ctx->irCtx->builder);
+      cond->load_ghost_reference(ctx->irCtx->builder);
       if (cond->get_ir_type()->is_reference()) {
-        cond->load_ghost_pointer(ctx->irCtx->builder);
+        cond->load_ghost_reference(ctx->irCtx->builder);
         llCond = ctx->irCtx->builder.CreateLoad(cond->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
                                                 cond->get_llvm());
       }
@@ -60,7 +60,7 @@ ir::Value* LoopWhile::emit(EmitCtx* ctx) {
                    condition->fileRange);
       }
     }
-    cond->load_ghost_pointer(ctx->irCtx->builder);
+    cond->load_ghost_reference(ctx->irCtx->builder);
     if (cond->get_ir_type()->is_reference()) {
       llCond = ctx->irCtx->builder.CreateLoad(cond->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
                                               cond->get_llvm());

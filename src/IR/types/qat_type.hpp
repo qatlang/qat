@@ -17,7 +17,7 @@ class IntegerType;
 class UnsignedType;
 class FloatType;
 class ReferenceType;
-class PointerType;
+class MarkType;
 class ArrayType;
 class TupleType;
 class FunctionType;
@@ -119,8 +119,8 @@ public:
   useit bool           is_reference() const;
   useit ReferenceType* as_reference() const;
 
-  useit bool         is_pointer() const;
-  useit PointerType* as_pointer() const;
+  useit bool      is_mark() const;
+  useit MarkType* as_mark() const;
 
   useit bool       is_array() const;
   useit ArrayType* as_array() const;

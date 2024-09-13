@@ -100,7 +100,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
         } else {
           if (typ->is_trivially_copyable() || typ->is_trivially_movable()) {
             if (val->is_reference()) {
-              val->load_ghost_pointer(irCtx->builder);
+              val->load_ghost_reference(irCtx->builder);
             }
             auto origVal = val;
             auto result  = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());

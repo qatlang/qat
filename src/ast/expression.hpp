@@ -53,8 +53,18 @@ struct FnAtEnd {
 class TypeInferrable {
 public:
   ir::Type*         inferredType = nullptr;
+
   useit inline bool is_type_inferred() const { return inferredType != nullptr; }
-  inline void       set_inference_type(ir::Type* _type) {
+
+  inline void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRange fileRange) const {
+    if(inferredType && !inferredType->is_same(provided)) {
+      ctx->Error("The type inferred for this expression is " + ctx->color(inferredType->to_string())
+		 + " which does not match with the provided type which is "
+		 + ctx->color(provided->to_string()), fileRange);
+    }
+  }
+
+  inline void set_inference_type(ir::Type* _type) {
     inferredType = _type->is_reference() ? _type->as_reference()->get_subtype() : _type;
   }
 };

@@ -1,5 +1,4 @@
 #include "./file_range.hpp"
-#include "../show.hpp"
 #include "./json.hpp"
 #include <filesystem>
 namespace qat {
@@ -30,6 +29,12 @@ FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, sta
 
 String FileRange::start_to_string() const {
   return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
+}
+
+bool FileRange::is_before(FileRange another) const {
+  return std::filesystem::equivalent(file, another.file) &&
+         ((end.line < another.start.line) ||
+          ((end.line == another.start.line) && (end.character < another.start.character)));
 }
 
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }

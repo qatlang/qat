@@ -42,7 +42,7 @@ public:
   FileRange(Json json);
 
   /**
-   *  FileRange represents a partivular range in a file
+   *  FileRange represents a particular range in a file
    *
    * This creates a FileRange from two other FileRanges. The beginning
    * of the first one will be the beginning of the new one. The end of the
@@ -69,6 +69,7 @@ public:
   useit FileRange spanTo(FileRange const& other) const;
   useit FileRange trimTo(FilePos othStart) const;
   useit String    start_to_string() const;
+  useit bool      is_before(FileRange another) const;
 
   operator Json() const;
 

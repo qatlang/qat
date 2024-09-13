@@ -215,11 +215,24 @@ void QatSitter::initialise() {
       log->say("Exporting code metadata");
       SHOW("About to export code metadata")
       // NOLINTNEXTLINE(readability-isolate-declaration)
-      Vec<JsonValue> modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
-          mixTypesJson, regionJson, choiceJson, defsJson;
+      Vec<JsonValue> modulesJSON, functionsJSON, genericFunctionsJSON, genericCoreTypesJSON, structTypesJSON,
+          mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON;
       for (auto* entity : fileEntities) {
-        entity->output_all_overview(modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson,
-                                    coreTypesJson, mixTypesJson, regionJson, choiceJson, defsJson);
+        entity->output_all_overview(modulesJSON, functionsJSON, genericFunctionsJSON, genericCoreTypesJSON,
+                                    structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON);
+      }
+      Vec<JsonValue> expressionUnits;
+      for (auto* exp : ir::Value::allValues) {
+        if (exp->get_ir_type() && exp->has_associated_range()) {
+          Maybe<String> expStr;
+          if (exp->is_prerun_value()) {
+            expStr = exp->get_ir_type()->to_prerun_generic_string((ir::PrerunValue*)(exp));
+          }
+          expressionUnits.push_back(Json()
+                                        ._("fileRange", exp->get_associated_range())
+                                        ._("typeID", exp->get_ir_type()->get_id())
+                                        ._("value", expStr.has_value() ? expStr.value() : JsonValue()));
+        }
       }
       auto            codeStructFilePath = cfg->get_output_path() / "QatCodeInfo.json";
       bool            codeInfoExists     = fs::exists(codeStructFilePath);
@@ -234,15 +247,16 @@ void QatSitter::initialise() {
         mStream.open(codeStructFilePath, std::ios_base::out);
         if (mStream.is_open()) {
           mStream << Json()
-                         ._("modules", modulesJson)
-                         ._("functions", functionsJson)
-                         ._("genericFunctions", genericFunctionsJson)
-                         ._("coreTypes", coreTypesJson)
-                         ._("genericCoreTypes", genericCoreTypesJson)
-                         ._("mixTypes", mixTypesJson)
-                         ._("regions", regionJson)
-                         ._("choiceTypes", choiceJson)
-                         ._("typeDefinitions", defsJson);
+                         ._("modules", modulesJSON)
+                         ._("functions", functionsJSON)
+                         ._("genericFunctions", genericFunctionsJSON)
+                         ._("structTypes", structTypesJSON)
+                         ._("genericStructTypes", genericCoreTypesJSON)
+                         ._("mixTypes", mixTypesJSON)
+                         ._("regions", regionJSON)
+                         ._("choiceTypes", choiceJSON)
+                         ._("typeDefinitions", typeDefinitionsJSON)
+                         ._("expressionUnits", expressionUnits);
           mStream.close();
         } else {
           ctx->Error("Could not open the code info file for output", codeStructFilePath);

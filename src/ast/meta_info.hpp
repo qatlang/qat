@@ -7,10 +7,17 @@ namespace qat::ast {
 
 struct MetaInfo {
   Vec<Pair<Identifier, PrerunExpression*>> keyValues;
+  Maybe<FileRange>                         inlineRange;
   FileRange                                fileRange;
+
+  mutable bool isParentFunction = false;
 
   MetaInfo(Vec<Pair<Identifier, PrerunExpression*>> _keyValues, FileRange _fileRange)
       : keyValues(_keyValues), fileRange(_fileRange) {}
+
+  inline void set_parent_as_function() const { isParentFunction = true; }
+
+  useit inline bool has_inline_range() const { return inlineRange.has_value(); }
 
   useit ir::MetaInfo toIR(EmitCtx* ctx) const {
     std::set<String>                        keys;
@@ -21,15 +28,46 @@ struct MetaInfo {
         ctx->Error("The key " + ctx->color(kv.first.value) + " is repeating here", kv.first.range);
       }
       auto irVal = kv.second->emit(ctx);
-      if (kv.first.value == "foreign" || kv.first.value == ir::MetaInfo::linkAsKey) {
+      if (kv.first.value == ir::MetaInfo::foreignKey || kv.first.value == ir::MetaInfo::linkAsKey) {
         if (!irVal->get_ir_type()->is_string_slice()) {
           ctx->Error("The " + ctx->color(kv.first.value) + " field is expected to be of type " + ctx->color("str") +
-                         ". Got an expression of type " + ctx->color(irVal->get_ir_type()->to_string()),
+                         ". Got an expression of type " + ctx->color(irVal->get_ir_type()->to_string()) + " instead",
+                     kv.second->fileRange);
+        }
+      } else if (kv.first.value == ir::MetaInfo::inlineKey) {
+        if (!isParentFunction) {
+          ctx->Error("This " + ctx->color("meta") + " info does not belong to a function, and hence the " +
+                         ctx->color("inline") + " keyword cannot be used",
+                     kv.second->fileRange);
+        }
+        if (inlineRange.has_value()) {
+          ctx->Error(
+              "The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is repeating here",
+              inlineRange.value().is_before(kv.second->fileRange) ? kv.second->fileRange : inlineRange.value(),
+              Pair<String, FileRange>{
+                  "The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is already provided here",
+                  inlineRange.value().is_before(kv.second->fileRange) ? inlineRange.value() : kv.second->fileRange});
+        }
+        if (!irVal->get_ir_type()->is_bool()) {
+          ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " field is expected to be of type " +
+                         ctx->color("bool") + ". Got an expression of type " +
+                         ctx->color(irVal->get_ir_type()->to_string()) + " instead",
                      kv.second->fileRange);
         }
       }
       resultVec.push_back({kv.first, irVal});
       valuesRange.push_back(kv.second->fileRange);
+    }
+    if (inlineRange.has_value()) {
+      if (!isParentFunction) {
+        ctx->Error("This " + ctx->color("meta") + " info does not belong to a parent, and hence the " +
+                       ctx->color("inline") + " keyword cannot be used here",
+                   inlineRange);
+      }
+      resultVec.push_back({{ir::MetaInfo::inlineKey, inlineRange.value()},
+                           ir::PrerunValue::get(llvm::ConstantInt::getBool(ctx->irCtx->llctx, false),
+                                                ir::UnsignedType::getBool(ctx->irCtx))});
+      valuesRange.push_back(inlineRange.value());
     }
     return ir::MetaInfo(resultVec, valuesRange, fileRange);
   }
@@ -39,7 +77,11 @@ struct MetaInfo {
     for (auto& kv : keyValues) {
       kvJson.push_back(Json()._("key", kv.first)._("value", kv.second->to_json()));
     }
-    return Json()._("keyValues", kvJson)._("fileRange", fileRange);
+    return Json()
+        ._("keyValues", kvJson)
+        ._("hasInline", inlineRange.has_value())
+        ._("inlineRange", inlineRange.has_value() ? inlineRange.value() : JsonValue())
+        ._("fileRange", fileRange);
   }
 };
 

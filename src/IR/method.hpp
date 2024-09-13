@@ -8,17 +8,15 @@
 #include "skill.hpp"
 #include "types/function.hpp"
 #include "types/qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
 
 #include <set>
 #include <string>
-#include <vector>
 
 namespace qat::ir {
 
 enum class MethodType {
   normal,
-  value_method,
+  valueMethod,
   staticFn,
   fromConvertor,
   toConvertor,
@@ -33,7 +31,7 @@ enum class MethodType {
   defaultConstructor,
 };
 
-String memberFnTypeToString(MethodType type);
+String method_type_to_string(MethodType type);
 
 class ExpandedType;
 
@@ -75,55 +73,58 @@ private:
   static LinkNames get_link_names_from(MethodParent* parent, bool isStatic, Identifier name, bool isVar,
                                        MethodType fnType, Vec<Argument> args, Type* retTy);
 
-  Method(MethodType fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, ReturnType* returnType,
-         Vec<Argument> _args, bool has_variadic_arguments, bool _is_static, Maybe<FileRange> _fileRange,
-         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
+  Method(MethodType fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, bool isInline,
+         ReturnType* returnType, Vec<Argument> _args, bool has_variadic_arguments, bool _is_static,
+         Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
 
 public:
-  static Method* Create(MethodParent* parent, bool is_variation, const Identifier& name, ReturnType* return_type,
-                        const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
-                        const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+  static std::map<MethodType, String> methodTypes;
 
-  static Method* CreateValued(MethodParent* parent, const Identifier& name, Type* return_type,
-                              const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
-                              const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+  useit static Method* Create(MethodParent* parent, bool is_variation, const Identifier& name, bool isInline,
+                              ReturnType* returnType, const Vec<Argument>& args, bool has_variadic_args,
+                              Maybe<FileRange> fileRange, const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static Method* DefaultConstructor(MethodParent* parent, FileRange nameRange, const VisibilityInfo& visibInfo,
-                                    Maybe<FileRange> fileRange, ir::Ctx* irCtx);
+  useit static Method* CreateValued(MethodParent* parent, const Identifier& name, bool isInline, Type* return_type,
+                                    const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                                    const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
-  static Method* CopyConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
-                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx);
+  useit static Method* DefaultConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
+                                          const VisibilityInfo& visibInfo, Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* MoveConstructor(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
-                                 Maybe<FileRange> fileRange, ir::Ctx* irCtx);
+  useit static Method* CopyConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
+                                       const Identifier& otherName, Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* CopyAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
-                                Maybe<FileRange> fileRange, ir::Ctx* irCtx);
+  useit static Method* MoveConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
+                                       const Identifier& otherName, Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* MoveAssignment(MethodParent* parent, FileRange nameRange, const Identifier& otherName,
-                                const FileRange& fileRange, ir::Ctx* irCtx);
+  useit static Method* CopyAssignment(MethodParent* parent, FileRange nameRange, bool isInline,
+                                      const Identifier& otherName, Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* CreateConstructor(MethodParent* parent, FileRange nameRange, const Vec<Argument>& args,
-                                   bool hasVariadicArgs, Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo,
-                                   ir::Ctx* irCtx);
+  useit static Method* MoveAssignment(MethodParent* parent, FileRange nameRange, bool isInline,
+                                      const Identifier& otherName, const FileRange& fileRange, ir::Ctx* irCtx);
 
-  static Method* CreateFromConvertor(MethodParent* parent, FileRange nameRange, Type* sourceType,
-                                     const Identifier& name, Maybe<FileRange> fileRange,
-                                     const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+  useit static Method* CreateConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
+                                         const Vec<Argument>& args, bool hasVariadicArgs, Maybe<FileRange> fileRange,
+                                         const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateToConvertor(MethodParent* parent, FileRange nameRange, Type* destType,
-                                   Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+  useit static Method* CreateFromConvertor(MethodParent* parent, FileRange nameRange, bool isInline, Type* sourceType,
+                                           const Identifier& name, Maybe<FileRange> fileRange,
+                                           const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateDestructor(MethodParent* parent, FileRange nameRange, Maybe<FileRange> fileRange,
-                                  ir::Ctx* irCtx);
+  useit static Method* CreateToConvertor(MethodParent* parent, FileRange nameRange, bool isInline, Type* destType,
+                                         Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  static Method* CreateOperator(MethodParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
-                                const String& opr, ReturnType* returnType, const Vec<Argument>& args,
-                                Maybe<FileRange> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+  useit static Method* CreateDestructor(MethodParent* parent, FileRange nameRange, bool isInline,
+                                        Maybe<FileRange> fileRange, ir::Ctx* irCtx);
 
-  static Method* CreateStatic(MethodParent* parent, const Identifier& name, Type* return_type,
-                              const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
-                              const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+  useit static Method* CreateOperator(MethodParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
+                                      const String& opr, bool isInline, ReturnType* returnType,
+                                      const Vec<Argument>& args, Maybe<FileRange> fileRange,
+                                      const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+
+  useit static Method* CreateStatic(MethodParent* parent, const Identifier& name, bool isInline, Type* return_type,
+                                    const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                                    const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
   ~Method() override;
 
@@ -161,7 +162,7 @@ public:
 
   useit String get_full_name() const final;
 
-  useit bool is_method() const final;
+  useit bool is_method() const final { return true; }
 
   useit inline bool is_in_skill() const { return parent->is_done_skill(); }
 

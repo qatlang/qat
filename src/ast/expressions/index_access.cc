@@ -20,7 +20,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
     } else if (instType->is_array()) {
       index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(64u, ctx->irCtx));
-    } else if (instType->is_pointer() || instType->is_string_slice()) {
+    } else if (instType->is_mark() || instType->is_string_slice()) {
       index->as_type_inferrable()->set_inference_type(ir::CType::get_usize(ctx->irCtx));
     }
   }
@@ -50,11 +50,11 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                        ", the number of members in this tuple",
                    index->fileRange);
       }
-      if (inst->is_reference() || inst->is_ghost_pointer()) {
+      if (inst->is_reference() || inst->is_ghost_reference()) {
         bool isMemVar =
             inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable() : inst->is_variable();
         if (inst->is_reference()) {
-          inst->load_ghost_pointer(ctx->irCtx->builder);
+          inst->load_ghost_reference(ctx->irCtx->builder);
         }
         return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), indPre),
                               ir::ReferenceType::get(isMemVar, instType->as_tuple()->getSubtypeAt(indPre), ctx->irCtx),
@@ -77,15 +77,15 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                      " type",
                  index->fileRange);
     }
-  } else if (instType->is_pointer() || instType->is_array()) {
-    ind->load_ghost_pointer(ctx->irCtx->builder);
+  } else if (instType->is_mark() || instType->is_array()) {
+    ind->load_ghost_reference(ctx->irCtx->builder);
     if (ind->get_ir_type()->is_reference()) {
       indType = indType->as_reference()->get_subtype();
     }
     if (indType->is_unsigned_integer() || (indType->is_ctype() && indType->as_ctype()->is_usize())) {
       if (inst->get_ir_type()->is_reference() &&
-          (inst->get_ir_type()->as_reference()->get_subtype()->is_pointer() &&
-           !inst->get_ir_type()->as_reference()->get_subtype()->as_pointer()->isMulti())) {
+          (inst->get_ir_type()->as_reference()->get_subtype()->is_mark() &&
+           !inst->get_ir_type()->as_reference()->get_subtype()->as_mark()->isSlice())) {
         SHOW("Instance for member access is a Reference to: "
              << inst->get_ir_type()->as_reference()->get_subtype()->to_string())
         inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()), instType,
@@ -95,8 +95,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
         ind = ir::Value::get(ctx->irCtx->builder.CreateLoad(indType->get_llvm_type(), ind->get_llvm()), indType,
                              ind->get_ir_type()->as_reference()->isSubtypeVariable());
       }
-      if (instType->is_pointer()) {
-        if (!instType->as_pointer()->isMulti()) {
+      if (instType->is_mark()) {
+        if (!instType->as_mark()->isSlice()) {
           ctx->Error("Only multi pointers can be indexed into", fileRange);
         }
         auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
@@ -121,18 +121,18 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
         idxs.push_back(ind->get_llvm());
         return ir::Value::get(
             ctx->irCtx->builder.CreateInBoundsGEP(
-                instType->as_pointer()->get_subtype()->get_llvm_type(),
+                instType->as_mark()->get_subtype()->get_llvm_type(),
                 ctx->irCtx->builder.CreateLoad(
-                    llvm::PointerType::get(instType->as_pointer()->get_subtype()->get_llvm_type(),
+                    llvm::PointerType::get(instType->as_mark()->get_subtype()->get_llvm_type(),
                                            ctx->irCtx->dataLayout->getProgramAddressSpace()),
                     ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), 0u)),
                 idxs),
-            ir::ReferenceType::get(instType->as_pointer()->isSubtypeVariable(), instType->as_pointer()->get_subtype(),
+            ir::ReferenceType::get(instType->as_mark()->isSubtypeVariable(), instType->as_mark()->get_subtype(),
                                    ctx->irCtx),
-            instType->as_pointer()->isSubtypeVariable());
+            instType->as_mark()->isSubtypeVariable());
       } else {
         if (inst->is_reference()) {
-          inst->load_ghost_pointer(ctx->irCtx->builder);
+          inst->load_ghost_reference(ctx->irCtx->builder);
         }
         if (llvm::isa<llvm::ConstantInt>(ind->get_llvm())) {
           SHOW("Index Access : Index is a constant")
@@ -161,8 +161,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                  index->fileRange);
     }
   } else if (instType->is_string_slice()) {
-    if (ind->is_reference() || ind->is_ghost_pointer()) {
-      ind->load_ghost_pointer(ctx->irCtx->builder);
+    if (ind->is_reference() || ind->is_ghost_reference()) {
+      ind->load_ghost_reference(ctx->irCtx->builder);
       if (ind->is_reference()) {
         ind = ir::Value::get(
             ctx->irCtx->builder.CreateLoad(ind->is_reference()
@@ -180,9 +180,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                      ctx->color("usize"),
                  fileRange);
     }
-    if (inst->is_reference() || inst->is_ghost_pointer()) {
+    if (inst->is_reference() || inst->is_ghost_reference()) {
       if (inst->is_reference()) {
-        inst->load_ghost_pointer(ctx->irCtx->builder);
+        inst->load_ghost_reference(ctx->irCtx->builder);
       }
       auto  usizeTy = ir::CType::get_usize(ctx->irCtx);
       auto* strTy   = ir::StringSliceType::get(ctx->irCtx);
@@ -269,8 +269,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           false);
     }
   } else if (instType->is_ctype() && instType->as_ctype()->is_cstring()) {
-    ind->load_ghost_pointer(ctx->irCtx->builder);
-    inst->load_ghost_pointer(ctx->irCtx->builder);
+    ind->load_ghost_reference(ctx->irCtx->builder);
+    inst->load_ghost_reference(ctx->irCtx->builder);
     auto* instVal = inst->get_llvm();
     if (inst->is_reference()) {
       instVal = ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm());
@@ -286,19 +286,19 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
     ir::Value*    operand  = nullptr;
     Maybe<String> localID  = inst->get_local_id();
     bool          isVarExp = inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable()
-                                                  : (inst->is_ghost_pointer() ? inst->is_variable() : true);
+                                                  : (inst->is_ghost_reference() ? inst->is_variable() : true);
     SHOW("Index access: isVarExp = " << isVarExp)
     if (!indType->is_reference() &&
         ((isVarExp && eTy->has_variation_binary_operator(
-                          "[]", {ind->is_ghost_pointer() ? Maybe<bool>(ind->is_variable()) : None, indType})) ||
+                          "[]", {ind->is_ghost_reference() ? Maybe<bool>(ind->is_variable()) : None, indType})) ||
          eTy->has_normal_binary_operator(
-             "[]", {ind->is_ghost_pointer() ? Maybe<bool>(ind->is_variable()) : None, indType}))) {
+             "[]", {ind->is_ghost_reference() ? Maybe<bool>(ind->is_variable()) : None, indType}))) {
       if ((isVarExp && eTy->has_variation_binary_operator("[]", {None, indType})) ||
           eTy->has_normal_binary_operator("[]", {None, indType})) {
         opFn = (isVarExp && eTy->has_variation_binary_operator("[]", {None, indType}))
                    ? eTy->get_variation_binary_operator("[]", {None, indType})
                    : eTy->get_normal_binary_operator("[]", {None, indType});
-        if (ind->is_ghost_pointer()) {
+        if (ind->is_ghost_reference()) {
           if (indType->is_trivially_copyable() || indType->is_trivially_movable()) {
             auto indVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(indType->get_llvm_type(), ind->get_llvm()),
                                          indType, false);
@@ -319,11 +319,11 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
         operand = ind;
       } else {
         opFn    = (isVarExp && eTy->has_variation_binary_operator(
-                                "[]", {ind->is_ghost_pointer() ? Maybe<bool>(ind->is_variable()) : None, indType}))
+                                "[]", {ind->is_ghost_reference() ? Maybe<bool>(ind->is_variable()) : None, indType}))
                       ? eTy->get_variation_binary_operator(
-                         "[]", {ind->is_ghost_pointer() ? Maybe<bool>(ind->is_variable()) : None, indType})
+                         "[]", {ind->is_ghost_reference() ? Maybe<bool>(ind->is_variable()) : None, indType})
                       : eTy->get_normal_binary_operator(
-                         "[]", {ind->is_ghost_pointer() ? Maybe<bool>(ind->is_variable()) : None, indType});
+                         "[]", {ind->is_ghost_reference() ? Maybe<bool>(ind->is_variable()) : None, indType});
         operand = ind;
       }
     } else if (indType->is_reference() &&
@@ -333,7 +333,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       opFn = (isVarExp && eTy->has_variation_binary_operator("[]", {None, indType->as_reference()->get_subtype()}))
                  ? eTy->get_variation_binary_operator("[]", {None, indType->as_reference()->get_subtype()})
                  : eTy->get_normal_binary_operator("[]", {None, indType->as_reference()->get_subtype()});
-      ind->load_ghost_pointer(ctx->irCtx->builder);
+      ind->load_ghost_reference(ctx->irCtx->builder);
       auto* indSubType = indType->as_reference()->get_subtype();
       if (indSubType->is_trivially_copyable() || indSubType->is_trivially_movable()) {
         auto indVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(indSubType->get_llvm_type(), ind->get_llvm()),
@@ -359,7 +359,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                  index->fileRange);
     }
     if (inst->is_reference()) {
-      inst->load_ghost_pointer(ctx->irCtx->builder);
+      inst->load_ghost_reference(ctx->irCtx->builder);
     }
     return opFn->call(ctx->irCtx, {inst->get_llvm(), operand->get_llvm()}, localID, ctx->mod);
   } else {

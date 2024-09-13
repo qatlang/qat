@@ -34,8 +34,8 @@ ir::Value* Default::emit(EmitCtx* ctx) {
         return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_unsigned_integer()->get_llvm_type(), 0u),
                                     theType);
       }
-    } else if (theType->is_pointer()) {
-      if (theType->as_pointer()->isNullable()) {
+    } else if (theType->is_mark()) {
+      if (theType->as_mark()->isNullable()) {
         return ir::PrerunValue::get(llvm::ConstantExpr::getNullValue(theType->get_llvm_type()), theType);
       } else {
         ctx->Error("The pointer type is " + ctx->color(theType->to_string()) +

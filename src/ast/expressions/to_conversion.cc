@@ -24,30 +24,30 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
     auto* typ     = val->get_ir_type();
     auto  loadRef = [&] {
       if (val->is_reference()) {
-        val->load_ghost_pointer(ctx->irCtx->builder);
+        val->load_ghost_reference(ctx->irCtx->builder);
         val = ir::Value::get(ctx->irCtx->builder.CreateLoad(
                                  val->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(), val->get_llvm()),
                               val->get_ir_type()->as_reference()->get_subtype(), false);
         typ = val->get_ir_type();
       } else {
-        val->load_ghost_pointer(ctx->irCtx->builder);
+        val->load_ghost_reference(ctx->irCtx->builder);
       }
     };
     auto valType = val->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
     if (valType->is_ctype()) {
       valType = valType->as_ctype()->get_subtype();
     }
-    if (valType->is_pointer()) {
-      if (destTy->is_pointer() || (destTy->is_ctype() && destTy->as_ctype()->is_c_ptr())) {
+    if (valType->is_mark()) {
+      if (destTy->is_mark() || (destTy->is_ctype() && destTy->as_ctype()->is_c_ptr())) {
         loadRef();
-        auto targetTy = destTy->is_ctype() ? destTy->as_ctype()->get_subtype()->as_pointer() : destTy->as_pointer();
-        if (!valType->as_pointer()->getOwner().is_same(targetTy->getOwner()) && !targetTy->getOwner().isAnonymous()) {
+        auto targetTy = destTy->is_ctype() ? destTy->as_ctype()->get_subtype()->as_mark() : destTy->as_mark();
+        if (!valType->as_mark()->getOwner().is_same(targetTy->getOwner()) && !targetTy->getOwner().isAnonymous()) {
           ctx->Error(
               "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
               fileRange);
         }
-        if (valType->as_pointer()->isNullable() != targetTy->as_pointer()->isNullable()) {
-          if (valType->as_pointer()->isNullable()) {
+        if (valType->as_mark()->isNullable() != targetTy->as_mark()->isNullable()) {
+          if (valType->as_mark()->isNullable()) {
             auto  fun           = ctx->get_fn();
             auto* currBlock     = fun->get_block();
             auto* nullTrueBlock = new ir::Block(fun, currBlock);
@@ -56,14 +56,14 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
             ctx->irCtx->builder.CreateCondBr(
                 ctx->irCtx->builder.CreateICmpEQ(
                     ctx->irCtx->builder.CreatePtrDiff(
-                        valType->as_pointer()->get_subtype()->is_type_sized()
-                            ? valType->as_pointer()->get_subtype()->get_llvm_type()
+                        valType->as_mark()->get_subtype()->is_type_sized()
+                            ? valType->as_mark()->get_subtype()->get_llvm_type()
                             : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-                        valType->as_pointer()->isMulti() ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
-                                                         : val->get_llvm(),
+                        valType->as_mark()->isSlice() ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
+                                                      : val->get_llvm(),
                         llvm::ConstantPointerNull::get(
-                            llvm::PointerType::get(valType->as_pointer()->get_subtype()->is_type_sized()
-                                                       ? valType->as_pointer()->get_subtype()->get_llvm_type()
+                            llvm::PointerType::get(valType->as_mark()->get_subtype()->is_type_sized()
+                                                       ? valType->as_mark()->get_subtype()->get_llvm_type()
                                                        : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
                                                    ctx->irCtx->dataLayout.value().getProgramAddressSpace()))),
                     llvm::ConstantInt::get(ir::CType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u, true)),
@@ -80,15 +80,15 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
             restBlock->set_active(ctx->irCtx->builder);
           }
         }
-        if (!valType->as_pointer()->get_subtype()->is_same(targetTy->get_subtype())) {
+        if (!valType->as_mark()->get_subtype()->is_same(targetTy->get_subtype())) {
           ctx->Error(
               "The value to be converted is of type " + ctx->color(typ->to_string()) + " but the destination type is " +
                   ctx->color(destTy->to_string()) +
                   ". The subtype of the pointer types do not match and conversion between them is not allowed. Use casting instead",
               fileRange);
         }
-        if (valType->as_pointer()->isMulti() != targetTy->as_pointer()->isMulti()) {
-          if (valType->as_pointer()->isMulti()) {
+        if (valType->as_mark()->isSlice() != targetTy->as_mark()->isSlice()) {
+          if (valType->as_mark()->isSlice()) {
             return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
           } else {
             auto newVal = ctx->get_fn()->get_block()->new_value(utils::unique_id(), destTy, false, fileRange);
@@ -100,7 +100,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
             return newVal->to_new_ir_value();
           }
         }
-        if (valType->as_pointer()->isMulti()) {
+        if (valType->as_mark()->isSlice()) {
           val->get_llvm()->mutateType(destTy->get_llvm_type());
           return ir::Value::get(val->get_llvm(), destTy, false);
         } else {
@@ -110,7 +110,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
       } else if (destTy->is_ctype() && (destTy->as_ctype()->is_intptr() || destTy->as_ctype()->is_intptr_unsigned())) {
         loadRef();
         return ir::Value::get(
-            ctx->irCtx->builder.CreateBitCast(valType->as_pointer()->isMulti()
+            ctx->irCtx->builder.CreateBitCast(valType->as_mark()->isSlice()
                                                   ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
                                                   : val->get_llvm(),
                                               destTy->get_llvm_type()),
@@ -127,22 +127,22 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
           loadRef();
           return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
         }
-      } else if (destValTy->is_pointer() &&
-                 (destValTy->as_pointer()->get_subtype()->is_unsigned_integer() ||
-                  (destValTy->as_pointer()->get_subtype()->is_ctype() &&
-                   destValTy->as_pointer()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
-                 destValTy->as_pointer()->getOwner().isAnonymous() &&
-                 (destValTy->as_pointer()->get_subtype()->is_unsigned_integer()
-                      ? (destValTy->as_pointer()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
-                      : (destValTy->as_pointer()
+      } else if (destValTy->is_mark() &&
+                 (destValTy->as_mark()->get_subtype()->is_unsigned_integer() ||
+                  (destValTy->as_mark()->get_subtype()->is_ctype() &&
+                   destValTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
+                 destValTy->as_mark()->getOwner().isAnonymous() &&
+                 (destValTy->as_mark()->get_subtype()->is_unsigned_integer()
+                      ? (destValTy->as_mark()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
+                      : (destValTy->as_mark()
                              ->get_subtype()
                              ->as_ctype()
                              ->get_subtype()
                              ->as_unsigned_integer()
                              ->getBitwidth() == 8u)) &&
-                 !destValTy->as_pointer()->isSubtypeVariable()) {
+                 !destValTy->as_mark()->isSubtypeVariable()) {
         loadRef();
-        if (destValTy->as_pointer()->isMulti()) {
+        if (destValTy->as_mark()->isSlice()) {
           val->get_llvm()->mutateType(destTy->get_llvm_type());
           return ir::Value::get(val->get_llvm(), destTy, false);
         } else {

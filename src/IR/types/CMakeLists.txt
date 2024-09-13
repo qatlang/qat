@@ -22,8 +22,7 @@ add_library(QAT_IR_TYPES
 	typed.cc
 	mix.cc
 	unsigned.cc
-	vector.cc
-	void.cc)
+	vector.cc)
 
 target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
 

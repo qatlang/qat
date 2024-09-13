@@ -72,9 +72,9 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
       if (isLocalDecl()) {
         newAlloc = localValue->get_llvm();
       } else if (canCreateIn()) {
-        if (createIn->is_reference() || createIn->is_ghost_pointer()) {
-          auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
-                                                    : createIn->get_ir_type()->as_reference()->get_subtype();
+        if (createIn->is_reference() || createIn->is_ghost_reference()) {
+          auto expTy = createIn->is_ghost_reference() ? createIn->get_ir_type()
+                                                      : createIn->get_ir_type()->as_reference()->get_subtype();
           if (!expTy->is_same(usableType)) {
             ctx->Error("Tried to optimise the " + ctx->color("error") +
                            " expression by creating in-place, but the inferred type is " +

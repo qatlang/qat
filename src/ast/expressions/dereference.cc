@@ -6,42 +6,41 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
   auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->get_ir_type();
   if (expTy->is_reference()) {
-    expEmit->load_ghost_pointer(ctx->irCtx->builder);
+    expEmit->load_ghost_reference(ctx->irCtx->builder);
     expTy = expTy->as_reference()->get_subtype();
   }
-  if (expTy->is_pointer()) {
+  if (expTy->is_mark()) {
     if (expEmit->is_reference()) {
-      expEmit->load_ghost_pointer(ctx->irCtx->builder);
-      if (!expTy->as_pointer()->isMulti()) {
+      expEmit->load_ghost_reference(ctx->irCtx->builder);
+      if (!expTy->as_mark()->isSlice()) {
         expEmit =
             ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), expEmit->get_llvm()), expTy, false);
       }
-    } else if (expEmit->is_ghost_pointer()) {
-      if (!expTy->as_pointer()->isMulti()) {
-        expEmit->load_ghost_pointer(ctx->irCtx->builder);
+    } else if (expEmit->is_ghost_reference()) {
+      if (!expTy->as_mark()->isSlice()) {
+        expEmit->load_ghost_reference(ctx->irCtx->builder);
       }
     } else {
-      if (expTy->as_pointer()->isMulti()) {
+      if (expTy->as_mark()->isSlice()) {
         expEmit = expEmit->make_local(ctx, None, exp->fileRange);
       }
     }
     return ir::Value::get(
-        expTy->as_pointer()->isMulti()
+        expTy->as_mark()->isSlice()
             ? ctx->irCtx->builder.CreateLoad(
-                  llvm::PointerType::get(expTy->as_pointer()->get_subtype()->get_llvm_type(),
+                  llvm::PointerType::get(expTy->as_mark()->get_subtype()->get_llvm_type(),
                                          ctx->irCtx->dataLayout->getProgramAddressSpace()),
                   ctx->irCtx->builder.CreateStructGEP(expTy->get_llvm_type(), expEmit->get_llvm(), 0u))
             : expEmit->get_llvm(),
-        ir::ReferenceType::get(expTy->as_pointer()->isSubtypeVariable(), expTy->as_pointer()->get_subtype(),
-                               ctx->irCtx),
+        ir::ReferenceType::get(expTy->as_mark()->isSubtypeVariable(), expTy->as_mark()->get_subtype(), ctx->irCtx),
         false);
   } else if (expTy->is_expanded()) {
     if (expTy->as_expanded()->has_unary_operator("@")) {
       auto localID = expEmit->get_local_id();
-      if (!expEmit->is_reference() && !expEmit->is_ghost_pointer()) {
+      if (!expEmit->is_reference() && !expEmit->is_ghost_reference()) {
         expEmit = expEmit->make_local(ctx, None, exp->fileRange);
       } else if (expEmit->is_reference()) {
-        expEmit->load_ghost_pointer(ctx->irCtx->builder);
+        expEmit->load_ghost_reference(ctx->irCtx->builder);
       }
       auto* uFn = expTy->as_expanded()->get_unary_operator("@");
       return uFn->call(ctx->irCtx, {expEmit->get_llvm()}, localID, ctx->mod);

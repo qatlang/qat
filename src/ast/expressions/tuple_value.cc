@@ -43,7 +43,7 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
                                                                   : memRes->get_ir_type());
     }
     if (memRes->get_ir_type()->is_reference()) {
-      memRes->load_ghost_pointer(ctx->irCtx->builder);
+      memRes->load_ghost_reference(ctx->irCtx->builder);
     }
     if (expMemTy) {
       auto valRes = ir::Logic::handle_pass_semantics(ctx, expMemTy, memRes, mem->fileRange);

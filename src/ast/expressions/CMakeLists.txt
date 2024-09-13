@@ -1,6 +1,7 @@
 add_library(QAT_AST_EXPRESSIONS
 	address_of.cc
 	array_literal.cc
+	assembly.cc
 	await.cc
 	binary_expression.cc
 	cast.cc
@@ -9,6 +10,7 @@ add_library(QAT_AST_EXPRESSIONS
 	default.cc
 	dereference.cc
 	entity.cc
+	error.cc
 	function_call.cc
 	get_intrinsic.cc
 	heap.cc

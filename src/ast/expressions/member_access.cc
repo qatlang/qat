@@ -38,7 +38,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
   auto* instType = inst->get_ir_type();
   bool  isVar    = inst->is_variable();
   if (instType->is_reference()) {
-    inst->load_ghost_pointer(ctx->irCtx->builder);
+    inst->load_ghost_reference(ctx->irCtx->builder);
     isVar    = instType->as_reference()->isSubtypeVariable();
     instType = instType->as_reference()->get_subtype();
   }
@@ -69,24 +69,23 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
     } else if (name.value == "data") {
       if (inst->is_prerun_value()) {
         return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(0u),
-                                    ir::PointerType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
-                                                         ir::PointerOwner::OfAnonymous(), false, ctx->irCtx));
+                                    ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
+                                                      ir::MarkOwner::OfAnonymous(), false, ctx->irCtx));
       } else if (inst->is_value()) {
         return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
-                              ir::PointerType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
-                                                   ir::PointerOwner::OfAnonymous(), false, ctx->irCtx),
+                              ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
+                                                ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
                               false);
       } else {
         SHOW("String slice is an implicit pointer or a reference or pointer")
-        return ir::Value::get(
-            ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(),
-                                                0u),
-            ir::ReferenceType::get(false,
-                                   ir::PointerType::get(false, ir::UnsignedType::get(8u, ctx->irCtx),
-                                                        false, // NOLINT(readability-magic-numbers)
-                                                        ir::PointerOwner::OfAnonymous(), false, ctx->irCtx),
-                                   ctx->irCtx),
-            false);
+        return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(),
+                                                                  inst->get_llvm(), 0u),
+                              ir::ReferenceType::get(false,
+                                                     ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx),
+                                                                       false, // NOLINT(readability-magic-numbers)
+                                                                       ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                                                     ctx->irCtx),
+                              false);
       }
     } else {
       ctx->Error("Invalid name for member access: " + ctx->color(name.value) + " for expression of type " +
@@ -259,7 +258,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
                      ctx->color(instType->to_string()),
                  fileRange);
     }
-  } else if (instType->is_pointer() && instType->as_pointer()->isMulti()) {
+  } else if (instType->is_mark() && instType->as_mark()->isSlice()) {
     if (name.value == "length") {
       if (inst->is_prerun_value()) {
         return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(1u),

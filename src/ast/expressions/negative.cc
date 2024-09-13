@@ -24,7 +24,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
     if (irVal->is_prerun_value()) {
       return ir::PrerunValue::get(llvm::ConstantExpr::getNeg(irVal->get_llvm_constant()), valTy);
     } else {
-      irVal->load_ghost_pointer(ctx->irCtx->builder);
+      irVal->load_ghost_reference(ctx->irCtx->builder);
       if (irVal->get_ir_type()->is_reference()) {
         irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), irVal->get_llvm()), valTy, false);
       }
@@ -36,7 +36,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
       return ir::PrerunValue::get(
           llvm::cast<llvm::Constant>(ctx->irCtx->builder.CreateFNeg(irVal->get_llvm_constant())), valTy);
     } else {
-      irVal->load_ghost_pointer(ctx->irCtx->builder);
+      irVal->load_ghost_reference(ctx->irCtx->builder);
       if (irVal->get_ir_type()->is_reference()) {
         irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), irVal->get_llvm()), valTy, false);
       }
@@ -53,9 +53,9 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
     // FIXME - Prerun expanded type values
     if (valTy->as_expanded()->has_unary_operator("-")) {
       auto localID = irVal->get_local_id();
-      if (irVal->get_ir_type()->is_reference() || irVal->is_ghost_pointer()) {
+      if (irVal->get_ir_type()->is_reference() || irVal->is_ghost_reference()) {
         if (irVal->get_ir_type()->is_reference()) {
-          irVal->load_ghost_pointer(ctx->irCtx->builder);
+          irVal->load_ghost_reference(ctx->irCtx->builder);
         }
       } else {
         auto* loc = ctx->get_fn()->get_block()->new_value(utils::unique_id(), valTy, true, fileRange);

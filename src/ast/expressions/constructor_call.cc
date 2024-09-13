@@ -27,7 +27,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
     for (auto* arg : args) {
       auto* argVal = arg->emit(ctx);
       valsType.push_back(
-          {argVal->is_ghost_pointer() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
+          {argVal->is_ghost_reference() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
       valsIR.push_back(argVal);
     }
     auto reqInfo = ctx->get_access_info();
@@ -98,7 +98,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
       } else {
         auto* valTy = valsType.at(i - 1).second;
         auto* val   = valsIR.at(i - 1);
-        if (valTy->is_reference() || val->is_ghost_pointer()) {
+        if (valTy->is_reference() || val->is_ghost_reference()) {
           if (valTy->is_reference()) {
             valTy = valTy->as_reference()->get_subtype();
           }

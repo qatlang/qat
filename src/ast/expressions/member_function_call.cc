@@ -50,11 +50,11 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
   auto* instType = inst->get_ir_type();
   bool  isVar    = inst->is_variable();
   if (instType->is_reference()) {
-    inst->load_ghost_pointer(ctx->irCtx->builder);
+    inst->load_ghost_reference(ctx->irCtx->builder);
     isVar    = instType->as_reference()->isSubtypeVariable();
     instType = instType->as_reference()->get_subtype();
   }
-  if (instType->is_pointer()) {
+  if (instType->is_mark()) {
     ctx->Error("The expression is of pointer type. Please dereference the pointer to call the method",
                instance->fileRange);
   }
@@ -68,10 +68,10 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                    fileRange);
       }
       auto* desFn = instType->as_expanded()->get_destructor();
-      if (!inst->is_ghost_pointer() && !inst->is_reference()) {
+      if (!inst->is_ghost_reference() && !inst->is_reference()) {
         inst = inst->make_local(ctx, None, instance->fileRange);
       } else if (inst->is_reference()) {
-        inst->load_ghost_pointer(ctx->irCtx->builder);
+        inst->load_ghost_reference(ctx->irCtx->builder);
       }
       return desFn->call(ctx->irCtx, {inst->get_llvm()}, None, ctx->mod);
     }
@@ -172,14 +172,14 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
       }
       thisFn->add_method_call(memFn);
     }
-    if (!inst->is_ghost_pointer() && !inst->is_reference() &&
-        (memFn->get_method_type() != ir::MethodType::value_method)) {
+    if (!inst->is_ghost_reference() && !inst->is_reference() &&
+        (memFn->get_method_type() != ir::MethodType::valueMethod)) {
       inst = inst->make_local(ctx, None, instance->fileRange);
-    } else if ((memFn->get_method_type() == ir::MethodType::value_method) &&
-               (inst->is_ghost_pointer() || inst->is_reference())) {
+    } else if ((memFn->get_method_type() == ir::MethodType::valueMethod) &&
+               (inst->is_ghost_reference() || inst->is_reference())) {
       if (instType->is_trivially_copyable() || instType->is_trivially_movable()) {
         if (inst->is_reference()) {
-          inst->load_ghost_pointer(ctx->irCtx->builder);
+          inst->load_ghost_reference(ctx->irCtx->builder);
         }
         auto origInst = inst;
         inst =
@@ -188,7 +188,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
           if (inst->is_reference() && !inst->get_ir_type()->as_reference()->isSubtypeVariable()) {
             ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
                        instance->fileRange);
-          } else if (inst->is_ghost_pointer() && !inst->is_variable()) {
+          } else if (inst->is_ghost_reference() && !inst->is_variable()) {
             ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
                        instance->fileRange);
           }
@@ -226,7 +226,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
       auto fnArgType = fnArgsTy[i]->get_type();
       auto argType   = argsEmit[i - 1]->get_ir_type();
       if (!(fnArgType->is_same(argType) || fnArgType->isCompatible(argType) ||
-            (fnArgType->is_reference() && argsEmit[i - 1]->is_ghost_pointer() &&
+            (fnArgType->is_reference() && argsEmit[i - 1]->is_ghost_reference() &&
              fnArgType->as_reference()->get_subtype()->is_same(argType)) ||
             (argType->is_reference() && argType->as_reference()->get_subtype()->is_same(fnArgType)))) {
         ctx->Error("Type of this expression " + ctx->color(argType->to_string()) +
@@ -251,8 +251,8 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                            " but the expression is of type " + ctx->color(currArg->get_ir_type()->to_string()),
                        arguments.at(i - 1)->fileRange);
           }
-          currArg->load_ghost_pointer(ctx->irCtx->builder);
-        } else if (!currArg->is_ghost_pointer()) {
+          currArg->load_ghost_reference(ctx->irCtx->builder);
+        } else if (!currArg->is_ghost_reference()) {
           ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);
         } else if (fnArgsTy.at(i)->get_type()->as_reference()->isSubtypeVariable()) {
           if (!currArg->is_variable()) {
@@ -262,9 +262,9 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                        arguments.at(i - 1)->fileRange);
           }
         }
-      } else if (currArg->is_reference() || currArg->is_ghost_pointer()) {
+      } else if (currArg->is_reference() || currArg->is_ghost_reference()) {
         if (currArg->is_reference()) {
-          currArg->load_ghost_pointer(ctx->irCtx->builder);
+          currArg->load_ghost_reference(ctx->irCtx->builder);
         }
         SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->get_ir_type()->to_string())
         auto* argTy    = fnArgsTy[i]->get_type();
@@ -304,13 +304,13 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
   } else if (instType->is_vector()) {
     auto*      origInst = ir::Value::get(inst->get_llvm(), inst->get_ir_type(), false);
     const auto isOrigRefNotVar =
-        (origInst->is_ghost_pointer() && !origInst->is_variable()) ||
+        (origInst->is_ghost_reference() && !origInst->is_variable()) ||
         (origInst->is_reference() && !origInst->get_ir_type()->as_reference()->isSubtypeVariable());
-    const auto shouldStore = origInst->is_ghost_pointer() || origInst->is_reference();
+    const auto shouldStore = origInst->is_ghost_reference() || origInst->is_reference();
     auto*      vecTy       = instType->as_vector();
     auto       refHandler  = [&]() {
-      if (inst->is_reference() || inst->is_ghost_pointer()) {
-        inst->load_ghost_pointer(ctx->irCtx->builder);
+      if (inst->is_reference() || inst->is_ghost_reference()) {
+        inst->load_ghost_reference(ctx->irCtx->builder);
         if (inst->is_reference()) {
           inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(vecTy->get_llvm_type(), inst->get_llvm()), vecTy, false);
         }
@@ -319,7 +319,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
     if (memberName.value == "insert") {
       if (isOrigRefNotVar) {
         ctx->Error(
-            "This " + String(origInst->is_ghost_pointer() ? "expression" : "reference") +
+            "This " + String(origInst->is_ghost_reference() ? "expression" : "reference") +
                 " does not have variability and hence cannot be inserted into. Inserting vectors to values are possible, but for clarity, make sure to copy the vector first using " +
                 ctx->color("'copy"),
             fileRange);
@@ -341,8 +341,8 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
       auto* argVec = arguments[0]->emit(ctx);
       if (argVec->get_ir_type()->is_same(vecTy->get_non_scalable_type(ctx->irCtx)) ||
           argVec->get_ir_type()->as_reference()->get_subtype()->is_same(vecTy->get_non_scalable_type(ctx->irCtx))) {
-        if (argVec->is_reference() || argVec->is_ghost_pointer()) {
-          argVec->load_ghost_pointer(ctx->irCtx->builder);
+        if (argVec->is_reference() || argVec->is_ghost_reference()) {
+          argVec->load_ghost_reference(ctx->irCtx->builder);
           if (argVec->is_reference()) {
             argVec = ir::Value::get(ctx->irCtx->builder.CreateLoad(
                                         vecTy->get_non_scalable_type(ctx->irCtx)->get_llvm_type(), argVec->get_llvm()),
@@ -355,7 +355,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
         if (shouldStore) {
           if (origInst->is_reference()) {
-            origInst->load_ghost_pointer(ctx->irCtx->builder);
+            origInst->load_ghost_reference(ctx->irCtx->builder);
           }
           ctx->irCtx->builder.CreateStore(result, origInst->get_llvm());
           return origInst;
@@ -370,7 +370,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
     } else if (memberName.value == "reverse") {
       if (isOrigRefNotVar) {
         ctx->Error(
-            "This " + String(origInst->is_ghost_pointer() ? "expression" : "reference") +
+            "This " + String(origInst->is_ghost_reference() ? "expression" : "reference") +
                 " does not have variability and hence cannot be reversed in-place. Reversing vector values are possible, but for clarity, make sure to copy the vector first using " +
                 ctx->color("'copy"),
             fileRange);

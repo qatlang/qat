@@ -37,13 +37,13 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
           }
           auto* expEmit = expression.value()->emit(ctx);
           if (typ->is_same(expEmit->get_ir_type())) {
-            expEmit->load_ghost_pointer(ctx->irCtx->builder);
+            expEmit->load_ghost_reference(ctx->irCtx->builder);
             exp = expEmit->get_llvm();
           } else if (expEmit->is_reference() && expEmit->get_ir_type()->as_reference()->get_subtype()->is_same(typ)) {
             exp = ctx->irCtx->builder.CreateLoad(expEmit->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
                                                  expEmit->get_llvm());
           } else if (typ->is_reference() && typ->as_reference()->get_subtype()->is_same(expEmit->get_ir_type())) {
-            if (expEmit->is_ghost_pointer()) {
+            if (expEmit->is_ghost_reference()) {
               exp = expEmit->get_llvm();
             } else {
               ctx->Error("The expected type is " + ctx->color(typ->to_string()) + ", but the expression is of type " +
@@ -69,9 +69,9 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
           }
         } else if (canCreateIn()) {
           SHOW("Is createIn")
-          if (createIn->is_reference() || createIn->is_ghost_pointer()) {
-            auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
-                                                      : createIn->get_ir_type()->as_reference()->get_subtype();
+          if (createIn->is_reference() || createIn->is_ghost_reference()) {
+            auto expTy = createIn->is_ghost_reference() ? createIn->get_ir_type()
+                                                        : createIn->get_ir_type()->as_reference()->get_subtype();
             if (!expTy->is_same(mixTy)) {
               ctx->Error(
                   "Trying to optimise the mix type initialisation by creating in-place, but the expression type is " +
@@ -119,9 +119,9 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
         ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), localValue->get_llvm());
         return nullptr;
       } else if (canCreateIn()) {
-        if (createIn->is_reference() || createIn->is_ghost_pointer()) {
-          auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
-                                                    : createIn->get_ir_type()->as_reference()->get_subtype();
+        if (createIn->is_reference() || createIn->is_ghost_reference()) {
+          auto expTy = createIn->is_ghost_reference() ? createIn->get_ir_type()
+                                                      : createIn->get_ir_type()->as_reference()->get_subtype();
           if (!expTy->is_same(chTy)) {
             ctx->Error(
                 "Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +

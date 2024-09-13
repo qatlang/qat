@@ -9,8 +9,8 @@ ir::Value* LogicalNot::emit(EmitCtx* ctx) {
     expTy = expTy->as_reference()->get_subtype();
   }
   if (expTy->is_bool()) {
-    if (expEmit->is_ghost_pointer() || expEmit->is_reference()) {
-      expEmit->load_ghost_pointer(ctx->irCtx->builder);
+    if (expEmit->is_ghost_reference() || expEmit->is_reference()) {
+      expEmit->load_ghost_reference(ctx->irCtx->builder);
       if (expEmit->is_reference()) {
         expEmit =
             ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), expEmit->get_llvm()), expTy, false);

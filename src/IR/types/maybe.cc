@@ -256,7 +256,7 @@ bool MaybeType::is_destructible() const { return subTy->is_destructible(); }
 void MaybeType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
   if (is_destructible()) {
     if (instance->is_reference()) {
-      instance->load_ghost_pointer(irCtx->builder);
+      instance->load_ghost_reference(irCtx->builder);
     }
     auto* inst      = instance->get_llvm();
     auto* currBlock = fun->get_block();

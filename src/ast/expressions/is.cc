@@ -56,10 +56,10 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
                      ", but found an expression of type " + ctx->color(subType->to_string()),
                  fileRange);
     }
-    if ((subType->is_reference() || subIR->is_ghost_pointer()) && !expectSubTy->is_reference()) {
+    if ((subType->is_reference() || subIR->is_ghost_reference()) && !expectSubTy->is_reference()) {
       if (subType->is_reference()) {
         subType = subType->as_reference()->get_subtype();
-        subIR->load_ghost_pointer(ctx->irCtx->builder);
+        subIR->load_ghost_reference(ctx->irCtx->builder);
       }
       ir::Method* mFn = nullptr;
       if (subType->is_expanded()) {
@@ -114,9 +114,9 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
         }
       }
     } else if (expectSubTy->is_reference()) {
-      if (subType->is_reference() || subIR->is_ghost_pointer()) {
+      if (subType->is_reference() || subIR->is_ghost_reference()) {
         if (subType->is_reference()) {
-          subIR->load_ghost_pointer(ctx->irCtx->builder);
+          subIR->load_ghost_reference(ctx->irCtx->builder);
         }
         if (isLocalDecl()) {
           if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
@@ -161,7 +161,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
     } else {
       if (isLocalDecl()) {
         if (expectSubTy->is_type_sized()) {
-          subIR->load_ghost_pointer(ctx->irCtx->builder);
+          subIR->load_ghost_reference(ctx->irCtx->builder);
           ctx->irCtx->builder.CreateStore(
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
               ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(), localValue->get_alloca(),

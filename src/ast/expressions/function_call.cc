@@ -11,9 +11,9 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     fnValType = fnValType->as_ctype()->get_subtype();
   }
   if (fnVal && (fnVal->get_ir_type()->is_function() ||
-                (fnValType->is_pointer() && fnValType->as_pointer()->get_subtype()->is_function()))) {
+                (fnValType->is_mark() && fnValType->as_mark()->get_subtype()->is_function()))) {
     auto*                fnTy = fnVal->get_ir_type()->is_function() ? fnVal->get_ir_type()->as_function()
-                                                                    : fnValType->as_pointer()->get_subtype()->as_function();
+                                                                    : fnValType->as_mark()->get_subtype()->as_function();
     Maybe<ir::Function*> fun;
     if (fnVal->get_ir_type()->is_function()) {
       fun = (ir::Function*)fnVal;
@@ -60,26 +60,26 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     for (usize i = 0; i < fnArgsTy.size(); i++) {
       SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->get_ir_type()->to_string())
       if (fnArgsTy.at(i)->get_type()->is_reference() &&
-          (!argsEmit.at(i)->is_reference() && !argsEmit.at(i)->is_ghost_pointer())) {
+          (!argsEmit.at(i)->is_reference() && !argsEmit.at(i)->is_ghost_reference())) {
         ctx->Error(
             "Cannot pass a value for the argument that expects a reference. The expression provided does not reside in an address",
             values.at(i)->fileRange);
       } else if (argsEmit.at(i)->is_reference()) {
-        argsEmit.at(i)->load_ghost_pointer(ctx->irCtx->builder);
+        argsEmit.at(i)->load_ghost_reference(ctx->irCtx->builder);
         argsEmit.at(i) = ir::Value::get(
             ctx->irCtx->builder.CreateLoad(
                 argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
                 argsEmit.at(i)->get_llvm()),
             argsEmit.at(i)->get_ir_type(), argsEmit.at(i)->get_ir_type()->as_reference()->isSubtypeVariable());
       } else {
-        argsEmit.at(i)->load_ghost_pointer(ctx->irCtx->builder);
+        argsEmit.at(i)->load_ghost_reference(ctx->irCtx->builder);
       }
       argValues.push_back(argsEmit.at(i)->get_llvm());
     }
     if (fun.has_value()) {
       return fun.value()->call(ctx->irCtx, argValues, None, ctx->mod);
     } else {
-      fnVal->load_ghost_pointer(ctx->irCtx->builder);
+      fnVal->load_ghost_reference(ctx->irCtx->builder);
       if (fnVal->is_reference()) {
         ctx->irCtx->builder.CreateLoad(fnValType->get_llvm_type(), fnVal->get_llvm());
       }

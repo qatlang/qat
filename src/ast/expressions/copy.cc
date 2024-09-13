@@ -26,9 +26,9 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
   }
   auto* expEmit = exp->emit(ctx);
   auto* expTy   = expEmit->get_ir_type();
-  if (expEmit->is_ghost_pointer() || expTy->is_reference()) {
+  if (expEmit->is_ghost_reference() || expTy->is_reference()) {
     if (expTy->is_reference()) {
-      expEmit->load_ghost_pointer(ctx->irCtx->builder);
+      expEmit->load_ghost_reference(ctx->irCtx->builder);
     }
     auto* candTy =
         expEmit->is_reference() ? expEmit->get_ir_type()->as_reference()->get_subtype() : expEmit->get_ir_type();
@@ -42,9 +42,9 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
           }
           createIn = ir::Value::get(localValue->get_alloca(), ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
         } else if (canCreateIn()) {
-          if (createIn->is_reference() || createIn->is_ghost_pointer()) {
-            auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
-                                                      : createIn->get_ir_type()->as_reference()->get_subtype();
+          if (createIn->is_reference() || createIn->is_ghost_reference()) {
+            auto expTy = createIn->is_ghost_reference() ? createIn->get_ir_type()
+                                                        : createIn->get_ir_type()->as_reference()->get_subtype();
             if (!expTy->is_same(candTy)) {
               ctx->Error("Trying to optimise the copy by creating in-place, but the expression type is " +
                              ctx->color(candTy->to_string()) +
@@ -82,9 +82,9 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
         }
         if (canCreateIn()) {
           if (!isLocalDecl()) {
-            if (createIn->is_reference() || createIn->is_ghost_pointer()) {
-              auto expTy = createIn->is_ghost_pointer() ? createIn->get_ir_type()
-                                                        : createIn->get_ir_type()->as_reference()->get_subtype();
+            if (createIn->is_reference() || createIn->is_ghost_reference()) {
+              auto expTy = createIn->is_ghost_reference() ? createIn->get_ir_type()
+                                                          : createIn->get_ir_type()->as_reference()->get_subtype();
               if (!expTy->is_same(candTy)) {
                 ctx->Error("Trying to optimise the copy by creating in-place, but the expression type is " +
                                ctx->color(candTy->to_string()) +
@@ -112,11 +112,11 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
                    fileRange);
       }
     } else {
-      if (createIn->is_ghost_pointer()
+      if (createIn->is_ghost_reference()
               ? createIn->get_ir_type()->is_same(candTy)
               : (createIn->is_reference() && createIn->get_ir_type()->as_reference()->get_subtype()->is_same(candTy))) {
         if (expEmit->is_reference()) {
-          expEmit->load_ghost_pointer(ctx->irCtx->builder);
+          expEmit->load_ghost_reference(ctx->irCtx->builder);
         }
         if (candTy->is_trivially_copyable()) {
           ctx->irCtx->builder.CreateStore(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),

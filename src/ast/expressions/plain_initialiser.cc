@@ -115,7 +115,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
         auto* memTy = cTy->get_field_at(i)->type;
         if (fVal->get_ir_type()->is_same(memTy) ||
             (memTy->is_reference() && memTy->as_reference()->get_subtype()->is_same(fVal->get_ir_type()) &&
-             fVal->is_ghost_pointer() && (memTy->as_reference()->isSubtypeVariable() ? fVal->is_variable() : true)) ||
+             fVal->is_ghost_reference() && (memTy->as_reference()->isSubtypeVariable() ? fVal->is_variable() : true)) ||
             (fVal->get_ir_type()->is_reference() &&
              fVal->get_ir_type()->as_reference()->get_subtype()->is_same(memTy))) {
           if (!fVal->is_prerun_value()) {
@@ -154,10 +154,10 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
           auto* memPtr = ctx->irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), alloca, indices.at(i));
           auto  irVal  = irVals.at(i);
           auto  memTy  = cTy->get_field_at(indices.at(i))->type;
-          if (irVal->is_ghost_pointer() || irVal->is_reference()) {
+          if (irVal->is_ghost_reference() || irVal->is_reference()) {
             if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
               if (irVal->is_reference()) {
-                irVal->load_ghost_pointer(ctx->irCtx->builder);
+                irVal->load_ghost_reference(ctx->irCtx->builder);
               }
               auto* irOrigVal = ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm());
               if (!memTy->is_trivially_copyable()) {
@@ -204,14 +204,14 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
         if (lenType->is_reference()) {
           lenType = lenType->as_reference()->get_subtype();
         }
-        if (dataType->is_pointer() && dataType->as_pointer()->get_subtype()->is_unsigned_integer() &&
-            dataType->as_pointer()->get_subtype()->as_unsigned_integer()->isBitWidth(8u)) {
-          if (dataType->as_pointer()->isMulti()) {
+        if (dataType->is_mark() && dataType->as_mark()->get_subtype()->is_unsigned_integer() &&
+            dataType->as_mark()->get_subtype()->as_unsigned_integer()->isBitWidth(8u)) {
+          if (dataType->as_mark()->isSlice()) {
             // FIXME - Change when `check` is added
             // FIXME - Add length confirmation if pointer is multi, compare with
             // the provided length of the string
             if (strData->is_reference()) {
-              strData->load_ghost_pointer(ctx->irCtx->builder);
+              strData->load_ghost_reference(ctx->irCtx->builder);
             }
             strData = ir::Value::get(
                 strData->is_value()
@@ -220,20 +220,20 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
                           llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
                                                  ctx->irCtx->dataLayout->getProgramAddressSpace()),
                           ctx->irCtx->builder.CreateStructGEP(dataType->get_llvm_type(), strData->get_llvm(), 0u)),
-                ir::PointerType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
-                                     ir::PointerOwner::OfAnonymous(), false, ctx->irCtx),
+                ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false, ir::MarkOwner::OfAnonymous(),
+                                  false, ctx->irCtx),
                 false);
           } else {
-            if (strData->is_ghost_pointer() || strData->get_ir_type()->is_reference()) {
-              if (strData->is_reference() && strData->is_ghost_pointer()) {
-                strData->load_ghost_pointer(ctx->irCtx->builder);
+            if (strData->is_ghost_reference() || strData->get_ir_type()->is_reference()) {
+              if (strData->is_reference() && strData->is_ghost_reference()) {
+                strData->load_ghost_reference(ctx->irCtx->builder);
               }
               strData = ir::Value::get(ctx->irCtx->builder.CreateLoad(dataType->get_llvm_type(), strData->get_llvm()),
                                        dataType, false);
             }
           }
           if (lenType->is_unsigned_integer() && lenType->as_unsigned_integer()->getBitwidth() == 64u) {
-            if (strLen->is_ghost_pointer() || strLen->is_reference()) {
+            if (strLen->is_ghost_reference() || strLen->is_reference()) {
               strLen = ir::Value::get(ctx->irCtx->builder.CreateLoad(lenType->get_llvm_type(), strLen->get_llvm()),
                                       lenType, false);
             }
@@ -252,7 +252,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
           ctx->Error("You are creating an " + ctx->color("str") +
                          " value from 2 arguments and the first argument "
                          "should be of " +
-                         ctx->color("ptr:[u8?]") + " or " + ctx->color("multiptr:[u8 ?]") + " type",
+                         ctx->color("mark:[u8]") + " or " + ctx->color("slice:[u8]") + " type",
                      fieldValues.at(0)->fileRange);
         }
       } else if (fieldValues.size() == 1) {
@@ -261,19 +261,19 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
         if (strDataTy->is_reference()) {
           strDataTy = strDataTy->as_reference()->get_subtype();
         }
-        if (strDataTy->is_pointer() && strDataTy->as_pointer()->isMulti() &&
-            (strDataTy->as_pointer()->get_subtype()->is_unsigned_integer() &&
-             strDataTy->as_pointer()->get_subtype()->as_unsigned_integer()->isBitWidth(8u))) {
+        if (strDataTy->is_mark() && strDataTy->as_mark()->isSlice() &&
+            (strDataTy->as_mark()->get_subtype()->is_unsigned_integer() &&
+             strDataTy->as_mark()->get_subtype()->as_unsigned_integer()->isBitWidth(8u))) {
           auto* strTy = ir::StringSliceType::get(ctx->irCtx);
-          if (strData->is_ghost_pointer() || strData->is_reference()) {
+          if (strData->is_ghost_reference() || strData->is_reference()) {
             if (strData->is_reference()) {
-              strData->load_ghost_pointer(ctx->irCtx->builder);
+              strData->load_ghost_reference(ctx->irCtx->builder);
             }
             return ir::Value::get(
                 ctx->irCtx->builder.CreatePointerCast(
                     strData->get_llvm(),
                     llvm::PointerType::get(strTy->get_llvm_type(), ctx->irCtx->dataLayout->getProgramAddressSpace())),
-                ir::ReferenceType::get(strData->is_ghost_pointer()
+                ir::ReferenceType::get(strData->is_ghost_reference()
                                            ? strData->is_variable()
                                            : strData->get_ir_type()->as_reference()->isSubtypeVariable(),
                                        strTy, ctx->irCtx),
@@ -284,18 +284,16 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
           }
         } else {
           ctx->Error("While creating a " + ctx->color("str") +
-                         " value with one argument, the argument is expected to be of type " +
-                         ctx->color("multiptr:[u8]"),
+                         " value with one argument, the argument is expected to be of type " + ctx->color("slice:[u8]"),
                      fieldValues.at(0)->fileRange);
         }
       } else {
         ctx->Error("There are two ways to create a " + ctx->color("str") +
                        " value using a plain initialiser. The first way requires one argument of type " +
-                       ctx->color("multiptr:[u8]") +
-                       ". The second way requires 2 arguments. In two possible ways:\n1) " + ctx->color("ptr:[u8]") +
-                       " and " + ctx->color("u64") + "\n2) " + ctx->color("multiptr:[u8]") + " and " +
-                       ctx->color("u64") +
-                       "\nIn case you are providing two arguments, the first argument is supposed to be a pointer" +
+                       ctx->color("slice:[u8]") + ". The second way requires 2 arguments. In two possible ways:\n1) " +
+                       ctx->color("mark:[u8]") + " and " + ctx->color("u64") + "\n2) " + ctx->color("slice:[u8]") +
+                       " and " + ctx->color("u64") +
+                       "\nIn case you are providing two arguments, the first argument is supposed to be a mark" +
                        " to the start of the data and the second argument is supposed to be the number of characters," +
                        " EXCLUDING the null character (which is required to be present at the end regardless)",
                    fileRange);
@@ -343,7 +341,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
                      fileRange);
         }
         SHOW("Done type check")
-        if (irTy->is_reference() || irVal->is_ghost_pointer()) {
+        if (irTy->is_reference() || irVal->is_ghost_reference()) {
           irTy  = irTy->is_reference() ? irTy->as_reference()->get_subtype() : irTy;
           irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(irTy->get_llvm_type(), irVal->get_llvm()), irTy, false);
         }

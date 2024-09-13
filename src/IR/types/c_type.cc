@@ -483,13 +483,13 @@ CType* CType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx)
     if (typ->type_kind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Pointer &&
-          (cTyp->subType->as_pointer()->isSubtypeVariable() == isSubTypeVariable) &&
-          cTyp->subType->as_pointer()->get_subtype()->is_same(subType)) {
+          (cTyp->subType->as_mark()->isSubtypeVariable() == isSubTypeVariable) &&
+          cTyp->subType->as_mark()->get_subtype()->is_same(subType)) {
         return cTyp;
       }
     }
   }
-  return new CType(ir::PointerType::get(isSubTypeVariable, subType, false, PointerOwner::OfAnonymous(), false, irCtx),
+  return new CType(ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::OfAnonymous(), false, irCtx),
                    CTypeKind::Pointer);
 }
 
@@ -590,7 +590,7 @@ CType* CType::get_cstr(ir::Ctx* irCtx) {
     }
   }
   return new CType(
-      ir::PointerType::get(false, ir::IntegerType::get(8, irCtx), false, PointerOwner::OfAnonymous(), false, irCtx),
+      ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::OfAnonymous(), false, irCtx),
       CTypeKind::String);
 }
 
@@ -640,10 +640,9 @@ Maybe<bool> CType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::Preru
 
 String CType::to_string() const {
   return ctype_kind_to_string(cTypeKind) +
-         ((cTypeKind == CTypeKind::Pointer)
-              ? (String(":[") + (subType->as_pointer()->isSubtypeVariable() ? "var " : "") +
-                 subType->as_pointer()->get_subtype()->to_string() + "]")
-              : "");
+         ((cTypeKind == CTypeKind::Pointer) ? (String(":[") + (subType->as_mark()->isSubtypeVariable() ? "var " : "") +
+                                               subType->as_mark()->get_subtype()->to_string() + "]")
+                                            : "");
 }
 
 } // namespace qat::ir

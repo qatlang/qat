@@ -98,6 +98,8 @@ enum class NodeType {
   DO_SKILL,
   GET_INTRINSIC,
   META_TODO,
+  ASSEMBLY_BLOCK,
+  ERROR_EXPRESSION,
 };
 
 } // namespace qat::ast

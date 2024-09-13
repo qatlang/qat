@@ -14,7 +14,7 @@
 
 namespace qat::ir {
 
-StructType::StructType(Mod* mod, Identifier _name, Vec<GenericParameter*> _generics, ir::OpaqueType* _opaqued,
+StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
                        Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
                        Maybe<MetaInfo> _metaInfo, bool isPacked)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
@@ -93,19 +93,26 @@ void StructType::update_overview() {
   for (auto* mFn : memberFunctions) {
     memFnJson.push_back(mFn->overviewToJson());
   }
+  Vec<JsonValue> genericArgumentsJSON;
+  for (auto* arg : generics) {
+    genericArgumentsJSON.push_back(arg->to_json());
+  }
   ovInfo = Json()
                ._("typeID", get_id())
                ._("fullName", get_full_name())
+               ._("genericArguments", genericArgumentsJSON)
                ._("moduleID", parent->get_id())
                ._("members", memJson)
-               ._("staticMembers", statMemJson)
+               ._("staticFields", statMemJson)
                ._("memberFunctions", memFnJson)
-               ._("has_default_constructor", defaultConstructor != nullptr)
-               ._("has_destructor", destructor.has_value())
-               ._("has_copy_constructor", copyConstructor.has_value())
-               ._("has_move_constructor", moveConstructor.has_value())
-               ._("has_copy_assignment", copyAssignment.has_value())
-               ._("has_move_assignment", moveAssignment.has_value())
+               ._("isDefaultConstructible", is_default_constructible())
+               ._("isDestructible", is_destructible())
+               ._("isTriviallyCopyable", is_trivially_copyable())
+               ._("isTriviallyMovable", is_trivially_movable())
+               ._("isCopyConstructible", is_copy_constructible())
+               ._("isMoveConstructible", is_move_constructible())
+               ._("isCopyAssignable", is_copy_assignable())
+               ._("isMoveAssignable", is_move_assignable())
                ._("visibility", visibility);
 }
 
@@ -406,26 +413,42 @@ TypeKind StructType::type_kind() const { return TypeKind::core; }
 
 String StructType::to_string() const { return get_full_name(); }
 
-GenericCoreType::GenericCoreType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                 Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* _defineCoreType,
-                                 Mod* _parent, const VisibilityInfo& _visibInfo)
+GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
+                                     Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* _defineCoreType,
+                                     Mod* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
                          ._("name", _name.value)
                          ._("fullName", _parent->get_fullname_with_child(_name.value))
                          ._("visibility", _visibInfo)
-                         ._("moduleID", _parent->get_id()),
+                         ._("moduleID", _parent->get_id())
+                         ._("visibility", _visibInfo),
                      _name.range),
       name(std::move(_name)), generics(_generics), defineCoreType(_defineCoreType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
   parent->genericCoreTypes.push_back(this);
 }
 
-Identifier GenericCoreType::get_name() const { return name; }
+void GenericStructType::update_overview() {
+  Vec<JsonValue> genericParamsJson;
+  for (auto* param : generics) {
+    genericParamsJson.push_back(param->to_json());
+  }
+  Vec<JsonValue> variantsJson;
+  for (auto var : variants) {
+    variantsJson.push_back(var.get()->overviewToJson());
+  }
+  ovInfo._("genericParameters", genericParamsJson)
+      ._("hasConstraint", constraint.has_value())
+      ._("constraint", constraint.has_value() ? constraint.value()->to_string() : JsonValue())
+      ._("variants", variantsJson);
+}
 
-VisibilityInfo GenericCoreType::get_visibility() const { return visibility; }
+Identifier GenericStructType::get_name() const { return name; }
 
-bool GenericCoreType::allTypesHaveDefaults() const {
+VisibilityInfo GenericStructType::get_visibility() const { return visibility; }
+
+bool GenericStructType::allTypesHaveDefaults() const {
   for (auto* gen : generics) {
     if (!gen->hasDefault()) {
       return false;
@@ -434,26 +457,24 @@ bool GenericCoreType::allTypesHaveDefaults() const {
   return true;
 }
 
-usize GenericCoreType::getTypeCount() const { return generics.size(); }
+usize GenericStructType::getTypeCount() const { return generics.size(); }
 
-usize GenericCoreType::getVariantCount() const { return variants.size(); }
+usize GenericStructType::getVariantCount() const { return variants.size(); }
 
-Mod* GenericCoreType::get_module() const { return parent; }
+Mod* GenericStructType::get_module() const { return parent; }
 
-ast::GenericAbstractType* GenericCoreType::getGenericAt(usize index) const { return generics.at(index); }
+ast::GenericAbstractType* GenericStructType::getGenericAt(usize index) const { return generics.at(index); }
 
-Type* GenericCoreType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
   for (auto& oVar : opaqueVariants) {
     SHOW("Opaque variant: " << oVar.get()->get_full_name())
-    if (oVar.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (oVar.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return oVar.get();
     }
   }
   for (auto& var : variants) {
     SHOW("Core type variant: " << var.get()->get_full_name())
-    if (var.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return var.get();
     }
   }
@@ -471,7 +492,7 @@ Type* GenericCoreType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* 
                    constraint.value()->fileRange);
     }
   }
-  Vec<ir::GenericParameter*> genParams;
+  Vec<ir::GenericArgument*> genParams;
   for (auto genAb : generics) {
     genParams.push_back(genAb->toIRGenericType());
   }

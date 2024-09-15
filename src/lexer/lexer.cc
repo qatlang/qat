@@ -1,6 +1,5 @@
 #include "lexer.hpp"
 #include "../IR/context.hpp"
-#include "../cli/color.hpp"
 #include "../show.hpp"
 #include "../utils/utils.hpp"
 #include "token_type.hpp"
@@ -580,6 +579,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("self", selfWord);
   else Check_Normal_Keyword("void", voidType);
   else Check_Normal_Keyword("type", Type);
+  else Check_Normal_Keyword("define", define);
   else Check_Normal_Keyword("skill", skill);
   else Check_Normal_Keyword("pre", pre);
   else Check_Normal_Keyword("up", super);

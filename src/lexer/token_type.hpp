@@ -25,6 +25,7 @@ enum class TokenType {
   to,
   child,
   external,
+  define,
   Type,
   identifier,
   parenthesisOpen,

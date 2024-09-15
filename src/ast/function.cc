@@ -92,6 +92,7 @@ void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irC
 }
 
 ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) const {
+
   SHOW("Creating function " << name.value << " with generic count: " << generics.size())
   auto emitCtx = EmitCtx::get(irCtx, mod);
   emitCtx->name_check_in_module(name, isGeneric() ? "generic function" : "function",
@@ -109,9 +110,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
     if (!returnType.has_value()) {
       irCtx->Error(
           "The " + irCtx->color("main") + " function is required to always give a value of type " +
-              irCtx->color("i32") +
-              " to indicate the resultant status of the program to the underlying operating system. Give a " +
-              irCtx->color("0") +
+              irCtx->color("int") +
+              " to indicate the resultant status of the program to the operating system. Give a " + irCtx->color("0") +
               " value at the end of the main function to indicate success, if you don't care about the status of the program for now",
           fileRange);
     }
@@ -147,7 +147,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
             generatedTypes.at(0)->as_mark()->getOwner().isAnonymous()) {
           if (generatedTypes.at(0)->as_mark()->isSubtypeVariable()) {
             irCtx->Error("Type of the first argument of the " + irCtx->color("main") +
-                             " function, cannot be a pointer with variability. "
+                             " function, cannot be a mark with variability. "
                              "It should be of " +
                              irCtx->color("slice![cStr]") + " type",
                          arguments.at(0)->get_type()->fileRange);
@@ -193,8 +193,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
   SHOW("Variability setting complete")
   auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
   if (isMainFn) {
-    if (!(retTy->is_integer() && (retTy->as_integer()->get_bitwidth() == 32u))) {
-      irCtx->Error(irCtx->color("main") + " function expects to have a given type of " + irCtx->color("i32"),
+    if (!(retTy->is_ctype() && retTy->as_ctype()->get_c_type_kind() == ir::CTypeKind::Int)) {
+      irCtx->Error(irCtx->color("main") + " function expects to have a given type of " + irCtx->color("int"),
                    fileRange);
     }
   }

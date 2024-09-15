@@ -32,7 +32,7 @@ std::map<MethodType, String> Method::methodTypes = {{MethodType::normal, "normal
 
 Vec<MethodParent*> MethodParent::allMemberParents = {};
 
-MethodParent::MethodParent(MemberParentType _parentTy, void* _data) : data(_data), parentType(_parentTy) {}
+MethodParent::MethodParent(MethodParentType _parentTy, void* _data) : data(_data), parentType(_parentTy) {}
 
 MethodParent* MethodParent::create_expanded_type(ir::ExpandedType* expTy) {
   for (auto mem : allMemberParents) {
@@ -42,7 +42,7 @@ MethodParent* MethodParent::create_expanded_type(ir::ExpandedType* expTy) {
       }
     }
   }
-  return std::construct_at(OwnNormal(MethodParent), MemberParentType::expandedType, (void*)expTy);
+  return std::construct_at(OwnNormal(MethodParent), MethodParentType::expandedType, (void*)expTy);
 }
 
 MethodParent* MethodParent::create_do_skill(ir::DoneSkill* doneSkill) {
@@ -53,7 +53,7 @@ MethodParent* MethodParent::create_do_skill(ir::DoneSkill* doneSkill) {
       }
     }
   }
-  return std::construct_at(OwnNormal(MethodParent), MemberParentType::doSkill, (void*)doneSkill);
+  return std::construct_at(OwnNormal(MethodParent), MethodParentType::doSkill, (void*)doneSkill);
 }
 
 bool MethodParent::is_same(ir::MethodParent* other) {
@@ -66,9 +66,9 @@ bool MethodParent::is_same(ir::MethodParent* other) {
   }
 }
 
-bool MethodParent::is_expanded() const { return parentType == MemberParentType::expandedType; }
+bool MethodParent::is_expanded() const { return parentType == MethodParentType::expandedType; }
 
-bool MethodParent::is_done_skill() const { return parentType == MemberParentType::doSkill; }
+bool MethodParent::is_done_skill() const { return parentType == MethodParentType::doSkill; }
 
 ir::ExpandedType* MethodParent::as_expanded() const { return (ir::ExpandedType*)data; }
 

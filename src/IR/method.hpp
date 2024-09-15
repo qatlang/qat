@@ -35,15 +35,15 @@ String method_type_to_string(MethodType type);
 
 class ExpandedType;
 
-enum class MemberParentType { expandedType, doSkill };
+enum class MethodParentType { expandedType, doSkill };
 class MethodParent {
   static Vec<MethodParent*> allMemberParents;
 
   void*            data;
-  MemberParentType parentType;
+  MethodParentType parentType;
 
 public:
-  MethodParent(MemberParentType _parentType, void* data);
+  MethodParent(MethodParentType _parentType, void* data);
   useit static MethodParent* create_expanded_type(ir::ExpandedType* expTy);
   useit static MethodParent* create_do_skill(ir::DoneSkill* doneSkill);
 

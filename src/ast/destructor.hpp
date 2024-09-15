@@ -16,17 +16,21 @@ class DestructorDefinition {
   friend DefineCoreType;
   friend DoSkill;
 
-  FileRange      nameRange;
-  Vec<Sentence*> sentences;
-  FileRange      fileRange;
+  FileRange         nameRange;
+  PrerunExpression* defineChecker;
+  Vec<Sentence*>    sentences;
+  FileRange         fileRange;
+
+  mutable Maybe<bool> checkResult;
 
 public:
-  DestructorDefinition(FileRange _nameRange, Vec<Sentence*> _sentences, FileRange _fileRange)
-      : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange) {}
+  DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Vec<Sentence*> _sentences,
+                       FileRange _fileRange)
+      : nameRange(_nameRange), defineChecker(_defineChecker), sentences(_sentences), fileRange(_fileRange) {}
 
-  useit static inline DestructorDefinition* create(FileRange _nameRange, Vec<Sentence*> _sentences,
-                                                   FileRange _fileRange) {
-    return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _sentences, _fileRange);
+  useit static inline DestructorDefinition* create(FileRange _nameRange, PrerunExpression* _defineChecker,
+                                                   Vec<Sentence*> _sentences, FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _defineChecker, _sentences, _fileRange);
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {

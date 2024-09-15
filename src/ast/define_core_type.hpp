@@ -59,17 +59,17 @@ public:
   };
 
 private:
-  Identifier               name;
-  Maybe<PrerunExpression*> checker;
-  Vec<Member*>             members;
-  Vec<StaticMember*>       staticMembers;
-  Maybe<FileRange>         trivialCopy;
-  Maybe<FileRange>         trivialMove;
-  Maybe<VisibilitySpec>    visibSpec;
-  Maybe<MetaInfo>          metaInfo;
+  Identifier            name;
+  PrerunExpression*     defineChecker;
+  Vec<Member*>          members;
+  Vec<StaticMember*>    staticMembers;
+  Maybe<FileRange>      trivialCopy;
+  Maybe<FileRange>      trivialMove;
+  Maybe<VisibilitySpec> visibSpec;
+  Maybe<MetaInfo>       metaInfo;
 
   Vec<ast::GenericAbstractType*> generics;
-  Maybe<PrerunExpression*>       constraint;
+  PrerunExpression*              genericConstraint;
   mutable ir::StructType*        resultCoreType = nullptr;
   mutable Vec<ir::OpaqueType*>   opaquedTypes;
   useit bool                     hasOpaque() const;
@@ -83,16 +83,16 @@ private:
   mutable ir::EntityState*        entityState = nullptr;
 
 public:
-  DefineCoreType(Identifier _name, Maybe<PrerunExpression*> _checker, Maybe<VisibilitySpec> _visibSpec,
-                 FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
+  DefineCoreType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
+                 Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _genericConstraint,
                  Maybe<MetaInfo> _metaInfo)
-      : IsEntity(_fileRange), name(_name), checker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
-        generics(_generics), constraint(_constraint) {}
+      : IsEntity(_fileRange), name(_name), defineChecker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
+        generics(_generics), genericConstraint(_genericConstraint) {}
 
-  useit static inline DefineCoreType* create(Identifier _name, Maybe<PrerunExpression*> _checker,
+  useit static inline DefineCoreType* create(Identifier _name, PrerunExpression* _checker,
                                              Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
-                                             Vec<ast::GenericAbstractType*> _generics,
-                                             Maybe<PrerunExpression*> _constraint, Maybe<MetaInfo> _metaInfo) {
+                                             Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
+                                             Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(DefineCoreType), _name, _checker, _visibSpec, _fileRange, _generics, _constraint,
                              _metaInfo);
   }

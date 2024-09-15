@@ -15,20 +15,27 @@ class DefineMixType final : public IsEntity {
   Maybe<VisibilitySpec> visibSpec;
   Vec<FileRange>        fRanges;
   Maybe<usize>          defaultVal;
+  PrerunExpression*     defineChecker;
+  PrerunExpression*     genericConstraint;
 
-  ir::OpaqueType* opaquedType = nullptr;
+  ir::OpaqueType*     opaquedType = nullptr;
+  mutable Maybe<bool> checkResult;
 
 public:
-  DefineMixType(Identifier _name, Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Vec<FileRange> _ranges,
-                Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : IsEntity(_fileRange), name(_name), subtypes(_subTypes), isPacked(_isPacked), visibSpec(_visibSpec),
-        fRanges(_ranges), defaultVal(_defaultVal) {}
+  DefineMixType(Identifier _name, PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint,
+                Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Vec<FileRange> _ranges, Maybe<usize> _defaultVal,
+                bool _isPacked, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+      : IsEntity(_fileRange), subtypes(_subTypes), name(_name), isPacked(_isPacked), visibSpec(_visibSpec),
+        fRanges(_ranges), defaultVal(_defaultVal), defineChecker(_defineChecker),
+        genericConstraint(_genericConstraint) {}
 
-  useit static inline DefineMixType* create(Identifier _name, Vec<Pair<Identifier, Maybe<Type*>>> _subTypes,
-                                            Vec<FileRange> _ranges, Maybe<usize> _defaultVal, bool _isPacked,
-                                            Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(DefineMixType), _name, _subTypes, _ranges, _defaultVal, _isPacked, _visibSpec,
-                             _fileRange);
+  useit static inline DefineMixType* create(Identifier _name, PrerunExpression* _defineChecker,
+                                            PrerunExpression*                   _genericConstraint,
+                                            Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Vec<FileRange> _ranges,
+                                            Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec,
+                                            FileRange _fileRange) {
+    return std::construct_at(OwnNormal(DefineMixType), _name, _defineChecker, _genericConstraint, _subTypes, _ranges,
+                             _defaultVal, _isPacked, _visibSpec, _fileRange);
   }
 
   void create_opaque(ir::Mod* mod, ir::Ctx* irCtx);

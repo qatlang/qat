@@ -250,8 +250,8 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
     for (auto* gen : generics) {
       gen->emit(emitCtx);
     }
-    genericCoreType =
-        new ir::GenericStructType(name, generics, constraint, this, mod, emitCtx->get_visibility_info(visibSpec));
+    genericCoreType = new ir::GenericStructType(name, generics, genericConstraint, this, mod,
+                                                emitCtx->get_visibility_info(visibSpec));
   }
 }
 
@@ -332,9 +332,12 @@ void DefineCoreType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 
 void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
   auto ctx = EmitCtx::get(irCtx, mod);
-  if (checker.has_value()) {
-    checker.value()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
-  }
+  // if (defineChecker) {
+  //   defineChecker->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+  // }
+  // if (genericConstraint) {
+  //   genericConstraint->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+  // }
   if (isGeneric()) {
     for (auto gen : generics) {
       gen->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
@@ -399,8 +402,10 @@ void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 }
 
 void DefineCoreType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
-  if (checker.has_value()) {
-    auto* checkRes = checker.value()->emit(EmitCtx::get(irCtx, mod));
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  } else if (defineChecker) {
+    auto* checkRes = defineChecker->emit(EmitCtx::get(irCtx, mod));
     if (checkRes->get_ir_type()->is_bool()) {
       checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
       if (!checkResult.value()) {
@@ -410,7 +415,7 @@ void DefineCoreType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
     } else {
       irCtx->Error("The condition for defining this struct type should be of " + irCtx->color("bool") +
                        " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
-                   checker.value()->fileRange);
+                   defineChecker->fileRange);
     }
   }
   if (isGeneric()) {

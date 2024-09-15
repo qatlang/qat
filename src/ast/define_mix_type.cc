@@ -1,4 +1,5 @@
 #include "./define_mix_type.hpp"
+#include "./expression.hpp"
 #include <cmath>
 
 namespace qat::ast {
@@ -50,6 +51,20 @@ void DefineMixType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 }
 
 void DefineMixType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+  auto ctx = EmitCtx::get(irCtx, mod);
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  } else if (defineChecker) {
+    auto checkRes = defineChecker->emit(ctx);
+    if (checkRes->get_ir_type()->is_bool()) {
+      checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
+      if (!checkResult.value()) {
+        return;
+      }
+    } else {
+      ctx->Error("The define condition is expected to be of " + ctx->color("bool") + " type", defineChecker->fileRange);
+    }
+  }
   if (phase == ir::EmitPhase::phase_1) {
     create_opaque(mod, irCtx);
   } else if (phase == ir::EmitPhase::phase_2) {

@@ -12,14 +12,14 @@ namespace qat::ast {
 
 class FunctionPrototype final : public IsEntity {
   friend class ir::GenericFunction;
-  Identifier               name;
-  Vec<Argument*>           arguments;
-  bool                     isVariadic;
-  Maybe<Type*>             returnType;
-  Maybe<MetaInfo>          metaInfo;
-  Maybe<VisibilitySpec>    visibSpec;
-  Maybe<PrerunExpression*> checker;
-  Maybe<PrerunExpression*> genericConstraint;
+  Identifier            name;
+  Vec<Argument*>        arguments;
+  bool                  isVariadic;
+  Maybe<Type*>          returnType;
+  Maybe<MetaInfo>       metaInfo;
+  Maybe<VisibilitySpec> visibSpec;
+  PrerunExpression*     defineChecker;
+  PrerunExpression*     genericConstraint;
 
   Maybe<Pair<Vec<Sentence*>, FileRange>> definition;
 
@@ -35,16 +35,16 @@ class FunctionPrototype final : public IsEntity {
 
 public:
   FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                    Maybe<PrerunExpression*> _checker, Maybe<PrerunExpression*> _genericConstraint,
-                    Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-                    Vec<GenericAbstractType*> _generics, Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
+                    PrerunExpression* _checker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
+                    Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Vec<GenericAbstractType*> _generics,
+                    Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
       : IsEntity(_fileRange), name(_name), arguments(_arguments), isVariadic(_isVariadic), returnType(_returnType),
-        metaInfo(_metaInfo), visibSpec(_visibSpec), checker(_checker), genericConstraint(_genericConstraint),
+        metaInfo(_metaInfo), visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
         definition(_definition), generics(_generics) {}
 
   useit static inline FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                                Maybe<Type*> _returnType, Maybe<PrerunExpression*> _checker,
-                                                Maybe<PrerunExpression*> _genericConstraint, Maybe<MetaInfo> _metaInfo,
+                                                Maybe<Type*> _returnType, PrerunExpression* _checker,
+                                                PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
                                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                                                 Vec<GenericAbstractType*>              _generics,
                                                 Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
@@ -52,8 +52,8 @@ public:
                              _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
   }
 
-  useit bool isGeneric() const;
-  useit Vec<GenericAbstractType*> getGenerics() const;
+  useit bool is_generic() const;
+  useit Vec<GenericAbstractType*> get_generics() const;
 
   void set_variant_name(const String& value) const;
   void unset_variant_name() const;

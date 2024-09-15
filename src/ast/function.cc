@@ -11,8 +11,6 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
 
-#define MainFirstArgBitwidth 32u
-
 namespace qat::ast {
 
 FunctionPrototype::~FunctionPrototype() {
@@ -21,16 +19,16 @@ FunctionPrototype::~FunctionPrototype() {
   }
 }
 
-bool FunctionPrototype::isGeneric() const { return !generics.empty(); }
+bool FunctionPrototype::is_generic() const { return !generics.empty(); }
 
-Vec<GenericAbstractType*> FunctionPrototype::getGenerics() const { return generics; }
+Vec<GenericAbstractType*> FunctionPrototype::get_generics() const { return generics; }
 
 void FunctionPrototype::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
-  mod->entity_name_check(irCtx, name, isGeneric() ? ir::EntityType::genericFunction : ir::EntityType::function);
+  mod->entity_name_check(irCtx, name, is_generic() ? ir::EntityType::genericFunction : ir::EntityType::function);
   entityState =
-      mod->add_entity(name, isGeneric() ? ir::EntityType::genericFunction : ir::EntityType::function, this,
-                      isGeneric() ? ir::EmitPhase::phase_1
-                                  : (definition.has_value() ? ir::EmitPhase::phase_2 : ir::EmitPhase::phase_1));
+      mod->add_entity(name, is_generic() ? ir::EntityType::genericFunction : ir::EntityType::function, this,
+                      is_generic() ? ir::EmitPhase::phase_1
+                                   : (definition.has_value() ? ir::EmitPhase::phase_2 : ir::EmitPhase::phase_1));
 }
 
 void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
@@ -38,7 +36,7 @@ void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx)
   if (returnType.has_value()) {
     returnType.value()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
   }
-  if (isGeneric()) {
+  if (is_generic()) {
     for (auto gen : generics) {
       if (gen->is_prerun() && gen->as_prerun()->hasDefault()) {
         gen->as_prerun()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
@@ -56,7 +54,7 @@ void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx)
   }
   if (definition.has_value()) {
     for (auto snt : definition.value().first) {
-      snt->update_dependencies(isGeneric() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_2, ir::DependType::complete,
+      snt->update_dependencies(is_generic() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_2, ir::DependType::complete,
                                entityState, ctx);
     }
   }
@@ -64,19 +62,21 @@ void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx)
 
 void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
   auto emitCtx = EmitCtx::get(irCtx, mod);
-  if (checker.has_value()) {
-    auto cond = checker.value()->emit(emitCtx);
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  } else if (defineChecker) {
+    auto cond = defineChecker->emit(emitCtx);
     if (cond->get_ir_type()->is_bool()) {
-      if (!llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue()) {
-        checkResult = false;
+      checkResult = llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue();
+      if (!checkResult.value()) {
         return;
       }
     } else {
       irCtx->Error("The condition for defining a function should be of " + irCtx->color("bool") + " type",
-                   checker.value()->fileRange);
+                   defineChecker->fileRange);
     }
   }
-  if (isGeneric()) {
+  if (is_generic()) {
     for (auto* gen : generics) {
       gen->emit(EmitCtx::get(irCtx, mod));
     }
@@ -95,8 +95,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 
   SHOW("Creating function " << name.value << " with generic count: " << generics.size())
   auto emitCtx = EmitCtx::get(irCtx, mod);
-  emitCtx->name_check_in_module(name, isGeneric() ? "generic function" : "function",
-                                isGeneric() ? Maybe<String>(genericFn->get_id()) : None);
+  emitCtx->name_check_in_module(name, is_generic() ? "generic function" : "function",
+                                is_generic() ? Maybe<String>(genericFn->get_id()) : None);
   Vec<ir::Type*> generatedTypes;
   String         fnName = name.value;
   SHOW("Creating function")
@@ -207,7 +207,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
       inlineFunction = irMetaInfo.value().get_value_as_bool(ir::MetaInfo::inlineKey).value();
     }
   }
-  if (isGeneric()) {
+  if (is_generic()) {
     Vec<ir::GenericArgument*> genericTypes;
     for (auto* gen : generics) {
       genericTypes.push_back(gen->toIRGenericType());

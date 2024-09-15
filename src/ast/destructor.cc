@@ -1,9 +1,24 @@
 #include "./destructor.hpp"
+#include "./expression.hpp"
 #include "sentence.hpp"
 
 namespace qat::ast {
 
 void DestructorDefinition::define(MethodState& state, ir::Ctx* irCtx) {
+  if (checkResult.has_value() && !checkResult.value()) {
+    return;
+  } else if (defineChecker) {
+    auto checkRes = defineChecker->emit(EmitCtx::get(irCtx, state.parent->get_module()));
+    if (checkRes->get_ir_type()->is_bool()) {
+      checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
+      if (!checkResult.value()) {
+        return;
+      }
+    } else {
+      irCtx->Error("The define condition is expected to be of " + irCtx->color("bool") + " type",
+                   defineChecker->fileRange);
+    }
+  }
   state.result = ir::Method::CreateDestructor(state.parent, nameRange, fileRange, irCtx);
 }
 

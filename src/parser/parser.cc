@@ -238,19 +238,114 @@ Vec<fs::path>& Parser::get_member_paths() { return memberPaths; }
 
 void Parser::clear_member_paths() { memberPaths.clear(); }
 
-ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) {
+EntityMetaData Parser::do_entity_metadata(ParserContext& parserCtx, usize from, String entityType,
+                                          usize genericLength) {
+  using lexer::TokenType;
+  auto                   i             = from;
+  ast::PrerunExpression* defineChecker = nullptr;
+  if (is_next(TokenType::define, i) && is_next(TokenType::If, i + 1)) {
+    auto start = i + 1;
+    if (is_next(TokenType::parenthesisOpen, i + 2)) {
+      auto parserCtx = ParserContext();
+      auto expRes    = do_prerun_expression(parserCtx, i + 3, None);
+      defineChecker  = expRes.first;
+      i              = expRes.second;
+      if (!is_next(TokenType::parenthesisClose, i)) {
+        add_error("Expected ) to end the define condition after this", RangeSpan(start, i));
+      }
+      i++;
+      if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) && !is_next(TokenType::meta, i + 1)) {
+        add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after " + color_error(",") +
+                      " and if you did not mean to include these, remove the " + color_error(",") + " separator",
+                  RangeAt(i + 1));
+      } else if (is_next(TokenType::separator, i)) {
+        i++;
+      }
+    } else {
+      add_error("Expected ( to start the define condition for the " + entityType, RangeSpan(start, i));
+    }
+  } else if (is_next(TokenType::define, i)) {
+    add_error("Expected " + color_error("if") + " after this. Define conditions are of the format " +
+                  color_error("define if (condition)"),
+              RangeAt(i + 1));
+  }
+  ast::PrerunExpression* genericConstraint = nullptr;
+  if (is_next(TokenType::where, i)) {
+    if (genericLength == 0) {
+      add_error("Cannot use generic constraint for a " + entityType + " without any generic parameters",
+                RangeAt(i + 1));
+    }
+    auto start = i + 1;
+    if (is_next(TokenType::parenthesisOpen, i + 1)) {
+      i++;
+    } else {
+      add_error("Expected ( after this to start the generic constraint", RangeAt(start));
+    }
+    auto expRes       = do_prerun_expression(parserCtx, i + 1, None);
+    genericConstraint = expRes.first;
+    i                 = expRes.second;
+    if (!is_next(TokenType::parenthesisClose, i)) {
+      add_error("Expected ) after this to end the generic constraint", RangeSpan(start, i));
+    }
+    i++;
+    if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
+      add_error("Expected " + color_error("meta") + " after , for the metadata for the " + entityType +
+                    ". If you did not mean to include the metadata, remove the " + color_error(",") + " separator",
+                RangeAt(i + 1));
+    } else if (is_next(TokenType::separator, i)) {
+      i++;
+    }
+  }
+  Maybe<ast::MetaInfo> metaInfo;
+  if (is_next(TokenType::meta, i)) {
+    if (is_next(TokenType::curlybraceOpen, i + 1)) {
+      auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
+      if (cRes.has_value()) {
+        metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
+        i        = cRes.value();
+        if (is_next(TokenType::separator, i)) {
+          add_error("Please remove the " + color_error(",") + " separator after this, as it is not necessary",
+                    RangeAt(i + 1));
+        }
+      } else {
+        add_error("Expected } to end the meta information", RangeAt(i + 2));
+      }
+    } else {
+      add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
+    }
+  }
+  return EntityMetaData(defineChecker, genericConstraint, std::move(metaInfo), i);
+}
 
+ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) {
   Vec<Pair<Identifier, ast::PrerunExpression*>> fields;
+
+  bool             isInline = false;
+  Maybe<FileRange> inlineRange;
   using lexer::TokenType;
   for (usize i = from + 1; i < upto; i++) {
     auto& token = tokens->at(i);
     switch (token.type) {
+      case TokenType::Inline: {
+        if (isInline) {
+          add_error(color_error("inline") + " has already been provided", RangeAt(i));
+        }
+        isInline = true;
+        if (!is_next(TokenType::associatedAssignment, i)) {
+          inlineRange = RangeAt(i);
+          if (is_next(TokenType::separator, i)) {
+            i++;
+          }
+          break;
+        }
+      }
       case TokenType::identifier: {
         if (!is_next(TokenType::associatedAssignment, i)) {
-          add_error("Expected := after the identifier", RangeAt(i));
+          add_error("Expected := after this", RangeAt(i));
         }
-        auto sepPos = first_primary_position(TokenType::separator, i + 1);
-        auto preCtx = parser::ParserContext();
+        auto fieldName = Identifier((token.type == TokenType::Inline) ? "inline" : ValueAt(i), RangeAt(i));
+        auto sepPos    = first_primary_position(TokenType::separator, i + 1);
+        auto preCtx    = parser::ParserContext(); // MetaInfo doesn't share the context of its scope
         if (sepPos.has_value() && (sepPos.value() < upto)) {
           auto expRes = do_prerun_expression(preCtx, i + 1, sepPos.value());
           if (expRes.second + 1 != sepPos.value()) {
@@ -834,6 +929,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
   } else {
     add_error("No expression found", RangeAt(from));
   }
+  return {nullptr, i - 1};
 }
 
 Vec<ast::FillGeneric*> Parser::do_generic_fill(ParserContext& preCtx, usize from, usize upto) {

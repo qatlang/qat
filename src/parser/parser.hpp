@@ -24,6 +24,13 @@
 
 namespace qat::parser {
 
+struct EntityMetaData {
+  ast::PrerunExpression* defineChecker;
+  ast::PrerunExpression* genericConstraint;
+  Maybe<ast::MetaInfo>   metaInfo;
+  usize                  lastIndex;
+};
+
 class Parser {
 private:
   Vec<lexer::Token>*            tokens = nullptr;
@@ -76,8 +83,10 @@ public:
 
   useit Vec<fs::path>& get_brought_paths();
   useit Vec<fs::path>& get_member_paths();
-  void                 clear_member_paths();
 
+  void clear_member_paths();
+
+  useit EntityMetaData do_entity_metadata(ParserContext& parserCtx, usize from, String entityType, usize genericLength);
   useit ast::MetaInfo do_meta_info(usize from, usize upto, FileRange fileRange);
   useit Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
   useit Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prev_ctx, usize from, usize upto);

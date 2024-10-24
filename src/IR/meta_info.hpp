@@ -60,25 +60,30 @@ struct MetaInfo {
   useit Maybe<String> get_foreign_id() const {
     if (has_key("foreign")) {
       return ir::StringSliceType::value_to_string(get_value_for("foreign"));
-    } else {
-      return None;
     }
+    return None;
   }
 
   useit Maybe<String> get_value_as_string_for(String key) const {
     if (has_key(key)) {
       return ir::StringSliceType::value_to_string(get_value_for(key));
-    } else {
-      return None;
     }
+    return None;
   }
 
   useit Maybe<bool> get_value_as_bool(String key) const {
     if (has_key(key)) {
       return llvm::cast<llvm::ConstantInt>(get_value_for(key)->get_llvm_constant())->getValue().getBoolValue();
-    } else {
-      return false;
     }
+    return None;
+  }
+
+  // NOTE - Should the return value be optional?
+  useit bool get_inline() const {
+    if (has_key(inlineKey)) {
+      return llvm::cast<llvm::ConstantInt>(get_value_for(inlineKey)->get_llvm_constant())->getValue().getBoolValue();
+    }
+    return false;
   }
 };
 

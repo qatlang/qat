@@ -4,6 +4,7 @@
 #include "../IR/context.hpp"
 #include "../IR/types/core_type.hpp"
 #include "./argument.hpp"
+#include "./meta_info.hpp"
 #include "./node.hpp"
 #include "member_parent_like.hpp"
 #include "sentence.hpp"
@@ -29,37 +30,43 @@ private:
   FileRange             nameRange;
   FileRange             fileRange;
 
+  PrerunExpression*    defineChecker;
+  Maybe<ast::MetaInfo> metaInfo;
+
+  mutable Maybe<bool>                  checkResult;
   mutable Vec<ir::StructType::Member*> presentMembers;
   mutable Vec<ir::StructType::Member*> absentMembersWithDefault;
   mutable Vec<ir::StructType::Member*> absentMembersWithoutDefault;
 
 public:
   ConstructorPrototype(ConstructorType _constrType, FileRange _nameRange, Vec<Argument*> _arguments,
-                       Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange, Maybe<Identifier> _argName = None)
+                       Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange, Maybe<Identifier> _argName,
+                       PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
       : arguments(_arguments), visibSpec(_visibSpec), type(_constrType), argName(_argName), nameRange(_nameRange),
-        fileRange(_fileRange) {}
+        fileRange(_fileRange), defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)) {}
 
   static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, Maybe<VisibilitySpec> visibSpec,
-                                      FileRange fileRange) {
+                                      FileRange fileRange, PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
     return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::normal, nameRange, std::move(args),
-                             visibSpec, std::move(fileRange));
+                             visibSpec, std::move(fileRange), None, defineChecker, metaInfo);
   }
 
-  static ConstructorPrototype* Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange) {
+  static ConstructorPrototype* Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
+                                       PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
     return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::Default, nameRange, Vec<Argument*>{},
-                             visibSpec, std::move(fileRange));
+                             visibSpec, std::move(fileRange), None, defineChecker, metaInfo);
   }
 
   static ConstructorPrototype* Copy(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
-                                    Identifier _argName) {
+                                    Identifier _argName, PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
     return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::copy, nameRange, Vec<Argument*>{},
-                             visibSpec, std::move(fileRange), _argName);
+                             visibSpec, std::move(fileRange), _argName, defineChecker, metaInfo);
   }
 
   static ConstructorPrototype* Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
-                                    Identifier _argName) {
+                                    Identifier _argName, PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
     return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::move, nameRange, Vec<Argument*>{},
-                             visibSpec, std::move(fileRange), _argName);
+                             visibSpec, std::move(fileRange), _argName, defineChecker, metaInfo);
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {

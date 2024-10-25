@@ -14,6 +14,21 @@ ConstructorPrototype::~ConstructorPrototype() {
 
 void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
+  if (defineChecker) {
+    auto defExp = defineChecker->emit(emitCtx);
+    if (!defExp->get_ir_type()->is_bool()) {
+      irCtx->Error("The define condition is required to be of type " + irCtx->color("bool") +
+                       ", but instead got an expression of type " + irCtx->color(defExp->get_ir_type()->to_string()),
+                   defineChecker->fileRange);
+    }
+    state.defineCondition = llvm::cast<llvm::ConstantInt>(defExp->get_llvm_constant())->getValue().getBoolValue();
+    if (!state.defineCondition.value()) {
+      return;
+    }
+  }
+  if (metaInfo.has_value()) {
+    state.metaInfo = std::move(metaInfo.value().toIR(emitCtx));
+  }
   if (type == ConstructorType::normal) {
     Vec<Pair<Maybe<bool>, ir::Type*>> generatedTypes;
     bool                              isMixAndHasMemberArg = false;
@@ -28,7 +43,7 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
         SHOW("Arg is type member")
         if (!state.parent->get_parent_type()->is_struct() && !state.parent->get_parent_type()->is_mix()) {
           irCtx->Error(
-              "The parent type is not a core or mix type, and hence member argument syntax cannot be used here",
+              "The parent type is not a struct or mix type, and hence member argument syntax cannot be used here",
               arg->get_name().range);
         }
         if (state.parent->get_parent_type()->is_struct()) {
@@ -126,8 +141,9 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
       }
     }
     SHOW("About to create function")
-    state.result = ir::Method::CreateConstructor(state.parent, nameRange, args, false, fileRange,
-                                                 emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::CreateConstructor(state.parent, nameRange,
+                                                 state.metaInfo.has_value() && state.metaInfo->get_inline(), args,
+                                                 false, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
     if (state.parent->is_done_skill() && state.parent->get_parent_type()->is_expanded() &&
@@ -136,12 +152,17 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                        " constructor, so it cannot be defined again",
                    fileRange);
     }
-    state.result = ir::Method::DefaultConstructor(state.parent, nameRange, emitCtx->get_visibility_info(visibSpec),
-                                                  fileRange, irCtx);
+    state.result = ir::Method::DefaultConstructor(state.parent, nameRange,
+                                                  state.metaInfo.has_value() && state.metaInfo->get_inline(),
+                                                  emitCtx->get_visibility_info(visibSpec), fileRange, irCtx);
   } else if (type == ConstructorType::copy) {
-    state.result = ir::Method::CopyConstructor(state.parent, nameRange, argName.value(), fileRange, irCtx);
+    state.result =
+        ir::Method::CopyConstructor(state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(),
+                                    argName.value(), fileRange, irCtx);
   } else if (type == ConstructorType::move) {
-    state.result = ir::Method::MoveConstructor(state.parent, nameRange, argName.value(), fileRange, irCtx);
+    state.result =
+        ir::Method::MoveConstructor(state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(),
+                                    argName.value(), fileRange, irCtx);
   }
 }
 
@@ -165,6 +186,9 @@ Json ConstructorPrototype::to_json() const {
 void ConstructorDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
+  if (state.defineCondition.has_value() && !state.defineCondition.value()) {
+    return nullptr;
+  }
   auto* fnEmit = state.result;
   SHOW("FNemit is " << fnEmit)
   SHOW("Set active contructor: " << fnEmit->get_full_name())

@@ -1,64 +1,119 @@
 #include "./run_command.hpp"
-#include "boost/process/child.hpp"
-#include "boost/process/io.hpp"
+#include <subprocess/subprocess.h>
 
 namespace qat {
 
-int run_command_get_code(String command, Vec<String> args) {
-  boost::process::ipstream outStream;
-  boost::process::child    childProcess(command, args, boost::process::std_out > boost::process::null);
-  childProcess.wait();
-  return childProcess.exit_code();
+Maybe<int> run_command_get_code(String command, Vec<String> args) {
+  Vec<const char*> cmdLine(args.size() + 1);
+  cmdLine.push_back(command.c_str());
+  for (auto& it : args) {
+    cmdLine.push_back(it.c_str());
+  }
+  subprocess_s subProc;
+  int          result = subprocess_create(cmdLine.data(), subprocess_option_inherit_environment, &subProc);
+  if (result != 0) {
+    return None;
+  }
+  subprocess_join(&subProc, &result);
+  subprocess_destroy(&subProc);
+  return result;
 }
 
-Pair<int, String> run_command_get_stdout(String command, Vec<String> args) {
-  boost::process::ipstream outStream;
-  boost::process::child    childProcess(command, args, boost::process::std_out > outStream);
-  childProcess.wait();
-  String output;
-  for (String line; std::getline(outStream, line);) {
-    output += line + "\n";
+Maybe<Pair<int, String>> run_command_get_stdout(String command, Vec<String> args) {
+  Vec<const char*> cmdLine(args.size() + 1);
+  cmdLine.push_back(command.c_str());
+  for (auto& it : args) {
+    cmdLine.push_back(it.c_str());
   }
-  return Pair<int, String>(childProcess.exit_code(), output);
+  subprocess_s subProc;
+  int          result = subprocess_create(cmdLine.data(), subprocess_option_inherit_environment, &subProc);
+  if (result != 0) {
+    return None;
+  }
+  auto progOut = subprocess_stdout(&subProc);
+  subprocess_join(&subProc, &result);
+  String outRes;
+  char   outBuffer[128] = {0};
+  while (std::fgets(outBuffer, sizeof(outBuffer), progOut) != nullptr) {
+    outRes += &outBuffer[0];
+  }
+  subprocess_destroy(&subProc);
+  return Pair<int, String>(result, outRes);
 }
 
-Pair<int, String> run_command_get_output(String command, Vec<String> args) {
-  boost::process::ipstream outStream;
-  boost::process::child    childProcess(command, args, (boost::process::std_out & boost::process::std_err) > outStream);
-  childProcess.wait();
-  String output;
-  for (String line; std::getline(outStream, line);) {
-    output += line + "\n";
+Maybe<Pair<int, String>> run_command_get_output(String command, Vec<String> args) {
+  Vec<const char*> cmdLine(args.size() + 1);
+  cmdLine.push_back(command.c_str());
+  for (auto& it : args) {
+    cmdLine.push_back(it.c_str());
   }
-  return Pair<int, String>(childProcess.exit_code(), output);
+  subprocess_s subProc;
+  int          result = subprocess_create(
+      cmdLine.data(), subprocess_option_inherit_environment | subprocess_option_combined_stdout_stderr, &subProc);
+  if (result != 0) {
+    return None;
+  }
+  auto progOut = subprocess_stdout(&subProc);
+  subprocess_join(&subProc, &result);
+  String outRes;
+  char   outBuffer[128] = {0};
+  while (std::fgets(outBuffer, sizeof(outBuffer), progOut) != nullptr) {
+    outRes += &outBuffer[0];
+  }
+  subprocess_destroy(&subProc);
+  return Pair<int, String>(result, outRes);
 }
 
-Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
-  boost::process::ipstream errorStream;
-  boost::process::child    childProcess(command, args, boost::process::std_err > errorStream);
-  childProcess.wait();
-  String errorOutput;
-  for (String line; !std::getline(errorStream, line).eof();) {
-    errorOutput += line + "\n";
+Maybe<Pair<int, String>> run_command_get_stderr(String command, Vec<String> args) {
+  Vec<const char*> cmdLine(args.size() + 1);
+  cmdLine.push_back(command.c_str());
+  for (auto& it : args) {
+    cmdLine.push_back(it.c_str());
   }
-  return Pair<int, String>(childProcess.exit_code(), errorOutput);
+  subprocess_s subProc;
+  int          result = subprocess_create(
+      cmdLine.data(), subprocess_option_inherit_environment | subprocess_option_combined_stdout_stderr, &subProc);
+  if (result != 0) {
+    return None;
+  }
+  auto progErr = subprocess_stderr(&subProc);
+  subprocess_join(&subProc, &result);
+  String errRes;
+  char   errBuffer[128] = {0};
+  while (std::fgets(errBuffer, sizeof(errBuffer), progErr) != nullptr) {
+    errRes += &errBuffer[0];
+  }
+  subprocess_destroy(&subProc);
+  return Pair<int, String>(result, errRes);
 }
 
-std::tuple<int, String, String> run_command_get_stdout_and_stderr(String command, Vec<String> args) {
-  boost::process::ipstream errorStream;
-  boost::process::ipstream outStream;
-  boost::process::child    childProcess(command, args, boost::process::std_out > outStream,
-                                        boost::process::std_err > errorStream);
-  childProcess.wait();
-  String output;
-  String errorOutput;
-  for (String line; std::getline(outStream, line);) {
-    output += line + "\n";
+Maybe<std::tuple<int, String, String>> run_command_get_stdout_and_stderr(String command, Vec<String> args) {
+  Vec<const char*> cmdLine(args.size() + 1);
+  cmdLine.push_back(command.c_str());
+  for (auto& it : args) {
+    cmdLine.push_back(it.c_str());
   }
-  for (String line; std::getline(errorStream, line);) {
-    errorOutput += line + "\n";
+  subprocess_s subProc;
+  int          result = subprocess_create(
+      cmdLine.data(), subprocess_option_inherit_environment | subprocess_option_combined_stdout_stderr, &subProc);
+  if (result != 0) {
+    return None;
   }
-  return std::tuple<int, String, String>(childProcess.exit_code(), output, errorOutput);
+  auto progOut = subprocess_stdout(&subProc);
+  auto progErr = subprocess_stderr(&subProc);
+  subprocess_join(&subProc, &result);
+  String outRes;
+  char   outBuffer[128] = {0};
+  while (std::fgets(outBuffer, sizeof(outBuffer), progOut) != nullptr) {
+    outRes += &outBuffer[0];
+  }
+  String errRes;
+  char   errBuffer[128] = {0};
+  while (std::fgets(errBuffer, sizeof(errBuffer), progErr) != nullptr) {
+    errRes += &errBuffer[0];
+  }
+  subprocess_destroy(&subProc);
+  return std::tuple<int, String, String>(result, outRes, errRes);
 }
 
 } // namespace qat

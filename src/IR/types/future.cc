@@ -56,7 +56,7 @@ void FutureType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Valu
   irCtx->builder.CreateAtomicRMW(
       llvm::AtomicRMWInst::Add,
       irCtx->builder.CreateLoad(
-          llvm::Type::getInt64PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()),
+          llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
           irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 1u)),
       llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u), llvm::MaybeAlign(0u),
       llvm::AtomicOrdering::AcquireRelease);
@@ -67,7 +67,7 @@ void FutureType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
   irCtx->builder.CreateAtomicRMW(
       llvm::AtomicRMWInst::Add,
       irCtx->builder.CreateLoad(
-          llvm::Type::getInt64PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()),
+          llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
           irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 1u)),
       llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u), llvm::MaybeAlign(0u),
       llvm::AtomicOrdering::AcquireRelease);
@@ -81,7 +81,7 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
   irCtx->builder.CreateAtomicRMW(
       llvm::AtomicRMWInst::Sub,
       irCtx->builder.CreateLoad(
-          llvm::Type::getInt64PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()),
+          llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
           irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u)),
       llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u), llvm::MaybeAlign(0u),
       llvm::AtomicOrdering::AcquireRelease);
@@ -90,7 +90,7 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
       irCtx->builder.CreateLoad(
           llvm::Type::getInt64Ty(irCtx->llctx),
           irCtx->builder.CreateLoad(
-              llvm::Type::getInt64PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()),
+              llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
               irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u))),
       llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u));
   auto* trueBlock = new ir::Block(fun, currBlock);
@@ -103,31 +103,31 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
   if (subTy->is_destructible()) {
     subTy->destroy_value(
         irCtx,
-        ir::Value::get(
-            irCtx->builder.CreatePointerCast(
-                irCtx->builder.CreateInBoundsGEP(
-                    llvm::Type::getInt8Ty(irCtx->llctx),
-                    irCtx->builder.CreatePointerCast(
-                        irCtx->builder.CreateInBoundsGEP(
-                            llvm::Type::getInt64Ty(irCtx->llctx),
-                            irCtx->builder.CreateLoad(
-                                llvm::Type::getInt64PtrTy(irCtx->llctx,
-                                                          irCtx->dataLayout.value().getProgramAddressSpace()),
-                                irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u)),
-                            {llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)}),
-                        llvm::Type::getInt8PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace())),
-                    {llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)}),
-                subTy->get_llvm_type()->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace())),
-            ir::ReferenceType::get(false, subTy, irCtx), false),
+        ir::Value::get(irCtx->builder.CreatePointerCast(
+                           irCtx->builder.CreateInBoundsGEP(
+                               llvm::Type::getInt8Ty(irCtx->llctx),
+                               irCtx->builder.CreatePointerCast(
+                                   irCtx->builder.CreateInBoundsGEP(
+                                       llvm::Type::getInt64Ty(irCtx->llctx),
+                                       irCtx->builder.CreateLoad(
+                                           llvm::Type::getInt64Ty(irCtx->llctx)
+                                               ->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
+                                           irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u)),
+                                       {llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)}),
+                                   llvm::Type::getInt8Ty(irCtx->llctx)
+                                       ->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace())),
+                               {llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)}),
+                           subTy->get_llvm_type()->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace())),
+                       ir::ReferenceType::get(false, subTy, irCtx), false),
         fun);
   }
   irCtx->builder.CreateCall(
       freeFn->getFunctionType(), freeFn,
       {irCtx->builder.CreatePointerCast(
           irCtx->builder.CreateLoad(
-              llvm::Type::getInt64PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()),
+              llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
               irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u)),
-          llvm::Type::getInt8PtrTy(irCtx->llctx, irCtx->dataLayout.value().getProgramAddressSpace()))});
+          llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()))});
   (void)ir::add_branch(irCtx->builder, restBlock->get_bb());
   restBlock->set_active(irCtx->builder);
 }

@@ -2,6 +2,7 @@
 #include "../context.hpp"
 #include "../value.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/IR/ConstantFold.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LLVMContext.h"
@@ -46,13 +47,11 @@ Maybe<String> UnsignedType::to_prerun_generic_string(ir::PrerunValue* val) const
   auto               len   = llvm::ConstantInt::get(llvm::Type::getInt64Ty(get_llvm_type()->getContext()), 1u, false);
   auto               value = val->get_llvm_constant();
   auto               temp  = value;
-  while (
-      llvm::cast<llvm::ConstantInt>(
-          llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_UGE, temp,
-                                                                 llvm::ConstantInt::get(value->getType(), 10u, false)),
-                                     irCtx->dataLayout.value()))
-          ->getValue()
-          .getBoolValue()) {
+  while (llvm::cast<llvm::ConstantInt>(
+             llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_UGE, temp,
+                                                  llvm::ConstantInt::get(value->getType(), 10u, false)))
+             ->getValue()
+             .getBoolValue()) {
     len         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
         llvm::ConstantExpr::getAdd(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout.value()));
     auto* radix = llvm::ConstantInt::get(temp->getType(), 10u, false);
@@ -69,14 +68,14 @@ Maybe<String> UnsignedType::to_prerun_generic_string(ir::PrerunValue* val) const
         irCtx->dataLayout.value()));
     len                                         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
         llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout.value()));
-    resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-        llvm::ConstantExpr::getIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false),
-        irCtx->dataLayout.value()));
-    value                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
+    resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(
+        llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout.value()));
+    value = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
         llvm::Instruction::BinaryOps::UDiv, llvm::ConstantExpr::getSub(value, digit),
         llvm::ConstantInt::get(value->getType(), 10u, false), irCtx->dataLayout.value()));
-  } while (llvm::cast<llvm::ConstantInt>(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, len,
-                                                                     llvm::ConstantInt::get(len->getType(), 0u, false)))
+  } while (llvm::cast<llvm::ConstantInt>(
+               llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, len,
+                                                    llvm::ConstantInt::get(len->getType(), 0u, false)))
                ->getValue()
                .getBoolValue());
   String resStr;
@@ -89,9 +88,9 @@ Maybe<String> UnsignedType::to_prerun_generic_string(ir::PrerunValue* val) const
 Maybe<bool> UnsignedType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
   if (first->get_ir_type()->is_same(second->get_ir_type())) {
     return llvm::cast<llvm::ConstantInt>(
-               llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
-                                                                      first->get_llvm_constant(),
-                                                                      second->get_llvm_constant()),
+               llvm::ConstantFoldConstant(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
+                                                                               first->get_llvm_constant(),
+                                                                               second->get_llvm_constant()),
                                           irCtx->dataLayout.value()))
         ->getValue()
         .getBoolValue();

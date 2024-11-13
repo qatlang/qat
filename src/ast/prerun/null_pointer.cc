@@ -36,7 +36,7 @@ ir::PrerunValue* NullPointer::emit(EmitCtx* ctx) {
                                  : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
                              ctx->irCtx->dataLayout->getProgramAddressSpace());
   return ir::PrerunValue::get(
-      finalTy->as_pointer()->isMulti()
+      finalTy->as_mark()->isSlice()
           ? llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(finalTy->get_llvm_type()),
                                       {llvm::ConstantPointerNull::get(llPtrTy),
                                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)})

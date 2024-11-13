@@ -5,6 +5,7 @@
 #include "integer.hpp"
 #include "unsigned.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/IR/ConstantFold.h"
 #include "llvm/IR/Constants.h"
 #include <cmath>
 
@@ -121,38 +122,29 @@ void ChoiceType::find_bitwidth_for_values() const {
   u64 result = 1;
   for (auto val : values.value()) {
     if (areValuesUnsigned) {
-      while (
-          llvm::cast<llvm::ConstantInt>(
-              llvm::ConstantFoldConstant(
-                  llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULT,
-                                              llvm::ConstantInt::get(val->getType(), std::pow(2, result), false), val),
-                  irCtx->dataLayout.value()))
-              ->getUniqueInteger()
-              .getBoolValue()) {
+      while (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
+                                               llvm::CmpInst::Predicate::ICMP_ULT,
+                                               llvm::ConstantInt::get(val->getType(), std::pow(2, result), false), val))
+                 ->getUniqueInteger()
+                 .getBoolValue()) {
         result++;
       }
-    } else if (llvm::cast<llvm::ConstantInt>(
-                   llvm::ConstantFoldConstant(
-                       llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                                   llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
-                                                   val),
-                       irCtx->dataLayout.value()))
+    } else if (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
+                                                 llvm::CmpInst::Predicate::ICMP_SLT,
+                                                 llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
+                                                 val))
                    ->getUniqueInteger()
                    .getBoolValue()) {
       auto sigVal = llvm::ConstantExpr::getNeg(val);
-      if (llvm::cast<llvm::ConstantInt>(
-              llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(
-                                             llvm::CmpInst::Predicate::ICMP_SLT,
-                                             llvm::ConstantInt::get(val->getType(), std::pow(2, result), true), sigVal),
-                                         irCtx->dataLayout.value()))
+      if (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
+                                            llvm::CmpInst::Predicate::ICMP_SLT,
+                                            llvm::ConstantInt::get(val->getType(), std::pow(2, result), true), sigVal))
               ->getUniqueInteger()
               .getBoolValue()) {
-        while (llvm::cast<llvm::ConstantInt>(
-                   llvm::ConstantFoldConstant(
-                       llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                                                   llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
-                                                   sigVal),
-                       irCtx->dataLayout.value()))
+        while (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
+                                                 llvm::CmpInst::Predicate::ICMP_SLT,
+                                                 llvm::ConstantInt::get(val->getType(), std::pow(2, result), true),
+                                                 sigVal))
                    ->getUniqueInteger()
                    .getBoolValue()) {
           result++;
@@ -207,10 +199,8 @@ Maybe<String> ChoiceType::to_prerun_generic_string(ir::PrerunValue* val) const {
   if (can_be_prerun_generic()) {
     for (auto const& field : fields) {
       if (llvm::cast<llvm::ConstantInt>(
-              llvm::ConstantFoldConstant(
-                  llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, get_value_for(field.value),
-                                              llvm::cast<llvm::ConstantInt>(val->get_llvm_constant())),
-                  irCtx->dataLayout.value()))
+              llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, get_value_for(field.value),
+                                                   llvm::cast<llvm::ConstantInt>(val->get_llvm_constant())))
               ->getValue()
               .getBoolValue()) {
         return get_full_name() + "::" + field.value;
@@ -226,11 +216,9 @@ bool ChoiceType::is_type_sized() const { return true; }
 
 Maybe<bool> ChoiceType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
   if (first->get_ir_type()->is_same(second->get_ir_type())) {
-    return llvm::cast<llvm::ConstantInt>(
-               llvm::ConstantFoldConstant(llvm::ConstantExpr::getICmp(llvm::CmpInst::ICMP_EQ,
-                                                                      first->get_llvm_constant(),
-                                                                      second->get_llvm_constant()),
-                                          irCtx->dataLayout.value()))
+    return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ,
+                                                                              first->get_llvm_constant(),
+                                                                              second->get_llvm_constant()))
         ->getValue()
         .getBoolValue();
   } else {

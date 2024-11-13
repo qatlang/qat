@@ -99,11 +99,9 @@ Maybe<String> FloatType::to_prerun_generic_string(ir::PrerunValue* val) const {
 
 Maybe<bool> FloatType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
   if (first->get_ir_type()->is_same(second->get_ir_type()) && first->get_ir_type()->is_float()) {
-    return llvm::cast<llvm::ConstantInt>(
-               llvm::ConstantFoldConstant(llvm::ConstantExpr::getFCmp(llvm::CmpInst::FCMP_OEQ,
-                                                                      first->get_llvm_constant(),
-                                                                      second->get_llvm_constant()),
-                                          irCtx->dataLayout.value()))
+    return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::FCMP_OEQ,
+                                                                              first->get_llvm_constant(),
+                                                                              second->get_llvm_constant()))
         ->getValue()
         .getBoolValue();
   } else {

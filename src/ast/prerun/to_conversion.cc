@@ -1,4 +1,5 @@
 #include "./to_conversion.hpp"
+#include "llvm/IR/ConstantFold.h"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {
@@ -21,35 +22,44 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
   }
   if (valTy->is_integer()) {
     if (target->is_integer()) {
-      return ir::PrerunValue::get(
-          llvm::ConstantExpr::getIntegerCast(val->get_llvm_constant(), target->get_llvm_type(), true), usableTarget);
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::SExt,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
+                                  usableTarget);
     } else if (target->is_unsigned_integer()) {
-      return ir::PrerunValue::get(
-          llvm::ConstantExpr::getIntegerCast(val->get_llvm_constant(), target->get_llvm_type(), false), usableTarget);
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::ZExt,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
+                                  usableTarget);
     } else if (target->is_float()) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getFPCast(val->get_llvm_constant(), target->get_llvm_type()),
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::SIToFP,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
                                   usableTarget);
     }
   } else if (valTy->is_unsigned_integer()) {
     if (target->is_integer()) {
-      return ir::PrerunValue::get(
-          llvm::ConstantExpr::getIntegerCast(val->get_llvm_constant(), target->get_llvm_type(), true), usableTarget);
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::SExt,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
+                                  usableTarget);
     } else if (target->is_unsigned_integer()) {
-      return ir::PrerunValue::get(
-          llvm::ConstantExpr::getIntegerCast(val->get_llvm_constant(), target->get_llvm_type(), false), usableTarget);
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::ZExt,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
+                                  usableTarget);
     } else if (target->is_float()) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getFPCast(val->get_llvm_constant(), target->get_llvm_type()),
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::UIToFP,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
                                   usableTarget);
     }
   } else if (valTy->is_float()) {
     if (target->is_integer()) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getFPToSI(val->get_llvm_constant(), target->get_llvm_type()),
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::FPToSI,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
                                   usableTarget);
     } else if (target->is_unsigned_integer()) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getFPToUI(val->get_llvm_constant(), target->get_llvm_type()),
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::FPToUI,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
                                   usableTarget);
     } else if (target->is_float()) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getFPCast(val->get_llvm_constant(), target->get_llvm_type()),
+      return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::FPExt,
+                                                                    val->get_llvm_constant(), target->get_llvm_type()),
                                   usableTarget);
     }
   } else if (valTy->is_string_slice()) {
@@ -68,7 +78,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
                            ->as_unsigned_integer()
                            ->getBitwidth() == 8u)) &&
                (valTy->as_mark()->getOwner().isAnonymous()) && (!valTy->as_mark()->isSubtypeVariable())) {
-      if (valTy->as_mark()->isMulti()) {
+      if (valTy->as_mark()->isSlice()) {
         return ir::PrerunValue::get(
             llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()), usableTarget);
       } else {

@@ -142,7 +142,8 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
             llvm::Type::getInt64Ty(ctx->irCtx->llctx),
             ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 1u)));
         printVals.push_back(ctx->irCtx->builder.CreateLoad(
-            llvm::Type::getInt8PtrTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+            llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
             ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 0u)));
       } else {
         printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
@@ -373,7 +374,8 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
               ir::CType::get_usize(ctx->irCtx)->get_llvm_type(),
               ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 1u)));
           printVals.push_back(ctx->irCtx->builder.CreateLoad(
-              llvm::Type::getInt8PtrTy(ctx->irCtx->llctx),
+              llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                  ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
               ctx->irCtx->builder.CreateStructGEP(
                   stringTy->get_llvm_type()->getStructElementType(0u),
                   ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 0u), 0u)));

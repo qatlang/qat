@@ -13,11 +13,11 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
                                   ir::UnsignedType::getBool(ctx->irCtx));
     } else if (memberName.value == "hasNoValue") {
       return ir::PrerunValue::get(
-          llvm::ConstantFoldConstant(
-              llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ,
-                                          irExp->get_llvm_constant()->getAggregateElement(0u),
-                                          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
-              ctx->irCtx->dataLayout.value()),
+          llvm::ConstantFoldConstant(llvm::ConstantFoldCompareInstruction(
+                                         llvm::CmpInst::Predicate::ICMP_EQ,
+                                         irExp->get_llvm_constant()->getAggregateElement(0u),
+                                         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
+                                     ctx->irCtx->dataLayout.value()),
           ir::UnsignedType::getBool(ctx->irCtx));
     } else if (memberName.value == "get") {
       if (llvm::cast<llvm::ConstantInt>(

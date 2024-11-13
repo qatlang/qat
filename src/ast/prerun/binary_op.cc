@@ -1,5 +1,7 @@
 #include "./binary_op.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/IR/ConstantFold.h"
+#include "llvm/IR/InstrTypes.h"
 
 namespace qat::ast {
 
@@ -72,57 +74,57 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
           break;
         }
         case Op::equalTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SLT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SGT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SGT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SLE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SGE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SGE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::bitwiseAnd: {
-          llRes = llvm::ConstantExpr::getAnd(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And, lhsConst, rhsConst);
           break;
         }
         case Op::bitwiseOr: {
-          llRes = llvm::ConstantExpr::getOr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or, lhsConst, rhsConst);
           break;
         }
         case Op::bitwiseXor: {
-          llRes = llvm::ConstantExpr::getXor(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor, lhsConst, rhsConst);
           break;
         }
         case Op::logicalLeftShift: {
-          llRes = llvm::ConstantExpr::getShl(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Shl, lhsConst, rhsConst);
           break;
         }
         case Op::logicalRightShift: {
-          llRes = llvm::ConstantExpr::getLShr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::LShr, lhsConst, rhsConst);
           break;
         }
         case Op::arithmeticRightShift: {
-          llRes = llvm::ConstantExpr::getAShr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::AShr, lhsConst, rhsConst);
           break;
         }
         default: {
@@ -136,11 +138,17 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
     } else {
       if (rhsValTy->is_choice() && (rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy))) {
         if (opr == Op::bitwiseAnd) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getAnd(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else if (opr == Op::bitwiseOr) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getOr(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else if (opr == Op::bitwiseXor) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getXor(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else {
           ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for left hand side type " +
                          ctx->color(lhsValTy->to_string()) + " and right hand side type " +
@@ -213,57 +221,57 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
           break;
         }
         case Op::equalTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_UGT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_UGT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
-          llRes   = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_UGE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_UGE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::bitwiseAnd: {
-          llRes = llvm::ConstantExpr::getAnd(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And, lhsConst, rhsConst);
           break;
         }
         case Op::bitwiseOr: {
-          llRes = llvm::ConstantExpr::getOr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or, lhsConst, rhsConst);
           break;
         }
         case Op::bitwiseXor: {
-          llRes = llvm::ConstantExpr::getXor(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor, lhsConst, rhsConst);
           break;
         }
         case Op::logicalLeftShift: {
-          llRes = llvm::ConstantExpr::getShl(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Shl, lhsConst, rhsConst);
           break;
         }
         case Op::logicalRightShift: {
-          llRes = llvm::ConstantExpr::getLShr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::LShr, lhsConst, rhsConst);
           break;
         }
         case Op::arithmeticRightShift: {
-          llRes = llvm::ConstantExpr::getAShr(lhsConst, rhsConst);
+          llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::AShr, lhsConst, rhsConst);
           break;
         }
         default: {
@@ -277,11 +285,17 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
     } else {
       if (rhsValTy->is_choice() && rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy)) {
         if (opr == Op::bitwiseAnd) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getAnd(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else if (opr == Op::bitwiseOr) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getOr(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else if (opr == Op::bitwiseXor) {
-          return ir::PrerunValue::get(llvm::ConstantExpr::getXor(lhsEmit->get_llvm(), rhsEmit->get_llvm()), lhsValTy);
+          return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor,
+                                                                          lhsEmit->get_llvm(), rhsEmit->get_llvm()),
+                                      lhsValTy);
         } else {
           ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for left hand side type " +
                          ctx->color(lhsType->to_string()) + " and right hand side type " +
@@ -332,19 +346,19 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
     llvm::Constant* llRes    = nullptr;
     switch (opr) {
       case Op::Or: {
-        llRes = llvm::ConstantExpr::getOr(lhsConst, rhsConst);
+        llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or, lhsConst, rhsConst);
         break;
       }
       case Op::And: {
-        llRes = llvm::ConstantExpr::getAnd(lhsConst, rhsConst);
+        llRes = llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And, lhsConst, rhsConst);
         break;
       }
       case Op::equalTo: {
-        llRes = llvm::ConstantExpr::getICmp(llvm::ICmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
+        llRes = llvm::ConstantFoldCompareInstruction(llvm::ICmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst);
         break;
       }
       case Op::notEqualTo: {
-        llRes = llvm::ConstantExpr::getICmp(llvm::ICmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
+        llRes = llvm::ConstantFoldCompareInstruction(llvm::ICmpInst::Predicate::ICMP_NE, lhsConst, rhsConst);
         break;
       }
       default: {
@@ -385,32 +399,32 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
           break;
         }
         case Op::equalTo: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_OEQ, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_OEQ, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_ONE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_ONE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_OLT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_OLT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_OGT, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_OGT, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_OLE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_OLE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
-          llRes   = llvm::ConstantExpr::getFCmp(llvm::CmpInst::Predicate::FCMP_OGE, lhsConst, rhsConst);
+          llRes   = llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::FCMP_OGE, lhsConst, rhsConst);
           resType = ir::UnsignedType::getBool(ctx->irCtx);
           break;
         }
@@ -464,72 +478,108 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
     auto lhsConst = lhsEmit->get_llvm_constant();
     auto rhsConst = rhsEmit->get_llvm_constant();
     if (opr == Op::equalTo) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst),
-                                  ir::UnsignedType::getBool(ctx->irCtx));
+      return ir::PrerunValue::get(
+          llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst),
+          ir::UnsignedType::getBool(ctx->irCtx));
     } else if (opr == Op::notEqualTo) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst),
-                                  ir::UnsignedType::getBool(ctx->irCtx));
+      return ir::PrerunValue::get(
+          llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst),
+          ir::UnsignedType::getBool(ctx->irCtx));
     } else if (opr == Op::lessThan) {
       if (chTy->has_negative_values()) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLT, lhsConst, rhsConst),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SLT, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       } else {
-        ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULT, lhsConst, rhsConst),
-                             ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULT, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       }
     } else if (opr == Op::lessThanOrEqualTo) {
       if (chTy->has_negative_values()) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SLE, lhsConst, rhsConst),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SLE, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       } else {
-        ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULE, lhsConst, rhsConst),
-                             ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULE, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       }
     } else if (opr == Op::greaterThan) {
       if (chTy->has_negative_values()) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SGT, lhsConst, rhsConst),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SGT, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       } else {
-        ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_UGT, lhsConst, rhsConst),
-                             ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_UGT, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       }
     } else if (opr == Op::greaterThanEqualTo) {
       if (chTy->has_negative_values()) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_SGE, lhsConst, rhsConst),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SGE, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       } else {
-        ir::PrerunValue::get(llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_UGE, lhsConst, rhsConst),
-                             ir::UnsignedType::getBool(ctx->irCtx));
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_UGE, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
       }
     } else {
-      // FIXME - ?? Separate type for bitwise operations
-      if (opr == Op::bitwiseAnd) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getAnd(lhsConst, rhsConst), chTy->get_underlying_type());
-      } else if (opr == Op::bitwiseOr) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getOr(lhsConst, rhsConst), chTy->get_underlying_type());
-      } else if (opr == Op::bitwiseXor) {
-        return ir::PrerunValue::get(llvm::ConstantExpr::getXor(lhsConst, rhsConst), chTy->get_underlying_type());
-      } else {
-        ctx->Error("Binary operator " + ctx->color(operator_to_string(opr)) +
-                       " is not supported for expressions of type " + ctx->color(lhsType->to_string()),
-                   fileRange);
-      }
+      ctx->Error("Binary operator " + ctx->color(operator_to_string(opr)) +
+                     " is not supported for expressions of type " + ctx->color(lhsType->to_string()),
+                 fileRange);
     }
   } else if (lhsType->is_choice() &&
              (lhsType->as_choice()->has_negative_values() ? rhsValTy->is_integer() : rhsValTy->is_unsigned_integer())) {
-    if (opr == Op::bitwiseAnd) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getAnd(lhsEmit->get_llvm(), rhsEmit->get_llvm()),
-                                  lhsType->as_choice()->get_underlying_type());
-    } else if (opr == Op::bitwiseOr) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getOr(lhsEmit->get_llvm(), rhsEmit->get_llvm()),
-                                  lhsType->as_choice()->get_underlying_type());
-    } else if (opr == Op::bitwiseXor) {
-      return ir::PrerunValue::get(llvm::ConstantExpr::getXor(lhsEmit->get_llvm(), rhsEmit->get_llvm()),
-                                  lhsType->as_choice()->get_underlying_type());
+    if (lhsType->as_choice()->get_underlying_type()->is_same(rhsValTy)) {
+      auto chTy     = lhsType->as_choice();
+      auto lhsConst = lhsEmit->get_llvm_constant();
+      auto rhsConst = rhsEmit->get_llvm_constant();
+      if (opr == Op::equalTo) {
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
+      } else if (opr == Op::notEqualTo) {
+        return ir::PrerunValue::get(
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst),
+            ir::UnsignedType::getBool(ctx->irCtx));
+      } else if (opr == Op::lessThan) {
+        return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(chTy->has_negative_values()
+                                                                             ? llvm::CmpInst::Predicate::ICMP_SLT
+                                                                             : llvm::CmpInst::Predicate::ICMP_ULT,
+                                                                         lhsConst, rhsConst),
+                                    ir::UnsignedType::getBool(ctx->irCtx));
+      } else if (opr == Op::lessThanOrEqualTo) {
+        return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(chTy->has_negative_values()
+                                                                             ? llvm::CmpInst::Predicate::ICMP_SLE
+                                                                             : llvm::CmpInst::Predicate::ICMP_ULE,
+                                                                         lhsConst, rhsConst),
+                                    ir::UnsignedType::getBool(ctx->irCtx));
+      } else if (opr == Op::greaterThan) {
+        return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(chTy->has_negative_values()
+                                                                             ? llvm::CmpInst::Predicate::ICMP_SGT
+                                                                             : llvm::CmpInst::Predicate::ICMP_UGT,
+                                                                         lhsConst, rhsConst),
+                                    ir::UnsignedType::getBool(ctx->irCtx));
+      } else if (opr == Op::greaterThanEqualTo) {
+        return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(chTy->has_negative_values()
+                                                                             ? llvm::CmpInst::Predicate::ICMP_SGE
+                                                                             : llvm::CmpInst::Predicate::ICMP_UGE,
+                                                                         lhsConst, rhsConst),
+                                    ir::UnsignedType::getBool(ctx->irCtx));
+      } else {
+        ctx->Error("Left hand side is of choice type " + ctx->color(lhsType->to_string()) +
+                       " and right hand side is of type " + ctx->color(rhsType->to_string()) + ". Binary operator " +
+                       ctx->color(operator_to_string(opr)) + " is not supported for these operands",
+                   fileRange);
+      }
     } else {
-      ctx->Error("Left hand side is of choice type " + ctx->color(lhsType->to_string()) +
-                     " and right hand side is of type " + ctx->color(rhsType->to_string()) + ". Binary operator " +
-                     ctx->color(operator_to_string(opr)) + " is not supported for these operands",
+      ctx->Error("The underlying type of the choice type " + ctx->color(lhsType->to_string()) +
+                     " on the left hand side is " +
+                     ctx->color(lhsType->as_choice()->get_underlying_type()->to_string()) +
+                     ". This is not compatible with the expression on the right side, which is of type " +
+                     ctx->color(rhsValTy->to_string()),
                  fileRange);
     }
   } else if (lhsValTy->is_mark() && rhsValTy->is_mark()) {
@@ -541,8 +591,8 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
                        ctx->color(lhsType->to_string()) + " and " + ctx->color(rhsType->to_string()),
                    fileRange);
       }
-      finalCondition = llvm::ConstantExpr::getICmp(
-          opr == Op::equalTo ? llvm::CmpInst::Predicate::ICMP_EQ : llvm::CmpInst::Predicate::ICMP_NE,
+      finalCondition = llvm::ConstantFoldCompareInstruction(
+          (opr == Op::equalTo) ? llvm::CmpInst::Predicate::ICMP_EQ : llvm::CmpInst::Predicate::ICMP_NE,
           llvm::ConstantExpr::getSub(
               llvm::ConstantExpr::getPtrToInt(
                   lhsValTy->as_mark()->isSlice() ? lhsEmit->get_llvm()->getAggregateElement(0u) : lhsEmit->get_llvm(),
@@ -552,9 +602,11 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
                   llvm::Type::getInt64Ty(ctx->irCtx->llctx))),
           llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
       if (lhsValTy->as_mark()->isSlice()) {
-        finalCondition = llvm::ConstantExpr::getAnd(
-            llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_EQ, lhsEmit->get_llvm()->getAggregateElement(1u),
-                                        rhsEmit->get_llvm()->getAggregateElement(1u)),
+        finalCondition = llvm::ConstantFoldBinaryInstruction(
+            llvm::Instruction::BinaryOps::And,
+            llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
+                                                 lhsEmit->get_llvm()->getAggregateElement(1u),
+                                                 rhsEmit->get_llvm()->getAggregateElement(1u)),
             finalCondition);
       }
       return ir::PrerunValue::get(llvm::ConstantFoldConstant(finalCondition, ctx->irCtx->dataLayout.value()),

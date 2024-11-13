@@ -318,7 +318,8 @@ ir::Value* Match::emit(EmitCtx* ctx) {
       strBuff  = expEmit->is_value()
                      ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u})
                      : ctx->irCtx->builder.CreateLoad(
-                          llvm::Type::getInt8PtrTy(ctx->irCtx->llctx),
+                          llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                              ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
                           ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), expEmit->get_llvm(), 0u));
       strCount = expEmit->is_value()
                      ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
@@ -406,11 +407,13 @@ ir::Value* Match::emit(EmitCtx* ctx) {
             if (caseIR->is_reference()) {
               caseIR->load_ghost_reference(ctx->irCtx->builder);
             }
-            caseStrBuff  = caseIR->is_value()
-                               ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
-                               : ctx->irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(ctx->irCtx->llctx),
-                                                                ctx->irCtx->builder.CreateStructGEP(
-                                                                   strTy->get_llvm_type(), caseIR->get_llvm(), 0u));
+            caseStrBuff =
+                caseIR->is_value()
+                    ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
+                    : ctx->irCtx->builder.CreateLoad(
+                          llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                              ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+                          ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), caseIR->get_llvm(), 0u));
             caseStrCount = ctx->irCtx->builder.CreateLoad(
                 llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                 caseIR->is_value()

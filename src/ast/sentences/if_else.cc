@@ -114,8 +114,8 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
     (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
   }
   restBlock->set_active(ctx->irCtx->builder);
-  if (ctx->get_fn()->hasDefinitionRange()) {
-    restBlock->set_file_range(FileRange(fileRange.file, fileRange.end, ctx->get_fn()->getDefinitionRange().end));
+  if (ctx->get_fn()->has_definition_range()) {
+    restBlock->set_file_range(FileRange(fileRange.file, fileRange.end, ctx->get_fn()->get_definition_range().end));
   }
   return nullptr;
 }

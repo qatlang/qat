@@ -59,11 +59,8 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
         if (typ->is_same(expEmit->get_ir_type())) {
           exp           = expEmit->get_llvm_constant();
           auto typeBits = (u64)ctx->irCtx->dataLayout.value().getTypeStoreSizeInBits(typ->get_llvm_type());
-          exp           = llvm::ConstantFoldConstant(
-              llvm::ConstantExpr::getIntegerCast(
-                  llvm::ConstantExpr::getBitCast(exp, llvm::Type::getIntNTy(ctx->irCtx->llctx, typeBits)),
-                  llvm::Type::getIntNTy(ctx->irCtx->llctx, typeBits), false),
-              ctx->irCtx->dataLayout.value());
+          exp           = llvm::ConstantFoldCastInstruction(llvm::CastInst::CastOps::BitCast, exp,
+                                                            llvm::Type::getIntNTy(ctx->irCtx->llctx, typeBits));
         } else {
           ctx->Error("The expected type is " + ctx->color(typ->to_string()) + ", but the expression is of type " +
                          ctx->color(expEmit->get_ir_type()->to_string()),

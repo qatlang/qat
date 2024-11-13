@@ -1,8 +1,6 @@
 #include "./region.hpp"
-#include "../../cli/version.hpp"
 #include "../../show.hpp"
 #include "pointer.hpp"
-#include "string_slice.hpp"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -24,28 +22,26 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     : EntityOverview("region", Json()._("moduleID", _module->get_id())._("visibility", _visibInfo), _name.range),
       name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
   parent->regions.push_back(this);
-  auto linkNames  = parent->get_link_names().newWith(LinkNameUnit(_name.value, LinkUnitType::region), None);
-  linkingName     = linkNames.toName();
-  auto& llCtx     = irCtx->llctx;
-  auto* Ty64Int   = llvm::Type::getInt64Ty(llCtx);
-  auto* zero64Bit = llvm::ConstantInt::get(Ty64Int, 0u);
-  blocks          = new llvm::GlobalVariable(
-      *parent->get_llvm_module(),
-      llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout->getProgramAddressSpace()), false,
+  auto linkNames     = parent->get_link_names().newWith(LinkNameUnit(_name.value, LinkUnitType::region), None);
+  linkingName        = linkNames.toName();
+  auto& llCtx        = irCtx->llctx;
+  auto* Ty64Int      = llvm::Type::getInt64Ty(llCtx);
+  auto* zero64Bit    = llvm::ConstantInt::get(Ty64Int, 0u);
+  auto  addressSpace = irCtx->dataLayout->getProgramAddressSpace();
+  blocks             = new llvm::GlobalVariable(
+      *parent->get_llvm_module(), llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace), false,
       llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-      llvm::ConstantPointerNull::get(
-          llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout->getProgramAddressSpace())),
+      llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace)),
       linkNames.newWith(LinkNameUnit("blocks", LinkUnitType::global), None).toName());
   blockCount = new llvm::GlobalVariable(*parent->get_llvm_module(), Ty64Int, false,
                                         llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage, zero64Bit,
                                         linkNames.newWith(LinkNameUnit("count", LinkUnitType::global), None).toName());
   ownFn      = llvm::Function::Create(
-      llvm::FunctionType::get(
-          llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout->getProgramAddressSpace()),
-          {/* Count */ Ty64Int, /* Size of type */ Ty64Int,
-           /* Destructor Pointer */
-           llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout->getProgramAddressSpace())},
-          false),
+      llvm::FunctionType::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace),
+                                   {/* Count */ Ty64Int, /* Size of type */ Ty64Int,
+                               /* Destructor Pointer */
+                               llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace)},
+                                   false),
       llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
       linkNames.newWith(LinkNameUnit("own", LinkUnitType::function), None).toName(), parent->get_llvm_module());
   destructor = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {}, false),
@@ -72,7 +68,9 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     // FIXME - Use UIntPtr instead of u64
     auto* entry = llvm::BasicBlock::Create(llCtx, "entry", ownFn);
     irCtx->builder.SetInsertPoint(entry);
-    auto* lastBlock          = irCtx->builder.CreateAlloca(llvm::Type::getInt8PtrTy(llCtx), nullptr, "lastBlock");
+    auto* lastBlock = irCtx->builder.CreateAlloca(
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(parent->get_llvm_module()->getDataLayout().getProgramAddressSpace()),
+        nullptr, "lastBlock");
     auto* blockIndex         = irCtx->builder.CreateAlloca(Ty64Int, nullptr, "blockIndex");
     auto* reqSize            = irCtx->builder.CreateMul(ownFn->getArg(0u), ownFn->getArg(1u));
     auto* zeroCheckTrueBlock = llvm::BasicBlock::Create(llCtx, "zeroCheckTrue", ownFn);
@@ -108,23 +106,23 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     auto* firstBlock = irCtx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn, {zeroCheckSizePhi});
     irCtx->builder.CreateStore(firstBlock, blocks, true);
     irCtx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 1u), blockCount);
-    auto* zeroCheckBlockSizePtr = irCtx->builder.CreatePointerCast(
-        firstBlock, llvm::PointerType::get(Ty64Int, irCtx->dataLayout->getProgramAddressSpace()));
+    auto* zeroCheckBlockSizePtr =
+        irCtx->builder.CreatePointerCast(firstBlock, llvm::PointerType::get(Ty64Int, addressSpace));
     irCtx->builder.CreateStore(zeroCheckSizePhi, zeroCheckBlockSizePtr);
     auto* zeroCheckBlockOccupiedPtr =
         irCtx->builder.CreateInBoundsGEP(Ty64Int, zeroCheckBlockSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)});
     irCtx->builder.CreateStore(irCtx->builder.CreateAdd(reqSize, llvm::ConstantInt::get(Ty64Int, DATA_HEADER_SIZE)),
                                zeroCheckBlockOccupiedPtr);
-    auto* ptrToVoidPtrTy                = llvm::Type::getInt8PtrTy(llCtx)->getPointerTo();
+    auto* ptrToVoidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace);
     auto* zeroCheckBlockNextBlockPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, zeroCheckBlockOccupiedPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
         ptrToVoidPtrTy);
-    irCtx->builder.CreateStore(llvm::ConstantPointerNull::get(llvm::PointerType::get(
-                                   llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout->getProgramAddressSpace())),
-                               zeroCheckBlockNextBlockPtrPtr);
+    irCtx->builder.CreateStore(
+        llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace)),
+        zeroCheckBlockNextBlockPtrPtr);
     auto* zeroCheckDataCountPtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), zeroCheckBlockNextBlockPtrPtr,
-                                         {llvm::ConstantInt::get(Ty64Int, 1u)}),
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                         zeroCheckBlockNextBlockPtrPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
         Ty64Int->getPointerTo());
     irCtx->builder.CreateStore(ownFn->getArg(0), zeroCheckDataCountPtr);
     SHOW("Count of instances to allocate for")
@@ -134,16 +132,17 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     SHOW("Size of type")
     auto* zeroCheckDataDestructorPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, zeroCheckDataTypeSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
     irCtx->builder.CreateStore(ownFn->getArg(2u), zeroCheckDataDestructorPtrPtr);
     auto* zeroCheckDataReturnPtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), zeroCheckDataDestructorPtrPtr,
-                                         {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx));
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                         zeroCheckDataDestructorPtrPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace));
     irCtx->builder.CreateRet(zeroCheckDataReturnPtr);
     irCtx->builder.SetInsertPoint(zeroCheckRestBlock);
     SHOW("Storing last block pointer")
-    irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), blocks), lastBlock);
+    irCtx->builder.CreateStore(
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), blocks), lastBlock);
     irCtx->builder.CreateStore(zero64Bit, blockIndex);
     auto* findLastCondBlock = llvm::BasicBlock::Create(llCtx, "findLastBlockCond", ownFn);
     auto* findLastTrueBlock = llvm::BasicBlock::Create(llCtx, "findLastBlockTrue", ownFn);
@@ -158,14 +157,15 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     SHOW("Find last true block")
     irCtx->builder.CreateStore(
         irCtx->builder.CreateLoad(
-            llvm::Type::getInt8PtrTy(llCtx),
+            llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
             irCtx->builder.CreatePointerCast(
                 irCtx->builder.CreateInBoundsGEP(
                     Ty64Int,
                     irCtx->builder.CreatePointerCast(
-                        irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), lastBlock), Ty64Int->getPointerTo()),
+                        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), lastBlock),
+                        Ty64Int->getPointerTo()),
                     {llvm::ConstantInt::get(Ty64Int, 2u)}),
-                llvm::Type::getInt8PtrTy(llCtx)->getPointerTo())),
+                llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace))),
         lastBlock);
     SHOW("Storing incremented block index")
     irCtx->builder.CreateStore(
@@ -175,7 +175,8 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.SetInsertPoint(findLastRestBlock);
     SHOW("Setting findLastRestBlock as active")
     auto* lastBlockSizePtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), lastBlock), llvm::Type::getInt64PtrTy(llCtx));
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), lastBlock),
+        llvm::Type::getInt64Ty(llCtx)->getPointerTo(addressSpace));
     auto* lastBlockOccupiedPtr    = irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt64Ty(llCtx), lastBlockSizePtr,
                                                                      {llvm::ConstantInt::get(Ty64Int, 1u)});
     auto* lastBlockSpaceLeftBlock = llvm::BasicBlock::Create(llCtx, "lastBlockSpaceLeftBlock", ownFn);
@@ -190,7 +191,7 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.SetInsertPoint(lastBlockSpaceLeftBlock);
     auto* lastBlockDataStartPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, lastBlockSizePtr, {llvm::ConstantInt::get(Ty64Int, 3u)}),
-        llvm::Type::getInt8PtrTy(llCtx));
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace));
     auto* lastBlockTargetStartPtr =
         irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx), lastBlockDataStartPtr,
                                          {irCtx->builder.CreateLoad(Ty64Int, lastBlockOccupiedPtr)});
@@ -203,7 +204,7 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.CreateStore(ownFn->getArg(1u), lastBlockTargetSizePtr);
     auto* lastBlockTargetDestructorPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, lastBlockTargetSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
     SHOW("Last Block: Storing destructor pointer")
     irCtx->builder.CreateStore(ownFn->getArg(2u), lastBlockTargetDestructorPtrPtr);
     irCtx->builder.CreateStore(
@@ -212,9 +213,9 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
         lastBlockOccupiedPtr);
     SHOW("Last Block: Returning the got data pointer")
     irCtx->builder.CreateRet(irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), lastBlockTargetDestructorPtrPtr,
-                                         {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)));
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                         lastBlockTargetDestructorPtrPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)));
     irCtx->builder.SetInsertPoint(newBlockNeededBlock);
     auto* newBlockSizeCheckTrueBlock  = llvm::BasicBlock::Create(llCtx, "newBlockSizeCheckTrue", ownFn);
     auto* newBlockSizeCheckFalseBlock = llvm::BasicBlock::Create(llCtx, "newBlockSizeCheckFalse", ownFn);
@@ -240,7 +241,7 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     auto* lastBlockNextBlockPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt64Ty(llCtx), lastBlockOccupiedPtr,
                                          {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
     irCtx->builder.CreateStore(newBlockPtr, lastBlockNextBlockPtrPtr);
     irCtx->builder.CreateStore(
         irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(Ty64Int, blockCount), llvm::ConstantInt::get(Ty64Int, 1u)),
@@ -253,12 +254,12 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
                                newBlockOccupiedPtr);
     auto* newBlockNextBlockPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, newBlockOccupiedPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
-    irCtx->builder.CreateStore(llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(llCtx)),
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
+    irCtx->builder.CreateStore(llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)),
                                newBlockNextBlockPtrPtr);
     auto* newDataCountPtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), newBlockNextBlockPtrPtr,
-                                         {llvm::ConstantInt::get(Ty64Int, 1u)}),
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                         newBlockNextBlockPtrPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
         Ty64Int->getPointerTo());
     irCtx->builder.CreateStore(ownFn->getArg(0), newDataCountPtr);
     auto* newDataSizePtr =
@@ -266,24 +267,27 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.CreateStore(ownFn->getArg(1), newDataSizePtr);
     auto* newDataDestructorPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, newDataSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
     irCtx->builder.CreateStore(ownFn->getArg(2), newDataDestructorPtrPtr);
     irCtx->builder.CreateRet(irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), newDataDestructorPtrPtr,
-                                         {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)));
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                         newDataDestructorPtrPtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)));
   }
   {
     SHOW("Creating the destructor")
     auto* entry = llvm::BasicBlock::Create(llCtx, "entry", destructor);
     irCtx->builder.SetInsertPoint(entry);
-    auto* blockIndex           = irCtx->builder.CreateAlloca(Ty64Int, nullptr, "blockIndex");
-    auto* lastBlockPtr         = irCtx->builder.CreateAlloca(llvm::Type::getInt8PtrTy(llCtx), nullptr, "lastBlock");
-    auto* dataCursor           = irCtx->builder.CreateAlloca(llvm::Type::getInt8PtrTy(llCtx), nullptr, "dataStart");
+    auto* blockIndex = irCtx->builder.CreateAlloca(Ty64Int, nullptr, "blockIndex");
+    auto* lastBlockPtr =
+        irCtx->builder.CreateAlloca(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), nullptr, "lastBlock");
+    auto* dataCursor =
+        irCtx->builder.CreateAlloca(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), nullptr, "dataStart");
     auto* dataInstanceIterator = irCtx->builder.CreateAlloca(Ty64Int, nullptr, "dataInstanceIterator");
     irCtx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), blockIndex);
     SHOW("Storing the block head pointer to lastBlockPtr")
-    irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), blocks), lastBlockPtr);
+    irCtx->builder.CreateStore(
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), blocks), lastBlockPtr);
     auto* hasBlocksBlock = llvm::BasicBlock::Create(llCtx, "hasBlocks", destructor);
     auto* endBlock       = llvm::BasicBlock::Create(llCtx, "endBlock", destructor);
     SHOW("Creating condition that block count is non zero and block head pointer is not null")
@@ -292,9 +296,10 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
             irCtx->builder.CreateICmpNE(irCtx->builder.CreateLoad(Ty64Int, blockCount),
                                         llvm::ConstantInt::get(Ty64Int, 0u)),
             irCtx->builder.CreateICmpNE(
-                irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(llCtx),
-                                             irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), blocks),
-                                             llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(llCtx))),
+                irCtx->builder.CreatePtrDiff(
+                    llvm::Type::getInt8Ty(llCtx),
+                    irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), blocks),
+                    llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace))),
                 llvm::ConstantInt::get(Ty64Int, 0u))),
         hasBlocksBlock, endBlock);
     irCtx->builder.SetInsertPoint(hasBlocksBlock);
@@ -307,10 +312,11 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     auto* blockDataStartPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(
             Ty64Int,
-            irCtx->builder.CreatePointerCast(irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), lastBlockPtr),
-                                             llvm::Type::getInt64PtrTy(llCtx)),
+            irCtx->builder.CreatePointerCast(
+                irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), lastBlockPtr),
+                llvm::Type::getInt64Ty(llCtx)->getPointerTo(addressSpace)),
             {llvm::ConstantInt::get(Ty64Int, 3u)}),
-        llvm::Type::getInt8PtrTy(llCtx));
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace));
     SHOW("Initialising data cursor") irCtx->builder.CreateStore(blockDataStartPtr, dataCursor);
     auto* dataCursorCondBlock = llvm::BasicBlock::Create(llCtx, "dataCursorCond", destructor);
     auto* dataCursorMainBlock = llvm::BasicBlock::Create(llCtx, "dataCursorMain", destructor);
@@ -319,41 +325,44 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.SetInsertPoint(dataCursorCondBlock);
     irCtx->builder.CreateCondBr(
         irCtx->builder.CreateICmpULT(
-            irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(llCtx),
-                                         irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), dataCursor),
-                                         blockDataStartPtr),
-            irCtx->builder.CreateLoad(Ty64Int,
-                                      irCtx->builder.CreateInBoundsGEP(
-                                          Ty64Int,
-                                          irCtx->builder.CreatePointerCast(
-                                              irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), lastBlockPtr),
-                                              llvm::Type::getInt64PtrTy(llCtx)),
-                                          {llvm::ConstantInt::get(Ty64Int, 1u)}))),
+            irCtx->builder.CreatePtrDiff(
+                llvm::Type::getInt8Ty(llCtx),
+                irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), dataCursor),
+                blockDataStartPtr),
+            irCtx->builder.CreateLoad(
+                Ty64Int, irCtx->builder.CreateInBoundsGEP(
+                             Ty64Int,
+                             irCtx->builder.CreatePointerCast(
+                                 irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
+                                                           lastBlockPtr),
+                                 llvm::Type::getInt64Ty(llCtx)->getPointerTo(addressSpace)),
+                             {llvm::ConstantInt::get(Ty64Int, 1u)}))),
         dataCursorMainBlock, dataCursorRestBlock);
     irCtx->builder.SetInsertPoint(dataCursorMainBlock);
     SHOW("Getting data count pointer")
     auto* dataCountPtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), dataCursor), llvm::Type::getInt64PtrTy(llCtx));
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), dataCursor),
+        llvm::Type::getInt64Ty(llCtx)->getPointerTo(addressSpace));
     SHOW("Getting data count") auto* dataCount = irCtx->builder.CreateLoad(Ty64Int, dataCountPtr);
     SHOW("Getting data type size pointer")
     auto* dataTypeSizePtr =
         irCtx->builder.CreateInBoundsGEP(Ty64Int, dataCountPtr, {llvm::ConstantInt::get(Ty64Int, 1u)});
     auto* dataTypeSize = irCtx->builder.CreateLoad(Ty64Int, dataTypeSizePtr);
     SHOW("Creating destructor type")
-    auto* destructorType =
-        llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt8PtrTy(llCtx)}, false);
+    auto* destructorType       = llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                         {llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)}, false);
     auto* dataDestructorPtrPtr = irCtx->builder.CreatePointerCast(
         irCtx->builder.CreateInBoundsGEP(Ty64Int, dataTypeSizePtr, {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx)->getPointerTo());
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace));
     SHOW("Got destructor pointer ref")
-    auto* dataDestructorPtr =
-        irCtx->builder.CreateBitCast(irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), dataDestructorPtrPtr),
-                                     destructorType->getPointerTo());
+    auto* dataDestructorPtr = irCtx->builder.CreateBitCast(
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), dataDestructorPtrPtr),
+        destructorType->getPointerTo());
     SHOW("Got destructor pointer")
     auto* blockStartDataPtr = irCtx->builder.CreatePointerCast(
-        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8PtrTy(llCtx), dataDestructorPtrPtr,
+        irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), dataDestructorPtrPtr,
                                          {llvm::ConstantInt::get(Ty64Int, 1u)}),
-        llvm::Type::getInt8PtrTy(llCtx));
+        llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace));
     SHOW("Stored 0 in data instance iterator")
     irCtx->builder.CreateStore(llvm::ConstantInt::get(Ty64Int, 0u), dataInstanceIterator);
     auto* dataIndexCondBlock = llvm::BasicBlock::Create(llCtx, "dataIndexCondBlock", destructor);
@@ -370,7 +379,7 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
                     llvm::Type::getInt8Ty(llCtx),
                     irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(llCtx), blockStartDataPtr,
                                                      {irCtx->builder.CreateLoad(Ty64Int, dataInstanceIterator)}),
-                    llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(llCtx))),
+                    llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace))),
                 llvm::ConstantInt::get(Ty64Int, 0u))),
         dataIndexTrueBlock, dataIndexRestBlock);
     irCtx->builder.SetInsertPoint(dataIndexTrueBlock);
@@ -392,16 +401,19 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     irCtx->builder.CreateStore(
         irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(Ty64Int, blockIndex), llvm::ConstantInt::get(Ty64Int, 1u)),
         blockIndex);
-    auto* doneBlockPtr = irCtx->builder.CreateLoad(llvm::Type::getInt8PtrTy(llCtx), lastBlockPtr);
+    auto* doneBlockPtr =
+        irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace), lastBlockPtr);
     SHOW("Updating last block pointer")
     irCtx->builder.CreateStore(
         irCtx->builder.CreateLoad(
-            llvm::Type::getInt8PtrTy(llCtx),
+            llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace),
             irCtx->builder.CreatePointerCast(
                 irCtx->builder.CreateInBoundsGEP(
-                    Ty64Int, irCtx->builder.CreatePointerCast(lastBlockPtr, llvm::Type::getInt64PtrTy(llCtx)),
+                    Ty64Int,
+                    irCtx->builder.CreatePointerCast(lastBlockPtr,
+                                                     llvm::Type::getInt64Ty(llCtx)->getPointerTo(addressSpace)),
                     {llvm::ConstantInt::get(Ty64Int, 2u)}),
-                llvm::Type::getInt8PtrTy(llCtx)->getPointerTo())),
+                llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace))),
         lastBlockPtr);
     parent->link_native(NativeUnit::free);
     auto* freeFn = parent->get_llvm_module()->getFunction("free");

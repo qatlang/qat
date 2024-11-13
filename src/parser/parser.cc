@@ -2791,20 +2791,50 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         }
         haveNonMemberEntities = true;
         auto start            = i;
-        if (memParent->has_copy_constructor()) {
-          add_error("A copy constructor is already defined for the core type", RangeAt(i));
-        }
-        if (is_next(TokenType::identifier, i)) {
+        if (is_next(TokenType::assignment, i)) {
+          if (memParent->has_copy_assignment()) {
+            add_error("The copy assignment operator is already defined for this struct type", RangeSpan(i, i + 1));
+          }
+          if (is_next(TokenType::identifier, i + 1)) {
+            auto argName = IdentifierAt(i + 2);
+            i            = i + 2;
+            auto entMeta = do_entity_metadata(preCtx, i, "copy assignment operator", 0);
+            if (is_next(TokenType::bracketOpen, i)) {
+              auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+              if (bCloseRes.has_value()) {
+                auto bClose  = bCloseRes.value();
+                auto snts    = do_sentences(preCtx, i + 1, bClose);
+                auto opVisib = getVisibility();
+                memParent->set_copy_assignment(ast::OperatorDefinition::create(
+                    ast::OperatorPrototype::create(true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {},
+                                                   nullptr, getVisibSpec(opVisib),
+                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName)),
+                    std::move(snts), RangeSpan(start, bClose)));
+                i = bClose;
+              } else {
+                add_error("Expected ] to end the function body, but could not find any", RangeAt(i + 1));
+              }
+            } else {
+              add_error("Expected [ to start the body of the copy assignment operator after this", RangeSpan(start, i));
+            }
+          } else {
+            add_error("Expected an identifier after this for the argument name of the copy assignment operator",
+                      RangeSpan(start, i + 1));
+          }
+        } else if (is_next(TokenType::identifier, i)) {
+          if (memParent->has_copy_constructor()) {
+            add_error("A copy constructor is already defined for the struct type", RangeAt(i));
+          }
           auto argName = IdentifierAt(i + 1);
           if (is_next(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose   = bCloseRes.value();
               auto snts     = do_sentences(preCtx, i + 2, bClose);
-              auto memVisib = get_visibility();
+              auto memVisib = getVisibility();
               memParent->set_copy_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Copy(getVisibSpec(memVisib), RangeAt(start),
-                                                  get_rangeWithVisib(memVisib, RangeSpan(i, i + 1)), argName),
+                                                  fromVisibRange(memVisib, RangeSpan(i, i + 1)), argName),
                   std::move(snts), RangeSpan(i + 2, bClose)));
               i = bClose;
             } else {
@@ -2822,20 +2852,50 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
       }
       case TokenType::move: {
         auto start = i;
-        if (memParent->has_move_constructor()) {
-          add_error("A move constructor is already defined for the core type", RangeAt(i));
-        }
-        if (is_next(TokenType::identifier, i)) {
+        if (is_next(TokenType::assignment, i)) {
+          if (memParent->has_move_assignment()) {
+            add_error("The move assignment operator is already defined for this struct type", RangeSpan(i, i + 1));
+          }
+          if (is_next(TokenType::identifier, i + 1)) {
+            auto argName = IdentifierAt(i + 2);
+            i            = i + 2;
+            auto entMeta = do_entity_metadata(preCtx, i, "move assignment operator", 0);
+            if (is_next(TokenType::bracketOpen, i)) {
+              auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+              if (bCloseRes.has_value()) {
+                auto bClose  = bCloseRes.value();
+                auto snts    = do_sentences(preCtx, i + 1, bClose);
+                auto opVisib = getVisibility();
+                memParent->set_copy_assignment(ast::OperatorDefinition::create(
+                    ast::OperatorPrototype::create(true, ast::Op::moveAssignment, RangeSpan(start, start + 1), {},
+                                                   nullptr, getVisibSpec(opVisib),
+                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName)),
+                    std::move(snts), RangeSpan(start, bClose)));
+                i = bClose;
+              } else {
+                add_error("Expected ] to end the function body, but could not find any", RangeAt(i + 1));
+              }
+            } else {
+              add_error("Expected [ to start the body of the move assignment operator after this", RangeSpan(start, i));
+            }
+          } else {
+            add_error("Expected an identifier after this for the argument name of the move assignment operator",
+                      RangeSpan(start, i + 1));
+          }
+        } else if (is_next(TokenType::identifier, i)) {
+          if (memParent->has_move_constructor()) {
+            add_error("A move constructor is already defined for the core type", RangeAt(i));
+          }
           auto argName = IdentifierAt(i + 1);
           if (is_next(TokenType::bracketOpen, i + 1)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose    = bCloseRes.value();
               auto snts      = do_sentences(preCtx, i + 2, bClose);
-              auto moveVisib = get_visibility();
+              auto moveVisib = getVisibility();
               memParent->set_move_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Move(getVisibSpec(moveVisib), RangeAt(start),
-                                                  get_rangeWithVisib(moveVisib, RangeSpan(i, i + 1)), argName),
+                                                  fromVisibRange(moveVisib, RangeSpan(i, i + 1)), argName),
                   std::move(snts), RangeSpan(i + 2, bClose)));
               i = bClose;
             } else {
@@ -2869,21 +2929,21 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
               if (bCloseRes.has_value()) {
                 auto bClose   = bCloseRes.value();
                 auto snts     = do_sentences(preCtx, pClose + 1, bClose);
-                auto memVisib = get_visibility();
+                auto memVisib = getVisibility();
                 if (argsRes.first.size() == 1) {
                   // NOTE - Convertor
                   memParent->add_convertor_definition(ast::ConvertorDefinition::create(
                       ast::ConvertorPrototype::create_from(
                           RangeAt(start), argsRes.first.front()->get_name(), argsRes.first.front()->get_type(),
                           argsRes.first.front()->is_type_member(), getVisibSpec(memVisib),
-                          get_rangeWithVisib(memVisib, RangeSpan(start, pClose))),
+                          fromVisibRange(memVisib, RangeSpan(start, pClose))),
                       snts, RangeSpan(start, bClose)));
                 } else {
                   // NOTE = Constructor
                   memParent->add_constructor_definition(ast::ConstructorDefinition::create(
                       ast::ConstructorPrototype::Normal(RangeAt(start), std::move(argsRes.first),
                                                         getVisibSpec(memVisib),
-                                                        get_rangeWithVisib(memVisib, RangeSpan(start, pClose))),
+                                                        fromVisibRange(memVisib, RangeSpan(start, pClose))),
                       snts, RangeSpan(pClose + 1, bClose)));
                 }
                 i = bClose;
@@ -2905,84 +2965,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                         " after the last member field to terminate the list",
                     RangeAt(i));
         }
-        haveNonMemberEntities = true;
-        auto start            = i;
-        if (is_next(TokenType::copy, i)) {
-          if (memParent->has_copy_assignment()) {
-            add_error("The copy assignment operator is already defined for this core "
-                      "type",
-                      RangeSpan(i, i + 1));
-          }
-          if (is_next(TokenType::assignment, i + 1)) {
-            if (is_next(TokenType::identifier, i + 2)) {
-              if (is_next(TokenType::bracketOpen, i + 3)) {
-                auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
-                if (bCloseRes) {
-                  auto bClose  = bCloseRes.value();
-                  auto snts    = do_sentences(preCtx, i + 4, bClose);
-                  auto opVisib = get_visibility();
-                  memParent->set_copy_assignment(ast::OperatorDefinition::create(
-                      ast::OperatorPrototype::create(
-                          true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {}, nullptr,
-                          getVisibSpec(opVisib), get_rangeWithVisib(opVisib, RangeSpan(i, i + 3)), IdentifierAt(i + 3)),
-                      std::move(snts), RangeSpan(i, bClose)));
-                  i = bClose;
-                } else {
-                  add_error("Expected end for [", RangeAt(i + 4));
-                }
-              } else {
-                add_error("Expected definition for the copy assignment operator", RangeSpan(i, i + 3));
-              }
-            } else {
-              add_error("Expected identifier for the name of the value that is being "
-                        "copied from",
-                        RangeSpan(i, i + 2));
-            }
-          } else {
-            add_error("Expected = after the copy keyword to indicate the copy "
-                      "assignment operator",
-                      RangeSpan(i, i + 1));
-          }
-          break;
-        } else if (is_next(TokenType::move, i)) {
-          if (memParent->has_move_assignment()) {
-            add_error("The move assignment operator is already defined for this core "
-                      "type",
-                      RangeSpan(i, i + 1));
-          }
-          if (is_next(TokenType::assignment, i + 1)) {
-            if (is_next(TokenType::identifier, i + 2)) {
-              if (is_next(TokenType::bracketOpen, i + 3)) {
-                auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 4);
-                if (bCloseRes) {
-                  auto bClose  = bCloseRes.value();
-                  auto snts    = do_sentences(preCtx, i + 4, bClose);
-                  auto opVisib = get_visibility();
-                  memParent->set_move_assignment(ast::OperatorDefinition::create(
-                      ast::OperatorPrototype::create(
-                          true, ast::Op::moveAssignment, RangeAt(start), {}, nullptr, getVisibSpec(opVisib),
-                          get_rangeWithVisib(opVisib, RangeSpan(i, i + 3)), IdentifierAt(i + 3)),
-                      std::move(snts), RangeSpan(i, bClose)));
-                  i = bClose;
-                } else {
-                  add_error("Expected end for [", RangeAt(i + 4));
-                }
-              } else {
-                add_error("Expected definition for the move assignment operator", RangeSpan(i, i + 3));
-              }
-            } else {
-              add_error("Expected identifier for the name of the value that is being "
-                        "moved from",
-                        RangeSpan(i, i + 2));
-            }
-          } else {
-            add_error("Expected = after the move keyword to indicate the move "
-                      "assignment operator",
-                      RangeSpan(i, i + 1));
-          }
-          break;
-        }
-        start = i;
+        haveNonMemberEntities     = true;
+        auto                start = i;
         String              opr;
         bool                isUnary  = false;
         ast::Type*          returnTy = ast::VoidType::create(FileRange{"", {0u, 0u}, {0u, 0u}});
@@ -3047,7 +3031,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         auto* prototype = ast::OperatorPrototype::create(
             getVariation(),
             isUnary ? (opr == "-" ? ast::Op::minus : ast::operator_from_string(opr)) : ast::operator_from_string(opr),
-            RangeAt(start), args, returnTy, getVisibSpec(memVisib), get_rangeWithVisib(memVisib, RangeSpan(start, i)),
+            RangeAt(start), args, returnTy, getVisibSpec(memVisib), fromVisibRange(memVisib, RangeSpan(start, i)),
             None);
         if (is_next(TokenType::bracketOpen, i)) {
           auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
@@ -3085,7 +3069,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
               memParent->add_convertor_definition(ast::ConvertorDefinition::create(
                   ast::ConvertorPrototype::create_to(RangeAt(start), typRes.first, getVisibSpec(memVisib),
                                                      RangeSpan(start, i + 1)),
-                  std::move(snts), get_rangeWithVisib(memVisib, RangeSpan(start, bClose))));
+                  std::move(snts), fromVisibRange(memVisib, RangeSpan(start, bClose))));
               i = bClose;
               break;
             } else {

@@ -1,4 +1,4 @@
-add_library(QAT_AST_EXPRESSIONS
+add_library(QAT_AST_EXPRESSIONS STATIC
 	address_of.cc
 	array_literal.cc
 	assembly.cc

@@ -1,4 +1,4 @@
-add_library(QAT_IR
+add_library(QAT_IR STATIC
 	context.cc
 	control_flow.cc
 	generics.cc

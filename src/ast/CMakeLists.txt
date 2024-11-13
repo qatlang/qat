@@ -1,4 +1,4 @@
-add_library(QAT_AST
+add_library(QAT_AST STATIC
 	bring_bitwidths.cc
 	bring_paths.cc
 	bring_entities.cc

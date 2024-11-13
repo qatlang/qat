@@ -17,45 +17,40 @@ class ConstructorDefinition;
 class DefineCoreType;
 
 struct MethodState {
-  ir::MethodParent* parent;
-  ir::Method*       result;
-  Maybe<bool>       defineCondition;
+  ir::MethodParent*   parent;
+  ir::Method*         result;
+  Maybe<bool>         defineCondition;
+  Maybe<ir::MetaInfo> metaInfo;
 
   MethodState(ir::MethodParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
   MethodState(ir::MethodParent* _parent, ir::Method* _result)
       : parent(_parent), result(_result), defineCondition(None) {}
 
-  MethodState(ir::MethodParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition)
-      : parent(_parent), result(_result), defineCondition(_defineCondition) {}
-};
-
-class MethodResult {
-public:
-  ir::Method* fn;
-  Maybe<bool> condition;
-
-  MethodResult(ir::Method* _fn) : fn(_fn), condition(None) {}
-  MethodResult(ir::Method* _fn, Maybe<bool> _cond) : fn(_fn), condition(_cond) {}
+  MethodState(ir::MethodParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition,
+              Maybe<ir::MetaInfo> _metaInfo)
+      : parent(_parent), result(_result), defineCondition(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 };
 
 class MethodParentState {
 public:
-  Vec<MethodResult> all_methods;
-  Vec<ir::Method*>  convertors;
-  Vec<ir::Method*>  operators;
-  Vec<ir::Method*>  constructors;
-  ir::Method*       defaultConstructor;
-  ir::Method*       copyConstructor;
-  ir::Method*       moveConstructor;
-  ir::Method*       copyAssignment;
-  ir::Method*       moveAssignment;
-  ir::Method*       destructor;
+  Vec<MethodState> allMethods;
+  Vec<MethodState> convertors;
+  Vec<MethodState> operators;
+  Vec<MethodState> constructors;
+  MethodState      defaultConstructor;
+  MethodState      copyConstructor;
+  MethodState      moveConstructor;
+  MethodState      copyAssignment;
+  MethodState      moveAssignment;
+  MethodState      destructor;
 
-  MethodParentState()
-      : all_methods(), convertors(), operators(), constructors(), defaultConstructor(nullptr), copyConstructor(nullptr),
-        moveConstructor(nullptr), copyAssignment(nullptr), moveAssignment(nullptr), destructor(nullptr) {}
+  MethodParentState(ir::MethodParent* parent)
+      : allMethods(), convertors(), operators(), constructors(), defaultConstructor(parent), copyConstructor(parent),
+        moveConstructor(parent), copyAssignment(parent), moveAssignment(parent), destructor(parent) {}
 
-  useit static inline MethodParentState* get() { return std::construct_at(OwnNormal(MethodParentState)); }
+  useit static inline MethodParentState* get(ir::MethodParent* parent) {
+    return std::construct_at(OwnNormal(MethodParentState), parent);
+  }
 };
 
 class MemberParentLike {
@@ -68,7 +63,7 @@ public:
         return state.second;
       }
     }
-    parentStates.push_back(std::make_pair(parent, MethodParentState::get()));
+    parentStates.push_back(std::make_pair(parent, MethodParentState::get(parent)));
     return parentStates.back().second;
   }
 

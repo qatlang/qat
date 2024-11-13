@@ -1,4 +1,4 @@
-add_library(QAT_IR_TYPES
+add_library(QAT_IR_TYPES STATIC
 	array.cc
 	c_type.cc
 	choice.cc

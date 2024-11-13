@@ -117,54 +117,42 @@ void DoSkill::define_members(ir::Ctx* irCtx) {
   parent           = ir::MethodParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (has_default_constructor()) {
-    MethodState state(parent);
-    defaultConstructor->define(state, irCtx);
-    parentState->defaultConstructor = state.result;
+    defaultConstructor->define(parentState->defaultConstructor, irCtx);
   }
   if (has_copy_constructor()) {
-    MethodState state(parent);
-    copyConstructor->define(state, irCtx);
-    parentState->copyConstructor = state.result;
+    copyConstructor->define(parentState->copyConstructor, irCtx);
   }
   if (has_copy_assignment()) {
-    MethodState state(parent);
-    copyAssignment->define(state, irCtx);
-    parentState->copyAssignment = state.result;
+    copyAssignment->define(parentState->copyAssignment, irCtx);
   }
   if (has_move_constructor()) {
-    MethodState state(parent);
-    moveConstructor->define(state, irCtx);
-    parentState->moveConstructor = state.result;
+    moveConstructor->define(parentState->moveConstructor, irCtx);
   }
   if (has_move_assignment()) {
-    MethodState state(parent);
-    moveAssignment->define(state, irCtx);
-    parentState->moveAssignment = state.result;
+    moveAssignment->define(parentState->moveAssignment, irCtx);
   }
   if (has_destructor()) {
-    MethodState state(parent);
-    destructorDefinition->define(state, irCtx);
-    parentState->destructor = state.result;
+    destructorDefinition->define(parentState->destructor, irCtx);
   }
   for (auto* conv : convertorDefinitions) {
     MethodState state(parent);
     conv->define(state, irCtx);
-    parentState->convertors.push_back(state.result);
+    parentState->convertors.push_back(state);
   }
   for (auto* cons : constructorDefinitions) {
     MethodState state(parent);
     cons->define(state, irCtx);
-    parentState->constructors.push_back(state.result);
+    parentState->constructors.push_back(state);
   }
   for (auto* memDef : memberDefinitions) {
     MethodState state(parent);
     memDef->define(state, irCtx);
-    parentState->all_methods.push_back(MethodResult(state.result, state.defineCondition));
+    parentState->allMethods.push_back(state);
   }
   for (auto* oprDef : operatorDefinitions) {
     MethodState state(parent);
     oprDef->define(state, irCtx);
-    parentState->operators.push_back(state.result);
+    parentState->operators.push_back(state);
   }
 }
 
@@ -172,44 +160,34 @@ void DoSkill::emit_members(ir::Ctx* irCtx) {
   parent           = ir::MethodParent::create_do_skill(doneSkill);
   auto parentState = get_state_for(parent);
   if (defaultConstructor) {
-    MethodState state(parent, parentState->defaultConstructor);
-    (void)defaultConstructor->emit(state, irCtx);
+    (void)defaultConstructor->emit(parentState->defaultConstructor, irCtx);
   }
   if (copyConstructor) {
-    MethodState state(parent, parentState->copyConstructor);
-    (void)copyConstructor->emit(state, irCtx);
+    (void)copyConstructor->emit(parentState->copyConstructor, irCtx);
   }
   if (moveConstructor) {
-    MethodState state(parent, parentState->moveConstructor);
-    (void)moveConstructor->emit(state, irCtx);
+    (void)moveConstructor->emit(parentState->moveConstructor, irCtx);
   }
   if (copyAssignment) {
-    MethodState state(parent, parentState->copyAssignment);
-    (void)copyAssignment->emit(state, irCtx);
+    (void)copyAssignment->emit(parentState->copyAssignment, irCtx);
   }
   if (moveAssignment) {
-    MethodState state(parent, parentState->moveAssignment);
-    (void)moveAssignment->emit(state, irCtx);
+    (void)moveAssignment->emit(parentState->moveAssignment, irCtx);
   }
   for (usize i = 0; i < constructorDefinitions.size(); i++) {
-    MethodState state(parent, parentState->constructors[i]);
-    (void)constructorDefinitions[i]->emit(state, irCtx);
+    (void)constructorDefinitions[i]->emit(parentState->constructors[i], irCtx);
   }
   for (usize i = 0; i < convertorDefinitions.size(); i++) {
-    MethodState state(parent, parentState->convertors[i]);
-    (void)convertorDefinitions[i]->emit(state, irCtx);
+    (void)convertorDefinitions[i]->emit(parentState->convertors[i], irCtx);
   }
   for (usize i = 0; i < memberDefinitions.size(); i++) {
-    MethodState state(parent, parentState->all_methods[i].fn, parentState->all_methods[i].condition);
-    (void)memberDefinitions[i]->emit(state, irCtx);
+    (void)memberDefinitions[i]->emit(parentState->allMethods[i], irCtx);
   }
   for (usize i = 0; i < operatorDefinitions.size(); i++) {
-    MethodState state(parent, parentState->operators[i]);
-    (void)operatorDefinitions[i]->emit(state, irCtx);
+    (void)operatorDefinitions[i]->emit(parentState->operators[i], irCtx);
   }
   if (destructorDefinition) {
-    MethodState state(parent, parentState->destructor);
-    (void)destructorDefinition->emit(state, irCtx);
+    (void)destructorDefinition->emit(parentState->destructor, irCtx);
   }
   // TODO - Member function call tree analysis
 }

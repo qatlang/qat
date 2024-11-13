@@ -7,15 +7,8 @@ src/cmake-build-debug/
 .idea/
 
 # Scripts
-rebuild.sh
-rebuild.bat
-release.sh
-package.sh
-release_silicon.sh
-release.bat
-refresh.sh
-refresh.bat
-run.sh
+./*.sh
+./*.bat
 
 # Other
 build/

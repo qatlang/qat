@@ -1,5 +1,6 @@
 #include "./integer.hpp"
 #include "../../IR/types/integer.hpp"
+#include "llvm/IR/Module.h"
 #include <string>
 
 namespace qat::ast {

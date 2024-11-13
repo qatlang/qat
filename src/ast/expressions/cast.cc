@@ -9,9 +9,9 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
   auto destTy = destination->emit(ctx);
   if (ctx->irCtx->dataLayout.value().getTypeAllocSize(srcTy->get_llvm_type()) ==
       ctx->irCtx->dataLayout.value().getTypeAllocSize(destTy->get_llvm_type())) {
-    if (inst->is_reference() || inst->is_ghost_pointer()) {
+    if (inst->is_reference() || inst->is_ghost_reference()) {
       if (inst->is_reference()) {
-        inst->load_ghost_pointer(ctx->irCtx->builder);
+        inst->load_ghost_reference(ctx->irCtx->builder);
       }
       if (srcTy->is_trivially_copyable() || srcTy->is_trivially_movable()) {
         auto instllvm = inst->get_llvm();
@@ -33,7 +33,8 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
             instance->fileRange);
       }
     }
-    return ir::Value::get(ctx->irCtx->builder.CreateBitCast(inst->get_llvm(), destTy->get_llvm_type()), destTy, false);
+    return ir::Value::get(ctx->irCtx->builder.CreateBitCast(inst->get_llvm(), destTy->get_llvm_type()), destTy, false)
+        ->with_range(fileRange);
   } else {
     ctx->Error("The type of the expression is " + ctx->color(srcTy->to_string()) + " with the allocation size of " +
                    ctx->color(std::to_string(ctx->irCtx->dataLayout.value().getTypeAllocSize(srcTy->get_llvm_type())) +

@@ -5,6 +5,7 @@ namespace qat::utils {
 llvm::CallingConv::ID stringToCallingConv(const String& name) {
   namespace CallingConv = llvm::CallingConv;
 
+  // TODO - Check WebKitJS
   if (name == "C") {
     return CallingConv::C;
   } else if (name == "Fast") {
@@ -15,8 +16,6 @@ llvm::CallingConv::ID stringToCallingConv(const String& name) {
     return CallingConv::GHC;
   } else if (name == "HiPE") {
     return CallingConv::HiPE;
-  } else if (name == "WebKitJS") {
-    return CallingConv::WebKit_JS;
   } else if (name == "AnyReg") {
     return CallingConv::AnyReg;
   } else if (name == "PreserveMost") {

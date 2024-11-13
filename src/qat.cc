@@ -1,7 +1,6 @@
 #include "./sitter.hpp"
 #include "cli/config.hpp"
 #include "cli/logger.hpp"
-#include "utils/qat_region.hpp"
 
 int main(int count, const char** args) {
   using namespace qat;

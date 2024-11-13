@@ -4,16 +4,17 @@ namespace qat::ast {
 
 ir::Value* AddressOf::emit(EmitCtx* ctx) {
   auto inst = instance->emit(ctx);
-  if (inst->is_reference() || inst->is_ghost_pointer()) {
+  if (inst->is_reference() || inst->is_ghost_reference()) {
     auto subTy = inst->is_reference() ? inst->get_ir_type()->as_reference()->get_subtype() : inst->get_ir_type();
     bool isPtrVar =
         inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable() : inst->is_variable();
     if (inst->is_reference()) {
-      inst->load_ghost_pointer(ctx->irCtx->builder);
+      inst->load_ghost_reference(ctx->irCtx->builder);
     }
-    return ir::Value::get(
-        inst->get_llvm(),
-        ir::PointerType::get(isPtrVar, subTy, true, ir::PointerOwner::OfAnonymous(), false, ctx->irCtx), false);
+    return ir::Value::get(inst->get_llvm(),
+                          ir::MarkType::get(isPtrVar, subTy, true, ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                          false)
+        ->with_range(fileRange);
   } else {
     ctx->Error("The expression provided is of type " + ctx->color(inst->get_ir_type()->to_string()) +
                    ". It is not a reference, local or global value, so its address cannot be retrieved",

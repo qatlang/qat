@@ -1,6 +1,7 @@
 #include "./future.hpp"
 #include "../../IR/types/future.hpp"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
 
 namespace qat::ast {
 

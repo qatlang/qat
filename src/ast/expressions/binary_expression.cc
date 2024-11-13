@@ -67,11 +67,11 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
   auto         referenceHandler = [&]() {
     SHOW("Reference handler ::")
     SHOW("Loading implicit LHS")
-    lhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+    lhsEmit->load_ghost_reference(ctx->irCtx->builder);
     SHOW("Loaded LHS")
     lhsVal = lhsEmit->get_llvm();
     SHOW("Loading implicit RHS")
-    rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+    rhsEmit->load_ghost_reference(ctx->irCtx->builder);
     SHOW("Loaded RHS")
     rhsVal = rhsEmit->get_llvm();
     if (lhsEmit->is_reference()) {
@@ -99,13 +99,16 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
     referenceHandler();
     if (op == Op::equalTo) {
       return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+                            false)
+          ->with_range(fileRange);
     } else if (op == Op::notEqualTo) {
       return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+                            false)
+          ->with_range(fileRange);
     } else if (op == Op::And) {
       return ir::Value::get(ctx->irCtx->builder.CreateLogicalAnd(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+                            false)
+          ->with_range(fileRange);
     } else if (op == Op::Or) {
       return ir::Value::get(ctx->irCtx->builder.CreateLogicalOr(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
                             false);
@@ -207,18 +210,21 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
       }
       SHOW("Returning IR Value llres " << llRes << " resType " << resType)
-      return ir::Value::get(llRes, resType, false);
+      return ir::Value::get(llRes, resType, false)->with_range(fileRange);
     } else {
       if (rhsValueType->is_choice() && (rhsValueType->as_choice()->get_underlying_type()->is_same(lhsValueType))) {
         if (op == Op::bitwiseAnd) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else if (op == Op::bitwiseOr) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else if (op == Op::bitwiseXor) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else {
           ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for left hand side type " +
                          ctx->color(lhsValueType->to_string()) + " and right hand side type " +
@@ -354,19 +360,22 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
       }
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-      return ir::Value::get(llRes, resType, false);
+      return ir::Value::get(llRes, resType, false)->with_range(fileRange);
     } else {
       if (rhsValueType->is_choice() && !rhsValueType->as_choice()->has_negative_values() &&
           (rhsValueType->as_choice()->get_underlying_type()->is_same(lhsValueType))) {
         if (op == Op::bitwiseAnd) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else if (op == Op::bitwiseOr) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else if (op == Op::bitwiseXor) {
           referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false);
+          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false)
+              ->with_range(fileRange);
         } else {
           ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for left hand side type " +
                          ctx->color(lhsType->to_string()) + " and right hand side type " +
@@ -483,7 +492,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
                      fileRange);
         }
       }
-      return ir::Value::get(llRes, resType, false);
+      return ir::Value::get(llRes, resType, false)->with_range(fileRange);
     } else {
       if (rhsType->is_float()) {
         ctx->Error(
@@ -520,8 +529,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         isConstantLHS = true;
       } else {
         if (lhsType->is_reference()) {
-          lhsEmit->load_ghost_pointer(ctx->irCtx->builder);
-        } else if (!lhsEmit->is_ghost_pointer()) {
+          lhsEmit->load_ghost_reference(ctx->irCtx->builder);
+        } else if (!lhsEmit->is_ghost_reference()) {
           lhsEmit = lhsEmit->make_local(ctx, None, lhs->fileRange);
         }
         lhsBuff = ctx->irCtx->builder.CreateLoad(
@@ -538,8 +547,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         isConstantRHS = true;
       } else {
         if (rhsType->is_reference()) {
-          rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
-        } else if (!rhsEmit->is_ghost_pointer()) {
+          rhsEmit->load_ghost_reference(ctx->irCtx->builder);
+        } else if (!rhsEmit->is_ghost_reference()) {
           rhsEmit = rhsEmit->make_local(ctx, None, rhs->fileRange);
         }
         rhsBuff = ctx->irCtx->builder.CreateLoad(
@@ -557,7 +566,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
             llvm::cast<llvm::Constant>(rhsBuff), llvm::cast<llvm::Constant>(rhsCount), ctx->irCtx->llctx);
         return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                            (op == Op::equalTo) ? strCmpRes : !strCmpRes),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+                                    ir::UnsignedType::getBool(ctx->irCtx))
+            ->with_range(fileRange);
       }
       auto* curr              = ctx->get_fn()->get_block();
       auto* lenCheckTrueBlock = new ir::Block(ctx->get_fn(), curr);
@@ -567,10 +577,10 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       auto* iterTrueBlock     = new ir::Block(ctx->get_fn(), lenCheckTrueBlock);
       auto* iterIncrBlock     = new ir::Block(ctx->get_fn(), iterTrueBlock);
       auto* iterFalseBlock    = new ir::Block(ctx->get_fn(), lenCheckTrueBlock);
-      auto* restBlock         = new ir::Block(ctx->get_fn(), curr->getParent());
+      auto* restBlock         = new ir::Block(ctx->get_fn(), curr->get_parent());
       restBlock->link_previous_block(curr);
       auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->irCtx->llctx);
-      auto* qatStrCmpIndex = ctx->get_fn()->get_function_common_index();
+      auto* qatStrCmpIndex = ctx->get_fn()->get_str_comparison_index();
       // NOTE - Length equality check
       ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(lhsCount, rhsCount),
                                        lenCheckTrueBlock->get_bb(), strCmpFalseBlock->get_bb());
@@ -627,27 +637,27 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       auto* strCmpRes = ctx->irCtx->builder.CreatePHI(Ty1Int, 2);
       strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 1u : 0u), strCmpTrueBlock->get_bb());
       strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 0u : 1u), strCmpFalseBlock->get_bb());
-      return ir::Value::get(strCmpRes, ir::UnsignedType::getBool(ctx->irCtx), false);
+      return ir::Value::get(strCmpRes, ir::UnsignedType::getBool(ctx->irCtx), false)->with_range(fileRange);
     } else {
       ctx->Error("String slices do not support the " + ctx->color(operator_to_string(op)) + " operator", fileRange);
     }
-  } else if (lhsValueType->is_pointer() && rhsValueType->is_pointer()) {
+  } else if (lhsValueType->is_mark() && rhsValueType->is_mark()) {
     SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
-    if (lhsValueType->as_pointer()->get_subtype()->is_same(rhsValueType->as_pointer()->get_subtype()) &&
-        (lhsValueType->as_pointer()->isMulti() == rhsValueType->as_pointer()->isMulti())) {
-      if (lhsValueType->as_pointer()->isMulti()) {
+    if (lhsValueType->as_mark()->get_subtype()->is_same(rhsValueType->as_mark()->get_subtype()) &&
+        (lhsValueType->as_mark()->isSlice() == rhsValueType->as_mark()->isSlice())) {
+      if (lhsValueType->as_mark()->isSlice()) {
         bool isLHSRef = false;
         SHOW("LHS side")
         if (lhsEmit->is_reference()) {
-          lhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+          lhsEmit->load_ghost_reference(ctx->irCtx->builder);
           isLHSRef = true;
-        } else if (lhsEmit->is_ghost_pointer()) {
+        } else if (lhsEmit->is_ghost_reference()) {
           isLHSRef = true;
         }
-        auto* ptrType = lhsValueType->as_pointer();
+        auto* ptrType = lhsValueType->as_mark();
         lhsType       = ptrType;
-        auto resPtrTy = ir::PointerType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
-                                             ir::PointerOwner::OfAnonymous(), false, ctx->irCtx);
+        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
+                                          ir::MarkOwner::OfAnonymous(), false, ctx->irCtx);
         if (lhsEmit->is_prerun_value()) {
           lhsEmit = ir::PrerunValue::get(lhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
         } else if (isLHSRef) {
@@ -661,8 +671,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         lhsVal = lhsEmit->get_llvm();
         SHOW("Set LhsEmit")
-      } else if (lhsEmit->is_reference() || lhsEmit->is_ghost_pointer()) {
-        lhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+      } else if (lhsEmit->is_reference() || lhsEmit->is_ghost_reference()) {
+        lhsEmit->load_ghost_reference(ctx->irCtx->builder);
         if (lhsEmit->is_reference()) {
           lhsEmit = ir::Value::get(ctx->irCtx->builder.CreateLoad(lhsValueType->get_llvm_type(), lhsEmit->get_llvm()),
                                    lhsValueType, false);
@@ -670,20 +680,20 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         lhsType = lhsValueType;
         lhsVal  = lhsEmit->get_llvm();
       }
-      if (rhsValueType->as_pointer()->isMulti()) {
+      if (rhsValueType->as_mark()->isSlice()) {
         bool isRHSRef = false;
         SHOW("RHS side")
         if (rhsEmit->is_reference()) {
           SHOW("Loading RHS")
-          rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+          rhsEmit->load_ghost_reference(ctx->irCtx->builder);
           isRHSRef = true;
-        } else if (rhsEmit->is_ghost_pointer()) {
+        } else if (rhsEmit->is_ghost_reference()) {
           isRHSRef = true;
         }
-        auto* ptrType = rhsValueType->as_pointer();
+        auto* ptrType = rhsValueType->as_mark();
         rhsType       = ptrType;
-        auto resPtrTy = ir::PointerType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
-                                             ir::PointerOwner::OfAnonymous(), false, ctx->irCtx);
+        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
+                                          ir::MarkOwner::OfAnonymous(), false, ctx->irCtx);
         if (rhsEmit->is_prerun_value()) {
           rhsEmit = ir::PrerunValue::get(rhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
         } else if (isRHSRef) {
@@ -697,8 +707,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         rhsVal = rhsEmit->get_llvm();
         SHOW("Set RhsEmit")
-      } else if (rhsEmit->is_reference() || rhsEmit->is_ghost_pointer()) {
-        rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+      } else if (rhsEmit->is_reference() || rhsEmit->is_ghost_reference()) {
+        rhsEmit->load_ghost_reference(ctx->irCtx->builder);
         if (rhsEmit->is_reference()) {
           rhsEmit = ir::Value::get(ctx->irCtx->builder.CreateLoad(rhsValueType->get_llvm_type(), rhsEmit->get_llvm()),
                                    rhsValueType, false);
@@ -707,21 +717,23 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         rhsVal  = rhsEmit->get_llvm();
       }
       SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
-      auto ptrTy = lhsValueType->as_pointer();
+      auto ptrTy = lhsValueType->as_mark();
       if (op == Op::equalTo) {
         SHOW("Pointer is normal")
         return ir::Value::get(
-            ctx->irCtx->builder.CreateICmpEQ(
-                ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-            ir::UnsignedType::getBool(ctx->irCtx), false);
+                   ctx->irCtx->builder.CreateICmpEQ(
+                       ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
+                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
+                   ir::UnsignedType::getBool(ctx->irCtx), false)
+            ->with_range(fileRange);
       } else if (op == Op::notEqualTo) {
         SHOW("Pointer is normal")
         return ir::Value::get(
-            ctx->irCtx->builder.CreateICmpNE(
-                ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-            ir::UnsignedType::getBool(ctx->irCtx), false);
+                   ctx->irCtx->builder.CreateICmpNE(
+                       ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
+                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
+                   ir::UnsignedType::getBool(ctx->irCtx), false)
+            ->with_range(fileRange);
       } else {
         ctx->Error("The operands are pointers, and the operation " + ctx->color(operator_to_string(op)) +
                        " is not supported for pointers",
@@ -739,50 +751,63 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
     auto chTy = lhsValueType->as_choice();
     if (op == Op::equalTo) {
       return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+                            false)
+          ->with_range(fileRange);
     } else if (op == Op::notEqualTo) {
       return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+                            false)
+          ->with_range(fileRange);
     } else if (op == Op::lessThan) {
       if (chTy->has_negative_values()) {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpULT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       }
     } else if (op == Op::lessThanOrEqualTo) {
       if (chTy->has_negative_values()) {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpULE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       }
     } else if (op == Op::greaterThan) {
       if (chTy->has_negative_values()) {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpUGT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       }
     } else if (op == Op::greaterThanEqualTo) {
       if (chTy->has_negative_values()) {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpUGE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false);
+                              false)
+            ->with_range(fileRange);
       }
     } else {
       // FIXME - ?? Separate type for bitwise operations
       if (op == Op::bitwiseAnd) {
-        return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), chTy->get_underlying_type(), false);
+        return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), chTy->get_underlying_type(), false)
+            ->with_range(fileRange);
       } else if (op == Op::bitwiseOr) {
-        return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), chTy->get_underlying_type(), false);
+        return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), chTy->get_underlying_type(), false)
+            ->with_range(fileRange);
       } else if (op == Op::bitwiseXor) {
-        return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), chTy->get_underlying_type(), false);
+        return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), chTy->get_underlying_type(), false)
+            ->with_range(fileRange);
       } else {
         ctx->Error("This binary operator is not supported for expressions of type " + ctx->color(lhsType->to_string()),
                    fileRange);
@@ -792,15 +817,18 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
     if (op == Op::bitwiseAnd) {
       referenceHandler();
       return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false);
+                            lhsValueType->as_choice()->get_underlying_type(), false)
+          ->with_range(fileRange);
     } else if (op == Op::bitwiseOr) {
       referenceHandler();
       return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false);
+                            lhsValueType->as_choice()->get_underlying_type(), false)
+          ->with_range(fileRange);
     } else if (op == Op::bitwiseXor) {
       referenceHandler();
       return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false);
+                            lhsValueType->as_choice()->get_underlying_type(), false)
+          ->with_range(fileRange);
     } else {
       ctx->Error("Left hand side is of choice type " + ctx->color(lhsValueType->to_string()) +
                      " and right hand side is of type " + ctx->color(rhsValueType->to_string()) + ". Binary operator " +
@@ -814,43 +842,44 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
           lhsType->is_reference() ? lhsType->as_reference()->get_subtype()->as_expanded() : lhsType->as_expanded();
       auto OpStr    = operator_to_string(op);
       bool isVarExp = lhsType->is_reference() ? lhsType->as_reference()->isSubtypeVariable()
-                                              : (lhsEmit->is_ghost_pointer() ? lhsEmit->is_variable() : true);
+                                              : (lhsEmit->is_ghost_reference() ? lhsEmit->is_variable() : true);
       if ((isVarExp &&
            eTy->has_variation_binary_operator(
-               OpStr, {rhsEmit->is_ghost_pointer() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) ||
+               OpStr, {rhsEmit->is_ghost_reference() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) ||
           eTy->has_normal_binary_operator(
-              OpStr, {rhsEmit->is_ghost_pointer() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
+              OpStr, {rhsEmit->is_ghost_reference() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
         SHOW("RHS is matched exactly")
         auto localID = lhsEmit->get_local_id();
-        if (!lhsType->is_reference() && !lhsEmit->is_ghost_pointer()) {
+        if (!lhsType->is_reference() && !lhsEmit->is_ghost_reference()) {
           lhsEmit = lhsEmit->make_local(ctx, None, lhs->fileRange);
         } else if (lhsType->is_reference()) {
-          lhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+          lhsEmit->load_ghost_reference(ctx->irCtx->builder);
         }
         auto* opFn =
             (isVarExp &&
              eTy->has_variation_binary_operator(
-                 OpStr, {rhsEmit->is_ghost_pointer() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType}))
+                 OpStr, {rhsEmit->is_ghost_reference() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType}))
                 ? eTy->get_variation_binary_operator(
-                      OpStr, {lhsEmit->is_ghost_pointer() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType})
+                      OpStr, {lhsEmit->is_ghost_reference() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType})
                 : eTy->get_normal_binary_operator(
-                      OpStr, {lhsEmit->is_ghost_pointer() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType});
+                      OpStr, {lhsEmit->is_ghost_reference() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType});
         if (!opFn->is_accessible(ctx->get_access_info())) {
           ctx->Error(String(isVarExp ? "Variation b" : "B") + "inary operator " + ctx->color(operator_to_string(op)) +
                          " of type " + ctx->color(eTy->get_full_name()) + " with right hand side type " +
                          ctx->color(rhsType->to_string()) + " is not accessible here",
                      fileRange);
         }
-        rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
-        return opFn->call(ctx->irCtx, {lhsEmit->get_llvm(), rhsEmit->get_llvm()}, localID, ctx->mod);
+        rhsEmit->load_ghost_reference(ctx->irCtx->builder);
+        return opFn->call(ctx->irCtx, {lhsEmit->get_llvm(), rhsEmit->get_llvm()}, localID, ctx->mod)
+            ->with_range(fileRange);
       } else if (rhsType->is_reference() &&
                  ((isVarExp &&
                    eTy->has_variation_binary_operator(OpStr, {None, rhsType->as_reference()->get_subtype()})) ||
                   eTy->has_normal_binary_operator(OpStr, {None, rhsType->as_reference()->get_subtype()}))) {
         auto localID = rhsEmit->get_local_id();
-        rhsEmit->load_ghost_pointer(ctx->irCtx->builder);
+        rhsEmit->load_ghost_reference(ctx->irCtx->builder);
         SHOW("RHS is matched as subtype of reference")
-        if (!lhsType->is_reference() && !lhsEmit->is_ghost_pointer()) {
+        if (!lhsType->is_reference() && !lhsEmit->is_ghost_reference()) {
           lhsEmit = lhsEmit->make_local(ctx, None, lhs->fileRange);
         }
         auto* opFn =
@@ -862,15 +891,17 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
                          " with right hand side type: " + ctx->color(rhsType->to_string()) + " is not accessible here",
                      fileRange);
         }
-        return opFn->call(ctx->irCtx,
-                          {lhsEmit->get_llvm(),
-                           ctx->irCtx->builder.CreateLoad(rhsType->as_reference()->get_subtype()->get_llvm_type(),
-                                                          rhsEmit->get_llvm())},
-                          localID, ctx->mod);
+        return opFn
+            ->call(ctx->irCtx,
+                   {lhsEmit->get_llvm(),
+                    ctx->irCtx->builder.CreateLoad(rhsType->as_reference()->get_subtype()->get_llvm_type(),
+                                                   rhsEmit->get_llvm())},
+                   localID, ctx->mod)
+            ->with_range(fileRange);
       } else {
         if (!isVarExp &&
             eTy->has_variation_binary_operator(
-                OpStr, {rhsEmit->is_ghost_pointer() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
+                OpStr, {rhsEmit->is_ghost_reference() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
           ctx->Error("Binary Operator " + ctx->color(OpStr) + " with right hand side of type " +
                          ctx->color(rhsType->to_string()) + " is a variation of type " +
                          ctx->color(eTy->get_full_name()) +
@@ -897,6 +928,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
                  fileRange);
     }
   }
+  return nullptr;
 }
 
 Json BinaryExpression::to_json() const {

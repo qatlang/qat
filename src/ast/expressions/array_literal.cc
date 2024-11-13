@@ -56,7 +56,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
       auto* val = valsIR.at(i);
       if (val->get_ir_type()->is_same(elemTy) ||
           (val->get_ir_type()->is_reference() && val->get_ir_type()->as_reference()->get_subtype()->is_same(elemTy))) {
-        val->load_ghost_pointer(ctx->irCtx->builder);
+        val->load_ghost_reference(ctx->irCtx->builder);
         if (val->get_ir_type()->is_reference()) {
           valsIR.at(i) =
               ir::Value::get(ctx->irCtx->builder.CreateLoad(
@@ -81,7 +81,8 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
       }
       constVal = llvm::ConstantArray::get(llvm::ArrayType::get(elemTy->get_llvm_type(), valsIR.size()), valsConst);
       if (!isLocalDecl() && !irName.has_value()) {
-        return ir::PrerunValue::get(constVal, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx));
+        return ir::PrerunValue::get(constVal, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx))
+            ->with_range(fileRange);
       }
     }
     if (isLocalDecl()) {
@@ -93,11 +94,12 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
                                                                            : ctx->get_fn()->get_random_alloca_name(),
                                                         ir::ArrayType::get(elemTy, values.size(), ctx->irCtx->llctx),
                                                         isVar, irName.has_value() ? irName->range : fileRange);
-      alloca = loc->getAlloca();
+      alloca = loc->get_alloca();
     }
     if (constVal) {
       ctx->irCtx->builder.CreateStore(constVal, alloca);
-      return ir::Value::get(alloca, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx), false);
+      return ir::Value::get(alloca, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx), false)
+          ->with_range(fileRange);
     }
     auto* elemPtr = ctx->irCtx->builder.CreateInBoundsGEP(
         ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx)->get_llvm_type(), alloca,
@@ -111,7 +113,8 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
       ctx->irCtx->builder.CreateStore(valsIR.at(i)->get_llvm(), elemPtr);
     }
     return ir::Value::get(alloca, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx),
-                          isLocalDecl() ? localValue->is_variable() : isVar);
+                          isLocalDecl() ? localValue->is_variable() : isVar)
+        ->with_range(fileRange);
   } else {
     if (isLocalDecl()) {
       if (localValue->get_ir_type()->is_array()) {
@@ -122,9 +125,10 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
     } else {
       if (inferredType->as_array()->get_element_type()) {
         return ir::PrerunValue::get(
-            llvm::ConstantArray::get(
-                llvm::ArrayType::get(inferredType->as_array()->get_element_type()->get_llvm_type(), 0u), {}),
-            ir::ArrayType::get(inferredType->as_array()->get_element_type(), 0u, ctx->irCtx->llctx));
+                   llvm::ConstantArray::get(
+                       llvm::ArrayType::get(inferredType->as_array()->get_element_type()->get_llvm_type(), 0u), {}),
+                   ir::ArrayType::get(inferredType->as_array()->get_element_type(), 0u, ctx->irCtx->llctx))
+            ->with_range(fileRange);
       } else {
         ctx->Error("Element type for the empty array is not provided and could not be inferred", fileRange);
       }

@@ -12,11 +12,11 @@ ir::Value* Await::emit(EmitCtx* ctx) {
   SHOW("Starting await emitting")
   auto* expEmit = exp->emit(ctx);
   if ((expEmit->is_reference() && expEmit->get_ir_type()->as_reference()->get_subtype()->is_future()) ||
-      (expEmit->is_ghost_pointer() && expEmit->get_ir_type()->is_future())) {
+      (expEmit->is_ghost_reference() && expEmit->get_ir_type()->is_future())) {
     auto* futureTy = expEmit->is_reference() ? expEmit->get_ir_type()->as_reference()->get_subtype()->as_future()
                                              : expEmit->get_ir_type()->as_future();
     if (expEmit->is_reference()) {
-      expEmit->load_ghost_pointer(ctx->irCtx->builder);
+      expEmit->load_ghost_reference(ctx->irCtx->builder);
     }
     auto* fun        = ctx->get_fn();
     auto* trueBlock  = new ir::Block(fun, fun->get_block());
@@ -55,7 +55,7 @@ ir::Value* Await::emit(EmitCtx* ctx) {
     (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
     restBlock->set_active(ctx->irCtx->builder);
     if (futureTy->get_subtype()->is_void()) {
-      return ir::Value::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx), false);
+      return ir::Value::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx), false)->with_range(fileRange);
     } else {
       return ir::Value::get(
           ctx->irCtx->builder.CreatePointerCast(

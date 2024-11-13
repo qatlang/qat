@@ -3,8 +3,8 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
-#include "llvm/Support/VersionTuple.h"
 #include <iostream>
+#include <llvm/Support/VersionTuple.h>
 
 namespace qat::cli {
 

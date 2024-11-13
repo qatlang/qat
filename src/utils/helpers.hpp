@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace qat {
@@ -24,6 +25,7 @@ using f64                                    = double;
 using usize                                  = std::size_t;
 using VoidPtr                                = void*;
 using String                                 = std::string;
+using StringView                             = std::string_view;
 template <typename T> using Maybe            = std::optional<T>;
 template <typename T> using Vec              = std::vector<T>;
 template <typename T> using Deque            = std::deque<T>;

@@ -3,9 +3,11 @@
 
 namespace qat {
 
-thread_local void* QatRegion::blockTail   = nullptr;
-std::mutex         QatRegion::regionMutex = std::mutex();
-Vec<void*>         QatRegion::allBlockTails{};
+thread_local void* QatRegion::blockTail = nullptr;
+
+std::mutex QatRegion::regionMutex = std::mutex();
+Vec<void*> QatRegion::allBlockTails{};
+usize      QatRegion::totalSize = 0;
 
 void QatRegion::destroyAllBlocks() {
   while (!regionMutex.try_lock()) {
@@ -23,13 +25,14 @@ void QatRegion::destroyAllBlocks() {
 }
 
 void* QatRegion::getMemory(usize typeSize) {
-  constexpr auto defaultBlockSize = 16384;
-  constexpr auto usizeSize        = sizeof(usize);
-  constexpr auto u8PtrSize        = sizeof(u8*);
-  void**         nextBlockPtr     = nullptr;
-  usize*         blockSizePtr     = nullptr;
-  usize*         blockOffsetPtr   = nullptr;
-  auto           unitSize         = typeSize;
+  static constexpr auto defaultBlockSize = 65536;
+  static constexpr auto usizeSize        = sizeof(usize);
+  static constexpr auto u8PtrSize        = sizeof(u8*);
+  totalSize += typeSize;
+  void** nextBlockPtr   = nullptr;
+  usize* blockSizePtr   = nullptr;
+  usize* blockOffsetPtr = nullptr;
+  auto   unitSize       = typeSize;
   if (blockTail == nullptr) {
     auto blockSize = (unitSize < (defaultBlockSize - (2 * usizeSize) - u8PtrSize)) ? defaultBlockSize : (2 * unitSize);
     blockTail      = malloc(blockSize);

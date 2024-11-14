@@ -4,6 +4,7 @@
 #include "../../IR/types/vector.hpp"
 #include "../../IR/value.hpp"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/Intrinsics.h"
 
 namespace qat::ast {
@@ -85,12 +86,9 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
         checkFn(fifthVal, args[5]->fileRange);
         auto oneMulRes = llvm::ConstantExpr::getMul(thirdVal->get_llvm_constant(), fourthVal->get_llvm_constant());
         if (!llvm::cast<llvm::ConstantInt>(
-                 llvm::ConstantFoldConstant(
-                     llvm::ConstantExpr::getICmp(
-                         llvm::CmpInst::ICMP_EQ,
-                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), oneTy->get_count()),
-                         oneMulRes),
-                     ctx->irCtx->dataLayout.value()))
+                 llvm::ConstantFoldCompareInstruction(
+                     llvm::CmpInst::ICMP_EQ,
+                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), oneTy->get_count()), oneMulRes))
                  ->getValue()
                  .getBoolValue()) {
           ctx->Error(
@@ -105,12 +103,9 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
         }
         auto twoMulRes = llvm::ConstantExpr::getMul(fourthVal->get_llvm_constant(), fifthVal->get_llvm_constant());
         if (!llvm::cast<llvm::ConstantInt>(
-                 llvm::ConstantFoldConstant(
-                     llvm::ConstantExpr::getICmp(
-                         llvm::CmpInst::ICMP_EQ,
-                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), twoTy->get_count()),
-                         twoMulRes),
-                     ctx->irCtx->dataLayout.value()))
+                 llvm::ConstantFoldCompareInstruction(
+                     llvm::CmpInst::ICMP_EQ,
+                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), twoTy->get_count()), twoMulRes))
                  ->getValue()
                  .getBoolValue()) {
           ctx->Error(

@@ -534,7 +534,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
           lhsEmit = lhsEmit->make_local(ctx, None, lhs->fileRange);
         }
         lhsBuff = ctx->irCtx->builder.CreateLoad(
-            llvm::Type::getInt8PtrTy(ctx->irCtx->llctx),
+            llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
             ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(),
                                                 lhsEmit->get_llvm(), 0u));
         lhsCount = ctx->irCtx->builder.CreateLoad(
@@ -552,7 +553,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
           rhsEmit = rhsEmit->make_local(ctx, None, rhs->fileRange);
         }
         rhsBuff = ctx->irCtx->builder.CreateLoad(
-            llvm::Type::getInt8PtrTy(ctx->irCtx->llctx),
+            llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
             ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(),
                                                 rhsEmit->get_llvm(), 0u));
         rhsCount = ctx->irCtx->builder.CreateLoad(

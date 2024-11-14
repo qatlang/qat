@@ -37,10 +37,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       }
       auto indPre = (u32)(*llvm::cast<llvm::ConstantInt>(
                                indType->as_unsigned_integer()->getBitwidth() < 32u
-                                   ? llvm::ConstantFoldConstant(llvm::ConstantExpr::getIntegerCast(
-                                                                    ind->get_llvm_constant(),
-                                                                    llvm::Type::getInt32Ty(ctx->irCtx->llctx), false),
-                                                                ctx->irCtx->dataLayout.value())
+                                   ? llvm::ConstantFoldIntegerCast(ind->get_llvm_constant(),
+                                                                   llvm::Type::getInt32Ty(ctx->irCtx->llctx), false,
+                                                                   ctx->irCtx->dataLayout.value())
                                    : ind->get_llvm_constant())
                                ->getValue()
                                .getRawData());
@@ -218,10 +217,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           false);
     } else if (inst->is_prerun_value() && ind->is_prerun_value()) {
       if (llvm::cast<llvm::ConstantInt>(
-              llvm::ConstantFoldConstant(
-                  llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_ULT, ind->get_llvm_constant(),
-                                              inst->get_llvm_constant()->getAggregateElement(1u)),
-                  ctx->irCtx->dataLayout.value()))
+              llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULT, ind->get_llvm_constant(),
+                                                   inst->get_llvm_constant()->getAggregateElement(1u)))
               ->getValue()
               .getBoolValue()) {
         return ir::PrerunValue::get(

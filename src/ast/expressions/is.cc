@@ -122,8 +122,8 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
           if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
             ctx->irCtx->builder.CreateStore(
                 ctx->irCtx->builder.CreatePointerCast(
-                    subIR->get_llvm(),
-                    llvm::Type::getInt8PtrTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace())),
+                    subIR->get_llvm(), llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                                           ->getPointerTo(ctx->irCtx->dataLayout->getProgramAddressSpace())),
                 ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
                                                     localValue->get_alloca(), 1u));
           } else {
@@ -144,8 +144,8 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
           if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
             ctx->irCtx->builder.CreateStore(
                 ctx->irCtx->builder.CreatePointerCast(
-                    subIR->get_llvm(),
-                    llvm::Type::getInt8PtrTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace())),
+                    subIR->get_llvm(), llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                                           ->getPointerTo(ctx->irCtx->dataLayout->getProgramAddressSpace())),
                 ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->get_alloca(), 1u));
           } else {
             ctx->irCtx->builder.CreateStore(

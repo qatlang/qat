@@ -7,6 +7,7 @@
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
+#include "meta_info.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 
@@ -16,26 +17,32 @@ class DestructorDefinition {
   friend DefineCoreType;
   friend DoSkill;
 
-  FileRange         nameRange;
-  PrerunExpression* defineChecker;
-  Vec<Sentence*>    sentences;
-  FileRange         fileRange;
+  FileRange      nameRange;
+  Vec<Sentence*> sentences;
+  FileRange      fileRange;
 
-  mutable Maybe<bool> checkResult;
+  PrerunExpression* defineChecker;
+  Maybe<MetaInfo>   metaInfo;
 
 public:
-  DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Vec<Sentence*> _sentences,
-                       FileRange _fileRange)
-      : nameRange(_nameRange), defineChecker(_defineChecker), sentences(_sentences), fileRange(_fileRange) {}
+  DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo,
+                       Vec<Sentence*> _sentences, FileRange _fileRange)
+      : nameRange(_nameRange), defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)), sentences(_sentences),
+        fileRange(_fileRange) {}
 
-  useit static inline DestructorDefinition* create(FileRange _nameRange, PrerunExpression* _defineChecker,
-                                                   Vec<Sentence*> _sentences, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(DestructorDefinition), _nameRange, _defineChecker, _sentences, _fileRange);
+  useit static inline DestructorDefinition* create(FileRange nameRange, PrerunExpression* _defineChecker,
+                                                   Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
+                                                   FileRange fileRange) {
+    return std::construct_at(OwnNormal(DestructorDefinition), nameRange, _defineChecker, std::move(metaInfo),
+                             std::move(_sentences), fileRange);
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     for (auto snt : sentences) {
       UPDATE_DEPS(snt);
+    }
+    if (defineChecker) {
+      UPDATE_DEPS(defineChecker);
     }
   }
 

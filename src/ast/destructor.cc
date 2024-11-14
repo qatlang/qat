@@ -5,24 +5,31 @@
 namespace qat::ast {
 
 void DestructorDefinition::define(MethodState& state, ir::Ctx* irCtx) {
-  if (checkResult.has_value() && !checkResult.value()) {
-    return;
-  } else if (defineChecker) {
-    auto checkRes = defineChecker->emit(EmitCtx::get(irCtx, state.parent->get_module()));
+  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
+  if (defineChecker) {
+    auto checkRes = defineChecker->emit(emitCtx);
     if (checkRes->get_ir_type()->is_bool()) {
-      checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
-      if (!checkResult.value()) {
+      state.defineCondition = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
+      if (not state.defineCondition.value()) {
         return;
       }
     } else {
-      irCtx->Error("The define condition is expected to be of " + irCtx->color("bool") + " type",
+      irCtx->Error("The define condition is expected to be of type " + irCtx->color("bool") +
+                       ", but instead got an expression of type " + checkRes->get_ir_type()->to_string(),
                    defineChecker->fileRange);
     }
   }
-  state.result = ir::Method::CreateDestructor(state.parent, nameRange, fileRange, irCtx);
+  if (metaInfo.has_value()) {
+    state.metaInfo = metaInfo.value().toIR(emitCtx);
+  }
+  state.result = ir::Method::CreateDestructor(
+      state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), fileRange, irCtx);
 }
 
 ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
+  if (state.defineCondition.has_value() && (not state.defineCondition.value())) {
+    return nullptr;
+  }
   auto memberFn = state.result;
   SHOW("Set active destructor: " << memberFn->get_full_name())
   auto* block = new ir::Block(memberFn, nullptr);

@@ -11,6 +11,22 @@ namespace qat::ast {
 
 void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Generating candidate type")
+  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
+  if (defineChecker) {
+    auto defRes = defineChecker->emit(emitCtx);
+    if (not defRes->get_ir_type()->is_bool()) {
+      irCtx->Error("The define condition is expected to be of type " + irCtx->color("bool") +
+                       ", but instead got an expression of type " + irCtx->color(defRes->get_ir_type()->to_string()),
+                   defineChecker->fileRange);
+    }
+    state.defineCondition = llvm::cast<llvm::ConstantInt>(defRes->get_llvm_constant())->getValue().getBoolValue();
+    if (not state.defineCondition.value()) {
+      return;
+    }
+  }
+  if (metaInfo.has_value()) {
+    state.metaInfo = metaInfo->toIR(emitCtx);
+  }
   ir::Type* candidate = nullptr;
   if (isFrom && argName.has_value() && is_member_argumentument) {
     if (state.parent->get_parent_type()->is_struct()) {
@@ -46,18 +62,17 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   }
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
-  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
   if (isFrom) {
     SHOW("Convertor is FROM for " << state.parent->get_parent_type()->to_string())
-    state.result = ir::Method::CreateFromConvertor(state.parent, nameRange, candidate, argName.value(),
-                                                   definitionRange.value_or(fileRange),
-                                                   emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::CreateFromConvertor(
+        state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), candidate, argName.value(),
+        definitionRange.value_or(fileRange), emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Convertor IR created")
   } else {
     SHOW("Convertor is TO")
-    state.result =
-        ir::Method::CreateToConvertor(state.parent, nameRange, candidate, definitionRange.value_or(fileRange),
-                                      emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::CreateToConvertor(
+        state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), candidate,
+        definitionRange.value_or(fileRange), emitCtx->get_visibility_info(visibSpec), irCtx);
   }
 }
 

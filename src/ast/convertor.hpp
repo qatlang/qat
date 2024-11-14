@@ -7,6 +7,7 @@
 #include "./node.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
+#include "meta_info.hpp"
 #include "sentence.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
@@ -26,28 +27,38 @@ private:
   Maybe<FileRange>      definitionRange;
   FileRange             fileRange;
 
+  PrerunExpression* defineChecker;
+  Maybe<MetaInfo>   metaInfo;
+
 public:
   ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
-                     bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange)
+                     bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+                     PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo)
       : argName(std::move(_argName)), candidateType(_candidateType), is_member_argumentument(_is_member_argument),
-        visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange) {}
+        visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange),
+        defineChecker(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 
   static ConvertorPrototype* create_from(FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
                                          bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec,
-                                         const FileRange& _fileRange) {
+                                         const FileRange& _fileRange, PrerunExpression* _defineCondition,
+                                         Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(ConvertorPrototype), true, _nameRange, _argName, _candidateType,
-                             _is_member_argument, _visibSpec, _fileRange);
+                             _is_member_argument, _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
   }
 
   static ConvertorPrototype* create_to(FileRange _nameRange, Type* _candidateType, Maybe<VisibilitySpec> _visibSpec,
-                                       const FileRange& _fileRange) {
+                                       const FileRange& _fileRange, PrerunExpression* _defineCondition,
+                                       Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(ConvertorPrototype), false, _nameRange, None, _candidateType, false, _visibSpec,
-                             _fileRange);
+                             _fileRange, _defineCondition, std::move(_metaInfo));
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
     if (candidateType) {
       UPDATE_DEPS(candidateType);
+    }
+    if (defineChecker) {
+      UPDATE_DEPS(defineChecker);
     }
   }
 

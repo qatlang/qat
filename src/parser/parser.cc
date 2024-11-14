@@ -3896,12 +3896,65 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
+      case TokenType::error: {
+        /// NOTE - The logic is identical to that of an `ok` expression
+        const auto                                     start = i;
+        Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
+        Maybe<Pair<ast::Type*, ast::Type*>>            providedType;
+        if (is_next(TokenType::genericTypeStart, i)) {
+          auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+          if (!gClose.has_value()) {
+            add_error("Expected ] to end the type specification for the " + color_error("error") + " expression",
+                      RangeAt(i + 1));
+          }
+          if (is_next(TokenType::packed, i + 1)) {
+            if (is_next(TokenType::associatedAssignment, i + 2)) {
+              auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
+              isPacked =
+                  Pair<FileRange, ast::PrerunExpression*>{RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
+              i = packExpRes.second;
+            } else {
+              isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+              i        = i + 2;
+            }
+            if (is_next(TokenType::separator, i)) {
+              i++;
+            } else if (!is_next(TokenType::genericTypeEnd, i)) {
+              add_error("Expected either a , after this, or expected ] to end the type specification here",
+                        RangeSpan(start, i));
+            }
+          }
+          if (!isPacked.has_value() || token.type == TokenType::separator) {
+            auto validTyRes = do_type(preCtx, i, None);
+            if (!is_next(TokenType::separator, validTyRes.second)) {
+              add_error("Expected , after this to separate the valid type from the error type",
+                        validTyRes.first->fileRange);
+            }
+            i             = validTyRes.second + 1;
+            auto errTyRes = do_type(preCtx, i, None);
+            if (errTyRes.second + 1 != gClose.value()) {
+              add_error("Expected ] after this to end the type specification, but found something else",
+                        RangeSpan(start, errTyRes.second));
+            }
+            providedType = Pair<ast::Type*, ast::Type*>{validTyRes.first, errTyRes.first};
+          }
+          i = gClose.value();
+        }
+        if (is_next(TokenType::parenthesisOpen, i)) {
+          auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+          if (pCloseRes) {
+            auto             pClose = pCloseRes.value();
+            ast::Expression* exp    = nullptr;
+            if (i + 2 != pClose) {
+              exp = do_expression(preCtx, None, i + 1, pClose).first;
+            }
+            setCachedExpr(ast::ErrorExpression::create(exp, isPacked, providedType, RangeSpan(i, pClose)), pClose);
             i = pClose;
           } else {
             add_error("Expected end for (", RangeAt(i + 1));
           }
         } else {
-          add_error("Expected ( to start the " + color_error("ok") + " expression", RangeAt(i));
+          add_error("Expected ( to start the " + color_error("error") + " expression", RangeSpan(start, i));
         }
         break;
       }

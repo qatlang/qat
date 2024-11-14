@@ -238,7 +238,7 @@ Vec<fs::path>& Parser::get_member_paths() { return memberPaths; }
 
 void Parser::clear_member_paths() { memberPaths.clear(); }
 
-EntityMetaData Parser::do_entity_metadata(ParserContext& parserCtx, usize from, String entityType,
+EntityMetadata Parser::do_entity_metadata(ParserContext& parserCtx, usize from, String entityType,
                                           usize genericLength) {
   using lexer::TokenType;
   auto                   i             = from;
@@ -314,7 +314,7 @@ EntityMetaData Parser::do_entity_metadata(ParserContext& parserCtx, usize from, 
       add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
     }
   }
-  return EntityMetaData(defineChecker, genericConstraint, std::move(metaInfo), i);
+  return EntityMetadata(defineChecker, genericConstraint, std::move(metaInfo), i);
 }
 
 ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) {
@@ -1866,6 +1866,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       }
       case TokenType::mix: {
         if (is_next(TokenType::identifier, i)) {
+          auto mixCtx     = ParserContext();
+          auto entityMeta = do_entity_metadata(mixCtx, i, "mix type", 0 /** Change this when generics is supported */);
+          i               = entityMeta.lastIndex;
           if (is_next(TokenType::curlybraceOpen, i + 1)) {
             auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
             if (bCloseRes.has_value()) {
@@ -1875,8 +1878,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               Maybe<usize>                             defaultVal;
               parse_mix_type(preCtx, i + 2, bClose, subTypes, fileRanges, defaultVal);
               // FIXME - Support packing
-              addNode(ast::DefineMixType::create(IdentifierAt(i + 1), std::move(subTypes), std::move(fileRanges),
-                                                 defaultVal, false, get_visibility(), RangeSpan(i, bClose)));
+              addNode(ast::DefineMixType::create(
+                  IdentifierAt(i + 1), entityMeta.defineChecker, entityMeta.genericConstraint, std::move(subTypes),
+                  std::move(fileRanges), defaultVal, false, get_visibility(), RangeSpan(i, bClose)));
               i = bClose;
             } else {
               add_error("Expected end for {", RangeAt(i + 2));
@@ -1943,7 +1947,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
       case TokenType::Type: {
         auto start = i;
         if (is_next(TokenType::identifier, i)) {
-          auto                           name = IdentifierAt(i + 1);
+          auto name = IdentifierAt(i + 1);
+
           Vec<ast::GenericAbstractType*> genericList;
           i++;
           auto typeCtx = ParserContext();
@@ -1957,106 +1962,51 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               }
               i = end;
             } else {
-              add_error("Expected end for generic type specification", RangeAt(i + 1));
+              add_error("Expected ] to end the generic parameter list", RangeAt(i + 1));
             }
           }
-          Maybe<usize>                  altPos;
-          Maybe<ast::PrerunExpression*> checkExp;
-          if (is_next(TokenType::If, i)) {
-            altPos = first_primary_position(TokenType::altArrow, i + 1);
-            if (!altPos.has_value()) {
-              add_error("Expected => after " + color_error("if"), RangeAt(i));
-            }
-            bool isSep   = false;
-            auto uptoPos = altPos.value();
-            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-              isSep   = true;
-              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-            }
-            auto expRes = do_prerun_expression(typeCtx, i + 1, uptoPos);
-            if (expRes.second + 1 != uptoPos) {
-              add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                        RangeSpan(expRes.second + 1, uptoPos));
-            }
-            checkExp = expRes.first;
-            i        = expRes.second;
-            if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                !is_next(TokenType::meta, i + 1)) {
-              add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after ,", RangeAt(i + 1));
-            } else if (is_next(TokenType::separator, i)) {
-              i++;
-            }
-          }
-          Maybe<ast::PrerunExpression*> constraint;
-          if (is_next(TokenType::where, i)) {
-            if (genericList.empty()) {
-              add_error("Cannot use generic constraint for a type without generic parameters", RangeAt(i + 1));
-            }
-            if (!altPos.has_value()) {
-              altPos = first_primary_position(TokenType::altArrow, i + 1);
-              if (!altPos.has_value()) {
-                add_error("Expected => after " + color_error("if"), RangeAt(i));
-              }
-            }
-            auto uptoPos = altPos.value();
-            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-            }
-            auto expRes = do_prerun_expression(typeCtx, i + 1, uptoPos);
-            constraint  = expRes.first;
-            i           = expRes.second;
-            if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
-              add_error("Expected " + color_error("meta") + " after , for the metadata for the type", RangeAt(i + 1));
-            } else if (is_next(TokenType::separator, i)) {
-              i++;
-            }
-          }
-          Maybe<ast::MetaInfo> metaInfo;
-          if (is_next(TokenType::meta, i)) {
-            if (is_next(TokenType::curlybraceOpen, i + 1)) {
-              auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-              if (cRes.has_value()) {
-                metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
-                i        = cRes.value();
-              } else {
-                add_error("Expected } to end the meta information", RangeAt(i + 2));
-              }
+          auto typeMetaData = do_entity_metadata(typeCtx, i, "type definition", genericList.size());
+          i                 = typeMetaData.lastIndex;
+          if (is_next(TokenType::assignment, i)) {
+            auto tyDefStartFrom = i + 1;
+            auto endRes         = first_primary_position(TokenType::stop, tyDefStartFrom);
+            if (endRes.has_value()) {
+              auto* typ = do_type(typeCtx, tyDefStartFrom, endRes.value()).first;
+              addNode(ast::TypeDefinition::create(name, typeMetaData.defineChecker, genericList,
+                                                  typeMetaData.genericConstraint, typ, RangeSpan(start, endRes.value()),
+                                                  get_visibility()));
+              i = endRes.value();
+              break;
             } else {
-              add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
+              add_error("Expected . to end the type definition", RangeSpan(i, i + 2));
             }
+          } else {
+            add_error("Expected = after this to start the type definition", RangeSpan(start, i));
           }
-          if (altPos.has_value()) {
-            if (i + 1 == altPos.value()) {
-              i++;
+        } else {
+          add_error("Expected name for the type definition", RangeAt(i));
+        }
+        break;
+      }
             } else {
-              add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
+              add_error("Expected ] to end the generic parameter list", RangeAt(i + 1));
             }
           }
+          auto typeMetaData = do_entity_metadata(typeCtx, i, "struct type", genericList.size());
+          i                 = typeMetaData.lastIndex;
           if (is_next(TokenType::curlybraceOpen, i)) {
             auto bClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
             if (bClose.has_value()) {
               // FIXME - Implement packing
-              auto* tRes = ast::DefineCoreType::create(name, checkExp, get_visibility(),
+              auto* tRes = ast::DefineCoreType::create(name, typeMetaData.defineChecker, get_visibility(),
                                                        {token.fileRange, RangeAt(bClose.value())}, genericList,
-                                                       constraint, metaInfo);
+                                                       typeMetaData.genericConstraint, typeMetaData.metaInfo);
               do_type_contents(typeCtx, i + 1, bClose.value(), tRes);
               addNode(tRes);
               i = bClose.value();
               break;
             } else {
-              add_error("Invalid end for declaring a type", RangeAt(i + 2));
-            }
-          } else if (altPos.has_value() || is_next(TokenType::assignment, i)) {
-            auto tyDefStartFrom = altPos.has_value() ? i : i + 1;
-            auto endRes         = first_primary_position(TokenType::stop, tyDefStartFrom);
-            if (endRes.has_value()) {
-              auto* typ = do_type(typeCtx, tyDefStartFrom, endRes.value()).first;
-              addNode(ast::TypeDefinition::create(name, checkExp, genericList, constraint, typ,
-                                                  RangeSpan(start, endRes.value()), get_visibility()));
-              i = endRes.value();
-              break;
-            } else {
-              add_error("Invalid end of type definition", RangeSpan(i, i + 2));
+              add_error("Expected } to end the body of the struct type", RangeAt(i + 2));
             }
           }
         } else {
@@ -2072,36 +2022,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           Maybe<ast::PrerunExpression*> condition;
           Maybe<ast::MetaInfo>          metaInfo;
 
-          if (is_next(TokenType::If, i + 1)) {
-            auto expRes = do_prerun_expression(thisCtx, i + 2, None);
-            condition   = expRes.first;
-            i           = expRes.second;
-            if (is_next(TokenType::separator, i)) {
-              if (is_next(TokenType::meta, i + 1)) {
-                i++;
-              } else {
-                add_error(
-                    "Expected " + color_error("meta") +
-                        " after , to specify the meta information about this opaque type. Remove the , if you don't want to specify the meta info",
-                    RangeAt(i + 1));
-              }
-            }
-          } else {
-            i++;
-          }
-          if (is_next(TokenType::meta, i)) {
-            if (is_next(TokenType::curlybraceOpen, i + 1)) {
-              auto cEnd = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-              if (cEnd.has_value()) {
-                metaInfo = do_meta_info(i + 2, cEnd.value(), RangeSpan(i + 1, cEnd.value()));
-                i        = cEnd.value();
-              } else {
-                add_error("Expected end for {", RangeAt(i + 2));
-              }
-            } else {
-              add_error("Expected { after this to start the meta information", RangeAt(i + 1));
-            }
-          }
+          auto entityMeta = do_entity_metadata(preCtx, i + 1, "opaque type", 0);
+          i               = entityMeta.lastIndex;
           if (is_next(TokenType::stop, i)) {
             addNode(ast::DefineOpaqueType::create(typeName, condition, visibility, metaInfo, RangeSpan(start, i + 1)));
             i++;
@@ -2183,87 +2105,18 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
               add_error("Expected end for (", RangeAt(i + 1));
             }
           }
-          auto                          protoEnd = i;
-          Maybe<usize>                  altPos;
-          Maybe<ast::PrerunExpression*> checkExp;
-          if (is_next(TokenType::If, i)) {
-            altPos = first_primary_position(TokenType::altArrow, i + 1);
-            if (!altPos.has_value()) {
-              add_error("Expected => after " + color_error("if"), RangeAt(i));
-            }
-            bool isSep   = false;
-            auto uptoPos = altPos.value();
-            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-              isSep   = true;
-              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-            }
-            auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
-            if (expRes.second + 1 != uptoPos) {
-              add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                        RangeSpan(expRes.second + 1, uptoPos));
-            }
-            checkExp = expRes.first;
-            i        = expRes.second;
-            if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                !is_next(TokenType::meta, i + 1)) {
-              add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after ,", RangeAt(i + 1));
-            } else if (is_next(TokenType::separator, i)) {
-              i++;
-            }
-          }
-          Maybe<ast::PrerunExpression*> constraint;
-          if (is_next(TokenType::where, i)) {
-            if (genericList.empty()) {
-              add_error("Cannot use generic constraint for a function without generic parameters", RangeAt(i + 1));
-            }
-            if (!altPos.has_value()) {
-              altPos = first_primary_position(TokenType::altArrow, i + 1);
-              if (!altPos.has_value()) {
-                add_error("Expected => after " + color_error("if"), RangeAt(i));
-              }
-            }
-            auto uptoPos = altPos.value();
-            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-            }
-            auto expRes = do_prerun_expression(fnCtx, i + 1, uptoPos);
-            constraint  = expRes.first;
-            i           = expRes.second;
-            if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
-              add_error("Expected " + color_error("meta") + " after , for the metadata for the type", RangeAt(i + 1));
-            } else if (is_next(TokenType::separator, i)) {
-              i++;
-            }
-          }
-          Maybe<ast::MetaInfo> metaInfo;
-          if (is_next(TokenType::meta, i)) {
-            if (is_next(TokenType::curlybraceOpen, i + 1)) {
-              auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-              if (cRes.has_value()) {
-                metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
-                i        = cRes.value();
-              } else {
-                add_error("Expected } to end the meta information", RangeAt(i + 2));
-              }
-            } else {
-              add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
-            }
-          }
-          if (altPos.has_value()) {
-            if (i + 1 == altPos.value()) {
-              i++;
-            } else {
-              add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
-            }
-          }
+          auto protoEnd = i;
+          auto entityMeta =
+              do_entity_metadata(preCtx, i, genericList.empty() ? "function" : "generic function", genericList.size());
+          i = entityMeta.lastIndex;
           if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               auto bClose    = bCloseRes.value();
               auto sentences = do_sentences(fnCtx, i + 1, bClose);
               addNode(ast::FunctionPrototype::create(
-                  IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
-                  get_visibility(),
+                  IdentifierAt(start), argResult.first, argResult.second, retType, entityMeta.defineChecker,
+                  entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
                   RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd), genericList,
                   Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
               i = bClose;
@@ -2274,9 +2127,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             }
           } else if (is_next(TokenType::stop, i)) {
             addNode(ast::FunctionPrototype::create(
-                IdentifierAt(start), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
-                get_visibility(), RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
-                genericList, None));
+                IdentifierAt(start), argResult.first, argResult.second, retType, entityMeta.defineChecker,
+                entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
+                RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd), genericList,
+                None));
             i++;
             break;
           } else {
@@ -2289,7 +2143,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         break;
       }
       case TokenType::givenTypeSeparator: {
-        // TODO - Add support for generic types for functions
         if (!hasCachedSymbol()) {
           add_error("Function name not provided", token.fileRange);
         }
@@ -2304,60 +2157,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
           auto pClose    = pCloseResult.value();
           auto argResult = do_function_parameters(thisCtx, i + 1, pClose);
           i              = pClose;
-          Maybe<usize>                  altPos;
-          Maybe<ast::PrerunExpression*> checkExp;
-          if (is_next(TokenType::If, i)) {
-            altPos = first_primary_position(TokenType::altArrow, i + 1);
-            if (!altPos.has_value()) {
-              add_error("Expected => after " + color_error("if"), RangeAt(i));
-            }
-            bool isSep   = false;
-            auto uptoPos = altPos.value();
-            if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-              isSep   = true;
-              uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-            }
-            auto expRes = do_prerun_expression(thisCtx, i + 1, uptoPos);
-            if (expRes.second + 1 != uptoPos) {
-              add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                        RangeSpan(expRes.second + 1, uptoPos));
-            }
-            checkExp = expRes.first;
-            i        = expRes.second;
-            if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                !is_next(TokenType::meta, i + 1)) {
-              add_error("Expected " + color_error("meta") + " after , for the meta info of the function",
-                        RangeAt(i + 1));
-            } else if (is_next(TokenType::separator, i)) {
-              i++;
-            }
-          }
-          Maybe<ast::PrerunExpression*> constraint;
-          if (is_next(TokenType::where, i)) {
-            add_error("Cannot use generic constraint for a function without generic parameters", RangeAt(i + 1));
-          }
-          Maybe<ast::MetaInfo> metaInfo;
-          if (is_next(TokenType::meta, i)) {
-            if (is_next(TokenType::curlybraceOpen, i + 1)) {
-              auto cRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-              if (cRes.has_value()) {
-                metaInfo = do_meta_info(i + 2, cRes.value(), RangeAt(i));
-                i        = cRes.value();
-              } else {
-                add_error("Expected } to end the meta information", RangeAt(i + 2));
-              }
-            } else {
-              add_error("Expected { after " + color_error("meta") + " to start the meta information", RangeAt(i));
-            }
-          }
-          if (altPos.has_value()) {
-            if (i + 1 == altPos.value()) {
-              i++;
-            } else {
-              add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
-            }
-          }
-          auto cacheSym = getCachedSymbol();
+          auto meta      = do_entity_metadata(preCtx, i, "function", 0);
+          auto cacheSym  = getCachedSymbol();
           if (cacheSym.name.size() > 1) {
             add_error("Function name should be just one identifier", cacheSym.fileRange);
           }
@@ -2369,14 +2170,14 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             auto bClose    = bCloseResult.value();
             auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
             addNode(ast::FunctionPrototype::create(
-                cacheSym.name.front(), argResult.first, argResult.second, retType, checkExp, constraint, metaInfo,
-                get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
+                cacheSym.name.front(), argResult.first, argResult.second, retType, meta.defineChecker, nullptr,
+                meta.metaInfo, get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
                 Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
             i = bClose;
             continue;
           } else if (is_next(TokenType::stop, i)) {
             addNode(ast::FunctionPrototype::create(cacheSym.name.front(), argResult.first, argResult.second, retType,
-                                                   checkExp, constraint, metaInfo, get_visibility(),
+                                                   meta.defineChecker, nullptr, meta.metaInfo, get_visibility(),
                                                    FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
             i++;
           } else {
@@ -2464,21 +2265,21 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
   };
 
   Maybe<Pair<ast::VisibilitySpec, FileRange>> visibility;
-  auto setVisibility  = [&](Pair<ast::VisibilitySpec, FileRange> kind) { visibility = kind; };
-  auto hasVisibility  = [&]() { return visibility.has_value(); };
-  auto get_visibility = [&]() {
+  auto setVisibility = [&](Pair<ast::VisibilitySpec, FileRange> kind) { visibility = kind; };
+  auto hasVisibility = [&]() { return visibility.has_value(); };
+  auto getVisibility = [&]() {
     auto res   = visibility;
     visibility = None;
     return res;
   };
-  auto getVisibSpec = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue) {
+  auto getVisibSpec = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue) -> Maybe<ast::VisibilitySpec> {
     if (visibValue.has_value()) {
-      return Maybe<ast::VisibilitySpec>(visibValue->first);
+      return visibValue->first;
     } else {
-      return Maybe<ast::VisibilitySpec>(None);
+      return None;
     }
   };
-  auto get_rangeWithVisib = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue, FileRange otherRange) {
+  auto fromVisibRange = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue, FileRange otherRange) {
     if (visibValue.has_value()) {
       return FileRange{visibValue->second, otherRange};
     } else {
@@ -2537,8 +2338,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                           RangeSpan(start, i + 1));
               }
               haveNonMemberEntities = true;
-              Maybe<ast::Type*>             retTy;
-              Maybe<ast::PrerunExpression*> checkExp;
+              Maybe<ast::Type*> retTy;
               if (is_next(TokenType::givenTypeSeparator, i)) {
                 auto typeRes = do_type(preCtx, i + 1, None);
                 retTy        = typeRes.first;
@@ -2554,52 +2354,21 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                 } else {
                   add_error("Expected end for (", RangeAt(i + 1));
                 }
-                Maybe<usize> altPos;
-                if (is_next(TokenType::If, i)) {
-                  altPos = first_primary_position(TokenType::altArrow, i + 1);
-                  if (!altPos.has_value()) {
-                    add_error("Expected => after " + color_error("if"), RangeAt(i));
-                  }
-                  bool isSep   = false;
-                  auto uptoPos = altPos.value();
-                  if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-                    isSep   = true;
-                    uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-                  }
-                  auto expRes = do_prerun_expression(preCtx, i + 1, uptoPos);
-                  if (expRes.second + 1 != uptoPos) {
-                    add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                              RangeSpan(expRes.second + 1, uptoPos));
-                  }
-                  checkExp = expRes.first;
-                  i        = expRes.second;
-                  if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                      !is_next(TokenType::meta, i + 1)) {
-                    add_error("Expected " + color_error("meta") + " after , for the meta info of the function",
-                              RangeAt(i + 1));
-                  } else if (is_next(TokenType::separator, i)) {
-                    i++;
-                  }
-                }
-                if (altPos.has_value()) {
-                  if (i + 1 == altPos.value()) {
-                    i++;
-                  } else {
-                    add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
-                  }
-                }
               }
+              auto entityMeta =
+                  do_entity_metadata(preCtx, i, "method", 0 /** TODO: Change to support generic methods */);
+              i = entityMeta.lastIndex;
               if (is_next(TokenType::bracketOpen, i)) {
                 auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
                 if (bCloseRes.has_value()) {
                   auto bClose = bCloseRes.value();
                   auto snts   = do_sentences(preCtx, i + 1, bClose);
                   SHOW("Creating member function prototype")
-                  auto memVisib = get_visibility();
+                  auto memVisib = getVisibility();
                   memParent->add_method_definition(ast::MethodDefinition::create(
-                      ast::MemberPrototype::Value(fnName, checkExp, argsRes.first, argsRes.second, retTy,
-                                                  getVisibSpec(memVisib),
-                                                  get_rangeWithVisib(memVisib, RangeSpan(start, i))),
+                      ast::MemberPrototype::Value(fnName, entityMeta.defineChecker, argsRes.first, argsRes.second,
+                                                  retTy, entityMeta.metaInfo, getVisibSpec(memVisib),
+                                                  fromVisibRange(memVisib, RangeSpan(start, i))),
                       snts, RangeSpan(start, bClose)));
                   i = bClose;
                 } else {
@@ -2637,7 +2406,6 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
             retTy        = typeRes.first;
             i            = typeRes.second;
           }
-          Maybe<ast::PrerunExpression*>   checkExp;
           Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
           if (is_next(TokenType::parenthesisOpen, i)) {
             auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
@@ -2648,55 +2416,25 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
             } else {
               add_error("Expected end for (", RangeAt(i + 1));
             }
-            Maybe<usize> altPos;
-            if (is_next(TokenType::If, i)) {
-              altPos = first_primary_position(TokenType::altArrow, i + 1);
-              if (!altPos.has_value()) {
-                add_error("Expected => after " + color_error("if"), RangeAt(i));
-              }
-              bool isSep   = false;
-              auto uptoPos = altPos.value();
-              if (is_primary_within(TokenType::separator, i + 1, altPos.value())) {
-                isSep   = true;
-                uptoPos = first_primary_position(TokenType::separator, i + 1).value();
-              }
-              auto expRes = do_prerun_expression(preCtx, i + 1, uptoPos);
-              if (expRes.second + 1 != uptoPos) {
-                add_error("Condition did not span till " + String(isSep ? "," : "=>"),
-                          RangeSpan(expRes.second + 1, uptoPos));
-              }
-              checkExp = expRes.first;
-              i        = expRes.second;
-              if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-                  !is_next(TokenType::meta, i + 1)) {
-                add_error("Expected " + color_error("meta") + " after , for the meta info of the function",
-                          RangeAt(i + 1));
-              } else if (is_next(TokenType::separator, i)) {
-                i++;
-              }
-            }
-            if (altPos.has_value()) {
-              if (i + 1 == altPos.value()) {
-                i++;
-              } else {
-                add_error("Unexpected tokens found here", RangeSpan(i, altPos.value()));
-              }
-            }
           }
+          auto meta = do_entity_metadata(preCtx, i, "method", 0 /** TODO - Generic methods */);
+          i         = meta.lastIndex;
           if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               auto bClose = bCloseRes.value();
               auto snts   = do_sentences(preCtx, i + 1, bClose);
               SHOW("Creating member function prototype")
-              auto memVisib = get_visibility();
+              auto memVisib = getVisibility();
               memParent->add_method_definition(ast::MethodDefinition::create(
-                  getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), checkExp, argsRes.first,
-                                                             argsRes.second, retTy, getVisibSpec(memVisib),
-                                                             get_rangeWithVisib(memVisib, RangeSpan(start, i)))
-                              : ast::MemberPrototype::Normal(
-                                    getVariation(), IdentifierAt(start), checkExp, argsRes.first, argsRes.second, retTy,
-                                    getVisibSpec(memVisib), get_rangeWithVisib(memVisib, RangeSpan(start, i))),
+                  getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), meta.defineChecker, argsRes.first,
+                                                             argsRes.second, retTy, std::move(meta.metaInfo),
+                                                             getVisibSpec(memVisib),
+                                                             fromVisibRange(memVisib, RangeSpan(start, i)))
+                              : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), meta.defineChecker,
+                                                             argsRes.first, argsRes.second, retTy,
+                                                             std::move(meta.metaInfo), getVisibSpec(memVisib),
+                                                             fromVisibRange(memVisib, RangeSpan(start, i))),
                   snts, RangeSpan(start, bClose)));
               i = bClose;
             } else {
@@ -2721,8 +2459,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                 RangeSpan(i, i + 1));
           }
           auto                    memName  = IdentifierAt(i);
-          auto                    memVisib = get_visibility();
-          auto                    memVar   = !getConst();
+          auto                    memVisib = getVisibility();
+          auto                    memVar   = not getConst();
           ast::Type*              memType  = nullptr;
           Maybe<ast::Expression*> memValue;
           auto                    typeRes = do_type(preCtx, i + 1, None);
@@ -2747,7 +2485,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
           SHOW("Adding member")
           memParent->as_define_core_type()->addMember(
               ast::DefineCoreType::Member::create(memType, memName, memVar, getVisibSpec(memVisib), memValue,
-                                                  get_rangeWithVisib(memVisib, RangeSpan(start, i))));
+                                                  fromVisibRange(memVisib, RangeSpan(start, i))));
         } else {
           add_error("Unexpected identifier found inside core type", RangeAt(i));
         }
@@ -2764,15 +2502,18 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         if (memParent->has_default_constructor()) {
           add_error("A default destructor is already defined for the core type", RangeAt(i));
         }
+        auto entMeta = do_entity_metadata(preCtx, i, "default constructor", 0);
+        i            = entMeta.lastIndex;
         if (is_next(TokenType::bracketOpen, i)) {
           auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             auto bClose   = bCloseRes.value();
             auto snts     = do_sentences(preCtx, i + 1, bClose);
-            auto defVisib = get_visibility();
+            auto defVisib = getVisibility();
             memParent->set_default_constructor(ast::ConstructorDefinition::create(
                 ast::ConstructorPrototype::Default(getVisibSpec(defVisib), RangeAt(start),
-                                                   get_rangeWithVisib(defVisib, RangeAt(i))),
+                                                   fromVisibRange(defVisib, RangeAt(i)), entMeta.defineChecker,
+                                                   std::move(entMeta.metaInfo)),
                 std::move(snts), RangeSpan(i + 1, bClose)));
             i = bClose;
           } else {
@@ -2808,7 +2549,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                 memParent->set_copy_assignment(ast::OperatorDefinition::create(
                     ast::OperatorPrototype::create(true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {},
                                                    nullptr, getVisibSpec(opVisib),
-                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName)),
+                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName),
+                                                   entMeta.defineChecker, std::move(entMeta.metaInfo)),
                     std::move(snts), RangeSpan(start, bClose)));
                 i = bClose;
               } else {
@@ -2826,16 +2568,20 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
             add_error("A copy constructor is already defined for the struct type", RangeAt(i));
           }
           auto argName = IdentifierAt(i + 1);
-          if (is_next(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
+          i++;
+          auto meta = do_entity_metadata(preCtx, i, "copy constructor", 0);
+          i         = meta.lastIndex;
+          if (is_next(TokenType::bracketOpen, i)) {
+            auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               auto bClose   = bCloseRes.value();
-              auto snts     = do_sentences(preCtx, i + 2, bClose);
+              auto snts     = do_sentences(preCtx, i + 1, bClose);
               auto memVisib = getVisibility();
               memParent->set_copy_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Copy(getVisibSpec(memVisib), RangeAt(start),
-                                                  fromVisibRange(memVisib, RangeSpan(i, i + 1)), argName),
-                  std::move(snts), RangeSpan(i + 2, bClose)));
+                                                  fromVisibRange(memVisib, RangeAt(i)), argName, meta.defineChecker,
+                                                  std::move(meta.metaInfo)),
+                  std::move(snts), RangeSpan(i + 1, bClose)));
               i = bClose;
             } else {
               add_error("Expected end for [", RangeAt(i + 2));
@@ -2844,8 +2590,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
             add_error("Expected [ to start the definition of the copy constructor", RangeSpan(i, i + 1));
           }
         } else {
-          add_error("Expected name for the argument, which represents the existing "
-                    "instance of the type, after copy keyword",
+          add_error("Expected " + color_error("copy other") + " for the copy constructor or " +
+                        color_error("copy = other") + " for the copy assignment, but could not find both",
                     RangeAt(i));
         }
         break;
@@ -2866,10 +2612,11 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                 auto bClose  = bCloseRes.value();
                 auto snts    = do_sentences(preCtx, i + 1, bClose);
                 auto opVisib = getVisibility();
-                memParent->set_copy_assignment(ast::OperatorDefinition::create(
+                memParent->set_move_assignment(ast::OperatorDefinition::create(
                     ast::OperatorPrototype::create(true, ast::Op::moveAssignment, RangeSpan(start, start + 1), {},
                                                    nullptr, getVisibSpec(opVisib),
-                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName)),
+                                                   fromVisibRange(opVisib, RangeSpan(start, i)), std::move(argName),
+                                                   entMeta.defineChecker, std::move(entMeta.metaInfo)),
                     std::move(snts), RangeSpan(start, bClose)));
                 i = bClose;
               } else {
@@ -2884,10 +2631,13 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
           }
         } else if (is_next(TokenType::identifier, i)) {
           if (memParent->has_move_constructor()) {
-            add_error("A move constructor is already defined for the core type", RangeAt(i));
+            add_error("A move constructor is already defined for the struct type", RangeAt(i));
           }
           auto argName = IdentifierAt(i + 1);
-          if (is_next(TokenType::bracketOpen, i + 1)) {
+          i++;
+          auto meta = do_entity_metadata(preCtx, i, "move constructor", 0);
+          i         = meta.lastIndex;
+          if (is_next(TokenType::bracketOpen, i)) {
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
             if (bCloseRes.has_value()) {
               auto bClose    = bCloseRes.value();
@@ -2895,8 +2645,9 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
               auto moveVisib = getVisibility();
               memParent->set_move_constructor(ast::ConstructorDefinition::create(
                   ast::ConstructorPrototype::Move(getVisibSpec(moveVisib), RangeAt(start),
-                                                  fromVisibRange(moveVisib, RangeSpan(i, i + 1)), argName),
-                  std::move(snts), RangeSpan(i + 2, bClose)));
+                                                  fromVisibRange(moveVisib, RangeAt(i)), argName, meta.defineChecker,
+                                                  std::move(meta.metaInfo)),
+                  std::move(snts), RangeSpan(i + 1, bClose)));
               i = bClose;
             } else {
               add_error("Expected end for [", RangeAt(i + 2));
@@ -2924,6 +2675,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
           if (pCloseRes.has_value()) {
             auto pClose  = pCloseRes.value();
             auto argsRes = do_function_parameters(preCtx, i + 1, pClose);
+            auto meta    = do_entity_metadata(preCtx, pClose, (argsRes.first.size() == 1) ? "convertor" : "constructor",
+                                              0 /** TODO - Change this? */);
             if (is_next(TokenType::bracketOpen, pClose)) {
               auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
               if (bCloseRes.has_value()) {
@@ -2936,14 +2689,16 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                       ast::ConvertorPrototype::create_from(
                           RangeAt(start), argsRes.first.front()->get_name(), argsRes.first.front()->get_type(),
                           argsRes.first.front()->is_type_member(), getVisibSpec(memVisib),
-                          fromVisibRange(memVisib, RangeSpan(start, pClose))),
+                          fromVisibRange(memVisib, RangeSpan(start, pClose)), meta.defineChecker,
+                          std::move(meta.metaInfo)),
                       snts, RangeSpan(start, bClose)));
                 } else {
                   // NOTE = Constructor
                   memParent->add_constructor_definition(ast::ConstructorDefinition::create(
                       ast::ConstructorPrototype::Normal(RangeAt(start), std::move(argsRes.first),
                                                         getVisibSpec(memVisib),
-                                                        fromVisibRange(memVisib, RangeSpan(start, pClose))),
+                                                        fromVisibRange(memVisib, RangeSpan(start, pClose)),
+                                                        meta.defineChecker, std::move(meta.metaInfo)),
                       snts, RangeSpan(pClose + 1, bClose)));
                 }
                 i = bClose;
@@ -3027,12 +2782,14 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
             add_error("Expected end for (", RangeAt(i + 1));
           }
         }
-        auto  memVisib  = get_visibility();
+        auto meta       = do_entity_metadata(preCtx, i, "operator function", 0 /** TODO - Generic method? */);
+        i               = meta.lastIndex;
+        auto  memVisib  = getVisibility();
         auto* prototype = ast::OperatorPrototype::create(
             getVariation(),
             isUnary ? (opr == "-" ? ast::Op::minus : ast::operator_from_string(opr)) : ast::operator_from_string(opr),
-            RangeAt(start), args, returnTy, getVisibSpec(memVisib), fromVisibRange(memVisib, RangeSpan(start, i)),
-            None);
+            RangeAt(start), args, returnTy, getVisibSpec(memVisib), fromVisibRange(memVisib, RangeSpan(start, i)), None,
+            meta.defineChecker, std::move(meta.metaInfo));
         if (is_next(TokenType::bracketOpen, i)) {
           auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
@@ -3059,27 +2816,25 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         auto start            = i;
         auto typRes           = do_type(preCtx, i, None);
         i                     = typRes.second;
-        if (is_next(TokenType::altArrow, i)) {
-          if (is_next(TokenType::bracketOpen, i + 1)) {
-            auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
-            if (bCloseRes.has_value()) {
-              auto bClose   = bCloseRes.value();
-              auto snts     = do_sentences(preCtx, i + 2, bClose);
-              auto memVisib = get_visibility();
-              memParent->add_convertor_definition(ast::ConvertorDefinition::create(
-                  ast::ConvertorPrototype::create_to(RangeAt(start), typRes.first, getVisibSpec(memVisib),
-                                                     RangeSpan(start, i + 1)),
-                  std::move(snts), fromVisibRange(memVisib, RangeSpan(start, bClose))));
-              i = bClose;
-              break;
-            } else {
-              add_error("Expected end for [", RangeAt(i + 2));
-            }
+        auto meta             = do_entity_metadata(preCtx, i, "to convertor", 0);
+        i                     = meta.lastIndex;
+        if (is_next(TokenType::bracketOpen, i)) {
+          auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+          if (bCloseRes.has_value()) {
+            auto bClose   = bCloseRes.value();
+            auto snts     = do_sentences(preCtx, i + 1, bClose);
+            auto memVisib = getVisibility();
+            memParent->add_convertor_definition(ast::ConvertorDefinition::create(
+                ast::ConvertorPrototype::create_to(RangeAt(start), typRes.first, getVisibSpec(memVisib),
+                                                   RangeSpan(start, i), meta.defineChecker, std::move(meta.metaInfo)),
+                std::move(snts), fromVisibRange(memVisib, RangeSpan(start, bClose))));
+            i = bClose;
+            break;
           } else {
-            add_error("Expected [ to start the definition of the to convertor", RangeAt(i + 2));
+            add_error("Expected ] to end body of the convertor", RangeAt(i + 1));
           }
         } else {
-          add_error("Expected => after the type for conversion", RangeSpan(start, i));
+          add_error("Expected [ after this to start the definition of the convertor", RangeSpan(start, i));
         }
         break;
       }
@@ -3094,13 +2849,16 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         if (memParent->has_destructor()) {
           add_error("A destructor is already defined for the core type", RangeAt(i));
         }
+        auto meta = do_entity_metadata(preCtx, i, "destructor", 0);
+        i         = meta.lastIndex;
         if (is_next(TokenType::bracketOpen, i)) {
           auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes) {
             auto snts     = do_sentences(preCtx, i + 1, bCloseRes.value());
-            auto memVisib = get_visibility();
-            memParent->set_destructor_definition(ast::DestructorDefinition::create(
-                RangeAt(start), snts, get_rangeWithVisib(memVisib, RangeSpan(i, bCloseRes.value()))));
+            auto memVisib = getVisibility();
+            memParent->set_destructor_definition(
+                ast::DestructorDefinition::create(RangeAt(start), meta.defineChecker, std::move(meta.metaInfo), snts,
+                                                  fromVisibRange(memVisib, RangeSpan(i, bCloseRes.value()))));
             i = bCloseRes.value();
           } else {
             add_error("Expected end for [", RangeAt(i + 1));

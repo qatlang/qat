@@ -223,19 +223,19 @@ void Config::setupEnvForQat() {
     if (fs::exists(bashConfigPath) && fs::is_regular_file(bashConfigPath)) {
       foundBashFile = true;
       std::ofstream outstream(homePath / ".bashrc", std::ios::app);
-      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":PATH\"\n";
+      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":$PATH\"\n";
       outstream.close();
     }
     if (fs::exists(zshConfigPath) && fs::is_regular_file(zshConfigPath)) {
       foundZshFile = true;
       std::ofstream outstream(homePath / ".zshrc", std::ios::app);
-      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":PATH\"\n";
+      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":$PATH\"\n";
       outstream.close();
     }
     if (!foundBashFile && !foundZshFile) {
       log->fatalError("Could not find .bashrc or .zshrc or similar configuration file for "
                       "your terminal session. Please add PATH=\"" +
-                          qatDirPath.parent_path().string() + ":PATH\"" + " to the environment manually",
+                          qatDirPath.parent_path().string() + ":$PATH\"" + " to the environment manually",
                       None);
     } else {
       log->warn("PATH has been updated in " + String(foundBashFile ? bashConfigPath.string() : "") +
@@ -336,20 +336,19 @@ Config::Config(u64 count, const char** args)
       buildCommit = res;
     }
 
-    if ((std::getenv("COLORTERM") != NULL) && ((std::strcmp(std::getenv("COLORTERM"), "truecolor") == 0) ||
-                                               (std::strcmp(std::getenv("COLORTERM"), "24bit") == 0))) {
+    auto termENV    = std::getenv("TERM");
+    auto colTermENV = std::getenv("COLORTERM");
+    if ((colTermENV != NULL) &&
+        ((std::strcmp(colTermENV, "truecolor") == 0) || (std::strcmp(colTermENV, "24bit") == 0))) {
       colorMode = ColorMode::truecolor;
-    } else if ((std::getenv("TERM") != NULL) &&
-               ((std::strcmp(std::getenv("TERM"), "iterm") == 0) ||
-                (std::strcmp(std::getenv("TERM"), "linux-truecolor") == 0) ||
-                (std::strcmp(std::getenv("TERM"), "gnome-truecolor") == 0) ||
-                (std::strcmp(std::getenv("TERM"), "screen-truecolor") == 0) ||
-                (std::strcmp(std::getenv("TERM"), "tmux-truecolor") == 0) ||
-                (std::strcmp(std::getenv("TERM"), "xterm-truecolor") == 0) || (std::getenv("WT_SESSION") != NULL))) {
+    } else if ((termENV != NULL) &&
+               ((std::strcmp(termENV, "iterm") == 0) || (std::strcmp(termENV, "linux-truecolor") == 0) ||
+                (std::strcmp(termENV, "gnome-truecolor") == 0) || (std::strcmp(termENV, "screen-truecolor") == 0) ||
+                (std::strcmp(termENV, "tmux-truecolor") == 0) || (std::strcmp(termENV, "xterm-truecolor") == 0) ||
+                (std::getenv("WT_SESSION") != NULL))) {
       colorMode = ColorMode::truecolor;
-    } else if ((std::getenv("TERM") != NULL) && (std::strcmp(std::getenv("TERM"), "xterm-256color") &&
-                                                 std::strcmp(std::getenv("TERM"), "tmux-256color") &&
-                                                 std::strcmp(std::getenv("TERM"), "gnome-256color"))) {
+    } else if ((termENV != NULL) && (std::strcmp(termENV, "xterm-256color") || std::strcmp(termENV, "tmux-256color") ||
+                                     std::strcmp(termENV, "gnome-256color"))) {
       colorMode = ColorMode::color256;
     } else {
       colorMode = ColorMode::none;

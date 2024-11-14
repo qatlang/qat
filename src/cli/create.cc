@@ -1,8 +1,8 @@
 #include "./create.hpp"
 #include "../cli/logger.hpp"
 #include "../lexer/lexer.hpp"
+#include "../utils/find_executable.hpp"
 #include "../utils/run_command.hpp"
-#include "boost/process/search_path.hpp"
 #include <fstream>
 #include <iostream>
 
@@ -58,27 +58,35 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
     std::cout << "✓ Created a qat executable project in " + log->color(projDir.string()) + "\n";
   }
   if (vcs.has_value() && (vcs.value() == "git")) {
-    auto gitPath = boost::process::search_path("git");
-    if (gitPath.string() == "") {
+    auto gitPath = find_executable("git");
+    if (not gitPath.has_value()) {
       log->fatalError(
           "Could not find git on PATH. Make sure that git is installed on your system. Could not initialise a git repository in the project directory " +
               projDir.string(),
           None);
     }
-    auto checkRes = run_command_get_stderr(gitPath.string(), {"-C", projDir.string(), "rev-parse"});
-    if (checkRes.first) {
-      auto initRes = run_command_get_stderr(gitPath.string(), {"init", projDir.string()});
-      if (initRes.first) {
-        log->fatalError("Running 'git init " + projDir.string() + "' failed with the status code " +
-                            std::to_string(initRes.first) + " and error message: " + initRes.second,
-                        projDir);
+    auto checkRes = run_command_get_stderr(gitPath.value(), {"-C", projDir.string(), "rev-parse"});
+    if (checkRes.has_value()) {
+      if (checkRes->first) {
+        auto initRes = run_command_get_stderr(gitPath.value(), {"init", projDir.string()});
+        if (initRes.has_value()) {
+          if (initRes->first) {
+            log->fatalError("Running " + log->color("git init " + projDir.string()) + " failed with the status code " +
+                                std::to_string(initRes->first) + " and error message: " + initRes->second,
+                            projDir);
+          } else {
+            std::cout << "✓ Successfully initialised a git repository" << std::endl;
+          }
+        } else {
+          log->fatalError("Failed to initialise a git repository", None);
+        }
       } else {
-        std::cout << "✓ Successfully initialised a git repository" << std::endl;
+        log->warn("The project directory " + projDir.string() +
+                      " is found to be part of a git repository, so no new repository has been created",
+                  None);
       }
     } else {
-      log->warn("The project directory " + projDir.string() +
-                    " is found to be part of a git repository, so no new repository has been created",
-                None);
+      log->fatalError("Failed to initialise a git repository", None);
     }
   }
 }

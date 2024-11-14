@@ -33,11 +33,14 @@
 #include <memory>
 #include <system_error>
 
-#include "boost/process/search_path.hpp"
-
-#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+#if OS_IS_WINDOWS
+#if RUNTIME_IS_MINGW
+#include <sdkddkver.h>
+#include <windows.h>
+#elif RUNTIME_IS_MSVC
 #include <SDKDDKVer.h>
 #include <Windows.h>
+#endif
 #endif
 
 #define MACOS_DEFAULT_SDK_PATH "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"

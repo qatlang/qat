@@ -93,7 +93,7 @@ public:
   bool operator==(unsigned long long val) const;
   bool operator!=(unsigned long long val) const;
 
-#if PlatformIsLinux
+#if OS_IS_LINUX
   bool operator==(uint64_t val) const;
   bool operator!=(uint64_t val) const;
 #endif

@@ -34,7 +34,6 @@ public:
   void handle_path(const fs::path& path, ir::Ctx* irCtx);
   void display_stats();
 
-  useit static bool check_exe_exists(const String& name);
   useit static bool is_name_valid(const String& name);
 
   useit static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);

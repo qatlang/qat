@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "./config.hpp"
 #include "../cli/logger.hpp"
 #include "../utils/qat_region.hpp"
 #include "create.hpp"
@@ -12,16 +12,21 @@
 #include <fstream>
 #include <system_error>
 
-#if PlatformIsMac
+#if OS_IS_MAC
 #include <mach-o/dyld.h>
-#endif
 
-#if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
+#elif OS_IS_WINDOWS
+#if RUNTIME_IS_MINGW
+#include <sdkddkver.h>
+#include <windows.h>
+#elif RUNTIME_IS_MSVC
 #include <SDKDDKVer.h>
 #include <Windows.h>
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-// #define DISABLE_NEWLINE_AUTO_RETURN        0x0008
 #endif
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#define DISABLE_NEWLINE_AUTO_RETURN        0x0008
+
+#endif // OS_IS_WINDOWS
 
 namespace qat::cli {
 
@@ -40,7 +45,7 @@ bool Config::hasInstance() { return Config::instance != nullptr; }
 
 Config const* Config::get() { return Config::instance; }
 
-Maybe<std::filesystem::path> Config::get_exe_path_from_env(String name) {
+Maybe<fs::path> Config::get_exe_path_from_env(String name) {
   auto hostTriple = llvm::Triple(LLVM_HOST_TRIPLE);
   auto pathEnv    = std::getenv(hostTriple.isOSWindows() ? "Path" : "PATH");
   if (pathEnv != nullptr) {
@@ -80,7 +85,7 @@ Maybe<std::filesystem::path> Config::get_exe_path_from_env(String name) {
   return None;
 }
 
-Maybe<std::filesystem::path> Config::get_exe_path(String name) {
+Maybe<fs::path> Config::get_exe_path(String name) {
   auto hostTriple  = llvm::Triple(LLVM_HOST_TRIPLE);
   auto pathFromEnv = get_exe_path_from_env(name);
   if (pathFromEnv.has_value()) {
@@ -89,7 +94,7 @@ Maybe<std::filesystem::path> Config::get_exe_path(String name) {
   std::error_code err;
   auto            resolvedPath = std::filesystem::canonical(hostTriple.isOSWindows() ? (name + ".exe") : name, err);
   if (err) {
-#if PlatformIsWindows
+#if OS_IS_WINDOWS
     auto pipe = _popen((hostTriple.isOSWindows() ? ("where.exe " + name + ".exe") : ("which " + name)).c_str(), "r");
 
 #else
@@ -106,7 +111,7 @@ Maybe<std::filesystem::path> Config::get_exe_path(String name) {
         output += buffer;
       }
     }
-#if PlatformIsWindows
+#if OS_IS_WINDOWS
     _pclose(pipe);
 #else
     pclose(pipe);
@@ -137,7 +142,7 @@ void Config::setupEnvForQat() {
     if (qatPathRes.has_value()) {
       qatDirPath = qatPathRes.value().parent_path();
     } else {
-#if PlatformIsWindows
+#if OS_IS_WINDOWS
       char selfdir[MAX_PATH] = {0};
       auto charLen           = GetModuleFileNameA(NULL, selfdir, MAX_PATH);
       if (charLen > 0) {
@@ -146,7 +151,7 @@ void Config::setupEnvForQat() {
       } else {
         log->fatalError("Path to qat could not be found", None);
       }
-#elif PlatformIsMac
+#elif OS_IS_MAC
       char     path[1024] = {0};
       uint32_t size       = sizeof(path);
       if (_NSGetExecutablePath(path, &size) == 0) {
@@ -154,19 +159,21 @@ void Config::setupEnvForQat() {
       } else {
         log->fatalError("Path to qat could not be found", None);
       }
-#else
+#elif OS_IS_LINUX || OS_IS_FREEBSD || OS_IS_HAIKU
       std::error_code err;
       qatDirPath = std::filesystem::canonical("/proc/self/exe", err);
       if (err) {
         log->fatalError("Could not retrieve path to the qat executable", None);
       }
+#else
+#error "Unsupported OS"
 #endif
       qatDirPath = qatDirPath.parent_path();
       if (!std::filesystem::exists(qatDirPath)) {
         log->fatalError("Could not retrieve path to the qat executable", None);
       }
     }
-#if PlatformIsWindows
+#if OS_IS_WINDOWS
     HKEY         hKey;
     LPCSTR       keyPath = "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
     Vec<wchar_t> pathBuffer;

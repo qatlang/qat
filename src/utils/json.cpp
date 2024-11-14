@@ -377,7 +377,7 @@ bool JsonValue::operator!=(unsigned long long val) const {
   return true;
 }
 
-#if PlatformIsLinux
+#if OS_IS_LINUX
 bool JsonValue::operator==(uint64_t val) const {
   if (isInt()) {
     return ((*((int64_t*)data)) == ((int64_t)val));

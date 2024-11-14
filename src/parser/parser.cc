@@ -4202,6 +4202,81 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
+      case TokenType::assembly: {
+        const auto start        = i;
+        ast::Type* functionType = nullptr;
+        if (is_next(TokenType::genericTypeStart, i)) {
+          auto genInd = i + 1;
+          auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+          if (!gClose.has_value()) {
+            add_error("Expected ] to end the prerun parameters for the assembly block", RangeAt(i + 1));
+          }
+          auto fnTypeRes = do_type(preCtx, i + 1, None);
+          functionType   = fnTypeRes.first;
+          i              = fnTypeRes.second;
+          if (is_next(TokenType::separator, i)) {
+            auto expRes = do_prerun_expression(preCtx, i + 1, None);
+            i           = expRes.second;
+            if (is_next(TokenType::separator, i)) {
+              auto clobRes = do_prerun_expression(preCtx, i + 1, None);
+              i            = clobRes.second;
+              Maybe<FileRange>       volatileRange;
+              ast::PrerunExpression* volatileExpr = nullptr;
+              if (is_next(TokenType::separator, i)) {
+                i++;
+                if (is_next(TokenType::Volatile, i)) {
+                  if (is_next(TokenType::parenthesisOpen, i + 1)) {
+                    auto pInd    = i + 2;
+                    auto volRes  = do_prerun_expression(preCtx, i + 2, None);
+                    volatileExpr = volRes.first;
+                    i            = volRes.second;
+                    if (is_next(TokenType::parenthesisClose, i)) {
+                      i++;
+                    } else {
+                      add_error("Expected ) to end the condition for volatility", RangeSpan(pInd, i));
+                    }
+                  } else {
+                    volatileRange = RangeAt(i + 1);
+                    i++;
+                  }
+                  if (is_next(TokenType::separator, i)) {
+                    i++;
+                  }
+                }
+              }
+              if (is_next(TokenType::genericTypeEnd, i) && ((i + 1) == gClose.value())) {
+                i++;
+              } else {
+                add_error("Expected ] to end the list of prerun parameters for the assembly block",
+                          RangeSpan(genInd, i));
+              }
+              Vec<ast::Expression*> args;
+              FileRange             argsRange{""};
+              if (is_next(TokenType::parenthesisOpen, i)) {
+                auto pClose = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+                if (!pClose.has_value()) {
+                  add_error("Expected ) to end the list of arguments for the assembly block", RangeAt(i + 1));
+                }
+                args      = do_separated_expressions(preCtx, i + 1, pClose.value());
+                argsRange = RangeSpan(i + 1, pClose.value());
+                i         = pClose.value();
+              } else {
+                add_error("Expected ( to start the list of arguments for the assembly block", RangeSpan(start, i));
+              }
+              setCachedExpr(ast::AssemblyBlock::create(functionType, expRes.first, args, argsRange, clobRes.first,
+                                                       volatileRange, volatileExpr, RangeSpan(start, i)),
+                            i);
+            } else {
+              add_error("Expected , after this to precede the list of constraints", RangeSpan(start, i));
+            }
+          } else {
+            add_error("Expected , after this to precede the assembly code", RangeSpan(start, i));
+          }
+        } else {
+          add_error("Expected :[ to start the list of prerun parameters for the assembly block", RangeAt(i));
+        }
+        break;
+      }
       default: {
         if (upto.has_value()) {
           SHOW("Value of i is: " << i << " and value of upto is: " << upto.value())

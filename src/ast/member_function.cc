@@ -8,12 +8,12 @@
 
 namespace qat::ast {
 
-MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
+MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, PrerunExpression* _condition,
                                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-    : fnTy(_fnTy), name(std::move(_name)), condition(_condition), arguments(std::move(_arguments)),
-      isVariadic(_isVariadic), returnType(_returnType), metaInfo(_metaInfo), visibSpec(_visibSpec),
-      fileRange(_fileRange) {}
+    : fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
+      returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange), defineChecker(_condition),
+      metaInfo(_metaInfo) {}
 
 MemberPrototype::~MemberPrototype() {
   for (auto* arg : arguments) {
@@ -21,16 +21,16 @@ MemberPrototype::~MemberPrototype() {
   }
 }
 
-MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name,
-                                         Maybe<PrerunExpression*> _condition, const Vec<Argument*>& _arguments,
-                                         bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
-                                         Maybe<VisibilitySpec> visibSpec, const FileRange& _fileRange) {
+MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
+                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
+                                         const FileRange& _fileRange) {
   return std::construct_at(OwnNormal(MemberPrototype),
                            _isVariationFn ? AstMemberFnType::variation : AstMemberFnType::normal, _name, _condition,
                            _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
+MemberPrototype* MemberPrototype::Static(const Identifier& _name, PrerunExpression* _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                          Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
@@ -38,7 +38,7 @@ MemberPrototype* MemberPrototype::Static(const Identifier& _name, Maybe<PrerunEx
                            _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
+MemberPrototype* MemberPrototype::Value(const Identifier& _name, PrerunExpression* _condition,
                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
                                         const FileRange& _fileRange) {
@@ -47,17 +47,20 @@ MemberPrototype* MemberPrototype::Value(const Identifier& _name, Maybe<PrerunExp
 }
 
 void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
-  if (condition.has_value()) {
-    auto condRes =
-        condition.value()->emit(EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));
+  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
+  if (defineChecker) {
+    auto condRes = defineChecker->emit(emitCtx);
     if (!condRes->get_ir_type()->is_bool()) {
       irCtx->Error("The condition for defining the method should be of " + irCtx->color("bool") + " type",
-                   condition.value()->fileRange);
+                   defineChecker->fileRange);
     }
     state.defineCondition = llvm::cast<llvm::ConstantInt>(condRes->get_llvm())->getValue().getBoolValue();
     if (state.defineCondition.has_value() && !state.defineCondition.value()) {
       return;
     }
+  }
+  if (metaInfo.has_value()) {
+    state.metaInfo = metaInfo.value().toIR(emitCtx);
   }
   SHOW("Defining member proto " << name.value << " " << state.parent->get_parent_type()->to_string())
   if (state.parent->is_done_skill()) {
@@ -130,8 +133,6 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
       isSelfReturn               = true;
     }
   }
-  SHOW("Creating emit ctx")
-  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
   SHOW("Emitting return type")
   auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
   SHOW("Generating types")
@@ -207,18 +208,21 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   SHOW("About to create function")
   if (fnTy == AstMemberFnType::Static) {
     SHOW("MemberFn :: " << name.value << " Static Method")
-    state.result = ir::Method::CreateStatic(state.parent, name, retTy, args, isVariadic, fileRange,
-                                            emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result =
+        ir::Method::CreateStatic(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy,
+                                 args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   } else if (fnTy == AstMemberFnType::valued) {
     SHOW("MemberFn :: " << name.value << " Valued Method")
     if (!parentType->is_trivially_copyable()) {
       irCtx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
     }
-    state.result = ir::Method::CreateValued(state.parent, name, retTy, args, isVariadic, fileRange,
-                                            emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result =
+        ir::Method::CreateValued(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy,
+                                 args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   } else {
     SHOW("MemberFn :: " << name.value << " Method or Variation")
     state.result = ir::Method::Create(state.parent, fnTy == AstMemberFnType::variation, name,
+                                      state.metaInfo.has_value() && state.metaInfo->get_inline(),
                                       ir::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
                                       emitCtx->get_visibility_info(visibSpec), irCtx);
   }

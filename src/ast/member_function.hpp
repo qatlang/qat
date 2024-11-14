@@ -37,35 +37,35 @@ inline String member_fn_type_to_string(AstMemberFnType ty) {
 class MemberPrototype {
   friend class MethodDefinition;
 
-  AstMemberFnType          fnTy;
-  Identifier               name;
-  Maybe<PrerunExpression*> condition;
-  Vec<Argument*>           arguments;
-  bool                     isVariadic;
-  Maybe<Type*>             returnType;
-  Maybe<MetaInfo>          metaInfo;
-  Maybe<VisibilitySpec>    visibSpec;
-  FileRange                fileRange;
+  AstMemberFnType       fnTy;
+  Identifier            name;
+  Vec<Argument*>        arguments;
+  bool                  isVariadic;
+  Maybe<Type*>          returnType;
+  Maybe<VisibilitySpec> visibSpec;
+  FileRange             fileRange;
+
+  PrerunExpression* defineChecker;
+  Maybe<MetaInfo>   metaInfo;
 
 public:
-  MemberPrototype(AstMemberFnType _fnTy, Identifier _name, Maybe<PrerunExpression*> _condition,
-                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+  MemberPrototype(AstMemberFnType _fnTy, Identifier _name, PrerunExpression* _defineChecker, Vec<Argument*> _arguments,
+                  bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
                   Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
-  static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, Maybe<PrerunExpression*> _condition,
+  static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
-  static MemberPrototype* Static(const Identifier& _name, Maybe<PrerunExpression*> _condition,
+  static MemberPrototype* Static(const Identifier& _name, PrerunExpression* _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
-  static MemberPrototype* Value(const Identifier& _name, Maybe<PrerunExpression*> _condition,
-                                const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-                                const FileRange& _fileRange);
+  static MemberPrototype* Value(const Identifier& _name, PrerunExpression* _condition, const Vec<Argument*>& _arguments,
+                                bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+                                Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
   ir::EntityChildType fn_type_to_child_type() {
     switch (fnTy) {
@@ -91,8 +91,8 @@ public:
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
-    if (condition.has_value()) {
-      UPDATE_DEPS(condition.value());
+    if (defineChecker) {
+      UPDATE_DEPS(defineChecker);
     }
     if (returnType.has_value()) {
       UPDATE_DEPS(returnType.value());

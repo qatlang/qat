@@ -10,6 +10,7 @@
 #include "../ast/do_skill.hpp"
 #include "../ast/expressions/address_of.hpp"
 #include "../ast/expressions/array_literal.hpp"
+#include "../ast/expressions/assembly.hpp"
 #include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/cast.hpp"
@@ -18,6 +19,7 @@
 #include "../ast/expressions/default.hpp"
 #include "../ast/expressions/dereference.hpp"
 #include "../ast/expressions/entity.hpp"
+#include "../ast/expressions/error.hpp"
 #include "../ast/expressions/function_call.hpp"
 #include "../ast/expressions/generic_entity.hpp"
 #include "../ast/expressions/get_intrinsic.hpp"
@@ -129,7 +131,8 @@
   case TokenType::unsignedIntegerType:                                                                                 \
   case TokenType::integerType:                                                                                         \
   case TokenType::floatType:                                                                                           \
-  case TokenType::futureType:
+  case TokenType::futureType:                                                                                          \
+  case TokenType::result:
 
 // NOTE - Check if file fileRange values are making use of the new merge
 // functionality
@@ -1944,7 +1947,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
-      case TokenType::Type: {
+      case TokenType::define: {
         auto start = i;
         if (is_next(TokenType::identifier, i)) {
           auto name = IdentifierAt(i + 1);
@@ -1988,6 +1991,22 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         }
         break;
       }
+      case TokenType::Type: {
+        auto start = i;
+        if (is_next(TokenType::identifier, i)) {
+          auto                           name = IdentifierAt(i + 1);
+          Vec<ast::GenericAbstractType*> genericList;
+          i++;
+          auto typeCtx = ParserContext();
+          if (is_next(TokenType::genericTypeStart, i)) {
+            auto endRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+            if (endRes.has_value()) {
+              auto end    = endRes.value();
+              genericList = do_generic_abstracts(typeCtx, i + 1, end);
+              for (auto* temp : genericList) {
+                typeCtx.add_abstract_generic(temp);
+              }
+              i = end;
             } else {
               add_error("Expected ] to end the generic parameter list", RangeAt(i + 1));
             }
@@ -2008,9 +2027,11 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
             } else {
               add_error("Expected } to end the body of the struct type", RangeAt(i + 2));
             }
+          } else {
+            add_error("Expected { to start the body of the struct type", RangeSpan(start, i));
           }
         } else {
-          add_error("Expected name for the type", token.fileRange);
+          add_error("Expected name for the struct type", token.fileRange);
         }
         break;
       }
@@ -2847,7 +2868,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
         haveNonMemberEntities = true;
         auto start            = i;
         if (memParent->has_destructor()) {
-          add_error("A destructor is already defined for the core type", RangeAt(i));
+          add_error("A destructor is already defined for the struct type", RangeAt(i));
         }
         auto meta = do_entity_metadata(preCtx, i, "destructor", 0);
         i         = meta.lastIndex;
@@ -3815,12 +3836,66 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         break;
       }
       case TokenType::ok: {
+        const auto                                     start = i;
+        Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
+        Maybe<Pair<ast::Type*, ast::Type*>>            providedType;
+        if (is_next(TokenType::genericTypeStart, i)) {
+          auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+          if (!gClose.has_value()) {
+            add_error("Expected ] to end the type specification for the " + color_error("ok") + " expression",
+                      RangeAt(i + 1));
+          }
+          if (is_next(TokenType::packed, i + 1)) {
+            if (is_next(TokenType::associatedAssignment, i + 2)) {
+              auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
+              isPacked =
+                  Pair<FileRange, ast::PrerunExpression*>{RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
+              i = packExpRes.second;
+            } else {
+              isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+              i        = i + 2;
+            }
+            if (is_next(TokenType::separator, i)) {
+              i++;
+            } else if (!is_next(TokenType::genericTypeEnd, i)) {
+              add_error("Expected either a , after this, or expected ] to end the type specification here",
+                        RangeSpan(start, i));
+            }
+          }
+          if (!isPacked.has_value() || token.type == TokenType::separator) {
+            auto validTyRes = do_type(preCtx, i, None);
+            if (!is_next(TokenType::separator, validTyRes.second)) {
+              add_error("Expected , after this to separate the valid type from the error type",
+                        validTyRes.first->fileRange);
+            }
+            i             = validTyRes.second + 1;
+            auto errTyRes = do_type(preCtx, i, None);
+            if (errTyRes.second + 1 != gClose.value()) {
+              add_error("Expected ] after this to end the type specification, but found something else",
+                        RangeSpan(start, errTyRes.second));
+            }
+            providedType = Pair<ast::Type*, ast::Type*>{validTyRes.first, errTyRes.first};
+          }
+          i = gClose.value();
+        }
         if (is_next(TokenType::parenthesisOpen, i)) {
           auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
           if (pCloseRes) {
-            auto  pClose = pCloseRes.value();
-            auto* exp    = do_expression(preCtx, None, i + 1, pClose).first;
-            setCachedExpr(ast::OkExpression::create(exp, RangeSpan(i, pClose)), pClose);
+            auto             pClose = pCloseRes.value();
+            ast::Expression* exp    = nullptr;
+            if (i + 2 != pClose) {
+              exp = do_expression(preCtx, None, i + 1, pClose).first;
+            }
+            setCachedExpr(ast::OkExpression::create(exp, isPacked, providedType, RangeSpan(i, pClose)), pClose);
+            i = pClose;
+          } else {
+            add_error("Expected end for (", RangeAt(i + 1));
+          }
+        } else {
+          add_error("Expected ( to start the " + color_error("ok") + " expression", RangeSpan(start, i));
+        }
+        break;
+      }
             i = pClose;
           } else {
             add_error("Expected end for (", RangeAt(i + 1));

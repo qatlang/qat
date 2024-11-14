@@ -13,6 +13,22 @@ OperatorPrototype::~OperatorPrototype() {
 }
 
 void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
+  auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
+  if (defineChecker) {
+    auto defRes = defineChecker->emit(emitCtx);
+    if (not defRes->get_ir_type()->is_bool()) {
+      irCtx->Error("The define condition is expected to be of type " + irCtx->color("bool") +
+                       ", but got an expression of type " + irCtx->color(defRes->get_ir_type()->to_string()),
+                   defineChecker->fileRange);
+    }
+    state.defineCondition = llvm::cast<llvm::ConstantInt>(defRes->get_llvm_constant())->getValue().getBoolValue();
+    if (not state.defineCondition.value()) {
+      return;
+    }
+  }
+  if (metaInfo.has_value()) {
+    state.metaInfo = metaInfo.value().toIR(emitCtx);
+  }
   if (opr == Op::copyAssignment) {
     if (state.parent->is_done_skill() && state.parent->as_done_skill()->has_copy_assignment()) {
       irCtx->Error("Copy assignment operator already exists in this implementation " +
@@ -23,7 +39,9 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                        irCtx->color(state.parent->as_expanded()->to_string()),
                    fileRange);
     }
-    state.result = ir::Method::CopyAssignment(state.parent, nameRange, argName.value(), fileRange, irCtx);
+    state.result =
+        ir::Method::CopyAssignment(state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(),
+                                   argName.value(), fileRange, irCtx);
     return;
   } else if (opr == Op::moveAssignment) {
     if (state.parent->is_expanded() && state.parent->as_expanded()->has_move_assignment()) {
@@ -35,7 +53,9 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                        irCtx->color(state.parent->as_done_skill()->to_string()),
                    fileRange);
     }
-    state.result = ir::Method::MoveAssignment(state.parent, nameRange, argName.value(), fileRange, irCtx);
+    state.result =
+        ir::Method::MoveAssignment(state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(),
+                                   argName.value(), fileRange, irCtx);
     return;
   }
   if (opr == Op::subtract) {
@@ -57,7 +77,6 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                    fileRange);
     }
   }
-  auto           emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
   Vec<ir::Type*> generatedTypes;
   SHOW("Generating types")
   for (auto* arg : arguments) {
@@ -127,9 +146,10 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   }
   auto retTy = returnType->emit(emitCtx);
   SHOW("Operator " + operator_to_string(opr) + " isVar: " << isVariationFn << " return type is " << retTy->to_string())
-  state.result = ir::Method::CreateOperator(state.parent, nameRange, !is_unary_operator(opr), isVariationFn,
-                                            operator_to_string(opr), ir::ReturnType::get(retTy, isSelfReturn), args,
-                                            fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+  state.result = ir::Method::CreateOperator(
+      state.parent, nameRange, !is_unary_operator(opr), isVariationFn, operator_to_string(opr),
+      state.metaInfo.has_value() && state.metaInfo->get_inline(), ir::ReturnType::get(retTy, isSelfReturn), args,
+      fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   SHOW("Created IR operator")
 }
 

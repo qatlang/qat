@@ -8,6 +8,7 @@
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
+#include "meta_info.hpp"
 
 namespace qat::ast {
 
@@ -24,21 +25,30 @@ private:
   FileRange             nameRange;
   FileRange             fileRange;
 
+  PrerunExpression* defineChecker;
+  Maybe<MetaInfo>   metaInfo;
+
 public:
   OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments, Type* _returnType,
-                    Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName)
+                    Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName,
+                    PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
       : isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType), visibSpec(_visibSpec),
-        argName(_argName), nameRange(_nameRange), fileRange(_fileRange) {}
+        argName(_argName), nameRange(_nameRange), fileRange(_fileRange), defineChecker(_defineChecker),
+        metaInfo(std::move(_metaInfo)) {}
 
   useit static inline OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange,
                                                 Vec<Argument*> _arguments, Type* _returnType,
                                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-                                                Maybe<Identifier> _argName) {
+                                                Maybe<Identifier> _argName, PrerunExpression* _defineChecker,
+                                                Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(OperatorPrototype), _isVariationFn, _op, _nameRange, _arguments, _returnType,
-                             _visibSpec, _fileRange, _argName);
+                             _visibSpec, _fileRange, _argName, _defineChecker, std::move(_metaInfo));
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+    if (defineChecker) {
+      UPDATE_DEPS(defineChecker);
+    }
     if (returnType) {
       UPDATE_DEPS(returnType);
     }

@@ -15,7 +15,7 @@
 namespace qat::ir {
 
 StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
-                       Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+                       Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
                        Maybe<MetaInfo> _metaInfo, bool isPacked)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
       opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
@@ -118,7 +118,7 @@ void StructType::update_overview() {
 
 u64 StructType::get_field_count() const { return members.size(); }
 
-Vec<StructType::Member*>& StructType::get_members() { return members; }
+Vec<StructField*>& StructType::get_members() { return members; }
 
 bool StructType::has_field_with_name(const String& member) const {
   for (auto* mem : members) {
@@ -129,7 +129,7 @@ bool StructType::has_field_with_name(const String& member) const {
   return false;
 }
 
-StructType::Member* StructType::get_field_with_name(const String& member) const {
+StructField* StructType::get_field_with_name(const String& member) const {
   for (auto* mem : members) {
     if (mem->name.value == member) {
       return mem;
@@ -138,7 +138,7 @@ StructType::Member* StructType::get_field_with_name(const String& member) const 
   return nullptr;
 }
 
-StructType::Member* StructType::get_field_at(u64 index) { return members.at(index); }
+StructField* StructType::get_field_at(u64 index) { return members.at(index); }
 
 Maybe<usize> StructType::get_index_of(const String& member) const {
   Maybe<usize> result;
@@ -468,13 +468,15 @@ ast::GenericAbstractType* GenericStructType::getGenericAt(usize index) const { r
 Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
   for (auto& oVar : opaqueVariants) {
     SHOW("Opaque variant: " << oVar.get()->get_full_name())
-    if (oVar.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (oVar.check(
+            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return oVar.get();
     }
   }
   for (auto& var : variants) {
     SHOW("Core type variant: " << var.get()->get_full_name())
-    if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (var.check(
+            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return var.get();
     }
   }

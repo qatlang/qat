@@ -162,7 +162,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
   }
   auto typeEmitCtx = EmitCtx::get(irCtx, mod)->with_opaque_parent(get_opaque());
   SHOW("Created opaque for core type")
-  Vec<ir::StructType::Member*> mems;
+  Vec<ir::StructField*> mems;
   SHOW("Generating core type members")
   for (auto* mem : members) {
     auto* memTy = mem->type->emit(typeEmitCtx);
@@ -183,8 +183,8 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
     if (memTy->is_destructible()) {
       needsDestructor = true;
     }
-    mems.push_back(new ir::StructType::Member(mem->name, memTy, mem->variability, mem->expression,
-                                              typeEmitCtx->get_visibility_info(mem->visibSpec)));
+    mems.push_back(ir::StructField::create(mem->name, memTy, mem->variability, mem->expression,
+                                           typeEmitCtx->get_visibility_info(mem->visibSpec)));
   }
   SHOW("Creating core type: " << cTyName.value)
   *resultTy = new ir::StructType(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
@@ -454,7 +454,6 @@ void DefineCoreType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
     (void)constructorDefinitions.at(i)->emit(parentState->constructors[i], irCtx);
   }
   for (usize i = 0; i < convertorDefinitions.size(); i++) {
-    MethodState state(memberParent, parentState->convertors[i]);
     (void)convertorDefinitions[i]->emit(parentState->convertors[i], irCtx);
   }
   for (usize i = 0; i < memberDefinitions.size(); i++) {

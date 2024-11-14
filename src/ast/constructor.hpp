@@ -33,10 +33,10 @@ private:
   PrerunExpression*    defineChecker;
   Maybe<ast::MetaInfo> metaInfo;
 
-  mutable Maybe<bool>                  checkResult;
-  mutable Vec<ir::StructType::Member*> presentMembers;
-  mutable Vec<ir::StructType::Member*> absentMembersWithDefault;
-  mutable Vec<ir::StructType::Member*> absentMembersWithoutDefault;
+  mutable Maybe<bool>           checkResult;
+  mutable Vec<ir::StructField*> presentMembers;
+  mutable Vec<ir::StructField*> absentMembersWithDefault;
+  mutable Vec<ir::StructField*> absentMembersWithoutDefault;
 
 public:
   ConstructorPrototype(ConstructorType _constrType, FileRange _nameRange, Vec<Argument*> _arguments,

@@ -2,6 +2,7 @@
 #define QAT_IR_TYPES_CORE_TYPE_HPP
 
 #include "../../utils/identifier.hpp"
+#include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
 #include "../generics.hpp"
 #include "../method.hpp"
@@ -20,59 +21,62 @@ class Expression;
 
 namespace qat::ir {
 
+class StructField final : public EntityOverview, public Uniq {
+public:
+  StructField(Identifier _name, Type* _type, bool _variability, Maybe<ast::Expression*> _defVal,
+              const VisibilityInfo& _visibility)
+      : EntityOverview("coreTypeMember",
+                       Json()
+                           ._("name", _name.value)
+                           ._("type", _type->to_string())
+                           ._("typeID", _type->get_id())
+                           ._("isVariable", _variability)
+                           ._("visibility", _visibility),
+                       _name.range),
+        name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility), variability(_variability) {
+  }
+
+  useit static inline StructField* create(Identifier name, Type* type, bool variability,
+                                          Maybe<ast::Expression*> defaultVal, const VisibilityInfo& visibility) {
+    return std::construct_at(OwnNormal(StructField), name, type, variability, defaultVal, visibility);
+  }
+
+  ~StructField() final = default;
+
+  Identifier              name;
+  Type*                   type;
+  Maybe<ast::Expression*> defaultValue;
+  VisibilityInfo          visibility;
+  bool                    variability;
+};
+
 class StructType final : public ExpandedType, public EntityOverview {
+  friend class StructField;
   friend class Method;
   friend class GenericArgument;
-
-public:
-  class Member final : public EntityOverview, public Uniq {
-  public:
-    Member(Identifier _name, Type* _type, bool _variability, Maybe<ast::Expression*> _defVal,
-           const VisibilityInfo& _visibility)
-        : EntityOverview("coreTypeMember",
-                         Json()
-                             ._("name", _name.value)
-                             ._("type", _type->to_string())
-                             ._("typeID", _type->get_id())
-                             ._("isVariable", _variability)
-                             ._("visibility", _visibility),
-                         _name.range),
-          name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
-          variability(_variability) {}
-
-    ~Member() final = default;
-
-    Identifier              name;
-    Type*                   type;
-    Maybe<ast::Expression*> defaultValue;
-    VisibilityInfo          visibility;
-    bool                    variability;
-  };
-
-private:
   ir::OpaqueType*    opaquedType = nullptr;
-  Vec<Member*>       members;
+  Vec<StructField*>  members;
   Vec<StaticMember*> staticMembers;
   Maybe<MetaInfo>    metaInfo;
 
 public:
   StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
-             Vec<Member*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+             Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
              Maybe<MetaInfo> metaInfo, bool isPacked);
 
   ~StructType() final;
 
   useit Maybe<usize> get_index_of(const String& member) const;
   useit bool         has_field_with_name(const String& member) const;
-  useit Member*      get_field_with_name(const String& name) const;
+  useit StructField* get_field_with_name(const String& name) const;
   useit u64          get_field_count() const;
-  useit Member*      get_field_at(u64 index);
+  useit StructField* get_field_at(u64 index);
   useit usize        get_field_index(String const& name) const;
   useit String       get_field_name_at(u64 index) const;
   useit Type*        get_type_of_field(const String& member) const;
-  useit Vec<Member*>& get_members();
-  useit bool          has_static(const String& name) const;
-  useit bool          is_type_sized() const final;
+  useit Vec<StructField*>& get_members();
+  useit bool               has_static(const String& name) const;
+  useit bool               is_type_sized() const final;
 
   useit bool is_trivially_copyable() const final;
   useit bool is_trivially_movable() const final;

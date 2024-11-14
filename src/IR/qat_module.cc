@@ -3,6 +3,7 @@
 #include "../cli/config.hpp"
 #include "../cli/logger.hpp"
 #include "../show.hpp"
+#include "../utils/find_executable.hpp"
 #include "../utils/run_command.hpp"
 #include "../utils/utils.hpp"
 #include "brought.hpp"
@@ -1934,30 +1935,33 @@ bool Mod::find_clang_path(Ctx* ctx) {
   }
   auto cfg = cli::Config::get();
   if (!cfg->has_clang_path()) {
-    auto clangPath   = boost::process::search_path("clang");
-    auto clang17Path = boost::process::search_path("clang-17");
-    SHOW("clang path from boost is " << clangPath)
-    SHOW("clang-17 path from boost is " << clang17Path)
-    if (clangPath.empty() && clang17Path.empty()) {
+    auto clangPath    = find_executable("clang");
+    auto qatClangPath = find_executable("qat-clang");
+    SHOW("clang path is " << (clangPath.has_value() ? clangPath.value() : "none"))
+    SHOW("clang path is " << (qatClangPath.has_value() ? qatClangPath.value() : "none"))
+    if ((not clangPath.has_value()) && (not qatClangPath.has_value())) {
       ctx->Error(
-          ctx->color("clang") + " could not be found in PATH. Tried using " + ctx->color("clang-17") +
-              " which is the compatible version of clang, also bundled with qat, but that executable also could not be found."
+          ctx->color("clang") + " could not be found in PATH. Tried using " + ctx->color("qat-clang") +
+              " which is the compatible version of clang bundled with qat, but that executable also could not be found."
               " Please check your installation of qat. Make sure that clang is installed and is added to the system PATH variable."
               " If you want clang from a custom path to be used, provide path to clang using " +
               ctx->color("--clang=\"/path/of/clang/exe\""),
           None);
-    } else if (clang17Path.empty() && !clangPath.empty()) {
-      auto clangRes = run_command_get_stdout(clangPath.string(), {"--version"});
-      if (clangRes.first == 0) {
+    } else if ((not qatClangPath.has_value()) && clangPath.has_value()) {
+      auto clangRes = run_command_get_stdout(clangPath.value(), {"--version"});
+      if (not clangRes.has_value()) {
+        ctx->Error("Failed to find the version of clang executable found at " + ctx->color(clangPath.value()), None);
+      }
+      if (clangRes->first == 0) {
         Maybe<String> versionString;
-        if (clangRes.second.find("\n") != String::npos) {
-          auto firstLine = clangRes.second.substr(0, clangRes.second.find("\n"));
+        if (clangRes->second.find("\n") != String::npos) {
+          auto firstLine = clangRes->second.substr(0, clangRes->second.find("\n"));
           if (firstLine.find("version ") != String::npos) {
             versionString = firstLine.substr(firstLine.find("version ") + String::traits_type::length("version "));
           }
-        } else if (clangRes.second.find("version ") != String::npos) {
+        } else if (clangRes->second.find("version ") != String::npos) {
           versionString =
-              clangRes.second.substr(clangRes.second.find("version ") + String::traits_type::length("version "));
+              clangRes->second.substr(clangRes->second.find("version ") + String::traits_type::length("version "));
         }
         if (versionString.has_value() && versionString.value().find(' ') != String::npos) {
           versionString = versionString.value().substr(versionString.value().find(' '));
@@ -1977,16 +1981,16 @@ bool Mod::find_clang_path(Ctx* ctx) {
           if (majorVersion.value() < 17) {
             ctx->Error(
                 "qat requires a clang installation of version 17 or later. The clang compiler found at " +
-                    clangPath.string() + " has a version of " + ctx->color(versionString.value()) +
-                    ". Also tried using the " + ctx->color("clang-17") +
+                    clangPath.value() + " has a version of " + ctx->color(versionString.value()) +
+                    ". Also tried using the " + ctx->color("qat-clang") +
                     " binary bundled with qat, but the file could not be found. Please check your installation of qat",
                 None);
           }
-          usableClangPath = clangPath.string();
+          usableClangPath = clangPath.value();
         } else {
           ctx->Error(
-              "Could not determine the version of the clang compiler found at " + ctx->color(clangPath.string()) +
-                  ". Also tried using the " + ctx->color("clang-17") +
+              "Could not determine the version of the clang compiler found at " + ctx->color(clangPath.value()) +
+                  ". Also tried using the " + ctx->color("qat-clang") +
                   " binary bundled with qat, but the file could not be found. Please check your installation of qat",
               None);
         }
@@ -1994,12 +1998,12 @@ bool Mod::find_clang_path(Ctx* ctx) {
         ctx->Error(
             "Tried to run " + ctx->color("clang --version") +
                 " to determine the version of the clang compiler. But the command failed with the status code " +
-                ctx->color(std::to_string(clangRes.first)) + ". Also tried using the " + ctx->color("clang-17") +
+                ctx->color(std::to_string(clangRes->first)) + ". Also tried using the " + ctx->color("qat-clang") +
                 " binary bundled with qat, but the file could not be found. Please check your installation of qat",
             None);
       }
-    } else if (!clang17Path.empty()) {
-      usableClangPath = clang17Path.string();
+    } else if (qatClangPath.has_value()) {
+      usableClangPath = qatClangPath.value();
     }
   } else {
     usableClangPath = cfg->get_clang_path();
@@ -2064,10 +2068,18 @@ void Mod::compile_to_object(Ctx* ctx) {
     SHOW("Clang is found: " << clangFound)
     // TODO - ?? Check if the provided clang compiler is above version 17
     auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
-    if (cmdRes.first) {
-      ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
-                     cmdRes.second,
-                 None);
+    if (cmdRes.has_value()) {
+      if (cmdRes->first) {
+        ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
+                       cmdRes->second,
+                   None);
+      }
+    } else {
+      String compileCmd(usableClangPath.value());
+      for (auto& it : compileArgs) {
+        compileCmd += ' ' + it;
+      }
+      ctx->Error("Failed to execute the compile command " + ctx->color(compileCmd), None);
     }
     isCompiledToObject = true;
   }
@@ -2343,7 +2355,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
           Maybe<int> version;
           for (auto it : fs::directory_iterator(msvcMainPath)) {
             if (it.is_directory()) {
-              if (utils::is_integer(it.path().filename())) {
+              if (utils::is_integer(it.path().filename().string())) {
                 if (version.has_value()) {
                   if (version.value() < std::stoi(it.path().filename())) {
                     version = std::stoi(it.path().filename());
@@ -2492,7 +2504,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
         }
       }
     } else {
-      irCtx->Error("Could not find the directory " + irCtx->color(windowsPath) +
+      irCtx->Error("Could not find the directory " + irCtx->color(windowsPath.string()) +
                        " which is required for finding platform-specific libraries for the target " +
                        irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
                    None);
@@ -2523,9 +2535,9 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
     vsWherePath = "C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe";
   }
   if (!vsWherePath.has_value()) {
-    auto pathRes = boost::process::search_path("vswhere");
-    if (pathRes.string() != "") {
-      vsWherePath = pathRes.string();
+    auto pathRes = find_executable("vswhere");
+    if (pathRes.has_value()) {
+      vsWherePath = pathRes.value();
     }
   }
   auto target = irCtx->clangTargetInfo->getTriple();
@@ -2533,20 +2545,25 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
     (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
   } else {
     auto vsWhereRes = run_command_get_output(vsWherePath.value(), {"-latest", "-property", "installationPath"});
-    if (vsWhereRes.first) {
-      irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes.first) +
-                       ". The error output is: " + vsWhereRes.second,
+    if (not vsWhereRes.has_value()) {
+      irCtx->Error("Failed to run the command " +
+                       irCtx->color(vsWherePath.value() + " -latest -property installationPath"),
+                   None);
+    }
+    if (vsWhereRes->first) {
+      irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes->first) +
+                       ". The error output is: " + vsWhereRes->second,
                    None);
     }
     Maybe<String> vsPath;
-    if (!vsWhereRes.second.empty()) {
-      if (vsWhereRes.second.find('\n') != String::npos) {
-        vsPath = vsWhereRes.second.substr(0, vsWhereRes.second.find('\n') - 1);
+    if (not vsWhereRes->second.empty()) {
+      if (vsWhereRes->second.find('\n') != String::npos) {
+        vsPath = vsWhereRes->second.substr(0, vsWhereRes->second.find('\n') - 1);
       } else {
-        vsPath = vsWhereRes.second;
+        vsPath = vsWhereRes->second;
       }
     }
-    if (!vsPath.has_value()) {
+    if (not vsPath.has_value()) {
       (void)find_windows_toolchain_libs(irCtx, true, true, false, false);
     } else {
       auto msvcMainPath = fs::path(vsPath.value()) / "VC" / "Tools" / "MSVC";
@@ -2833,16 +2850,23 @@ void Mod::bundle_modules(Ctx* ctx) {
 
       if (cfg->should_build_static()) {
         auto cmdRes = run_command_get_stderr(usableClangPath.value(), staticArgs);
-        if (cmdRes.first) {
+        if (not cmdRes.has_value()) {
+          String statCmd(usableClangPath.value());
+          for (auto& it : staticArgs) {
+            statCmd += ' ' + it;
+          }
+          ctx->Error("Failed to statically compile by executing the command " + ctx->color(statCmd), None);
+        }
+        if (cmdRes->first) {
           ctx->Error("Statically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-                         ". The error output is\n" + cmdRes.second,
+                         ". The error output is\n" + cmdRes->second,
                      None);
         }
       } else if (cfg->should_build_shared()) {
         auto cmdRes = run_command_get_stderr(usableClangPath.value(), sharedArgs);
-        if (cmdRes.first) {
+        if (cmdRes->first) {
           ctx->Error("Dynamically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-                         ". The error output is\n" + cmdRes.second,
+                         ". The error output is\n" + cmdRes->second,
                      None);
         }
       }
@@ -2989,6 +3013,7 @@ void Mod::bundle_modules(Ctx* ctx) {
         /**
          *  Windows Linker
          */
+        // FIXME - Check if this should be used
         auto msvcRes      = find_windows_sdk_paths(ctx);
         auto outSharedArg = "/OUT:" + outPathShared;
 
@@ -3048,23 +3073,32 @@ void Mod::bundle_modules(Ctx* ctx) {
           allArgsShared.push_back(obj.c_str());
         }
         if (cfg->should_build_static()) {
-          auto llvmLibPath = boost::process::search_path("llvm-ar-17");
-          if (llvmLibPath.string() == "") {
+          auto llvmLibPath = find_executable("llvm-ar-17");
+          if (not llvmLibPath.has_value()) {
             ctx->Error("Could not find " + ctx->color("llvm-ar-17") + " on the PATH. " + ctx->color("llvm-ar-17") +
                            " is the renamed version of " + ctx->color("llvm-ar") +
                            " utility, bundled with the QAT installation. Please check your installation of qat",
                        None);
           }
           SHOW("Linking Static Library Windows")
-          auto llvmLibRes = run_command_get_stderr(llvmLibPath.string(), allArgs);
-          if (llvmLibRes.first) {
-            auto staticCmdStr = llvmLibPath.string() + " ";
+          auto llvmLibRes = run_command_get_stderr(llvmLibPath.value(), allArgs);
+          if (not llvmLibRes.has_value()) {
+            String statCmd(llvmLibPath.value());
+            for (auto& it : allArgs) {
+              statCmd += ' ' + it;
+            }
+            ctx->Error("Failed to statically link library by executing the command " + ctx->color(std::move(statCmd)),
+                       None);
+          }
+          if (llvmLibRes->first) {
+            auto staticCmdStr = llvmLibPath.value() + " ";
             for (auto arg : allArgs) {
               staticCmdStr += arg + " ";
             }
             ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-                           " using the 'LLVM Lib' program failed with status code " + std::to_string(llvmLibRes.first) +
-                           "\nThe command was: " + staticCmdStr + "\nThe error output is: " + llvmLibRes.second,
+                           " using the 'LLVM Lib' program failed with status code " +
+                           std::to_string(llvmLibRes->first) + "\nThe command was: " + staticCmdStr +
+                           "\nThe error output is: " + llvmLibRes->second,
                        None);
           }
         }
@@ -3264,9 +3298,18 @@ void Mod::bundle_modules(Ctx* ctx) {
           cmdArgs.push_back(outPath);
           cmdArgs.insert(cmdArgs.end(), objectFiles.begin(), objectFiles.end());
           auto cmdRes = run_command_get_output(cmd, cmdArgs);
-          if (cmdRes.first) {
+          if (not cmdRes.has_value()) {
+            String linkCmd(cmd);
+            for (auto& it : cmdArgs) {
+              linkCmd += ' ' + it;
+            }
+            ctx->Error("Failed to link library by executing the command " + ctx->color(linkCmd) +
+                           ". Please not that the linker path was provided via the cli",
+                       None);
+          }
+          if (cmdRes->first) {
             ctx->Error("Building library failed for module " + ctx->color(name.value) + " in " +
-                           ctx->color(filePath.string()) + ". The output is\n" + cmdRes.second,
+                           ctx->color(filePath.string()) + ". The output is\n" + cmdRes->second,
                        None);
           }
         } else {
@@ -3339,22 +3382,29 @@ void Mod::link_intrinsic(IntrinsicID intr) {
   auto& llCtx = llvmModule->getContext();
   switch (intr) {
     case IntrinsicID::vaStart: {
-      llvm::Function::Create(
-          llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt8PtrTy(llCtx)}, false),
-          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_start", llvmModule);
+      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                     {llvm::Type::getInt8Ty(llCtx)->getPointerTo(
+                                                         llvmModule->getDataLayout().getProgramAddressSpace())},
+                                                     false),
+                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_start", llvmModule);
       break;
     }
     case IntrinsicID::vaCopy: {
-      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-                                                     {llvm::Type::getInt8PtrTy(llCtx), llvm::Type::getInt8PtrTy(llCtx)},
-                                                     false),
-                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_copy", llvmModule);
+      llvm::Function::Create(
+          llvm::FunctionType::get(
+              llvm::Type::getVoidTy(llCtx),
+              {llvm::Type::getInt8Ty(llCtx)->getPointerTo(llvmModule->getDataLayout().getProgramAddressSpace()),
+               llvm::Type::getInt8Ty(llCtx)->getPointerTo(llvmModule->getDataLayout().getProgramAddressSpace())},
+              false),
+          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_copy", llvmModule);
       break;
     }
     case IntrinsicID::vaEnd: {
-      llvm::Function::Create(
-          llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt8PtrTy(llCtx)}, false),
-          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_end", llvmModule);
+      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+                                                     {llvm::Type::getInt8Ty(llCtx)->getPointerTo(
+                                                         llvmModule->getDataLayout().getProgramAddressSpace())},
+                                                     false),
+                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_end", llvmModule);
       break;
     }
   }

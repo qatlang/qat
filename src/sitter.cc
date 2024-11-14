@@ -4,14 +4,13 @@
 #include "IR/qat_module.hpp"
 #include "IR/value.hpp"
 #include "ast/types/qat_type.hpp"
-#include "boost/process/search_path.hpp"
 #include "cli/config.hpp"
 #include "cli/logger.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token_type.hpp"
 #include "parser/parser.hpp"
+#include "utils/find_executable.hpp"
 #include "utils/identifier.hpp"
-#include "utils/qat_region.hpp"
 #include "utils/run_command.hpp"
 #include "utils/visibility.hpp"
 #include <chrono>
@@ -292,7 +291,7 @@ void QatSitter::initialise() {
     auto clangStartTime = std::chrono::high_resolution_clock::now();
     if (cfg->is_workflow_build()) {
       SHOW("Checking whether clang exists or not")
-      if (check_exe_exists("clang") || check_exe_exists("clang++")) {
+      if (check_executable_exists("clang") || check_executable_exists("clang++")) {
         SHOW("Executable paths count: " << ctx->executablePaths.size())
         for (auto* entity : fileEntities) {
           entity->compile_to_object(ctx);
@@ -318,10 +317,15 @@ void QatSitter::initialise() {
           for (const auto& exePath : ctx->executablePaths) {
             SHOW("Running built executable at: " << exePath.string())
             auto cmdRes = run_command_get_output(fs::absolute(exePath).string(), {});
-            std::cout << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
-                             cmdRes.second + "===== Status Code: " + std::to_string(cmdRes.first) + "\n";
-            if (cmdRes.first) {
-              std::cout << "\nThe built executable at " + ctx->color(exePath.string()) + " exited with error";
+            if (not cmdRes.has_value()) {
+              std::cout << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
+                               cmdRes->second + "===== Status Code: " + std::to_string(cmdRes->first) + "\n";
+              if (cmdRes->first) {
+                std::cout << "\nThe built executable at " + ctx->color(exePath.string()) + " exited with error";
+              }
+            } else {
+              std::cout << "\nFailed to execute and get output of the executable at " << fs::absolute(exePath).string()
+                        << '\n';
             }
           }
           SHOW("Ran all compiled executables")
@@ -533,25 +537,6 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
     remove_entity_with_path(mPath);
   }
   memberPaths.clear();
-}
-
-bool QatSitter::check_exe_exists(const String& name) {
-  if (boost::process::search_path(name).string() != "") {
-    return true;
-  }
-  if (llvm::Triple(LLVM_HOST_TRIPLE).isOSWindows()) {
-    auto wherePath = boost::process::search_path("where");
-    if (wherePath.string() != "") {
-      return run_command_get_code(wherePath.string(), {name}) != 0;
-    }
-    return false;
-  } else {
-    auto whichPath = boost::process::search_path("which");
-    if (whichPath.string() != "") {
-      return run_command_get_code(whichPath.string(), {name}) != 0;
-    }
-    return false;
-  }
 }
 
 void QatSitter::destroy() {

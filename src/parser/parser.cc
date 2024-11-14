@@ -5097,14 +5097,6 @@ bool Parser::is_previous(const lexer::TokenType type, const usize from) {
   }
 }
 
-bool Parser::is_next(const lexer::TokenType type, const usize current) {
-  if ((current + 1) < tokens->size()) {
-    return tokens->at(current + 1).type == type;
-  } else {
-    return false;
-  }
-}
-
 bool Parser::are_only_present_within(const Vec<lexer::TokenType>& kinds, usize from, usize upto) {
   for (usize i = from + 1; i < upto; i++) {
     for (auto const& kind : kinds) {

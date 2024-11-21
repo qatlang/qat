@@ -3378,34 +3378,25 @@ void Mod::export_json_from_ast(Ctx* ctx) {
 
 llvm::Module* Mod::get_llvm_module() const { return llvmModule; }
 
-void Mod::link_intrinsic(IntrinsicID intr) {
+llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
   auto& llCtx = llvmModule->getContext();
   switch (intr) {
-    case IntrinsicID::vaStart: {
-      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-                                                     {llvm::Type::getInt8Ty(llCtx)->getPointerTo(
-                                                         llvmModule->getDataLayout().getProgramAddressSpace())},
-                                                     false),
-                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_start", llvmModule);
-      break;
-    }
-    case IntrinsicID::vaCopy: {
-      llvm::Function::Create(
-          llvm::FunctionType::get(
-              llvm::Type::getVoidTy(llCtx),
-              {llvm::Type::getInt8Ty(llCtx)->getPointerTo(llvmModule->getDataLayout().getProgramAddressSpace()),
-               llvm::Type::getInt8Ty(llCtx)->getPointerTo(llvmModule->getDataLayout().getProgramAddressSpace())},
-              false),
-          llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_copy", llvmModule);
-      break;
-    }
-    case IntrinsicID::vaEnd: {
-      llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-                                                     {llvm::Type::getInt8Ty(llCtx)->getPointerTo(
-                                                         llvmModule->getDataLayout().getProgramAddressSpace())},
-                                                     false),
-                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "llvm.va_end", llvmModule);
-      break;
+    case IntrinsicID::varArgStart:
+      return llvm::Intrinsic::getDeclaration(
+          llvmModule, llvm::Intrinsic::vastart,
+          {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+    case IntrinsicID::varArgCopy:
+      return llvm::Intrinsic::getDeclaration(
+          llvmModule, llvm::Intrinsic::vacopy,
+          {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+    case IntrinsicID::varArgEnd:
+      return llvm::Intrinsic::getDeclaration(
+          llvmModule, llvm::Intrinsic::vaend,
+          {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+    case IntrinsicID::vectorScale:
+      return llvm::Intrinsic::getDeclaration(llvmModule, llvm::Intrinsic::vscale, {llvm::IntegerType::get(llCtx, 64u)});
+  }
+}
     }
   }
 }

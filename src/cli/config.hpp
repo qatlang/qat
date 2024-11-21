@@ -12,6 +12,8 @@ enum class ColorMode { none, truecolor, color256 };
 
 enum class BuildMode { debug, release, releaseWithDebugInfo };
 
+enum class PanicStrategy { resume, exitThread, exitProgram, handler, none };
+
 class Config {
 private:
   static Config* instance;
@@ -44,11 +46,14 @@ private:
   bool analyseWorkflow = false;
   bool clearLLVMFiles  = false;
   bool exportCodeInfo  = false;
+  bool isFreestanding  = false;
   bool isNoStd         = false;
   bool diagnostic      = false;
 
   ColorMode colorMode = ColorMode::color256;
   BuildMode buildMode = BuildMode::debug;
+
+  PanicStrategy panicStrategy = PanicStrategy::none;
 
   Maybe<bool> buildShared;
   Maybe<bool> buildStatic;
@@ -83,7 +88,8 @@ public:
   useit inline bool has_target_triple() const { return targetTriple.has_value(); }
   useit inline bool has_std_lib_path() const { return stdLibPath.has_value(); }
   useit inline bool has_toolchain_path() const { return toolchainPath.has_value(); }
-  useit inline bool is_no_std_enabled() const { return isNoStd; }
+  useit inline bool is_freestanding() const { return isFreestanding; }
+  useit inline bool is_no_std_enabled() const { return isNoStd || isFreestanding; }
   useit inline bool export_code_metadata() const { return exportCodeInfo; }
 
   useit inline ColorMode color_mode() const { return colorMode; }
@@ -94,6 +100,10 @@ public:
   useit inline bool should_have_debug_info() const {
     return (buildMode == BuildMode::releaseWithDebugInfo) || (buildMode == BuildMode::debug);
   }
+
+  useit inline bool has_panic_strategy() const { return panicStrategy != PanicStrategy::none; }
+
+  useit inline PanicStrategy get_panic_strategy() const { return panicStrategy; }
 
   useit inline bool has_sysroot() const { return sysRoot.has_value(); }
   useit inline bool has_clang_path() const { return clangPath.has_value(); }

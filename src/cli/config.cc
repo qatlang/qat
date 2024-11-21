@@ -583,8 +583,27 @@ Config::Config(u64 count, const char** args)
       } else if (arg == "--no-std") {
         stdLibPath = None;
         isNoStd    = true;
+      } else if (arg == "--freestanding") {
+        stdLibPath     = None;
+        isFreestanding = true;
       } else if (arg == "--save-docs") {
         saveDocs = true;
+      } else if (arg.starts_with("--panic=")) {
+        auto panicVal = arg.substr(String::traits_type::length("--panic="));
+        if (panicVal == "resume") {
+          panicStrategy = PanicStrategy::resume;
+        } else if (panicVal == "exit-thread") {
+          panicStrategy = PanicStrategy::exitThread;
+        } else if (panicVal == "exit-program") {
+          panicStrategy = PanicStrategy::exitProgram;
+        } else if (panicVal == "handler") {
+          panicStrategy = PanicStrategy::handler;
+        } else {
+          log->fatalError("Invalid panic strategy found: " + log->color(arg) + ". The possible values are " +
+                              log->color("resume") + ", " + log->color("exit-thread") + ", " +
+                              log->color("exit-program") + " and " + log->color("handler"),
+                          None);
+        }
       } else if (arg.starts_with("--mode=")) {
         auto modeVal = filter_quotes(arg.substr(String::traits_type::length("--mode=")));
         if (modeVal == "debug") {
@@ -624,19 +643,28 @@ Config::Config(u64 count, const char** args)
         }
       }
     }
-    if (exitAfter && ((count - 1) >= proceed)) {
+    if (exitAfter && (proceed < count)) {
       String otherArgs;
       for (usize i = proceed; i < count; i++) {
-        otherArgs += args[proceed];
+        otherArgs += log->color(args[proceed]);
         if (i != (count - 1)) {
           otherArgs += ", ";
         }
       }
       log->warn("Ignoring additional arguments provided: " + otherArgs, None);
     }
-    if (!outputPath.has_value() && !exitAfter) {
+    if (is_freestanding() && (not has_panic_strategy())) {
+      log->fatalError(
+          "The " + log->color("--freestanding") +
+              " flag was provided, but panic strategy has not been provided. You can provide the panic strategy using one of the following arguments: " +
+              log->color("--panic=resume") + '\n' + log->color("--panic=exit-thread") + '\n' +
+              log->color("--panic=exit-program") + '\n' + log->color("--panic=handler") + "\nRun " +
+              log->color("qat help --panic") + " to see what each of these options mean",
+          None);
+    }
+    if ((not outputPath.has_value()) && (not exitAfter)) {
       if ((is_workflow_build() || is_workflow_bundle() || is_workflow_analyse() || is_workflow_run()) &&
-          paths.size() == 1) {
+          (paths.size() == 1)) {
         if ((fs::is_regular_file(paths[0]) && (paths[0].extension() == ".qat")) || fs::is_directory(paths[0])) {
           auto candParent = fs::is_directory(paths[0]) ? fs::path(paths[0]) : fs::path(paths[0]).parent_path();
           if (fs::exists(candParent)) {
@@ -647,10 +675,10 @@ Config::Config(u64 count, const char** args)
           }
         }
       }
-      if (!outputPath.has_value()) {
+      if (not outputPath.has_value()) {
         outputPath = fs::current_path() / ".qatcache";
       }
-      if (!fs::exists(outputPath.value())) {
+      if (not fs::exists(outputPath.value())) {
         std::error_code err;
         fs::create_directories(outputPath.value(), err);
         if (err) {

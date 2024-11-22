@@ -9,26 +9,29 @@ namespace qat::ast {
 struct VisibilitySpec;
 
 enum class LoopType {
-  nTimes,
-  While,
-  doWhile,
-  over,
-  infinite,
+  TO_COUNT,
+  WHILE,
+  DO_WHILE,
+  OVER,
+  INFINITE,
 };
 
 struct LoopInfo {
-  String          name;
-  ir::Block*      mainBlock;
-  ir::Block*      condBlock;
-  ir::Block*      restBlock;
-  ir::LocalValue* index;
-  LoopType        type;
+  Maybe<Identifier> name;
+  Maybe<Identifier> secondaryName;
+  ir::Block*        mainBlock;
+  ir::Block*        condBlock;
+  ir::Block*        restBlock;
+  ir::LocalValue*   index;
+  LoopType          type;
 
-  LoopInfo(String _name, ir::Block* _mainB, ir::Block* _condB, ir::Block* _restB, ir::LocalValue* _index,
+  LoopInfo(Maybe<Identifier> _name, ir::Block* _mainB, ir::Block* _condB, ir::Block* _restB, ir::LocalValue* _index,
            LoopType _type)
       : name(_name), mainBlock(_mainB), condBlock(_condB), restBlock(_restB), index(_index), type(_type) {}
 
-  useit inline bool isTimes() const { return type == LoopType::nTimes; }
+  void set_secondary_name(Identifier other) { secondaryName = std::move(other); }
+
+  useit inline bool isTimes() const { return type == LoopType::TO_COUNT; }
 };
 
 enum class BreakableType {
@@ -37,12 +40,22 @@ enum class BreakableType {
 };
 
 struct Breakable {
-  Maybe<String> tag;
-  ir::Block*    restBlock;
-  ir::Block*    trueBlock;
+  Maybe<Identifier> tag;
+  ir::Block*        restBlock;
+  ir::Block*        trueBlock;
+  BreakableType     type;
 
-  Breakable(Maybe<String> _tag, ir::Block* _restBlock, ir::Block* _trueBlock)
-      : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock) {}
+  Breakable(BreakableType _type, Maybe<Identifier> _tag, ir::Block* _restBlock, ir::Block* _trueBlock)
+      : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock), type(_type) {}
+
+  String type_to_string() const {
+    switch (type) {
+      case BreakableType::loop:
+        return "loop";
+      case BreakableType::match:
+        return "match";
+    }
+  }
 };
 
 struct EmitCtx {

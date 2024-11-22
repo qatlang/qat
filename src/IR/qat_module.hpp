@@ -50,7 +50,8 @@ namespace qat::ir {
 class Ctx;
 
 enum class ModuleType { lib, file, folder };
-enum class NativeUnit {
+
+enum class InternalDependency {
   printf,
   malloc,
   free,
@@ -59,9 +60,64 @@ enum class NativeUnit {
   pthreadJoin,
   pthreadExit,
   pthreadAttrInit,
-  windowsExitThread
+  windowsExitThread,
+  exitProgram,
+  panicHandler,
 };
 enum class IntrinsicID { vaStart, vaEnd, vaCopy };
+useit inline String internal_dependency_to_string(InternalDependency unit) {
+  switch (unit) {
+    case InternalDependency::printf:
+      return "printf";
+    case InternalDependency::malloc:
+      return "malloc";
+    case InternalDependency::free:
+      return "free";
+    case InternalDependency::realloc:
+      return "realloc";
+    case InternalDependency::pthreadCreate:
+      return "pthread_create";
+    case InternalDependency::pthreadJoin:
+      return "pthread_join";
+    case InternalDependency::pthreadExit:
+      return "pthread_exit";
+    case InternalDependency::pthreadAttrInit:
+      return "pthread_attr_init";
+    case InternalDependency::windowsExitThread:
+      return "__imp_ExitThread";
+    case InternalDependency::exitProgram:
+      return "exit";
+    case InternalDependency::panicHandler:
+      return "panicHandler";
+  }
+}
+
+useit inline Maybe<InternalDependency> internal_dependency_from_string(String value) {
+  if (value == "printf") {
+    return InternalDependency::printf;
+  } else if (value == "malloc") {
+    return InternalDependency::malloc;
+  } else if (value == "free") {
+    return InternalDependency::free;
+  } else if (value == "realloc") {
+    return InternalDependency::realloc;
+  } else if (value == "pthread_create") {
+    return InternalDependency::pthreadCreate;
+  } else if (value == "pthread_join") {
+    return InternalDependency::pthreadJoin;
+  } else if (value == "pthread_exit") {
+    return InternalDependency::pthreadExit;
+  } else if (value == "pthread_attr_init") {
+    return InternalDependency::pthreadAttrInit;
+  } else if (value == "__imp_ExitThread") {
+    return InternalDependency::windowsExitThread;
+  } else if (value == "exit") {
+    return InternalDependency::exitProgram;
+  } else if (value == "panicHandler") {
+    return InternalDependency::panicHandler;
+  }
+  return None;
+}
 
 enum class LibToLinkType {
   namedLib,

@@ -24,6 +24,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CodeGen.h"
@@ -47,6 +48,8 @@
 #define MACOS_DEFAULT_SDK_PATH "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
 
 namespace qat::ir {
+
+std::map<InternalDependency, Function*> Mod::providedFunctions = {};
 
 Vec<Mod*>       Mod::allModules{};
 Vec<fs::path>   Mod::usableNativeLibPaths{};
@@ -3397,41 +3400,71 @@ llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
       return llvm::Intrinsic::getDeclaration(llvmModule, llvm::Intrinsic::vscale, {llvm::IntegerType::get(llCtx, 64u)});
   }
 }
+
+String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRange rangeVal) {
+  if (cli::Config::get()->is_freestanding()) {
+    if (has_provided_function(nval)) {
+      auto resFn      = get_provided_function(nval);
+      auto existingFn = llvmModule->getFunction(resFn->get_llvm_function()->getName());
+      if (not existingFn) {
+        llvm::Function::Create(resFn->get_llvm_function()->getFunctionType(),
+                               llvm::GlobalValue::LinkageTypes::ExternalLinkage, resFn->get_llvm_function()->getName(),
+                               llvmModule);
+        if (this != resFn->get_module()) {
+          dependencies.insert(resFn->get_module());
+        }
+        return resFn->get_llvm_function()->getName().str();
+      } else if (existingFn->getFunctionType() != resFn->get_llvm_function()->getFunctionType()) {
+        String                   fnTyVal;
+        llvm::raw_string_ostream fnTypeStr(fnTyVal);
+        existingFn->getFunctionType()->print(fnTypeStr);
+        irCtx->Error(
+            "The internal dependency " + irCtx->color(existingFn->getName().str()) +
+                " is already linked to the current module, and has an unexpected signature. The llvm signature of the existing function in the module is " +
+                irCtx->color(fnTyVal) + " and the expected signature is " +
+                irCtx->color(resFn->get_ir_type()->to_string()) + ". Note that the " + irCtx->color("--freestanding") +
+                " flag was provided, which leads to the assumption that such dependencies are not present",
+            std::move(rangeVal));
+      }
+    } else {
+      irCtx->Error(
+          "The internal dependency " + internal_dependency_to_string(nval) +
+              " could not be automatically linked in a freestanding environment. The " +
+              irCtx->color("--freestanding") +
+              " flag was provided, which means that such dependencies are assumed to not be present. You can provide a replacement for such dependencies on your own, or remove logic that uses these dependencies in such scenarios",
+          rangeVal);
     }
   }
-}
-
-void Mod::link_native(NativeUnit nval) {
   // FIXME - Use integer widths according to the specification and not the same
   // on all platforms
   llvm::LLVMContext& llCtx = llvmModule->getContext();
   switch (nval) {
-    case NativeUnit::printf: {
+    case InternalDependency::printf: {
       if (!llvmModule->getFunction("printf")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
                                llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
       }
-      break;
+      return "printf";
     }
-    case NativeUnit::malloc: {
+    case InternalDependency::malloc: {
       if (!llvmModule->getFunction("malloc")) {
         SHOW("Creating malloc function")
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
                                                        {llvm::Type::getInt64Ty(llCtx)}, false),
                                llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
       }
-      break;
+      return "malloc";
     }
-    case NativeUnit::free: {
+    case InternalDependency::free: {
       if (!llvmModule->getFunction("free")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
                                llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
       }
-      break;
+      return "free";
     }
-    case NativeUnit::realloc: {
+    case InternalDependency::realloc: {
       if (!llvmModule->getFunction("realloc")) {
         llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
@@ -3439,9 +3472,9 @@ void Mod::link_native(NativeUnit nval) {
                                     false),
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
       }
-      break;
+      return "realloc";
     }
-    case NativeUnit::pthreadCreate: {
+    case InternalDependency::pthreadCreate: {
       if (!llvmModule->getFunction("pthread_create")) {
         llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(llCtx)->getPointerTo();
         llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
@@ -3460,9 +3493,9 @@ void Mod::link_native(NativeUnit nval) {
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
         linkPthread = true;
       }
-      break;
+      return "pthread_create";
     }
-    case NativeUnit::pthreadJoin: {
+    case InternalDependency::pthreadJoin: {
       if (!llvmModule->getFunction("pthread_join")) {
         llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
         llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
@@ -3471,18 +3504,18 @@ void Mod::link_native(NativeUnit nval) {
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
         linkPthread = true;
       }
-      break;
+      return "pthread_join";
     }
-    case NativeUnit::pthreadExit: {
+    case InternalDependency::pthreadExit: {
       if (!llvmModule->getFunction("pthread_exit")) {
         llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
                                                        {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
                                llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
         linkPthread = true;
       }
-      break;
+      return "pthread_exit";
     }
-    case NativeUnit::windowsExitThread: {
+    case InternalDependency::windowsExitThread: {
       if (!llvmModule->getGlobalVariable("__imp_ExitThread")) {
         new llvm::GlobalVariable(
             *llvmModule,
@@ -3491,9 +3524,9 @@ void Mod::link_native(NativeUnit nval) {
             true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, "__imp_ExitThread", nullptr,
             llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
       }
-      break;
+      return "__imp_ExitThread";
     }
-    case NativeUnit::pthreadAttrInit: {
+    case InternalDependency::pthreadAttrInit: {
       if (!llvmModule->getFunction("pthread_attr_init")) {
         if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
           llvm::StructType::create(
@@ -3506,7 +3539,18 @@ void Mod::link_native(NativeUnit nval) {
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
         linkPthread = true;
       }
-      break;
+      return "pthread_attr_init";
+    }
+    case InternalDependency::exitProgram: {
+      if (not llvmModule->getFunction("exit")) {
+        llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {CType::get_int(irCtx)->get_llvm_type()}, false),
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, "exit", llvmModule);
+      }
+      return "exit";
+    }
+    case InternalDependency::panicHandler: {
+      return "";
     }
   }
 }

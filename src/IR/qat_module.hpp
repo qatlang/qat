@@ -64,7 +64,7 @@ enum class InternalDependency {
   exitProgram,
   panicHandler,
 };
-enum class IntrinsicID { vaStart, vaEnd, vaCopy };
+
 useit inline String internal_dependency_to_string(InternalDependency unit) {
   switch (unit) {
     case InternalDependency::printf:
@@ -118,6 +118,8 @@ useit inline Maybe<InternalDependency> internal_dependency_from_string(String va
   }
   return None;
 }
+
+enum class IntrinsicID { varArgStart, varArgEnd, varArgCopy, vectorScale };
 
 enum class LibToLinkType {
   namedLib,
@@ -498,6 +500,8 @@ private:
 
   useit bool should_be_named() const;
 
+  static std::map<InternalDependency, Function*> providedFunctions;
+
 public:
   ~Mod();
 
@@ -509,6 +513,12 @@ public:
                                     Vec<ast::Node*>, VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
   useit static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
                                     Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+
+  useit static inline bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
+  inline static void       add_provided_function(InternalDependency unit, Function* fnVal) {
+    providedFunctions[unit] = fnVal;
+  }
+  useit static inline Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
 
   static bool triple_is_equivalent(llvm::Triple const& first, llvm::Triple const& second);
 
@@ -763,30 +773,35 @@ public:
   void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,
                                      Maybe<Identifier> bName = None);
 
-  useit fs::path get_resolved_output_path(const String& extension, ir::Ctx* irCtx);
+  useit fs::path get_resolved_output_path(const String& extension, Ctx* irCtx);
   useit llvm::Module* get_llvm_module() const;
   useit Maybe<fs::path> find_static_library_path(String libName) const;
 
-  useit bool find_clang_path(ir::Ctx* irCtx);
-  useit bool find_windows_sdk_paths(ir::Ctx* irCtx);
-  useit bool find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
-                                         bool findUCRTLibPath, bool findUMLibPath);
+  useit bool find_clang_path(Ctx* irCtx);
+  useit bool find_windows_sdk_paths(Ctx* irCtx);
+  useit bool find_windows_toolchain_libs(Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath, bool findUCRTLibPath,
+                                         bool findUMLibPath);
 
   static void find_native_library_paths();
 
-  void node_create_modules(ir::Ctx* irCtx);
-  void node_handle_fs_brings(ir::Ctx* irCtx);
-  void node_create_entities(ir::Ctx* irCtx);
-  void node_update_dependencies(ir::Ctx* irCtx);
+  void node_create_modules(Ctx* irCtx);
+  void node_handle_fs_brings(Ctx* irCtx);
+  void node_create_entities(Ctx* irCtx);
+  void node_update_dependencies(Ctx* irCtx);
 
-  void setup_llvm_file(ir::Ctx* irCtx);
-  void compile_to_object(ir::Ctx* irCtx);
-  void handle_native_libs(ir::Ctx* irCtx);
-  void bundle_modules(ir::Ctx* irCtx);
+  void setup_llvm_file(Ctx* irCtx);
+  void compile_to_object(Ctx* irCtx);
+  void handle_native_libs(Ctx* irCtx);
+  void bundle_modules(Ctx* irCtx);
 
-  void export_json_from_ast(ir::Ctx* irCtx);
-  void link_native(NativeUnit nval);
-  void link_intrinsic(IntrinsicID intr);
+  void export_json_from_ast(Ctx* irCtx);
+
+  /// This returns the name of the linked function or symbol
+  /// Even known units like printf can have a different name for the underlying function, especially in freehosting
+  /// environments
+  useit String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRange fileRange);
+
+  useit llvm::Function* link_intrinsic(IntrinsicID intr);
 
   Json to_json() const;
 };

@@ -7,8 +7,10 @@ src/cmake-build-debug/
 .idea/
 
 # Scripts
-./*.sh
-./*.bat
+build.sh
+redo.sh
+run.sh
+build.bat
 
 # Other
 build/

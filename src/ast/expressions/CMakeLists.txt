@@ -15,7 +15,6 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	get_intrinsic.cc
 	heap.cc
 	is.cc
-	loop_tag.cc
 	member_function_call.cc
 	index_access.cc
 	member_access.cc

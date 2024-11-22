@@ -26,7 +26,6 @@
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/is.hpp"
-#include "../ast/expressions/loop_tag.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/member_function_call.hpp"
 #include "../ast/expressions/mix_choice_initialiser.hpp"
@@ -3821,20 +3820,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
-      case TokenType::loop: {
-        if (is_next(TokenType::colon, i)) {
-          if (is_next(TokenType::identifier, i + 1)) {
-            setCachedExpr(
-                ast::TagOfLoop::create((ValueAt(i + 2) == "index") ? "" : ValueAt(i + 2), RangeSpan(i, i + 2)), i + 2);
-            i = i + 2;
-          } else {
-            add_error("Unexpected token after loop'", {token.fileRange, RangeAt(i + 1)});
-          }
-        } else {
-          add_error("Invalid token after loop", token.fileRange);
-        }
-        break;
-      }
       case TokenType::ok: {
         const auto                                     start = i;
         Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
@@ -4920,17 +4905,6 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           setCachedExprForSentences(expRes.first);
           i = expRes.second;
           break;
-        } else if (is_next(TokenType::colon, i)) {
-          Maybe<String> tag = None;
-          if (is_next(TokenType::identifier, i + 1)) {
-            auto stop   = first_primary_position(TokenType::stop, i + 2);
-            auto expRes = do_expression(preCtx, None, i, stop);
-            setCachedExprForSentences(expRes.first);
-            i = expRes.second;
-            break;
-          } else {
-            add_error("Expected an identifier after : for the loop tag to be specified", RangeAt(i + 1));
-          }
         } else if (is_next(TokenType::altArrow, i)) {
           auto              start = i;
           Maybe<Identifier> tagValue;

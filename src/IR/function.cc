@@ -37,7 +37,8 @@ LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun
                                                         ._("isVariable", _isVar)
                                                         ._("functionID", fun->get_id()),
                                                     _fileRange),
-      name(std::move(_name)), fileRange(std::move(_fileRange)) {
+      name(std::move(_name)) {
+  associatedRange = std::move(_fileRange);
   SHOW("Type is " << type->to_string())
   SHOW("Creating llvm::AllocaInst for " << name)
   ll      = ir::Logic::newAlloca(fun, name, type->get_llvm_type());
@@ -49,7 +50,7 @@ String LocalValue::get_name() const { return name; }
 
 llvm::AllocaInst* LocalValue::get_alloca() const { return (llvm::AllocaInst*)ll; }
 
-FileRange LocalValue::get_file_range() const { return fileRange; }
+FileRange LocalValue::get_file_range() const { return associatedRange.value(); }
 
 ir::Value* LocalValue::to_new_ir_value() const {
   auto* result = ir::Value::get(get_llvm(), get_ir_type(), is_variable());
@@ -264,8 +265,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
   linkingName = namingInfo.toName();
   Vec<ArgumentType*> argTypes;
   for (auto const& arg : arguments) {
-    argTypes.push_back(
-        new ArgumentType(arg.get_name().value, arg.get_type(), arg.is_member_argument(), arg.get_variability()));
+    argTypes.push_back(arg.to_arg_type());
   }
   type = new FunctionType(returnType, argTypes, ctx->llctx);
   if (isMemberFn) {
@@ -547,8 +547,10 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
           restBlock->set_active(irCtx->builder);
         }
       }
-      fun->get_module()->link_native(NativeUnit::free);
-      auto* freeFn = fun->get_module()->get_llvm_module()->getFunction("free");
+      auto freeName = fun->get_module()->link_internal_dependency(
+          InternalDependency::free, irCtx,
+          fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
+      auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
       irCtx->builder.CreateCall(
           freeFn->getFunctionType(), freeFn,
           {ptrTy->isSlice()
@@ -645,8 +647,10 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
               restBlock->set_active(irCtx->builder);
             }
           }
-          fun->get_module()->link_native(NativeUnit::free);
-          auto* freeFn = fun->get_module()->get_llvm_module()->getFunction("free");
+          auto freeName = fun->get_module()->link_internal_dependency(
+              InternalDependency::free, irCtx,
+              fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
+          auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
           irCtx->builder.CreateCall(
               freeFn->getFunctionType(), freeFn,
               {ptrTy->isSlice()

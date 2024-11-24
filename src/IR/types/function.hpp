@@ -4,33 +4,76 @@
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
 #include "llvm/IR/LLVMContext.h"
-#include <optional>
 #include <string>
-#include <vector>
 
 namespace qat::ir {
 
+enum class ArgumentKind : u8 { NORMAL, MEMBER, VARIADIC };
+
 class ArgumentType {
 private:
-  // Name of the argument
   Maybe<String> name;
-  // Type of the argument
-  Type* type;
-  // Variability of the argument
-  bool variability;
-  bool isMemberArg;
+  Type*         type;
+  bool          variability;
+  ArgumentKind  kind;
+
+  ArgumentType(ArgumentKind _kind, Maybe<String> _name, Type* _type, bool _isVar)
+      : name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
 
 public:
-  ArgumentType(Type* _type, bool _variability);
-  ArgumentType(String _name, Type* _type, bool _variability);
-  ArgumentType(String _name, Type* type, bool is_member_argument, bool _variability);
+  useit static inline ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
+    return new ArgumentType(ArgumentKind::NORMAL, std::move(name), type, isVar);
+  }
 
-  useit bool   has_name() const;
-  useit String get_name() const;
-  useit Type*  get_type();
-  useit bool   is_variable() const;
-  useit bool   is_member_argument() const;
-  useit String to_string() const;
+  useit static inline ArgumentType* create_member(String name, Type* type = nullptr) {
+    return new ArgumentType(ArgumentKind::MEMBER, name, type, false);
+  }
+
+  useit static inline ArgumentType* create_variadic(Maybe<String> name) {
+    return new ArgumentType(ArgumentKind::VARIADIC, std::move(name), nullptr, false);
+  }
+
+  useit inline bool is_same_as(ArgumentType* other) {
+    if (kind != other->kind) {
+      return false;
+    }
+    switch (kind) {
+      case ArgumentKind::NORMAL: {
+        return (variability == other->variability) && (type->is_same(other->type));
+      }
+      case ArgumentKind::MEMBER: {
+        return (name.value() == other->name.value());
+      }
+      case ArgumentKind::VARIADIC: {
+        return (type != nullptr) ? ((other->type != nullptr) && type->is_same(other->type)) : (other->type == nullptr);
+      }
+    }
+  }
+
+  useit inline bool has_name() const { return name.has_value(); }
+
+  useit inline String get_name() const { return name.value(); }
+
+  useit inline Type* get_type() const { return type; }
+
+  useit inline ArgumentKind get_kind() const { return kind; }
+
+  useit inline bool is_variable() const { return variability; }
+
+  useit inline bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
+
+  useit inline bool is_variadic_argument() const { return kind == ArgumentKind::VARIADIC; }
+
+  useit inline String to_string() const {
+    switch (kind) {
+      case ArgumentKind::NORMAL:
+        return (variability ? "var " : "") + (name.has_value() ? (name.value() + " :: ") : "") + type->to_string();
+      case ArgumentKind::MEMBER:
+        return "''" + name.value();
+      case ArgumentKind::VARIADIC:
+        return "variadic " + (name.has_value() ? name.value() : "") + (type ? (" :: " + type->to_string()) : "");
+    }
+  }
 };
 
 class ReturnType {
@@ -52,18 +95,30 @@ public:
 class FunctionType final : public Type {
   ReturnType*        returnType;
   Vec<ArgumentType*> argTypes;
+  bool               isVariadicArgs;
 
 public:
   FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
 
+  useit static inline FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, llvm::LLVMContext& llCtx) {
+    return new FunctionType(retTy, std::move(argTys), llCtx);
+  }
+
   ~FunctionType() final;
 
-  useit ReturnType*   get_return_type();
-  useit ArgumentType* get_argument_type_at(u32 index);
+  useit ReturnType* get_return_type();
+
+  useit ArgumentType* get_argument_type_at(u64 index);
+
   useit Vec<ArgumentType*> get_argument_types() const;
-  useit u64                get_argument_count() const;
-  useit TypeKind           type_kind() const final { return TypeKind::function; }
-  useit String             to_string() const final;
+
+  useit u64 get_argument_count() const;
+
+  useit bool is_variadic() const { return isVariadicArgs; }
+
+  useit TypeKind type_kind() const final { return TypeKind::function; }
+
+  useit String to_string() const final;
 };
 
 } // namespace qat::ir

@@ -45,8 +45,7 @@ enum class ExternFnType {
 };
 
 class LocalValue final : public Value, public Uniq, public EntityOverview {
-  String    name;
-  FileRange fileRange;
+  String name;
 
 public:
   LocalValue(String name, ir::Type* type, bool is_variable, Function* fun, FileRange fileRange);
@@ -164,13 +163,10 @@ protected:
   Vec<Block*>           blocks;
   ir::LocalValue*       strComparisonIndex = nullptr;
   Maybe<MetaInfo>       metaInfo;
-  ir::Ctx*              ctx;
+  Ctx*                  ctx;
 
   mutable u64   localNameCounter = 0;
   mutable usize activeBlock      = 0;
-
-  mutable u64 calls  = 0;
-  mutable u64 refers = 0;
 
 public:
   Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
@@ -183,10 +179,10 @@ public:
                           Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                           Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
-  useit Value*            call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
-  useit virtual bool      is_method() const { return false; }
-  useit inline bool       has_variadic_args() const { return hasVariadicArguments; }
-  useit inline Identifier arg_name_at(u32 index) const { return arguments[index].get_name(); }
+  useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
+  useit virtual bool       is_method() const { return false; }
+  useit inline bool        has_variadic_args() const { return hasVariadicArguments; }
+  useit inline Identifier  arg_name_at(u32 index) const { return arguments[index].get_name(); }
   useit virtual Identifier get_name() const { return name; }
   useit virtual String     get_full_name() const;
   useit inline bool is_accessible(const AccessInfo& req_info) const { return visibilityInfo.is_accessible(req_info); }
@@ -197,9 +193,9 @@ public:
   useit inline Block*                get_first_block() const { return blocks[0]; }
   useit inline usize                 get_block_count() const { return blocks.size(); }
   useit inline bool                  is_inline() const { return isInline; }
-  useit ir::LocalValue* get_str_comparison_index();
-  useit inline bool     is_generic() const { return !generics.empty(); }
-  useit inline bool     has_generic_parameter(const String& name) const {
+  useit LocalValue*                  get_str_comparison_index();
+  useit inline bool                  is_generic() const { return !generics.empty(); }
+  useit inline bool                  has_generic_parameter(const String& name) const {
     for (auto* gen : generics) {
       if (gen->get_name().value == name) {
         return true;

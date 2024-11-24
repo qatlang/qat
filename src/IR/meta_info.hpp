@@ -8,11 +8,12 @@
 namespace qat::ir {
 
 struct MetaInfo {
-  static constexpr auto foreignKey = "foreign";
-  static constexpr auto linkAsKey  = "linkAs";
-  static constexpr auto unionKey   = "union";
-  static constexpr auto packedKey  = "packed";
-  static constexpr auto inlineKey  = "inline";
+  static constexpr auto foreignKey  = "foreign";
+  static constexpr auto linkAsKey   = "linkAs";
+  static constexpr auto unionKey    = "union";
+  static constexpr auto packedKey   = "packed";
+  static constexpr auto inlineKey   = "inline";
+  static constexpr auto providesKey = "provides";
 
   MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
       : valueRanges(_valueRanges), fileRange(_fileRange) {

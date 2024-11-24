@@ -28,9 +28,11 @@ struct MetaInfo {
         ctx->Error("The key " + ctx->color(kv.first.value) + " is repeating here", kv.first.range);
       }
       auto irVal = kv.second->emit(ctx);
-      if (kv.first.value == ir::MetaInfo::foreignKey || kv.first.value == ir::MetaInfo::linkAsKey) {
-        if (!irVal->get_ir_type()->is_string_slice()) {
-          ctx->Error("The " + ctx->color(kv.first.value) + " field is expected to be of type " + ctx->color("str") +
+      if (kv.first.value == ir::MetaInfo::foreignKey || kv.first.value == ir::MetaInfo::linkAsKey ||
+          kv.first.value == ir::MetaInfo::providesKey) {
+        if (not irVal->get_ir_type()->is_string_slice()) {
+          ctx->Error("The " + ctx->color(kv.first.value) + " field is expected to be of type " +
+                         ctx->color(ir::StringSliceType::get(ctx->irCtx, false)->to_string()) +
                          ". Got an expression of type " + ctx->color(irVal->get_ir_type()->to_string()) + " instead",
                      kv.second->fileRange);
         }

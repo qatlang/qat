@@ -6,29 +6,61 @@
 
 namespace qat::ast {
 
+enum class ArgKind {
+  NORMAL,
+  MEMBER,
+  VARIADIC,
+};
+
+useit inline String arg_kind_to_string(ArgKind kind) {
+  switch (kind) {
+    case ArgKind::NORMAL:
+      return "normal";
+    case ArgKind::MEMBER:
+      return "member";
+    case ArgKind::VARIADIC:
+      return "variadic";
+  }
+}
+
 class Argument {
 private:
   bool       isVar;
   Identifier name;
   Type*      type;
-  bool       isMember;
+  ArgKind    kind;
 
 public:
-  Argument(Identifier _name, bool _isVar, Type* _type, bool _isMember)
-      : isVar(_isVar), name(_name), type(_type), isMember(_isMember) {}
+  Argument(ArgKind _kind, Identifier _name, bool _isVar, Type* _type)
+      : isVar(_isVar), name(_name), type(_type), kind(_kind) {}
 
-  static Argument* create_normal(Identifier name, bool isVar, Type* type) {
-    return std::construct_at(OwnNormal(Argument), name, isVar, type, false);
+  useit static inline Argument* create_normal(Identifier name, bool isVar, Type* type) {
+    return std::construct_at(OwnNormal(Argument), ArgKind::NORMAL, name, isVar, type);
   }
 
-  static Argument* create_for_constructor(Identifier name, bool isVar, Type* type, bool isMember) {
-    return std::construct_at(OwnNormal(Argument), name, isVar, type, isMember);
+  useit static inline Argument* create_member(Identifier name, bool isVar, Type* type) {
+    return std::construct_at(OwnNormal(Argument), ArgKind::MEMBER, name, isVar, type);
+  }
+
+  useit static inline Argument* create_variadic(FileRange range) {
+    return std::construct_at(OwnNormal(Argument), ArgKind::VARIADIC, Identifier{"", range}, false, nullptr);
   }
 
   useit inline Identifier get_name() const { return name; }
   useit inline bool       is_variable() const { return isVar; }
   useit inline Type*      get_type() { return type; }
-  useit inline bool       is_type_member() const { return isMember; }
+
+  useit inline bool is_member_arg() const { return kind == ArgKind::MEMBER; }
+  useit inline bool is_variadic_arg() const { return kind == ArgKind::VARIADIC; }
+
+  useit Json to_json() const {
+    return Json()
+        ._("name", name)
+        ._("isVar", isVar)
+        ._("hasType", type != nullptr)
+        ._("type", (type != nullptr) ? type->to_json() : Json())
+        ._("kind", arg_kind_to_string(kind));
+  }
 };
 
 } // namespace qat::ast

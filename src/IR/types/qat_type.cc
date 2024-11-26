@@ -250,12 +250,8 @@ bool Type::is_same(Type* other) {
             for (usize i = 0; i < thisVal->get_argument_count(); i++) {
               auto* thisArg  = thisVal->get_argument_type_at(i);
               auto* otherArg = otherVal->get_argument_type_at(i);
-              if (thisArg->is_variable() != otherArg->is_variable()) {
+              if (not thisArg->is_same_as(otherArg)) {
                 return false;
-              } else {
-                if (!thisArg->get_type()->is_same(otherArg->get_type())) {
-                  return false;
-                }
               }
             }
             return true;

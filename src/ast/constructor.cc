@@ -33,8 +33,9 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     Vec<Pair<Maybe<bool>, ir::Type*>> generatedTypes;
     bool                              isMixAndHasMemberArg = false;
     SHOW("Generating types")
-    for (auto* arg : arguments) {
-      if (arg->is_type_member()) {
+    for (usize i = 0; i < arguments.size(); i++) {
+      auto arg = arguments[i];
+      if (arg->is_member_arg()) {
         if (isMixAndHasMemberArg) {
           irCtx->Error("Cannot have multiple member arguments in a constructor for type " +
                            irCtx->color(state.parent->get_parent_type()->to_string()) + ", since it is a mix type",
@@ -80,6 +81,33 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                          fileRange);
           }
           isMixAndHasMemberArg = true;
+        }
+      } else if (arg->is_variadic_arg()) {
+        if (i != (arguments.size() - 1)) {
+          irCtx->Error("Variadic argument should always be the last argument", arg->get_name().range);
+        }
+        if (state.parent->is_done_skill() &&
+            state.parent->as_done_skill()->has_from_convertor(None, generatedTypes.back().second)) {
+          irCtx->Error(
+              "Because of the variadic argument, this constructor can be called with the same argument as a previous " +
+                  irCtx->color("from convertor") + ", thereby effectively having the same signature",
+              fileRange,
+              Pair<String, FileRange>{"The previous " + irCtx->color("from convertor") + " can be found here",
+                                      state.parent->as_done_skill()
+                                          ->get_from_convertor(None, generatedTypes.back().second)
+                                          ->get_name()
+                                          .range});
+        } else if (state.parent->is_expanded() &&
+                   state.parent->as_expanded()->has_from_convertor(None, generatedTypes.back().second)) {
+          irCtx->Error(
+              "Because of the variadic argument, this constructor can be called with the same argument as a previous " +
+                  irCtx->color("from convertor") + ", thereby effectively having the same signature",
+              fileRange,
+              Pair<String, FileRange>{"The previous " + irCtx->color("from convertor") + " can be found here",
+                                      state.parent->as_expanded()
+                                          ->get_from_convertor(None, generatedTypes.back().second)
+                                          ->get_name()
+                                          .range});
         }
       } else {
         generatedTypes.push_back({None, arg->get_type()->emit(emitCtx)});
@@ -127,23 +155,27 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
         }
       }
     }
+    bool              isMethodVariadic = false;
     Vec<ir::Argument> args;
     SHOW("Setting variability of arguments")
-    for (usize i = 0; i < generatedTypes.size(); i++) {
-      if (arguments.at(i)->is_type_member()) {
+    for (usize i = 0; i < arguments.size(); i++) {
+      auto arg = arguments[i];
+      if (arg->is_member_arg()) {
         SHOW("Creating member argument")
-        args.push_back(ir::Argument::CreateMember(arguments.at(i)->get_name(), generatedTypes.at(i).second, i));
+        args.push_back(ir::Argument::CreateMember(arg->get_name(), generatedTypes.at(i).second, i));
+      } else if (arguments[i]->is_variadic_arg()) {
+        args.push_back(ir::Argument::CreateVariadic(arg->get_name().value, arg->get_name().range, i));
+        isMethodVariadic = true;
       } else {
         args.push_back(arguments.at(i)->is_variable()
-                           ? ir::Argument::CreateVariable(arguments.at(i)->get_name(),
-                                                          arguments.at(i)->get_type()->emit(emitCtx), i)
-                           : ir::Argument::Create(arguments.at(i)->get_name(), generatedTypes.at(i).second, i));
+                           ? ir::Argument::CreateVariable(arg->get_name(), generatedTypes[i].second, i)
+                           : ir::Argument::Create(arguments.at(i)->get_name(), generatedTypes[i].second, i));
       }
     }
     SHOW("About to create function")
-    state.result = ir::Method::CreateConstructor(state.parent, nameRange,
-                                                 state.metaInfo.has_value() && state.metaInfo->get_inline(), args,
-                                                 false, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::CreateConstructor(
+        state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), args, isMethodVariadic,
+        fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
     if (state.parent->is_done_skill() && state.parent->get_parent_type()->is_expanded() &&
@@ -169,11 +201,7 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 Json ConstructorPrototype::to_json() const {
   Vec<JsonValue> args;
   for (auto* arg : arguments) {
-    auto aJson = Json()
-                     ._("name", arg->get_name())
-                     ._("type", arg->get_type() ? arg->get_type()->to_json() : Json())
-                     ._("is_member_argument", arg->is_type_member());
-    args.push_back(aJson);
+    args.push_back(arg->to_json());
   }
   return Json()
       ._("nodeType", "constructorPrototype")
@@ -215,37 +243,36 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     argVal->load_ghost_reference(irCtx->builder);
   } else {
     for (usize i = 1; i < argIRTypes.size(); i++) {
-      SHOW("Argument type is " << argIRTypes.at(i)->get_type()->to_string())
-      if (argIRTypes.at(i)->is_member_argument()) {
+      SHOW("Argument type is " << argIRTypes[i]->get_type()->to_string())
+      if (argIRTypes[i]->is_member_argument()) {
         llvm::Value* memPtr;
         if (parentRefTy->get_subtype()->is_struct()) {
           memPtr = irCtx->builder.CreateStructGEP(
               parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
-              parentRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes.at(i)->get_name()).value());
-          fnEmit->add_init_member(
-              {parentRefTy->get_subtype()->as_struct()->get_field_index(argIRTypes.at(i)->get_name()),
-               prototype->arguments.at(i - 1)->get_name().range});
+              parentRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes[i]->get_name()).value());
+          fnEmit->add_init_member({parentRefTy->get_subtype()->as_struct()->get_field_index(argIRTypes[i]->get_name()),
+                                   prototype->arguments[i - 1]->get_name().range});
         } else if (parentRefTy->get_subtype()->is_mix()) {
           memPtr = irCtx->builder.CreatePointerCast(
               irCtx->builder.CreateStructGEP(parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(), 1u),
               parentRefTy->get_subtype()
                   ->as_mix()
-                  ->get_variant_with_name(argIRTypes.at(i)->get_name())
+                  ->get_variant_with_name(argIRTypes[i]->get_name())
                   ->get_llvm_type()
                   ->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()));
-          fnEmit->add_init_member({parentRefTy->get_subtype()->as_mix()->get_index_of(argIRTypes.at(i)->get_name()),
-                                   prototype->arguments.at(i)->get_name().range});
+          fnEmit->add_init_member({parentRefTy->get_subtype()->as_mix()->get_index_of(argIRTypes[i]->get_name()),
+                                   prototype->arguments[i]->get_name().range});
         } else {
           irCtx->Error("Cannot use member argument syntax for the parent type " +
                            irCtx->color(parentRefTy->get_subtype()->to_string()) + " as it is not a mix or core type",
-                       prototype->arguments.at(i - 1)->get_name().range);
+                       prototype->arguments[i - 1]->get_name().range);
         }
         irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr);
-      } else {
+      } else if (not argIRTypes[i]->is_variadic_argument()) {
         SHOW("Argument is variable")
-        auto* argVal = block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
-                                        prototype->arguments.at(i - 1)->is_variable(),
-                                        prototype->arguments.at(i - 1)->get_name().range);
+        auto* argVal =
+            block->new_value(argIRTypes[i]->get_name(), argIRTypes[i]->get_type(),
+                             prototype->arguments[i - 1]->is_variable(), prototype->arguments[i - 1]->get_name().range);
         SHOW("Created local value for the argument")
         irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
       }

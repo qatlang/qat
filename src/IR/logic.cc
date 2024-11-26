@@ -30,8 +30,8 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
       auto valueType = value->get_ir_type();
       if (valueType->is_trivially_copyable() || valueType->is_trivially_movable()) {
         auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
-        if (!valueType->is_trivially_copyable()) {
-          if (!value->is_variable()) {
+        if (not valueType->is_trivially_copyable()) {
+          if (not value->is_variable()) {
             ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
                        valueRange);
           }
@@ -402,19 +402,19 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
   return {formatString, printVals};
 }
 
-void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx) {
+void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal) {
   auto triple = ctx->irCtx->clangTargetInfo->getTriple();
   if (triple.isWindowsMSVCEnvironment()) {
-    ctx->mod->link_native(NativeUnit::windowsExitThread);
-    auto exitThreadPtr  = ctx->mod->get_llvm_module()->getGlobalVariable("__imp_ExitThread");
+    auto exitFnName = ctx->mod->link_internal_dependency(InternalDependency::windowsExitThread, ctx->irCtx, rangeVal);
+    auto exitThreadPtr  = ctx->mod->get_llvm_module()->getGlobalVariable(exitFnName);
     auto exitThreadFnTy = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx->irCtx->llctx),
                                                   {llvm::Type::getInt32Ty(ctx->irCtx->llctx)}, false);
     ctx->irCtx->builder.CreateCall(
         exitThreadFnTy, ctx->irCtx->builder.CreateLoad(llvm::PointerType::get(exitThreadFnTy, 0u), exitThreadPtr),
         {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)});
   } else {
-    ctx->mod->link_native(NativeUnit::pthreadExit);
-    auto pthreadExitFn = ctx->mod->get_llvm_module()->getFunction("pthread_exit");
+    auto exitFnName    = ctx->mod->link_internal_dependency(InternalDependency::pthreadExit, ctx->irCtx, rangeVal);
+    auto pthreadExitFn = ctx->mod->get_llvm_module()->getFunction(exitFnName);
     ctx->irCtx->builder.CreateCall(
         pthreadExitFn->getFunctionType(), pthreadExitFn,
         {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx)
@@ -422,15 +422,23 @@ void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx) {
   }
 }
 
+void Logic::exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal) {
+  auto exitFnName = ctx->mod->link_internal_dependency(InternalDependency::exitProgram, ctx->irCtx, rangeVal);
+  auto exitFun    = ctx->mod->get_llvm_module()->getFunction(exitFnName);
+  ctx->irCtx->builder.CreateCall(exitFun->getFunctionType(), exitFun,
+                                 {llvm::ConstantInt::get(CType::get_int(ctx->irCtx)->get_llvm_type(), 1u)});
+}
+
 void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
                               ast::EmitCtx* ctx) {
-  fileRange.file    = fs::canonical(fileRange.file);
+  fileRange.file    = fs::absolute(fileRange.file);
   auto startMessage = ir::StringSliceType::create_value(
       ctx->irCtx, "\nFunction " + fun->get_full_name() + " panicked at " + fileRange.start_to_string() + " => ");
-  auto* mod = fun->get_module();
-  mod->link_native(NativeUnit::printf);
-  auto              printFn   = mod->get_llvm_module()->getFunction("printf");
-  auto              formatRes = format_values(ctx, values, ranges, fileRange);
+  auto* mod        = fun->get_module();
+  auto  printfName = mod->link_internal_dependency(InternalDependency::printf, ctx->irCtx, fileRange);
+  auto  printFn    = mod->get_llvm_module()->getFunction(printfName);
+  auto  formatRes  = format_values(ctx, values, ranges, fileRange);
+
   Vec<llvm::Value*> printVals{
       ctx->irCtx->builder.CreateGlobalStringPtr("%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
                                                 ctx->irCtx->dataLayout.value().getDefaultGlobalsAddressSpace()),
@@ -440,7 +448,50 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
     printVals.push_back(val);
   }
   ctx->irCtx->builder.CreateCall(printFn->getFunctionType(), printFn, printVals);
-  exit_thread(fun, ctx);
+  auto cfg = cli::Config::get();
+  if (cfg->is_freestanding()) {
+    switch (cfg->get_panic_strategy()) {
+      case cli::PanicStrategy::exitThread: {
+        exit_thread(fun, ctx, fileRange);
+        break;
+      }
+      case cli::PanicStrategy::exitProgram: {
+        exit_program(fun, ctx, fileRange);
+        break;
+      }
+      case cli::PanicStrategy::handler: {
+        auto handlerName =
+            fun->get_module()->link_internal_dependency(InternalDependency::panicHandler, ctx->irCtx, fileRange);
+        auto handlerFn = mod->get_llvm_module()->getFunction(handlerName);
+        ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
+        break;
+      }
+      default:
+        break;
+    }
+  } else if (not cfg->has_panic_strategy()) {
+    exit_thread(fun, ctx, fileRange);
+  } else {
+    switch (cfg->get_panic_strategy()) {
+      case cli::PanicStrategy::exitThread: {
+        exit_thread(fun, ctx, fileRange);
+        break;
+      }
+      case cli::PanicStrategy::exitProgram: {
+        exit_program(fun, ctx, fileRange);
+        break;
+      }
+      case cli::PanicStrategy::handler: {
+        auto handlerName =
+            fun->get_module()->link_internal_dependency(InternalDependency::panicHandler, ctx->irCtx, fileRange);
+        auto handlerFn = mod->get_llvm_module()->getFunction(handlerName);
+        ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
+        break;
+      }
+      default:
+        break;
+    }
+  }
 }
 
 String Logic::get_generic_variant_name(String mainName, Vec<ir::GenericToFill*>& fills) {

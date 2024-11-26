@@ -9,7 +9,8 @@
 
 namespace qat::ast {
 class Type;
-}
+class ConvertorPrototype;
+} // namespace qat::ast
 
 namespace qat::ir {
 
@@ -81,6 +82,8 @@ public:
 
 class DoneSkill : public Uniq {
   friend class Method;
+  friend class ast::ConvertorPrototype;
+
   Mod*                      parent;
   Maybe<Skill*>             skill;
   Vec<ir::GenericArgument*> generics;

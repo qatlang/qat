@@ -17,6 +17,7 @@ class ExpandedType : public Type {
   friend class Method;
   friend class ast::DefineCoreType;
   friend class ast::DefineMixType;
+  friend class ast::ConvertorPrototype;
 
 protected:
   Identifier            name;
@@ -28,15 +29,15 @@ protected:
   Vec<Method*>          normalBinaryOperators;    // Normal
   Vec<Method*>          variationBinaryOperators; // Variation
 
-  Vec<Method*>   unaryOperators;  //
-  Vec<Method*>   constructors;    // Constructors
-  Vec<Method*>   fromConvertors;  // From Convertors
-  Vec<Method*>   toConvertors;    // To Convertors
-  Vec<Method*>   staticFunctions; // Static
-  Maybe<Method*> copyConstructor; // Copy constructor
-  Maybe<Method*> moveConstructor; // Move constructor
-  Maybe<Method*> copyAssignment;  // Copy assignment operator
-  Maybe<Method*> moveAssignment;  // Move assignment operator
+  Vec<Method*>   unaryOperators;                  //
+  Vec<Method*>   constructors;                    // Constructors
+  Vec<Method*>   fromConvertors;                  // From Convertors
+  Vec<Method*>   toConvertors;                    // To Convertors
+  Vec<Method*>   staticFunctions;                 // Static
+  Maybe<Method*> copyConstructor;                 // Copy constructor
+  Maybe<Method*> moveConstructor;                 // Move constructor
+  Maybe<Method*> copyAssignment;                  // Copy assignment operator
+  Maybe<Method*> moveAssignment;                  // Move assignment operator
 
   bool explicitTrivialCopy     = false;
   bool explicitTrivialMove     = false;

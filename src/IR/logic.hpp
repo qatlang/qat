@@ -25,7 +25,8 @@ public:
   static void panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
                                 ast::EmitCtx* ctx);
 
-  static void exit_thread(ir::Function* fun, ast::EmitCtx* ctx);
+  static void exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal);
+  static void exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal);
 
   useit static ir::Value* int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange);
 

@@ -66,8 +66,6 @@ public:
   static Config const* get();
   static bool          hasInstance();
 
-  static Maybe<std::filesystem::path> get_exe_path_from_env(String name);
-  static Maybe<std::filesystem::path> get_exe_path(String name);
   static String                       filter_quotes(String value);
 
   void setupEnvForQat();

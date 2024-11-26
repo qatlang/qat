@@ -96,7 +96,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
       }
       if (instType->is_mark()) {
         if (!instType->as_mark()->isSlice()) {
-          ctx->Error("Only multi pointers can be indexed into", fileRange);
+          ctx->Error("Only slices can be indexed into", fileRange);
         }
         auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
         auto* restBlock          = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block()->get_parent());
@@ -107,13 +107,12 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
         ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), ptrLen),
                                          lenExceedTrueBlock->get_bb(), restBlock->get_bb());
         lenExceedTrueBlock->set_active(ctx->irCtx->builder);
-        ir::Logic::panic_in_function(
-            ctx->get_fn(),
-            {ir::StringSliceType::create_value(ctx->irCtx, "The index is "), ind,
-             ir::StringSliceType::create_value(ctx->irCtx,
-                                               " which is not less than the length of the multipointer, which is "),
-             ir::Value::get(ptrLen, ir::CType::get_usize(ctx->irCtx), false)},
-            {}, index->fileRange, ctx);
+        ir::Logic::panic_in_function(ctx->get_fn(),
+                                     {ir::StringSliceType::create_value(ctx->irCtx, "The index is "), ind,
+                                      ir::StringSliceType::create_value(
+                                          ctx->irCtx, " which is not less than the length of the slice, which is "),
+                                      ir::Value::get(ptrLen, ir::CType::get_usize(ctx->irCtx), false)},
+                                     {}, index->fileRange, ctx);
         (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
         restBlock->set_active(ctx->irCtx->builder);
         Vec<llvm::Value*> idxs;

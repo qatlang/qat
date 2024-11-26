@@ -98,8 +98,10 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
   restBlock->link_previous_block(currBlock);
   irCtx->builder.CreateCondBr(zeroCmp, trueBlock->get_bb(), restBlock->get_bb());
   trueBlock->set_active(irCtx->builder);
-  fun->get_module()->link_native(NativeUnit::free);
-  auto* freeFn = fun->get_module()->get_llvm_module()->getFunction("free");
+  auto  freeName = fun->get_module()->link_internal_dependency(InternalDependency::free, irCtx,
+                                                              fun->has_definition_range() ? fun->get_definition_range()
+                                                                                           : fun->get_name().range);
+  auto* freeFn   = fun->get_module()->get_llvm_module()->getFunction(freeName);
   if (subTy->is_destructible()) {
     subTy->destroy_value(
         irCtx,

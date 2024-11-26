@@ -99,8 +99,8 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
     auto* zeroCheckSizePhi = irCtx->builder.CreatePHI(Ty64Int, 2u);
     zeroCheckSizePhi->addIncoming(largerBlockSize, zeroCheckSizeCheckTrueBlock);
     zeroCheckSizePhi->addIncoming(defaultBlockSize, zeroCheckSizeCheckFalseBlock);
-    parent->link_native(NativeUnit::malloc);
-    auto* mallocFn = parent->get_llvm_module()->getFunction("malloc");
+    auto  mallocName = parent->link_internal_dependency(InternalDependency::malloc, irCtx, fileRange);
+    auto* mallocFn   = parent->get_llvm_module()->getFunction(mallocName);
     // FIXME - Allow to change block size
     // FIXME - Throw/Panic if malloc fails
     auto* firstBlock = irCtx->builder.CreateCall(mallocFn->getFunctionType(), mallocFn, {zeroCheckSizePhi});
@@ -415,8 +415,8 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
                     {llvm::ConstantInt::get(Ty64Int, 2u)}),
                 llvm::Type::getInt8Ty(llCtx)->getPointerTo(addressSpace)->getPointerTo(addressSpace))),
         lastBlockPtr);
-    parent->link_native(NativeUnit::free);
-    auto* freeFn = parent->get_llvm_module()->getFunction("free");
+    auto  freeName = parent->link_internal_dependency(InternalDependency::free, irCtx, fileRange);
+    auto* freeFn   = parent->get_llvm_module()->getFunction(freeName);
     irCtx->builder.CreateCall(freeFn->getFunctionType(), freeFn, {doneBlockPtr});
     SHOW("Called free function") irCtx->builder.CreateBr(hasBlocksBlock);
     irCtx->builder.SetInsertPoint(endBlock);

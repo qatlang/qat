@@ -43,9 +43,9 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
     size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                                   mod->get_llvm_module()->getDataLayout().getTypeAllocSize(typRes->get_llvm_type()));
   }
-  mod->link_native(ir::NativeUnit::malloc);
-  auto* resTy    = ir::MarkType::get(true, typRes, false, ir::MarkOwner::OfHeap(), count != nullptr, ctx->irCtx);
-  auto* mallocFn = mod->get_llvm_module()->getFunction("malloc");
+  auto  mallocName = mod->link_internal_dependency(ir::InternalDependency::malloc, ctx->irCtx, fileRange);
+  auto* resTy      = ir::MarkType::get(true, typRes, false, ir::MarkOwner::OfHeap(), count != nullptr, ctx->irCtx);
+  auto* mallocFn   = mod->get_llvm_module()->getFunction(mallocName);
   if (resTy->isSlice()) {
     SHOW("Creating alloca for multi pointer")
     auto* llAlloca = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());
@@ -80,14 +80,14 @@ Json HeapGet::to_json() const {
 
 ir::Value* HeapPut::emit(EmitCtx* ctx) {
   if (ptr->nodeType() == NodeType::NULL_POINTER) {
-    ctx->Error("Null pointer cannot be freed", ptr->fileRange);
+    ctx->Error("Null mark cannot be freed", ptr->fileRange);
   }
   auto* exp   = ptr->emit(ctx);
   auto  expTy = exp->is_reference() ? exp->get_ir_type()->as_reference()->get_subtype() : exp->get_ir_type();
   if (expTy->is_mark()) {
     auto ptrTy = expTy->as_mark();
     if (!ptrTy->getOwner().isHeap()) {
-      ctx->Error("The pointer type of this expression is " + ctx->color(ptrTy->to_string()) +
+      ctx->Error("The mark type of this expression is " + ctx->color(ptrTy->to_string()) +
                      " which does not have heap ownership and hence cannot be used here",
                  ptr->fileRange);
     }
@@ -107,9 +107,9 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
   // FIXME - CONSIDER PRERUN POINTERS
   candExp =
       expTy->as_mark()->isSlice() ? ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}) : exp->get_llvm();
-  auto* mod = ctx->mod;
-  mod->link_native(ir::NativeUnit::free);
-  auto* freeFn = mod->get_llvm_module()->getFunction("free");
+  auto* mod      = ctx->mod;
+  auto  freeName = mod->link_internal_dependency(ir::InternalDependency::free, ctx->irCtx, fileRange);
+  auto* freeFn   = mod->get_llvm_module()->getFunction(freeName);
   ctx->irCtx->builder.CreateCall(
       freeFn->getFunctionType(), freeFn,
       {ctx->irCtx->builder.CreatePointerCast(candExp, llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo())});
@@ -200,25 +200,25 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
         countVal->get_ir_type()->as_reference()->get_subtype(), false);
   }
   if (countVal->get_ir_type()->is_ctype() && countVal->get_ir_type()->as_ctype()->is_usize()) {
-    ctx->mod->link_native(ir::NativeUnit::realloc);
-    auto* reallocFn = ctx->mod->get_llvm_module()->getFunction("realloc");
-    auto* ptrRes    = ctx->irCtx->builder.CreatePointerCast(
+    auto  reallocName = ctx->mod->link_internal_dependency(ir::InternalDependency::realloc, ctx->irCtx, fileRange);
+    auto* reallocFn   = ctx->mod->get_llvm_module()->getFunction(reallocName);
+    auto* ptrRes      = ctx->irCtx->builder.CreatePointerCast(
         ctx->irCtx->builder.CreateCall(
             reallocFn->getFunctionType(), reallocFn,
             {ctx->irCtx->builder.CreatePointerCast(
                  ctx->irCtx->builder.CreateLoad(
                      llvm::PointerType::get(ptrType->get_subtype()->get_llvm_type(),
-                                               ctx->irCtx->dataLayout->getProgramAddressSpace()),
+                                                 ctx->irCtx->dataLayout->getProgramAddressSpace()),
                      ptrVal->is_value()
-                            ? ctx->irCtx->builder.CreateExtractValue(ptrVal->get_llvm(), {0u})
-                            : ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), ptrVal->get_llvm(), 0u)),
+                              ? ctx->irCtx->builder.CreateExtractValue(ptrVal->get_llvm(), {0u})
+                              : ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), ptrVal->get_llvm(), 0u)),
                  llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo()),
-                ctx->irCtx->builder.CreateMul(countVal->get_llvm(),
-                                              llvm::ConstantInt::get(ir::CType::get_usize(ctx->irCtx)->get_llvm_type(),
-                                                                     ctx->irCtx->dataLayout.value().getTypeStoreSize(
+                  ctx->irCtx->builder.CreateMul(countVal->get_llvm(),
+                                                llvm::ConstantInt::get(ir::CType::get_usize(ctx->irCtx)->get_llvm_type(),
+                                                                       ctx->irCtx->dataLayout.value().getTypeStoreSize(
                                                                       ptrType->get_subtype()->get_llvm_type())))}),
         llvm::PointerType::get(ptrType->as_mark()->get_subtype()->get_llvm_type(),
-                                  ctx->irCtx->dataLayout->getProgramAddressSpace()));
+                                    ctx->irCtx->dataLayout->getProgramAddressSpace()));
     auto* resAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, ptrType->get_llvm_type());
     SHOW("Storing raw pointer into multipointer")
     ctx->irCtx->builder.CreateStore(ptrRes,

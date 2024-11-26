@@ -9,8 +9,8 @@ ir::Value* SayLike::emit(EmitCtx* ctx) {
   if ((sayType == SayType::dbg) ? cfg->is_build_mode_debug() : true) {
     SHOW("Say sentence emitting..")
     SHOW("Current block is: " << ctx->get_fn()->get_block()->get_name())
-    ctx->mod->link_native(ir::NativeUnit::printf);
-    auto*           printfFn = ctx->mod->get_llvm_module()->getFunction("printf");
+    auto  printfName = ctx->mod->link_internal_dependency(ir::InternalDependency::printf, ctx->irCtx, fileRange);
+    auto* printfFn   = ctx->mod->get_llvm_module()->getFunction(printfName);
     Vec<ir::Value*> valuesIR;
     Vec<FileRange>  valuesRange;
     for (usize i = 0; i < expressions.size(); i++) {

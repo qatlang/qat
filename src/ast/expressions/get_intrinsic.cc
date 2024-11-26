@@ -133,11 +133,11 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
                                             {retTy->get_llvm_type(), oneTy->get_llvm_type(), twoTy->get_llvm_type()});
         auto fnTy = new ir::FunctionType(ir::ReturnType::get(retTy),
                                          {
-                                             new ir::ArgumentType(oneTy, false),
-                                             new ir::ArgumentType(twoTy, false),
-                                             new ir::ArgumentType(thirdVal->get_ir_type(), false),
-                                             new ir::ArgumentType(thirdVal->get_ir_type(), false),
-                                             new ir::ArgumentType(thirdVal->get_ir_type(), false),
+                                             ir::ArgumentType::create_normal(oneTy, None, false),
+                                             ir::ArgumentType::create_normal(twoTy, None, false),
+                                             ir::ArgumentType::create_normal(thirdVal->get_ir_type(), None, false),
+                                             ir::ArgumentType::create_normal(thirdVal->get_ir_type(), None, false),
+                                             ir::ArgumentType::create_normal(thirdVal->get_ir_type(), None, false),
                                          },
                                          ctx->irCtx->llctx);
         return ir::Value::get(intrFn, fnTy, false);

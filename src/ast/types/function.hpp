@@ -9,13 +9,15 @@ class FunctionType final : public Type {
 private:
   Type*      returnType;
   Vec<Type*> argTypes;
+  bool       isVariadic;
 
 public:
-  FunctionType(Type* _retType, Vec<Type*> _argTypes, FileRange _fileRange)
-      : Type(_fileRange), returnType(_retType), argTypes(_argTypes) {}
+  FunctionType(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic, FileRange _fileRange)
+      : Type(_fileRange), returnType(_retType), argTypes(_argTypes), isVariadic(_isVariadic) {}
 
-  useit static inline FunctionType* create(Type* _retType, Vec<Type*> _argTypes, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _fileRange);
+  useit static inline FunctionType* create(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic,
+                                           FileRange _fileRange) {
+    return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _isVariadic, _fileRange);
   }
 
   void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) final;

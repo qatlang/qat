@@ -28,11 +28,11 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     state.metaInfo = metaInfo->toIR(emitCtx);
   }
   ir::Type* candidate = nullptr;
-  if (isFrom && argName.has_value() && is_member_argumentument) {
+  if (isFrom && argName.has_value() && isMemArg) {
     if (state.parent->get_parent_type()->is_struct()) {
       auto coreType = state.parent->get_parent_type()->as_struct();
       if (!coreType->has_field_with_name(argName->value)) {
-        irCtx->Error("No member field named " + irCtx->color(argName->value) + " found in core type " +
+        irCtx->Error("No member field named " + irCtx->color(argName->value) + " found in struct type " +
                          irCtx->color(coreType->get_full_name()),
                      fileRange);
       }
@@ -63,12 +63,69 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Candidate type generated")
   SHOW("About to create convertor")
   if (isFrom) {
+    if (state.parent->is_done_skill()) {
+      if (state.parent->as_done_skill()->has_from_convertor(None, candidate)) {
+        irCtx->Error("There already exists another " + irCtx->color("from convertor") +
+                         " with the same receiving type in the parent skill",
+                     fileRange,
+                     Pair<String, FileRange>{
+                         "The previous convertor can be found here",
+                         state.parent->as_done_skill()->get_from_convertor(None, candidate)->get_name().range});
+      }
+      for (auto cons : state.parent->as_done_skill()->constructors) {
+        auto fnTy = cons->get_ir_type()->as_function();
+        if ((fnTy->get_argument_count() == 3) && fnTy->is_variadic() &&
+            fnTy->get_argument_type_at(1)->get_type()->is_same(candidate)) {
+          irCtx->Error("This " + irCtx->color("from convertor") +
+                           " can be called with the same argument as a previous constructor, because the constructor"
+                           " have a variadic argument which can be skipped. This convertor will effectively have the"
+                           " same signature as that constructor, which is not allowed",
+                       fileRange,
+                       Pair<String, FileRange>{"The previous constructor can be found here", cons->get_name().range});
+        }
+      }
+    } else if (state.parent->is_expanded()) {
+      if (state.parent->as_expanded()->has_from_convertor(None, candidate)) {
+        irCtx->Error("There already exists another " + irCtx->color("from convertor") +
+                         " with the same receiving type in the parent type",
+                     fileRange,
+                     Pair<String, FileRange>{
+                         "The previous convertor can be found here",
+                         state.parent->as_expanded()->get_from_convertor(None, candidate)->get_name().range});
+      }
+      for (auto cons : state.parent->as_expanded()->constructors) {
+        auto fnTy = cons->get_ir_type()->as_function();
+        if ((fnTy->get_argument_count() == 3) && fnTy->is_variadic() &&
+            fnTy->get_argument_type_at(1)->get_type()->is_same(candidate)) {
+          irCtx->Error("This " + irCtx->color("from convertor") +
+                           " can be called with the same argument as a previous constructor, because the constructor"
+                           " have a variadic argument which can be skipped. This convertor will effectively have the"
+                           " same signature as that constructor, which is not allowed",
+                       fileRange,
+                       Pair<String, FileRange>{"The previous constructor can be found here", cons->get_name().range});
+        }
+      }
+    }
     SHOW("Convertor is FROM for " << state.parent->get_parent_type()->to_string())
     state.result = ir::Method::CreateFromConvertor(
         state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), candidate, argName.value(),
         definitionRange.value_or(fileRange), emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Convertor IR created")
   } else {
+    if (state.parent->is_done_skill() && state.parent->as_done_skill()->has_to_convertor(candidate)) {
+      irCtx->Error(
+          "There already exists another " + irCtx->color("to convertor") +
+              " with the same destination type in the parent skill",
+          fileRange,
+          Pair<String, FileRange>{"The previous convertor can be found here",
+                                  state.parent->as_done_skill()->get_to_convertor(candidate)->get_name().range});
+    } else if (state.parent->is_expanded() && state.parent->as_expanded()->has_to_convertor(candidate)) {
+      irCtx->Error("There already exists another " + irCtx->color("to convertor") +
+                       " with the same destination type in the parent type",
+                   fileRange,
+                   Pair<String, FileRange>{"The previous convertor can be found here",
+                                           state.parent->as_expanded()->get_to_convertor(candidate)->get_name().range});
+    }
     SHOW("Convertor is TO")
     state.result = ir::Method::CreateToConvertor(
         state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), candidate,
@@ -105,7 +162,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
   self->load_ghost_reference(irCtx->builder);
   if (prototype->isFrom) {
-    if (prototype->is_member_argumentument) {
+    if (prototype->isMemArg) {
       llvm::Value* memPtr = nullptr;
       if (parentRefType->get_subtype()->is_struct()) {
         memPtr = irCtx->builder.CreateStructGEP(

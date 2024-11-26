@@ -20,7 +20,7 @@ class ConvertorPrototype {
 private:
   Maybe<Identifier>     argName;
   Type*                 candidateType;
-  bool                  is_member_argumentument;
+  bool                  isMemArg;
   Maybe<VisibilitySpec> visibSpec;
   bool                  isFrom;
   FileRange             nameRange;
@@ -34,7 +34,7 @@ public:
   ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
                      bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
                      PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo)
-      : argName(std::move(_argName)), candidateType(_candidateType), is_member_argumentument(_is_member_argument),
+      : argName(std::move(_argName)), candidateType(_candidateType), isMemArg(_is_member_argument),
         visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange),
         defineChecker(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 

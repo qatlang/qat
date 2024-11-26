@@ -41,7 +41,7 @@ class BringPaths;
 class BinaryExpression;
 class BringBitwidths;
 class BringEntities;
-class MemberFunctionCall;
+class MethodCall;
 class MemberAccess;
 } // namespace qat::ast
 
@@ -397,7 +397,7 @@ class Mod final : public Uniq, public EntityOverview {
   friend class ast::BringBitwidths;
   friend class ast::BringEntities;
   friend class qat::QatSitter;
-  friend class ast::MemberFunctionCall;
+  friend class ast::MethodCall;
   friend class ast::MemberAccess;
 
 public:

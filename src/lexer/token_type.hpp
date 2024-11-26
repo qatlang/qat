@@ -116,6 +116,7 @@ enum class TokenType {
   Volatile,
   Inline,
   error,
+  in,
 };
 
 } // namespace qat::lexer

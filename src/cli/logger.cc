@@ -18,7 +18,7 @@ Unique<Logger> const& Logger::get() {
 }
 
 void Logger::diagnostic(String message) const {
-  if ((logLevel == LogLevel::NONE) && !cli::Config::get()->should_do_diagnostics()) {
+  if ((logLevel == LogLevel::NONE) && not cli::Config::get()->should_do_diagnostics()) {
     return;
   }
   std::cout << message.append("\n");

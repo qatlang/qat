@@ -630,6 +630,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("slice", sliceType);
   else Check_Normal_Keyword("vec", vectorType);
   else Check_Normal_Keyword("is", is);
+  else Check_Normal_Keyword("in", in);
   else Check_Normal_Keyword("ok", ok);
   else Check_Normal_Keyword("range", range);
   else Check_Normal_Keyword("result", result);

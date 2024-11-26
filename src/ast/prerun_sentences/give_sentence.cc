@@ -22,7 +22,7 @@ void PrerunGive::emit(EmitCtx* ctx) {
                    fileRange);
       }
     } else {
-      if (!ctx->get_pre_call_state()->get_function()->get_return_type()->is_void()) {
+      if (not ctx->get_pre_call_state()->get_function()->get_return_type()->is_void()) {
         ctx->Error("The given type of this function is " +
                        ctx->color(ctx->get_pre_call_state()->get_function()->get_return_type()->to_string()) +
                        ", so a value should be provided",

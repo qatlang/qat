@@ -8,45 +8,44 @@
 
 namespace qat::ast {
 
-MemberPrototype::MemberPrototype(AstMemberFnType _fnTy, Identifier _name, PrerunExpression* _condition,
+MethodPrototype::MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _condition,
                                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
     : fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
       returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange), defineChecker(_condition),
       metaInfo(_metaInfo) {}
 
-MemberPrototype::~MemberPrototype() {
+MethodPrototype::~MethodPrototype() {
   for (auto* arg : arguments) {
     std::destroy_at(arg);
   }
 }
 
-MemberPrototype* MemberPrototype::Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
+MethodPrototype* MethodPrototype::Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                          Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
-  return std::construct_at(OwnNormal(MemberPrototype),
-                           _isVariationFn ? AstMemberFnType::variation : AstMemberFnType::normal, _name, _condition,
-                           _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
+  return std::construct_at(OwnNormal(MethodPrototype), _isVariationFn ? MethodType::variation : MethodType::normal,
+                           _name, _condition, _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Static(const Identifier& _name, PrerunExpression* _condition,
+MethodPrototype* MethodPrototype::Static(const Identifier& _name, PrerunExpression* _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                          Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
                                          const FileRange& _fileRange) {
-  return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::Static, _name, _condition, _arguments,
-                           _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
+  return std::construct_at(OwnNormal(MethodPrototype), MethodType::Static, _name, _condition, _arguments, _isVariadic,
+                           _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
-MemberPrototype* MemberPrototype::Value(const Identifier& _name, PrerunExpression* _condition,
+MethodPrototype* MethodPrototype::Value(const Identifier& _name, PrerunExpression* _condition,
                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
                                         const FileRange& _fileRange) {
-  return std::construct_at(OwnNormal(MemberPrototype), AstMemberFnType::valued, _name, _condition, _arguments,
-                           _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
+  return std::construct_at(OwnNormal(MethodPrototype), MethodType::valued, _name, _condition, _arguments, _isVariadic,
+                           _returnType, _metaInfo, visibSpec, _fileRange);
 }
 
-void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
+void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
   if (defineChecker) {
     auto condRes = defineChecker->emit(emitCtx);
@@ -65,13 +64,13 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   SHOW("Defining member proto " << name.value << " " << state.parent->get_parent_type()->to_string())
   if (state.parent->is_done_skill()) {
     auto doneSkill = state.parent->as_done_skill();
-    if ((fnTy != AstMemberFnType::normal) && doneSkill->has_variation_method(name.value)) {
+    if ((fnTy != MethodType::normal) && doneSkill->has_variation_method(name.value)) {
       irCtx->Error("A variation function named " + irCtx->color(name.value) +
                        " already exists in the same implementation at " +
                        irCtx->color(doneSkill->get_variation_method(name.value)->get_name().range.start_to_string()),
                    name.range);
     }
-    if ((fnTy != AstMemberFnType::variation) && doneSkill->has_normal_method(name.value)) {
+    if ((fnTy != MethodType::variation) && doneSkill->has_normal_method(name.value)) {
       irCtx->Error("A member function named " + irCtx->color(name.value) +
                        " already exists in the same implementation at " +
                        irCtx->color(doneSkill->get_normal_method(name.value)->get_name().range.start_to_string()),
@@ -89,13 +88,13 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
       state.parent->is_done_skill() ? state.parent->as_done_skill()->get_ir_type() : state.parent->as_expanded();
   if (parentType->is_expanded()) {
     auto expTy = parentType->as_expanded();
-    if ((fnTy != AstMemberFnType::normal) && expTy->has_variation(name.value)) {
+    if ((fnTy != MethodType::normal) && expTy->has_variation(name.value)) {
       irCtx->Error("A variation function named " + irCtx->color(name.value) + " exists in the parent type " +
                        irCtx->color(expTy->get_full_name()) + " at " +
                        irCtx->color(expTy->get_variation(name.value)->get_name().range.start_to_string()),
                    name.range);
     }
-    if ((fnTy != AstMemberFnType::variation) && expTy->has_normal_method(name.value)) {
+    if ((fnTy != MethodType::variation) && expTy->has_normal_method(name.value)) {
       irCtx->Error("A member function named " + irCtx->color(name.value) + " exists in the parent type " +
                        irCtx->color(expTy->get_full_name()) + " at " +
                        irCtx->color(expTy->get_normal_method(name.value)->get_name().range.start_to_string()),
@@ -128,7 +127,7 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     SHOW("Return is self")
     auto* selfRet = (SelfType*)returnType.value();
     if (!selfRet->isJustType) {
-      selfRet->isVarRef          = fnTy == AstMemberFnType::variation;
+      selfRet->isVarRef          = fnTy == MethodType::variation;
       selfRet->canBeSelfInstance = true;
       isSelfReturn               = true;
     }
@@ -139,13 +138,13 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   Vec<ir::Type*> generatedTypes;
   // TODO - Check existing member functions
   for (auto* arg : arguments) {
-    if (arg->is_type_member()) {
+    if (arg->is_member_arg()) {
       if (!state.parent->get_parent_type()->is_struct()) {
         irCtx->Error(
             "The parent type of this function is not a core type and hence the member argument syntax cannot be used",
             arg->get_name().range);
       }
-      if (fnTy != AstMemberFnType::Static && fnTy != AstMemberFnType::valued) {
+      if (fnTy != MethodType::Static && fnTy != MethodType::valued) {
         auto structType = state.parent->get_parent_type()->as_struct();
         if (structType->has_field_with_name(arg->get_name().value)) {
           if (state.parent->is_done_skill()) {
@@ -156,7 +155,7 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                            arg->get_name().range);
             }
           }
-          if (fnTy == AstMemberFnType::variation) {
+          if (fnTy == MethodType::variation) {
             auto* memTy = structType->get_type_of_field(arg->get_name().value);
             if (memTy->is_reference()) {
               if (memTy->as_reference()->isSubtypeVariable()) {
@@ -193,9 +192,14 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   Vec<ir::Argument> args;
   SHOW("Setting variability of arguments")
   for (usize i = 0; i < generatedTypes.size(); i++) {
-    if (arguments.at(i)->is_type_member()) {
-      SHOW("Argument at " << i << " named " << arguments.at(i)->get_name().value << " is a type member")
-      args.push_back(ir::Argument::CreateMember(arguments.at(i)->get_name(), generatedTypes.at(i), i));
+    if (arguments[i]->is_member_arg()) {
+      SHOW("Argument at " << i << " named " << arguments[i]->get_name().value << " is a type member")
+      args.push_back(ir::Argument::CreateMember(arguments[i]->get_name(), generatedTypes[i], i));
+    } else if (arguments[i]->is_variadic_arg()) {
+      if (i != (generatedTypes.size() - 1)) {
+        irCtx->Error("Variadic argument should always be the last argument", arguments[i]->get_name().range);
+      }
+      args.push_back(ir::Argument::CreateVariadic(arguments[i]->get_name().value, arguments[i]->get_name().range, i));
     } else {
       SHOW("Argument at " << i << " named " << arguments.at(i)->get_name().value << " is not a type member")
       args.push_back(
@@ -206,12 +210,12 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   }
   SHOW("Variability setting complete")
   SHOW("About to create function")
-  if (fnTy == AstMemberFnType::Static) {
+  if (fnTy == MethodType::Static) {
     SHOW("MemberFn :: " << name.value << " Static Method")
     state.result =
         ir::Method::CreateStatic(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy,
                                  args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
-  } else if (fnTy == AstMemberFnType::valued) {
+  } else if (fnTy == MethodType::valued) {
     SHOW("MemberFn :: " << name.value << " Valued Method")
     if (!parentType->is_trivially_copyable()) {
       irCtx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
@@ -221,25 +225,21 @@ void MemberPrototype::define(MethodState& state, ir::Ctx* irCtx) {
                                  args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   } else {
     SHOW("MemberFn :: " << name.value << " Method or Variation")
-    state.result = ir::Method::Create(state.parent, fnTy == AstMemberFnType::variation, name,
+    state.result = ir::Method::Create(state.parent, fnTy == MethodType::variation, name,
                                       state.metaInfo.has_value() && state.metaInfo->get_inline(),
                                       ir::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
                                       emitCtx->get_visibility_info(visibSpec), irCtx);
   }
 }
 
-Json MemberPrototype::to_json() const {
+Json MethodPrototype::to_json() const {
   Vec<JsonValue> args;
   for (auto* arg : arguments) {
-    auto aJson = Json()
-                     ._("name", arg->get_name())
-                     ._("type", arg->get_type() ? arg->get_type()->to_json() : Json())
-                     ._("is_member_argument", arg->is_type_member());
-    args.push_back(aJson);
+    args.push_back(arg->to_json());
   }
   return Json()
-      ._("nodeType", "memberPrototype")
-      ._("functionType", member_fn_type_to_string(fnTy))
+      ._("nodeType", "methodPrototype")
+      ._("functionType", method_type_to_string(fnTy))
       ._("name", name)
       ._("hasReturnType", returnType.has_value())
       ._("returnType", returnType.has_value() ? returnType.value()->to_json() : JsonValue())
@@ -263,7 +263,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
   auto               argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
   ir::ReferenceType* coreRefTy  = nullptr;
   ir::LocalValue*    self       = nullptr;
-  if (prototype->fnTy != AstMemberFnType::Static && prototype->fnTy != AstMemberFnType::valued) {
+  if (prototype->fnTy != MethodType::Static && prototype->fnTy != MethodType::valued) {
     coreRefTy = argIRTypes.at(0)->get_type()->as_reference();
     self      = block->new_value("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
     irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
@@ -282,7 +282,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
         memPtr = irCtx->builder.CreateLoad(memTy->as_reference()->get_llvm_type(), memPtr);
       }
       irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
-    } else {
+    } else if (not argIRTypes.at(i)->is_variadic_argument()) {
       if (!argIRTypes.at(i)->get_type()->is_trivially_copyable() || argIRTypes.at(i)->is_variable()) {
         auto* argVal =
             block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),

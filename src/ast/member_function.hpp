@@ -14,30 +14,30 @@
 
 namespace qat::ast {
 
-enum class AstMemberFnType {
+enum class MethodType {
   Static,
   normal,
   variation,
   valued,
 };
 
-inline String member_fn_type_to_string(AstMemberFnType ty) {
+inline String method_type_to_string(MethodType ty) {
   switch (ty) {
-    case AstMemberFnType::Static:
+    case MethodType::Static:
       return "static";
-    case AstMemberFnType::normal:
+    case MethodType::normal:
       return "normal";
-    case AstMemberFnType::variation:
+    case MethodType::variation:
       return "variation";
-    case AstMemberFnType::valued:
+    case MethodType::valued:
       return "valued";
   }
 }
 
-class MemberPrototype {
+class MethodPrototype {
   friend class MethodDefinition;
 
-  AstMemberFnType       fnTy;
+  MethodType            fnTy;
   Identifier            name;
   Vec<Argument*>        arguments;
   bool                  isVariadic;
@@ -49,33 +49,33 @@ class MemberPrototype {
   Maybe<MetaInfo>   metaInfo;
 
 public:
-  MemberPrototype(AstMemberFnType _fnTy, Identifier _name, PrerunExpression* _defineChecker, Vec<Argument*> _arguments,
+  MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _defineChecker, Vec<Argument*> _arguments,
                   bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
                   Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
-  static MemberPrototype* Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
+  static MethodPrototype* Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
-  static MemberPrototype* Static(const Identifier& _name, PrerunExpression* _condition,
+  static MethodPrototype* Static(const Identifier& _name, PrerunExpression* _condition,
                                  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
                                  const FileRange& _fileRange);
 
-  static MemberPrototype* Value(const Identifier& _name, PrerunExpression* _condition, const Vec<Argument*>& _arguments,
+  static MethodPrototype* Value(const Identifier& _name, PrerunExpression* _condition, const Vec<Argument*>& _arguments,
                                 bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
                                 Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange);
 
   ir::EntityChildType fn_type_to_child_type() {
     switch (fnTy) {
-      case AstMemberFnType::Static:
+      case MethodType::Static:
         return ir::EntityChildType::staticFn;
-      case AstMemberFnType::normal:
+      case MethodType::normal:
         return ir::EntityChildType::method;
-      case AstMemberFnType::variation:
+      case MethodType::variation:
         return ir::EntityChildType::variation;
-      case AstMemberFnType::valued:
+      case MethodType::valued:
         return ir::EntityChildType::valued;
     }
   }
@@ -107,7 +107,7 @@ public:
   void           define(MethodState& state, ir::Ctx* irCtx);
   useit Json     to_json() const;
   useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
-  ~MemberPrototype();
+  ~MethodPrototype();
 };
 
 class MethodDefinition {
@@ -116,14 +116,14 @@ class MethodDefinition {
 
 private:
   Vec<Sentence*>   sentences;
-  MemberPrototype* prototype;
+  MethodPrototype* prototype;
   FileRange        fileRange;
 
 public:
-  MethodDefinition(MemberPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+  MethodDefinition(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-  useit static inline MethodDefinition* create(MemberPrototype* _prototype, Vec<Sentence*> _sentences,
+  useit static inline MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences,
                                                FileRange _fileRange) {
     return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
   }

@@ -79,11 +79,13 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   }
   Vec<ir::Type*> generatedTypes;
   SHOW("Generating types")
-  for (auto* arg : arguments) {
-    if (arg->is_type_member()) {
-      irCtx->Error("Member arguments cannot be used in operators", arg->get_name().range);
+  for (usize i = 0; i < arguments.size(); i++) {
+    if (arguments[i]->is_member_arg()) {
+      irCtx->Error("Member arguments are not allowed in operators", arguments[i]->get_name().range);
+    } else if (arguments[i]->is_variadic_arg()) {
+      irCtx->Error("Variadic argument is not allowed in operators", arguments[i]->get_name().range);
     } else {
-      generatedTypes.push_back(arg->get_type()->emit(emitCtx));
+      generatedTypes.push_back(arguments[i]->get_type()->emit(emitCtx));
     }
   }
   if (is_unary_operator(opr)) {
@@ -124,7 +126,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
   Vec<ir::Argument> args;
   SHOW("Setting variability of arguments")
   for (usize i = 0; i < generatedTypes.size(); i++) {
-    if (arguments.at(i)->is_type_member()) {
+    if (arguments.at(i)->is_member_arg()) {
       args.push_back(ir::Argument::CreateMember(arguments.at(i)->get_name(), generatedTypes.at(i), i));
     } else {
       args.push_back(
@@ -159,7 +161,8 @@ Json OperatorPrototype::to_json() const {
     auto aJson = Json()
                      ._("name", arg->get_name())
                      ._("type", arg->get_type() ? arg->get_type()->to_json() : Json())
-                     ._("is_member_argument", arg->is_type_member());
+                     ._("is_member_argument", arg->is_member_arg())
+                     ._("is_variadic_argument", arg->is_variadic_arg());
     args.push_back(aJson);
   }
   return Json()

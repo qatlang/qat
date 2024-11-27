@@ -371,7 +371,7 @@ Token Lexer::tokeniser() {
       read();
       if (current == '\'') {
         read();
-        return Token::normal(TokenType::self_instance, this->get_position(2));
+        return Token::normal(TokenType::selfInstance, this->get_position(2));
       } else {
         return Token::normal(TokenType::child, this->get_position(1));
       }
@@ -596,8 +596,6 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
   else Check_Normal_Keyword("static", Static);
   else Check_Normal_Keyword("variadic", variadic);
   else Check_Normal_Keyword("loop", loop);
-  else Check_Normal_Keyword("while", While);
-  else Check_Normal_Keyword("over", over);
   else Check_Normal_Keyword("heap", heap);
   else Check_Normal_Keyword("operator", Operator);
   else Check_Normal_Keyword("mix", mix);

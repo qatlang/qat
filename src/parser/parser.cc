@@ -1029,7 +1029,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
   for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
     Token& token = tokens->at(i);
     switch (token.type) {
-      case TokenType::self_instance:
+      case TokenType::selfInstance:
       case TokenType::selfWord: {
         cacheTy = ast::SelfType::create(token.type == TokenType::selfWord, RangeAt(i));
         break;
@@ -1224,10 +1224,61 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
         }
         auto pClose = pCloseResult.value();
         if (is_next(TokenType::givenTypeSeparator, pClose)) {
-          auto argTypes = do_separated_types(preCtx, i, pClose);
+          Vec<ast::Type*> argTypes;
+          bool            isVariadic = false;
+          while (i < pClose) {
+            if (is_next(TokenType::variadic, i)) {
+              isVariadic = true;
+              i++;
+              if (is_next(TokenType::separator, i)) {
+                i++;
+              }
+              if (is_next(TokenType::separator, i)) {
+                add_error("Repeating separator " + color_error(",") + " found here", RangeAt(i + 1));
+              }
+              if (i + 1 == pClose) {
+                break;
+              } else {
+                add_error(
+                    "Expected the list of argument types to end here, but it did not. Variadic argument should always be the last argument",
+                    RangeSpan(i, pClose));
+              }
+            } else if (is_next(TokenType::selfInstance, i)) {
+              if (is_next(TokenType::identifier, i + 1)) {
+                add_error("Member arguments are not allowed in function types", RangeSpan(i + 1, i + 2));
+              } else {
+                add_error(
+                    "It seems like you were trying to provide member argument here. Note that the name is missing after this. And member arguments are not allowed in function types",
+                    RangeAt(i + 1));
+              }
+            } else if (is_next(TokenType::separator, i)) {
+              if (tokens->at(i).type == TokenType::separator) {
+                add_error("Repeating separator " + color_error(",") + " found here", RangeAt(i));
+              } else {
+                add_error("Found separator " + color_error(",") + " here which is not allowed", RangeAt(i + 1));
+              }
+            } else if (i != (pClose - 1)) {
+              auto typRes = do_type(preCtx, i, None);
+              argTypes.push_back(typRes.first);
+              i = typRes.second;
+              if (is_next(TokenType::separator, i)) {
+                i++;
+                if (is_next(TokenType::separator, i)) {
+                  add_error("Repeating separator " + color_error(",") + " found here", RangeAt(i + 1));
+                }
+              } else if (i != (pClose - 1)) {
+                add_error("Invalid syntax found for function type. Expected either separator " + color_error(",") +
+                              " or for the list of argument types to end, but found more symbols here",
+                          RangeSpan(i, pClose));
+              }
+            } else {
+              break;
+            }
+          }
+          i             = pClose + 1;
           auto retTyRes = do_type(preCtx, pClose + 1, None);
-          cacheTy       = ast::FunctionType::create(retTyRes.first, argTypes, RangeSpan(start, retTyRes.second));
-          i             = retTyRes.second;
+          cacheTy = ast::FunctionType::create(retTyRes.first, argTypes, isVariadic, RangeSpan(start, retTyRes.second));
+          i       = retTyRes.second;
         } else {
           if (is_primary_within(TokenType::separator, start, pClose)) {
             add_error("Expected a type here. Expected ; to separate member types of a tuple type, but found , instead",
@@ -1456,7 +1507,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                     add_error("Expected end for (", RangeAt(sepPos + 2));
                   }
                 } else {
-                  add_error("Expected a type to be provided to be the owner of this pointer type like " +
+                  add_error("Expected a type to be provided to be the owner of this " +
+                                String(isSlice ? "slice" : "mark") + " type like " +
                                 color_error(String(isSlice ? "slice:[" : "mark:[") + subTypeRes.first->to_string() +
                                             ", type(OwnerType)]"),
                             RangeSpan(sepPos, bClose));
@@ -1483,14 +1535,15 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
                   cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::anyRegion,
                                                   isNonNullable, nullptr, isSlice, {token.fileRange, RangeAt(bClose)});
                 }
-              } else if (is_next(TokenType::self_instance, sepPos)) {
+              } else if (is_next(TokenType::selfInstance, sepPos)) {
                 if (sepPos + 2 != bClose) {
                   add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
                 }
                 cacheTy = ast::MarkType::create(subTypeRes.first, isSubtypeVar, ast::MarkOwnType::typeParent,
                                                 isNonNullable, None, isSlice, {token.fileRange, RangeAt(bClose)});
               } else {
-                add_error("Invalid ownership of the pointer", {token.fileRange, RangeAt(sepPos)});
+                add_error("Invalid ownership of the " + color_error(isSlice ? "slice" : "mark"),
+                          {token.fileRange, RangeAt(sepPos)});
               }
             } else {
               auto subTypeRes = do_type(ctx, i + 1, bClose);
@@ -1503,18 +1556,21 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
             i = bClose;
             break;
           } else {
-            add_error("Could not find " TOKEN_GENERIC_LIST_END " for the end of pointer type", RangeAt(i + 1));
+            add_error("Could not find " TOKEN_GENERIC_LIST_END " for the end of the mark subtype", RangeAt(i + 1));
           }
         } else {
           if (is_next(TokenType::bracketOpen, i)) {
-            add_error("Found [ after " + color_error("mark") +
-                          " which is not the correct syntax. The syntax for pointer type is " +
-                          color_error("mark:[subtype]"),
+            add_error("Found [ after " + color_error(isSlice ? "slice" : "mark") +
+                          " which is not the correct syntax. The syntax for " +
+                          color_error(isSlice ? "slice" : "mark") + " type is " + color_error("mark:[subtype]"),
                       RangeSpan(i, i + 1));
           } else {
-            add_error("Subtype of the mark not specified. The syntax for a mark type is " +
-                          color_error("mark:[subtype]") + " for nullable mark and " + color_error("mark![subtype]") +
-                          " for non-nullable mark",
+            add_error("Subtype of the " + color_error(isSlice ? "slice" : "mark") +
+                          " type is not specified. The syntax for a " + color_error(isSlice ? "slice" : "mark") +
+                          " type is " + color_error(isSlice ? "slice:[subtype]" : "mark:[subtype]") + " for nullable " +
+                          (isSlice ? "slice" : "mark") + " and " +
+                          color_error(isSlice ? "slice![subtype]" : "mark![subtype]") + " for non-nullable " +
+                          (isSlice ? "slice" : "mark"),
                       token.fileRange);
           }
         }
@@ -2709,7 +2765,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                   memParent->add_convertor_definition(ast::ConvertorDefinition::create(
                       ast::ConvertorPrototype::create_from(
                           RangeAt(start), argsRes.first.front()->get_name(), argsRes.first.front()->get_type(),
-                          argsRes.first.front()->is_type_member(), getVisibSpec(memVisib),
+                          argsRes.first.front()->is_member_arg(), getVisibSpec(memVisib),
                           fromVisibRange(memVisib, RangeSpan(start, pClose)), meta.defineChecker,
                           std::move(meta.metaInfo)),
                       snts, RangeSpan(start, bClose)));
@@ -3553,7 +3609,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         }
         break;
       }
-      case TokenType::self_instance: {
+      case TokenType::selfInstance: {
         if (is_next(TokenType::copy, i)) {
           setCachedExpr(ast::Copy::create(ast::SelfInstance::create(RangeAt(i)), true, RangeSpan(i, i + 1)), i + 1);
           i++;
@@ -4586,7 +4642,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
         }
         break;
       }
-      case TokenType::self_instance: {
+      case TokenType::selfInstance: {
         if (is_next(TokenType::identifier, i)) {
           if (is_next(TokenType::associatedAssignment, i + 1)) {
             auto stop = first_primary_position(TokenType::stop, i + 2);
@@ -4864,38 +4920,39 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
             tagVal = IdentifierAt(i + 2);
             i += 2;
           } else {
-            add_error("Expected an identifier for the tag of the do-while loop", RangeAt(i + 1));
+            add_error("Expected an identifier for the tag of the " + color_error("do-loop-if"), RangeAt(i + 1));
           }
         }
         if (is_next(TokenType::bracketOpen, i)) {
           auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
           if (bCloseRes.has_value()) {
             auto bClose = bCloseRes.value();
-            if (is_next(TokenType::loop, bClose) && is_next(TokenType::While, bClose + 1)) {
+            if (is_next(TokenType::loop, bClose) && is_next(TokenType::If, bClose + 1)) {
               auto stopPos = first_primary_position(TokenType::stop, bClose + 2);
               if (stopPos.has_value()) {
                 auto sentences = do_sentences(ctx, i + 1, bClose);
                 auto condRes =
                     do_expression(ctx, None, bClose + 2, first_primary_position(TokenType::stop, bClose + 2));
                 if (condRes.second + 1 != stopPos.value()) {
-                  add_error("Condition for the do-while loop did not span till the .",
+                  add_error("Condition for the " + color_error("do-loop-if") + " did not span till the .",
                             RangeSpan(condRes.second + 1, stopPos.value()));
                 }
                 result.push_back(
                     ast::LoopWhile::create(true, condRes.first, sentences, tagVal, RangeSpan(start, stopPos.value())));
                 i = stopPos.value();
               } else {
-                add_error("Expected . to end the condition for the do-while loop", RangeSpan(start, bClose + 2));
+                add_error("Expected . to end the condition for the " + color_error("do-loop-if"),
+                          RangeSpan(start, bClose + 2));
               }
             } else {
-              add_error("Expected " + color_error("loop while") + " after ] to precede the condition for the loop",
+              add_error("Expected " + color_error("do-loop-if") + " after ] to precede the condition for the loop",
                         RangeAt(bClose));
             }
           } else {
             add_error("Expected end for [", RangeAt(i + 1));
           }
         } else {
-          add_error("Expected [ to start the body of the ", RangeAt(i));
+          add_error("Expected [ to start the body of the " + color_error("do-loop-if"), RangeAt(i));
         }
         break;
       }
@@ -4968,13 +5025,13 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           result.push_back(ast::LoopOver::create(exp.first, std::move(sentences), std::move(itemName.value()),
                                                  std::move(indexName), RangeSpan(start, i)));
           break;
-        } else if (is_next(TokenType::While, i)) {
+        } else if (is_next(TokenType::If, i)) {
           auto start = i;
           if (first_primary_position(TokenType::altArrow, i + 1).has_value()) {
             auto altPos = first_primary_position(TokenType::altArrow, i + 1).value();
             auto cond   = do_expression(preCtx, None, i + 1, altPos);
             if (cond.second + 1 != altPos) {
-              add_error("The condition for the while loop did not span till the =>",
+              add_error("The condition for the " + color_error("loop if") + " did not span till the =>",
                         RangeSpan(cond.second + 1, altPos));
             }
             i = altPos;
@@ -4983,7 +5040,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
               tagValue = IdentifierAt(altPos + 1);
               i++;
             } else if (is_next(TokenType::let, altPos)) {
-              add_error("Please remove new from here. As this is a conditional loop, there is no loop counter",
+              add_error("Please remove " + color_error("let") +
+                            " from here. As this is a conditional loop, there is no loop counter or item",
                         RangeAt(altPos + 1));
             }
             if (is_next(TokenType::bracketOpen, i)) {
@@ -5001,30 +5059,30 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
               add_error("Expected [ to after this to start the body of the loop", RangeSpan(start, i));
             }
           } else {
-            add_error("Expected => to end the condition for the while loop", RangeSpan(i, i + 1));
+            add_error("Expected => to end the condition for the " + color_error("loop if"), RangeSpan(i, i + 1));
           }
-        } else if (is_next(TokenType::over, i)) {
-          // FIXME - Implement
-          add_error("Not supported for now", RangeSpan(i, i + 1));
-        } else if (first_primary_position(TokenType::altArrow, i).has_value()) {
+        } else if (is_next(TokenType::to, i)) {
           auto              start    = i;
-          auto              altPos   = first_primary_position(TokenType::altArrow, i).value();
           Maybe<Identifier> loopTag  = None;
-          auto              countRes = do_expression(preCtx, None, i, altPos);
-          if (countRes.second + 1 != altPos) {
-            add_error("Loop count expression did not span till =>", RangeSpan(countRes.second + 1, altPos));
+          auto              countRes = do_expression(preCtx, None, i, None);
+          i                          = countRes.second;
+          if (is_next(TokenType::altArrow, i)) {
+            i++;
+          } else {
+            add_error("Expected => after the count of the " + color_error("loop to"), RangeSpan(start, i));
           }
-          i = altPos;
           if (is_next(TokenType::let, i)) {
             if (is_next(TokenType::identifier, i + 1)) {
               loopTag = IdentifierAt(i + 2);
               i += 2;
             } else {
-              add_error("Expected an identifier after new for the name of the loop counter variable", RangeAt(i + 1));
+              add_error("Expected an identifier after " + color_error("let") +
+                            " for the name of the loop counter variable",
+                        RangeAt(i + 1));
             }
           } else if (is_next(TokenType::identifier, i)) {
-            add_error("This is a loop with a counter variable. Please use " + color_error("new " + ValueAt(i + 1)) +
-                          " instead here",
+            add_error("If this is meant to be a loop with a counter variable. Please use " +
+                          color_error("let " + ValueAt(i + 1)) + " instead here",
                       RangeAt(i + 1));
           }
           if (is_next(TokenType::bracketOpen, i)) {
@@ -5041,7 +5099,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
             add_error("Expected [ to start the body of the loop", RangeSpan(start, i));
           }
         } else {
-          add_error("Could not find => after the loop", token.fileRange);
+          add_error("Invalid type of loop", token.fileRange);
         }
         break;
       }
@@ -5191,10 +5249,10 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
         }
         break;
       }
-      case TokenType::self_instance: {
+      case TokenType::selfInstance: {
         if (is_next(TokenType::identifier, i)) {
           SHOW("Creating member argument: " << ValueAt(i + 1))
-          args.push_back(ast::Argument::create_for_constructor({ValueAt(i + 1), RangeAt(i + 1)}, false, nullptr, true));
+          args.push_back(ast::Argument::create_member({ValueAt(i + 1), RangeAt(i + 1)}, false, nullptr));
           if (is_next(TokenType::separator, i + 1) || is_next(TokenType::parenthesisClose, i + 1)) {
             i += 2;
           } else {

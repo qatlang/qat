@@ -6,8 +6,8 @@
 
 namespace qat::ast {
 
-void MemberFunctionCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-                                             EmitCtx* ctx) {
+void MethodCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+                                     EmitCtx* ctx) {
   UPDATE_DEPS(instance);
   for (auto arg : arguments) {
     UPDATE_DEPS(arg);
@@ -27,7 +27,7 @@ void MemberFunctionCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depe
   }
 }
 
-ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
+ir::Value* MethodCall::emit(EmitCtx* ctx) {
   SHOW("Member variable emitting")
   if (isExpSelf) {
     if (ctx->get_fn()->is_method()) {
@@ -204,22 +204,28 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
       }
     }
     //
-    auto fnArgsTy = memFn->get_ir_type()->as_function()->get_argument_types();
-    if ((fnArgsTy.size() - 1) != arguments.size()) {
-      ctx->Error("Number of arguments provided for the method call does not "
-                 "match the signature",
-                 fileRange);
+    auto       fnArgsTy      = memFn->get_ir_type()->as_function()->get_argument_types();
+    const auto isVariadicArg = memFn->get_ir_type()->as_function()->is_variadic();
+    if (isVariadicArg) {
+      if ((fnArgsTy.size() - 1) > arguments.size()) {
+        ctx->Error("This method is a variadic function and requires at least " +
+                       ctx->color(std::to_string(fnArgsTy.size() - 1)) + " arguments to be provided",
+                   fileRange);
+      }
+    } else if ((fnArgsTy.size() - 1) != arguments.size()) {
+      ctx->Error("Number of arguments provided for the method call does not match the signature", fileRange);
     }
     Vec<ir::Value*> argsEmit;
-    auto*           fnTy = memFn->get_ir_type()->as_function();
+    auto*           fnTy         = memFn->get_ir_type()->as_function();
+    auto            fnTyArgCount = fnTy->get_argument_count();
     for (usize i = 0; i < arguments.size(); i++) {
-      if (fnTy->get_argument_count() > (u64)i) {
+      if ((i + 1) < fnTyArgCount) {
         auto* argTy = fnTy->get_argument_type_at(i + 1)->get_type();
-        if (arguments.at(i)->has_type_inferrance()) {
-          arguments.at(i)->as_type_inferrable()->set_inference_type(argTy);
+        if (arguments[i]->has_type_inferrance()) {
+          arguments[i]->as_type_inferrable()->set_inference_type(argTy);
         }
       }
-      argsEmit.push_back(arguments.at(i)->emit(ctx));
+      argsEmit.push_back(arguments[i]->emit(ctx));
     }
     SHOW("Argument values generated for method")
     for (usize i = 1; i < fnArgsTy.size(); i++) {
@@ -236,30 +242,29 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                        " of the function " + ctx->color(memFn->get_full_name()),
                    arguments.at(i - 1)->fileRange);
       }
-    }
-    //
+    } //
     Vec<llvm::Value*> argVals;
     Maybe<String>     localID = inst->get_local_id();
     argVals.push_back(inst->get_llvm());
     for (usize i = 1; i < fnArgsTy.size(); i++) {
       auto* currArg = argsEmit[i - 1];
-      if (fnArgsTy.at(i)->get_type()->is_reference()) {
+      if (fnArgsTy[i]->get_type()->is_reference()) {
         auto fnRefTy = fnArgsTy[i]->get_type()->as_reference();
         if (currArg->is_reference()) {
-          if (fnRefTy->isSubtypeVariable() && !currArg->get_ir_type()->as_reference()->isSubtypeVariable()) {
+          if (fnRefTy->isSubtypeVariable() && not currArg->get_ir_type()->as_reference()->isSubtypeVariable()) {
             ctx->Error("The type of the argument is " + ctx->color(fnArgsTy[i]->get_type()->to_string()) +
                            " but the expression is of type " + ctx->color(currArg->get_ir_type()->to_string()),
-                       arguments.at(i - 1)->fileRange);
+                       arguments[i - 1]->fileRange);
           }
           currArg->load_ghost_reference(ctx->irCtx->builder);
-        } else if (!currArg->is_ghost_reference()) {
-          ctx->Error("Cannot pass a value for the argument that expects a reference", arguments.at(i - 1)->fileRange);
-        } else if (fnArgsTy.at(i)->get_type()->as_reference()->isSubtypeVariable()) {
-          if (!currArg->is_variable()) {
+        } else if (not currArg->is_ghost_reference()) {
+          ctx->Error("Cannot pass a value for the argument that expects a reference", arguments[i - 1]->fileRange);
+        } else if (fnArgsTy[i]->get_type()->as_reference()->isSubtypeVariable()) {
+          if (not currArg->is_variable()) {
             ctx->Error("The argument " + ctx->color(fnArgsTy.at(i)->get_name()) + " is of type " +
-                           ctx->color(fnArgsTy.at(i)->get_type()->to_string()) +
+                           ctx->color(fnArgsTy[i]->get_type()->to_string()) +
                            " which is a reference with variability, but this expression does not have variability",
-                       arguments.at(i - 1)->fileRange);
+                       arguments[i - 1]->fileRange);
           }
         }
       } else if (currArg->is_reference() || currArg->is_ghost_reference()) {
@@ -275,11 +280,12 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
           auto* argEmitLLVMValue = currArg->get_llvm();
           argsEmit[i - 1] =
               ir::Value::get(ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()), argTy, false);
-          if (!argTy->is_trivially_movable()) {
-            if (!isRefVar) {
+          if (not argTy->is_trivially_copyable()) {
+            if (not isRefVar) {
               if (argValTy->is_reference()) {
-                ctx->Error("This expression is a reference without variability and hence cannot be trivilly moved from",
-                           arguments[i - 1]->fileRange);
+                ctx->Error(
+                    "This expression is a reference without variability and hence cannot be trivially moved from",
+                    arguments[i - 1]->fileRange);
               } else {
                 ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
                            arguments[i - 1]->fileRange);
@@ -297,6 +303,44 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
       SHOW("Argument value at " << i - 1 << " is of type " << argsEmit[i - 1]->get_ir_type()->to_string()
                                 << " and argtype is " << fnArgsTy.at(i)->get_type()->to_string())
       argVals.push_back(argsEmit[i - 1]->get_llvm());
+    }
+    if (isVariadicArg) {
+      for (usize i = fnArgsTy.size() - 1; i < argsEmit.size(); i++) {
+        auto currArg  = argsEmit[i];
+        auto argTy    = currArg->get_ir_type();
+        auto isRefVar = false;
+        if (argTy->is_reference()) {
+          isRefVar = argTy->as_reference()->isSubtypeVariable();
+          argTy    = argTy->as_reference()->get_subtype();
+        } else {
+          isRefVar = currArg->is_variable();
+        }
+        if (currArg->get_ir_type()->is_reference() || currArg->is_ghost_reference()) {
+          if (currArg->get_ir_type()->is_reference()) {
+            currArg->load_ghost_reference(ctx->irCtx->builder);
+          }
+          if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
+            auto* argLLVMVal = currArg->get_llvm();
+            argsEmit[i] = ir::Value::get(ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()),
+                                         argTy, false);
+            if (not argTy->is_trivially_copyable()) {
+              if (not isRefVar) {
+                ctx->Error("This expression " +
+                               String(currArg->get_ir_type()->is_reference() ? "is a reference without variability"
+                                                                             : "does not have variability") +
+                               " and hence cannot be trivially moved from",
+                           arguments[i]->fileRange);
+              }
+              ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(argTy->get_llvm_type()), argLLVMVal);
+            }
+          } else {
+            ctx->Error("This expression is of type " + ctx->color(currArg->get_ir_type()->to_string()) +
+                           " which is not trivially copyable or movable. It cannot be passed as a variadic argument",
+                       arguments[i]->fileRange);
+          }
+        }
+        argVals.push_back(argsEmit[i]->get_llvm());
+      }
     }
     return memFn->call(ctx->irCtx, argVals, localID, ctx->mod);
   } else if (instType->is_typed()) {
@@ -324,7 +368,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
                 ctx->color("'copy"),
             fileRange);
       }
-      if (!vecTy->is_scalable()) {
+      if (not vecTy->is_scalable()) {
         ctx->Error("Method " + ctx->color(memberName.value) +
                        " can only be called on expressions with scalable vector type. This expression is of type " +
                        ctx->color(vecTy->to_string()) + " which is not scalable",
@@ -400,7 +444,7 @@ ir::Value* MemberFunctionCall::emit(EmitCtx* ctx) {
   return nullptr;
 }
 
-Json MemberFunctionCall::to_json() const {
+Json MethodCall::to_json() const {
   Vec<JsonValue> args;
   for (auto* arg : arguments) {
     args.emplace_back(arg->to_json());

@@ -8,6 +8,7 @@ add_library(QAT_AST_SENTENCES
 	local_declaration.cc
 	loop_infinite.cc
 	loop_n_times.cc
+	loop_over.cc
 	loop_while.cc
 	match.cc
 	member_initialisation.cc

@@ -9,19 +9,29 @@ bool LoopNTimes::hasTag() const { return tag.has_value(); }
 ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
   if (tag.has_value()) {
     for (const auto& info : ctx->loopsInfo) {
-      if (info.name == tag.value().value) {
-        ctx->Error("The tag provided for the loop is already used for another loop", fileRange);
+      if (info.name.has_value() && (info.name->value == tag->value)) {
+        ctx->Error("The tag provided for the loop is already used by another loop", tag->range,
+                   Pair<String, FileRange>{"The existing tag was found here", info.name->range});
+      }
+      if (info.secondaryName.has_value() && (info.secondaryName.value().value == tag->value)) {
+        ctx->Error("The tag provided for the loop is already used by another loop", tag->range,
+                   Pair<String, FileRange>{"The existing tag was found here", info.secondaryName->range});
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek.tag.has_value() && (brek.tag.value() == tag.value().value)) {
-        ctx->Error("The tag provided for the loop is already used by another "
-                   "loop or switch",
-                   fileRange);
+      if (brek.tag.has_value() && (brek.tag->value == tag->value)) {
+        ctx->Error("The tag provided for the loop is already used by another " + ctx->color(brek.type_to_string()),
+                   tag.value().range,
+                   Pair<String, FileRange>{"The existing tag was found here", brek.tag.value().range});
       }
     }
-    if (ctx->get_fn()->get_block()->has_value(tag->value)) {
-      ctx->Error("There already exists another local value with the same name as this tag", tag->range);
+    auto block = ctx->get_fn()->get_block();
+    if (block->has_value(tag->value)) {
+      ctx->Error("There already exists another local value with the same name as this tag", tag->range,
+                 block->get_value(tag->value)->has_associated_range()
+                     ? Maybe<Pair<String, FileRange>>(
+                           {"The local value was found here", block->get_value(tag->value)->get_file_range()})
+                     : None);
     }
   }
   auto* limit = count->emit(ctx);
@@ -66,8 +76,8 @@ ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
                                                       loopIndex->get_alloca()),
                        llCount))),
         trueBlock->get_bb(), restBlock->get_bb());
-    ctx->loopsInfo.push_back(LoopInfo(uniq, trueBlock, condBlock, restBlock, loopIndex, LoopType::nTimes));
-    ctx->breakables.push_back(Breakable(uniq, restBlock, trueBlock));
+    ctx->loopsInfo.push_back(LoopInfo(tag, trueBlock, condBlock, restBlock, loopIndex, LoopType::TO_COUNT));
+    ctx->breakables.push_back(Breakable(BreakableType::loop, tag, restBlock, trueBlock));
     trueBlock->set_active(ctx->irCtx->builder);
     emit_sentences(sentences, ctx);
     trueBlock->destroy_locals(ctx);

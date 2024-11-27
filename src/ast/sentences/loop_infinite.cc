@@ -6,16 +6,30 @@ namespace qat::ast {
 ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
   String uniqueName;
   if (tag.has_value()) {
-    uniqueName = tag.value().value;
+    uniqueName = tag->value;
     for (const auto& info : ctx->loopsInfo) {
-      if (info.name == uniqueName) {
-        ctx->Error("The tag provided for this loop is already used by another loop", fileRange);
+      if (info.name.has_value() && (info.name->value == uniqueName)) {
+        ctx->Error("The tag provided for this loop is already used by another loop", tag->range,
+                   Pair<String, FileRange>{"The existing tag was found here", info.name->range});
+      }
+      if (info.secondaryName.has_value() && (info.secondaryName->value == uniqueName)) {
+        ctx->Error("The tag provided for this loop is already used by another loop", tag->range,
+                   Pair<String, FileRange>{"The existing tag was found here", info.secondaryName->range});
       }
     }
     for (const auto& brek : ctx->breakables) {
-      if (brek.tag.has_value() && (brek.tag.value() == tag.value().value)) {
-        ctx->Error("The tag provided for the loop is already used by another loop or switch", fileRange);
+      if (brek.tag.has_value() && (brek.tag->value == tag->value)) {
+        ctx->Error("The tag provided for the loop is already used by another " + ctx->color(brek.type_to_string()),
+                   tag->range, Pair<String, FileRange>{"The existing tag was found here", brek.tag->range});
       }
+    }
+    auto block = ctx->get_fn()->get_block();
+    if (block->has_value(tag->value)) {
+      ctx->Error("There already exists another local value with the same name as this tag", tag->range,
+                 block->get_value(tag->value)->has_associated_range()
+                     ? Maybe<Pair<String, FileRange>>(
+                           {"The local value was found here", block->get_value(tag->value)->get_file_range()})
+                     : None);
     }
   } else {
     uniqueName = utils::unique_id();
@@ -27,8 +41,8 @@ ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
   SHOW("Infinite loop rest block " << restBlock->get_name())
   (void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
   trueBlock->set_active(ctx->irCtx->builder);
-  ctx->loopsInfo.push_back(LoopInfo(uniqueName, trueBlock, nullptr, restBlock, nullptr, LoopType::infinite));
-  ctx->breakables.push_back(Breakable(tag.has_value() ? Maybe<String>(uniqueName) : None, restBlock, trueBlock));
+  ctx->loopsInfo.push_back(LoopInfo(tag, trueBlock, nullptr, restBlock, nullptr, LoopType::INFINITE));
+  ctx->breakables.push_back(Breakable(BreakableType::loop, tag, restBlock, trueBlock));
   emit_sentences(sentences, ctx);
   trueBlock->destroy_locals(ctx);
   ctx->loopsInfo.pop_back();

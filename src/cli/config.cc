@@ -1,12 +1,10 @@
 #include "./config.hpp"
 #include "../cli/logger.hpp"
-#include "../utils/qat_region.hpp"
+#include "../utils/find_executable.hpp"
 #include "create.hpp"
 #include "display.hpp"
 #include "error.hpp"
 #include "version.hpp"
-#include "llvm/Config/llvm-config.h"
-#include "llvm/TargetParser/Triple.h"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -34,7 +32,7 @@ Config* Config::instance = nullptr;
 
 Config const* Config::init(u64          count,
                            const char** args) { // NOLINT(modernize-avoid-c-arrays)
-  if (!Config::instance) {
+  if (not Config::instance) {
     return new Config(count, args);
   } else {
     return get();
@@ -45,109 +43,184 @@ bool Config::hasInstance() { return Config::instance != nullptr; }
 
 Config const* Config::get() { return Config::instance; }
 
-void Config::setupEnvForQat() {
-  auto& log        = Logger::get();
-  auto  qatPathEnv = Config::get_exe_path_from_env("qat");
-  if (!qatPathEnv.has_value()) {
+void Config::setup_path_in_env(bool isSetupCmd) {
+  auto&      log                = Logger::get();
+  auto       qatPathEnv         = find_executable("qat");
+  const auto foundInPathAlready = qatPathEnv.has_value();
+  if (not foundInPathAlready) {
     // QAT_PATH is not set
-    auto qatPathRes = get_exe_path("qat");
-    if (qatPathRes.has_value()) {
-      qatDirPath = qatPathRes.value().parent_path();
-    } else {
 #if OS_IS_WINDOWS
-      char selfdir[MAX_PATH] = {0};
-      auto charLen           = GetModuleFileNameA(NULL, selfdir, MAX_PATH);
-      if (charLen > 0) {
-        // PathRemoveFileSpecA(selfdir);
-        qatDirPath = std::filesystem::path(String(selfdir, charLen));
-      } else {
-        log->fatalError("Path to qat could not be found", None);
-      }
+    char selfdir[MAX_PATH] = {0};
+    auto charLen           = GetModuleFileNameA(NULL, selfdir, MAX_PATH);
+    if (charLen > 0) {
+      // PathRemoveFileSpecA(selfdir);
+      qatDirPath = std::filesystem::path(String(selfdir, charLen));
+    } else {
+      log->fatalError("Path to qat could not be found", None);
+    }
 #elif OS_IS_MAC
-      char     path[1024] = {0};
-      uint32_t size       = sizeof(path);
-      if (_NSGetExecutablePath(path, &size) == 0) {
-        qatDirPath = std::filesystem::path(String(path, size));
-      } else {
-        log->fatalError("Path to qat could not be found", None);
-      }
+    char     path[1024] = {0};
+    uint32_t size       = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) == 0) {
+      qatDirPath = std::filesystem::path(String(path, size));
+    } else {
+      log->fatalError("Path to qat could not be found", None);
+    }
 #elif OS_IS_LINUX || OS_IS_FREEBSD || OS_IS_HAIKU
-      std::error_code err;
-      qatDirPath = std::filesystem::canonical("/proc/self/exe", err);
-      if (err) {
-        log->fatalError("Could not retrieve path to the qat executable", None);
-      }
+    std::error_code err;
+    qatDirPath = std::filesystem::canonical("/proc/self/exe", err);
+    if (err) {
+      log->fatalError("Could not retrieve path to the qat executable", None);
+    }
 #else
 #error "Unsupported OS"
 #endif
-      qatDirPath = qatDirPath.parent_path();
-      if (!std::filesystem::exists(qatDirPath)) {
-        log->fatalError("Could not retrieve path to the qat executable", None);
-      }
+    qatDirPath = qatDirPath.parent_path();
+    if (not std::filesystem::exists(qatDirPath)) {
+      log->fatalError("Could not retrieve path to the " + log->color("qat") +
+                          " executable. Please add the directory of the " + log->color("qat") + " to the " +
+                          (OS_IS_WINDOWS ? ("system " + log->color("Path")) : "PATH") +
+                          " environment variable manually",
+                      None);
     }
 #if OS_IS_WINDOWS
-    HKEY         hKey;
-    LPCSTR       keyPath = "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
-    Vec<wchar_t> pathBuffer;
-    pathBuffer.reserve(2048);
-    DWORD pathBufferSize = pathBuffer.size();
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-      if (RegQueryValueEx(hKey, "Path", nullptr, nullptr, reinterpret_cast<LPBYTE>(pathBuffer.data()),
-                          &pathBufferSize) != ERROR_SUCCESS) {
-        log->fatalError(
-            "Path could not be retrieved from the registry. Make sure that this executable is running in the administrator mode",
-            None);
-      }
-      RegCloseKey(hKey);
-      if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-        pathBuffer.push_back(L';');
-        for (auto w : qatDirPath.wstring()) {
-          pathBuffer.push_back(w);
+    auto isProcessAdmin = []() -> BOOL {
+      BOOL   result = false;
+      HANDLE hToken = NULL;
+      if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        TOKEN_ELEVATION elevation;
+        DWORD           dwSize;
+        if (GetTokenInformation(hToken, TokenElevation, &elevation, sizeof(elevation), &dwSize)) {
+          result = elevation.TokenIsElevated;
         }
-        if (RegSetValueEx(hKey, "Path", 0, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(pathBuffer.data()),
-                          wcslen(pathBuffer.data()) * sizeof(wchar_t)) != ERROR_SUCCESS) {
+      }
+      if (hToken) {
+        CloseHandle(hToken);
+        hToken = NULL;
+      }
+      return result;
+    };
+    // I am not confident about the above function to check admin mode, so I am not removing errors about failures
+    // related to the admin mode
+    if (isProcessAdmin()) {
+      HKEY         hKey;
+      LPCSTR       keyPath = "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+      Vec<wchar_t> pathBuffer;
+      pathBuffer.reserve(2048);
+      DWORD pathBufferSize = pathBuffer.size();
+      if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        if (RegQueryValueEx(hKey, "Path", nullptr, nullptr, reinterpret_cast<LPBYTE>(pathBuffer.data()),
+                            &pathBufferSize) != ERROR_SUCCESS) {
           log->fatalError(
-              "Could not set `Path` in the registry. Make sure that this executable is running in administrator mode",
+              "Path could not be retrieved from the registry. Make sure that this executable is running in the administrator mode",
               None);
         }
         RegCloseKey(hKey);
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyPath, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+          pathBuffer.push_back(L';');
+          for (auto w : qatDirPath.wstring()) {
+            pathBuffer.push_back(w);
+          }
+          if (RegSetValueEx(hKey, "Path", 0, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(pathBuffer.data()),
+                            wcslen(pathBuffer.data()) * sizeof(wchar_t)) != ERROR_SUCCESS) {
+            log->fatalError(
+                "Could not set `Path` in the registry. Make sure that this executable is running in administrator mode",
+                None);
+          }
+          RegCloseKey(hKey);
+        } else {
+          log->fatalError(
+              "Could not update registry key. Make sure that this executable is running in administrator mode", None);
+        }
       } else {
-        log->fatalError(
-            "Could not update registry key. Make sure that this executable is running in administrator mode", None);
+        log->fatalError("Could not open registry key. Make sure that this executable is running in administrator mode",
+                        None);
       }
+      log->warn(
+          "Path has been updated in the registry. Please close and reopen this terminal for the changes to take effect",
+          None);
     } else {
-      log->fatalError("Could not open registry key. Make sure that this executable is running in administrator mode",
-                      None);
+      log->fatalError(
+          "Please re-run this program in " + log->color("administrator mode") + ". The system " + log->color("Path") +
+              " environment variable cannot be updated otherwise, to include path to the qat executable."
+              " If you wish to not run this program in administrator mode, please add path to the qat executable"
+              " to the system " +
+              log->color("Path") + " environment variable manually. The qat executable was found in " +
+              log->color(qatDirPath.string()),
+          None);
     }
-    log->warn(
-        "Path has been updated in the registry. Please close and reopen this terminal for the changes to take effect",
-        None);
 #else
-    auto homeEnv = std::getenv("HOME");
+    auto     homeEnv = std::getenv("HOME");
+    fs::path homePath;
     if (homeEnv == nullptr) {
-      log->fatalError("Could not get HOME directory from the program environment", None);
+      log->warn("Could not get the " + log->color("HOME") +
+                    " variable from the program environment, while trying to update the " + log->color("PATH") +
+                    " environment variable. Using ~ instead to refer to the home directory",
+                None);
+      homePath = "~";
+    } else {
+      homePath = fs::path(homeEnv);
     }
-    auto           homePath       = fs::path(homeEnv);
     bool           foundBashFile  = false;
     bool           foundZshFile   = false;
     const fs::path bashConfigPath = homePath / ".bashrc";
     const fs::path zshConfigPath  = homePath / ".zshrc";
+#define QAT_PATH_PREPEND "export PATH=\"" + qatDirPath.string() + ":$PATH\""
+#define QAT_PATH_APPEND  "export PATH=\"$PATH:" + qatDirPath.string() + '"'
     if (fs::exists(bashConfigPath) && fs::is_regular_file(bashConfigPath)) {
       foundBashFile = true;
-      std::ofstream outstream(homePath / ".bashrc", std::ios::app);
-      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":$PATH\"\n";
-      outstream.close();
+      std::ifstream inStr(homePath / ".bashrc");
+      bool          foundInPath = false;
+      String        fileStr;
+      while (std::getline(inStr, fileStr)) {
+        if ((fileStr.find(QAT_PATH_PREPEND) != String::npos) || (fileStr.find(QAT_PATH_APPEND) != String::npos)) {
+          foundInPath = true;
+          break;
+        }
+      }
+      inStr.close();
+      if (not foundInPath) {
+        std::ofstream outstream(homePath / ".bashrc", std::ios::app);
+        outstream << '\n' << QAT_PATH_PREPEND << '\n';
+        outstream.close();
+      } else {
+        log->warn("Detected that the path to the qat executable is already present in the file " +
+                      log->color((homePath / ".bashrc").string()) + ". If your current shell is " + log->color("bash") +
+                      " make sure to run " + log->color("source " + (homePath / ".bashrc").string()) + " or " +
+                      log->color("source ~/.bashrc") + " to source the contents of the configuration file",
+                  None);
+      }
     }
     if (fs::exists(zshConfigPath) && fs::is_regular_file(zshConfigPath)) {
       foundZshFile = true;
-      std::ofstream outstream(homePath / ".zshrc", std::ios::app);
-      outstream << "\nexport PATH=\"" << qatDirPath.string() << ":$PATH\"\n";
-      outstream.close();
+      std::ifstream inStr(homePath / ".zshrc");
+      bool          foundInPath = false;
+      String        fileStr;
+      while (std::getline(inStr, fileStr)) {
+        if ((fileStr.find(QAT_PATH_PREPEND) != String::npos) || (fileStr.find(QAT_PATH_APPEND) != String::npos)) {
+          foundInPath = true;
+          break;
+        }
+      }
+      inStr.close();
+      if (not foundInPath) {
+        std::ofstream outstream(homePath / ".zshrc", std::ios::app);
+        outstream << '\n' << QAT_PATH_PREPEND << '\n';
+        outstream.close();
+      } else {
+        log->warn("Detected that the path to the qat executable is already present in the file " +
+                      log->color((homePath / ".zshrc").string()) + ". If your current shell is " + log->color("zsh") +
+                      " make sure to run " + log->color("source ~/.zshrc") + " or " +
+                      log->color("source " + (homePath / ".zshrc").string()) +
+                      " to source the contents of the configuration file",
+                  None);
+      }
     }
-    if (!foundBashFile && !foundZshFile) {
+    if (not foundBashFile && not foundZshFile) {
       log->fatalError("Could not find .bashrc or .zshrc or similar configuration file for "
-                      "your terminal session. Please add PATH=\"" +
-                          qatDirPath.parent_path().string() + ":$PATH\"" + " to the environment manually",
+                      "your terminal session. Please add " +
+                          log->color("export PATH=\"" + qatDirPath.parent_path().string() + ":$PATH\"") +
+                          " to the environment manually",
                       None);
     } else {
       log->warn("PATH has been updated in " + String(foundBashFile ? bashConfigPath.string() : "") +
@@ -158,36 +231,37 @@ void Config::setupEnvForQat() {
     }
 #endif
   } else {
-    qatDirPath = qatPathEnv.value().parent_path();
+    qatDirPath = fs::path(qatPathEnv.value()).parent_path();
   }
-  qatDirPath = fs::canonical(qatDirPath);
-  // FIXME - Update this when nostdlib feature is added
+  qatDirPath       = fs::absolute(qatDirPath);
   auto stdPathCand = qatDirPath / "../std";
-  if (!isNoStd && fs::exists(stdPathCand)) {
-    stdLibPath = stdPathCand / "std.lib.qat";
-    if (!fs::exists(stdLibPath.value()) || !fs::is_regular_file(stdLibPath.value())) {
-      if (!isNoStd) {
+  if (not isNoStd && not isFreestanding) {
+    if (fs::exists(stdPathCand)) {
+      stdLibPath = stdPathCand / "std.lib.qat";
+      if (not fs::exists(stdLibPath.value()) || not fs::is_regular_file(stdLibPath.value())) {
         log->fatalError("Found the standard library folder at path " + stdPathCand.string() +
                             " but could not find the library file in the folder. File " + stdLibPath.value().string() +
                             " is expected to be present",
                         None);
       } else {
-        stdLibPath = None;
+        stdLibPath = fs::absolute(stdLibPath.value());
       }
     } else {
-      stdLibPath = fs::canonical(stdLibPath.value());
+      log->fatalError(
+          "Could not find the standard library. Path to the qat executable was found to be " + qatDirPath.string() +
+              " but the standard library could not be found in " + stdPathCand.string() +
+              ". If you wish to compile a project without the standard library, use the " + log->color("--no-std") +
+              " flag. And if you wish to compile for a freestanding environment, use the " +
+              log->color("--freestanding") + " flag.",
+          None);
     }
-  } else if (!isNoStd) {
-    log->fatalError("Could not find the standard library. Path to the qat executable was found to be " +
-                        qatDirPath.string() + " but the standard library could not be found in " + stdPathCand.string(),
-                    None);
   } else {
     stdLibPath = None;
   }
   auto toolchainCand = qatDirPath / "../toolchain";
   if (fs::exists(toolchainCand)) {
     if (fs::is_directory(toolchainCand)) {
-      toolchainPath = toolchainCand;
+      toolchainPath = fs::absolute(toolchainCand);
     } else {
       log->fatalError(
           "The path " + toolchainCand.string() + " is not a directory. The " + log->color("toolchain") +
@@ -199,6 +273,11 @@ void Config::setupEnvForQat() {
         "Could not find the " + log->color("toolchain") +
             " directory in the QAT installation directory. This directory is required for linking platform specific dependencies required by QAT",
         None);
+  }
+  if (foundInPathAlready) {
+    log->say("qat is present in   := " + qatPathEnv.value());
+    log->say("Standard Library    := " + (stdLibPath.has_value() ? stdLibPath.value().string() : "(Not Found)"));
+    log->say("Toolchain Directory := " + (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
   }
 }
 
@@ -234,8 +313,10 @@ Config::Config(u64 count, const char** args)
     Config::instance = this;
     invokePath       = args[0];
     exitAfter        = false;
-    if (count <= 1) {
-      cli::Error("No commands or arguments provided!", None);
+    if (count < 2) {
+      setup_path_in_env(false);
+      exitAfter = true;
+      return;
     }
     buildCommit = BUILD_COMMIT_QUOTED;
     if (buildCommit.find('"') != String::npos) {
@@ -356,6 +437,12 @@ Config::Config(u64 count, const char** args)
                             vcs.has_value() ? ((vcs.value() == "none") ? None : vcs) : "git");
       } else {
         log->fatalError("The 'new' command expects the name of the project to be created", None);
+      }
+      exitAfter = true;
+    } else if (command == "setup") {
+      auto next = readNext();
+      if (not next.has_value()) {
+        setup_path_in_env(true);
       }
       exitAfter = true;
     } else if (command == "help") {
@@ -600,7 +687,6 @@ Config::Config(u64 count, const char** args)
         }
       }
     }
-    setupEnvForQat();
   }
 }
 

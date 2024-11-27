@@ -64,11 +64,12 @@ public:
   static Config const* init(u64          count,
                             const char** args); // NOLINT(modernize-avoid-c-arrays)
   static Config const* get();
-  static bool          hasInstance();
 
-  static String                       filter_quotes(String value);
+  static bool hasInstance();
 
-  void setupEnvForQat();
+  static String filter_quotes(String value);
+
+  void setup_path_in_env(bool isSetupCmd);
 
   /** Behaviour specific functions */
 

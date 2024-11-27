@@ -75,6 +75,7 @@
 #include "../ast/sentences/local_declaration.hpp"
 #include "../ast/sentences/loop_infinite.hpp"
 #include "../ast/sentences/loop_n_times.hpp"
+#include "../ast/sentences/loop_over.hpp"
 #include "../ast/sentences/loop_while.hpp"
 #include "../ast/sentences/member_initialisation.hpp"
 #include "../ast/sentences/say_sentence.hpp"
@@ -2386,7 +2387,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
                   SHOW("Creating member function prototype")
                   auto memVisib = getVisibility();
                   memParent->add_method_definition(ast::MethodDefinition::create(
-                      ast::MemberPrototype::Value(fnName, entityMeta.defineChecker, argsRes.first, argsRes.second,
+                      ast::MethodPrototype::Value(fnName, entityMeta.defineChecker, argsRes.first, argsRes.second,
                                                   retTy, entityMeta.metaInfo, getVisibSpec(memVisib),
                                                   fromVisibRange(memVisib, RangeSpan(start, i))),
                       snts, RangeSpan(start, bClose)));
@@ -2447,11 +2448,11 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
               SHOW("Creating member function prototype")
               auto memVisib = getVisibility();
               memParent->add_method_definition(ast::MethodDefinition::create(
-                  getStatic() ? ast::MemberPrototype::Static(IdentifierAt(start), meta.defineChecker, argsRes.first,
+                  getStatic() ? ast::MethodPrototype::Static(IdentifierAt(start), meta.defineChecker, argsRes.first,
                                                              argsRes.second, retTy, std::move(meta.metaInfo),
                                                              getVisibSpec(memVisib),
                                                              fromVisibRange(memVisib, RangeSpan(start, i)))
-                              : ast::MemberPrototype::Normal(getVariation(), IdentifierAt(start), meta.defineChecker,
+                              : ast::MethodPrototype::Normal(getVariation(), IdentifierAt(start), meta.defineChecker,
                                                              argsRes.first, argsRes.second, retTy,
                                                              std::move(meta.metaInfo), getVisibSpec(memVisib),
                                                              fromVisibRange(memVisib, RangeSpan(start, i))),
@@ -3577,9 +3578,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             if (pCloseRes.has_value()) {
               auto pClose = pCloseRes.value();
               auto args   = do_separated_expressions(preCtx, i + 2, pClose);
-              setCachedExpr(ast::MemberFunctionCall::create(ast::SelfInstance::create(RangeAt(start)), true,
-                                                            IdentifierAt(i + 1), args, callNature,
-                                                            RangeSpan(start, pClose)),
+              setCachedExpr(ast::MethodCall::create(ast::SelfInstance::create(RangeAt(start)), true,
+                                                    IdentifierAt(i + 1), args, callNature, RangeSpan(start, pClose)),
                             pClose);
               i = pClose;
               break;
@@ -4146,8 +4146,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
               if (pCloseRes.has_value()) {
                 auto pClose = pCloseRes.value();
                 auto args   = do_separated_expressions(preCtx, i + 2, pClose);
-                setCachedExpr(ast::MemberFunctionCall::create(exp, false, IdentifierAt(i + 1), args, callNature,
-                                                              exp->fileRange.spanTo(RangeSpan(start, pClose))),
+                setCachedExpr(ast::MethodCall::create(exp, false, IdentifierAt(i + 1), args, callNature,
+                                                      exp->fileRange.spanTo(RangeSpan(start, pClose))),
                               pClose);
                 i = pClose;
                 break;
@@ -4165,8 +4165,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
             if (is_next(TokenType::parenthesisOpen, i + 1)) {
               auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
               if (pCloseRes) {
-                setCachedExpr(ast::MemberFunctionCall::create(exp, false, Identifier{"end", RangeAt(i)}, {}, None,
-                                                              exp->fileRange.spanTo(RangeSpan(i, pCloseRes.value()))),
+                setCachedExpr(ast::MethodCall::create(exp, false, Identifier{"end", RangeAt(i)}, {}, None,
+                                                      exp->fileRange.spanTo(RangeSpan(i, pCloseRes.value()))),
                               pCloseRes.value());
                 i = pCloseRes.value();
                 break;
@@ -4927,6 +4927,47 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           } else {
             add_error("Expected [ to start the body of the loop", RangeSpan(start, i));
           }
+        } else if (is_next(TokenType::in, i)) {
+          auto start = i;
+          auto exp   = do_expression(preCtx, None, i + 1, None);
+          i          = exp.second;
+          if (not is_next(TokenType::altArrow, i)) {
+            add_error("Expected => to end the expression for the item to loop over", RangeSpan(start, i));
+          }
+          i++;
+          Maybe<Identifier> itemName;
+          Maybe<Identifier> indexName;
+          if (is_next(TokenType::let, i)) {
+            if (not is_next(TokenType::identifier, i + 1)) {
+              add_error("Expected the name for the item of the loop after this", RangeAt(i + 1));
+            }
+            itemName = IdentifierAt(i + 2);
+            if (is_next(TokenType::separator, i + 2)) {
+              if (not is_next(TokenType::identifier, i + 3)) {
+                add_error("Expected the name for the index of the loop after ,", RangeAt(i + 3));
+              }
+              indexName = IdentifierAt(i + 4);
+              i += 4;
+            } else {
+              i += 2;
+            }
+          } else {
+            add_error("Expected " + color_error("let") +
+                          " after this to start the declaration for the element of the loop",
+                      RangeSpan(start, i));
+          }
+          if (not is_next(TokenType::bracketOpen, i)) {
+            add_error("Expected [ to start the block of sentences for this loop", RangeSpan(start, i));
+          }
+          auto bClose = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+          if (not bClose.has_value()) {
+            add_error("Expected ] to end the block of sentences for this loop", RangeAt(i + 1));
+          }
+          auto sentences = do_sentences(preCtx, i + 1, bClose.value());
+          i              = bClose.value();
+          result.push_back(ast::LoopOver::create(exp.first, std::move(sentences), std::move(itemName.value()),
+                                                 std::move(indexName), RangeSpan(start, i)));
+          break;
         } else if (is_next(TokenType::While, i)) {
           auto start = i;
           if (first_primary_position(TokenType::altArrow, i + 1).has_value()) {

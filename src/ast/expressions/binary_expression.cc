@@ -212,40 +212,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       SHOW("Returning IR Value llres " << llRes << " resType " << resType)
       return ir::Value::get(llRes, resType, false)->with_range(fileRange);
     } else {
-      if (rhsValueType->is_choice() && (rhsValueType->as_choice()->get_underlying_type()->is_same(lhsValueType))) {
-        if (op == Op::bitwiseAnd) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else if (op == Op::bitwiseOr) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else if (op == Op::bitwiseXor) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else {
-          ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for left hand side type " +
-                         ctx->color(lhsValueType->to_string()) + " and right hand side type " +
-                         ctx->color(rhsValueType->to_string()),
-                     fileRange);
-        }
-      } else if (rhsValueType->is_choice()) {
-        if (rhsValueType->as_choice()->has_negative_values()) {
-          ctx->Error("The bitwidth of the operand on the left is " +
-                         ctx->color(std::to_string(lhsValueType->as_integer()->get_bitwidth())) +
-                         ", but the operand on the right is of the choice type " +
-                         ctx->color(rhsValueType->to_string()) + " whose underlying type is " +
-                         ctx->color(rhsValueType->as_choice()->get_underlying_type()->to_string()),
-                     fileRange);
-        } else {
-          ctx->Error("The operand on the left is a signed integer of type " + ctx->color(lhsValueType->to_string()) +
-                         " but the operand on the right is of the choice type " +
-                         ctx->color(rhsValueType->to_string()) + " whose underlying type is an unsigned integer type",
-                     fileRange);
-        }
-      } else if (rhsValueType->is_integer()) {
+      if (rhsValueType->is_integer()) {
         ctx->Error("Signed integers in this binary operation have different bitwidths."
                    " It is recommended to convert the operand with smaller bitwidth to the bigger "
                    "bitwidth to prevent potential loss of data and logical errors",
@@ -362,41 +329,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       return ir::Value::get(llRes, resType, false)->with_range(fileRange);
     } else {
-      if (rhsValueType->is_choice() && !rhsValueType->as_choice()->has_negative_values() &&
-          (rhsValueType->as_choice()->get_underlying_type()->is_same(lhsValueType))) {
-        if (op == Op::bitwiseAnd) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else if (op == Op::bitwiseOr) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else if (op == Op::bitwiseXor) {
-          referenceHandler();
-          return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), lhsValueType, false)
-              ->with_range(fileRange);
-        } else {
-          ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for left hand side type " +
-                         ctx->color(lhsType->to_string()) + " and right hand side type " +
-                         ctx->color(rhsType->to_string()),
-                     fileRange);
-        }
-      } else if (rhsValueType->is_choice()) {
-        if (!rhsValueType->as_choice()->has_negative_values()) {
-          ctx->Error("The bitwidth of the operand on the left is " +
-                         ctx->color(std::to_string(lhsValueType->as_unsigned_integer()->getBitwidth())) +
-                         ", but the operand on the right is of the choice type " +
-                         ctx->color(rhsValueType->to_string()) + " whose underlying type is " +
-                         ctx->color(rhsValueType->as_choice()->get_underlying_type()->to_string()),
-                     fileRange);
-        } else {
-          ctx->Error("The operand on the left is an unsigned integer of type " + ctx->color(lhsValueType->to_string()) +
-                         " but the operand on the right is of the choice type " +
-                         ctx->color(rhsValueType->to_string()) + " whose underlying type is a signed integer type",
-                     fileRange);
-        }
-      } else if (rhsValueType->is_unsigned_integer()) {
+      if (rhsValueType->is_unsigned_integer()) {
         ctx->Error("Unsigned integers in this binary operation have different "
                    "bitwidths. Cast the operand with smaller bitwidth to the bigger "
                    "bitwidth to prevent potential loss of data and logical errors",
@@ -800,41 +733,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
             ->with_range(fileRange);
       }
     } else {
-      // FIXME - ?? Separate type for bitwise operations
-      if (op == Op::bitwiseAnd) {
-        return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), chTy->get_underlying_type(), false)
-            ->with_range(fileRange);
-      } else if (op == Op::bitwiseOr) {
-        return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), chTy->get_underlying_type(), false)
-            ->with_range(fileRange);
-      } else if (op == Op::bitwiseXor) {
-        return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal), chTy->get_underlying_type(), false)
-            ->with_range(fileRange);
-      } else {
-        ctx->Error("This binary operator is not supported for expressions of type " + ctx->color(lhsType->to_string()),
-                   fileRange);
-      }
-    }
-  } else if (lhsValueType->is_choice() && (lhsValueType->as_choice()->get_underlying_type()->is_same(rhsValueType))) {
-    if (op == Op::bitwiseAnd) {
-      referenceHandler();
-      return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false)
-          ->with_range(fileRange);
-    } else if (op == Op::bitwiseOr) {
-      referenceHandler();
-      return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false)
-          ->with_range(fileRange);
-    } else if (op == Op::bitwiseXor) {
-      referenceHandler();
-      return ir::Value::get(ctx->irCtx->builder.CreateXor(lhsVal, rhsVal),
-                            lhsValueType->as_choice()->get_underlying_type(), false)
-          ->with_range(fileRange);
-    } else {
-      ctx->Error("Left hand side is of choice type " + ctx->color(lhsValueType->to_string()) +
-                     " and right hand side is of type " + ctx->color(rhsValueType->to_string()) + ". Binary operator " +
-                     ctx->color(operator_to_string(op)) + " is not supported for these operands",
+      ctx->Error("This binary operator is not supported for expressions of type " + ctx->color(lhsType->to_string()),
                  fileRange);
     }
   } else {

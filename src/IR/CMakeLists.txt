@@ -2,6 +2,7 @@ add_library(QAT_IR STATIC
 	context.cc
 	control_flow.cc
 	generics.cc
+	internal.cc
 	logic.cc
 	entity_overview.cc
 	function.cc

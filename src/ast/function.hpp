@@ -14,7 +14,6 @@ class FunctionPrototype final : public IsEntity {
   friend class ir::GenericFunction;
   Identifier            name;
   Vec<Argument*>        arguments;
-  bool                  isVariadic;
   Maybe<Type*>          returnType;
   Maybe<MetaInfo>       metaInfo;
   Maybe<VisibilitySpec> visibSpec;
@@ -38,9 +37,9 @@ public:
                     PrerunExpression* _checker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
                     Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Vec<GenericAbstractType*> _generics,
                     Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
-      : IsEntity(_fileRange), name(_name), arguments(_arguments), isVariadic(_isVariadic), returnType(_returnType),
-        metaInfo(_metaInfo), visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
-        definition(_definition), generics(_generics) {}
+      : IsEntity(_fileRange), name(_name), arguments(_arguments), returnType(_returnType), metaInfo(_metaInfo),
+        visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint), definition(_definition),
+        generics(_generics) {}
 
   useit static inline FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
                                                 Maybe<Type*> _returnType, PrerunExpression* _checker,

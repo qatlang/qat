@@ -1,15 +1,18 @@
 #include "./function.hpp"
+#include "../IR/qat_module.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
+#include "./emit_ctx.hpp"
+#include "./sentence.hpp"
+#include "./types/generic_abstract.hpp"
 #include "./types/prerun_generic.hpp"
 #include "./types/typed_generic.hpp"
-#include "emit_ctx.hpp"
-#include "sentence.hpp"
-#include "types/generic_abstract.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/Instructions.h"
+#include "internal.hpp"
+
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalValue.h>
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 
@@ -92,7 +95,6 @@ void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irC
 }
 
 ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) const {
-
   SHOW("Creating function " << name.value << " with generic count: " << generics.size())
   auto emitCtx = EmitCtx::get(irCtx, mod);
   emitCtx->name_check_in_module(name, is_generic() ? "generic function" : "function",
@@ -119,13 +121,20 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
     irCtx->Error("Main function cannot be inside a named module", name.range);
   }
   SHOW("Generating types")
-  for (auto* arg : arguments) {
-    if (arg->is_type_member()) {
+  bool isVariadic = false;
+  for (usize i = 0; i < arguments.size(); i++) {
+    auto arg = arguments[i];
+    if (arg->is_member_arg()) {
       irCtx->Error("Function is not a member function of a core type and cannot "
                    "use member argument syntax",
                    arg->get_name().range);
     }
-    if (arg->get_type()) {
+    if (arg->is_variadic_arg()) {
+      isVariadic = true;
+      if (i != (arguments.size() - 1)) {
+        irCtx->Error("Variadic argument should always be the last argument", arg->get_name().range);
+      }
+    } else {
       auto* genType = arg->get_type()->emit(EmitCtx::get(irCtx, mod));
       generatedTypes.push_back(genType);
     }
@@ -146,18 +155,17 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
         if (generatedTypes.at(0)->is_mark() && generatedTypes.at(0)->as_mark()->isSlice() &&
             generatedTypes.at(0)->as_mark()->getOwner().isAnonymous()) {
           if (generatedTypes.at(0)->as_mark()->isSubtypeVariable()) {
-            irCtx->Error("Type of the first argument of the " + irCtx->color("main") +
-                             " function, cannot be a mark with variability. "
-                             "It should be of " +
-                             irCtx->color("slice![cStr]") + " type",
-                         arguments.at(0)->get_type()->fileRange);
+            irCtx->Error("Type of the argument of the " + irCtx->color("main") +
+                             " function, cannot be a slice with variability. It should be of type " +
+                             irCtx->color("slice![cStr]"),
+                         arguments[0]->get_type()->fileRange);
           }
           mod->set_has_main_function();
           irCtx->hasMain = true;
         } else {
-          irCtx->Error("Type of the first argument of the " + irCtx->color("main") + " function should be " +
+          irCtx->Error("Type of the argument of the " + irCtx->color("main") + " function should be " +
                            irCtx->color("slice![cStr]"),
-                       arguments.at(0)->get_type()->fileRange);
+                       arguments[0]->get_type()->fileRange);
         }
       } else if (generatedTypes.empty()) {
         mod->set_has_main_function();
@@ -189,11 +197,14 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                                                         arguments.at(i)->get_type()->emit(EmitCtx::get(irCtx, mod)), i)
                          : ir::Argument::Create(arguments.at(i)->get_name(), generatedTypes.at(i), i));
     }
+    if (isVariadic) {
+      args.push_back(ir::Argument::CreateVariadic("", arguments.back()->get_name().range, arguments.size() - 1));
+    }
   }
   SHOW("Variability setting complete")
   auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
   if (isMainFn) {
-    if (!(retTy->is_ctype() && retTy->as_ctype()->get_c_type_kind() == ir::CTypeKind::Int)) {
+    if (not(retTy->is_ctype() && retTy->as_ctype()->get_c_type_kind() == ir::CTypeKind::Int)) {
       irCtx->Error(irCtx->color("main") + " function expects to have a given type of " + irCtx->color("int"),
                    fileRange);
     }
@@ -214,7 +225,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
     }
     SHOW("About to create generic function")
     auto* fun = ir::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes), inlineFunction,
-                                     ir::ReturnType::get(retTy), args, isVariadic, fileRange,
+                                     ir::ReturnType::get(retTy), args, fileRange,
                                      emitCtx->get_visibility_info(visibSpec), irCtx, None, irMetaInfo);
     SHOW("Created IR function")
     return fun;
@@ -227,13 +238,85 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                                                        LinkUnitType::function)},
                                          "C", nullptr))
             : None,
-        {}, inlineFunction, ir::ReturnType::get(retTy), args, isVariadic, fileRange,
-        emitCtx->get_visibility_info(visibSpec), irCtx,
+        {}, inlineFunction, ir::ReturnType::get(retTy), args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx,
         definition.has_value()
             ? None
             : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalLinkage),
         irMetaInfo);
     SHOW("Created IR function")
+    if (irMetaInfo.has_value() && irMetaInfo->has_key(ir::MetaInfo::providesKey)) {
+      auto proVal = irMetaInfo->get_value_as_string_for(ir::MetaInfo::providesKey);
+      if (proVal.has_value()) {
+        auto inDep = ir::internal_dependency_from_string(proVal.value());
+        if (not inDep.has_value()) {
+          irCtx->Error("The " + irCtx->color(ir::MetaInfo::providesKey) + " key has a value of " +
+                           irCtx->color(proVal.value()) + ", which is not a recognised internal dependency",
+                       irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey));
+        }
+        if (ir::Mod::has_provided_function(inDep.value())) {
+          auto fn       = ir::Mod::get_provided_function(inDep.value());
+          auto depRange = fn->has_definition_range() ? fn->get_definition_range() : fn->get_name().range;
+          irCtx->Error("The internal dependency " + irCtx->color(proVal.value()) + " has already been provided",
+                       irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey),
+                       Pair<String, FileRange>{"The previously provided entity can be found here", depRange});
+        }
+        switch (inDep.value()) {
+          case ir::InternalDependency::printf: {
+            auto printfSig = ir::Internal::printf_signature(irCtx);
+            if (not fun->get_ir_type()->is_same(printfSig)) {
+              irCtx->Error("The internal dependency " + irCtx->color(ir::internal_dependency_to_string(inDep.value())) +
+                               " provided by this function has an unexpected signature. The expected signature is " +
+                               irCtx->color(printfSig->to_string()) + " but the signature of this function is " +
+                               irCtx->color(fun->get_ir_type()->to_string()),
+                           fileRange);
+            }
+            break;
+          }
+          case ir::InternalDependency::malloc: {
+            auto mallocSig = ir::Internal::malloc_signature(irCtx);
+            if (not fun->get_ir_type()->is_same(mallocSig)) {
+              irCtx->Error("The internal dependency " + irCtx->color(ir::internal_dependency_to_string(inDep.value())) +
+                               " provided by this function has an unexpected signature. The expected signature is " +
+                               irCtx->color(mallocSig->to_string()) + " but the signature of this function is " +
+                               irCtx->color(fun->get_ir_type()->to_string()),
+                           fileRange);
+            }
+            break;
+          }
+          case ir::InternalDependency::realloc: {
+            auto reallocSig = ir::Internal::realloc_signature(irCtx);
+            if (not fun->get_ir_type()->is_same(reallocSig)) {
+              irCtx->Error("The internal dependency " + irCtx->color(ir::internal_dependency_to_string(inDep.value())) +
+                               " provided by this function has an unexpected signature. The expected signature is " +
+                               irCtx->color(reallocSig->to_string()) + " but the signature of this function is " +
+                               irCtx->color(fun->get_ir_type()->to_string()),
+                           fileRange);
+            }
+            break;
+          }
+          case ir::InternalDependency::free: {
+            auto freeSig = ir::Internal::free_signature(irCtx);
+            if (not fun->get_ir_type()->is_same(freeSig)) {
+              irCtx->Error("The internal dependency " + irCtx->color(ir::internal_dependency_to_string(inDep.value())) +
+                               " provided by this function has an unexpected signature. The expected signature is " +
+                               irCtx->color(freeSig->to_string()) + " but the signature of this function is " +
+                               irCtx->color(fun->get_ir_type()->to_string()),
+                           fileRange);
+            }
+          }
+          default: {
+            irCtx->Error("The internal dependency " + irCtx->color(ir::internal_dependency_to_string(inDep.value())) +
+                             " cannot be provided at the moment",
+                         fileRange);
+          }
+        }
+        ir::Mod::add_provided_function(inDep.value(), fun);
+      } else {
+        irCtx->Error("Could not get the value of the " + irCtx->color(ir::MetaInfo::providesKey) +
+                         " key in the metadata of the function",
+                     irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey));
+      }
+    }
     return fun;
   }
 }
@@ -312,7 +395,6 @@ Json FunctionPrototype::to_json() const {
       ._("hasReturnType", returnType.has_value())
       ._("returnType", returnType.has_value() ? returnType.value()->to_json() : JsonValue())
       ._("arguments", args)
-      ._("isVariadic", isVariadic)
       ._("hasVisibility", visibSpec.has_value())
       ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
       ._("hasMetaInfo", metaInfo.has_value())

@@ -614,7 +614,7 @@ public:
   useit const VisibilityInfo& get_visibility() const;
 
   useit Function* create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-                                  bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
+                                  const FileRange& fileRange, const VisibilityInfo& visibility,
                                   Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
   useit inline bool is_submodule() const { return parent != nullptr; }

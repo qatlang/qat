@@ -228,7 +228,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
       argsEmit.push_back(arguments[i]->emit(ctx));
     }
     SHOW("Argument values generated for method")
-    for (usize i = 1; i < fnArgsTy.size(); i++) {
+    for (usize i = 1; i < fnTy->get_argument_count(); i++) {
       auto fnArgType = fnArgsTy[i]->get_type();
       auto argType   = argsEmit[i - 1]->get_ir_type();
       if (!(fnArgType->is_same(argType) || fnArgType->isCompatible(argType) ||
@@ -246,7 +246,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
     Vec<llvm::Value*> argVals;
     Maybe<String>     localID = inst->get_local_id();
     argVals.push_back(inst->get_llvm());
-    for (usize i = 1; i < fnArgsTy.size(); i++) {
+    for (usize i = 1; i < fnTy->get_argument_count(); i++) {
       auto* currArg = argsEmit[i - 1];
       if (fnArgsTy[i]->get_type()->is_reference()) {
         auto fnRefTy = fnArgsTy[i]->get_type()->as_reference();
@@ -305,7 +305,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
       argVals.push_back(argsEmit[i - 1]->get_llvm());
     }
     if (isVariadicArg) {
-      for (usize i = fnArgsTy.size() - 1; i < argsEmit.size(); i++) {
+      for (usize i = fnTy->get_argument_count(); i < argsEmit.size(); i++) {
         auto currArg  = argsEmit[i];
         auto argTy    = currArg->get_ir_type();
         auto isRefVar = false;

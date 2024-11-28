@@ -18,35 +18,40 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
     if (fnVal->get_ir_type()->is_function()) {
       fun = (ir::Function*)fnVal;
     }
-    if (fnTy->get_argument_types().size() != values.size()) {
+    if (not fnTy->is_variadic() && fnTy->get_argument_count() != values.size()) {
       ctx->Error("Number of arguments provided for the function call does not "
                  "match the function signature",
+                 fileRange);
+    } else if (fnTy->is_variadic() && (values.size() < fnTy->get_argument_count())) {
+      ctx->Error("The number of arguments provided is " + ctx->color(std::to_string(values.size())) +
+                     ", but trying to call a variadic function that requires at least " +
+                     ctx->color(std::to_string(fnTy->get_argument_count())) + " arguments",
                  fileRange);
     }
     Vec<ir::Value*> argsEmit;
     for (usize i = 0; i < values.size(); i++) {
       if (fnTy->get_argument_count() > (u64)i) {
         auto* argTy = fnTy->get_argument_type_at(i)->get_type();
-        if (values.at(i)->has_type_inferrance()) {
-          values.at(i)->as_type_inferrable()->set_inference_type(argTy);
+        if (values[i]->has_type_inferrance()) {
+          values[i]->as_type_inferrable()->set_inference_type(argTy);
         }
       }
-      argsEmit.push_back(values.at(i)->emit(ctx));
+      argsEmit.push_back(values[i]->emit(ctx));
     }
     SHOW("Argument values generated")
     auto fnArgsTy = fnTy->get_argument_types();
-    for (usize i = 0; i < fnArgsTy.size(); i++) {
-      SHOW("FnArg type is " << fnArgsTy.at(i)->to_string() << " and arg emit type is "
+    for (usize i = 0; i < fnTy->get_argument_count(); i++) {
+      auto fnArgTy = fnArgsTy[i];
+      SHOW("FnArg type is " << fnArgTy->to_string() << " and arg emit type is "
                             << argsEmit.at(i)->get_ir_type()->to_string())
-      if (!fnArgsTy.at(i)->get_type()->is_same(argsEmit.at(i)->get_ir_type()) &&
-          !fnArgsTy.at(i)->get_type()->isCompatible(argsEmit.at(i)->get_ir_type()) &&
+      if ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type())) &&
+          (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type())) &&
           (argsEmit.at(i)->get_ir_type()->is_reference()
-               ? (!fnArgsTy.at(i)->get_type()->is_same(argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype()) &&
-                  !fnArgsTy.at(i)->get_type()->isCompatible(
-                      argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype()))
+               ? ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype())) &&
+                  (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype())))
                : true)) {
         ctx->Error("Type of this expression is " + ctx->color(argsEmit.at(i)->get_ir_type()->to_string()) +
-                       " which is not compatible with the type " + ctx->color(fnArgsTy.at(i)->get_type()->to_string()) +
+                       " which is not compatible with the type " + ctx->color(fnArgTy->get_type()->to_string()) +
                        " of the " + utils::number_to_position(i) + " argument " +
                        (fun.has_value()
                             ? ctx->color(fun.value()->get_ir_type()->as_function()->get_argument_type_at(i)->get_name())
@@ -56,8 +61,9 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
                    values.at(i)->fileRange);
       }
     }
+
     Vec<llvm::Value*> argValues;
-    for (usize i = 0; i < fnArgsTy.size(); i++) {
+    for (usize i = 0; i < fnTy->get_argument_count(); i++) {
       SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->get_ir_type()->to_string())
       if (fnArgsTy.at(i)->get_type()->is_reference() &&
           (!argsEmit.at(i)->is_reference() && !argsEmit.at(i)->is_ghost_reference())) {
@@ -75,6 +81,45 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
         argsEmit.at(i)->load_ghost_reference(ctx->irCtx->builder);
       }
       argValues.push_back(argsEmit.at(i)->get_llvm());
+    }
+    if (fnTy->is_variadic()) {
+      for (usize i = fnTy->get_argument_count(); i < argsEmit.size(); i++) {
+        // The logic of this loop is identical to that in `ast::MethodCall`
+        auto currArg  = argsEmit[i];
+        auto argTy    = currArg->get_ir_type();
+        auto isRefVar = false;
+        if (argTy->is_reference()) {
+          isRefVar = argTy->as_reference()->isSubtypeVariable();
+          argTy    = argTy->as_reference()->get_subtype();
+        } else {
+          isRefVar = currArg->is_variable();
+        }
+        if (currArg->get_ir_type()->is_reference() || currArg->is_ghost_reference()) {
+          if (currArg->get_ir_type()->is_reference()) {
+            currArg->load_ghost_reference(ctx->irCtx->builder);
+          }
+          if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
+            auto* argLLVMVal = currArg->get_llvm();
+            argsEmit[i] = ir::Value::get(ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()),
+                                         argTy, false);
+            if (not argTy->is_trivially_copyable()) {
+              if (not isRefVar) {
+                ctx->Error("This expression " +
+                               String(currArg->get_ir_type()->is_reference() ? "is a reference without variability"
+                                                                             : "does not have variability") +
+                               " and hence cannot be trivially moved from",
+                           values[i]->fileRange);
+              }
+              ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(argTy->get_llvm_type()), argLLVMVal);
+            }
+          } else {
+            ctx->Error("This expression is of type " + ctx->color(currArg->get_ir_type()->to_string()) +
+                           " which is not trivially copyable or movable. It cannot be passed as a variadic argument",
+                       values[i]->fileRange);
+          }
+        }
+        argValues.push_back(argsEmit[i]->get_llvm());
+      }
     }
     if (fun.has_value()) {
       return fun.value()->call(ctx->irCtx, argValues, None, ctx->mod);

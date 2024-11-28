@@ -155,7 +155,6 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
         }
       }
     }
-    bool              isMethodVariadic = false;
     Vec<ir::Argument> args;
     SHOW("Setting variability of arguments")
     for (usize i = 0; i < arguments.size(); i++) {
@@ -164,8 +163,10 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
         SHOW("Creating member argument")
         args.push_back(ir::Argument::CreateMember(arg->get_name(), generatedTypes.at(i).second, i));
       } else if (arguments[i]->is_variadic_arg()) {
+        if (i != (arguments.size() - 1)) {
+          irCtx->Error("Variadic arguments should always be the last argument", arguments[i]->get_name().range);
+        }
         args.push_back(ir::Argument::CreateVariadic(arg->get_name().value, arg->get_name().range, i));
-        isMethodVariadic = true;
       } else {
         args.push_back(arguments.at(i)->is_variable()
                            ? ir::Argument::CreateVariable(arg->get_name(), generatedTypes[i].second, i)
@@ -173,9 +174,9 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
       }
     }
     SHOW("About to create function")
-    state.result = ir::Method::CreateConstructor(
-        state.parent, nameRange, state.metaInfo.has_value() && state.metaInfo->get_inline(), args, isMethodVariadic,
-        fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::CreateConstructor(state.parent, nameRange,
+                                                 state.metaInfo.has_value() && state.metaInfo->get_inline(), args,
+                                                 fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
     SHOW("Constructor created in the IR")
   } else if (type == ConstructorType::Default) {
     if (state.parent->is_done_skill() && state.parent->get_parent_type()->is_expanded() &&

@@ -223,13 +223,14 @@ void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
 }
 
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, bool _isVariadicArguments,
-                   Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
+                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> _fileRange,
+                   const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
                    Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
     : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
       namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
       arguments(std::move(_args)), visibilityInfo(_visibility_info), fileRange(std::move(_fileRange)),
-      hasVariadicArguments(_isVariadicArguments), isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
+      hasVariadicArguments(not arguments.empty() && (arguments.back().kind == ArgumentKind::VARIADIC)),
+      isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
 {
   SHOW("ir::Function constructor")
   Maybe<String> foreignID;
@@ -277,7 +278,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
         llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
                                llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName, mod->get_llvm_module());
   }
-  if (!is_method() && !is_generic()) {
+  if (not is_method() && not is_generic()) {
     mod->functions.push_back(this);
   }
 }
@@ -295,8 +296,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
   SHOW("Linking function if it is external")
   auto* llvmFunction = llvm::cast<llvm::Function>(ll);
   if (destMod->get_id() != mod->get_id()) {
-    // FIXME - This will prevent some functions with duplicate names in the global scope to be not linked during calls
-    if (!destMod->get_llvm_module()->getFunction(llvmFunction->getName())) {
+    if (not destMod->get_llvm_module()->getFunction(llvmFunction->getName())) {
       llvm::Function::Create((llvm::FunctionType*)get_ir_type()->get_llvm_type(),
                              llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
                              llvmFunction->getName(), destMod->get_llvm_module());
@@ -305,7 +305,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
   SHOW("Getting return type")
   auto* retType = ((FunctionType*)get_ir_type())->get_return_type();
   SHOW("Getting function type")
-  auto* fnTy = (llvm::FunctionType*)get_ir_type()->as_function()->get_llvm_type();
+  auto* fnTy = llvm::cast<llvm::FunctionType>(get_ir_type()->as_function()->get_llvm_type());
   SHOW("Got function type")
   SHOW("Creating LLVM call: " << linkingName << " with ID " << get_id())
   SHOW("Number of args: " << argValues.size())
@@ -321,11 +321,11 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 }
 
 Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> _generics,
-                           bool isInline, ReturnType* returnTy, Vec<Argument> args, const bool hasVariadicArgs,
-                           Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRange> fileRange,
+                           const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
   return new Function(mod, std::move(name), namingInfo, std::move(_generics), isInline, returnTy, std::move(args),
-                      hasVariadicArgs, std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
+                      std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
 }
 
 void Function::update_overview() {

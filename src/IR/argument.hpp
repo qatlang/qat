@@ -12,6 +12,7 @@ namespace qat::ir {
  *
  */
 class Argument {
+  friend class Function;
   Identifier   name;
   Type*        type;
   bool         variability;

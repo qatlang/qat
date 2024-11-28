@@ -170,13 +170,13 @@ protected:
 
 public:
   Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
-           ReturnType* returnType, Vec<Argument> _args, bool _hasVariadicArguments, Maybe<FileRange> fileRange,
+           ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> fileRange,
            const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
            Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
   static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-                          bool isInline, ReturnType* return_type, Vec<Argument> args, bool has_variadic_args,
-                          Maybe<FileRange> fileRange, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+                          bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRange> fileRange,
+                          const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                           Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
   useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;

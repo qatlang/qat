@@ -214,7 +214,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     SHOW("MemberFn :: " << name.value << " Static Method")
     state.result =
         ir::Method::CreateStatic(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy,
-                                 args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+                                 args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   } else if (fnTy == MethodType::valued) {
     SHOW("MemberFn :: " << name.value << " Valued Method")
     if (!parentType->is_trivially_copyable()) {
@@ -222,13 +222,12 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     }
     state.result =
         ir::Method::CreateValued(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy,
-                                 args, isVariadic, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+                                 args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   } else {
     SHOW("MemberFn :: " << name.value << " Method or Variation")
-    state.result = ir::Method::Create(state.parent, fnTy == MethodType::variation, name,
-                                      state.metaInfo.has_value() && state.metaInfo->get_inline(),
-                                      ir::ReturnType::get(retTy, isSelfReturn), args, isVariadic, fileRange,
-                                      emitCtx->get_visibility_info(visibSpec), irCtx);
+    state.result = ir::Method::Create(
+        state.parent, fnTy == MethodType::variation, name, state.metaInfo.has_value() && state.metaInfo->get_inline(),
+        ir::ReturnType::get(retTy, isSelfReturn), args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
   }
 }
 

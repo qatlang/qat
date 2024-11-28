@@ -299,13 +299,13 @@ void Mod::addMember(Mod* mod) {
 }
 
 Function* Mod::create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-                               bool isVariadic, const FileRange& fileRange, const VisibilityInfo& visibility,
+                               const FileRange& fileRange, const VisibilityInfo& visibility,
                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
   SHOW("Creating IR function")
   auto nmUnits = get_link_names();
   nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, {}), None);
   auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, isInline, ir::ReturnType::get(returnType),
-                               std::move(args), isVariadic, fileRange, visibility, ctx, linkage);
+                               std::move(args), fileRange, visibility, ctx, linkage);
   SHOW("Created function")
   functions.push_back(fun);
   return fun;
@@ -531,7 +531,7 @@ Function* Mod::get_mod_initialiser(Ctx* ctx) {
   if (!moduleInitialiser) {
     moduleInitialiser = ir::Function::Create(
         this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), None, {/* Generics */}, false,
-        ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, false, name.range, VisibilityInfo::pub(), ctx);
+        ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
     auto* entry = new ir::Block(moduleInitialiser, nullptr);
     entry->set_active(ctx->builder);
   }

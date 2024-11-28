@@ -74,18 +74,18 @@ private:
                                        MethodType fnType, Vec<Argument> args, Type* retTy);
 
   Method(MethodType fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, bool isInline,
-         ReturnType* returnType, Vec<Argument> _args, bool has_variadic_arguments, bool _is_static,
-         Maybe<FileRange> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
+         ReturnType* returnType, Vec<Argument> _args, bool _is_static, Maybe<FileRange> _fileRange,
+         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
 
 public:
   static std::map<MethodType, String> methodTypes;
 
   useit static Method* Create(MethodParent* parent, bool is_variation, const Identifier& name, bool isInline,
-                              ReturnType* returnType, const Vec<Argument>& args, bool has_variadic_args,
-                              Maybe<FileRange> fileRange, const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+                              ReturnType* returnType, const Vec<Argument>& args, Maybe<FileRange> fileRange,
+                              const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
   useit static Method* CreateValued(MethodParent* parent, const Identifier& name, bool isInline, Type* return_type,
-                                    const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                                    const Vec<Argument>& args, Maybe<FileRange> fileRange,
                                     const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
   useit static Method* DefaultConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
@@ -104,7 +104,7 @@ public:
                                       const Identifier& otherName, const FileRange& fileRange, ir::Ctx* irCtx);
 
   useit static Method* CreateConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
-                                         const Vec<Argument>& args, bool hasVariadicArgs, Maybe<FileRange> fileRange,
+                                         const Vec<Argument>& args, Maybe<FileRange> fileRange,
                                          const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
   useit static Method* CreateFromConvertor(MethodParent* parent, FileRange nameRange, bool isInline, Type* sourceType,
@@ -123,7 +123,7 @@ public:
                                       const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
   useit static Method* CreateStatic(MethodParent* parent, const Identifier& name, bool isInline, Type* return_type,
-                                    const Vec<Argument>& args, bool has_variadic_args, Maybe<FileRange> fileRange,
+                                    const Vec<Argument>& args, Maybe<FileRange> fileRange,
                                     const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 
   ~Method() override;

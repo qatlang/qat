@@ -40,8 +40,8 @@
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
-#include "../ast/member_function.hpp"
 #include "../ast/meta/todo.hpp"
+#include "../ast/method.hpp"
 #include "../ast/mod_info.hpp"
 #include "../ast/operator_function.hpp"
 #include "../ast/prerun/array_literal.hpp"
@@ -73,10 +73,10 @@
 #include "../ast/sentences/give_sentence.hpp"
 #include "../ast/sentences/if_else.hpp"
 #include "../ast/sentences/local_declaration.hpp"
+#include "../ast/sentences/loop_if.hpp"
+#include "../ast/sentences/loop_in.hpp"
 #include "../ast/sentences/loop_infinite.hpp"
-#include "../ast/sentences/loop_n_times.hpp"
-#include "../ast/sentences/loop_over.hpp"
-#include "../ast/sentences/loop_while.hpp"
+#include "../ast/sentences/loop_to.hpp"
 #include "../ast/sentences/member_initialisation.hpp"
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
@@ -4938,7 +4938,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
                             RangeSpan(condRes.second + 1, stopPos.value()));
                 }
                 result.push_back(
-                    ast::LoopWhile::create(true, condRes.first, sentences, tagVal, RangeSpan(start, stopPos.value())));
+                    ast::LoopIf::create(true, condRes.first, sentences, tagVal, RangeSpan(start, stopPos.value())));
                 i = stopPos.value();
               } else {
                 add_error("Expected . to end the condition for the " + color_error("do-loop-if"),
@@ -5022,8 +5022,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
           }
           auto sentences = do_sentences(preCtx, i + 1, bClose.value());
           i              = bClose.value();
-          result.push_back(ast::LoopOver::create(exp.first, std::move(sentences), std::move(itemName.value()),
-                                                 std::move(indexName), RangeSpan(start, i)));
+          result.push_back(ast::LoopIn::create(exp.first, std::move(sentences), std::move(itemName.value()),
+                                               std::move(indexName), RangeSpan(start, i)));
           break;
         } else if (is_next(TokenType::If, i)) {
           auto start = i;
@@ -5049,7 +5049,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
               if (bCloseRes.has_value()) {
                 auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
                 result.push_back(
-                    ast::LoopWhile::create(false, cond.first, snts, tagValue, RangeSpan(start, bCloseRes.value())));
+                    ast::LoopIf::create(false, cond.first, snts, tagValue, RangeSpan(start, bCloseRes.value())));
                 i = bCloseRes.value();
                 break;
               } else {
@@ -5089,8 +5089,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
             auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
             if (bCloseRes.has_value()) {
               auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
-              result.push_back(ast::LoopNTimes::create(countRes.first, do_sentences(preCtx, i + 1, bCloseRes.value()),
-                                                       loopTag, RangeSpan(i, bCloseRes.value())));
+              result.push_back(ast::LoopTo::create(countRes.first, do_sentences(preCtx, i + 1, bCloseRes.value()),
+                                                   loopTag, RangeSpan(i, bCloseRes.value())));
               i = bCloseRes.value();
             } else {
               add_error("Expected end for [", RangeAt(i + 1));

@@ -1,4 +1,4 @@
-#include "./loop_over.hpp"
+#include "./loop_in.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
@@ -8,7 +8,7 @@
 
 namespace qat::ast {
 
-ir::Value* LoopOver::emit(EmitCtx* ctx) {
+ir::Value* LoopIn::emit(EmitCtx* ctx) {
   for (auto& loopInfo : ctx->loopsInfo) {
     if (loopInfo.name.has_value()) {
       if (loopInfo.name->value == itemName.value) {

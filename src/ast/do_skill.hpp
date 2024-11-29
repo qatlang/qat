@@ -1,12 +1,10 @@
 #ifndef QAT_AST_DO_SKILL_HPP
 #define QAT_AST_DO_SKILL_HPP
 
-#include "destructor.hpp"
-#include "member_function.hpp"
-#include "member_parent_like.hpp"
-#include "node.hpp"
-#include "operator_function.hpp"
-#include "types/qat_type.hpp"
+#include "./member_parent_like.hpp"
+#include "./node.hpp"
+#include "./types/qat_type.hpp"
+
 namespace qat::ast {
 
 struct SkillName {

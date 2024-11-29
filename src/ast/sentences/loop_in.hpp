@@ -1,12 +1,12 @@
-#ifndef LOOP_IN_HPP
-#define LOOP_IN_HPP
+#ifndef QAT_AST_SENTENCES_LOOP_IN_HPP
+#define QAT_AST_SENTENCES_LOOP_IN_HPP
 
 #include "../expression.hpp"
 #include "../sentence.hpp"
 
 namespace qat::ast {
 
-class LoopOver : public Sentence {
+class LoopIn : public Sentence {
   Expression*    candidate;
   Vec<Sentence*> sentences;
   Identifier     itemName;
@@ -14,14 +14,14 @@ class LoopOver : public Sentence {
   Maybe<Identifier> indexName;
 
 public:
-  LoopOver(Expression* _candidate, Vec<Sentence*> _sentences, Identifier _itemName, Maybe<Identifier> _indexName,
-           FileRange _fileRange)
+  LoopIn(Expression* _candidate, Vec<Sentence*> _sentences, Identifier _itemName, Maybe<Identifier> _indexName,
+         FileRange _fileRange)
       : Sentence(std::move(_fileRange)), candidate(_candidate), sentences(std::move(_sentences)),
         itemName(std::move(_itemName)), indexName(std::move(_indexName)) {}
 
-  useit static inline LoopOver* create(Expression* candidate, Vec<Sentence*> sentences, Identifier itemName,
-                                       Maybe<Identifier> indexName, FileRange fileRange) {
-    return std::construct_at(OwnNormal(LoopOver), candidate, std::move(sentences), std::move(itemName),
+  useit static inline LoopIn* create(Expression* candidate, Vec<Sentence*> sentences, Identifier itemName,
+                                     Maybe<Identifier> indexName, FileRange fileRange) {
+    return std::construct_at(OwnNormal(LoopIn), candidate, std::move(sentences), std::move(itemName),
                              std::move(indexName), std::move(fileRange));
   }
 

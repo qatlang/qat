@@ -1,12 +1,12 @@
-#include "./loop_n_times.hpp"
+#include "./loop_to.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../utils/unique_id.hpp"
 
 namespace qat::ast {
 
-bool LoopNTimes::hasTag() const { return tag.has_value(); }
+bool LoopTo::hasTag() const { return tag.has_value(); }
 
-ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
+ir::Value* LoopTo::emit(EmitCtx* ctx) {
   if (tag.has_value()) {
     for (const auto& info : ctx->loopsInfo) {
       if (info.name.has_value() && (info.name->value == tag->value)) {
@@ -106,7 +106,7 @@ ir::Value* LoopNTimes::emit(EmitCtx* ctx) {
   return nullptr;
 }
 
-Json LoopNTimes::to_json() const {
+Json LoopTo::to_json() const {
   Vec<JsonValue> snts;
   for (auto* snt : sentences) {
     snts.push_back(snt->to_json());

@@ -16,7 +16,7 @@ add_library(QAT_AST STATIC
 	generics.cc
 	global_declaration.cc
 	lib.cc
-	member_function.cc
+	method.cc
 	mod_info.cc
 	node.cc
 	operator_function.cc

@@ -1,4 +1,4 @@
-#include "./member_function.hpp"
+#include "./method.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"

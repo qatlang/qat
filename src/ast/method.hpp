@@ -1,14 +1,14 @@
-#ifndef QAT_AST_MEMBER_FUNCTION_HPP
-#define QAT_AST_MEMBER_FUNCTION_HPP
+#ifndef QAT_AST_METHOD_HPP
+#define QAT_AST_METHOD_HPP
 
 #include "../IR/context.hpp"
 #include "../IR/types/core_type.hpp"
 #include "./argument.hpp"
+#include "./expression.hpp"
+#include "./member_parent_like.hpp"
+#include "./meta_info.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
-#include "expression.hpp"
-#include "member_parent_like.hpp"
-#include "meta_info.hpp"
 #include "llvm/IR/GlobalValue.h"
 #include <string>
 

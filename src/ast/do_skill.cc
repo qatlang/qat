@@ -1,5 +1,8 @@
 #include "./do_skill.hpp"
 #include "../IR/skill.hpp"
+#include "./destructor.hpp"
+#include "./method.hpp"
+#include "./operator_function.hpp"
 #include "constructor.hpp"
 #include "convertor.hpp"
 

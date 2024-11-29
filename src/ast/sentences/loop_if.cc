@@ -1,9 +1,9 @@
-#include "./loop_while.hpp"
+#include "./loop_if.hpp"
 #include "../../IR/control_flow.hpp"
 
 namespace qat::ast {
 
-ir::Value* LoopWhile::emit(EmitCtx* ctx) {
+ir::Value* LoopIf::emit(EmitCtx* ctx) {
   String uniq;
   if (tag.has_value()) {
     uniq = tag->value;
@@ -93,7 +93,7 @@ ir::Value* LoopWhile::emit(EmitCtx* ctx) {
   return nullptr;
 }
 
-Json LoopWhile::to_json() const {
+Json LoopIf::to_json() const {
   Vec<JsonValue> snts;
   for (auto* snt : sentences) {
     snts.push_back(snt->to_json());

@@ -2,13 +2,17 @@
 #define QAT_IR_PRERUN_FUNCTION_HPP
 
 #include "../utils/identifier.hpp"
-#include "types/function.hpp"
-#include "types/qat_type.hpp"
+#include "../utils/visibility.hpp"
+#include "./types/function.hpp"
+#include "./types/qat_type.hpp"
 #include "value.hpp"
 
 namespace qat::ast {
 class PrerunSentence;
-}
+class PrerunLoopTo;
+class PrerunBreak;
+class PrerunContinue;
+} // namespace qat::ast
 
 namespace qat::ir {
 
@@ -88,12 +92,43 @@ public:
   void set_next(PreBlock* _next) { next = _next; }
 };
 
+enum class PreLoopKind {
+  TO,
+  IF,
+  IN,
+  INFINITE,
+};
+
+struct PreLoopInfo {
+  PreLoopKind       kind;
+  Maybe<Identifier> tag;
+
+  useit String kind_to_string() const {
+    switch (kind) {
+      case PreLoopKind::TO:
+        return "loop to";
+      case PreLoopKind::IF:
+        return "loop if";
+      case PreLoopKind::IN:
+        return "loop in";
+      case PreLoopKind::INFINITE:
+        return "loop";
+    }
+  }
+};
+
 class PrerunCallState {
   friend class PrerunFunction;
+  friend class ast::PrerunLoopTo;
+  friend class ast::PrerunBreak;
+  friend class ast::PrerunContinue;
+
   PrerunFunction*   function = nullptr;
   Vec<PrerunValue*> argumentValues;
   Vec<PreBlock*>    blocks;
   usize             activeBlock = 0;
+
+  Vec<PreLoopInfo> loopsInfo;
 
   Maybe<PrerunValue*> givenValue;
   usize               emitNesting = 0;

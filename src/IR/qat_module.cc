@@ -6,6 +6,7 @@
 #include "../utils/find_executable.hpp"
 #include "../utils/run_command.hpp"
 #include "../utils/utils.hpp"
+#include "./prerun_function.hpp"
 #include "brought.hpp"
 #include "function.hpp"
 #include "global_entity.hpp"
@@ -19,19 +20,20 @@
 #include "types/string_slice.hpp"
 #include "types/void.hpp"
 #include "value.hpp"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/Config/llvm-config.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
-#include "llvm/Support/CodeGen.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/TargetParser/Triple.h"
+
 #include <filesystem>
 #include <fstream>
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/Config/llvm-config.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/GlobalValue.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/CodeGen.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/TargetParser/Triple.h>
 #include <memory>
 #include <system_error>
 
@@ -786,6 +788,14 @@ void Mod::bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identi
   }
 }
 
+void Mod::bring_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName) {
+  if (bName.has_value()) {
+    broughtPrerunFunctions.push_back(Brought<PrerunFunction>(bName.value(), preFn, visib));
+  } else {
+    broughtPrerunFunctions.push_back(Brought<PrerunFunction>(preFn, visib));
+  }
+}
+
 void Mod::bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
   if (bName.has_value()) {
     broughtGenericFunctions.push_back(Brought<GenericFunction>(bName.value(), gFn, visib));
@@ -897,6 +907,86 @@ Function* Mod::get_function(const String& name, const AccessInfo& reqInfo) {
             bMod->has_function_in_imports(name, reqInfo).first) {
           if (bMod->get_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
             return bMod->get_function(name, reqInfo);
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+// PRERUN FUNCTIONS
+
+bool Mod::has_prerun_function(String const& name, AccessInfo reqInfo) const {
+  for (auto* fn : prerunFunctions) {
+    if ((fn->get_name().value == name) && fn->get_visibility().is_accessible(reqInfo)) {
+      return true;
+    }
+  }
+  for (auto sub : submodules) {
+    if (not sub->should_be_named()) {
+      if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
+          sub->has_prerun_function_in_imports(name, reqInfo).first) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool Mod::has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const {
+  for (const auto& brought : broughtPrerunFunctions) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Pair<bool, String> Mod::has_prerun_function_in_imports(const String& name, const AccessInfo& reqInfo) const {
+  for (const auto& brought : broughtModules) {
+    if (not brought.is_named()) {
+      auto* bMod = brought.get();
+      if (not bMod->should_be_named()) {
+        if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
+            bMod->has_prerun_function_in_imports(name, reqInfo).first) {
+          if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+            return {true, bMod->filePath.string()};
+          }
+        }
+      }
+    }
+  }
+  return {false, ""};
+}
+
+PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& reqInfo) {
+  for (auto* function : prerunFunctions) {
+    if ((function->get_name().value == name) && function->get_visibility().is_accessible(reqInfo)) {
+      return function;
+    }
+  }
+  for (auto sub : submodules) {
+    if (not sub->should_be_named()) {
+      if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
+          sub->has_prerun_function_in_imports(name, reqInfo).first) {
+        return sub->get_prerun_function(name, reqInfo);
+      }
+    }
+  }
+  for (const auto& brought : broughtPrerunFunctions) {
+    if (matchBroughtEntity(brought, name, reqInfo)) {
+      return brought.get();
+    }
+  }
+  for (const auto& brought : broughtModules) {
+    if (not brought.is_named()) {
+      auto* bMod = brought.get();
+      if (not bMod->should_be_named()) {
+        if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
+            bMod->has_prerun_function_in_imports(name, reqInfo).first) {
+          if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+            return bMod->get_prerun_function(name, reqInfo);
           }
         }
       }

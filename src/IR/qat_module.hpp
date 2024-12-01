@@ -9,8 +9,6 @@
 #include "./emit_phase.hpp"
 #include "./function.hpp"
 #include "./global_entity.hpp"
-#include "./types/core_type.hpp"
-#include "./types/definition.hpp"
 #include "./types/float.hpp"
 #include "./types/mix.hpp"
 #include "entity_overview.hpp"
@@ -48,6 +46,8 @@ class MemberAccess;
 namespace qat::ir {
 
 class Ctx;
+class PrerunFunction;
+class GenericStructType;
 
 enum class ModuleType { lib, file, folder };
 
@@ -422,44 +422,59 @@ public:
   useit static Mod* get_folder_module(const fs::path& fPath);
 
 private:
-  Identifier                          name;
-  ModuleType                          moduleType;
-  bool                                rootLib = false;
-  Maybe<MetaInfo>                     metaInfo;
-  Deque<LibToLink>                    nativeLibsToLink;
-  fs::path                            filePath;
-  fs::path                            basePath;
-  VisibilityInfo                      visibility;
-  Mod*                                parent = nullptr;
-  Mod*                                active = nullptr;
-  std::set<Mod*>                      dependencies;
-  Vec<Mod*>                           submodules;
-  Vec<Brought<Mod>>                   broughtModules;
-  Deque<OpaqueType*>                  opaqueTypes;
-  Vec<Brought<OpaqueType>>            broughtOpaqueTypes;
-  Vec<Brought<OpaqueType>>            broughtGenericOpaqueTypes;
-  Vec<StructType*>                    coreTypes;
-  Vec<Brought<StructType>>            broughtCoreTypes;
-  Vec<ChoiceType*>                    choiceTypes;
-  Vec<Brought<ChoiceType>>            broughtChoiceTypes;
-  Vec<MixType*>                       mixTypes;
-  Vec<Brought<MixType>>               broughtMixTypes;
-  Vec<DefinitionType*>                typeDefs;
-  Vec<Brought<DefinitionType>>        broughtTypeDefs;
-  Vec<Function*>                      functions;
-  Vec<Brought<Function>>              broughtFunctions;
-  Vec<GenericFunction*>               genericFunctions;
-  Vec<Brought<GenericFunction>>       broughtGenericFunctions;
-  Vec<GenericStructType*>             genericCoreTypes;
-  Vec<Brought<GenericStructType>>     broughtGenericCoreTypes;
+  Identifier        name;
+  ModuleType        moduleType;
+  bool              rootLib = false;
+  Maybe<MetaInfo>   metaInfo;
+  Deque<LibToLink>  nativeLibsToLink;
+  fs::path          filePath;
+  fs::path          basePath;
+  VisibilityInfo    visibility;
+  Mod*              parent = nullptr;
+  Mod*              active = nullptr;
+  std::set<Mod*>    dependencies;
+  Vec<Mod*>         submodules;
+  Vec<Brought<Mod>> broughtModules;
+
+  Deque<OpaqueType*>       opaqueTypes;
+  Vec<Brought<OpaqueType>> broughtOpaqueTypes;
+  Vec<Brought<OpaqueType>> broughtGenericOpaqueTypes;
+
+  Vec<StructType*>         coreTypes;
+  Vec<Brought<StructType>> broughtCoreTypes;
+
+  Vec<ChoiceType*>         choiceTypes;
+  Vec<Brought<ChoiceType>> broughtChoiceTypes;
+
+  Vec<MixType*>         mixTypes;
+  Vec<Brought<MixType>> broughtMixTypes;
+
+  Vec<DefinitionType*>         typeDefs;
+  Vec<Brought<DefinitionType>> broughtTypeDefs;
+
+  Vec<Function*>         functions;
+  Vec<Brought<Function>> broughtFunctions;
+
+  Vec<PrerunFunction*>         prerunFunctions;
+  Vec<Brought<PrerunFunction>> broughtPrerunFunctions;
+
+  Vec<GenericFunction*>         genericFunctions;
+  Vec<Brought<GenericFunction>> broughtGenericFunctions;
+
+  Vec<GenericStructType*>         genericCoreTypes;
+  Vec<Brought<GenericStructType>> broughtGenericCoreTypes;
+
   Vec<GenericDefinitionType*>         genericTypeDefinitions;
   Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
-  Vec<GlobalEntity*>                  globalEntities;
-  Vec<Brought<GlobalEntity>>          broughtGlobalEntities;
-  Vec<PrerunGlobal*>                  prerunGlobals;
-  Vec<Brought<PrerunGlobal>>          broughtPrerunGlobals;
-  Vec<Region*>                        regions;
-  Vec<Brought<Region>>                broughtRegions;
+
+  Vec<GlobalEntity*>         globalEntities;
+  Vec<Brought<GlobalEntity>> broughtGlobalEntities;
+
+  Vec<PrerunGlobal*>         prerunGlobals;
+  Vec<Brought<PrerunGlobal>> broughtPrerunGlobals;
+
+  Vec<Region*>         regions;
+  Vec<Brought<Region>> broughtRegions;
 
   Vec<EntityState*> entityEntries;
 
@@ -673,6 +688,13 @@ public:
   useit Function* get_function(const String& name, const AccessInfo& reqInfo);
   useit Pair<bool, String> has_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
+  // PRERUN FUNCTION
+
+  useit bool            has_prerun_function(String const& name, AccessInfo reqInfo) const;
+  useit bool            has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
+  useit PrerunFunction* get_prerun_function(String const& name, const AccessInfo& reqInfo);
+  useit Pair<bool, String> has_prerun_function_in_imports(String const& name, AccessInfo const& reqInfo) const;
+
   // GENERIC FUNCTIONS
 
   useit bool             has_generic_function(const String& name, AccessInfo reqInfo) const;
@@ -765,6 +787,7 @@ public:
   void bring_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+  void bring_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
   void bring_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
   void bring_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);

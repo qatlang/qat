@@ -131,19 +131,22 @@ class PrerunFunction : public PrerunValue {
   Type*              returnType;
   Vec<ArgumentType*> argTypes;
   Mod*               parent;
+  VisibilityInfo     visibility;
 
   Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
 
 public:
   PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
-                 Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, llvm::LLVMContext& ctx)
-      : PrerunValue(nullptr, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)), name(_name),
-        returnType(_retTy), argTypes(_argTys), parent(_parent), sentences(_sentences) {}
+                 Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
+      : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)), name(_name),
+        returnType(_retTy), argTypes(_argTys), parent(_parent), visibility(visib), sentences(_sentences) {}
 
   useit Identifier    get_name() const { return name; }
   useit Type*         get_return_type() const { return returnType; }
   useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
   useit Mod*          get_module() const { return parent; }
+
+  useit VisibilityInfo const& get_visibility() const { return visibility; }
 
   PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRange fileRange);
 };

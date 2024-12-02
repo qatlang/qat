@@ -10,8 +10,45 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
   if (fnValType->is_ctype()) {
     fnValType = fnValType->as_ctype()->get_subtype();
   }
-  if (fnVal && (fnVal->get_ir_type()->is_function() ||
-                (fnValType->is_mark() && fnValType->as_mark()->get_subtype()->is_function()))) {
+  if (fnVal->is_prerun_value() && fnValType->is_function()) {
+    // Is prerun function
+    auto* fnTy = fnValType->as_function();
+    if (fnTy->is_variadic()) {
+      if (values.size() < fnTy->get_argument_count()) {
+        ctx->Error("The number of arguments provided is " + ctx->color(std::to_string(values.size())) +
+                       ", but trying to call a variadic prerun function that requires at least " +
+                       ctx->color(std::to_string(fnTy->get_argument_count())) + " arguments",
+                   fileRange);
+      }
+    } else {
+      if (values.size() != fnTy->get_argument_count()) {
+        ctx->Error("Number of arguments provided for the function call does not match the function signature",
+                   fileRange);
+      }
+    }
+    Vec<ir::PrerunValue*> argsEmit;
+    for (usize i = 0; i < values.size(); i++) {
+      auto argRes = values[i]->emit(ctx);
+      if (not argRes->is_prerun_value()) {
+        ctx->Error(
+            "While trying to perform a prerun function call, but this is not a prerun value. Please check your logic",
+            values[i]->fileRange);
+      }
+      if (i < fnTy->get_argument_count()) {
+        if (not fnTy->get_argument_type_at(i)->get_type()->is_same(argRes->get_ir_type())) {
+          ctx->Error("Expected a prerun expression of type " +
+                         ctx->color(fnTy->get_argument_type_at(i)->get_type()->to_string()) +
+                         " here, but found a prerun expression of type " +
+                         ctx->color(argRes->get_ir_type()->to_string()),
+                     values[i]->fileRange);
+        }
+      }
+      argsEmit.push_back(argRes->as_prerun());
+    }
+    auto* preFn = (ir::PrerunFunction*)(fnVal->get_llvm_constant());
+    return preFn->call_prerun(argsEmit, ctx->irCtx, fileRange);
+  } else if (fnVal->get_ir_type()->is_function() ||
+             (fnValType->is_mark() && fnValType->as_mark()->get_subtype()->is_function())) {
     auto*                fnTy = fnVal->get_ir_type()->is_function() ? fnVal->get_ir_type()->as_function()
                                                                     : fnValType->as_mark()->get_subtype()->as_function();
     Maybe<ir::Function*> fun;

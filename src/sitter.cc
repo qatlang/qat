@@ -219,11 +219,12 @@ void QatSitter::initialise() {
       log->say("Exporting code metadata");
       SHOW("About to export code metadata")
       // NOLINTNEXTLINE(readability-isolate-declaration)
-      Vec<JsonValue> modulesJSON, functionsJSON, genericFunctionsJSON, genericCoreTypesJSON, structTypesJSON,
-          mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON;
+      Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON, genericCoreTypesJSON,
+          structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON;
       for (auto* entity : fileEntities) {
-        entity->output_all_overview(modulesJSON, functionsJSON, genericFunctionsJSON, genericCoreTypesJSON,
-                                    structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON);
+        entity->output_all_overview(modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
+                                    genericCoreTypesJSON, structTypesJSON, mixTypesJSON, regionJSON, choiceJSON,
+                                    typeDefinitionsJSON);
       }
       Vec<JsonValue> expressionUnits;
       for (auto* exp : ir::Value::allValues) {
@@ -253,6 +254,7 @@ void QatSitter::initialise() {
           mStream << Json()
                          ._("modules", modulesJSON)
                          ._("functions", functionsJSON)
+                         ._("prerunFunctions", prerunFunctionsJSON)
                          ._("genericFunctions", genericFunctionsJSON)
                          ._("structTypes", structTypesJSON)
                          ._("genericStructTypes", genericCoreTypesJSON)

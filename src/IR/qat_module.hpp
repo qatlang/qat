@@ -666,9 +666,10 @@ public:
 
   void update_overview() final;
   void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-                           Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
-                           Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson,
-                           Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson);
+                           Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
+                           Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+                           Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
+                           Vec<JsonValue>& defsJson);
 
   // LIB
 

@@ -404,14 +404,18 @@ void Mod::update_overview() {
 }
 
 void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-                              Vec<JsonValue>& genericFunctionsJson, Vec<JsonValue>& genericCoreTypesJson,
-                              Vec<JsonValue>& coreTypesJson, Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson,
-                              Vec<JsonValue>& choiceJson, Vec<JsonValue>& defsJson) {
-  if (!isOverviewOutputted) {
+                              Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
+                              Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+                              Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
+                              Vec<JsonValue>& defsJson) {
+  if (not isOverviewOutputted) {
     isOverviewOutputted = true;
     modulesJson.push_back(overviewToJson());
     for (auto* fun : functions) {
       functionsJson.push_back(fun->overviewToJson());
+    }
+    for (auto* pre : prerunFunctions) {
+      prerunFunctionJSON.push_back(pre->overviewToJson());
     }
     for (auto* fun : genericFunctions) {
       genericFunctionsJson.push_back(fun->overviewToJson());

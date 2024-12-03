@@ -167,6 +167,20 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
               " which is brought into the current module. Please change name of this " + entityType +
               " or check the codebase for inconsistencies",
           name.range);
+  } else if (mod->has_prerun_function(name.value, reqInfo)) {
+    Error("A prerun function named " + color(name.value) + " exists in this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->has_brought_prerun_function(name.value, None)) {
+    Error("A prerun function named " + color(name.value) + " is brought into this module. Please change name of this " +
+              entityType + " or check the codebase for inconsistencies",
+          name.range);
+  } else if (mod->has_prerun_function_in_imports(name.value, reqInfo).first) {
+    Error("A prerun function named " + color(name.value) + " is present inside the module " +
+              color(mod->has_function_in_imports(name.value, reqInfo).second) +
+              " which is brought into the current module. Please change name of this " + entityType +
+              " or check the codebase for inconsistencies",
+          name.range);
   } else if (mod->has_generic_function(name.value, reqInfo)) {
     if (genericID.has_value() &&
         mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {

@@ -1,6 +1,6 @@
 #include "./give_sentence.hpp"
-
 #include "../../IR/types/void.hpp"
+#include "./internal_exceptions.hpp"
 
 namespace qat::ast {
 
@@ -13,8 +13,7 @@ void PrerunGive::emit(EmitCtx* ctx) {
       }
       auto retVal = value.value()->emit(ctx);
       if (ctx->get_pre_call_state()->get_function()->get_return_type()->is_same(retVal->get_ir_type())) {
-        ctx->get_pre_call_state()->set_given_value(retVal);
-        return;
+        throw InternalPrerunGive{retVal};
       } else {
         ctx->Error("This function expects a given value of type " +
                        ctx->color(ctx->get_pre_call_state()->get_function()->get_return_type()->to_string()) +
@@ -28,8 +27,7 @@ void PrerunGive::emit(EmitCtx* ctx) {
                        ", so a value should be provided",
                    fileRange);
       }
-      ctx->get_pre_call_state()->set_given_value(ir::PrerunValue::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx)));
-      return;
+      throw InternalPrerunGive{ir::PrerunValue::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx))};
     }
   } else {
     ctx->Error("No function call state for this give sentence", fileRange);

@@ -1,7 +1,10 @@
 #include "./parser.hpp"
 #include "../ast/bring_bitwidths.hpp"
+#include "../ast/bring_entities.hpp"
+#include "../ast/bring_paths.hpp"
 #include "../ast/constructor.hpp"
 #include "../ast/convertor.hpp"
+#include "../ast/define_choice_type.hpp"
 #include "../ast/define_core_type.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/define_opaque_type.hpp"
@@ -27,7 +30,7 @@
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/is.hpp"
 #include "../ast/expressions/member_access.hpp"
-#include "../ast/expressions/member_function_call.hpp"
+#include "../ast/expressions/method_call.hpp"
 #include "../ast/expressions/mix_choice_initialiser.hpp"
 #include "../ast/expressions/move.hpp"
 #include "../ast/expressions/negative.hpp"
@@ -55,7 +58,7 @@
 #include "../ast/prerun/float_literal.hpp"
 #include "../ast/prerun/integer_literal.hpp"
 #include "../ast/prerun/member_access.hpp"
-#include "../ast/prerun/member_function_call.hpp"
+#include "../ast/prerun/method_call.hpp"
 #include "../ast/prerun/mix_choice_init.hpp"
 #include "../ast/prerun/negative.hpp"
 #include "../ast/prerun/none.hpp"
@@ -77,6 +80,7 @@
 #include "../ast/sentences/loop_in.hpp"
 #include "../ast/sentences/loop_infinite.hpp"
 #include "../ast/sentences/loop_to.hpp"
+#include "../ast/sentences/match.hpp"
 #include "../ast/sentences/member_initialisation.hpp"
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
@@ -105,8 +109,9 @@
 #include "../cli/config.hpp"
 #include "../show.hpp"
 #include "../utils/utils.hpp"
-#include "cache_symbol.hpp"
-#include "parser_context.hpp"
+#include "./cache_symbol.hpp"
+#include "./parser_context.hpp"
+
 #include <chrono>
 #include <string>
 #include <utility>

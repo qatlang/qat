@@ -10,7 +10,7 @@ add_library(QAT_AST_PRERUN
 	float_literal.cc
 	integer_literal.cc
 	member_access.cc
-	member_function_call.cc
+	method_call.cc
 	mix_choice_init.cc
 	negative.cc
 	none.cc

@@ -1,8 +1,9 @@
-#include "./member_function_call.hpp"
+#include "./method_call.hpp"
 #include "../../IR/qat_module.hpp"
 #include "../../IR/types/vector.hpp"
-#include "../prerun/member_function_call.hpp"
-#include "llvm/IR/Intrinsics.h"
+#include "../prerun/method_call.hpp"
+
+#include <llvm/IR/Intrinsics.h>
 
 namespace qat::ast {
 

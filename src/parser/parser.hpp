@@ -1,26 +1,28 @@
 #ifndef QAT_PARSER_PARSER_HPP
 #define QAT_PARSER_PARSER_HPP
 
-#include "../ast/argument.hpp"
-#include "../ast/bring_entities.hpp"
-#include "../ast/bring_paths.hpp"
-#include "../ast/define_choice_type.hpp"
-#include "../ast/expression.hpp"
-#include "../ast/expressions/plain_initialiser.hpp"
-#include "../ast/generics.hpp"
-#include "../ast/member_parent_like.hpp"
 #include "../ast/meta_info.hpp"
-#include "../ast/sentence.hpp"
-#include "../ast/sentences/match.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
+
 #include <chrono>
 #include <map>
 #include <optional>
+
+namespace qat::ast {
+
+class PlainInitialiser;
+class Argument;
+class MatchValue;
+class Sentence;
+class MemberParentLike;
+class FillGeneric;
+
+} // namespace qat::ast
 
 namespace qat::parser {
 
@@ -86,8 +88,8 @@ public:
   useit bool are_only_present_within(const Vec<lexer::TokenType>& kinds, usize from, usize upto);
   useit bool is_primary_within(lexer::TokenType candidate, usize from, usize upto);
 
-  useit ast::BringEntities* parse_bring_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind, usize from,
-                                                 usize upto);
+  [[nodiscard]] ast::BringEntities* parse_bring_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind,
+                                                         usize from, usize upto);
   useit ast::BringPaths* parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
                                            const FileRange& start);
 

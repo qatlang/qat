@@ -244,12 +244,10 @@ void QatSitter::initialise() {
       std::error_code errorCode;
       if (not codeInfoExists) {
         fs::create_directories(codeStructFilePath.parent_path(), errorCode);
-      } else {
-        fs::remove(codeStructFilePath);
       }
-      if ((not errorCode) || codeInfoExists) {
+      if (codeInfoExists || (not errorCode)) {
         std::ofstream mStream;
-        mStream.open(codeStructFilePath, std::ios_base::out);
+        mStream.open(codeStructFilePath, std::ios_base::out | std::ios_base::trunc);
         if (mStream.is_open()) {
           mStream << Json()
                          ._("modules", modulesJSON)

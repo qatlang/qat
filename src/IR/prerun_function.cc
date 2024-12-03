@@ -35,7 +35,12 @@ PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx
   } catch (...) {
     irCtx->Error("Failed to call the prerun function with an exception", fileRange);
   }
-  return nullptr;
+  if (returnType->is_void()) {
+    return nullptr;
+  } else {
+    irCtx->Error("This prerun function did not give any value", fileRange);
+  }
+}
 }
 
 } // namespace qat::ir

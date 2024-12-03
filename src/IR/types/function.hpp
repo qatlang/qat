@@ -64,6 +64,16 @@ public:
 
   useit inline bool is_variadic_argument() const { return kind == ArgumentKind::VARIADIC; }
 
+  useit inline Json to_json() const {
+    return Json()
+        ._("hasName", name.has_value())
+        ._("name", name.has_value() ? name.value() : JsonValue())
+        ._("hasType", type != nullptr)
+        ._("type", type ? type->get_id() : JsonValue())
+        ._("isVar", variability)
+        ._("kind", kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
+  }
+
   useit inline String to_string() const {
     switch (kind) {
       case ArgumentKind::NORMAL:

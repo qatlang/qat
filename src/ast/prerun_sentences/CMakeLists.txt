@@ -1,6 +1,9 @@
 add_library(QAT_AST_PRERUN_SENTENCES
-	give_sentence.cc
-	prerun_sentence.cc)
+  break.cc
+  continue.cc
+  give_sentence.cc
+  loop_to.cc
+  prerun_sentence.cc)
 
 target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")
 

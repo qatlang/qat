@@ -4,7 +4,6 @@
 #include "../cli/color.hpp"
 #include "../cli/config.hpp"
 #include "../utils/file_range.hpp"
-#include "../utils/qat_region.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
 #include "clang/Basic/TargetInfo.h"
@@ -15,7 +14,6 @@
 #include "llvm/IR/Module.h"
 #include <chrono>
 #include <string>
-#include <thread>
 
 using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
 

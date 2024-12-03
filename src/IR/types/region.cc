@@ -1,6 +1,8 @@
 #include "./region.hpp"
 #include "../../show.hpp"
-#include "pointer.hpp"
+#include "./core_type.hpp"
+#include "./pointer.hpp"
+
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"

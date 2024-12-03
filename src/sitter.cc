@@ -242,12 +242,12 @@ void QatSitter::initialise() {
       auto            codeStructFilePath = cfg->get_output_path() / "QatCodeInfo.json";
       bool            codeInfoExists     = fs::exists(codeStructFilePath);
       std::error_code errorCode;
-      if (!codeInfoExists) {
+      if (not codeInfoExists) {
         fs::create_directories(codeStructFilePath.parent_path(), errorCode);
       } else {
         fs::remove(codeStructFilePath);
       }
-      if (!errorCode || codeInfoExists) {
+      if ((not errorCode) || codeInfoExists) {
         std::ofstream mStream;
         mStream.open(codeStructFilePath, std::ios_base::out);
         if (mStream.is_open()) {

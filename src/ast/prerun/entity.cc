@@ -207,7 +207,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
                fileRange);
   } else if (mod->has_prerun_function(name.value, reqInfo) || mod->has_brought_prerun_function(name.value, reqInfo) ||
              mod->has_prerun_function_in_imports(name.value, reqInfo).first) {
-    return mod->get_prerun_function(name.value, reqInfo);
+    auto preFn = mod->get_prerun_function(name.value, reqInfo);
+    preFn->add_mention(name.range);
+    return preFn;
   }
   ctx->Error("No prerun entity named " + ctx->color(name.value) + " found", name.range);
   return nullptr;

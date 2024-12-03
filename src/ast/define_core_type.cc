@@ -2,14 +2,14 @@
 #include "../IR/generics.hpp"
 #include "../IR/types/core_type.hpp"
 #include "../utils/identifier.hpp"
-#include "constructor.hpp"
-#include "convertor.hpp"
-#include "destructor.hpp"
-#include "member_function.hpp"
-#include "member_parent_like.hpp"
-#include "node.hpp"
-#include "operator_function.hpp"
-#include "types/generic_abstract.hpp"
+#include "./constructor.hpp"
+#include "./convertor.hpp"
+#include "./destructor.hpp"
+#include "./member_parent_like.hpp"
+#include "./method.hpp"
+#include "./node.hpp"
+#include "./operator_function.hpp"
+#include "./types/generic_abstract.hpp"
 
 namespace qat::ast {
 

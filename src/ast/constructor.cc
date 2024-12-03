@@ -27,7 +27,7 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
     }
   }
   if (metaInfo.has_value()) {
-    state.metaInfo = std::move(metaInfo.value().toIR(emitCtx));
+    state.metaInfo = metaInfo.value().toIR(emitCtx);
   }
   if (type == ConstructorType::normal) {
     Vec<Pair<Maybe<bool>, ir::Type*>> generatedTypes;
@@ -246,7 +246,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
     for (usize i = 1; i < argIRTypes.size(); i++) {
       SHOW("Argument type is " << argIRTypes[i]->get_type()->to_string())
       if (argIRTypes[i]->is_member_argument()) {
-        llvm::Value* memPtr;
+        llvm::Value* memPtr = nullptr;
         if (parentRefTy->get_subtype()->is_struct()) {
           memPtr = irCtx->builder.CreateStructGEP(
               parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),

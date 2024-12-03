@@ -442,8 +442,8 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
       defsJson.push_back(tDef->overviewToJson());
     }
     for (auto* sub : submodules) {
-      sub->output_all_overview(modulesJson, functionsJson, genericFunctionsJson, genericCoreTypesJson, coreTypesJson,
-                               mixTypesJson, regionJson, choiceJson, defsJson);
+      sub->output_all_overview(modulesJson, functionsJson, prerunFunctionJSON, genericFunctionsJson,
+                               genericCoreTypesJson, coreTypesJson, mixTypesJson, regionJson, choiceJson, defsJson);
     }
   }
 }

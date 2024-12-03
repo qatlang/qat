@@ -15,7 +15,7 @@ public:
   virtual void emit(EmitCtx* ctx) = 0;
 };
 
-useit bool emit_prerun_sentences(Vec<PrerunSentence*>& sentences, EmitCtx* ctx);
+void emit_prerun_sentences(Vec<PrerunSentence*>& sentences, EmitCtx* ctx) noexcept(false);
 
 } // namespace qat::ast
 

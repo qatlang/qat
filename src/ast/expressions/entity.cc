@@ -231,10 +231,9 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
     } else if (mod->has_type_definition(entityName.value, reqInfo) ||
                mod->has_brought_type_definition(entityName.value, reqInfo) ||
                mod->has_type_definition_in_imports(entityName.value, reqInfo).first) {
-      ctx->Error(mod->get_type_def(entityName.value, reqInfo)->get_full_name() +
-                     " is a type definition and cannot be used as a "
-                     "value in an expression",
-                 fileRange);
+      auto* resTy = mod->get_type_def(entityName.value, reqInfo);
+      resTy->add_mention(entityName.range);
+      return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resTy));
     } else if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
                mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
                mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {

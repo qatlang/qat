@@ -421,6 +421,19 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
         currentMod->bring_prerun_global(gEnt, emitCtx->get_visibility_info(visibSpec));
         gEnt->add_bring_mention(currentMod, entName.range);
         ent->bring();
+      } else if (mod->has_prerun_function(entName.value, reqInfo) ||
+                 mod->has_brought_prerun_function(entName.value, reqInfo) ||
+                 mod->has_prerun_function_in_imports(entName.value, reqInfo).first) {
+        auto* preFn = mod->get_prerun_function(entName.value, reqInfo);
+        if (not preFn->get_visibility().is_accessible(
+                reqInfo)) { // TODO - Verify that this check is necessary. It most probably isn't. If not remove this
+                            // and the above checks as well
+          irCtx->Error("Prerun function " + irCtx->color(entName.value) + " is not accessible in the current scope",
+                       entName.range);
+        }
+        currentMod->bring_prerun_function(preFn, emitCtx->get_visibility_info(visibSpec));
+        preFn->add_bring_mention(currentMod, entName.range);
+        ent->bring();
       } else if (throwErrorsWhenUnfound) {
         irCtx->Error("No module, type, function, region , prerun global, or global named " +
                          irCtx->color(entName.value) + " found in the parent scope",

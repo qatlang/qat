@@ -234,6 +234,12 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
       auto* resTy = mod->get_type_def(entityName.value, reqInfo);
       resTy->add_mention(entityName.range);
       return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resTy));
+    } else if (mod->has_prerun_function(entityName.value, reqInfo) ||
+               mod->has_brought_prerun_function(entityName.value, reqInfo) ||
+               mod->has_prerun_function_in_imports(entityName.value, reqInfo).first) {
+      auto* preFn = mod->get_prerun_function(entityName.value, reqInfo);
+      preFn->add_mention(entityName.range);
+      return preFn;
     } else if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
                mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
                mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {

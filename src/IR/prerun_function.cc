@@ -24,6 +24,8 @@ PrerunValue* PrerunCallState::get_arg_value_for(String const& name) {
   return nullptr;
 }
 
+String PrerunFunction::get_full_name() const { return parent->get_fullname_with_child(name.value); }
+
 PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx, FileRange fileRange) {
   auto callState = PrerunCallState::get(this, argValues);
   auto emitCtx   = ast::EmitCtx::get(irCtx, parent)->with_prerun_call_state(callState);
@@ -41,6 +43,19 @@ PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx
     irCtx->Error("This prerun function did not give any value", fileRange);
   }
 }
+
+void PrerunFunction::update_overview() {
+  Vec<JsonValue> argTyJSON;
+  for (auto* argTy : argTypes) {
+    argTyJSON.push_back(argTy->to_json());
+  }
+  ovInfo = Json()
+               ._("name", name)
+               ._("fullName", get_full_name())
+               ._("arguments", argTyJSON)
+               ._("parent", parent->get_id())
+               ._("givenType", returnType->get_id())
+               ._("visibility", visibility);
 }
 
 } // namespace qat::ir

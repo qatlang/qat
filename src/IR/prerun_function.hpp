@@ -5,6 +5,7 @@
 #include "../utils/visibility.hpp"
 #include "./types/function.hpp"
 #include "./types/qat_type.hpp"
+#include "entity_overview.hpp"
 #include "value.hpp"
 
 namespace qat::ast {
@@ -160,7 +161,7 @@ public:
   useit inline usize get_emit_nesting() const { return emitNesting; }
 };
 
-class PrerunFunction : public PrerunValue {
+class PrerunFunction : public PrerunValue, public EntityOverview {
   friend class PrerunCallState;
   Identifier         name;
   Type*              returnType;
@@ -173,10 +174,14 @@ class PrerunFunction : public PrerunValue {
 public:
   PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
                  Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
-      : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)), name(_name),
-        returnType(_retTy), argTypes(_argTys), parent(_parent), visibility(visib), sentences(_sentences) {}
+      : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
+        EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
+        parent(_parent), visibility(visib), sentences(_sentences) {}
+
+  void update_overview() final;
 
   useit Identifier    get_name() const { return name; }
+  useit String        get_full_name() const;
   useit Type*         get_return_type() const { return returnType; }
   useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
   useit Mod*          get_module() const { return parent; }

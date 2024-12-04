@@ -252,22 +252,16 @@ set(DEFAULT_LLVM_LIBS
   -lLLVMIRPrinter -lLLVMCodeGenTypes -lLLVMTargetParser -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMLoongArchAsmParser -lLLVMLoongArchCodeGen
   -lLLVMLoongArchDesc -lLLVMLoongArchDisassembler -lLLVMLoongArchInfo)
 
-if(is_os_windows)
-  if (is_runtime_mingw)
-	 set(LLVM_LIBRARIES ${DEFAULT_LLVM_LIBS})
-  else()
-    execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --link-static --libs
+if (CMAKE_CROSSCOMPILING)
+  set(LLVM_LIBRARIES ${DEFAULT_LLVM_LIBS})
+else()
+  if(is_os_windows)
+	 execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config.exe --link-static --libs
 		OUTPUT_VARIABLE LLVM_LIBRARIES)
-  endif()
-elseif(is_os_linux)
-  if (CMAKE_CROSSCOMPILING)
-	 set(LLVM_LIBRARIES ${DEFAULT_LLVM_LIBS})
   else()
 	 execute_process(COMMAND ${LLVM_ROOT_DIR}/bin/llvm-config --link-static --libs
 	   OUTPUT_VARIABLE LLVM_LIBRARIES)
   endif()
-elseif(is_os_macos)
-  set(LLVM_LIBRARIES ${DEFAULT_LLVM_LIBS})
 endif()
 
 string(STRIP "${LLVM_LIBRARIES}" LLVM_LIBRARIES)

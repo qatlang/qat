@@ -160,9 +160,10 @@ void Parser::set_tokens(Vec<lexer::Token>* allTokens) {
   g_ctx = ParserContext();
   delete tokens;
   tokens = allTokens;
+  filter_comments();
 }
 
-void Parser::filter_comments() {}
+void Parser::filter_comments() { comments.clear(); }
 
 ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibSpec,
                                                  usize fromMain, usize uptoMain) {

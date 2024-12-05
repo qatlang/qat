@@ -128,11 +128,8 @@ class PrerunCallState {
   Vec<PrerunValue*> argumentValues;
   Vec<PreBlock*>    blocks;
   usize             activeBlock = 0;
-
-  Vec<PreLoopInfo> loopsInfo;
-
-  Maybe<PrerunValue*> givenValue;
-  usize               emitNesting = 0;
+  Vec<PreLoopInfo>  loopsInfo;
+  usize             emitNesting = 0;
 
   PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
       : function(_function), argumentValues(_argVals) {}
@@ -151,10 +148,6 @@ public:
   useit inline PrerunFunction* get_function() const { return function; }
   useit bool                   has_arg_with_name(String const& name);
   useit PrerunValue*           get_arg_value_for(String const& name);
-
-  void inline set_given_value(PrerunValue* _givenVal) { givenValue = _givenVal; }
-  useit bool inline has_given_value() const { return givenValue.has_value(); }
-  useit PrerunValue* get_given_value() const { return givenValue.value(); }
 
   void               increment_emit_nesting() { emitNesting++; }
   void               decrement_emit_nesting() { emitNesting--; }

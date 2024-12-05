@@ -1,6 +1,29 @@
 #include "./loop_to.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "./internal_exceptions.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Constants.h>
+
+// I LOVE EXCEPTIONS from now on...
+#define PRERUN_LOOP_BASIC_CONTENTS                                                                                     \
+  try {                                                                                                                \
+    for (auto snt : sentences) {                                                                                       \
+      snt->emit(ctx);                                                                                                  \
+    }                                                                                                                  \
+  } catch (InternalPrerunBreak & brk) {                                                                                \
+    if (tag.has_value() && ((not brk.tag.has_value()) || (brk.tag.value() == tag->value))) {                           \
+      break;                                                                                                           \
+    } else {                                                                                                           \
+      throw;                                                                                                           \
+    }                                                                                                                  \
+  } catch (InternalPrerunContinue & cont) {                                                                            \
+    if (tag.has_value() && ((not cont.tag.has_value()) || (cont.tag.value() == tag->value))) {                         \
+      continue;                                                                                                        \
+    } else {                                                                                                           \
+      throw;                                                                                                           \
+    }                                                                                                                  \
+  }
 
 namespace qat::ast {
 
@@ -18,31 +41,30 @@ void PrerunLoopTo::emit(EmitCtx* ctx) {
       }
     }
     ctx->get_pre_call_state()->loopsInfo.push_back(ir::PreLoopInfo{.kind = ir::PreLoopKind::TO, .tag = tag});
-    const bool isUnsigned = countTy->is_underlying_type_unsigned();
-    for (auto index = llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, not isUnsigned);
-         llvm::cast<llvm::ConstantInt>(
-             llvm::ConstantFoldCompareInstruction(isUnsigned ? llvm::CmpInst::ICMP_ULT : llvm::CmpInst::ICMP_SLT, index,
-                                                  countExp->get_llvm_constant()))
-             ->getValue()
-             .getBoolValue();
-         index =
-             llvm::ConstantExpr::getAdd(index, llvm::ConstantInt::get(countTy->get_llvm_type(), 1u, not isUnsigned))) {
-      try { // I LOVE EXCEPTIONS from now on...
-        for (auto snt : sentences) {
-          snt->emit(ctx);
-        }
-      } catch (InternalPrerunBreak& brk) {
-        if (tag.has_value() && ((not brk.tag.has_value()) || (brk.tag.value() == tag->value))) {
-          break;
-        } else {
-          throw;
-        }
-      } catch (InternalPrerunContinue& cont) {
-        if (tag.has_value() && ((not cont.tag.has_value()) || (cont.tag.value() == tag->value))) {
-          continue;
-        } else {
-          throw;
-        }
+    if (countTy->is_integer() && (countTy->as_integer()->get_bitwidth() <= 64u) && (not tag.has_value())) {
+      auto countVal = *reinterpret_cast<i64 const*>(
+          llvm::cast<llvm::ConstantInt>(countExp->get_llvm_constant())->getValue().getRawData());
+      for (i64 i = 0; i < countVal; i++) {
+        PRERUN_LOOP_BASIC_CONTENTS
+      }
+    } else if (countTy->is_unsigned_integer() && (countTy->as_unsigned_integer()->getBitwidth() <= 64u) &&
+               (not tag.has_value())) {
+      auto countVal = *llvm::cast<llvm::ConstantInt>(countExp->get_llvm_constant())->getValue().getRawData();
+      for (u64 i = 0; i < countVal; i++) {
+        PRERUN_LOOP_BASIC_CONTENTS
+      }
+    } else {
+      const bool isUnsigned = countTy->is_underlying_type_unsigned();
+      for (auto index = llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, not isUnsigned);
+           llvm::cast<llvm::ConstantInt>(
+               llvm::ConstantFoldCompareInstruction(isUnsigned ? llvm::CmpInst::ICMP_ULT : llvm::CmpInst::ICMP_SLT,
+                                                    index, countExp->get_llvm_constant()))
+               ->getValue()
+               .getBoolValue();
+           index = llvm::ConstantFoldConstant(
+               llvm::ConstantExpr::getAdd(index, llvm::ConstantInt::get(countTy->get_llvm_type(), 1u, not isUnsigned)),
+               ctx->irCtx->dataLayout.value())) {
+        PRERUN_LOOP_BASIC_CONTENTS
       }
     }
     ctx->get_pre_call_state()->loopsInfo.pop_back();

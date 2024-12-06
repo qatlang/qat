@@ -24,8 +24,8 @@ public:
       : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), radix(_radix),
         isUnsigned(_isUnsigned), suffix(_suffix) {}
 
-  useit static inline CustomIntegerLiteral* create(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth,
-                                                   Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange) {
+  useit static CustomIntegerLiteral* create(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth,
+                                            Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange) {
     return std::construct_at(OwnNormal(CustomIntegerLiteral), _value, _isUnsigned, _bitWidth, _radix, _suffix,
                              _fileRange);
   }

@@ -3,9 +3,10 @@
 #include "../context.hpp"
 #include "../value.hpp"
 #include "./c_type.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/Support/raw_ostream.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/raw_ostream.h>
 
 namespace qat::ir {
 

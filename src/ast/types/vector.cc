@@ -2,7 +2,8 @@
 #include "../../IR/types/c_type.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../expression.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 
@@ -18,10 +19,10 @@ ir::Type* VectorType::emit(EmitCtx* ctx) {
   auto usableSubTy = subTy->is_ctype() ? subTy->as_ctype()->get_subtype() : subTy;
   if (usableSubTy->is_integer() || usableSubTy->is_unsigned_integer() || usableSubTy->is_float()) {
     if (count->has_type_inferrance()) {
-      count->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
+      count->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
     }
     auto num = count->emit(ctx);
-    if (num->get_ir_type()->is_unsigned_integer() && num->get_ir_type()->as_unsigned_integer()->getBitwidth() == 32u) {
+    if (num->get_ir_type()->is_unsigned_integer() && num->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u) {
       auto numVal = llvm::cast<llvm::ConstantInt>(
           llvm::ConstantFoldConstant(num->get_llvm_constant(), ctx->irCtx->dataLayout.value()));
       if (numVal->isZero()) {

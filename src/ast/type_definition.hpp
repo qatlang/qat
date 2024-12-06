@@ -29,10 +29,9 @@ public:
       : IsEntity(_fileRange), name(_name), subType(_subType), checker(_checker), constraint(_constraint),
         visibSpec(_visibSpec), generics(_generics) {}
 
-  useit static inline TypeDefinition* create(Identifier _name, Maybe<PrerunExpression*> _checker,
-                                             Vec<ast::GenericAbstractType*> _generics,
-                                             Maybe<PrerunExpression*> _constraint, Type* _subType, FileRange _fileRange,
-                                             Maybe<VisibilitySpec> _visibSpec) {
+  useit static TypeDefinition* create(Identifier _name, Maybe<PrerunExpression*> _checker,
+                                      Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
+                                      Type* _subType, FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec) {
     return std::construct_at(OwnNormal(TypeDefinition), _name, _checker, _generics, _constraint, _subType, _fileRange,
                              _visibSpec);
   }

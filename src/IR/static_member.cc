@@ -1,6 +1,6 @@
 #include "./static_member.hpp"
 #include "./qat_module.hpp"
-#include "./types/core_type.hpp"
+#include "./types/struct_type.hpp"
 #include "entity_overview.hpp"
 
 namespace qat::ir {

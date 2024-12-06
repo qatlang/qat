@@ -56,7 +56,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
   auto       candType   = candExp->get_ir_type()->is_reference() ? candExp->get_ir_type()->as_reference()->get_subtype()
                                                                  : candExp->get_ir_type();
   auto const isTyArray  = candType->is_array();
-  auto const isTySlice  = candType->is_mark() && candType->as_mark()->isSlice();
+  auto const isTySlice  = candType->is_mark() && candType->as_mark()->is_slice();
   auto const isTyCString  = candType->is_ctype() && candType->as_ctype()->is_cstring();
   auto const isTyStrSlice = candType->is_string_slice();
   auto const isTyVec      = candType->is_vector();
@@ -72,7 +72,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
     llvm::Value* lenVal  = nullptr;
     if (isTyArray) {
       elemTy  = candType->as_array()->get_element_type();
-      countTy = ir::UnsignedType::get(64u, ctx->irCtx);
+      countTy = ir::UnsignedType::create(64u, ctx->irCtx);
       if (not isRefUnder) {
         candExp    = candExp->make_local(ctx, None, candidate->fileRange);
         isRefUnder = true;
@@ -92,16 +92,16 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
         ptrVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {0u});
         lenVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {1u});
       }
-      candHasVar = candType->as_mark()->isSubtypeVariable();
+      candHasVar = candType->as_mark()->is_subtype_variable();
     } else if (isTyCString) {
-      elemTy = ir::UnsignedType::get(8, ctx->irCtx);
+      elemTy = ir::UnsignedType::create(8, ctx->irCtx);
       if (isRefUnder) {
         candExp = ir::Value::get(ctx->irCtx->builder.CreateLoad(candType->get_llvm_type(), candExp->get_llvm()),
                                  candType, false);
       }
       ptrVal = candExp->get_llvm();
     } else if (isTyStrSlice) {
-      elemTy = ir::UnsignedType::get(8, ctx->irCtx);
+      elemTy = ir::UnsignedType::create(8, ctx->irCtx);
       if (isRefUnder) {
         ptrVal = ctx->irCtx->builder.CreateLoad(
             llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace()),

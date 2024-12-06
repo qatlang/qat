@@ -41,12 +41,12 @@ public:
         visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint), definition(_definition),
         generics(_generics) {}
 
-  useit static inline FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-                                                Maybe<Type*> _returnType, PrerunExpression* _checker,
-                                                PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
-                                                Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-                                                Vec<GenericAbstractType*>              _generics,
-                                                Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
+  useit static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
+                                         Maybe<Type*> _returnType, PrerunExpression* _checker,
+                                         PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
+                                         Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+                                         Vec<GenericAbstractType*>              _generics,
+                                         Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
     return std::construct_at(OwnNormal(FunctionPrototype), _name, _arguments, _isVariadic, _returnType, _checker,
                              _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
   }

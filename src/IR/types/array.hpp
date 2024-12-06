@@ -3,7 +3,8 @@
 
 #include "../../utils/helpers.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -27,8 +28,8 @@ public:
   useit TypeKind type_kind() const final;
   useit String   to_string() const final;
 
-  useit inline bool can_be_prerun() const final { return elementType->can_be_prerun(); }
-  useit inline bool can_be_prerun_generic() const final { return elementType->can_be_prerun_generic(); }
+  useit bool can_be_prerun() const final { return elementType->can_be_prerun(); }
+  useit bool can_be_prerun_generic() const final { return elementType->can_be_prerun_generic(); }
   useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
   useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
   useit bool        is_type_sized() const final;

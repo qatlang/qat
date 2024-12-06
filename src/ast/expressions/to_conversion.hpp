@@ -14,7 +14,7 @@ public:
   ToConversion(Expression* _source, Type* _destinationType, FileRange _fileRange)
       : Expression(_fileRange), source(_source), destinationType(_destinationType) {}
 
-  useit static inline ToConversion* create(Expression* _source, Type* _destinationType, FileRange _fileRange) {
+  useit static ToConversion* create(Expression* _source, Type* _destinationType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
   }
 

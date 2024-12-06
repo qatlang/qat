@@ -29,14 +29,14 @@ class PrerunLocal {
       : name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
 
 public:
-  useit static inline PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
+  useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
     return new PrerunLocal(_name, _type, _isVar, _initialVal);
   }
 
-  useit inline Identifier   get_name() const { return name; }
-  useit inline Type*        get_type() const { return type; }
-  useit inline bool         is_variable() const { return isVar; }
-  useit inline PrerunValue* get_value() const { return value; }
+  useit Identifier   get_name() const { return name; }
+  useit Type*        get_type() const { return type; }
+  useit bool         is_variable() const { return isVar; }
+  useit PrerunValue* get_value() const { return value; }
 
   void change_value(PrerunValue* other) { value = other; }
 };
@@ -62,9 +62,7 @@ public:
     }
   }
 
-  useit static inline PreBlock* get(PrerunFunction* _function, PreBlock* _parent) {
-    return new PreBlock(_function, _parent);
-  }
+  useit static PreBlock* get(PrerunFunction* _function, PreBlock* _parent) { return new PreBlock(_function, _parent); }
 
   useit bool has_previous() const { return previous != nullptr; }
   useit bool has_next() const { return next != nullptr; }
@@ -141,17 +139,17 @@ public:
     }
   }
 
-  useit static inline PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
+  useit static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
     return new PrerunCallState(fun, argVals);
   }
 
-  useit inline PrerunFunction* get_function() const { return function; }
-  useit bool                   has_arg_with_name(String const& name);
-  useit PrerunValue*           get_arg_value_for(String const& name);
+  useit PrerunFunction* get_function() const { return function; }
+  useit bool            has_arg_with_name(String const& name);
+  useit PrerunValue*    get_arg_value_for(String const& name);
 
-  void               increment_emit_nesting() { emitNesting++; }
-  void               decrement_emit_nesting() { emitNesting--; }
-  useit inline usize get_emit_nesting() const { return emitNesting; }
+  void        increment_emit_nesting() { emitNesting++; }
+  void        decrement_emit_nesting() { emitNesting--; }
+  useit usize get_emit_nesting() const { return emitNesting; }
 };
 
 class PrerunFunction : public PrerunValue, public EntityOverview {

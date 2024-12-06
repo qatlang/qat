@@ -6,39 +6,43 @@
 #include "../link_names.hpp"
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
+
 #include <string>
 #include <vector>
 
+namespace llvm {
+class Type;
+class LLVMContext;
+} // namespace llvm
+
 namespace qat::ir {
 
+class ArrayType;
+class ChoiceType;
+class CType;
+class Ctx;
+class DoneSkill;
 class IntegerType;
 class UnsignedType;
 class FloatType;
 class ReferenceType;
 class MarkType;
-class ArrayType;
 class TupleType;
 class FunctionType;
 class StringSliceType;
 class StructType;
 class DefinitionType;
 class MixType;
-class ChoiceType;
 class FutureType;
 class MaybeType;
 class Region;
 class ExpandedType;
-class Ctx;
 class Function;
 class Value;
 class OpaqueType;
 class TypedType;
 class PrerunValue;
-class CType;
 class ResultType;
-class DoneSkill;
 class VectorType;
 
 // Type is the base class for all types in the IR

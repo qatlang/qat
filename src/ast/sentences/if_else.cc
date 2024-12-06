@@ -1,6 +1,7 @@
 #include "./if_else.hpp"
 #include "../../IR/control_flow.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

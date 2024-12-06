@@ -11,7 +11,7 @@ class Negative final : public Expression, public TypeInferrable {
 public:
   Negative(Expression* _value, FileRange _fileRange) : Expression(_fileRange), value(_value) {}
 
-  useit static inline Negative* create(Expression* value, FileRange fileRange) {
+  useit static Negative* create(Expression* value, FileRange fileRange) {
     return std::construct_at(OwnNormal(Negative), value, fileRange);
   }
 

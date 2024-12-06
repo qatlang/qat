@@ -40,7 +40,7 @@ public:
   ~Logger() = default;
   useit static Unique<Logger> const& get();
 
-  inline void say(String message) const {
+  void say(String message) const {
     if (logLevel == LogLevel::NONE) {
       return;
     }

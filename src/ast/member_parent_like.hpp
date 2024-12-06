@@ -48,7 +48,7 @@ public:
       : allMethods(), convertors(), operators(), constructors(), defaultConstructor(parent), copyConstructor(parent),
         moveConstructor(parent), copyAssignment(parent), moveAssignment(parent), destructor(parent) {}
 
-  useit static inline MethodParentState* get(ir::MethodParent* parent) {
+  useit static MethodParentState* get(ir::MethodParent* parent) {
     return std::construct_at(OwnNormal(MethodParentState), parent);
   }
 };
@@ -89,23 +89,23 @@ public:
     }
   }
 
-  inline void add_method_definition(MethodDefinition* mdef) { memberDefinitions.push_back(mdef); }
-  inline void add_convertor_definition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }
-  inline void add_constructor_definition(ConstructorDefinition* cdef) { constructorDefinitions.push_back(cdef); }
-  inline void add_operator_definition(OperatorDefinition* odef) { operatorDefinitions.push_back(odef); }
-  inline void set_destructor_definition(DestructorDefinition* ddef) { destructorDefinition = ddef; }
-  inline void set_default_constructor(ConstructorDefinition* cDef) { defaultConstructor = cDef; }
-  inline void set_copy_constructor(ConstructorDefinition* cDef) { copyConstructor = cDef; }
-  inline void set_move_constructor(ConstructorDefinition* cDef) { moveConstructor = cDef; }
-  inline void set_copy_assignment(OperatorDefinition* mDef) { copyAssignment = mDef; }
-  inline void set_move_assignment(OperatorDefinition* mDef) { moveAssignment = mDef; }
+  void add_method_definition(MethodDefinition* mdef) { memberDefinitions.push_back(mdef); }
+  void add_convertor_definition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }
+  void add_constructor_definition(ConstructorDefinition* cdef) { constructorDefinitions.push_back(cdef); }
+  void add_operator_definition(OperatorDefinition* odef) { operatorDefinitions.push_back(odef); }
+  void set_destructor_definition(DestructorDefinition* ddef) { destructorDefinition = ddef; }
+  void set_default_constructor(ConstructorDefinition* cDef) { defaultConstructor = cDef; }
+  void set_copy_constructor(ConstructorDefinition* cDef) { copyConstructor = cDef; }
+  void set_move_constructor(ConstructorDefinition* cDef) { moveConstructor = cDef; }
+  void set_copy_assignment(OperatorDefinition* mDef) { copyAssignment = mDef; }
+  void set_move_assignment(OperatorDefinition* mDef) { moveAssignment = mDef; }
 
-  useit inline bool has_destructor() const { return destructorDefinition != nullptr; }
-  useit inline bool has_default_constructor() const { return defaultConstructor != nullptr; }
-  useit inline bool has_copy_constructor() const { return copyConstructor != nullptr; }
-  useit inline bool has_move_constructor() const { return moveConstructor != nullptr; }
-  useit inline bool has_copy_assignment() const { return copyAssignment != nullptr; }
-  useit inline bool has_move_assignment() const { return moveAssignment != nullptr; }
+  useit bool has_destructor() const { return destructorDefinition != nullptr; }
+  useit bool has_default_constructor() const { return defaultConstructor != nullptr; }
+  useit bool has_copy_constructor() const { return copyConstructor != nullptr; }
+  useit bool has_move_constructor() const { return moveConstructor != nullptr; }
+  useit bool has_copy_assignment() const { return copyAssignment != nullptr; }
+  useit bool has_move_assignment() const { return moveAssignment != nullptr; }
 
   useit virtual bool is_define_core_type() const { return false; }
   useit virtual bool is_done_skill() const { return false; }

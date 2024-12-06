@@ -128,7 +128,7 @@ public:
 
   ~Method() override;
 
-  useit inline Identifier get_name() const final {
+  useit Identifier get_name() const final {
     switch (fnType) {
       case MethodType::normal:
       case MethodType::binaryOperator:
@@ -141,9 +141,9 @@ public:
     }
   }
 
-  useit inline MethodType get_method_type() const { return fnType; }
+  useit MethodType get_method_type() const { return fnType; }
 
-  useit inline bool isConstructor() const {
+  useit bool isConstructor() const {
     switch (get_method_type()) {
       case MethodType::fromConvertor:
       case MethodType::constructor:
@@ -156,23 +156,23 @@ public:
     }
   }
 
-  useit inline bool is_variation_method() const { return isStatic ? false : isVariation; }
+  useit bool is_variation_method() const { return isStatic ? false : isVariation; }
 
-  useit inline bool is_static_method() const { return isStatic; }
+  useit bool is_static_method() const { return isStatic; }
 
   useit String get_full_name() const final;
 
   useit bool is_method() const final { return true; }
 
-  useit inline bool is_in_skill() const { return parent->is_done_skill(); }
+  useit bool is_in_skill() const { return parent->is_done_skill(); }
 
-  useit inline DoneSkill* get_parent_skill() const { return parent->as_done_skill(); }
+  useit DoneSkill* get_parent_skill() const { return parent->as_done_skill(); }
 
-  useit inline Type* get_parent_type() { return parent->get_parent_type(); }
+  useit Type* get_parent_type() { return parent->get_parent_type(); }
 
-  useit inline Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
+  useit Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
 
-  useit inline Maybe<FileRange> is_member_initted(usize memInd) const {
+  useit Maybe<FileRange> is_member_initted(usize memInd) const {
     for (auto mem : initTypeMembers) {
       if (mem.first == memInd) {
         return mem.second;
@@ -180,13 +180,13 @@ public:
     }
     return None;
   }
-  useit inline std::set<String>& get_used_members() { return usedMembers; }
+  useit std::set<String>& get_used_members() { return usedMembers; }
 
-  void inline add_used_members(String memberName) { usedMembers.insert(memberName); }
+  void add_used_members(String memberName) { usedMembers.insert(memberName); }
 
-  void inline add_method_call(ir::Method* other) { memberFunctionCalls.insert(other); }
+  void add_method_call(ir::Method* other) { memberFunctionCalls.insert(other); }
 
-  void inline add_init_member(Pair<usize, FileRange> memInfo) { initTypeMembers.push_back(memInfo); }
+  void add_init_member(Pair<usize, FileRange> memInfo) { initTypeMembers.push_back(memInfo); }
 
   void update_overview() final;
 };

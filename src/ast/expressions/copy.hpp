@@ -19,7 +19,7 @@ public:
   Copy(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
       : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
 
-  useit static inline Copy* create(Expression* exp, bool _isExpSelf, FileRange fileRange) {
+  useit static Copy* create(Expression* exp, bool _isExpSelf, FileRange fileRange) {
     return std::construct_at(OwnNormal(Copy), exp, _isExpSelf, fileRange);
   }
 

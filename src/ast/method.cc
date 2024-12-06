@@ -1,5 +1,5 @@
 #include "./method.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
 #include "emit_ctx.hpp"

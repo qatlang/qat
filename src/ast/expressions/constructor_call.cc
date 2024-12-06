@@ -2,7 +2,8 @@
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/region.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

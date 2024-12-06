@@ -15,7 +15,7 @@ public:
   DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
       : IsEntity(_fileRange), name(_name), visibSpec(_visibSpec) {}
 
-  useit static inline DefineRegion* create(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+  useit static DefineRegion* create(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(DefineRegion), _name, _visibSpec, _fileRange);
   }
 

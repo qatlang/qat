@@ -34,24 +34,24 @@ public:
   Argument(ArgKind _kind, Identifier _name, bool _isVar, Type* _type)
       : isVar(_isVar), name(_name), type(_type), kind(_kind) {}
 
-  useit static inline Argument* create_normal(Identifier name, bool isVar, Type* type) {
+  useit static Argument* create_normal(Identifier name, bool isVar, Type* type) {
     return std::construct_at(OwnNormal(Argument), ArgKind::NORMAL, name, isVar, type);
   }
 
-  useit static inline Argument* create_member(Identifier name, bool isVar, Type* type) {
+  useit static Argument* create_member(Identifier name, bool isVar, Type* type) {
     return std::construct_at(OwnNormal(Argument), ArgKind::MEMBER, name, isVar, type);
   }
 
-  useit static inline Argument* create_variadic(FileRange range) {
+  useit static Argument* create_variadic(FileRange range) {
     return std::construct_at(OwnNormal(Argument), ArgKind::VARIADIC, Identifier{"", range}, false, nullptr);
   }
 
-  useit inline Identifier get_name() const { return name; }
-  useit inline bool       is_variable() const { return isVar; }
-  useit inline Type*      get_type() { return type; }
+  useit Identifier get_name() const { return name; }
+  useit bool       is_variable() const { return isVar; }
+  useit Type*      get_type() { return type; }
 
-  useit inline bool is_member_arg() const { return kind == ArgKind::MEMBER; }
-  useit inline bool is_variadic_arg() const { return kind == ArgKind::VARIADIC; }
+  useit bool is_member_arg() const { return kind == ArgKind::MEMBER; }
+  useit bool is_variadic_arg() const { return kind == ArgKind::VARIADIC; }
 
   useit Json to_json() const {
     return Json()

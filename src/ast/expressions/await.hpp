@@ -12,7 +12,7 @@ private:
 public:
   Await(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
 
-  useit static inline Await* create(Expression* exp, FileRange fileRange) {
+  useit static Await* create(Expression* exp, FileRange fileRange) {
     return std::construct_at(OwnNormal(Await), exp, fileRange);
   }
 

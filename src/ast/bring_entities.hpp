@@ -27,12 +27,12 @@ public:
   BroughtGroup(u32 _relative, Vec<Identifier> _entity, FileRange _fileRange)
       : relative(_relative), entity(_entity), fileRange(_fileRange) {}
 
-  useit static inline BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, Vec<BroughtGroup*> _members,
-                                           FileRange _fileRange) {
+  useit static BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, Vec<BroughtGroup*> _members,
+                                    FileRange _fileRange) {
     return std::construct_at(OwnNormal(BroughtGroup), _relative, _parent, _members, _fileRange);
   }
 
-  useit static inline BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, FileRange _range) {
+  useit static BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, FileRange _range) {
     return std::construct_at(OwnNormal(BroughtGroup), _relative, _parent, _range);
   }
 
@@ -55,8 +55,8 @@ public:
   BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
       : IsEntity(_fileRange), entities(_entities), visibSpec(_visibSpec) {}
 
-  useit static inline BringEntities* create(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
-                                            FileRange _fileRange) {
+  useit static BringEntities* create(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
+                                     FileRange _fileRange) {
     return std::construct_at(OwnNormal(BringEntities), _entities, _visibSpec, _fileRange);
   }
 

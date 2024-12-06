@@ -77,8 +77,8 @@ public:
   String      color_error(const String& message);
   static void add_warning(const String& message, const FileRange& fileRange);
 
-  useit bool        is_previous(lexer::TokenType type, usize current);
-  useit inline bool is_next(lexer::TokenType type, usize current) {
+  useit bool is_previous(lexer::TokenType type, usize current);
+  useit bool is_next(lexer::TokenType type, usize current) {
     if ((current + 1) < tokens->size()) {
       return tokens->at(current + 1).type == type;
     } else {

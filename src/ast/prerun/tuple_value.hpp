@@ -12,7 +12,7 @@ public:
   PrerunTupleValue(Vec<PrerunExpression*> _members, FileRange _fileRange)
       : PrerunExpression(_fileRange), members(_members) {}
 
-  useit static inline PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRange _fileRange) {
+  useit static PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunTupleValue), _members, _fileRange);
   }
 

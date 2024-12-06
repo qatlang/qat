@@ -1,6 +1,7 @@
 #include "./tuple_value.hpp"
 #include "../../IR/logic.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 

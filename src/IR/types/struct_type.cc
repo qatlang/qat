@@ -1,4 +1,4 @@
-#include "core_type.hpp"
+#include "./struct_type.hpp"
 #include "../../ast/define_core_type.hpp"
 #include "../../ast/types/generic_abstract.hpp"
 #include "../../show.hpp"
@@ -8,8 +8,9 @@
 #include "./expanded_type.hpp"
 #include "./qat_type.hpp"
 #include "reference.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 #include <utility>
 
 namespace qat::ir {
@@ -468,15 +469,13 @@ ast::GenericAbstractType* GenericStructType::getGenericAt(usize index) const { r
 Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
   for (auto& oVar : opaqueVariants) {
     SHOW("Opaque variant: " << oVar.get()->get_full_name())
-    if (oVar.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (oVar.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return oVar.get();
     }
   }
   for (auto& var : variants) {
     SHOW("Core type variant: " << var.get()->get_full_name())
-    if (var.check(
-            irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+    if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
       return var.get();
     }
   }

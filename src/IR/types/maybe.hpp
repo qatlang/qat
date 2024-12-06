@@ -1,8 +1,9 @@
 #ifndef QAT_IR_MAYBE_HPP
 #define QAT_IR_MAYBE_HPP
 
-#include "qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+#include "./qat_type.hpp"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -34,10 +35,8 @@ public:
   useit bool is_destructible() const final;
   void       destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-  useit inline bool can_be_prerun() const final { return subTy->is_type_sized() && subTy->can_be_prerun(); }
-  useit inline bool can_be_prerun_generic() const final {
-    return subTy->is_type_sized() && subTy->can_be_prerun_generic();
-  }
+  useit bool can_be_prerun() const final { return subTy->is_type_sized() && subTy->can_be_prerun(); }
+  useit bool can_be_prerun_generic() const final { return subTy->is_type_sized() && subTy->can_be_prerun_generic(); }
   useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final;
   useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 

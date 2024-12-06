@@ -20,8 +20,8 @@ public:
   Lib(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, const FileRange& _file_range)
       : Node(_file_range), name(_name), members(_members), visibSpec(_visibSpec) {}
 
-  useit static inline Lib* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
-                                  const FileRange& _file_range) {
+  useit static Lib* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
+                           const FileRange& _file_range) {
     return std::construct_at(OwnNormal(Lib), _name, _members, _visibSpec, _file_range);
   }
 

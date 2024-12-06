@@ -67,12 +67,12 @@ public:
 
   useit static AccessInfo GetPrivileged();
 
-  useit bool        has_type() const { return type.has_value(); }
-  useit inline bool has_skill() const { return skill.has_value(); }
-  useit bool        is_privileged_access() const;
+  useit bool has_type() const { return type.has_value(); }
+  useit bool has_skill() const { return skill.has_value(); }
+  useit bool is_privileged_access() const;
   useit ir::Mod* get_module() const { return module; }
-  useit ir::Type*             get_type() const { return type.value(); }
-  useit inline ir::DoneSkill* get_skill() const { return skill.value(); }
+  useit ir::Type* get_type() const { return type.value(); }
+  useit ir::DoneSkill* get_skill() const { return skill.value(); }
 };
 
 class Visibility {

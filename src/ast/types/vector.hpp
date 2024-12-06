@@ -15,8 +15,8 @@ public:
   VectorType(Type* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable, FileRange _fileRange)
       : Type(_fileRange), subType(_subType), count(_count), scalable(_scalable) {}
 
-  useit static inline VectorType* create(Type* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable,
-                                         FileRange _fileRange) {
+  useit static VectorType* create(Type* _subType, PrerunExpression* _count, Maybe<FileRange> _scalable,
+                                  FileRange _fileRange) {
     return std::construct_at(OwnNormal(VectorType), _subType, _count, _scalable, _fileRange);
   }
 

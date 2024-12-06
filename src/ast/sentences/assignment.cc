@@ -2,7 +2,8 @@
 #include "../../IR/function.hpp"
 #include "../expressions/copy.hpp"
 #include "../expressions/move.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

@@ -1,7 +1,8 @@
 #include "./opaque.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ir {
 

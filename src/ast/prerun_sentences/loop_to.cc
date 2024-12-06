@@ -47,7 +47,7 @@ void PrerunLoopTo::emit(EmitCtx* ctx) {
       for (i64 i = 0; i < countVal; i++) {
         PRERUN_LOOP_BASIC_CONTENTS
       }
-    } else if (countTy->is_unsigned_integer() && (countTy->as_unsigned_integer()->getBitwidth() <= 64u) &&
+    } else if (countTy->is_unsigned_integer() && (countTy->as_unsigned_integer()->get_bitwidth() <= 64u) &&
                (not tag.has_value())) {
       auto countVal = *llvm::cast<llvm::ConstantInt>(countExp->get_llvm_constant())->getValue().getRawData();
       for (u64 i = 0; i < countVal; i++) {

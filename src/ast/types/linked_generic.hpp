@@ -11,7 +11,7 @@ class LinkedGeneric final : public Type {
 public:
   LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRange _range) : Type(_range), genAbs(_genAbs) {}
 
-  useit static inline LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRange _range) {
+  useit static LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRange _range) {
     return std::construct_at(OwnNormal(LinkedGeneric), _genAbs, _range);
   }
 

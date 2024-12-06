@@ -34,7 +34,7 @@ private:
 
 public:
   MixOrChoiceMatchValue(Identifier name, Maybe<Identifier> valueName, bool isVar);
-  useit static inline MixOrChoiceMatchValue* create(Identifier name, Maybe<Identifier> valueName, bool isVar) {
+  useit static MixOrChoiceMatchValue* create(Identifier name, Maybe<Identifier> valueName, bool isVar) {
     return std::construct_at(OwnNormal(MixOrChoiceMatchValue), name, valueName, isVar);
   }
 
@@ -56,7 +56,7 @@ private:
 public:
   explicit ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
 
-  useit static inline ExpressionMatchValue* create(Expression* exp) {
+  useit static ExpressionMatchValue* create(Expression* exp) {
     return std::construct_at(OwnNormal(ExpressionMatchValue), exp);
   }
 
@@ -90,9 +90,9 @@ public:
         Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
       : Sentence(_fileRange), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(_chain), elseCase(_elseCase) {}
 
-  useit static inline Match* create(bool _isTypeMatch, Expression* _candidate,
-                                    Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-                                    Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
+  useit static Match* create(bool _isTypeMatch, Expression* _candidate,
+                             Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
+                             Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Match), _isTypeMatch, _candidate, _chain, _elseCase, _fileRange);
   }
 

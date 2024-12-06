@@ -1,7 +1,8 @@
 #include "./match.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

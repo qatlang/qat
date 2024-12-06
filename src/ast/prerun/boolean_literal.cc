@@ -4,7 +4,7 @@ namespace qat::ast {
 
 ir::PrerunValue* BooleanLiteral::emit(EmitCtx* ctx) {
   return ir::PrerunValue::get(llvm::ConstantInt::getBool(ctx->irCtx->llctx, value),
-                              ir::UnsignedType::getBool(ctx->irCtx));
+                              ir::UnsignedType::create_bool(ctx->irCtx));
 }
 
 String BooleanLiteral::to_string() const { return value ? "true" : "false"; }

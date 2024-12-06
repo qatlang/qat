@@ -11,7 +11,7 @@ class PrerunNegative final : public PrerunExpression, public TypeInferrable {
 public:
   PrerunNegative(PrerunExpression* _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-  useit static inline PrerunNegative* create(PrerunExpression* value, FileRange fileRange) {
+  useit static PrerunNegative* create(PrerunExpression* value, FileRange fileRange) {
     return std::construct_at(OwnNormal(PrerunNegative), value, fileRange);
   }
 

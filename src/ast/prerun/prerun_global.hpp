@@ -17,8 +17,8 @@ public:
                FileRange _fileRange)
       : IsEntity(_fileRange), name(_name), type(_type), value(_value), visibSpec(_visibSpec) {}
 
-  useit static inline PrerunGlobal* create(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value,
-                                           Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+  useit static PrerunGlobal* create(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value,
+                                    Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunGlobal), _name, _type, _value, _visibSpec, _fileRange);
   }
 

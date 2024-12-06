@@ -1,8 +1,9 @@
 #include "./control_flow.hpp"
 #include "../show.hpp"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Value.h"
-#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Value.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 namespace qat::ir {
 

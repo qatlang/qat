@@ -16,7 +16,7 @@ class IsExpression final : public Expression, public LocalDeclCompatible, public
 public:
   IsExpression(Expression* _subExpr, FileRange _fileRange) : Expression(_fileRange), subExpr(_subExpr) {}
 
-  useit static inline IsExpression* create(Expression* subExpr, FileRange fileRange) {
+  useit static IsExpression* create(Expression* subExpr, FileRange fileRange) {
     return std::construct_at(OwnNormal(IsExpression), subExpr, fileRange);
   }
 

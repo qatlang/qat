@@ -2,7 +2,8 @@
 #define QAT_IR_TYPES_FLOAT_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 

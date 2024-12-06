@@ -1,13 +1,13 @@
 #include "./region.hpp"
 #include "../../show.hpp"
-#include "./core_type.hpp"
 #include "./pointer.hpp"
+#include "./struct_type.hpp"
 
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalVariable.h"
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalVariable.h>
 
 #define BLOCK_HEADER_SIZE  24u
 #define DATA_HEADER_SIZE   24u
@@ -453,7 +453,7 @@ ir::Value* Region::ownData(ir::Type* otype, Maybe<llvm::Value*> _count, ir::Ctx*
                           llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
                     : llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo()))}),
           otype->get_llvm_type()->getPointerTo()),
-      ir::MarkType::get(true, otype, false, MarkOwner::OfRegion(this), _count.has_value(), irCtx), false);
+      ir::MarkType::get(true, otype, false, MarkOwner::of_region(this), _count.has_value(), irCtx), false);
 }
 
 void Region::destroyObjects(ir::Ctx* irCtx) {

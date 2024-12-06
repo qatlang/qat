@@ -16,7 +16,7 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public T
 public:
   TupleValue(Vec<Expression*> _members, FileRange _fileRange) : Expression(_fileRange), members(_members) {}
 
-  useit static inline TupleValue* create(Vec<Expression*> _members, FileRange _fileRange) {
+  useit static TupleValue* create(Vec<Expression*> _members, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TupleValue), _members, _fileRange);
   }
 

@@ -13,8 +13,7 @@ public:
   ResultType(ast::Type* _validType, ast::Type* _errorType, bool _isPacked, FileRange _fileRange)
       : Type(_fileRange), validType(_validType), errorType(_errorType), isPacked(_isPacked) {}
 
-  useit static inline ResultType* create(ast::Type* _validType, ast::Type* _errorType, bool _isPacked,
-                                         FileRange _fileRange) {
+  useit static ResultType* create(ast::Type* _validType, ast::Type* _errorType, bool _isPacked, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ResultType), _validType, _errorType, _isPacked, _fileRange);
   }
 

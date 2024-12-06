@@ -15,7 +15,7 @@ public:
   IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
       : Expression(_fileRange), instance(_instance), index(_index) {}
 
-  useit static inline IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
+  useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
     return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
   }
 

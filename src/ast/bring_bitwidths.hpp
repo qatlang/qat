@@ -12,7 +12,7 @@ class BringBitwidths : public Node {
 public:
   BringBitwidths(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) : Node(_fileRange), broughtTypes(_broughtTypes) {}
 
-  useit static inline BringBitwidths* create(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) {
+  useit static BringBitwidths* create(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) {
     return std::construct_at(OwnNormal(BringBitwidths), _broughtTypes, _fileRange);
   }
 

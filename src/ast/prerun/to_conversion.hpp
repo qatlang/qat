@@ -14,7 +14,7 @@ public:
   PrerunTo(PrerunExpression* _value, Type* _targetType, FileRange _fileRange)
       : PrerunExpression(_fileRange), value(_value), targetType(_targetType) {}
 
-  useit static inline PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRange _fileRange) {
+  useit static PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunTo), _value, _targetType, _fileRange);
   }
 

@@ -1,11 +1,12 @@
 #include "./index_access.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Type.h"
-#include "llvm/Support/Casting.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Type.h>
+#include <llvm/Support/Casting.h>
 
 namespace qat::ast {
 
@@ -17,9 +18,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
   }
   if (index->has_type_inferrance()) {
     if (instType->is_tuple()) {
-      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
+      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
     } else if (instType->is_array()) {
-      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(64u, ctx->irCtx));
+      index->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(64u, ctx->irCtx));
     } else if (instType->is_mark() || instType->is_string_slice()) {
       index->as_type_inferrable()->set_inference_type(ir::CType::get_usize(ctx->irCtx));
     }
@@ -29,14 +30,14 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
   auto* zero64  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u);
   if (instType->is_tuple()) {
     if (indType->is_unsigned_integer() && ind->is_prerun_value()) {
-      if (indType->as_unsigned_integer()->getBitwidth() > 32u) {
+      if (indType->as_unsigned_integer()->get_bitwidth() > 32u) {
         ctx->Error(
             ctx->color(indType->to_string()) +
                 " is an unsupported type of the index for accessing tuple members. The maximum allowed bitwidth is 32",
             index->fileRange);
       }
       auto indPre = (u32)(*llvm::cast<llvm::ConstantInt>(
-                               indType->as_unsigned_integer()->getBitwidth() < 32u
+                               indType->as_unsigned_integer()->get_bitwidth() < 32u
                                    ? llvm::ConstantFoldIntegerCast(ind->get_llvm_constant(),
                                                                    llvm::Type::getInt32Ty(ctx->irCtx->llctx), false,
                                                                    ctx->irCtx->dataLayout.value())
@@ -84,7 +85,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
     if (indType->is_unsigned_integer() || (indType->is_ctype() && indType->as_ctype()->is_usize())) {
       if (inst->get_ir_type()->is_reference() &&
           (inst->get_ir_type()->as_reference()->get_subtype()->is_mark() &&
-           !inst->get_ir_type()->as_reference()->get_subtype()->as_mark()->isSlice())) {
+           !inst->get_ir_type()->as_reference()->get_subtype()->as_mark()->is_slice())) {
         SHOW("Instance for member access is a Reference to: "
              << inst->get_ir_type()->as_reference()->get_subtype()->to_string())
         inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()), instType,
@@ -95,7 +96,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                              ind->get_ir_type()->as_reference()->isSubtypeVariable());
       }
       if (instType->is_mark()) {
-        if (!instType->as_mark()->isSlice()) {
+        if (!instType->as_mark()->is_slice()) {
           ctx->Error("Only slices can be indexed into", fileRange);
         }
         auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
@@ -125,9 +126,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                                            ctx->irCtx->dataLayout->getProgramAddressSpace()),
                     ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), 0u)),
                 idxs),
-            ir::ReferenceType::get(instType->as_mark()->isSubtypeVariable(), instType->as_mark()->get_subtype(),
+            ir::ReferenceType::get(instType->as_mark()->is_subtype_variable(), instType->as_mark()->get_subtype(),
                                    ctx->irCtx),
-            instType->as_mark()->isSubtypeVariable());
+            instType->as_mark()->is_subtype_variable());
       } else {
         if (inst->is_reference()) {
           inst->load_ghost_reference(ctx->irCtx->builder);
@@ -197,7 +198,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
           ctx->get_fn(),
           {ir::StringSliceType::create_value(ctx->irCtx, "Index for string slice is "), ind,
            ir::StringSliceType::create_value(ctx->irCtx, " which is not less than its length, which is "),
-           ir::Value::get(strLen, ir::UnsignedType::get(64u, ctx->irCtx), false)},
+           ir::Value::get(strLen, ir::UnsignedType::create(64u, ctx->irCtx), false)},
           {}, fileRange, ctx);
       (void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
       restBlock->set_active(ctx->irCtx->builder);
@@ -212,7 +213,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
               Vec<llvm::Value*>({ind->get_llvm()})),
           ir::ReferenceType::get(inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable()
                                                       : inst->is_variable(),
-                                 ir::UnsignedType::get(8u, ctx->irCtx), ctx->irCtx),
+                                 ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
           false);
     } else if (inst->is_prerun_value() && ind->is_prerun_value()) {
       if (llvm::cast<llvm::ConstantInt>(
@@ -227,7 +228,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                     ->getRawDataValues()
                     .str()
                     .at(*llvm::cast<llvm::ConstantInt>(ind->get_llvm_constant())->getValue().getRawData())),
-            ir::UnsignedType::get(8u, ctx->irCtx));
+            ir::UnsignedType::create(8u, ctx->irCtx));
       } else {
         ctx->Error("The provided index is " +
                        ctx->color(ind->get_ir_type()->to_prerun_generic_string((ir::PrerunValue*)ind).value()) +
@@ -235,7 +236,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                        ctx->color(ind->get_ir_type()
                                       ->to_prerun_generic_string(
                                           ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(1u),
-                                                               ir::UnsignedType::get(64u, ctx->irCtx)))
+                                                               ir::UnsignedType::create(64u, ctx->irCtx)))
                                       .value()),
                    index->fileRange);
       }
@@ -261,7 +262,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                                                 {ind->get_llvm()}),
           ir::ReferenceType::get(inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable()
                                                       : inst->is_variable(),
-                                 ir::UnsignedType::get(8u, ctx->irCtx), ctx->irCtx),
+                                 ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
           false);
     }
   } else if (instType->is_ctype() && instType->as_ctype()->is_cstring()) {

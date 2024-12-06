@@ -19,7 +19,7 @@ private:
 public:
   ModInfo(MetaInfo _metaInfo, FileRange _fileRange) : Node(_fileRange), metaInfo(_metaInfo) {}
 
-  useit static inline ModInfo* create(MetaInfo _metaInfo, FileRange _fileRange) {
+  useit static ModInfo* create(MetaInfo _metaInfo, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ModInfo), _metaInfo, _fileRange);
   }
 

@@ -20,10 +20,8 @@ public:
   explicit FillGeneric(Type* type) : data(type), kind(FillGenericKind::typed) {}
   explicit FillGeneric(PrerunExpression* expression) : data(expression), kind(FillGenericKind::prerun) {}
 
-  useit static inline FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
-  useit static inline FillGeneric* create(PrerunExpression* _exp) {
-    return std::construct_at(OwnNormal(FillGeneric), _exp);
-  }
+  useit static FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
+  useit static FillGeneric* create(PrerunExpression* _exp) { return std::construct_at(OwnNormal(FillGeneric), _exp); }
 
   useit bool is_type() const;
   useit bool is_prerun() const;

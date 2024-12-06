@@ -14,7 +14,7 @@ public:
   FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
       : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
 
-  useit static inline FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
+  useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
   }
 

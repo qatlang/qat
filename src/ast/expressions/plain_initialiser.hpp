@@ -20,8 +20,8 @@ public:
                    FileRange _fileRange)
       : Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-  useit static inline PlainInitialiser* create(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields,
-                                               Vec<Expression*> _fieldValues, FileRange _fileRange) {
+  useit static PlainInitialiser* create(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields,
+                                        Vec<Expression*> _fieldValues, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PlainInitialiser), _type, _fields, _fieldValues, _fileRange);
   }
 

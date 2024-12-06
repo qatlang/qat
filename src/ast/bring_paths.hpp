@@ -17,8 +17,8 @@ public:
              Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
       : Node(_fileRange), isMember(_isMember), paths(_paths), visibSpec(_visibSpec), names(_names) {}
 
-  useit static inline BringPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-                                         Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+  useit static BringPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+                                  Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(BringPaths), _isMember, _paths, _names, _visibSpec, _fileRange);
   }
 

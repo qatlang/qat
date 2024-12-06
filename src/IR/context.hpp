@@ -7,12 +7,13 @@
 #include "./qat_module.hpp"
 #include "function.hpp"
 #include "clang/Basic/TargetInfo.h"
-#include "llvm/IR/ConstantFolder.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
+
 #include <chrono>
+#include <llvm/IR/ConstantFolder.h>
+#include <llvm/IR/DataLayout.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 #include <string>
 
 using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
@@ -95,7 +96,7 @@ private:
 
   Vec<ir::Mod*> modulesWithErrors;
 
-  useit inline bool module_has_errors(ir::Mod* cand) {
+  useit bool module_has_errors(ir::Mod* cand) {
     for (auto* module : modulesWithErrors) {
       if (module->get_id() == cand->get_id()) {
         return true;
@@ -116,7 +117,7 @@ private:
 public:
   Ctx();
 
-  static inline Ctx* New() {
+  static Ctx* New() {
     if (instance) {
       return instance;
     }
@@ -143,26 +144,26 @@ public:
   mutable Maybe<u64>               qatCompileTimeInMs;
   mutable Maybe<u64>               clangAndLinkTimeInMs;
 
-  useit inline bool                 has_active_generic() const { return !allActiveGenerics.empty(); }
-  useit inline GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
-  useit bool                        has_generic_parameter_in_entity(String const& name) const;
-  useit GenericArgument*            get_generic_parameter_from_entity(String const& name) const;
+  useit bool                 has_active_generic() const { return !allActiveGenerics.empty(); }
+  useit GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
+  useit bool                 has_generic_parameter_in_entity(String const& name) const;
+  useit GenericArgument*     get_generic_parameter_from_entity(String const& name) const;
 
-  inline void add_active_generic(GenericEntityMarker marker, bool main) {
+  void add_active_generic(GenericEntityMarker marker, bool main) {
     if (main) {
       lastMainActiveGeneric.push_back(allActiveGenerics.size());
     }
     allActiveGenerics.push_back(marker);
   }
 
-  inline void remove_active_generic() {
+  void remove_active_generic() {
     if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
       lastMainActiveGeneric.pop_back();
     }
     allActiveGenerics.pop_back();
   }
 
-  useit inline String joinActiveGenericNames(bool highlight) const {
+  useit String joinActiveGenericNames(bool highlight) const {
     String result;
     for (usize i = 0; i < allActiveGenerics.size(); i++) {
       result.append(highlight ? color(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
@@ -173,7 +174,7 @@ public:
     return result;
   }
 
-  useit inline clang::LangAS get_language_address_space() const {
+  useit clang::LangAS get_language_address_space() const {
     if (dataLayout) {
       return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
     } else {
@@ -181,7 +182,7 @@ public:
     }
   }
 
-  useit inline String get_global_string_name() const {
+  useit String get_global_string_name() const {
     auto res = "qat'str'" + std::to_string(stringCount);
     stringCount++;
     return res;

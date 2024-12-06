@@ -19,14 +19,14 @@ public:
   VectorType(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
   useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
 
-  useit inline ir::Type*       get_element_type() const { return subType; }
-  useit inline usize           get_count() const { return count; }
-  useit inline bool            is_scalable() const { return kind == VectorKind::scalable; }
-  useit inline bool            is_fixed() const { return kind == VectorKind::fixed; }
-  useit inline ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
+  useit ir::Type* get_element_type() const { return subType; }
+  useit usize     get_count() const { return count; }
+  useit bool      is_scalable() const { return kind == VectorKind::scalable; }
+  useit bool      is_fixed() const { return kind == VectorKind::fixed; }
+  useit ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
     return VectorType::create(subType, count, VectorKind::fixed, irCtx);
   }
-  useit inline VectorKind get_vector_kind() const { return kind; }
+  useit VectorKind get_vector_kind() const { return kind; }
 
   useit TypeKind type_kind() const final { return TypeKind::vector; }
   useit String   to_string() const final;

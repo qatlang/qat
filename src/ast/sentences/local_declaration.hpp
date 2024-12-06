@@ -21,8 +21,8 @@ public:
                    FileRange _fileRange)
       : Sentence(_fileRange), type(_type), name(_name), value(_value), variability(_variability), isRef(_isRef) {}
 
-  useit static inline LocalDeclaration* create(Type* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
-                                               bool _variability, FileRange _fileRange) {
+  useit static LocalDeclaration* create(Type* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
+                                        bool _variability, FileRange _fileRange) {
     return std::construct_at(OwnNormal(LocalDeclaration), _type, _isRef, _name, _value, _variability, _fileRange);
   }
 

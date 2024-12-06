@@ -1,7 +1,8 @@
 #include "./pointer.hpp"
 #include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 
@@ -45,24 +46,24 @@ String MarkType::pointerOwnerToString() const {
 ir::MarkOwner MarkType::getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const {
   switch (ownTyp) {
     case MarkOwnType::type:
-      return ir::MarkOwner::OfType(ownerVal.value());
+      return ir::MarkOwner::of_type(ownerVal.value());
     case MarkOwnType::typeParent: {
       if (ctx->has_member_parent()) {
-        return ir::MarkOwner::OfParentInstance(ctx->get_member_parent()->get_parent_type());
+        return ir::MarkOwner::of_parent_instance(ctx->get_member_parent()->get_parent_type());
       } else {
         ctx->Error("No parent type or skill found", fileRange);
       }
     }
     case MarkOwnType::anonymous:
-      return ir::MarkOwner::OfAnonymous();
+      return ir::MarkOwner::of_anonymous();
     case MarkOwnType::heap:
-      return ir::MarkOwner::OfHeap();
+      return ir::MarkOwner::of_heap();
     case MarkOwnType::function:
-      return ir::MarkOwner::OfParentFunction(ctx->get_fn());
+      return ir::MarkOwner::of_parent_function(ctx->get_fn());
     case MarkOwnType::region:
-      return ir::MarkOwner::OfRegion(ownerVal.value()->as_region());
+      return ir::MarkOwner::of_region(ownerVal.value()->as_region());
     case MarkOwnType::anyRegion:
-      return ir::MarkOwner::OfAnyRegion();
+      return ir::MarkOwner::of_any_region();
   }
 }
 
@@ -116,7 +117,7 @@ AstTypeKind MarkType::type_kind() const { return AstTypeKind::POINTER; }
 
 Json MarkType::to_json() const {
   return Json()
-      ._("typeKind", "pointer")
+      ._("typeKind", "mark")
       ._("isSlice", isSlice)
       ._("isSubtypeVariable", isSubtypeVar)
       ._("subType", type->to_json())

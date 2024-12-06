@@ -1,6 +1,7 @@
 #include "./reference.hpp"
 #include "../../IR/types/reference.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 

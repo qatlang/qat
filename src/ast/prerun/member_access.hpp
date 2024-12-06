@@ -13,7 +13,7 @@ public:
   PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRange _fileRange)
       : PrerunExpression(std::move(_fileRange)), expr(_expr), memberName(_member) {}
 
-  useit static inline PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRange _fileRange) {
+  useit static PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
   }
 

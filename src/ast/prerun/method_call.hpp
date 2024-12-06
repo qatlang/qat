@@ -15,8 +15,8 @@ public:
                      FileRange _fileRange)
       : PrerunExpression(_fileRange), instance(_instance), memberName(_memberName), arguments(_arguments) {}
 
-  useit static inline PrerunMemberFnCall* create(PrerunExpression* instance, Identifier memberName,
-                                                 Vec<PrerunExpression*> arguments, FileRange fileRange) {
+  useit static PrerunMemberFnCall* create(PrerunExpression* instance, Identifier memberName,
+                                          Vec<PrerunExpression*> arguments, FileRange fileRange) {
     return std::construct_at(OwnNormal(PrerunMemberFnCall), instance, memberName, arguments, fileRange);
   }
 

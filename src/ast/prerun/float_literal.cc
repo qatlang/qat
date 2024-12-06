@@ -1,5 +1,6 @@
 #include "./float_literal.hpp"
-#include "llvm/ADT/APFloat.h"
+
+#include <llvm/ADT/APFloat.h>
 
 namespace qat::ast {
 

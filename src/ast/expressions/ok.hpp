@@ -18,8 +18,8 @@ public:
                Maybe<Pair<Type*, Type*>> _providedType, FileRange _fileRange)
       : Expression(_fileRange), subExpr(_subExpr), isPacked(_isPacked), providedType(_providedType){};
 
-  useit static inline OkExpression* create(Expression* subExpr, Maybe<Pair<FileRange, PrerunExpression*>> isPacked,
-                                           Maybe<Pair<Type*, Type*>> providedType, FileRange fileRange) {
+  useit static OkExpression* create(Expression* subExpr, Maybe<Pair<FileRange, PrerunExpression*>> isPacked,
+                                    Maybe<Pair<Type*, Type*>> providedType, FileRange fileRange) {
     return std::construct_at(OwnNormal(OkExpression), subExpr, isPacked, providedType, fileRange);
   }
 

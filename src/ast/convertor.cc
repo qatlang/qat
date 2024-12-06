@@ -1,11 +1,12 @@
-#include "convertor.hpp"
+#include "./convertor.hpp"
 #include "../show.hpp"
 #include "./expression.hpp"
+#include "./sentence.hpp"
 #include "./sentences/member_initialisation.hpp"
-#include "sentence.hpp"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
+
 #include <algorithm>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 

@@ -12,7 +12,7 @@ ir::Value* AddressOf::emit(EmitCtx* ctx) {
       inst->load_ghost_reference(ctx->irCtx->builder);
     }
     return ir::Value::get(inst->get_llvm(),
-                          ir::MarkType::get(isPtrVar, subTy, true, ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                          ir::MarkType::get(isPtrVar, subTy, true, ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
                           false)
         ->with_range(fileRange);
   } else {

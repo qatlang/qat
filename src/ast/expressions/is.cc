@@ -2,7 +2,8 @@
 #include "../../IR/logic.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/void.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

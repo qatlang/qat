@@ -14,7 +14,7 @@ public:
   TypeWrap(ast::Type* _theType, bool _isExplicit, FileRange _fileRange)
       : PrerunExpression(_fileRange), theType(_theType), isExplicit(_isExplicit) {}
 
-  useit static inline TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRange _fileRange) {
+  useit static TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
   }
 

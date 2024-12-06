@@ -20,8 +20,8 @@ public:
          FileRange _fileRange)
       : Sentence(_fileRange), chain(_chain), elseCase(_else) {}
 
-  useit static inline IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
-                                     Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
+  useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
+                              Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
     return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
   }
 

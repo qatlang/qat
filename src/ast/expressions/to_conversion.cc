@@ -3,7 +3,8 @@
 #include "../../IR/logic.hpp"
 #include "../../IR/types/c_type.hpp"
 #include "../../IR/types/string_slice.hpp"
-#include "llvm/IR/Instructions.h"
+
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 
@@ -41,13 +42,14 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
       if (destTy->is_mark() || (destTy->is_ctype() && destTy->as_ctype()->is_c_ptr())) {
         loadRef();
         auto targetTy = destTy->is_ctype() ? destTy->as_ctype()->get_subtype()->as_mark() : destTy->as_mark();
-        if (!valType->as_mark()->getOwner().is_same(targetTy->getOwner()) && !targetTy->getOwner().isAnonymous()) {
+        if (!valType->as_mark()->get_owner().is_same(targetTy->get_owner()) &&
+            !targetTy->get_owner().is_of_anonymous()) {
           ctx->Error(
               "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
               fileRange);
         }
-        if (valType->as_mark()->isNullable() != targetTy->as_mark()->isNullable()) {
-          if (valType->as_mark()->isNullable()) {
+        if (valType->as_mark()->is_nullable() != targetTy->as_mark()->is_nullable()) {
+          if (valType->as_mark()->is_nullable()) {
             auto  fun           = ctx->get_fn();
             auto* currBlock     = fun->get_block();
             auto* nullTrueBlock = new ir::Block(fun, currBlock);
@@ -59,8 +61,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
                         valType->as_mark()->get_subtype()->is_type_sized()
                             ? valType->as_mark()->get_subtype()->get_llvm_type()
                             : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-                        valType->as_mark()->isSlice() ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
-                                                      : val->get_llvm(),
+                        valType->as_mark()->is_slice() ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
+                                                       : val->get_llvm(),
                         llvm::ConstantPointerNull::get(
                             llvm::PointerType::get(valType->as_mark()->get_subtype()->is_type_sized()
                                                        ? valType->as_mark()->get_subtype()->get_llvm_type()
@@ -87,8 +89,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
                   ". The subtype of the pointer types do not match and conversion between them is not allowed. Use casting instead",
               fileRange);
         }
-        if (valType->as_mark()->isSlice() != targetTy->as_mark()->isSlice()) {
-          if (valType->as_mark()->isSlice()) {
+        if (valType->as_mark()->is_slice() != targetTy->as_mark()->is_slice()) {
+          if (valType->as_mark()->is_slice()) {
             return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
           } else {
             auto newVal = ctx->get_fn()->get_block()->new_value(utils::unique_id(), destTy, false, fileRange);
@@ -100,7 +102,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
             return newVal->to_new_ir_value();
           }
         }
-        if (valType->as_mark()->isSlice()) {
+        if (valType->as_mark()->is_slice()) {
           val->get_llvm()->mutateType(destTy->get_llvm_type());
           return ir::Value::get(val->get_llvm(), destTy, false);
         } else {
@@ -110,7 +112,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
       } else if (destTy->is_ctype() && (destTy->as_ctype()->is_intptr() || destTy->as_ctype()->is_intptr_unsigned())) {
         loadRef();
         return ir::Value::get(
-            ctx->irCtx->builder.CreateBitCast(valType->as_mark()->isSlice()
+            ctx->irCtx->builder.CreateBitCast(valType->as_mark()->is_slice()
                                                   ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
                                                   : val->get_llvm(),
                                               destTy->get_llvm_type()),
@@ -131,18 +133,18 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
                  (destValTy->as_mark()->get_subtype()->is_unsigned_integer() ||
                   (destValTy->as_mark()->get_subtype()->is_ctype() &&
                    destValTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
-                 destValTy->as_mark()->getOwner().isAnonymous() &&
+                 destValTy->as_mark()->get_owner().is_of_anonymous() &&
                  (destValTy->as_mark()->get_subtype()->is_unsigned_integer()
-                      ? (destValTy->as_mark()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
+                      ? (destValTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
                       : (destValTy->as_mark()
                              ->get_subtype()
                              ->as_ctype()
                              ->get_subtype()
                              ->as_unsigned_integer()
-                             ->getBitwidth() == 8u)) &&
-                 !destValTy->as_mark()->isSubtypeVariable()) {
+                             ->get_bitwidth() == 8u)) &&
+                 !destValTy->as_mark()->is_subtype_variable()) {
         loadRef();
-        if (destValTy->as_mark()->isSlice()) {
+        if (destValTy->as_mark()->is_slice()) {
           val->get_llvm()->mutateType(destTy->get_llvm_type());
           return ir::Value::get(val->get_llvm(), destTy, false);
         } else {
@@ -162,7 +164,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
                  (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
         loadRef();
         ctx->irCtx->Warning("Conversion from signed integer to unsigned integers can be lossy", fileRange);
-        if (valType->as_integer()->get_bitwidth() == destTy->as_unsigned_integer()->getBitwidth()) {
+        if (valType->as_integer()->get_bitwidth() == destTy->as_unsigned_integer()->get_bitwidth()) {
           return ir::Value::get(ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true),
                                 destTy, false);
         } else {
@@ -187,7 +189,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
       } else if (destTy->is_integer() || (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_integer())) {
         loadRef();
         ctx->irCtx->Warning("Conversion from unsigned integer to signed integers can be lossy", fileRange);
-        if (typ->as_unsigned_integer()->getBitwidth() == destTy->as_integer()->get_bitwidth()) {
+        if (typ->as_unsigned_integer()->get_bitwidth() == destTy->as_integer()->get_bitwidth()) {
           return ir::Value::get(val->get_llvm(), destTy, false);
         } else {
           return ir::Value::get(ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true),

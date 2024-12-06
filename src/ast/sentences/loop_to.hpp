@@ -15,8 +15,7 @@ public:
   LoopTo(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange)
       : Sentence(_fileRange), sentences(_snts), count(_count), tag(_tag) {}
 
-  useit static inline LoopTo* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag,
-                                     FileRange _fileRange) {
+  useit static LoopTo* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRange _fileRange) {
     return std::construct_at(OwnNormal(LoopTo), _count, _snts, _tag, _fileRange);
   }
 

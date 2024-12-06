@@ -21,8 +21,8 @@ public:
   MixOrChoiceInitialiser(Maybe<Type*> _type, Identifier _subName, Maybe<Expression*> _expression, FileRange _fileRange)
       : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-  useit static inline MixOrChoiceInitialiser* create(Maybe<Type*> type, Identifier subName,
-                                                     Maybe<Expression*> expression, FileRange fileRange) {
+  useit static MixOrChoiceInitialiser* create(Maybe<Type*> type, Identifier subName, Maybe<Expression*> expression,
+                                              FileRange fileRange) {
     return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
   }
 

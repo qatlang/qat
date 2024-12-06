@@ -17,7 +17,7 @@ class GetIntrinsic final : public Expression {
 public:
   GetIntrinsic(Vec<PrerunExpression*> _types, FileRange _fileRange) : Expression(_fileRange), args(_types) {}
 
-  useit static inline GetIntrinsic* create(Vec<PrerunExpression*> _args, FileRange _fileRange) {
+  useit static GetIntrinsic* create(Vec<PrerunExpression*> _args, FileRange _fileRange) {
     return std::construct_at(OwnNormal(GetIntrinsic), _args, _fileRange);
   }
 

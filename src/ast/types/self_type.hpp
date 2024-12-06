@@ -16,7 +16,7 @@ class SelfType final : public Type {
 public:
   SelfType(bool _isJustType, FileRange _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
 
-  useit static inline SelfType* create(bool _isJustType, FileRange _fileRange) {
+  useit static SelfType* create(bool _isJustType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
   }
 

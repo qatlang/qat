@@ -119,7 +119,7 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
       suffixType.has_value()
           ? suffixType.value()
           : (is_type_inferred() ? inferredType
-                                : (numberIsUnsigned ? (ir::Type*)ir::UnsignedType::get(usableBitwidth, ctx->irCtx)
+                                : (numberIsUnsigned ? (ir::Type*)ir::UnsignedType::create(usableBitwidth, ctx->irCtx)
                                                     : (ir::Type*)ir::IntegerType::get(usableBitwidth, ctx->irCtx))));
 }
 

@@ -2,7 +2,6 @@
 #define QAT_AST_EXPRESSIONS_ARRAY_LITERAL_HPP
 
 #include "../expression.hpp"
-#include "llvm/IR/Instructions.h"
 
 namespace qat::ast {
 
@@ -20,7 +19,7 @@ public:
   ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
       : Expression(std::move(_fileRange)), values(std::move(_values)) {}
 
-  useit static inline ArrayLiteral* create(Vec<Expression*> values, FileRange fileRange) {
+  useit static ArrayLiteral* create(Vec<Expression*> values, FileRange fileRange) {
     return std::construct_at(OwnNormal(ArrayLiteral), values, fileRange);
   }
 

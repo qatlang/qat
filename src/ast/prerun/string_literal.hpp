@@ -14,7 +14,7 @@ public:
   StringLiteral(String _value, FileRange _fileRange)
       : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
-  useit static inline StringLiteral* create(String _value, FileRange _fileRange) {
+  useit static StringLiteral* create(String _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(StringLiteral), _value, _fileRange);
   }
 

@@ -2,7 +2,7 @@
 #define QAT_AST_CONSTRUCTOR_PROTOTYPE_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "./argument.hpp"
 #include "./meta_info.hpp"
 #include "./node.hpp"
@@ -96,8 +96,8 @@ public:
   ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-  useit static inline ConstructorDefinition* create(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                                    FileRange _fileRange) {
+  useit static ConstructorDefinition* create(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
+                                             FileRange _fileRange) {
     return std::construct_at(OwnNormal(ConstructorDefinition), _prototype, _sentences, _fileRange);
   }
 

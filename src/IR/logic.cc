@@ -16,10 +16,11 @@
 #include "types/string_slice.hpp"
 #include "types/tuple.hpp"
 #include "value.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/GlobalVariable.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -209,7 +210,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
         } else {
           intVal = val->get_llvm();
         }
-        if (uintTy->getBitwidth() < 64u) {
+        if (uintTy->get_bitwidth() < 64u) {
           intVal = ctx->irCtx->builder.CreateIntCast(intVal, llvm::Type::getInt64Ty(ctx->irCtx->llctx), false);
         }
         formatString += "%u";
@@ -241,7 +242,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
         auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
         formatString += valStr;
       } else {
-        if (valTy->as_mark()->isSlice()) {
+        if (valTy->as_mark()->is_slice()) {
           //   auto usizeTy = ir::CType::get_usize(ctx->irCtx);
           if (val->is_reference() || val->is_ghost_reference()) {
             if (val->is_reference()) {
@@ -252,12 +253,12 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
                                          ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
                                      ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
                                  ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false,
-                                                   MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                                                   MarkOwner::of_anonymous(), false, ctx->irCtx),
                                  false);
           } else {
             val = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
                                  ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false,
-                                                   MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                                                   MarkOwner::of_anonymous(), false, ctx->irCtx),
                                  false);
           }
         } else {

@@ -2,9 +2,8 @@
 #define QAT_IR_PASSES_HPP
 
 #include "../utils/macros.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
+
+#include <llvm/IR/IRBuilder.h>
 
 namespace qat::ir {
 

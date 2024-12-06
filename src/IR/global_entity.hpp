@@ -19,8 +19,8 @@ public:
   PrerunGlobal(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant, VisibilityInfo _visibility,
                FileRange _fileRange);
 
-  useit inline Identifier get_name() const { return name; }
-  useit String            get_full_name() const;
+  useit Identifier get_name() const { return name; }
+  useit String     get_full_name() const;
   useit ir::Mod*              getParent() const { return parent; }
   useit VisibilityInfo const& get_visibility() const { return visibility; }
 };
@@ -35,9 +35,9 @@ public:
   GlobalEntity(Mod* _parent, Identifier _name, Type* _type, bool _is_variable, Maybe<llvm::Constant*> initialValue,
                llvm::Value* _value, const VisibilityInfo& _visibility);
 
-  useit static inline GlobalEntity* get(Mod* _parent, Identifier _name, Type* _type, bool _is_variable,
-                                        Maybe<llvm::Constant*> initialValue, llvm::Value* _value,
-                                        const VisibilityInfo& _visibility) {
+  useit static GlobalEntity* get(Mod* _parent, Identifier _name, Type* _type, bool _is_variable,
+                                 Maybe<llvm::Constant*> initialValue, llvm::Value* _value,
+                                 const VisibilityInfo& _visibility) {
     return new GlobalEntity(_parent, _name, _type, _is_variable, initialValue, _value, _visibility);
   }
 

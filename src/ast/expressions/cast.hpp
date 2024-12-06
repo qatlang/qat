@@ -14,7 +14,7 @@ public:
   Cast(Expression* _mainExp, Type* _dest, FileRange _fileRange)
       : Expression(_fileRange), instance(_mainExp), destination(_dest) {}
 
-  useit static inline Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
+  useit static Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
     return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
   }
 

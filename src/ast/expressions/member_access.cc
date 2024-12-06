@@ -2,9 +2,10 @@
 #include "../../IR/types/future.hpp"
 #include "../../IR/types/string_slice.hpp"
 #include "../../utils/helpers.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/Support/Casting.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/Support/Casting.h>
 
 namespace qat::ast {
 
@@ -69,23 +70,24 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
     } else if (name.value == "data") {
       if (inst->is_prerun_value()) {
         return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(0u),
-                                    ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
-                                                      ir::MarkOwner::OfAnonymous(), false, ctx->irCtx));
+                                    ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+                                                      ir::MarkOwner::of_anonymous(), false, ctx->irCtx));
       } else if (inst->is_value()) {
         return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
-                              ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false,
-                                                ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
+                              ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+                                                ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
                               false);
       } else {
         SHOW("String slice is an implicit pointer or a reference or pointer")
-        return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(),
-                                                                  inst->get_llvm(), 0u),
-                              ir::ReferenceType::get(false,
-                                                     ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx),
-                                                                       false, // NOLINT(readability-magic-numbers)
-                                                                       ir::MarkOwner::OfAnonymous(), false, ctx->irCtx),
-                                                     ctx->irCtx),
-                              false);
+        return ir::Value::get(
+            ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(),
+                                                0u),
+            ir::ReferenceType::get(false,
+                                   ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
+                                                     false, // NOLINT(readability-magic-numbers)
+                                                     ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
+                                   ctx->irCtx),
+            false);
       }
     } else {
       ctx->Error("Invalid name for member access: " + ctx->color(name.value) + " for expression of type " +
@@ -112,7 +114,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
                                     llvm::Type::getInt1Ty(ctx->irCtx->llctx)
                                         ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
                                 true),
-                            ir::UnsignedType::getBool(ctx->irCtx), false);
+                            ir::UnsignedType::create_bool(ctx->irCtx), false);
     } else if (name.value == "isNotDone") {
       return ir::Value::get(
           ctx->irCtx->builder.CreateICmpEQ(
@@ -131,7 +133,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
                           ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
                   true),
               llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
-          ir::UnsignedType::getBool(ctx->irCtx), false);
+          ir::UnsignedType::create_bool(ctx->irCtx), false);
     } else {
       ctx->Error("Invalid name " + ctx->color(name.value) + " for member access for type " +
                      ctx->color(instType->to_string()),
@@ -144,17 +146,17 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
     if (name.value == "hasValue") {
       if (inst->is_prerun_value()) {
         return ir::PrerunValue::get(llvm::cast<llvm::ConstantInt>(inst->get_llvm_constant()->getAggregateElement(0u)),
-                                    ir::UnsignedType::getBool(ctx->irCtx));
+                                    ir::UnsignedType::create_bool(ctx->irCtx));
       } else if (inst->is_value()) {
         return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
-                              ir::UnsignedType::getBool(ctx->irCtx), false);
+                              ir::UnsignedType::create_bool(ctx->irCtx), false);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(
                                   ctx->irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                                  ctx->irCtx->builder.CreateStructGEP(
                                                                      instType->get_llvm_type(), inst->get_llvm(), 0u)),
                                   llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u)),
-                              ir::UnsignedType::getBool(ctx->irCtx), false);
+                              ir::UnsignedType::create_bool(ctx->irCtx), false);
       }
     } else if (name.value == "hasNoValue") {
       if (inst->is_prerun_value()) {
@@ -162,18 +164,18 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
             llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
                                                  inst->get_llvm_constant()->getAggregateElement(0u),
                                                  llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
-            ir::UnsignedType::getBool(ctx->irCtx));
+            ir::UnsignedType::create_bool(ctx->irCtx));
       } else if (inst->is_value()) {
         return ir::Value::get(
             ctx->irCtx->builder.CreateNot(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u})),
-            ir::UnsignedType::getBool(ctx->irCtx), false);
+            ir::UnsignedType::create_bool(ctx->irCtx), false);
       } else {
         return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(
                                   ctx->irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                                  ctx->irCtx->builder.CreateStructGEP(
                                                                      instType->get_llvm_type(), inst->get_llvm(), 0u)),
                                   llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
-                              ir::UnsignedType::getBool(ctx->irCtx), false);
+                              ir::UnsignedType::create_bool(ctx->irCtx), false);
       }
     } else {
       ctx->Error("Invalid name " + ctx->color(name.value) + " for member access of type " +
@@ -256,7 +258,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
                      ctx->color(instType->to_string()),
                  fileRange);
     }
-  } else if (instType->is_mark() && instType->as_mark()->isSlice()) {
+  } else if (instType->is_mark() && instType->as_mark()->is_slice()) {
     if (name.value == "length") {
       if (inst->is_prerun_value()) {
         return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(1u),

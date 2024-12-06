@@ -20,7 +20,7 @@ public:
   UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange)
       : Type(_fileRange), bitWidth(_bitWidth), is_bool(_isBool) {}
 
-  useit static inline UnsignedType* create(u64 _bitWidth, bool _isBool, FileRange _fileRange) {
+  useit static UnsignedType* create(u64 _bitWidth, bool _isBool, FileRange _fileRange) {
     return std::construct_at(OwnNormal(UnsignedType), _bitWidth, _isBool, _fileRange);
   }
 

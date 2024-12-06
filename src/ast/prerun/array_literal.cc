@@ -1,5 +1,6 @@
 #include "./array_literal.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

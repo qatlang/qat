@@ -19,8 +19,8 @@ public:
                         FileRange _fileRange)
       : PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-  useit static inline PrerunMixOrChoiceInit* create(Maybe<PrerunExpression*> type, Identifier subName,
-                                                    Maybe<PrerunExpression*> expression, FileRange fileRange) {
+  useit static PrerunMixOrChoiceInit* create(Maybe<PrerunExpression*> type, Identifier subName,
+                                             Maybe<PrerunExpression*> expression, FileRange fileRange) {
     return std::construct_at(OwnNormal(PrerunMixOrChoiceInit), type, subName, expression, fileRange);
   }
 

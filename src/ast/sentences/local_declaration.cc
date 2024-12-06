@@ -1,7 +1,8 @@
 #include "./local_declaration.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../show.hpp"
-#include "llvm/IR/Instructions.h"
+
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 

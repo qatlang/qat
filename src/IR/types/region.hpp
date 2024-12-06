@@ -2,8 +2,9 @@
 #define QAT_IR_TYPES_REGION_HPP
 
 #include "../context.hpp"
-#include "qat_type.hpp"
-#include "llvm/IR/GlobalVariable.h"
+#include "./qat_type.hpp"
+
+#include <llvm/IR/GlobalVariable.h>
 
 namespace qat::ir {
 

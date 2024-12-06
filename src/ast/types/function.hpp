@@ -15,8 +15,7 @@ public:
   FunctionType(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic, FileRange _fileRange)
       : Type(_fileRange), returnType(_retType), argTypes(_argTypes), isVariadic(_isVariadic) {}
 
-  useit static inline FunctionType* create(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic,
-                                           FileRange _fileRange) {
+  useit static FunctionType* create(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _isVariadic, _fileRange);
   }
 

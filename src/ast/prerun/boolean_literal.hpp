@@ -11,7 +11,7 @@ class BooleanLiteral final : public PrerunExpression {
 public:
   BooleanLiteral(bool _value, FileRange _fileRange) : PrerunExpression(std::move(_fileRange)), value(_value) {}
 
-  useit static inline BooleanLiteral* create(bool _value, FileRange _fileRange) {
+  useit static BooleanLiteral* create(bool _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(BooleanLiteral), _value, _fileRange);
   }
 

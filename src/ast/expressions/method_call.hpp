@@ -20,8 +20,8 @@ public:
       : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
         memberName(std::move(_memberName)), arguments(std::move(_arguments)), callNature(_variation) {}
 
-  useit static inline MethodCall* create(Expression* _instance, bool _isExpSelf, Identifier _memberName,
-                                         Vec<Expression*> _arguments, Maybe<bool> _variation, FileRange _fileRange) {
+  useit static MethodCall* create(Expression* _instance, bool _isExpSelf, Identifier _memberName,
+                                  Vec<Expression*> _arguments, Maybe<bool> _variation, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MethodCall), _instance, _isExpSelf, _memberName, _arguments, _variation,
                              _fileRange);
   }

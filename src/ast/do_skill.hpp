@@ -24,8 +24,7 @@ public:
   DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
       : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
-  useit static inline DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType,
-                                      FileRange _fileRange) {
+  useit static DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
   }
 

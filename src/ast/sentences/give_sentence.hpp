@@ -15,7 +15,7 @@ public:
   GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
       : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
 
-  useit static inline GiveSentence* create(Maybe<Expression*> _given_expr, FileRange _fileRange) {
+  useit static GiveSentence* create(Maybe<Expression*> _given_expr, FileRange _fileRange) {
     return std::construct_at(OwnNormal(GiveSentence), _given_expr, _fileRange);
   }
 

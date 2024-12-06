@@ -12,7 +12,7 @@ class PrerunBitwiseNot final : public PrerunExpression {
 public:
   PrerunBitwiseNot(PrerunExpression* _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-  useit static inline PrerunBitwiseNot* create(PrerunExpression* _value, FileRange _fileRange) {
+  useit static PrerunBitwiseNot* create(PrerunExpression* _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunBitwiseNot), _value, _fileRange);
   }
 

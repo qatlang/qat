@@ -10,7 +10,7 @@ class StringSliceType final : public Type {
 public:
   explicit StringSliceType(FileRange _fileRange) : Type(_fileRange) {}
 
-  useit static inline StringSliceType* create(FileRange _fileRange) {
+  useit static StringSliceType* create(FileRange _fileRange) {
     return std::construct_at(OwnNormal(StringSliceType), _fileRange);
   }
 

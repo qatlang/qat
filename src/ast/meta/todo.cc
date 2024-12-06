@@ -1,7 +1,8 @@
 #include "./todo.hpp"
 #include "../../IR/context.hpp"
 #include "../../cli/config.hpp"
-#include "llvm/IR/Instructions.h"
+
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 
@@ -11,10 +12,6 @@ void PrerunMetaTodo::emit(EmitCtx* ctx) {
     ctx->irCtx->Warning("TODO" + (message.has_value() ? (": " + message.value()) : ""), fileRange);
   } else {
     ctx->Error("TODO" + (message.has_value() ? (": " + message.value()) : ""), fileRange);
-  }
-  if (ctx->has_pre_call_state()) {
-    // FIXME - Change so that individual blocks can be tagged as having TODOs
-    ctx->get_pre_call_state()->set_given_value(nullptr);
   }
 }
 

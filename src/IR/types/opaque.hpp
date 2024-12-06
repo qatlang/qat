@@ -7,7 +7,8 @@
 #include "../generics.hpp"
 #include "../meta_info.hpp"
 #include "qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ast {
 class DefineCoreType;

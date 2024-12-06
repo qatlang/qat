@@ -3,7 +3,8 @@
 
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 #include <string>
 
 namespace qat::ir {
@@ -21,19 +22,19 @@ private:
       : name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
 
 public:
-  useit static inline ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
+  useit static ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
     return new ArgumentType(ArgumentKind::NORMAL, std::move(name), type, isVar);
   }
 
-  useit static inline ArgumentType* create_member(String name, Type* type = nullptr) {
+  useit static ArgumentType* create_member(String name, Type* type = nullptr) {
     return new ArgumentType(ArgumentKind::MEMBER, name, type, false);
   }
 
-  useit static inline ArgumentType* create_variadic(Maybe<String> name) {
+  useit static ArgumentType* create_variadic(Maybe<String> name) {
     return new ArgumentType(ArgumentKind::VARIADIC, std::move(name), nullptr, false);
   }
 
-  useit inline bool is_same_as(ArgumentType* other) {
+  useit bool is_same_as(ArgumentType* other) {
     if (kind != other->kind) {
       return false;
     }
@@ -50,21 +51,21 @@ public:
     }
   }
 
-  useit inline bool has_name() const { return name.has_value(); }
+  useit bool has_name() const { return name.has_value(); }
 
-  useit inline String get_name() const { return name.value(); }
+  useit String get_name() const { return name.value(); }
 
-  useit inline Type* get_type() const { return type; }
+  useit Type* get_type() const { return type; }
 
-  useit inline ArgumentKind get_kind() const { return kind; }
+  useit ArgumentKind get_kind() const { return kind; }
 
-  useit inline bool is_variable() const { return variability; }
+  useit bool is_variable() const { return variability; }
 
-  useit inline bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
+  useit bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
 
-  useit inline bool is_variadic_argument() const { return kind == ArgumentKind::VARIADIC; }
+  useit bool is_variadic_argument() const { return kind == ArgumentKind::VARIADIC; }
 
-  useit inline Json to_json() const {
+  useit Json to_json() const {
     return Json()
         ._("hasName", name.has_value())
         ._("name", name.has_value() ? name.value() : JsonValue())
@@ -74,7 +75,7 @@ public:
         ._("kind", kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
   }
 
-  useit inline String to_string() const {
+  useit String to_string() const {
     switch (kind) {
       case ArgumentKind::NORMAL:
         return (variability ? "var " : "") + (name.has_value() ? (name.value() + " :: ") : "") + type->to_string();
@@ -110,7 +111,7 @@ class FunctionType final : public Type {
 public:
   FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
 
-  useit static inline FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, llvm::LLVMContext& llCtx) {
+  useit static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, llvm::LLVMContext& llCtx) {
     return new FunctionType(retTy, std::move(argTys), llCtx);
   }
 

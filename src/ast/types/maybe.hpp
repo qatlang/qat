@@ -13,7 +13,7 @@ public:
   MaybeType(bool _isPacked, Type* _subType, FileRange _fileRange)
       : Type(_fileRange), subTyp(_subType), isPacked(_isPacked) {}
 
-  useit static inline MaybeType* create(bool _isPacked, Type* _subType, FileRange _fileRange) {
+  useit static MaybeType* create(bool _isPacked, Type* _subType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MaybeType), _isPacked, _subType, _fileRange);
   }
 

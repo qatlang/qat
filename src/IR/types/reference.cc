@@ -1,7 +1,8 @@
 #include "./reference.hpp"
 #include "../context.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 

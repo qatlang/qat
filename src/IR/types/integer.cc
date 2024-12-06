@@ -2,11 +2,12 @@
 #include "../context.hpp"
 #include "../value.hpp"
 #include "qat_type.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/InstrTypes.h"
-#include "llvm/IR/Instruction.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/LLVMContext.h>
 
 #define MAXIMUM_CONST_EXPR_BITWIDTH 64u
 

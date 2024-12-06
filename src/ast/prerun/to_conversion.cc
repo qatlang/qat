@@ -1,6 +1,7 @@
 #include "./to_conversion.hpp"
-#include "llvm/IR/ConstantFold.h"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/ConstantFold.h>
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 
@@ -70,15 +71,15 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
                 (valTy->as_mark()->get_subtype()->is_ctype() &&
                  valTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
                (valTy->as_mark()->get_subtype()->is_unsigned_integer()
-                    ? (valTy->as_mark()->get_subtype()->as_unsigned_integer()->getBitwidth() == 8u)
+                    ? (valTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
                     : (valTy->as_mark()
                            ->get_subtype()
                            ->as_ctype()
                            ->get_subtype()
                            ->as_unsigned_integer()
-                           ->getBitwidth() == 8u)) &&
-               (valTy->as_mark()->getOwner().isAnonymous()) && (!valTy->as_mark()->isSubtypeVariable())) {
-      if (valTy->as_mark()->isSlice()) {
+                           ->get_bitwidth() == 8u)) &&
+               (valTy->as_mark()->get_owner().is_of_anonymous()) && (!valTy->as_mark()->is_subtype_variable())) {
+      if (valTy->as_mark()->is_slice()) {
         return ir::PrerunValue::get(
             llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()), usableTarget);
       } else {

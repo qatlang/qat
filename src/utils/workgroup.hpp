@@ -10,8 +10,8 @@ class Workgroup {
   Vec<std::thread> workers;
 
 public:
-  void inline add(std::thread thr) { workers.push_back(std::move(thr)); }
-  void inline wait() {
+  void add(std::thread thr) { workers.push_back(std::move(thr)); }
+  void wait() {
     for (auto& thr : workers) {
       thr.join();
     }

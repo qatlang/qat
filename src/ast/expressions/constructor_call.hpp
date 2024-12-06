@@ -17,7 +17,7 @@ public:
   ConstructorCall(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange)
       : Expression(_fileRange), type(_type), args(_args) {}
 
-  useit static inline ConstructorCall* create(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange) {
+  useit static ConstructorCall* create(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
   }
 

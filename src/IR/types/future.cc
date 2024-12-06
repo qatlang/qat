@@ -4,12 +4,13 @@
 #include "../control_flow.hpp"
 #include "../logic.hpp"
 #include "reference.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/Alignment.h"
-#include "llvm/Support/AtomicOrdering.h"
+
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/Alignment.h>
+#include <llvm/Support/AtomicOrdering.h>
 
 namespace qat::ir {
 

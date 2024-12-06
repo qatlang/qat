@@ -14,7 +14,7 @@ public:
   IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
       : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
 
-  useit static inline IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange) {
+  useit static IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange) {
     return std::construct_at(OwnNormal(IntegerLiteral), _value, _bits, _fileRange);
   }
 

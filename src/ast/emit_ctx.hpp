@@ -31,7 +31,7 @@ struct LoopInfo {
 
   void set_secondary_name(Identifier other) { secondaryName = std::move(other); }
 
-  useit inline bool isTimes() const { return type == LoopType::TO_COUNT; }
+  useit bool isTimes() const { return type == LoopType::TO_COUNT; }
 };
 
 enum class BreakableType {
@@ -76,7 +76,7 @@ struct EmitCtx {
       : irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
         prerunCallState(nullptr) {}
 
-  useit static inline EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
+  useit static EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
     return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
   }
 
@@ -102,20 +102,20 @@ struct EmitCtx {
 
   useit AccessInfo get_access_info() const;
 
-  useit inline bool              has_member_parent() const { return memberParent != nullptr; }
-  useit inline ir::MethodParent* get_member_parent() const { return memberParent; }
+  useit bool has_member_parent() const { return memberParent != nullptr; }
+  useit ir::MethodParent* get_member_parent() const { return memberParent; }
 
-  useit inline bool          has_fn() const { return fn != nullptr; }
-  useit inline ir::Function* get_fn() const { return fn; }
+  useit bool has_fn() const { return fn != nullptr; }
+  useit ir::Function* get_fn() const { return fn; }
 
-  useit inline bool                 has_pre_call_state() const { return prerunCallState != nullptr; }
-  useit inline ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
+  useit bool has_pre_call_state() const { return prerunCallState != nullptr; }
+  useit ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
 
-  useit inline bool            has_opaque_parent() const { return parentOpaque != nullptr; }
-  useit inline ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
+  useit bool has_opaque_parent() const { return parentOpaque != nullptr; }
+  useit ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
 
-  useit inline bool       has_skill() const { return skill != nullptr; }
-  useit inline ir::Skill* get_skill() const { return skill; }
+  useit bool has_skill() const { return skill != nullptr; }
+  useit ir::Skill* get_skill() const { return skill; }
 
   useit String color(String const& message) const;
 

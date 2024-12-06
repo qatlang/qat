@@ -5,7 +5,6 @@
 #include "../IR/types/array.hpp"
 #include "../IR/types/c_type.hpp"
 #include "../IR/types/choice.hpp"
-#include "../IR/types/core_type.hpp"
 #include "../IR/types/float.hpp"
 #include "../IR/types/function.hpp"
 #include "../IR/types/integer.hpp"
@@ -13,6 +12,7 @@
 #include "../IR/types/pointer.hpp"
 #include "../IR/types/reference.hpp"
 #include "../IR/types/string_slice.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
 #include "../show.hpp"
@@ -51,7 +51,7 @@ struct VisibilitySpec {
 class Commentable {
 public:
   Maybe<Pair<String, FileRange>> commentValue;
-  useit inline bool              hasCommentValue() const { return commentValue.has_value(); }
+  useit bool                     hasCommentValue() const { return commentValue.has_value(); }
 };
 
 #define COMMENTABLE_FUNCTIONS                                                                                          \

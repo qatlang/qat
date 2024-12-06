@@ -23,24 +23,24 @@ public:
   ir::LocalValue*   localValue = nullptr;
   Maybe<Identifier> irName;
   bool              isVar = false;
-  useit inline bool isLocalDecl() const { return localValue != nullptr; }
-  void inline type_check_local(ir::Type* type, ir::Ctx* irCtx, FileRange fileRange) {
+  useit bool        isLocalDecl() const { return localValue != nullptr; }
+  void              type_check_local(ir::Type* type, ir::Ctx* irCtx, FileRange fileRange) {
     if (!localValue->get_ir_type()->is_same(type)) {
       irCtx->Error("The type of this expression is " + irCtx->color(type->to_string()) +
-                       " which does not match the type of the local declaration, which is " +
-                       irCtx->color(localValue->get_ir_type()->to_string()),
-                   fileRange);
+                                    " which does not match the type of the local declaration, which is " +
+                                    irCtx->color(localValue->get_ir_type()->to_string()),
+                                fileRange);
     }
   }
-  inline void setLocalValue(ir::LocalValue* _localValue) { localValue = _localValue; }
+  void setLocalValue(ir::LocalValue* _localValue) { localValue = _localValue; }
 };
 
 class InPlaceCreatable {
 public:
-  ir::Value*        createIn = nullptr;
-  useit inline bool canCreateIn() const { return createIn != nullptr; }
-  inline void       setCreateIn(ir::Value* _createIn) { createIn = _createIn; }
-  inline void       unsetCreateIn() { createIn = nullptr; }
+  ir::Value* createIn = nullptr;
+  useit bool canCreateIn() const { return createIn != nullptr; }
+  void       setCreateIn(ir::Value* _createIn) { createIn = _createIn; }
+  void       unsetCreateIn() { createIn = nullptr; }
 };
 
 struct FnAtEnd {
@@ -52,19 +52,19 @@ struct FnAtEnd {
 
 class TypeInferrable {
 public:
-  ir::Type*         inferredType = nullptr;
+  ir::Type* inferredType = nullptr;
 
-  useit inline bool is_type_inferred() const { return inferredType != nullptr; }
+  useit bool is_type_inferred() const { return inferredType != nullptr; }
 
-  inline void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRange fileRange) const {
-    if(inferredType && !inferredType->is_same(provided)) {
-      ctx->Error("The type inferred for this expression is " + ctx->color(inferredType->to_string())
-		 + " which does not match with the provided type which is "
-		 + ctx->color(provided->to_string()), fileRange);
+  void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRange fileRange) const {
+    if (inferredType && !inferredType->is_same(provided)) {
+      ctx->Error("The type inferred for this expression is " + ctx->color(inferredType->to_string()) +
+                     " which does not match with the provided type which is " + ctx->color(provided->to_string()),
+                 fileRange);
     }
   }
 
-  inline void set_inference_type(ir::Type* _type) {
+  void set_inference_type(ir::Type* _type) {
     inferredType = _type->is_reference() ? _type->as_reference()->get_subtype() : _type;
   }
 };

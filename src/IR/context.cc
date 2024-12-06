@@ -11,11 +11,12 @@
 #include "qat_module.hpp"
 #include "clang/Basic/AddressSpaces.h"
 #include "clang/Basic/DiagnosticDriver.h"
-#include "llvm/IR/GlobalValue.h"
-#include "llvm/IR/LLVMContext.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <llvm/IR/GlobalValue.h>
+#include <llvm/IR/LLVMContext.h>
 #include <string>
 
 namespace qat::ir {

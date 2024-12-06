@@ -4,9 +4,10 @@
 #include "../../IR/types/void.hpp"
 #include "../expression.hpp"
 #include "../types/qat_type.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/InlineAsm.h"
-#include "llvm/Support/Error.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/InlineAsm.h>
+#include <llvm/Support/Error.h>
 
 namespace qat::ast {
 

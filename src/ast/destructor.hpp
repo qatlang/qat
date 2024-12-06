@@ -2,13 +2,12 @@
 #define QAT_AST_DESTRUCTOR_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "./argument.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
 #include "meta_info.hpp"
-#include "llvm/IR/GlobalValue.h"
 #include <string>
 
 namespace qat::ast {
@@ -27,12 +26,11 @@ class DestructorDefinition {
 public:
   DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo,
                        Vec<Sentence*> _sentences, FileRange _fileRange)
-      : nameRange(_nameRange), defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)), sentences(_sentences),
-        fileRange(_fileRange) {}
+      : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange), defineChecker(_defineChecker),
+        metaInfo(std::move(_metaInfo)) {}
 
-  useit static inline DestructorDefinition* create(FileRange nameRange, PrerunExpression* _defineChecker,
-                                                   Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
-                                                   FileRange fileRange) {
+  useit static DestructorDefinition* create(FileRange nameRange, PrerunExpression* _defineChecker,
+                                            Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences, FileRange fileRange) {
     return std::construct_at(OwnNormal(DestructorDefinition), nameRange, _defineChecker, std::move(metaInfo),
                              std::move(_sentences), fileRange);
   }

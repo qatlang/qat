@@ -11,7 +11,7 @@ class LogicalNot final : public Expression {
 public:
   LogicalNot(Expression* _exp, FileRange _range) : Expression(_range), exp(_exp) {}
 
-  useit static inline LogicalNot* create(Expression* _exp, FileRange _range) {
+  useit static LogicalNot* create(Expression* _exp, FileRange _range) {
     return std::construct_at(OwnNormal(LogicalNot), _exp, _range);
   }
 

@@ -11,7 +11,7 @@ class Break final : public Sentence {
 public:
   Break(Maybe<Identifier> _tag, FileRange _fileRange) : Sentence(_fileRange), tag(_tag) {}
 
-  useit static inline Break* create(Maybe<Identifier> _tag, FileRange _fileRange) {
+  useit static Break* create(Maybe<Identifier> _tag, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Break), _tag, _fileRange);
   }
 

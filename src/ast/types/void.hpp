@@ -9,9 +9,7 @@ class VoidType final : public Type {
 public:
   explicit VoidType(FileRange _fileRange) : Type(_fileRange) {}
 
-  useit static inline VoidType* create(FileRange _fileRange) {
-    return std::construct_at(OwnNormal(VoidType), _fileRange);
-  }
+  useit static VoidType* create(FileRange _fileRange) { return std::construct_at(OwnNormal(VoidType), _fileRange); }
 
   useit ir::Type*   emit(EmitCtx* ctx);
   useit AstTypeKind type_kind() const;

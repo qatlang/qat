@@ -19,9 +19,9 @@ public:
                    Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
       : IsEntity(_fileRange), name(_name), condition(_condition), visibSpec(_visibSpec), metaInfo(_metaInfo) {}
 
-  useit static inline DefineOpaqueType* create(Identifier _name, Maybe<PrerunExpression*> _condition,
-                                               Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
-                                               FileRange _fileRange) {
+  useit static DefineOpaqueType* create(Identifier _name, Maybe<PrerunExpression*> _condition,
+                                        Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
+                                        FileRange _fileRange) {
     return std::construct_at(OwnNormal(DefineOpaqueType), _name, _condition, _visibSpec, _metaInfo, _fileRange);
   }
 

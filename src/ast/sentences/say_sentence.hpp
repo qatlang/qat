@@ -17,7 +17,7 @@ public:
   SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange)
       : Sentence(_fileRange), expressions(_expressions), sayType(_sayTy) {}
 
-  useit static inline SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange) {
+  useit static SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange) {
     return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
   }
 

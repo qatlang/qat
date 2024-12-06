@@ -3,11 +3,12 @@
 #include "../../IR/logic.hpp"
 #include "../../IR/types/reference.hpp"
 #include "operator.hpp"
-#include "llvm/IR/Constant.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/Casting.h"
+
+#include <llvm/IR/Constant.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/Support/Casting.h>
 
 #define QAT_COMPARISON_INDEX "qat'str'comparisonIndex"
 
@@ -27,11 +28,11 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
     rhs->as_type_inferrable()->set_inference_type(
         lhsEmit->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype() : lhsEmit->get_ir_type());
     rhsEmit = rhs->emit(ctx);
-  } else if (lhs->nodeType() == NodeType::NULL_POINTER) {
+  } else if (lhs->nodeType() == NodeType::NULL_MARK) {
     rhsEmit = rhs->emit(ctx);
     lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
     lhsEmit = lhs->emit(ctx);
-  } else if (rhs->nodeType() == NodeType::NULL_POINTER) {
+  } else if (rhs->nodeType() == NodeType::NULL_MARK) {
     lhsEmit = lhs->emit(ctx);
     rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
     rhsEmit = rhs->emit(ctx);
@@ -98,20 +99,20 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
   if (lhsValueType->is_bool() && rhsValueType->is_bool()) {
     referenceHandler();
     if (op == Op::equalTo) {
-      return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
+      return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::create_bool(ctx->irCtx),
                             false)
           ->with_range(fileRange);
     } else if (op == Op::notEqualTo) {
-      return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
+      return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::create_bool(ctx->irCtx),
                             false)
           ->with_range(fileRange);
     } else if (op == Op::And) {
-      return ir::Value::get(ctx->irCtx->builder.CreateLogicalAnd(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false)
+      return ir::Value::get(ctx->irCtx->builder.CreateLogicalAnd(lhsVal, rhsVal),
+                            ir::UnsignedType::create_bool(ctx->irCtx), false)
           ->with_range(fileRange);
     } else if (op == Op::Or) {
-      return ir::Value::get(ctx->irCtx->builder.CreateLogicalOr(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                            false);
+      return ir::Value::get(ctx->irCtx->builder.CreateLogicalOr(lhsVal, rhsVal),
+                            ir::UnsignedType::create_bool(ctx->irCtx), false);
     } else {
       ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for expressions of type " +
                      ctx->color(lhsType->to_string()),
@@ -149,32 +150,32 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         case Op::equalTo: {
           llRes   = ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::bitwiseAnd: {
@@ -267,32 +268,32 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         case Op::equalTo: {
           llRes   = ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->irCtx->builder.CreateICmpULT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->irCtx->builder.CreateICmpUGT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpULE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->irCtx->builder.CreateICmpUGE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::bitwiseAnd: {
@@ -390,32 +391,32 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         case Op::equalTo: {
           llRes   = ctx->irCtx->builder.CreateFCmpOEQ(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::notEqualTo: {
           llRes   = ctx->irCtx->builder.CreateFCmpONE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThan: {
           llRes   = ctx->irCtx->builder.CreateFCmpOLT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThan: {
           llRes   = ctx->irCtx->builder.CreateFCmpOGT(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::lessThanOrEqualTo: {
           llRes   = ctx->irCtx->builder.CreateFCmpOLE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         case Op::greaterThanEqualTo: {
           llRes   = ctx->irCtx->builder.CreateFCmpOGE(lhsVal, rhsVal);
-          resType = ir::UnsignedType::getBool(ctx->irCtx);
+          resType = ir::UnsignedType::create_bool(ctx->irCtx);
           break;
         }
         default: {
@@ -501,7 +502,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
             llvm::cast<llvm::Constant>(rhsBuff), llvm::cast<llvm::Constant>(rhsCount), ctx->irCtx->llctx);
         return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                            (op == Op::equalTo) ? strCmpRes : !strCmpRes),
-                                    ir::UnsignedType::getBool(ctx->irCtx))
+                                    ir::UnsignedType::create_bool(ctx->irCtx))
             ->with_range(fileRange);
       }
       auto* curr              = ctx->get_fn()->get_block();
@@ -572,15 +573,15 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
       auto* strCmpRes = ctx->irCtx->builder.CreatePHI(Ty1Int, 2);
       strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 1u : 0u), strCmpTrueBlock->get_bb());
       strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 0u : 1u), strCmpFalseBlock->get_bb());
-      return ir::Value::get(strCmpRes, ir::UnsignedType::getBool(ctx->irCtx), false)->with_range(fileRange);
+      return ir::Value::get(strCmpRes, ir::UnsignedType::create_bool(ctx->irCtx), false)->with_range(fileRange);
     } else {
       ctx->Error("String slices do not support the " + ctx->color(operator_to_string(op)) + " operator", fileRange);
     }
   } else if (lhsValueType->is_mark() && rhsValueType->is_mark()) {
     SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
     if (lhsValueType->as_mark()->get_subtype()->is_same(rhsValueType->as_mark()->get_subtype()) &&
-        (lhsValueType->as_mark()->isSlice() == rhsValueType->as_mark()->isSlice())) {
-      if (lhsValueType->as_mark()->isSlice()) {
+        (lhsValueType->as_mark()->is_slice() == rhsValueType->as_mark()->is_slice())) {
+      if (lhsValueType->as_mark()->is_slice()) {
         bool isLHSRef = false;
         SHOW("LHS side")
         if (lhsEmit->is_reference()) {
@@ -591,8 +592,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         auto* ptrType = lhsValueType->as_mark();
         lhsType       = ptrType;
-        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
-                                          ir::MarkOwner::OfAnonymous(), false, ctx->irCtx);
+        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+                                          ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
         if (lhsEmit->is_prerun_value()) {
           lhsEmit = ir::PrerunValue::get(lhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
         } else if (isLHSRef) {
@@ -615,7 +616,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         lhsType = lhsValueType;
         lhsVal  = lhsEmit->get_llvm();
       }
-      if (rhsValueType->as_mark()->isSlice()) {
+      if (rhsValueType->as_mark()->is_slice()) {
         bool isRHSRef = false;
         SHOW("RHS side")
         if (rhsEmit->is_reference()) {
@@ -627,8 +628,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
         }
         auto* ptrType = rhsValueType->as_mark();
         rhsType       = ptrType;
-        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->isNonNullable(),
-                                          ir::MarkOwner::OfAnonymous(), false, ctx->irCtx);
+        auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+                                          ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
         if (rhsEmit->is_prerun_value()) {
           rhsEmit = ir::PrerunValue::get(rhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
         } else if (isRHSRef) {
@@ -659,7 +660,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
                    ctx->irCtx->builder.CreateICmpEQ(
                        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-                   ir::UnsignedType::getBool(ctx->irCtx), false)
+                   ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else if (op == Op::notEqualTo) {
         SHOW("Pointer is normal")
@@ -667,7 +668,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
                    ctx->irCtx->builder.CreateICmpNE(
                        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-                   ir::UnsignedType::getBool(ctx->irCtx), false)
+                   ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else {
         ctx->Error("The operands are pointers, and the operation " + ctx->color(operator_to_string(op)) +
@@ -685,51 +686,51 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
     referenceHandler();
     auto chTy = lhsValueType->as_choice();
     if (op == Op::equalTo) {
-      return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
+      return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal), ir::UnsignedType::create_bool(ctx->irCtx),
                             false)
           ->with_range(fileRange);
     } else if (op == Op::notEqualTo) {
-      return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
+      return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal), ir::UnsignedType::create_bool(ctx->irCtx),
                             false)
           ->with_range(fileRange);
     } else if (op == Op::lessThan) {
       if (chTy->has_negative_values()) {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpULT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpULT(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       }
     } else if (op == Op::lessThanOrEqualTo) {
       if (chTy->has_negative_values()) {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpULE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpULE(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       }
     } else if (op == Op::greaterThan) {
       if (chTy->has_negative_values()) {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpUGT(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpUGT(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       }
     } else if (op == Op::greaterThanEqualTo) {
       if (chTy->has_negative_values()) {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       } else {
-        return ir::Value::get(ctx->irCtx->builder.CreateICmpUGE(lhsVal, rhsVal), ir::UnsignedType::getBool(ctx->irCtx),
-                              false)
+        return ir::Value::get(ctx->irCtx->builder.CreateICmpUGE(lhsVal, rhsVal),
+                              ir::UnsignedType::create_bool(ctx->irCtx), false)
             ->with_range(fileRange);
       }
     } else {

@@ -14,7 +14,7 @@ public:
   FutureType(bool _isPacked, ast::Type* _subType, FileRange _fileRange)
       : Type(_fileRange), subType(_subType), isPacked(_isPacked) {}
 
-  useit static inline FutureType* create(bool isPacked, ast::Type* subType, FileRange fileRange) {
+  useit static FutureType* create(bool isPacked, ast::Type* subType, FileRange fileRange) {
     return std::construct_at(OwnNormal(FutureType), isPacked, subType, fileRange);
   }
 

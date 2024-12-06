@@ -2,14 +2,15 @@
 #define QAT_AST_METHOD_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "./argument.hpp"
 #include "./expression.hpp"
 #include "./member_parent_like.hpp"
 #include "./meta_info.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
-#include "llvm/IR/GlobalValue.h"
+
+#include <llvm/IR/GlobalValue.h>
 #include <string>
 
 namespace qat::ast {
@@ -123,8 +124,7 @@ public:
   MethodDefinition(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-  useit static inline MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences,
-                                               FileRange _fileRange) {
+  useit static MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
   }
 

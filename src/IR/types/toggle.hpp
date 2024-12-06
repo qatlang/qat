@@ -20,9 +20,9 @@ public:
     return new ToggleType(name, variants, parent, visibility, metaInfo, irCtx);
   }
 
-  useit inline usize get_variant_count() const { return variants.size(); }
+  useit usize get_variant_count() const { return variants.size(); }
 
-  useit inline Type* get_type_of(String const& name) const {
+  useit Type* get_type_of(String const& name) const {
     for (auto& it : variants) {
       if (it.first.value == name) {
         return it.second;
@@ -33,8 +33,8 @@ public:
 
   useit LinkNames get_link_names() const final;
 
-  useit inline bool is_trivially_copyable() const final { return true; }
-  useit inline bool is_trivially_movable() const final { return true; }
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
 
   useit TypeKind type_kind() const final { return TypeKind::toggle; }
   useit String   to_string() const final { return name.value; }

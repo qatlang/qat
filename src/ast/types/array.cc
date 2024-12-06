@@ -1,7 +1,8 @@
 #include "./array.hpp"
 #include "../../IR/types/array.hpp"
 #include "../expression.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 
@@ -15,7 +16,7 @@ void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 
 void ArrayType::typeInferenceForLength(ir::Ctx* irCtx) const {
   if (lengthExp->has_type_inferrance()) {
-    lengthExp->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(ARRAY_LENGTH_BITWIDTH, irCtx));
+    lengthExp->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(ARRAY_LENGTH_BITWIDTH, irCtx));
   }
 }
 
@@ -24,7 +25,7 @@ Maybe<usize> ArrayType::getTypeSizeInBits(EmitCtx* ctx) const {
   typeInferenceForLength(ctx->irCtx);
   auto* lengthIR = lengthExp->emit(ctx);
   if (lengthIR->get_ir_type()->is_unsigned_integer() &&
-      (lengthIR->get_ir_type()->as_unsigned_integer()->getBitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
+      (lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
     auto length = *llvm::cast<llvm::ConstantInt>(lengthIR->get_llvm_constant())->getValue().getRawData();
     if (elemSize.has_value() && (length > 0u)) {
       return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
@@ -41,10 +42,10 @@ ir::Type* ArrayType::emit(EmitCtx* ctx) {
   typeInferenceForLength(ctx->irCtx);
   auto* lengthIR = lengthExp->emit(ctx);
   if (lengthIR->get_ir_type()->is_unsigned_integer()) {
-    if (lengthIR->get_ir_type()->as_unsigned_integer()->getBitwidth() > ARRAY_LENGTH_BITWIDTH) {
+    if (lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth() > ARRAY_LENGTH_BITWIDTH) {
       ctx->Error(
           "Length of an array is an unsigned integer with bitwidth of " +
-              ctx->color(std::to_string(lengthIR->get_ir_type()->as_unsigned_integer()->getBitwidth())) +
+              ctx->color(std::to_string(lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth())) +
               " which is not allowed. Bitwidth of the length of the array should be less than or equal to 64, as there can be loss of data during compilation otherwise",
           lengthExp->fileRange);
     }

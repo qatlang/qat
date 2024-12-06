@@ -4,9 +4,10 @@
 #include "../value.hpp"
 #include "./array.hpp"
 #include "reference.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ir {
 

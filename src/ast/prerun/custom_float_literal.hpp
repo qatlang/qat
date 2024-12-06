@@ -14,7 +14,7 @@ public:
   CustomFloatLiteral(String _value, String _kind, FileRange _fileRange)
       : PrerunExpression(_fileRange), value(_value), kind(_kind) {}
 
-  useit static inline CustomFloatLiteral* create(String _value, String _kind, FileRange _fileRange) {
+  useit static CustomFloatLiteral* create(String _value, String _kind, FileRange _fileRange) {
     return std::construct_at(OwnNormal(CustomFloatLiteral), _value, _kind, _fileRange);
   }
 

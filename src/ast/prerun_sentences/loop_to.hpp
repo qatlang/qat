@@ -14,7 +14,7 @@ class PrerunLoopTo final : public PrerunSentence {
 public:
   PrerunLoopTo(PrerunExpression* _count, FileRange _fileRange) : PrerunSentence(_fileRange), count(_count) {}
 
-  useit static inline PrerunLoopTo* get(PrerunExpression* count, FileRange fileRange) {
+  useit static PrerunLoopTo* get(PrerunExpression* count, FileRange fileRange) {
     return std::construct_at(OwnNormal(PrerunLoopTo), count, fileRange);
   }
 

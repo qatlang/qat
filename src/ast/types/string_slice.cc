@@ -1,7 +1,8 @@
 #include "./string_slice.hpp"
 #include "../../IR/types/string_slice.hpp"
-#include "type_kind.hpp"
-#include "llvm/IR/DerivedTypes.h"
+#include "./type_kind.hpp"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 

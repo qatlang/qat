@@ -2,7 +2,7 @@
 #define QAT_AST_OPERATOR_FUNCTION_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "./argument.hpp"
 #include "./expressions/operator.hpp"
 #include "./sentence.hpp"
@@ -36,11 +36,10 @@ public:
         argName(_argName), nameRange(_nameRange), fileRange(_fileRange), defineChecker(_defineChecker),
         metaInfo(std::move(_metaInfo)) {}
 
-  useit static inline OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange,
-                                                Vec<Argument*> _arguments, Type* _returnType,
-                                                Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-                                                Maybe<Identifier> _argName, PrerunExpression* _defineChecker,
-                                                Maybe<MetaInfo> _metaInfo) {
+  useit static OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
+                                         Type* _returnType, Maybe<VisibilitySpec> _visibSpec,
+                                         const FileRange& _fileRange, Maybe<Identifier> _argName,
+                                         PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo) {
     return std::construct_at(OwnNormal(OperatorPrototype), _isVariationFn, _op, _nameRange, _arguments, _returnType,
                              _visibSpec, _fileRange, _argName, _defineChecker, std::move(_metaInfo));
   }
@@ -77,8 +76,8 @@ public:
   OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
       : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-  useit static inline OperatorDefinition* create(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
-                                                 FileRange _fileRange) {
+  useit static OperatorDefinition* create(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
+                                          FileRange _fileRange) {
     return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
   }
 

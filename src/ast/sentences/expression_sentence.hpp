@@ -12,7 +12,7 @@ class ExpressionSentence final : public Sentence {
 public:
   ExpressionSentence(Expression* _expr, FileRange _fileRange) : Sentence(_fileRange), expr(_expr) {}
 
-  useit static inline ExpressionSentence* create(Expression* _expr, FileRange _fileRange) {
+  useit static ExpressionSentence* create(Expression* _expr, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ExpressionSentence), _expr, _fileRange);
   }
 

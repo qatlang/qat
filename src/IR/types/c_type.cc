@@ -209,7 +209,7 @@ CType* CType::get_bool(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getBoolWidth(), irCtx), CTypeKind::Bool);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getBoolWidth(), irCtx), CTypeKind::Bool);
 }
 
 CType* CType::get_int(ir::Ctx* irCtx) {
@@ -233,7 +233,7 @@ CType* CType::get_uint(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getIntWidth(), irCtx), CTypeKind::Uint);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getIntWidth(), irCtx), CTypeKind::Uint);
 }
 
 CType* CType::get_char(ir::Ctx* irCtx) {
@@ -257,7 +257,7 @@ CType* CType::get_char_unsigned(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getCharWidth(), irCtx), CTypeKind::UChar);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getCharWidth(), irCtx), CTypeKind::UChar);
 }
 
 CType* CType::get_short(ir::Ctx* irCtx) {
@@ -281,7 +281,7 @@ CType* CType::get_short_unsigned(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getShortWidth(), irCtx), CTypeKind::UChar);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getShortWidth(), irCtx), CTypeKind::UChar);
 }
 
 CType* CType::get_wide_char(ir::Ctx* irCtx) {
@@ -305,7 +305,7 @@ CType* CType::get_wide_char_unsigned(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getWCharWidth(), irCtx), CTypeKind::UWideChar);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getWCharWidth(), irCtx), CTypeKind::UWideChar);
 }
 
 CType* CType::get_long_int(ir::Ctx* irCtx) {
@@ -329,7 +329,7 @@ CType* CType::get_long_int_unsigned(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getLongWidth(), irCtx), CTypeKind::ULongInt);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getLongWidth(), irCtx), CTypeKind::ULongInt);
 }
 
 CType* CType::get_long_long(ir::Ctx* irCtx) {
@@ -353,7 +353,7 @@ CType* CType::get_long_long_unsigned(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getLongLongWidth(), irCtx), CTypeKind::ULongLong);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getLongLongWidth(), irCtx), CTypeKind::ULongLong);
 }
 
 CType* CType::get_isize(ir::Ctx* irCtx) {
@@ -380,7 +380,7 @@ CType* CType::get_usize(ir::Ctx* irCtx) {
     }
   }
   return new CType(
-      ir::UnsignedType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()), irCtx),
+      ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()), irCtx),
       CTypeKind::Usize);
 }
 
@@ -475,7 +475,7 @@ CType* CType::get_uintmax(ir::Ctx* irCtx) {
       }
     }
   }
-  return new CType(ir::UnsignedType::get(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx), CTypeKind::UintMax);
+  return new CType(ir::UnsignedType::create(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx), CTypeKind::UintMax);
 }
 
 CType* CType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx) {
@@ -483,13 +483,13 @@ CType* CType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx)
     if (typ->type_kind() == TypeKind::cType) {
       auto cTyp = (CType*)typ;
       if (cTyp->cTypeKind == CTypeKind::Pointer &&
-          (cTyp->subType->as_mark()->isSubtypeVariable() == isSubTypeVariable) &&
+          (cTyp->subType->as_mark()->is_subtype_variable() == isSubTypeVariable) &&
           cTyp->subType->as_mark()->get_subtype()->is_same(subType)) {
         return cTyp;
       }
     }
   }
-  return new CType(ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::OfAnonymous(), false, irCtx),
+  return new CType(ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::of_anonymous(), false, irCtx),
                    CTypeKind::Pointer);
 }
 
@@ -517,7 +517,7 @@ CType* CType::get_uintptr(ir::Ctx* irCtx) {
     }
   }
   return new CType(
-      ir::UnsignedType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntMaxType()), irCtx),
+      ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntMaxType()), irCtx),
       CTypeKind::UintPtr);
 }
 
@@ -546,9 +546,9 @@ CType* CType::get_ptrdiff_unsigned(ir::Ctx* irCtx) {
     }
   }
   return new CType(
-      ir::UnsignedType::get(irCtx->clangTargetInfo->getTypeWidth(
-                                irCtx->clangTargetInfo->getUnsignedPtrDiffType(irCtx->get_language_address_space())),
-                            irCtx),
+      ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(
+                                   irCtx->clangTargetInfo->getUnsignedPtrDiffType(irCtx->get_language_address_space())),
+                               irCtx),
       CTypeKind::UPtrDiff);
 }
 
@@ -590,7 +590,7 @@ CType* CType::get_cstr(ir::Ctx* irCtx) {
     }
   }
   return new CType(
-      ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::OfAnonymous(), false, irCtx),
+      ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::of_anonymous(), false, irCtx),
       CTypeKind::String);
 }
 
@@ -640,9 +640,10 @@ Maybe<bool> CType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::Preru
 
 String CType::to_string() const {
   return ctype_kind_to_string(cTypeKind) +
-         ((cTypeKind == CTypeKind::Pointer) ? (String(":[") + (subType->as_mark()->isSubtypeVariable() ? "var " : "") +
-                                               subType->as_mark()->get_subtype()->to_string() + "]")
-                                            : "");
+         ((cTypeKind == CTypeKind::Pointer)
+              ? (String(":[") + (subType->as_mark()->is_subtype_variable() ? "var " : "") +
+                 subType->as_mark()->get_subtype()->to_string() + "]")
+              : "");
 }
 
 } // namespace qat::ir

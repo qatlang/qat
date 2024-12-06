@@ -17,7 +17,7 @@ public:
   Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange)
       : Sentence(_fileRange), lhs(_lhs), value(_value) {}
 
-  useit static inline Assignment* create(Expression* _lhs, Expression* _value, FileRange _fileRange) {
+  useit static Assignment* create(Expression* _lhs, Expression* _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Assignment), _lhs, _value, _fileRange);
   }
 

@@ -16,11 +16,11 @@ public:
   NoneExpression(Maybe<FileRange> _isPacked, Type* _type, FileRange _fileRange)
       : PrerunExpression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
 
-  useit static inline NoneExpression* create(Maybe<FileRange> isPacked, Type* _type, FileRange _fileRange) {
+  useit static NoneExpression* create(Maybe<FileRange> isPacked, Type* _type, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NoneExpression), isPacked, _type, _fileRange);
   }
 
-  useit inline bool hasTypeSet() const { return type != nullptr; }
+  useit bool hasTypeSet() const { return type != nullptr; }
 
   TYPE_INFERRABLE_FUNCTIONS
 

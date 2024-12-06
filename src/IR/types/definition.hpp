@@ -8,7 +8,8 @@
 #include "../entity_overview.hpp"
 #include "../generic_variant.hpp"
 #include "./expanded_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ast {
 class GenericAbstractType;

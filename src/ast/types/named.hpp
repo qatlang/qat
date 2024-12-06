@@ -17,7 +17,7 @@ public:
   NamedType(u32 _relative, Vec<Identifier> _names, FileRange _fileRange)
       : Type(_fileRange), relative(_relative), names(_names) {}
 
-  useit static inline NamedType* create(u32 _relative, Vec<Identifier> _names, FileRange _fileRange) {
+  useit static NamedType* create(u32 _relative, Vec<Identifier> _names, FileRange _fileRange) {
     return std::construct_at(OwnNormal(NamedType), _relative, _names, _fileRange);
   }
 

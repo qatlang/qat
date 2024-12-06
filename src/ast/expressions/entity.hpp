@@ -21,7 +21,7 @@ public:
   Entity(u32 _relative, Vec<Identifier> _name, FileRange _fileRange)
       : Expression(std::move(_fileRange)), names(std::move(_name)), relative(_relative) {}
 
-  static inline Entity* create(u32 relative, Vec<Identifier> _name, FileRange _fileRange) {
+  static Entity* create(u32 relative, Vec<Identifier> _name, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Entity), relative, _name, _fileRange);
   }
 

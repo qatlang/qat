@@ -17,8 +17,8 @@ public:
   TypedGenericAbstract(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRange _fileRange)
       : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
 
-  useit static inline TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
-                                                   FileRange _fileRange) {
+  useit static TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
+                                            FileRange _fileRange) {
     return std::construct_at(OwnNormal(TypedGenericAbstract), _index, std::move(_name), _defaultTy,
                              std::move(_fileRange));
   }

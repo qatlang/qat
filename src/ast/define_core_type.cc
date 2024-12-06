@@ -1,6 +1,6 @@
 #include "./define_core_type.hpp"
 #include "../IR/generics.hpp"
-#include "../IR/types/core_type.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "../utils/identifier.hpp"
 #include "./constructor.hpp"
 #include "./convertor.hpp"

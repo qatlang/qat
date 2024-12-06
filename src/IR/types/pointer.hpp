@@ -24,27 +24,27 @@ public:
   void*            owner;
   PointerOwnerType ownerTy;
 
-  useit static MarkOwner OfHeap();
-  useit static MarkOwner OfAnonymous();
-  useit static MarkOwner OfType(Type* type);
-  useit static MarkOwner OfParentFunction(Function* fun);
-  useit static MarkOwner OfParentInstance(Type* type);
-  useit static MarkOwner OfRegion(Region* region);
-  useit static MarkOwner OfAnyRegion();
+  useit static MarkOwner of_heap();
+  useit static MarkOwner of_anonymous();
+  useit static MarkOwner of_type(Type* type);
+  useit static MarkOwner of_parent_function(Function* fun);
+  useit static MarkOwner of_parent_instance(Type* type);
+  useit static MarkOwner of_region(Region* region);
+  useit static MarkOwner of_any_region();
 
-  useit inline Type*     ownerAsType() const { return (Type*)owner; }
-  useit inline Region*   ownerAsRegion() const { return ((Type*)owner)->as_region(); }
-  useit inline Function* owner_as_parent_function() const { return (Function*)owner; }
-  useit inline Type*     ownerAsParentType() const { return (Type*)owner; }
+  useit Type*     owner_as_type() const { return (Type*)owner; }
+  useit Region*   owner_as_region() const { return ((Type*)owner)->as_region(); }
+  useit Function* owner_as_parent_function() const { return (Function*)owner; }
+  useit Type*     owner_as_parent_type() const { return (Type*)owner; }
 
-  useit inline bool isType() const { return ownerTy == PointerOwnerType::type; }
-  useit inline bool isAnonymous() const { return ownerTy == PointerOwnerType::anonymous; }
-  useit inline bool isAnyRegion() const { return ownerTy == PointerOwnerType::anyRegion; }
-  useit inline bool isRegion() const { return ownerTy == PointerOwnerType::region; }
-  useit inline bool isHeap() const { return ownerTy == PointerOwnerType::heap; }
-  useit inline bool is_parent_function() const { return ownerTy == PointerOwnerType::parentFunction; }
-  useit inline bool isParentInstance() const { return ownerTy == PointerOwnerType::parentInstance; }
-  useit inline bool isStatic() const { return ownerTy == PointerOwnerType::Static; }
+  useit bool is_of_type() const { return ownerTy == PointerOwnerType::type; }
+  useit bool is_of_anonymous() const { return ownerTy == PointerOwnerType::anonymous; }
+  useit bool is_of_any_region() const { return ownerTy == PointerOwnerType::anyRegion; }
+  useit bool is_of_region() const { return ownerTy == PointerOwnerType::region; }
+  useit bool is_of_heap() const { return ownerTy == PointerOwnerType::heap; }
+  useit bool is_of_parent_function() const { return ownerTy == PointerOwnerType::parentFunction; }
+  useit bool is_of_parent_instance() const { return ownerTy == PointerOwnerType::parentInstance; }
+  useit bool is_of_static() const { return ownerTy == PointerOwnerType::Static; }
 
   useit bool is_same(const MarkOwner& other) const;
 
@@ -66,12 +66,12 @@ public:
                              ir::Ctx* irCtx);
 
   useit Type*     get_subtype() const;
-  useit MarkOwner getOwner() const;
+  useit MarkOwner get_owner() const;
 
-  useit bool isSubtypeVariable() const;
-  useit bool isSlice() const;
-  useit bool isNullable() const;
-  useit bool isNonNullable() const;
+  useit bool is_subtype_variable() const;
+  useit bool is_slice() const;
+  useit bool is_nullable() const;
+  useit bool is_non_nullable() const;
   useit bool can_be_prerun() const final { return subType->is_function(); }
   useit bool is_type_sized() const final;
   useit bool has_prerun_default_value() const final;

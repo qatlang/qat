@@ -14,7 +14,7 @@ add_library(QAT_AST_PRERUN
 	mix_choice_init.cc
 	negative.cc
 	none.cc
-	null_pointer.cc
+	null_mark.cc
 	plain_initialiser.cc
 	prerun_global.cc
 	string_literal.cc

@@ -1,9 +1,10 @@
 #include "./plain_initialiser.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/vector.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Instructions.h"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ast {
 
@@ -205,8 +206,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
           lenType = lenType->as_reference()->get_subtype();
         }
         if (dataType->is_mark() && dataType->as_mark()->get_subtype()->is_unsigned_integer() &&
-            dataType->as_mark()->get_subtype()->as_unsigned_integer()->isBitWidth(8u)) {
-          if (dataType->as_mark()->isSlice()) {
+            dataType->as_mark()->get_subtype()->as_unsigned_integer()->is_bitWidth(8u)) {
+          if (dataType->as_mark()->is_slice()) {
             // FIXME - Change when `check` is added
             // FIXME - Add length confirmation if pointer is multi, compare with
             // the provided length of the string
@@ -220,7 +221,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
                           llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
                                                  ctx->irCtx->dataLayout->getProgramAddressSpace()),
                           ctx->irCtx->builder.CreateStructGEP(dataType->get_llvm_type(), strData->get_llvm(), 0u)),
-                ir::MarkType::get(false, ir::UnsignedType::get(8u, ctx->irCtx), false, ir::MarkOwner::OfAnonymous(),
+                ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false, ir::MarkOwner::of_anonymous(),
                                   false, ctx->irCtx),
                 false);
           } else {
@@ -232,7 +233,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
                                        dataType, false);
             }
           }
-          if (lenType->is_unsigned_integer() && lenType->as_unsigned_integer()->getBitwidth() == 64u) {
+          if (lenType->is_unsigned_integer() && lenType->as_unsigned_integer()->get_bitwidth() == 64u) {
             if (strLen->is_ghost_reference() || strLen->is_reference()) {
               strLen = ir::Value::get(ctx->irCtx->builder.CreateLoad(lenType->get_llvm_type(), strLen->get_llvm()),
                                       lenType, false);
@@ -261,9 +262,9 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
         if (strDataTy->is_reference()) {
           strDataTy = strDataTy->as_reference()->get_subtype();
         }
-        if (strDataTy->is_mark() && strDataTy->as_mark()->isSlice() &&
+        if (strDataTy->is_mark() && strDataTy->as_mark()->is_slice() &&
             (strDataTy->as_mark()->get_subtype()->is_unsigned_integer() &&
-             strDataTy->as_mark()->get_subtype()->as_unsigned_integer()->isBitWidth(8u))) {
+             strDataTy->as_mark()->get_subtype()->as_unsigned_integer()->is_bitWidth(8u))) {
           auto* strTy = ir::StringSliceType::get(ctx->irCtx);
           if (strData->is_ghost_reference() || strData->is_reference()) {
             if (strData->is_reference()) {

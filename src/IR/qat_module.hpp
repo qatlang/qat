@@ -17,7 +17,8 @@
 #include "meta_info.hpp"
 #include "types/definition.hpp"
 #include "value.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 #include <set>
 
 LLD_HAS_DRIVER(elf)
@@ -529,17 +530,15 @@ public:
   useit static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
                                     Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-  useit static inline bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
-  inline static void       add_provided_function(InternalDependency unit, Function* fnVal) {
-    providedFunctions[unit] = fnVal;
-  }
-  useit static inline Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
+  useit static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
+  static void       add_provided_function(InternalDependency unit, Function* fnVal) { providedFunctions[unit] = fnVal; }
+  useit static Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
 
   static bool triple_is_equivalent(llvm::Triple const& first, llvm::Triple const& second);
 
   static Vec<Function*> collect_mod_initialisers();
 
-  useit inline bool has_entity_with_name(String const& name) {
+  useit bool has_entity_with_name(String const& name) {
     for (auto ent : entityEntries) {
       if (ent->name.has_value() && ent->name->value == name) {
         return true;
@@ -601,7 +600,7 @@ public:
   useit Mod*       get_active();
   useit Mod*       get_parent_file();
 
-  useit inline String get_file_path() const { return filePath.string(); }
+  useit String get_file_path() const { return filePath.string(); }
 
   void            set_file_range(FileRange fileRange);
   useit FileRange get_file_range() const;
@@ -632,12 +631,12 @@ public:
                                   const FileRange& fileRange, const VisibilityInfo& visibility,
                                   Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
-  useit inline bool is_submodule() const { return parent != nullptr; }
-  useit inline bool has_submodules() const { return !submodules.empty(); }
+  useit bool is_submodule() const { return parent != nullptr; }
+  useit bool has_submodules() const { return !submodules.empty(); }
 
   void add_dependency(ir::Mod* dep);
 
-  useit inline bool has_integer_bitwidth(u64 bits) const {
+  useit bool has_integer_bitwidth(u64 bits) const {
     return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
            integerBitwidths.contains(bits);
   }
@@ -649,14 +648,14 @@ public:
     return (kind == FloatTypeKind::_32 || kind == FloatTypeKind::_64) || floatKinds.contains(kind);
   }
 
-  inline void add_integer_bitwidth(u64 bits) { integerBitwidths.insert(bits); }
+  void add_integer_bitwidth(u64 bits) { integerBitwidths.insert(bits); }
 
-  inline void add_unsigned_bitwidth(u64 bits) { unsignedBitwidths.insert(bits); }
+  void add_unsigned_bitwidth(u64 bits) { unsignedBitwidths.insert(bits); }
 
-  inline void add_float_kind(FloatTypeKind kind) { floatKinds.insert(kind); }
+  void add_float_kind(FloatTypeKind kind) { floatKinds.insert(kind); }
 
-  useit inline bool has_main_function() const { return hasMain; }
-  inline void       set_has_main_function() { hasMain = true; }
+  useit bool has_main_function() const { return hasMain; }
+  void       set_has_main_function() { hasMain = true; }
 
   useit std::set<String> getAllObjectPaths() const;
   useit std::set<String> getAllLinkableLibs() const;

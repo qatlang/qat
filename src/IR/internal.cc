@@ -16,12 +16,12 @@ FunctionType* Internal::printf_signature(Ctx* irCtx) {
 
 FunctionType* Internal::malloc_signature(Ctx* irCtx) {
   return FunctionType::create(
-      ReturnType::get(MarkType::get(true, VoidType::get(irCtx->llctx), false, MarkOwner::OfAnonymous(), false, irCtx)),
+      ReturnType::get(MarkType::get(true, VoidType::get(irCtx->llctx), false, MarkOwner::of_anonymous(), false, irCtx)),
       {ArgumentType::create_normal(CType::get_usize(irCtx), None, false)}, irCtx->llctx);
 }
 
 FunctionType* Internal::realloc_signature(Ctx* irCtx) {
-  auto markTy = MarkType::get(true, VoidType::get(irCtx->llctx), false, MarkOwner::OfAnonymous(), false, irCtx);
+  auto markTy = MarkType::get(true, VoidType::get(irCtx->llctx), false, MarkOwner::of_anonymous(), false, irCtx);
   return FunctionType::create(ReturnType::get(markTy),
                               {ArgumentType::create_normal(markTy, None, false),
                                ArgumentType::create_normal(CType::get_usize(irCtx), None, false)},
@@ -31,7 +31,7 @@ FunctionType* Internal::realloc_signature(Ctx* irCtx) {
 FunctionType* Internal::free_signature(Ctx* irCtx) {
   return FunctionType::create(ReturnType::get(VoidType::get(irCtx->llctx)),
                               {ArgumentType::create_normal(MarkType::get(true, VoidType::get(irCtx->llctx), false,
-                                                                         MarkOwner::OfAnonymous(), false, irCtx),
+                                                                         MarkOwner::of_anonymous(), false, irCtx),
                                                            None, false)},
                               irCtx->llctx);
 }

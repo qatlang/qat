@@ -16,13 +16,12 @@ public:
                      FileRange _fileRange)
       : Type(_fileRange), bitValue(_bitValue), isUnsigned(_isUnsigned), isUnsignedExp(_isUnsignedExp) {}
 
-  useit static inline GenericIntegerType* create_specific(PrerunExpression* bitValue, bool isUnsigned,
-                                                          FileRange fileRange) {
+  useit static GenericIntegerType* create_specific(PrerunExpression* bitValue, bool isUnsigned, FileRange fileRange) {
     return std::construct_at(OwnNormal(GenericIntegerType), bitValue, isUnsigned, nullptr, fileRange);
   }
 
-  useit static inline GenericIntegerType* create(PrerunExpression* bitValue, PrerunExpression* isUnsigned,
-                                                 FileRange fileRange) {
+  useit static GenericIntegerType* create(PrerunExpression* bitValue, PrerunExpression* isUnsigned,
+                                          FileRange fileRange) {
     return std::construct_at(OwnNormal(GenericIntegerType), bitValue, None, isUnsigned, fileRange);
   }
 

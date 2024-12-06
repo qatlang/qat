@@ -53,13 +53,13 @@ public:
   useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
                                                     Vec<SkillArg*> _arguments);
 
-  useit inline Skill*          get_parent_skill() const { return parent; }
-  useit inline SkillFnType     get_method_type() const { return fnTy; }
-  useit inline Identifier      get_name() const { return name; }
-  useit inline ast::Type*      get_return_type() const { return returnType; }
-  useit inline Vec<SkillArg*>& get_args() { return arguments; }
-  useit inline usize           get_arg_count() const { return arguments.size(); }
-  useit inline SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
+  useit Skill*      get_parent_skill() const { return parent; }
+  useit SkillFnType get_method_type() const { return fnTy; }
+  useit Identifier  get_name() const { return name; }
+  useit ast::Type* get_return_type() const { return returnType; }
+  useit Vec<SkillArg*>& get_args() { return arguments; }
+  useit usize           get_arg_count() const { return arguments.size(); }
+  useit SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
 };
 
 class Skill : public Uniq {
@@ -114,8 +114,8 @@ public:
   useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
                                         FileRange typeRange);
 
-  useit inline bool is_generic() const { return !generics.empty(); }
-  useit inline bool has_generic_parameter(String const& name) {
+  useit bool is_generic() const { return !generics.empty(); }
+  useit bool has_generic_parameter(String const& name) {
     for (auto gen : generics) {
       if (gen->get_name().value == name) {
         return true;
@@ -123,7 +123,7 @@ public:
     }
     return false;
   }
-  useit inline GenericArgument* get_generic_parameter(String const& name) {
+  useit GenericArgument* get_generic_parameter(String const& name) {
     for (auto gen : generics) {
       if (gen->get_name().value == name) {
         return gen;

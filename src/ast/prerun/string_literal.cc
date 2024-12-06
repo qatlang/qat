@@ -1,6 +1,7 @@
 #include "./string_literal.hpp"
 #include "../../IR/types/string_slice.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

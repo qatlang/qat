@@ -1,5 +1,6 @@
 #include "./negative.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 

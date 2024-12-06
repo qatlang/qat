@@ -18,7 +18,7 @@ private:
 public:
   IntegerType(u32 _bitWidth, FileRange _fileRange) : Type(_fileRange), bitWidth(_bitWidth) {}
 
-  useit static inline IntegerType* create(u32 _bitWidth, FileRange _fileRange) {
+  useit static IntegerType* create(u32 _bitWidth, FileRange _fileRange) {
     return std::construct_at(OwnNormal(IntegerType), _bitWidth, _fileRange);
   }
 

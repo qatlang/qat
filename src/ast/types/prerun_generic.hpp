@@ -21,8 +21,8 @@ public:
       : GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
         defaultValueAST(_defaultVal) {}
 
-  useit static inline PrerunGenericAbstract* get(usize _index, Identifier _name, Type* _expTy,
-                                                 Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
+  useit static PrerunGenericAbstract* get(usize _index, Identifier _name, Type* _expTy,
+                                          Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
     return std::construct_at(OwnNormal(PrerunGenericAbstract), _index, std::move(_name), _expTy, _defaultVal,
                              std::move(_range));
   }

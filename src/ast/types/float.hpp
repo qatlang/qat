@@ -12,7 +12,7 @@ private:
 public:
   FloatType(ir::FloatTypeKind _kind, FileRange _fileRange) : Type(_fileRange), kind(_kind) {}
 
-  useit static inline FloatType* create(ir::FloatTypeKind _kind, FileRange _fileRange) {
+  useit static FloatType* create(ir::FloatTypeKind _kind, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FloatType), _kind, _fileRange);
   }
 

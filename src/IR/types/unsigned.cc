@@ -1,11 +1,12 @@
 #include "./unsigned.hpp"
 #include "../context.hpp"
 #include "../value.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/ConstantFold.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/ConstantFold.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -15,11 +16,11 @@ UnsignedType::UnsignedType(u64 _bitWidth, ir::Ctx* _ctx, bool _isBool)
   linkingName = "qat'" + to_string();
 }
 
-UnsignedType* UnsignedType::get(u64 bits, ir::Ctx* irCtx) {
+UnsignedType* UnsignedType::create(u64 bits, ir::Ctx* irCtx) {
   for (auto* typ : allTypes) {
     if (typ->is_unsigned_integer()) {
       auto candidate = typ->as_unsigned_integer();
-      if (candidate->isBitWidth(bits) && !candidate->isTypeBool) {
+      if (candidate->is_bitWidth(bits) && !candidate->isTypeBool) {
         return typ->as_unsigned_integer();
       }
     }
@@ -27,7 +28,7 @@ UnsignedType* UnsignedType::get(u64 bits, ir::Ctx* irCtx) {
   return new UnsignedType(bits, irCtx, false);
 }
 
-UnsignedType* UnsignedType::getBool(ir::Ctx* irCtx) {
+UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
   for (auto* typ : allTypes) {
     if (typ->is_unsigned_integer()) {
       if (typ->as_unsigned_integer()->isTypeBool) {

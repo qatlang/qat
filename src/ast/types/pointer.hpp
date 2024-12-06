@@ -33,8 +33,8 @@ public:
       : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isSlice(_isSlice),
         isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNullable) {}
 
-  useit static inline MarkType* create(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable,
-                                       Maybe<Type*> _ownerTyTy, bool _isSlice, FileRange _fileRange) {
+  useit static MarkType* create(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable,
+                                Maybe<Type*> _ownerTyTy, bool _isSlice, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MarkType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy, _isSlice,
                              _fileRange);
   }

@@ -18,8 +18,8 @@ public:
   GenericNamedType(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes, FileRange _fileRange)
       : Type(_fileRange), relative(_relative), names(_names), genericTypes(_genericTypes) {}
 
-  useit static inline GenericNamedType* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
-                                               FileRange _fileRange) {
+  useit static GenericNamedType* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
+                                        FileRange _fileRange) {
     return std::construct_at(OwnNormal(GenericNamedType), _relative, _names, _genericTypes, _fileRange);
   }
 

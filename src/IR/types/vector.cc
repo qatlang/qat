@@ -1,5 +1,6 @@
 #include "./vector.hpp"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ir {
 

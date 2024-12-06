@@ -19,8 +19,8 @@ public:
       : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
         isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
 
-  useit static inline MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<bool> _isVariationAccess,
-                                           Identifier _name, FileRange _fileRange) {
+  useit static MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<bool> _isVariationAccess,
+                                    Identifier _name, FileRange _fileRange) {
     return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, _isVariationAccess, _name, _fileRange);
   }
 

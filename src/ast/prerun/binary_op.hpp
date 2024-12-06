@@ -15,8 +15,7 @@ public:
   PrerunBinaryOp(PrerunExpression* _lhs, Op _opr, PrerunExpression* _rhs, FileRange _fileRange)
       : PrerunExpression(_fileRange), lhs(_lhs), opr(_opr), rhs(_rhs) {}
 
-  useit static inline PrerunBinaryOp* create(PrerunExpression* _lhs, Op _opr, PrerunExpression* _rhs,
-                                             FileRange _fileRange) {
+  useit static PrerunBinaryOp* create(PrerunExpression* _lhs, Op _opr, PrerunExpression* _rhs, FileRange _fileRange) {
     return std::construct_at(OwnNormal(PrerunBinaryOp), _lhs, _opr, _rhs, _fileRange);
   }
 

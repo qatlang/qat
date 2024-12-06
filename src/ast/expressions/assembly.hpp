@@ -22,10 +22,9 @@ public:
       : Expression(_fileRange), functionType(_functionType), asmValue(_asmValue), arguments(_arguments),
         argsRange(_argsRange), clobbers(_clobbers), volatileExp(_volatileExp), volatileRange(_volatileRange) {}
 
-  useit static inline AssemblyBlock* create(Type* functionType, PrerunExpression* asmValue, Vec<Expression*> arguments,
-                                            FileRange argsRange, PrerunExpression* clobbers,
-                                            Maybe<FileRange> volatileRange, PrerunExpression* volatileExp,
-                                            FileRange fileRange) {
+  useit static AssemblyBlock* create(Type* functionType, PrerunExpression* asmValue, Vec<Expression*> arguments,
+                                     FileRange argsRange, PrerunExpression* clobbers, Maybe<FileRange> volatileRange,
+                                     PrerunExpression* volatileExp, FileRange fileRange) {
     return std::construct_at(OwnNormal(AssemblyBlock), functionType, asmValue, arguments, argsRange, clobbers,
                              volatileRange, volatileExp, fileRange);
   }

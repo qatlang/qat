@@ -8,7 +8,8 @@
 #include "../generics.hpp"
 #include "./expanded_type.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -54,7 +55,7 @@ public:
   useit LinkNames get_link_names() const final;
   useit bool      is_type_sized() const final;
 
-  useit inline bool can_be_prerun() const final {
+  useit bool can_be_prerun() const final {
     for (auto sub : subtypes) {
       if (sub.second.has_value() && !sub.second.value()->can_be_prerun()) {
         return false;

@@ -1,5 +1,5 @@
-#ifndef QAT_IR_TYPES_CORE_TYPE_HPP
-#define QAT_IR_TYPES_CORE_TYPE_HPP
+#ifndef QAT_IR_TYPES_STRUCT_TYPE_HPP
+#define QAT_IR_TYPES_STRUCT_TYPE_HPP
 
 #include "../../utils/identifier.hpp"
 #include "../../utils/qat_region.hpp"
@@ -9,7 +9,8 @@
 #include "../static_member.hpp"
 #include "./qat_type.hpp"
 #include "expanded_type.hpp"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/LLVMContext.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,8 +37,8 @@ public:
         name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility), variability(_variability) {
   }
 
-  useit static inline StructField* create(Identifier name, Type* type, bool variability,
-                                          Maybe<ast::Expression*> defaultVal, const VisibilityInfo& visibility) {
+  useit static StructField* create(Identifier name, Type* type, bool variability, Maybe<ast::Expression*> defaultVal,
+                                   const VisibilityInfo& visibility) {
     return std::construct_at(OwnNormal(StructField), name, type, variability, defaultVal, visibility);
   }
 
@@ -86,7 +87,7 @@ public:
   useit bool is_move_assignable() const final;
   useit bool is_destructible() const final;
 
-  useit inline bool can_be_prerun() const final {
+  useit bool can_be_prerun() const final {
     for (auto* mem : members) {
       if (!mem->type->can_be_prerun()) {
         return false;
@@ -95,7 +96,7 @@ public:
     return true;
   }
 
-  useit inline bool can_be_prerun_generic() const final {
+  useit bool can_be_prerun_generic() const final {
     for (auto* mem : members) {
       if (!mem->type->can_be_prerun_generic()) {
         return false;
@@ -104,7 +105,7 @@ public:
     return true;
   }
 
-  useit inline Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final {
+  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final {
     if (can_be_prerun_generic()) {
       auto   valConst = value->get_llvm_constant();
       String result(get_full_name());

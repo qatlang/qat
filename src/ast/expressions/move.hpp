@@ -19,7 +19,7 @@ public:
   Move(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
       : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
 
-  useit static inline Move* create(Expression* _exp, bool _isExpSelf, FileRange _fileRange) {
+  useit static Move* create(Expression* _exp, bool _isExpSelf, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Move), _exp, _isExpSelf, _fileRange);
   }
 

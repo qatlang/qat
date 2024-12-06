@@ -23,7 +23,7 @@ public:
   ArrayType(Type* _element_type, PrerunExpression* _length, FileRange _fileRange)
       : Type(_fileRange), elementType(_element_type), lengthExp(_length) {}
 
-  useit static inline ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRange _fileRange) {
+  useit static ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ArrayType), _element_type, _length, _fileRange);
   }
 

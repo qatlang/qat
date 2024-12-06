@@ -17,7 +17,7 @@ public:
   Default(Maybe<ast::Type*> _providedType, FileRange _fileRange)
       : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
-  useit static inline Default* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
+  useit static Default* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
     return std::construct_at(OwnNormal(Default), _providedType, _fileRange);
   }
 

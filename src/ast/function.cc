@@ -152,9 +152,9 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
                    fileRange);
     } else {
       if (generatedTypes.size() == 1) {
-        if (generatedTypes.at(0)->is_mark() && generatedTypes.at(0)->as_mark()->isSlice() &&
-            generatedTypes.at(0)->as_mark()->getOwner().isAnonymous()) {
-          if (generatedTypes.at(0)->as_mark()->isSubtypeVariable()) {
+        if (generatedTypes.at(0)->is_mark() && generatedTypes.at(0)->as_mark()->is_slice() &&
+            generatedTypes.at(0)->as_mark()->get_owner().is_of_anonymous()) {
+          if (generatedTypes.at(0)->as_mark()->is_subtype_variable()) {
             irCtx->Error("Type of the argument of the " + irCtx->color("main") +
                              " function, cannot be a slice with variability. It should be of type " +
                              irCtx->color("slice![cStr]"),
@@ -185,10 +185,10 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
           // NOLINTNEXTLINE(readability-magic-numbers)
           ir::Argument::Create(
               Identifier(arguments.at(0)->get_name().value + "'count", arguments.at(0)->get_name().range),
-              ir::UnsignedType::get(32u, irCtx), 0u));
+              ir::UnsignedType::create(32u, irCtx), 0u));
       args.push_back(ir::Argument::Create(
           Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
-          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), true, ir::MarkOwner::OfAnonymous(), false, irCtx), 1u));
+          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), true, ir::MarkOwner::of_anonymous(), false, irCtx), 1u));
     }
   } else {
     for (usize i = 0; i < generatedTypes.size(); i++) {
@@ -339,8 +339,8 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
     if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
       auto* cmdArgsVal = block->new_value(
           fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
-          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), false, ir::MarkOwner::OfAnonymous(), true, irCtx), false,
-          fnEmit->arg_name_at(0).range);
+          ir::MarkType::get(false, ir::CType::get_cstr(irCtx), false, ir::MarkOwner::of_anonymous(), true, irCtx),
+          false, fnEmit->arg_name_at(0).range);
       SHOW("Storing argument pointer")
       irCtx->builder.CreateStore(
           fnEmit->get_llvm_function()->getArg(1u),

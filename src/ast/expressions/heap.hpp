@@ -15,7 +15,7 @@ public:
   HeapGet(Type* _type, Expression* _count, FileRange _fileRange)
       : Expression(std::move(_fileRange)), type(_type), count(_count) {}
 
-  useit static inline HeapGet* create(Type* _type, Expression* _count, FileRange _fileRange) {
+  useit static HeapGet* create(Type* _type, Expression* _count, FileRange _fileRange) {
     return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
   }
 
@@ -38,7 +38,7 @@ private:
 public:
   HeapPut(Expression* pointer, FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
 
-  useit static inline HeapPut* create(Expression* _pointer, FileRange _fileRange) {
+  useit static HeapPut* create(Expression* _pointer, FileRange _fileRange) {
     return std::construct_at(OwnNormal(HeapPut), _pointer, _fileRange);
   }
 
@@ -62,7 +62,7 @@ public:
   HeapGrow(Type* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
       : Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
 
-  useit static inline HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRange fileRange) {
+  useit static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRange fileRange) {
     return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
   }
 

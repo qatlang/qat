@@ -29,11 +29,11 @@ public:
         fRanges(_ranges), defaultVal(_defaultVal), defineChecker(_defineChecker),
         genericConstraint(_genericConstraint) {}
 
-  useit static inline DefineMixType* create(Identifier _name, PrerunExpression* _defineChecker,
-                                            PrerunExpression*                   _genericConstraint,
-                                            Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Vec<FileRange> _ranges,
-                                            Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec,
-                                            FileRange _fileRange) {
+  useit static DefineMixType* create(Identifier _name, PrerunExpression* _defineChecker,
+                                     PrerunExpression*                   _genericConstraint,
+                                     Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Vec<FileRange> _ranges,
+                                     Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec,
+                                     FileRange _fileRange) {
     return std::construct_at(OwnNormal(DefineMixType), _name, _defineChecker, _genericConstraint, _subTypes, _ranges,
                              _defaultVal, _isPacked, _visibSpec, _fileRange);
   }

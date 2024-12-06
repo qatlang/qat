@@ -1,7 +1,8 @@
 #include "./member_access.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 
@@ -10,7 +11,7 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
   if (irExp->get_ir_type()->is_maybe()) {
     if (memberName.value == "hasValue") {
       return ir::PrerunValue::get(irExp->get_llvm_constant()->getAggregateElement(0u),
-                                  ir::UnsignedType::getBool(ctx->irCtx));
+                                  ir::UnsignedType::create_bool(ctx->irCtx));
     } else if (memberName.value == "hasNoValue") {
       return ir::PrerunValue::get(
           llvm::ConstantFoldConstant(llvm::ConstantFoldCompareInstruction(
@@ -18,7 +19,7 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
                                          irExp->get_llvm_constant()->getAggregateElement(0u),
                                          llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
                                      ctx->irCtx->dataLayout.value()),
-          ir::UnsignedType::getBool(ctx->irCtx));
+          ir::UnsignedType::create_bool(ctx->irCtx));
     } else if (memberName.value == "get") {
       if (llvm::cast<llvm::ConstantInt>(
               llvm::cast<llvm::ConstantStruct>(irExp->get_llvm_constant())->getAggregateElement(0u))
@@ -37,7 +38,7 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
     if (memberName.value == "length") {
       return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                                                          irExp->get_ir_type()->as_array()->get_length()),
-                                  ir::UnsignedType::get(64u, ctx->irCtx));
+                                  ir::UnsignedType::create(64u, ctx->irCtx));
     } else {
       ctx->Error("Invalid name for member access for expression of array type " +
                      ctx->color(irExp->get_ir_type()->to_string()),

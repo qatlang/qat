@@ -62,7 +62,7 @@
 #include "../ast/prerun/mix_choice_init.hpp"
 #include "../ast/prerun/negative.hpp"
 #include "../ast/prerun/none.hpp"
-#include "../ast/prerun/null_pointer.hpp"
+#include "../ast/prerun/null_mark.hpp"
 #include "../ast/prerun/plain_initialiser.hpp"
 #include "../ast/prerun/prerun_global.hpp"
 #include "../ast/prerun/to_conversion.hpp"
@@ -3479,16 +3479,16 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
           if (gClose.has_value()) {
             auto typRes = do_type(preCtx, i + 1, gClose);
             if (typRes.second + 1 != gClose.value()) {
-              add_error("Provided type for the null pointer did not span till the ]",
+              add_error("Provided type for the null mark did not span till the ]",
                         RangeSpan(typRes.second + 1, gClose.value()));
             }
-            setCachedExpr(ast::NullPointer::create(typRes.first, token.fileRange), gClose.value());
+            setCachedExpr(ast::NullMark::create(typRes.first, token.fileRange), gClose.value());
             i = gClose.value();
           } else {
-            add_error("No ] to end the type associated with the null-pointer expression", RangeSpan(i, i + 1));
+            add_error("No ] to end the type associated with the null-mark expression", RangeSpan(i, i + 1));
           }
         } else {
-          setCachedExpr(ast::NullPointer::create(None, token.fileRange), i);
+          setCachedExpr(ast::NullMark::create(None, token.fileRange), i);
         }
         break;
       }

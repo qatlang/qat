@@ -19,11 +19,11 @@ public:
       : Type(_fileRange), cTypeKind(ir::CTypeKind::Pointer), subType(_pointerSubTy),
         isPointerSubTypeVariable(_isPtrSubTyVar) {}
 
-  useit static inline CType* create(ir::CTypeKind _cTypeKind, FileRange _fileRange) {
+  useit static CType* create(ir::CTypeKind _cTypeKind, FileRange _fileRange) {
     return std::construct_at(OwnNormal(CType), _cTypeKind, _fileRange);
   }
 
-  useit static inline CType* create(Type* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange) {
+  useit static CType* create(Type* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange) {
     return std::construct_at(OwnNormal(CType), _pointerSubTy, _isPtrSubTyVar, _fileRange);
   }
 

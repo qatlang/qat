@@ -43,7 +43,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                subTy->is_type_sized() ? ctx->mod->get_llvm_module()->getDataLayout().getTypeStoreSize(
                                                             subTy->get_llvm_type())
                                                       : 1u),
-        ir::UnsignedType::get(64u, ctx->irCtx));
+        ir::UnsignedType::create(64u, ctx->irCtx));
   } else if (memberName.value == "bit_size") {
     zeroArgCheck();
     auto* subTy = typed->get_subtype();
@@ -53,7 +53,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
             subTy->is_type_sized()
                 ? ctx->mod->get_llvm_module()->getDataLayout().getTypeStoreSizeInBits(subTy->get_llvm_type())
                 : 8u),
-        ir::UnsignedType::get(64u, ctx->irCtx));
+        ir::UnsignedType::create(64u, ctx->irCtx));
   } else if (memberName.value == "name") {
     zeroArgCheck();
     auto result = typed->get_subtype()->to_string();
@@ -77,7 +77,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                        llvm::cast<llvm::StructType>(typed->get_subtype()->get_llvm_type())->isPacked()
                                    ? 1u
                                    : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_any_unsigned_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
@@ -87,7 +87,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                  typed->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer()))
                                    ? 1u
                                    : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_any_signed_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
@@ -96,7 +96,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                                          typed->get_subtype()->as_ctype()->get_subtype()->is_integer()))
                                                            ? 1u
                                                            : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_any_float_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
@@ -105,124 +105,124 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                                          typed->get_subtype()->as_ctype()->get_subtype()->is_float()))
                                                            ? 1u
                                                            : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_unsigned_int_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_unsigned_integer() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_signed_int_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_integer() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_float_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_float() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_tuple_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_tuple() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_string_slice_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_string_slice() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_struct") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_struct() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_vector_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_vector() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_underlying_struct_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->get_llvm_type()->isStructTy() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_mix_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_mix() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_array_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_array() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_choice_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_choice() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_maybe_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_maybe() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_result_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_result() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_void_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_void() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_future_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_future() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
-  } else if (memberName.value == "is_pointer_type") {
+        ir::UnsignedType::create_bool(ctx->irCtx));
+  } else if (memberName.value == "is_mark_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), typed->get_subtype()->is_mark() ? 1u : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
-  } else if (memberName.value == "is_multi_pointer_type") {
+        ir::UnsignedType::create_bool(ctx->irCtx));
+  } else if (memberName.value == "is_slice_type") {
     zeroArgCheck();
     return ir::PrerunValue::get(
         llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-                               (typed->get_subtype()->is_mark() && typed->get_subtype()->as_mark()->isSlice()) ? 1u
-                                                                                                               : 0u),
-        ir::UnsignedType::getBool(ctx->irCtx));
+                               (typed->get_subtype()->is_mark() && typed->get_subtype()->as_mark()->is_slice()) ? 1u
+                                                                                                                : 0u),
+        ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_trivially_copyable") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_trivially_copyable() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_trivially_movable") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_trivially_movable() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_copy_constructible") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_copy_constructible() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_copy_assignable") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_copy_assignable() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_move_constructible") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_move_constructible() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_move_assignable") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_move_assignable() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "has_copy") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
@@ -231,7 +231,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                                                 typed->get_subtype()->is_copy_assignable())
                                                            ? 1u
                                                            : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "has_move") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
@@ -240,36 +240,36 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
                                                                 typed->get_subtype()->is_move_assignable())
                                                            ? 1u
                                                            : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "is_default_constructible") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->is_default_constructible() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "has_prerun_default_value") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->has_prerun_default_value() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "can_be_prerun") {
     zeroArgCheck();
     return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
                                                        typed->get_subtype()->can_be_prerun() ? 1u : 0u),
-                                ir::UnsignedType::getBool(ctx->irCtx));
+                                ir::UnsignedType::create_bool(ctx->irCtx));
   } else if (memberName.value == "get_element_count") {
     zeroArgCheck();
     if (typed->get_subtype()->is_array()) {
       return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                                                          typed->get_subtype()->as_array()->get_length()),
-                                  ir::UnsignedType::get(64u, ctx->irCtx));
+                                  ir::UnsignedType::create(64u, ctx->irCtx));
     } else if (typed->get_subtype()->is_tuple()) {
       return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                                                          typed->get_subtype()->as_tuple()->getSubTypeCount()),
-                                  ir::UnsignedType::get(64u, ctx->irCtx));
+                                  ir::UnsignedType::create(64u, ctx->irCtx));
     } else if (typed->get_subtype()->is_vector() && typed->get_subtype()->as_vector()->is_fixed()) {
       return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
                                                          typed->get_subtype()->as_vector()->get_count()),
-                                  ir::UnsignedType::get(64u, ctx->irCtx));
+                                  ir::UnsignedType::create(64u, ctx->irCtx));
     } else {
       ctx->Error(
           "This attribute can only be used for array, fixed vector or tuple types, make sure that the type is appropriate before querying this attribute",

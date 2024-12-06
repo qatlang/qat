@@ -13,7 +13,7 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 public:
   PrerunDefault(Maybe<ast::Type*> _type, FileRange range) : PrerunExpression(range), theType(_type) {}
 
-  useit static inline PrerunDefault* create(Maybe<ast::Type*> _type, FileRange _range) {
+  useit static PrerunDefault* create(Maybe<ast::Type*> _type, FileRange _range) {
     return std::construct_at(OwnNormal(PrerunDefault), _type, _range);
   }
 

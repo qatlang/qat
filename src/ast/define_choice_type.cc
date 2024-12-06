@@ -1,7 +1,8 @@
 #include "./define_choice_type.hpp"
 #include "./types/qat_type.hpp"
 #include "expression.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 

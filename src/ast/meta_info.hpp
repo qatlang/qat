@@ -15,9 +15,9 @@ struct MetaInfo {
   MetaInfo(Vec<Pair<Identifier, PrerunExpression*>> _keyValues, FileRange _fileRange)
       : keyValues(_keyValues), fileRange(_fileRange) {}
 
-  inline void set_parent_as_function() const { isParentFunction = true; }
+  void set_parent_as_function() const { isParentFunction = true; }
 
-  useit inline bool has_inline_range() const { return inlineRange.has_value(); }
+  useit bool has_inline_range() const { return inlineRange.has_value(); }
 
   useit ir::MetaInfo toIR(EmitCtx* ctx) const {
     std::set<String>                        keys;
@@ -68,7 +68,7 @@ struct MetaInfo {
       }
       resultVec.push_back({{ir::MetaInfo::inlineKey, inlineRange.value()},
                            ir::PrerunValue::get(llvm::ConstantInt::getBool(ctx->irCtx->llctx, false),
-                                                ir::UnsignedType::getBool(ctx->irCtx))});
+                                                ir::UnsignedType::create_bool(ctx->irCtx))});
       valuesRange.push_back(inlineRange.value());
     }
     return ir::MetaInfo(resultVec, valuesRange, fileRange);

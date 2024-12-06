@@ -3,9 +3,10 @@
 #include "../../IR/types/function.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../../IR/value.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/Instruction.h"
-#include "llvm/IR/Intrinsics.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/Instruction.h>
+#include <llvm/IR/Intrinsics.h>
 
 namespace qat::ast {
 
@@ -62,20 +63,20 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
                      fileRange);
         }
         if (args[3]->has_type_inferrance()) {
-          args[3]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
+          args[3]->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
         }
         if (args[4]->has_type_inferrance()) {
-          args[4]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
+          args[4]->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
         }
         if (args[5]->has_type_inferrance()) {
-          args[5]->as_type_inferrable()->set_inference_type(ir::UnsignedType::get(32u, ctx->irCtx));
+          args[5]->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
         }
         auto thirdVal  = args[3]->emit(ctx);
         auto fourthVal = args[4]->emit(ctx);
         auto fifthVal  = args[5]->emit(ctx);
         auto checkFn   = [&](ir::PrerunValue* value, FileRange range) {
           if (!(value->get_ir_type()->is_unsigned_integer() &&
-                (value->get_ir_type()->as_unsigned_integer()->getBitwidth() == 32u))) {
+                (value->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u))) {
             ctx->Error("This value is expected to be of type " + ctx->color("u32") + ". Got an expression of type " +
                              ctx->color(value->get_ir_type()->to_string()),
                          range);

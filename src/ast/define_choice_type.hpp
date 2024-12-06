@@ -26,10 +26,9 @@ public:
       : IsEntity(_fileRange), name(_name), fields(_fields), visibSpec(_visibSpec), defaultVal(_defaultVal),
         providedIntegerTy(_providedTy) {}
 
-  useit static inline DefineChoiceType* create(Identifier                                           _name,
-                                               Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
-                                               Maybe<ast::Type*> _providedTy, Maybe<usize> _defaultVal,
-                                               Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+  useit static DefineChoiceType* create(Identifier _name, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> _fields,
+                                        Maybe<ast::Type*> _providedTy, Maybe<usize> _defaultVal,
+                                        Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
     return std::construct_at(OwnNormal(DefineChoiceType), _name, _fields, _providedTy, _defaultVal, _visibSpec,
                              _fileRange);
   }

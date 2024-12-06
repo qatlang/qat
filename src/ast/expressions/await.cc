@@ -2,8 +2,9 @@
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/future.hpp"
 #include "../../IR/types/void.hpp"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 

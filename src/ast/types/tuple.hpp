@@ -17,7 +17,7 @@ public:
   TupleType(Vec<Type*> _types, bool _isPacked, FileRange _fileRange)
       : Type(_fileRange), types(_types), isPacked(_isPacked) {}
 
-  useit static inline TupleType* create(Vec<Type*> _types, bool _isPacked, FileRange _fileRange) {
+  useit static TupleType* create(Vec<Type*> _types, bool _isPacked, FileRange _fileRange) {
     return std::construct_at(OwnNormal(TupleType), _types, _isPacked, _fileRange);
   }
 

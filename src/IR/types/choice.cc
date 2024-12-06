@@ -1,13 +1,14 @@
 #include "./choice.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
-#include "c_type.hpp"
-#include "integer.hpp"
-#include "unsigned.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/IR/ConstantFold.h"
-#include "llvm/IR/Constants.h"
+#include "./c_type.hpp"
+#include "./integer.hpp"
+#include "./unsigned.hpp"
+
 #include <cmath>
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/ConstantFold.h>
+#include <llvm/IR/Constants.h>
 
 namespace qat::ir {
 
@@ -59,7 +60,7 @@ ir::Type* ChoiceType::get_provided_type() const { return providedType.value(); }
 ir::Type* ChoiceType::get_underlying_type() const {
   return providedType.has_value() ? providedType.value()
                                   : (has_negative_values() ? (ir::Type*)ir::IntegerType::get(bitwidth, irCtx)
-                                                           : ir::UnsignedType::get(bitwidth, irCtx));
+                                                           : ir::UnsignedType::create(bitwidth, irCtx));
 }
 
 Identifier ChoiceType::get_name() const { return name; }

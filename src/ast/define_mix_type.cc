@@ -105,7 +105,7 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
         irCtx->Error(
             "Type nesting found. The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +
                 irCtx->color(opaquedType->to_string()) +
-                " has the same type associated with it as its parent. Check the code for mistakes or use a pointer or reference to the parent type as the variant type",
+                " has the same type associated with it as its parent. Check the code for mistakes or use a mark or reference to the parent type as the variant type",
             subtypes.at(i).second.value()->fileRange);
       } else {
         irCtx->Error("The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +

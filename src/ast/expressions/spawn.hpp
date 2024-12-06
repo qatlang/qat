@@ -12,7 +12,7 @@ class Spawn : public Expression {
 public:
   Spawn(Vec<Sentence*> _sentences, FileRange _fileRange) : Expression(_fileRange), sentences(_sentences) {}
 
-  useit static inline Spawn* create(Vec<Sentence*> sentences, FileRange fileRange) {
+  useit static Spawn* create(Vec<Sentence*> sentences, FileRange fileRange) {
     return std::construct_at(OwnNormal(Spawn), sentences, fileRange);
   }
 

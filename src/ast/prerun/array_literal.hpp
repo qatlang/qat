@@ -12,7 +12,7 @@ public:
   PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRange _fileRange)
       : PrerunExpression(_fileRange), valuesExp(_elements) {}
 
-  useit static inline PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRange fileRange) {
+  useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRange fileRange) {
     return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, fileRange);
   }
 

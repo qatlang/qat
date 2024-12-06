@@ -12,7 +12,7 @@ private:
 public:
   FloatLiteral(String _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-  useit static inline FloatLiteral* create(String _value, FileRange _fileRange) {
+  useit static FloatLiteral* create(String _value, FileRange _fileRange) {
     return std::construct_at(OwnNormal(FloatLiteral), _value, _fileRange);
   }
 

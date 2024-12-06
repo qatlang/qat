@@ -25,8 +25,8 @@ public:
   StaticMember(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
                const VisibilityInfo& _visibility);
 
-  useit static inline StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable,
-                                        Value* _initial, const VisibilityInfo& _visibility) {
+  useit static StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
+                                 const VisibilityInfo& _visibility) {
     return new StaticMember(_parent, name, _type, _is_variable, _initial, _visibility);
   }
 

@@ -37,7 +37,7 @@ public:
 
   useit Identifier get_name() const { return name; }
 
-  useit inline ArgumentType* to_arg_type() const {
+  useit ArgumentType* to_arg_type() const {
     switch (kind) {
       case ArgumentKind::NORMAL:
         return ArgumentType::create_normal(type, name.value, variability);

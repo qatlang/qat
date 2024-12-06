@@ -5,7 +5,8 @@
 #include "logic.hpp"
 #include "types/function.hpp"
 #include "types/pointer.hpp"
-#include "llvm/IR/Instructions.h"
+
+#include <llvm/IR/Instructions.h>
 
 namespace qat::ir {
 

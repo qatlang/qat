@@ -25,9 +25,9 @@ public:
       : IsEntity(_fileRange), name(_name), type(_type), value(_value), is_variable(_isVariable), visibSpec(_visibSpec),
         metaInfo(_metaInfo) {}
 
-  useit static inline GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value,
-                                                bool _isVariable, Maybe<VisibilitySpec> _visibSpec,
-                                                Maybe<MetaInfo> _metaInfo, FileRange _fileRange) {
+  useit static GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
+                                         Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
+                                         FileRange _fileRange) {
     return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _metaInfo,
                              _fileRange);
   }

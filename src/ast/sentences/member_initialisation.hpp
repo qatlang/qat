@@ -21,8 +21,8 @@ public:
       : Sentence(_fileRange), memName(_memName), value(_value),
         isInitOfMixVariantWithoutValue(_isInitOfMixVariantWithoutValue) {}
 
-  useit static inline MemberInit* create(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
-                                         FileRange _fileRange) {
+  useit static MemberInit* create(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
+                                  FileRange _fileRange) {
     return std::construct_at(OwnNormal(MemberInit), _memName, _value, _isInitOfMixVariantWithoutValue, _fileRange);
   }
 

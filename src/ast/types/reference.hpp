@@ -15,7 +15,7 @@ public:
   ReferenceType(Type* _type, bool _isSubtypeVar, FileRange _fileRange)
       : Type(_fileRange), type(_type), isSubtypeVar(_isSubtypeVar) {}
 
-  useit static inline ReferenceType* create(Type* _type, bool _isSubtypeVar, FileRange _fileRange) {
+  useit static ReferenceType* create(Type* _type, bool _isSubtypeVar, FileRange _fileRange) {
     return std::construct_at(OwnNormal(ReferenceType), _type, _isSubtypeVar, _fileRange);
   }
 

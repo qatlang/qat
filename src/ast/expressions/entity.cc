@@ -1,7 +1,8 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
-#include "llvm/IR/GlobalVariable.h"
+
+#include <llvm/IR/GlobalVariable.h>
 #include <utility>
 
 namespace qat::ast {

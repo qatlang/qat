@@ -5,8 +5,9 @@
 #include "../logic.hpp"
 #include "../qat_module.hpp"
 #include "./qat_type.hpp"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 

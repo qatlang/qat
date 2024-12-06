@@ -2,7 +2,6 @@
 #include "../../show.hpp"
 #include "./array.hpp"
 #include "./choice.hpp"
-#include "./core_type.hpp"
 #include "./definition.hpp"
 #include "./float.hpp"
 #include "./function.hpp"
@@ -14,6 +13,7 @@
 #include "./reference.hpp"
 #include "./region.hpp"
 #include "./string_slice.hpp"
+#include "./struct_type.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
@@ -84,10 +84,10 @@ Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue*
 bool Type::isCompatible(Type* other) {
   if (is_mark() && other->is_mark()) {
     if ((as_mark()->get_subtype()->is_same(other->as_mark()->get_subtype())) &&
-        (as_mark()->getOwner().is_same(other->as_mark()->getOwner()) || as_mark()->getOwner().isAnonymous() ||
-         (as_mark()->getOwner().isAnyRegion() && other->as_mark()->getOwner().isRegion())) &&
-        (as_mark()->isNonNullable() ? other->as_mark()->isNonNullable() : true) &&
-        (as_mark()->isSlice() == other->as_mark()->isSlice())) {
+        (as_mark()->get_owner().is_same(other->as_mark()->get_owner()) || as_mark()->get_owner().is_of_anonymous() ||
+         (as_mark()->get_owner().is_of_any_region() && other->as_mark()->get_owner().is_of_region())) &&
+        (as_mark()->is_non_nullable() ? other->as_mark()->is_non_nullable() : true) &&
+        (as_mark()->is_slice() == other->as_mark()->is_slice())) {
       return true;
     } else {
       return is_same(other);
@@ -132,10 +132,10 @@ bool Type::is_same(Type* other) {
         }
       }
       case TypeKind::pointer: {
-        return (((MarkType*)this)->isSubtypeVariable() == ((MarkType*)other)->isSubtypeVariable()) &&
-               (((MarkType*)this)->isNullable() == ((MarkType*)other)->isNullable()) &&
+        return (((MarkType*)this)->is_subtype_variable() == ((MarkType*)other)->is_subtype_variable()) &&
+               (((MarkType*)this)->is_nullable() == ((MarkType*)other)->is_nullable()) &&
                (((MarkType*)this)->get_subtype()->is_same(((MarkType*)other)->get_subtype())) &&
-               (((MarkType*)this)->getOwner().is_same(((MarkType*)other)->getOwner()));
+               (((MarkType*)this)->get_owner().is_same(((MarkType*)other)->get_owner()));
       }
       case TypeKind::reference: {
         return (((ReferenceType*)this)->isSubtypeVariable() == ((ReferenceType*)other)->isSubtypeVariable()) &&
@@ -154,8 +154,8 @@ bool Type::is_same(Type* other) {
                (thisVal->is_type_packed() == otherVal->is_type_packed());
       }
       case TypeKind::unsignedInteger: {
-        return (((UnsignedType*)this)->getBitwidth() == ((UnsignedType*)other)->getBitwidth()) &&
-               (((UnsignedType*)this)->isBoolean() == ((UnsignedType*)other)->isBoolean());
+        return (((UnsignedType*)this)->get_bitwidth() == ((UnsignedType*)other)->get_bitwidth()) &&
+               (((UnsignedType*)this)->is_this_bool_type() == ((UnsignedType*)other)->is_this_bool_type());
       }
       case TypeKind::integer: {
         return (((IntegerType*)this)->get_bitwidth() == ((IntegerType*)other)->get_bitwidth());
@@ -386,7 +386,7 @@ IntegerType* Type::as_integer() const {
 }
 
 bool Type::is_unsigned_integer() const {
-  return ((type_kind() == TypeKind::unsignedInteger) && !((ir::UnsignedType*)this)->isBoolean()) ||
+  return ((type_kind() == TypeKind::unsignedInteger) && !((ir::UnsignedType*)this)->is_this_bool_type()) ||
          (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_unsigned_integer()) ||
          (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_unsigned_integer());
 }
@@ -421,7 +421,9 @@ UnsignedType* Type::get_underlying_unsigned_type() const {
   }
 }
 
-bool Type::is_bool() const { return (type_kind() == TypeKind::unsignedInteger) && as_unsigned_integer()->isBoolean(); }
+bool Type::is_bool() const {
+  return (type_kind() == TypeKind::unsignedInteger) && as_unsigned_integer()->is_this_bool_type();
+}
 
 UnsignedType* Type::as_bool() const { return as_unsigned_integer(); }
 

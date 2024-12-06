@@ -18,8 +18,8 @@ public:
          FileRange _fileRange)
       : Sentence(_fileRange), condition(_condition), sentences(_sentences), tag(_tag), isDoAndLoop(_isDoAndLoop) {}
 
-  useit static inline LoopIf* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
-                                     Maybe<Identifier> _tag, FileRange _fileRange) {
+  useit static LoopIf* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
+                              Maybe<Identifier> _tag, FileRange _fileRange) {
     return std::construct_at(OwnNormal(LoopIf), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
   }
 

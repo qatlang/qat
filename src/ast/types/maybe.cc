@@ -1,7 +1,8 @@
 #include "./maybe.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "qat_type.hpp"
-#include "llvm/IR/Module.h"
+
+#include <llvm/IR/Module.h>
 
 namespace qat::ast {
 

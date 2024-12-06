@@ -1,8 +1,9 @@
 #include "./heap.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/void.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
 
 namespace qat::ast {
 
@@ -44,9 +45,9 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
                                   mod->get_llvm_module()->getDataLayout().getTypeAllocSize(typRes->get_llvm_type()));
   }
   auto  mallocName = mod->link_internal_dependency(ir::InternalDependency::malloc, ctx->irCtx, fileRange);
-  auto* resTy      = ir::MarkType::get(true, typRes, false, ir::MarkOwner::OfHeap(), count != nullptr, ctx->irCtx);
+  auto* resTy      = ir::MarkType::get(true, typRes, false, ir::MarkOwner::of_heap(), count != nullptr, ctx->irCtx);
   auto* mallocFn   = mod->get_llvm_module()->getFunction(mallocName);
-  if (resTy->isSlice()) {
+  if (resTy->is_slice()) {
     SHOW("Creating alloca for multi pointer")
     auto* llAlloca = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());
     ctx->irCtx->builder.CreateStore(
@@ -79,14 +80,14 @@ Json HeapGet::to_json() const {
 }
 
 ir::Value* HeapPut::emit(EmitCtx* ctx) {
-  if (ptr->nodeType() == NodeType::NULL_POINTER) {
+  if (ptr->nodeType() == NodeType::NULL_MARK) {
     ctx->Error("Null mark cannot be freed", ptr->fileRange);
   }
   auto* exp   = ptr->emit(ctx);
   auto  expTy = exp->is_reference() ? exp->get_ir_type()->as_reference()->get_subtype() : exp->get_ir_type();
   if (expTy->is_mark()) {
     auto ptrTy = expTy->as_mark();
-    if (!ptrTy->getOwner().isHeap()) {
+    if (!ptrTy->get_owner().is_of_heap()) {
       ctx->Error("The mark type of this expression is " + ctx->color(ptrTy->to_string()) +
                      " which does not have heap ownership and hence cannot be used here",
                  ptr->fileRange);
@@ -106,7 +107,7 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
   }
   // FIXME - CONSIDER PRERUN POINTERS
   candExp =
-      expTy->as_mark()->isSlice() ? ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}) : exp->get_llvm();
+      expTy->as_mark()->is_slice() ? ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}) : exp->get_llvm();
   auto* mod      = ctx->mod;
   auto  freeName = mod->link_internal_dependency(ir::InternalDependency::free, ctx->irCtx, fileRange);
   auto* freeFn   = mod->get_llvm_module()->getFunction(freeName);
@@ -133,12 +134,12 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
     if (ptrVal->get_ir_type()->as_reference()->get_subtype()->is_mark()) {
       ptrType = ptrVal->get_ir_type()->as_reference()->get_subtype()->as_mark();
       ptrVal->load_ghost_reference(ctx->irCtx->builder);
-      if (!ptrType->getOwner().isHeap()) {
+      if (!ptrType->get_owner().is_of_heap()) {
         ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
                        " and hence cannot be used in heap:grow",
                    fileRange);
       }
-      if (!ptrType->isSlice()) {
+      if (!ptrType->is_slice()) {
         ctx->Error("The type of the expression is " +
                        ctx->color(ptrVal->get_ir_type()->as_reference()->get_subtype()->to_string()) +
                        " which is not a multi pointer and hence cannot be grown",
@@ -156,12 +157,12 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
         ctx->Error("This expression is not a variable", fileRange);
       }
       ptrType = ptrVal->get_ir_type()->as_mark();
-      if (!ptrType->getOwner().isHeap()) {
+      if (!ptrType->get_owner().is_of_heap()) {
         ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
                        " and hence cannot be used in heap:grow",
                    fileRange);
       }
-      if (!ptrType->isSlice()) {
+      if (!ptrType->is_slice()) {
         ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
                        " which is not a multi pointer and hence cannot be grown",
                    ptr->fileRange);
@@ -176,13 +177,13 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
     }
   } else {
     ptrType = ptrVal->get_ir_type()->as_mark();
-    if (!ptrType->getOwner().isHeap()) {
+    if (!ptrType->get_owner().is_of_heap()) {
       ctx->Error("Expected a multipointer with " + ctx->color("heap") +
-                     " ownership. The ownership of this pointer is " + ctx->color(ptrType->getOwner().to_string()) +
+                     " ownership. The ownership of this pointer is " + ctx->color(ptrType->get_owner().to_string()) +
                      " and hence cannot be used.",
                  fileRange);
     }
-    if (!ptrType->isSlice()) {
+    if (!ptrType->is_slice()) {
       ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
                      " which is not a multi pointer and hence cannot be used here",
                  ptr->fileRange);

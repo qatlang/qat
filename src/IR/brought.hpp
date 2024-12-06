@@ -29,16 +29,16 @@ public:
   Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
   // Get the name if the brought entity is named
-  useit inline Identifier get_name() const { return name.value_or(Identifier("", {""})); }
+  useit Identifier get_name() const { return name.value_or(Identifier("", {""})); }
 
   // Is entity named
-  useit inline bool is_named() const { return name.has_value(); }
+  useit bool is_named() const { return name.has_value(); }
 
   // Get the entity
-  useit inline T* get() const { return entity; }
+  useit T* get() const { return entity; }
 
   // Get the visibility of the brought entity
-  useit inline const VisibilityInfo& get_visibility() const { return visibility; }
+  useit const VisibilityInfo& get_visibility() const { return visibility; }
 };
 
 template <typename T> useit bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {

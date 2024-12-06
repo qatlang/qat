@@ -13,9 +13,9 @@ ir::Type* UnsignedType::emit(EmitCtx* ctx) {
     ctx->Error("Arbitrary unsigned integer bitwidths above 128 are not allowed at the moment", fileRange);
   }
   if (is_bool) {
-    return ir::UnsignedType::getBool(ctx->irCtx);
+    return ir::UnsignedType::create_bool(ctx->irCtx);
   } else if (isPartOfGeneric || ctx->mod->has_unsigned_bitwidth(bitWidth)) {
-    return ir::UnsignedType::get(bitWidth, ctx->irCtx);
+    return ir::UnsignedType::create(bitWidth, ctx->irCtx);
   } else {
     ctx->Error("The unsigned integer bitwidth " + ctx->color(std::to_string(bitWidth)) +
                    " is not allowed to be used since it is not brought into the module " +

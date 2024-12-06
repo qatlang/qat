@@ -2,8 +2,9 @@
 #define QAT_IR_TYPES_INTEGER_HPP
 
 #include "./qat_type.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/LLVMContext.h"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 
@@ -17,14 +18,14 @@ private:
 public:
   useit static IntegerType* get(u64 _bits, ir::Ctx* irCtx);
 
-  useit inline bool is_bitwidth(u64 width) const { return bitWidth == width; }
-  useit inline u64  get_bitwidth() const { return bitWidth; }
-  useit inline bool is_type_sized() const final { return true; }
-  useit inline bool is_trivially_copyable() const final { return true; }
-  useit inline bool is_trivially_movable() const final { return true; }
-  useit inline bool has_prerun_default_value() const final { return true; }
-  useit inline bool can_be_prerun() const final { return true; }
-  useit inline bool can_be_prerun_generic() const final { return true; }
+  useit bool is_bitwidth(u64 width) const { return bitWidth == width; }
+  useit u64  get_bitwidth() const { return bitWidth; }
+  useit bool is_type_sized() const final { return true; }
+  useit bool is_trivially_copyable() const final { return true; }
+  useit bool is_trivially_movable() const final { return true; }
+  useit bool has_prerun_default_value() const final { return true; }
+  useit bool can_be_prerun() const final { return true; }
+  useit bool can_be_prerun_generic() const final { return true; }
 
   useit ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
   useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;

@@ -30,7 +30,7 @@ ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
                              : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
           intValue, 10u),
       is_type_inferred() ? inferredType
-                         : ir::UnsignedType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
+                         : ir::UnsignedType::create(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
   // NOLINTEND(readability-magic-numbers)
 }
 

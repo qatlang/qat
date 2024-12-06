@@ -1,5 +1,6 @@
 #include "./mix_choice_init.hpp"
-#include "llvm/Analysis/ConstantFolding.h"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 

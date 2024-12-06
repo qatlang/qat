@@ -2,10 +2,11 @@
 #include "../../IR/logic.hpp"
 #include "../../show.hpp"
 #include "../context.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+
 #include <errno.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 

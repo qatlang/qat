@@ -2,10 +2,11 @@
 #include "../context.hpp"
 #include "../value.hpp"
 #include "./qat_type.hpp"
-#include "reference.hpp"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/LLVMContext.h"
+#include "./reference.hpp"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {
 

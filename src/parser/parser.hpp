@@ -58,6 +58,7 @@ class Parser {
 	~Parser();
 
 	static u64 timeInMicroSeconds;
+	static u64 tokenCount;
 	u64		   parseRecurseCount = 0;
 
 	std::chrono::high_resolution_clock::time_point latestStartTime = std::chrono::high_resolution_clock::now();
@@ -104,7 +105,9 @@ class Parser {
 	useit Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
 	useit Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prevCtx, usize from, usize upto);
 	useit Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto);
+
 	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
+
 	useit Pair<CacheSymbol, usize> do_symbol(ParserContext& prevCtx, usize start);
 	useit Pair<Vec<ast::Argument*>, bool> do_function_parameters(ParserContext& prevCtx, usize from, usize upto);
 	useit Pair<ast::PrerunExpression*, usize> do_prerun_expression(ParserContext& prevCtx, usize from,

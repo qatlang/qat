@@ -155,6 +155,7 @@ Parser::~Parser() {
 }
 
 u64 Parser::timeInMicroSeconds = 0;
+u64 Parser::tokenCount		   = 0;
 
 void Parser::set_tokens(Vec<lexer::Token>* allTokens) {
 	g_ctx = ParserContext();
@@ -2362,6 +2363,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 		SHOW("Parse end time: " << parseEndTime.time_since_epoch().count())
 		timeInMicroSeconds +=
 			std::chrono::duration_cast<std::chrono::microseconds>(parseEndTime - latestStartTime).count();
+		tokenCount += tokens->size();
 	}
 	return resultNodes;
 }

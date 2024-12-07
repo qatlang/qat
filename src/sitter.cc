@@ -60,7 +60,10 @@ void QatSitter::display_stats() {
 		"Parser speed  -> " +
 		std::to_string(
 			(u64)((((double)lexer::Lexer::lineCount) / ((double)parser::Parser::timeInMicroSeconds)) * 1000000.0)) +
-		" lines/s");
+		" lines/s & " +
+		std::to_string(
+			(u64)((((double)parser::Parser::tokenCount) / ((double)parser::Parser::timeInMicroSeconds)) * 1000000.0)) +
+		" tokens/s");
 	if (ctx->clangAndLinkTimeInMs.has_value()) {
 		log->diagnostic(
 			"Compile speed -> " +

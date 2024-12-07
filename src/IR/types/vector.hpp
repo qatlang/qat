@@ -6,34 +6,34 @@
 namespace qat::ir {
 
 enum class VectorKind {
-  fixed,
-  scalable,
+	fixed,
+	scalable,
 };
 
 class VectorType : public Type {
-  ir::Type*  subType;
-  usize      count;
-  VectorKind kind;
+	ir::Type*  subType;
+	usize	   count;
+	VectorKind kind;
 
-public:
-  VectorType(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
-  useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
+  public:
+	VectorType(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
+	useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
 
-  useit ir::Type* get_element_type() const { return subType; }
-  useit usize     get_count() const { return count; }
-  useit bool      is_scalable() const { return kind == VectorKind::scalable; }
-  useit bool      is_fixed() const { return kind == VectorKind::fixed; }
-  useit ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
-    return VectorType::create(subType, count, VectorKind::fixed, irCtx);
-  }
-  useit VectorKind get_vector_kind() const { return kind; }
+	useit ir::Type* get_element_type() const { return subType; }
+	useit usize		get_count() const { return count; }
+	useit bool		is_scalable() const { return kind == VectorKind::scalable; }
+	useit bool		is_fixed() const { return kind == VectorKind::fixed; }
+	useit ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
+		return VectorType::create(subType, count, VectorKind::fixed, irCtx);
+	}
+	useit VectorKind get_vector_kind() const { return kind; }
 
-  useit TypeKind type_kind() const final { return TypeKind::vector; }
-  useit String   to_string() const final;
+	useit TypeKind type_kind() const final { return TypeKind::vector; }
+	useit String   to_string() const final;
 
-  useit bool is_type_sized() const final { return kind == VectorKind::fixed; }
-  useit bool is_trivially_copyable() const final { return true; }
-  useit bool is_trivially_movable() const final { return true; }
+	useit bool is_type_sized() const final { return kind == VectorKind::fixed; }
+	useit bool is_trivially_copyable() const final { return true; }
+	useit bool is_trivially_movable() const final { return true; }
 };
 
 } // namespace qat::ir

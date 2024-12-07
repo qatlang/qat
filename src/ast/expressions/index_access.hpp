@@ -8,25 +8,25 @@
 namespace qat::ast {
 
 class IndexAccess final : public Expression {
-  Expression* instance;
-  Expression* index;
+	Expression* instance;
+	Expression* index;
 
-public:
-  IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
-      : Expression(_fileRange), instance(_instance), index(_index) {}
+  public:
+	IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
+		: Expression(_fileRange), instance(_instance), index(_index) {}
 
-  useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
-  }
+	useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
+	}
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-    UPDATE_DEPS(instance);
-    UPDATE_DEPS(index);
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+		UPDATE_DEPS(instance);
+		UPDATE_DEPS(index);
+	}
 
-  useit ir::Value* emit(EmitCtx* ctx) final;
-  useit Json       to_json() const final;
-  useit NodeType   nodeType() const final { return NodeType::INDEX_ACCESS; }
+	useit ir::Value* emit(EmitCtx* ctx) final;
+	useit Json		 to_json() const final;
+	useit NodeType	 nodeType() const final { return NodeType::INDEX_ACCESS; }
 };
 
 } // namespace qat::ast

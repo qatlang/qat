@@ -6,15 +6,15 @@
 namespace qat::ast {
 
 class VoidType final : public Type {
-public:
-  explicit VoidType(FileRange _fileRange) : Type(_fileRange) {}
+  public:
+	explicit VoidType(FileRange _fileRange) : Type(_fileRange) {}
 
-  useit static VoidType* create(FileRange _fileRange) { return std::construct_at(OwnNormal(VoidType), _fileRange); }
+	useit static VoidType* create(FileRange _fileRange) { return std::construct_at(OwnNormal(VoidType), _fileRange); }
 
-  useit ir::Type*   emit(EmitCtx* ctx);
-  useit AstTypeKind type_kind() const;
-  useit Json        to_json() const;
-  useit String      to_string() const;
+	useit ir::Type*	  emit(EmitCtx* ctx);
+	useit AstTypeKind type_kind() const;
+	useit Json		  to_json() const;
+	useit String	  to_string() const;
 };
 
 } // namespace qat::ast

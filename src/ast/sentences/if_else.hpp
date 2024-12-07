@@ -11,49 +11,49 @@ namespace qat::ast {
 // and If-Else. The Else block is optional and if omitted, IfElse becomes a
 // plain if sentence
 class IfElse final : public Sentence {
-  Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> chain;
-  Maybe<Pair<Vec<Sentence*>, FileRange>>                  elseCase;
-  Vec<Maybe<bool>>                                        knownVals;
+	Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> chain;
+	Maybe<Pair<Vec<Sentence*>, FileRange>>					elseCase;
+	Vec<Maybe<bool>>										knownVals;
 
-public:
-  IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain, Maybe<Pair<Vec<Sentence*>, FileRange>> _else,
-         FileRange _fileRange)
-      : Sentence(_fileRange), chain(_chain), elseCase(_else) {}
+  public:
+	IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain, Maybe<Pair<Vec<Sentence*>, FileRange>> _else,
+		   FileRange _fileRange)
+		: Sentence(_fileRange), chain(_chain), elseCase(_else) {}
 
-  useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
-                              Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
-  }
+	useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
+								Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
+	}
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-    for (auto& ch : chain) {
-      UPDATE_DEPS(std::get<0>(ch));
-      for (auto snt : std::get<1>(ch)) {
-        UPDATE_DEPS(snt);
-      }
-    }
-    if (elseCase.has_value()) {
-      for (auto snt : elseCase.value().first) {
-        UPDATE_DEPS(snt);
-      }
-    }
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+		for (auto& ch : chain) {
+			UPDATE_DEPS(std::get<0>(ch));
+			for (auto snt : std::get<1>(ch)) {
+				UPDATE_DEPS(snt);
+			}
+		}
+		if (elseCase.has_value()) {
+			for (auto snt : elseCase.value().first) {
+				UPDATE_DEPS(snt);
+			}
+		}
+	}
 
-  useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
-  useit bool              getKnownValue(usize ind) const;
-  useit bool              hasValueAt(usize ind) const;
-  useit bool              isFalseTill(usize ind) const;
-  useit bool              hasAnyKnownValue() const {
-    for (const auto& val : knownVals) {
-      if (val.has_value()) {
-        return true;
-      }
-    }
-    return false;
-  };
-  useit ir::Value* emit(EmitCtx* ctx) final;
-  useit Json       to_json() const final;
-  useit NodeType   nodeType() const final { return NodeType::IF_ELSE_IF; }
+	useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
+	useit bool				getKnownValue(usize ind) const;
+	useit bool				hasValueAt(usize ind) const;
+	useit bool				isFalseTill(usize ind) const;
+	useit bool				hasAnyKnownValue() const {
+		 for (const auto& val : knownVals) {
+			 if (val.has_value()) {
+				 return true;
+			 }
+		 }
+		 return false;
+	};
+	useit ir::Value* emit(EmitCtx* ctx) final;
+	useit Json		 to_json() const final;
+	useit NodeType	 nodeType() const final { return NodeType::IF_ELSE_IF; }
 };
 
 } // namespace qat::ast

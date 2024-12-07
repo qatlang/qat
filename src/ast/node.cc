@@ -7,10 +7,10 @@ Node::Node(FileRange _fileRange) : fileRange(std::move(_fileRange)) { Node::allN
 Vec<Node*> Node::allNodes = {};
 
 void Node::clear_all() {
-  for (auto* node : allNodes) {
-    std::destroy_at(node);
-  }
-  allNodes.clear();
+	for (auto* node : allNodes) {
+		std::destroy_at(node);
+	}
+	allNodes.clear();
 }
 
 } // namespace qat::ast

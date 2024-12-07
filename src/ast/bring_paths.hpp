@@ -7,25 +7,25 @@
 namespace qat::ast {
 
 class BringPaths final : public Node {
-  bool                       isMember;
-  Vec<StringLiteral*>        paths;
-  Maybe<VisibilitySpec>      visibSpec;
-  Vec<Maybe<StringLiteral*>> names;
+	bool					   isMember;
+	Vec<StringLiteral*>		   paths;
+	Maybe<VisibilitySpec>	   visibSpec;
+	Vec<Maybe<StringLiteral*>> names;
 
-public:
-  BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-             Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-      : Node(_fileRange), isMember(_isMember), paths(_paths), visibSpec(_visibSpec), names(_names) {}
+  public:
+	BringPaths(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+			   Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+		: Node(_fileRange), isMember(_isMember), paths(_paths), visibSpec(_visibSpec), names(_names) {}
 
-  useit static BringPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-                                  Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(BringPaths), _isMember, _paths, _names, _visibSpec, _fileRange);
-  }
+	useit static BringPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+									Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(BringPaths), _isMember, _paths, _names, _visibSpec, _fileRange);
+	}
 
-  void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const final;
+	void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-  useit Json     to_json() const final;
-  useit NodeType nodeType() const final { return NodeType::BRING_PATHS; }
+	useit Json	   to_json() const final;
+	useit NodeType nodeType() const final { return NodeType::BRING_PATHS; }
 };
 
 } // namespace qat::ast

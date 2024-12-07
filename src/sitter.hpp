@@ -14,31 +14,31 @@ namespace qat {
 namespace fs = std::filesystem;
 
 class QatSitter {
-  friend class qat::ir::Ctx;
+	friend class qat::ir::Ctx;
 
-private:
-  Deque<ir::Mod*> fileEntities;
-  ir::Ctx*        ctx    = nullptr;
-  lexer::Lexer*   Lexer  = nullptr;
-  parser::Parser* Parser = nullptr;
-  std::thread::id mainThread;
+  private:
+	Deque<ir::Mod*> fileEntities;
+	ir::Ctx*		ctx	   = nullptr;
+	lexer::Lexer*	Lexer  = nullptr;
+	parser::Parser* Parser = nullptr;
+	std::thread::id mainThread;
 
-public:
-  QatSitter();
-  useit static QatSitter* get();
-  static QatSitter*       instance;
+  public:
+	QatSitter();
+	useit static QatSitter* get();
+	static QatSitter*		instance;
 
-  void initialise();
-  void destroy();
-  void remove_entity_with_path(const fs::path& path);
-  void handle_path(const fs::path& path, ir::Ctx* irCtx);
-  void display_stats();
+	void initialise();
+	void destroy();
+	void remove_entity_with_path(const fs::path& path);
+	void handle_path(const fs::path& path, ir::Ctx* irCtx);
+	void display_stats();
 
-  useit static bool is_name_valid(const String& name);
+	useit static bool is_name_valid(const String& name);
 
-  useit static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);
+	useit static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);
 
-  ~QatSitter();
+	~QatSitter();
 };
 
 } // namespace qat

@@ -8,49 +8,49 @@
 namespace qat::ast {
 
 class PrerunGenericAbstract final : public GenericAbstractType {
-  Type*                         expTy;
-  Maybe<ast::PrerunExpression*> defaultValueAST;
+	Type*						  expTy;
+	Maybe<ast::PrerunExpression*> defaultValueAST;
 
-  mutable ir::Type*             expressionType = nullptr;
-  mutable ir::PrerunValue*      defaultValue   = nullptr;
-  mutable Vec<ir::PrerunValue*> expressionValue;
+	mutable ir::Type*			  expressionType = nullptr;
+	mutable ir::PrerunValue*	  defaultValue	 = nullptr;
+	mutable Vec<ir::PrerunValue*> expressionValue;
 
-public:
-  PrerunGenericAbstract(usize _index, Identifier _name, Type* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
-                        FileRange _range)
-      : GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
-        defaultValueAST(_defaultVal) {}
+  public:
+	PrerunGenericAbstract(usize _index, Identifier _name, Type* _expTy, Maybe<ast::PrerunExpression*> _defaultVal,
+						  FileRange _range)
+		: GenericAbstractType(_index, _name, GenericKind::prerunGeneric, _range), expTy(_expTy),
+		  defaultValueAST(_defaultVal) {}
 
-  useit static PrerunGenericAbstract* get(usize _index, Identifier _name, Type* _expTy,
-                                          Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
-    return std::construct_at(OwnNormal(PrerunGenericAbstract), _index, std::move(_name), _expTy, _defaultVal,
-                             std::move(_range));
-  }
+	useit static PrerunGenericAbstract* get(usize _index, Identifier _name, Type* _expTy,
+											Maybe<ast::PrerunExpression*> _defaultVal, FileRange _range) {
+		return std::construct_at(OwnNormal(PrerunGenericAbstract), _index, std::move(_name), _expTy, _defaultVal,
+								 std::move(_range));
+	}
 
-  useit bool hasDefault() const final;
-  useit ast::PrerunExpression* getDefaultAST() { return defaultValueAST.value(); }
-  useit ir::PrerunValue* getDefault() const;
+	useit bool hasDefault() const final;
+	useit ast::PrerunExpression* getDefaultAST() { return defaultValueAST.value(); }
+	useit ir::PrerunValue* getDefault() const;
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-                           EmitCtx* ctx) final {
-    UPDATE_DEPS(expTy);
-    if (defaultValueAST.has_value()) {
-      UPDATE_DEPS(defaultValueAST.value());
-    }
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+							 EmitCtx* ctx) final {
+		UPDATE_DEPS(expTy);
+		if (defaultValueAST.has_value()) {
+			UPDATE_DEPS(defaultValueAST.value());
+		}
+	}
 
-  void emit(EmitCtx* ctx) const final;
+	void emit(EmitCtx* ctx) const final;
 
-  useit ir::Type* getType() const;
-  useit ir::PrerunValue* getPrerun() const;
-  useit ir::PrerunGeneric* toIR() const;
+	useit ir::Type* getType() const;
+	useit ir::PrerunValue* getPrerun() const;
+	useit ir::PrerunGeneric* toIR() const;
 
-  useit bool isSet() const final;
-  void       setExpression(ir::PrerunValue* exp) const;
-  void       unset() const final;
-  useit Json to_json() const final;
+	useit bool isSet() const final;
+	void	   setExpression(ir::PrerunValue* exp) const;
+	void	   unset() const final;
+	useit Json to_json() const final;
 
-  ~PrerunGenericAbstract() final;
+	~PrerunGenericAbstract() final;
 };
 
 } // namespace qat::ast

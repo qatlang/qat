@@ -7,16 +7,16 @@
 namespace qat::ast {
 
 class PrerunGive final : public PrerunSentence {
-  Maybe<PrerunExpression*> value;
+	Maybe<PrerunExpression*> value;
 
-public:
-  PrerunGive(Maybe<PrerunExpression*> _value, FileRange _fileRange) : PrerunSentence(_fileRange), value(_value) {}
+  public:
+	PrerunGive(Maybe<PrerunExpression*> _value, FileRange _fileRange) : PrerunSentence(_fileRange), value(_value) {}
 
-  useit static PrerunGive* get(Maybe<PrerunExpression*> value, FileRange fileRange) {
-    return std::construct_at(OwnNormal(PrerunGive), value, fileRange);
-  }
+	useit static PrerunGive* get(Maybe<PrerunExpression*> value, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunGive), value, fileRange);
+	}
 
-  void emit(EmitCtx* ctx) final;
+	void emit(EmitCtx* ctx) final;
 };
 
 } // namespace qat::ast

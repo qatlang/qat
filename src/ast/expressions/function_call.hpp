@@ -6,28 +6,28 @@
 namespace qat::ast {
 
 class FunctionCall final : public Expression {
-private:
-  Expression*      fnExpr;
-  Vec<Expression*> values;
+  private:
+	Expression*		 fnExpr;
+	Vec<Expression*> values;
 
-public:
-  FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
-      : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
+  public:
+	FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
+		: Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
 
-  useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
-  }
+	useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
+	}
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-    UPDATE_DEPS(fnExpr);
-    for (auto arg : values) {
-      UPDATE_DEPS(arg);
-    }
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+		UPDATE_DEPS(fnExpr);
+		for (auto arg : values) {
+			UPDATE_DEPS(arg);
+		}
+	}
 
-  useit ir::Value* emit(EmitCtx* ctx) final;
-  useit Json       to_json() const final;
-  useit NodeType   nodeType() const final { return NodeType::FUNCTION_CALL; }
+	useit ir::Value* emit(EmitCtx* ctx) final;
+	useit Json		 to_json() const final;
+	useit NodeType	 nodeType() const final { return NodeType::FUNCTION_CALL; }
 };
 
 } // namespace qat::ast

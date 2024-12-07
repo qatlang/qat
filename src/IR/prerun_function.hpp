@@ -20,166 +20,168 @@ namespace qat::ir {
 class PrerunFunction;
 
 class PrerunLocal {
-  Identifier   name;
-  Type*        type = nullptr;
-  bool         isVar;
-  PrerunValue* value = nullptr;
+	Identifier	 name;
+	Type*		 type = nullptr;
+	bool		 isVar;
+	PrerunValue* value = nullptr;
 
-  PrerunLocal(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal)
-      : name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
+	PrerunLocal(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal)
+		: name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
 
-public:
-  useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
-    return new PrerunLocal(_name, _type, _isVar, _initialVal);
-  }
+  public:
+	useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
+		return new PrerunLocal(_name, _type, _isVar, _initialVal);
+	}
 
-  useit Identifier   get_name() const { return name; }
-  useit Type*        get_type() const { return type; }
-  useit bool         is_variable() const { return isVar; }
-  useit PrerunValue* get_value() const { return value; }
+	useit Identifier   get_name() const { return name; }
+	useit Type*		   get_type() const { return type; }
+	useit bool		   is_variable() const { return isVar; }
+	useit PrerunValue* get_value() const { return value; }
 
-  void change_value(PrerunValue* other) { value = other; }
+	void change_value(PrerunValue* other) { value = other; }
 };
 
 class PreBlock {
-  PrerunFunction*   function = nullptr;
-  Vec<PrerunLocal*> locals;
-  Vec<PreBlock*>    children;
-  PreBlock*         parent   = nullptr;
-  PreBlock*         previous = nullptr;
-  PreBlock*         next     = nullptr;
+	PrerunFunction*	  function = nullptr;
+	Vec<PrerunLocal*> locals;
+	Vec<PreBlock*>	  children;
+	PreBlock*		  parent   = nullptr;
+	PreBlock*		  previous = nullptr;
+	PreBlock*		  next	   = nullptr;
 
-  PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {
-    if (parent) {
-      parent->children.push_back(this);
-    }
-  }
+	PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {
+		if (parent) {
+			parent->children.push_back(this);
+		}
+	}
 
-public:
-  ~PreBlock() {
-    for (auto loc : locals) {
-      delete loc;
-    }
-  }
+  public:
+	~PreBlock() {
+		for (auto loc : locals) {
+			delete loc;
+		}
+	}
 
-  useit static PreBlock* get(PrerunFunction* _function, PreBlock* _parent) { return new PreBlock(_function, _parent); }
+	useit static PreBlock* get(PrerunFunction* _function, PreBlock* _parent) {
+		return new PreBlock(_function, _parent);
+	}
 
-  useit bool has_previous() const { return previous != nullptr; }
-  useit bool has_next() const { return next != nullptr; }
-  useit bool has_parent() const { return parent != nullptr; }
-  useit bool has_local(String const& name) {
-    for (auto loc : locals) {
-      if (loc->get_name().value == name) {
-        return true;
-      }
-    }
-    return false;
-  }
+	useit bool has_previous() const { return previous != nullptr; }
+	useit bool has_next() const { return next != nullptr; }
+	useit bool has_parent() const { return parent != nullptr; }
+	useit bool has_local(String const& name) {
+		for (auto loc : locals) {
+			if (loc->get_name().value == name) {
+				return true;
+			}
+		}
+		return false;
+	}
 
-  useit PrerunFunction* get_fn() const { return function; }
+	useit PrerunFunction* get_fn() const { return function; }
 
-  useit PrerunLocal* get_local(String const& name) {
-    for (auto loc : locals) {
-      if (loc->get_name().value == name) {
-        return loc;
-      }
-    }
-    return nullptr;
-  }
+	useit PrerunLocal* get_local(String const& name) {
+		for (auto loc : locals) {
+			if (loc->get_name().value == name) {
+				return loc;
+			}
+		}
+		return nullptr;
+	}
 
-  void set_previous(PreBlock* _prev) { previous = _prev; }
-  void set_next(PreBlock* _next) { next = _next; }
+	void set_previous(PreBlock* _prev) { previous = _prev; }
+	void set_next(PreBlock* _next) { next = _next; }
 };
 
 enum class PreLoopKind {
-  TO,
-  IF,
-  IN,
-  INFINITE,
+	TO,
+	IF,
+	IN,
+	INFINITE,
 };
 
 struct PreLoopInfo {
-  PreLoopKind       kind;
-  Maybe<Identifier> tag;
+	PreLoopKind		  kind;
+	Maybe<Identifier> tag;
 
-  useit String kind_to_string() const {
-    switch (kind) {
-      case PreLoopKind::TO:
-        return "loop to";
-      case PreLoopKind::IF:
-        return "loop if";
-      case PreLoopKind::IN:
-        return "loop in";
-      case PreLoopKind::INFINITE:
-        return "loop";
-    }
-  }
+	useit String kind_to_string() const {
+		switch (kind) {
+			case PreLoopKind::TO:
+				return "loop to";
+			case PreLoopKind::IF:
+				return "loop if";
+			case PreLoopKind::IN:
+				return "loop in";
+			case PreLoopKind::INFINITE:
+				return "loop";
+		}
+	}
 };
 
 class PrerunCallState {
-  friend class PrerunFunction;
-  friend class ast::PrerunLoopTo;
-  friend class ast::PrerunBreak;
-  friend class ast::PrerunContinue;
+	friend class PrerunFunction;
+	friend class ast::PrerunLoopTo;
+	friend class ast::PrerunBreak;
+	friend class ast::PrerunContinue;
 
-  PrerunFunction*   function = nullptr;
-  Vec<PrerunValue*> argumentValues;
-  Vec<PreBlock*>    blocks;
-  usize             activeBlock = 0;
-  Vec<PreLoopInfo>  loopsInfo;
-  usize             emitNesting = 0;
+	PrerunFunction*	  function = nullptr;
+	Vec<PrerunValue*> argumentValues;
+	Vec<PreBlock*>	  blocks;
+	usize			  activeBlock = 0;
+	Vec<PreLoopInfo>  loopsInfo;
+	usize			  emitNesting = 0;
 
-  PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
-      : function(_function), argumentValues(_argVals) {}
+	PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
+		: function(_function), argumentValues(_argVals) {}
 
-public:
-  ~PrerunCallState() {
-    for (auto blk : blocks) {
-      delete blk;
-    }
-  }
+  public:
+	~PrerunCallState() {
+		for (auto blk : blocks) {
+			delete blk;
+		}
+	}
 
-  useit static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
-    return new PrerunCallState(fun, argVals);
-  }
+	useit static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
+		return new PrerunCallState(fun, argVals);
+	}
 
-  useit PrerunFunction* get_function() const { return function; }
-  useit bool            has_arg_with_name(String const& name);
-  useit PrerunValue*    get_arg_value_for(String const& name);
+	useit PrerunFunction* get_function() const { return function; }
+	useit bool			  has_arg_with_name(String const& name);
+	useit PrerunValue*	  get_arg_value_for(String const& name);
 
-  void        increment_emit_nesting() { emitNesting++; }
-  void        decrement_emit_nesting() { emitNesting--; }
-  useit usize get_emit_nesting() const { return emitNesting; }
+	void		increment_emit_nesting() { emitNesting++; }
+	void		decrement_emit_nesting() { emitNesting--; }
+	useit usize get_emit_nesting() const { return emitNesting; }
 };
 
 class PrerunFunction : public PrerunValue, public EntityOverview {
-  friend class PrerunCallState;
-  Identifier         name;
-  Type*              returnType;
-  Vec<ArgumentType*> argTypes;
-  Mod*               parent;
-  VisibilityInfo     visibility;
+	friend class PrerunCallState;
+	Identifier		   name;
+	Type*			   returnType;
+	Vec<ArgumentType*> argTypes;
+	Mod*			   parent;
+	VisibilityInfo	   visibility;
 
-  Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
+	Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
 
-public:
-  PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
-                 Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
-      : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
-        EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
-        parent(_parent), visibility(visib), sentences(_sentences) {}
+  public:
+	PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
+				   Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
+		: PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
+		  EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
+		  parent(_parent), visibility(visib), sentences(_sentences) {}
 
-  void update_overview() final;
+	void update_overview() final;
 
-  useit Identifier    get_name() const { return name; }
-  useit String        get_full_name() const;
-  useit Type*         get_return_type() const { return returnType; }
-  useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
-  useit Mod*          get_module() const { return parent; }
+	useit Identifier	get_name() const { return name; }
+	useit String		get_full_name() const;
+	useit Type*			get_return_type() const { return returnType; }
+	useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
+	useit Mod*			get_module() const { return parent; }
 
-  useit VisibilityInfo const& get_visibility() const { return visibility; }
+	useit VisibilityInfo const& get_visibility() const { return visibility; }
 
-  PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRange fileRange);
+	PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRange fileRange);
 };
 
 } // namespace qat::ir

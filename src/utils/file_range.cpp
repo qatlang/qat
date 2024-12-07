@@ -18,23 +18,23 @@ FileRange::FileRange(fs::path _filePath) : file(std::move(_filePath)), start({0u
 FileRange::FileRange(fs::path _file, FilePos _start, FilePos _end) : file(std::move(_file)), start(_start), end(_end) {}
 
 FileRange::FileRange(const FileRange& first, const FileRange& second)
-    : file(first.file), start(first.start), end((first.file == second.file) ? second.end : first.end) {}
+	: file(first.file), start(first.start), end((first.file == second.file) ? second.end : first.end) {}
 
 FileRange::FileRange(Json json)
-    : file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
+	: file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
 
 FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*this, other}; }
 
 FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, start, othStart); }
 
 String FileRange::start_to_string() const {
-  return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
+	return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
 }
 
 bool FileRange::is_before(FileRange another) const {
-  return std::filesystem::equivalent(file, another.file) &&
-         ((end.line < another.start.line) ||
-          ((end.line == another.start.line) && (end.character < another.start.character)));
+	return std::filesystem::equivalent(file, another.file) &&
+		   ((end.line < another.start.line) ||
+			((end.line == another.start.line) && (end.character < another.start.character)));
 }
 
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
@@ -42,7 +42,7 @@ FileRange::operator Json() const { return Json()._("path", file.string())._("sta
 FileRange::operator JsonValue() const { return (Json)(*this); }
 
 std::ostream& operator<<(std::ostream& os, FileRange const& range) {
-  return os << range.file.string() << ":" << range.start << " - " << range.end;
+	return os << range.file.string() << ":" << range.start << " - " << range.end;
 }
 
 } // namespace qat

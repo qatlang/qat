@@ -6,13 +6,13 @@
 namespace qat::ast {
 
 class PrerunSentence {
-protected:
-  FileRange fileRange;
+  protected:
+	FileRange fileRange;
 
-public:
-  PrerunSentence(FileRange _fileRange) : fileRange(_fileRange) {}
+  public:
+	PrerunSentence(FileRange _fileRange) : fileRange(_fileRange) {}
 
-  virtual void emit(EmitCtx* ctx) = 0;
+	virtual void emit(EmitCtx* ctx) = 0;
 };
 
 void emit_prerun_sentences(Vec<PrerunSentence*>& sentences, EmitCtx* ctx) noexcept(false);

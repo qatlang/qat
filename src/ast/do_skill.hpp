@@ -8,39 +8,39 @@
 namespace qat::ast {
 
 struct SkillName {
-  u32             relative;
-  Vec<Identifier> names;
+	u32				relative;
+	Vec<Identifier> names;
 };
 
 class DoSkill final : public IsEntity, public MemberParentLike {
-  bool             isDefaultSkill;
-  Maybe<SkillName> name;
-  ast::Type*       targetType;
+	bool			 isDefaultSkill;
+	Maybe<SkillName> name;
+	ast::Type*		 targetType;
 
-  mutable ir::DoneSkill*    doneSkill = nullptr;
-  mutable ir::MethodParent* parent    = nullptr;
+	mutable ir::DoneSkill*	  doneSkill = nullptr;
+	mutable ir::MethodParent* parent	= nullptr;
 
-public:
-  DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
-      : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
+  public:
+	DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
+		: IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
-  useit static DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
-  }
+	useit static DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
+	}
 
-  void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
-  void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
-  void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
+	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
+	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-  void define_done_skill(ir::Mod* mod, ir::Ctx* irCtx);
-  void define_members(ir::Ctx* irCtx);
-  void emit_members(ir::Ctx* irCtx);
+	void define_done_skill(ir::Mod* mod, ir::Ctx* irCtx);
+	void define_members(ir::Ctx* irCtx);
+	void emit_members(ir::Ctx* irCtx);
 
-  useit bool     is_done_skill() const final { return true; }
-  useit DoSkill* as_done_skill() final { return this; }
+	useit bool	   is_done_skill() const final { return true; }
+	useit DoSkill* as_done_skill() final { return this; }
 
-  Json     to_json() const final;
-  NodeType nodeType() const final { return NodeType::DO_SKILL; }
+	Json	 to_json() const final;
+	NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 
 } // namespace qat::ast

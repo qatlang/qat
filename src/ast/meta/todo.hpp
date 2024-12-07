@@ -7,34 +7,34 @@
 namespace qat::ast {
 
 class PrerunMetaTodo : public PrerunSentence {
-  Maybe<String> message;
+	Maybe<String> message;
 
-public:
-  PrerunMetaTodo(Maybe<String> _message, FileRange _fileRange) : PrerunSentence(_fileRange), message(_message) {}
+  public:
+	PrerunMetaTodo(Maybe<String> _message, FileRange _fileRange) : PrerunSentence(_fileRange), message(_message) {}
 
-  useit static PrerunMetaTodo* create(Maybe<String> message, FileRange fileRange) {
-    return std::construct_at(OwnNormal(PrerunMetaTodo), message, fileRange);
-  }
+	useit static PrerunMetaTodo* create(Maybe<String> message, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunMetaTodo), message, fileRange);
+	}
 
-  void emit(EmitCtx* ctx) final;
+	void emit(EmitCtx* ctx) final;
 };
 
 class MetaTodo : public Sentence {
-  Maybe<String> message;
+	Maybe<String> message;
 
-public:
-  MetaTodo(Maybe<String> _message, FileRange _fileRange) : Sentence(_fileRange), message(_message) {}
+  public:
+	MetaTodo(Maybe<String> _message, FileRange _fileRange) : Sentence(_fileRange), message(_message) {}
 
-  useit static MetaTodo* create(Maybe<String> message, FileRange fileRange) {
-    return std::construct_at(OwnNormal(MetaTodo), message, fileRange);
-  }
+	useit static MetaTodo* create(Maybe<String> message, FileRange fileRange) {
+		return std::construct_at(OwnNormal(MetaTodo), message, fileRange);
+	}
 
-  virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
-  }
+	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+									 EmitCtx* ctx) {}
 
-  useit ir::Value* emit(EmitCtx* ctx) final;
-  useit NodeType   nodeType() const final { return NodeType::META_TODO; }
-  useit Json       to_json() const final;
+	useit ir::Value* emit(EmitCtx* ctx) final;
+	useit NodeType	 nodeType() const final { return NodeType::META_TODO; }
+	useit Json		 to_json() const final;
 };
 
 } // namespace qat::ast

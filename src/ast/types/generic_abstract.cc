@@ -20,11 +20,11 @@ bool GenericAbstractType::is_typed() const { return kind == GenericKind::typedGe
 PrerunGenericAbstract* GenericAbstractType::as_prerun() const { return (PrerunGenericAbstract*)this; }
 
 ir::GenericArgument* GenericAbstractType::toIRGenericType() const {
-  if (is_typed()) {
-    return as_typed()->toIR();
-  } else {
-    return as_prerun()->toIR();
-  }
+	if (is_typed()) {
+		return as_typed()->toIR();
+	} else {
+		return as_prerun()->toIR();
+	}
 }
 
 } // namespace qat::ast

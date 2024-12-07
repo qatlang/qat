@@ -9,30 +9,30 @@ namespace qat::ir {
 class Mod;
 
 class EntityOverview {
-  friend class StructType;
-  friend class MixType;
+	friend class StructType;
+	friend class MixType;
 
-protected:
-  String         ovKind;
-  Json           ovInfo;
-  FileRange      ovRange;
-  Vec<FileRange> ovMentions;
-  bool           isOverviewUpdated = false;
+  protected:
+	String		   ovKind;
+	Json		   ovInfo;
+	FileRange	   ovRange;
+	Vec<FileRange> ovMentions;
+	bool		   isOverviewUpdated = false;
 
-  Vec<Pair<Mod*, FileRange>> ovBroughtMentions;
+	Vec<Pair<Mod*, FileRange>> ovBroughtMentions;
 
-public:
-  EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
+  public:
+	EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
 
-  virtual ~EntityOverview() = default;
+	virtual ~EntityOverview() = default;
 
-  void add_mention(FileRange _range);
-  void add_bring_mention(Mod* module, const FileRange& range);
+	void add_mention(FileRange _range);
+	void add_bring_mention(Mod* module, const FileRange& range);
 
-  Vec<Pair<Mod*, FileRange>> const& get_brought_mentions() const;
+	Vec<Pair<Mod*, FileRange>> const& get_brought_mentions() const;
 
-  virtual void update_overview() {}
-  Json         overviewToJson();
+	virtual void update_overview() {}
+	Json		 overviewToJson();
 };
 
 } // namespace qat::ir

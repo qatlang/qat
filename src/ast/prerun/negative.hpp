@@ -6,25 +6,25 @@
 namespace qat::ast {
 
 class PrerunNegative final : public PrerunExpression, public TypeInferrable {
-  PrerunExpression* value;
+	PrerunExpression* value;
 
-public:
-  PrerunNegative(PrerunExpression* _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
+  public:
+	PrerunNegative(PrerunExpression* _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-  useit static PrerunNegative* create(PrerunExpression* value, FileRange fileRange) {
-    return std::construct_at(OwnNormal(PrerunNegative), value, fileRange);
-  }
+	useit static PrerunNegative* create(PrerunExpression* value, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunNegative), value, fileRange);
+	}
 
-  TYPE_INFERRABLE_FUNCTIONS
+	TYPE_INFERRABLE_FUNCTIONS
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-    UPDATE_DEPS(value);
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+		UPDATE_DEPS(value);
+	}
 
-  ir::PrerunValue* emit(EmitCtx* ctx);
-  useit Json       to_json() const;
-  useit String     to_string() const;
-  useit NodeType   nodeType() const { return NodeType::PRERUN_NEGATIVE; }
+	ir::PrerunValue* emit(EmitCtx* ctx);
+	useit Json		 to_json() const;
+	useit String	 to_string() const;
+	useit NodeType	 nodeType() const { return NodeType::PRERUN_NEGATIVE; }
 };
 
 } // namespace qat::ast

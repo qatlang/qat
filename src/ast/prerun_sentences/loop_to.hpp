@@ -7,18 +7,18 @@
 namespace qat::ast {
 
 class PrerunLoopTo final : public PrerunSentence {
-  PrerunExpression*    count;
-  Maybe<Identifier>    tag;
-  Vec<PrerunSentence*> sentences;
+	PrerunExpression*	 count;
+	Maybe<Identifier>	 tag;
+	Vec<PrerunSentence*> sentences;
 
-public:
-  PrerunLoopTo(PrerunExpression* _count, FileRange _fileRange) : PrerunSentence(_fileRange), count(_count) {}
+  public:
+	PrerunLoopTo(PrerunExpression* _count, FileRange _fileRange) : PrerunSentence(_fileRange), count(_count) {}
 
-  useit static PrerunLoopTo* get(PrerunExpression* count, FileRange fileRange) {
-    return std::construct_at(OwnNormal(PrerunLoopTo), count, fileRange);
-  }
+	useit static PrerunLoopTo* get(PrerunExpression* count, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunLoopTo), count, fileRange);
+	}
 
-  void emit(EmitCtx* ctx) final;
+	void emit(EmitCtx* ctx) final;
 };
 
 } // namespace qat::ast

@@ -7,22 +7,22 @@ namespace qat::ir {
 
 // Meant mainly for const expressions
 class TypedType : public Type {
-  Type* subTy;
+	Type* subTy;
 
-public:
-  explicit TypedType(Type* _subTy);
+  public:
+	explicit TypedType(Type* _subTy);
 
-  useit static TypedType* get(Type* _subTy);
+	useit static TypedType* get(Type* _subTy);
 
-  useit Type* get_subtype() const;
+	useit Type* get_subtype() const;
 
-  useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
-  useit bool        can_be_prerun() const final { return true; }
-  useit bool        can_be_prerun_generic() const final { return true; }
-  useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	useit bool		  can_be_prerun() const final { return true; }
+	useit bool		  can_be_prerun_generic() const final { return true; }
+	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-  useit TypeKind type_kind() const final;
-  useit String   to_string() const final;
+	useit TypeKind type_kind() const final;
+	useit String   to_string() const final;
 };
 
 } // namespace qat::ir

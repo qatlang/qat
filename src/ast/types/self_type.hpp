@@ -6,24 +6,24 @@
 namespace qat::ast {
 
 class SelfType final : public Type {
-  friend class MethodPrototype;
-  friend class OperatorPrototype;
-  bool isJustType;
+	friend class MethodPrototype;
+	friend class OperatorPrototype;
+	bool isJustType;
 
-  bool canBeSelfInstance = false;
-  bool isVarRef          = false;
+	bool canBeSelfInstance = false;
+	bool isVarRef		   = false;
 
-public:
-  SelfType(bool _isJustType, FileRange _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
+  public:
+	SelfType(bool _isJustType, FileRange _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
 
-  useit static SelfType* create(bool _isJustType, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
-  }
+	useit static SelfType* create(bool _isJustType, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
+	}
 
-  useit ir::Type*   emit(EmitCtx* ctx);
-  useit Json        to_json() const;
-  useit String      to_string() const;
-  useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
+	useit ir::Type*	  emit(EmitCtx* ctx);
+	useit Json		  to_json() const;
+	useit String	  to_string() const;
+	useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
 };
 
 } // namespace qat::ast

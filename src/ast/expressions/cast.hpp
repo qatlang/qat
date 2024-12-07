@@ -7,24 +7,24 @@
 namespace qat::ast {
 
 class Cast final : public Expression {
-  Expression* instance;
-  Type*       destination;
+	Expression* instance;
+	Type*		destination;
 
-public:
-  Cast(Expression* _mainExp, Type* _dest, FileRange _fileRange)
-      : Expression(_fileRange), instance(_mainExp), destination(_dest) {}
+  public:
+	Cast(Expression* _mainExp, Type* _dest, FileRange _fileRange)
+		: Expression(_fileRange), instance(_mainExp), destination(_dest) {}
 
-  useit static Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
-    return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
-  }
+	useit static Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
+		return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
+	}
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-    UPDATE_DEPS(destination);
-  }
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+		UPDATE_DEPS(destination);
+	}
 
-  useit ir::Value* emit(EmitCtx* ctx) final;
-  useit Json       to_json() const final;
-  useit NodeType   nodeType() const final { return NodeType::CAST; }
+	useit ir::Value* emit(EmitCtx* ctx) final;
+	useit Json		 to_json() const final;
+	useit NodeType	 nodeType() const final { return NodeType::CAST; }
 };
 
 } // namespace qat::ast

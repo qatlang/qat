@@ -7,15 +7,15 @@
 namespace qat {
 
 class Identifier {
-public:
-  Identifier(String value, FileRange range);
+  public:
+	Identifier(String value, FileRange range);
 
-  String    value;
-  FileRange range;
+	String	  value;
+	FileRange range;
 
-  operator JsonValue() const;
+	operator JsonValue() const;
 
-  static Identifier fullName(Vec<Identifier> ids);
+	static Identifier fullName(Vec<Identifier> ids);
 };
 
 } // namespace qat

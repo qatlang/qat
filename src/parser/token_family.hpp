@@ -7,10 +7,10 @@
 namespace qat::parser {
 
 class TokenFamily {
-public:
-  static Vec<lexer::TokenType> genericTypeSpecifiers;
-  static Vec<lexer::TokenType> functionArgs;
-  static Vec<lexer::TokenType> scopeLimiters;
+  public:
+	static Vec<lexer::TokenType> genericTypeSpecifiers;
+	static Vec<lexer::TokenType> functionArgs;
+	static Vec<lexer::TokenType> scopeLimiters;
 };
 
 } // namespace qat::parser

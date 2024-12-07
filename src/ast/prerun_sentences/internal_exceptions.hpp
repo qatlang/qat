@@ -10,15 +10,15 @@ class PrerunValue;
 };
 
 struct InternalPrerunBreak {
-  Maybe<String> tag;
+	Maybe<String> tag;
 };
 
 struct InternalPrerunContinue {
-  Maybe<String> tag;
+	Maybe<String> tag;
 };
 
 struct InternalPrerunGive {
-  ir::PrerunValue* value;
+	ir::PrerunValue* value;
 };
 
 } // namespace qat

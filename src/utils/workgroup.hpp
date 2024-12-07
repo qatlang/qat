@@ -7,16 +7,16 @@
 namespace qat {
 
 class Workgroup {
-  Vec<std::thread> workers;
+	Vec<std::thread> workers;
 
-public:
-  void add(std::thread thr) { workers.push_back(std::move(thr)); }
-  void wait() {
-    for (auto& thr : workers) {
-      thr.join();
-    }
-    workers.clear();
-  }
+  public:
+	void add(std::thread thr) { workers.push_back(std::move(thr)); }
+	void wait() {
+		for (auto& thr : workers) {
+			thr.join();
+		}
+		workers.clear();
+	}
 };
 
 } // namespace qat

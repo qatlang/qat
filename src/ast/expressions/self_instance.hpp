@@ -7,18 +7,19 @@
 namespace qat::ast {
 
 class SelfInstance final : public Expression {
-public:
-  explicit SelfInstance(FileRange _fileRange) : Expression(_fileRange) {}
+  public:
+	explicit SelfInstance(FileRange _fileRange) : Expression(_fileRange) {}
 
-  useit static SelfInstance* create(FileRange _fileRange) {
-    return std::construct_at(OwnNormal(SelfInstance), _fileRange);
-  }
+	useit static SelfInstance* create(FileRange _fileRange) {
+		return std::construct_at(OwnNormal(SelfInstance), _fileRange);
+	}
 
-  void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {}
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	}
 
-  useit ir::Value* emit(EmitCtx* ctx) override;
-  useit Json       to_json() const override;
-  useit NodeType   nodeType() const override { return NodeType::SELF; }
+	useit ir::Value* emit(EmitCtx* ctx) override;
+	useit Json		 to_json() const override;
+	useit NodeType	 nodeType() const override { return NodeType::SELF; }
 };
 
 } // namespace qat::ast

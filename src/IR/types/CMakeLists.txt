@@ -1,6 +1,5 @@
 add_library(QAT_IR_TYPES STATIC
 	array.cc
-	c_type.cc
 	choice.cc
 	definition.cc
 	expanded_type.cc
@@ -9,6 +8,7 @@ add_library(QAT_IR_TYPES STATIC
 	future.cc
 	integer.cc
 	maybe.cc
+	native_type.cc
 	opaque.cc
 	pointer.cc
 	qat_type.cc

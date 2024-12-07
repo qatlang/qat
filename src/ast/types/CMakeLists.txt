@@ -1,6 +1,5 @@
 add_library(QAT_AST_TYPES
 	array.cc
-	c_type.cc
 	float.cc
 	function.cc
 	future.cc
@@ -11,6 +10,7 @@ add_library(QAT_AST_TYPES
 	linked_generic.cc
 	maybe.cc
 	named.cc
+	native_type.cc
 	reference.cc
 	pointer.cc
 	prerun_generic.cc

@@ -7,30 +7,30 @@
 namespace qat::ast {
 
 class UnsignedType final : public Type {
-  friend class BringBitwidths;
-  friend class FillGeneric;
+	friend class BringBitwidths;
+	friend class FillGeneric;
 
-private:
-  u32  bitWidth;
-  bool is_bool;
+  private:
+	u32	 bitWidth;
+	bool is_bool;
 
-  mutable bool isPartOfGeneric = false;
+	mutable bool isPartOfGeneric = false;
 
-public:
-  UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange)
-      : Type(_fileRange), bitWidth(_bitWidth), is_bool(_isBool) {}
+  public:
+	UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange)
+		: Type(_fileRange), bitWidth(_bitWidth), is_bool(_isBool) {}
 
-  useit static UnsignedType* create(u64 _bitWidth, bool _isBool, FileRange _fileRange) {
-    return std::construct_at(OwnNormal(UnsignedType), _bitWidth, _isBool, _fileRange);
-  }
+	useit static UnsignedType* create(u64 _bitWidth, bool _isBool, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(UnsignedType), _bitWidth, _isBool, _fileRange);
+	}
 
-  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
 
-  useit ir::Type*   emit(EmitCtx* ctx);
-  useit AstTypeKind type_kind() const final;
-  useit bool        isBitWidth(u32 width) const;
-  useit Json        to_json() const final;
-  useit String      to_string() const final;
+	useit ir::Type*	  emit(EmitCtx* ctx);
+	useit AstTypeKind type_kind() const final;
+	useit bool		  isBitWidth(u32 width) const;
+	useit Json		  to_json() const final;
+	useit String	  to_string() const final;
 };
 
 } // namespace qat::ast

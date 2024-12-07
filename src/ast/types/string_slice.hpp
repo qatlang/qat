@@ -7,18 +7,18 @@
 namespace qat::ast {
 
 class StringSliceType final : public Type {
-public:
-  explicit StringSliceType(FileRange _fileRange) : Type(_fileRange) {}
+  public:
+	explicit StringSliceType(FileRange _fileRange) : Type(_fileRange) {}
 
-  useit static StringSliceType* create(FileRange _fileRange) {
-    return std::construct_at(OwnNormal(StringSliceType), _fileRange);
-  }
+	useit static StringSliceType* create(FileRange _fileRange) {
+		return std::construct_at(OwnNormal(StringSliceType), _fileRange);
+	}
 
-  useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
-  useit ir::Type*   emit(EmitCtx* ctx) final;
-  useit AstTypeKind type_kind() const final;
-  useit Json        to_json() const final;
-  useit String      to_string() const final;
+	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit ir::Type*	  emit(EmitCtx* ctx) final;
+	useit AstTypeKind type_kind() const final;
+	useit Json		  to_json() const final;
+	useit String	  to_string() const final;
 };
 
 } // namespace qat::ast

@@ -10,15 +10,15 @@ class QatSitter;
 namespace qat::ir {
 
 class StdLib {
-  static ir::DefinitionType* stdStringType;
+	static ir::DefinitionType* stdStringType;
 
-public:
-  static ir::Mod* stdLib;
+  public:
+	static ir::Mod* stdLib;
 
-  useit static bool is_std_lib_found();
+	useit static bool is_std_lib_found();
 
-  useit static bool            has_string_type();
-  useit static DefinitionType* get_string_type();
+	useit static bool			 has_string_type();
+	useit static DefinitionType* get_string_type();
 };
 
 } // namespace qat::ir

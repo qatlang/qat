@@ -12,9 +12,9 @@ Vec<GenericAbstractType*> Type::generics{};
 Vec<Type*> Type::allTypes{};
 
 void Type::clear_all() {
-  for (auto* typ : allTypes) {
-    std::destroy_at(typ);
-  }
+	for (auto* typ : allTypes) {
+		std::destroy_at(typ);
+	}
 }
 
 } // namespace qat::ast

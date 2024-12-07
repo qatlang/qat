@@ -8,47 +8,38 @@
 
 namespace qat::ir {
 
-// Brought Entity
 template <class T> class Brought {
-  friend ir::Mod;
-  template <typename E> friend bool matchBroughtEntity(Brought<E> brought, String candName, Maybe<AccessInfo> reqInfo);
+	friend ir::Mod;
+	template <typename E>
+	friend bool matchBroughtEntity(Brought<E> brought, String candName, Maybe<AccessInfo> reqInfo);
 
-  // Optional name of the entity
-  Maybe<Identifier> name;
+	Maybe<Identifier> name;
+	T*				  entity;
+	VisibilityInfo	  visibility;
 
-  // The entity brought
-  T* entity;
+  public:
+	Brought(Identifier _name, T* _entity, const VisibilityInfo& _visibility)
+		: name(_name), entity(_entity), visibility(_visibility) {}
 
-  // VisibilityInfo of the brought entity
-  VisibilityInfo visibility;
+	Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
-public:
-  Brought(Identifier _name, T* _entity, const VisibilityInfo& _visibility)
-      : name(_name), entity(_entity), visibility(_visibility) {}
+	useit Identifier get_name() const { return name.value_or(Identifier("", {""})); }
 
-  Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
+	useit bool is_named() const { return name.has_value(); }
 
-  // Get the name if the brought entity is named
-  useit Identifier get_name() const { return name.value_or(Identifier("", {""})); }
+	useit T* get() const { return entity; }
 
-  // Is entity named
-  useit bool is_named() const { return name.has_value(); }
-
-  // Get the entity
-  useit T* get() const { return entity; }
-
-  // Get the visibility of the brought entity
-  useit const VisibilityInfo& get_visibility() const { return visibility; }
+	useit const VisibilityInfo& get_visibility() const { return visibility; }
 };
 
 template <typename T> useit bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {
-  if (brought.is_named()) {
-    return (brought.name.value().value == candName) && brought.visibility.is_accessible(reqInfo) &&
-           brought.entity->get_visibility().is_accessible(reqInfo);
-  } else {
-    return (brought.entity->get_name().value == candName) && brought.visibility.is_accessible(reqInfo) &&
-           brought.entity->get_visibility().is_accessible(reqInfo);
-  }
+	if (brought.is_named()) {
+		return (brought.name.value().value == candName) && brought.visibility.is_accessible(reqInfo) &&
+			   brought.entity->get_visibility().is_accessible(reqInfo);
+	} else {
+		return (brought.entity->get_name().value == candName) && brought.visibility.is_accessible(reqInfo) &&
+			   brought.entity->get_visibility().is_accessible(reqInfo);
+	}
 }
 
 } // namespace qat::ir

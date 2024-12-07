@@ -129,7 +129,7 @@
 
 #define TYPE_TRIGGER_TOKENS                                                                                            \
 	case TokenType::voidType:                                                                                          \
-	case TokenType::cType:                                                                                             \
+	case TokenType::nativeType:                                                                                        \
 	case TokenType::maybeType:                                                                                         \
 	case TokenType::vectorType:                                                                                        \
 	case TokenType::stringSliceType:                                                                                   \

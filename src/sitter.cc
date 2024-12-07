@@ -323,18 +323,12 @@ void QatSitter::initialise() {
 					for (const auto& exePath : ctx->executablePaths) {
 						SHOW("Running built executable at: " << exePath.string())
 						auto cmdRes = run_command_get_output(fs::absolute(exePath).string(), {});
-						if (not cmdRes.has_value()) {
-							std::cout << "\n===== Output of \"" +
-											 exePath.lexically_relative(fs::current_path()).string() + "\"\n" +
-											 cmdRes->second + "===== Status Code: " + std::to_string(cmdRes->first) +
-											 "\n";
-							if (cmdRes->first) {
-								std::cout << "\nThe built executable at " + ctx->color(exePath.string()) +
-												 " exited with error";
-							}
-						} else {
-							std::cout << "\nFailed to execute and get output of the executable at "
-									  << fs::absolute(exePath).string() << '\n';
+						std::cout << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() +
+										 "\"\n" + cmdRes.second + "===== Status Code: " + std::to_string(cmdRes.first) +
+										 "\n";
+						if (cmdRes.first) {
+							std::cout << "\nThe built executable at " + ctx->color(exePath.string()) +
+											 " exited with error";
 						}
 					}
 					SHOW("Ran all compiled executables")

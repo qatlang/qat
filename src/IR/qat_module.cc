@@ -2057,27 +2057,24 @@ bool Mod::find_clang_path(Ctx* ctx) {
 				None);
 		} else if ((not qatClangPath.has_value()) && clangPath.has_value()) {
 			auto clangRes = run_command_get_stdout(clangPath.value(), {"--version"});
-			if (not clangRes.has_value()) {
-				ctx->Error("Failed to find the version of clang executable found at " + ctx->color(clangPath.value()),
-						   None);
-			}
-			if (clangRes->first == 0) {
+			if (clangRes.first == 0) {
 				Maybe<String> versionString;
-				if (clangRes->second.find("\n") != String::npos) {
-					auto firstLine = clangRes->second.substr(0, clangRes->second.find("\n"));
+				if (clangRes.second.find("\n") != String::npos) {
+					auto firstLine = clangRes.second.substr(0, clangRes.second.find("\n"));
 					if (firstLine.find("version ") != String::npos) {
 						versionString =
 							firstLine.substr(firstLine.find("version ") + String::traits_type::length("version "));
 					}
-				} else if (clangRes->second.find("version ") != String::npos) {
-					versionString = clangRes->second.substr(clangRes->second.find("version ") +
-															String::traits_type::length("version "));
+				} else if (clangRes.second.find("version ") != String::npos) {
+					versionString = clangRes.second.substr(clangRes.second.find("version ") +
+														   String::traits_type::length("version "));
 				}
 				if (versionString.has_value() && versionString.value().find(' ') != String::npos) {
-					versionString = versionString.value().substr(versionString.value().find(' '));
+					versionString = versionString.value().substr(0, versionString.value().find(' '));
 				}
 				Maybe<int> majorVersion;
 				if (versionString.has_value()) {
+					SHOW("Version string is " << versionString.value())
 					if (versionString.value().find('.') != String::npos) {
 						auto majorStr = versionString.value().substr(0, versionString.value().find('.'));
 						if (utils::is_integer(majorStr)) {
@@ -2108,7 +2105,7 @@ bool Mod::find_clang_path(Ctx* ctx) {
 				ctx->Error(
 					"Tried to run " + ctx->color("clang --version") +
 						" to determine the version of the clang compiler. But the command failed with the status code " +
-						ctx->color(std::to_string(clangRes->first)) + ". Also tried using the " +
+						ctx->color(std::to_string(clangRes.first)) + ". Also tried using the " +
 						ctx->color("qat-clang") +
 						" binary bundled with qat, but the file could not be found. Please check your installation of qat",
 					None);
@@ -2179,18 +2176,10 @@ void Mod::compile_to_object(Ctx* ctx) {
 		SHOW("Clang is found: " << clangFound)
 		// TODO - ?? Check if the provided clang compiler is above version 17
 		auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
-		if (cmdRes.has_value()) {
-			if (cmdRes->first) {
-				ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
-							   cmdRes->second,
-						   None);
-			}
-		} else {
-			String compileCmd(usableClangPath.value());
-			for (auto& it : compileArgs) {
-				compileCmd += ' ' + it;
-			}
-			ctx->Error("Failed to execute the compile command " + ctx->color(compileCmd), None);
+		if (cmdRes.first) {
+			ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
+						   cmdRes.second,
+					   None);
 		}
 		isCompiledToObject = true;
 	}
@@ -2660,22 +2649,17 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		(void)find_windows_toolchain_libs(irCtx, true, true, false, false);
 	} else {
 		auto vsWhereRes = run_command_get_output(vsWherePath.value(), {"-latest", "-property", "installationPath"});
-		if (not vsWhereRes.has_value()) {
-			irCtx->Error("Failed to run the command " +
-							 irCtx->color(vsWherePath.value() + " -latest -property installationPath"),
-						 None);
-		}
-		if (vsWhereRes->first) {
-			irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes->first) +
-							 ". The error output is: " + vsWhereRes->second,
+		if (vsWhereRes.first) {
+			irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes.first) +
+							 ". The error output is: " + vsWhereRes.second,
 						 None);
 		}
 		Maybe<String> vsPath;
-		if (not vsWhereRes->second.empty()) {
-			if (vsWhereRes->second.find('\n') != String::npos) {
-				vsPath = vsWhereRes->second.substr(0, vsWhereRes->second.find('\n') - 1);
+		if (not vsWhereRes.second.empty()) {
+			if (vsWhereRes.second.find('\n') != String::npos) {
+				vsPath = vsWhereRes.second.substr(0, vsWhereRes.second.find('\n') - 1);
 			} else {
-				vsPath = vsWhereRes->second;
+				vsPath = vsWhereRes.second;
 			}
 		}
 		if (not vsPath.has_value()) {
@@ -2966,23 +2950,16 @@ void Mod::bundle_modules(Ctx* ctx) {
 
 			if (cfg->should_build_static()) {
 				auto cmdRes = run_command_get_stderr(usableClangPath.value(), staticArgs);
-				if (not cmdRes.has_value()) {
-					String statCmd(usableClangPath.value());
-					for (auto& it : staticArgs) {
-						statCmd += ' ' + it;
-					}
-					ctx->Error("Failed to statically compile by executing the command " + ctx->color(statCmd), None);
-				}
-				if (cmdRes->first) {
+				if (cmdRes.first) {
 					ctx->Error("Statically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-								   ". The error output is\n" + cmdRes->second,
+								   ". The error output is\n" + cmdRes.second,
 							   None);
 				}
 			} else if (cfg->should_build_shared()) {
 				auto cmdRes = run_command_get_stderr(usableClangPath.value(), sharedArgs);
-				if (cmdRes->first) {
+				if (cmdRes.first) {
 					ctx->Error("Dynamically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-								   ". The error output is\n" + cmdRes->second,
+								   ". The error output is\n" + cmdRes.second,
 							   None);
 				}
 			}
@@ -3203,24 +3180,15 @@ void Mod::bundle_modules(Ctx* ctx) {
 					}
 					SHOW("Linking Static Library Windows")
 					auto llvmLibRes = run_command_get_stderr(llvmLibPath.value(), allArgs);
-					if (not llvmLibRes.has_value()) {
-						String statCmd(llvmLibPath.value());
-						for (auto& it : allArgs) {
-							statCmd += ' ' + it;
-						}
-						ctx->Error("Failed to statically link library by executing the command " +
-									   ctx->color(std::move(statCmd)),
-								   None);
-					}
-					if (llvmLibRes->first) {
+					if (llvmLibRes.first) {
 						auto staticCmdStr = llvmLibPath.value() + " ";
 						for (auto arg : allArgs) {
 							staticCmdStr += arg + " ";
 						}
 						ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
 									   " using the 'LLVM Lib' program failed with status code " +
-									   std::to_string(llvmLibRes->first) + "\nThe command was: " + staticCmdStr +
-									   "\nThe error output is: " + llvmLibRes->second,
+									   std::to_string(llvmLibRes.first) + "\nThe command was: " + staticCmdStr +
+									   "\nThe error output is: " + llvmLibRes.second,
 								   None);
 					}
 				}
@@ -3427,18 +3395,11 @@ void Mod::bundle_modules(Ctx* ctx) {
 					cmdArgs.push_back(outPath);
 					cmdArgs.insert(cmdArgs.end(), objectFiles.begin(), objectFiles.end());
 					auto cmdRes = run_command_get_output(cmd, cmdArgs);
-					if (not cmdRes.has_value()) {
-						String linkCmd(cmd);
-						for (auto& it : cmdArgs) {
-							linkCmd += ' ' + it;
-						}
-						ctx->Error("Failed to link library by executing the command " + ctx->color(linkCmd) +
-									   ". Please not that the linker path was provided via the cli",
-								   None);
-					}
-					if (cmdRes->first) {
-						ctx->Error("Building library failed for module " + ctx->color(name.value) + " in " +
-									   ctx->color(filePath.string()) + ". The output is\n" + cmdRes->second,
+					if (cmdRes.first) {
+						ctx->Error("Linking library failed for module " + ctx->color(name.value) + " in " +
+									   ctx->color(filePath.string()) +
+									   ". Please note that the linker path was provided via the cli The output is\n" +
+									   cmdRes.second,
 								   None);
 					}
 				} else {

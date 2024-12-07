@@ -47,8 +47,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		lhsEmit	   = lhs->emit(ctx);
 		auto lhsTy = lhsEmit->get_ir_type()->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype()
 															: lhsEmit->get_ir_type();
-		if (lhsTy->is_ctype()) {
-			lhsTy = lhsTy->as_ctype()->get_subtype();
+		if (lhsTy->is_native_type()) {
+			lhsTy = lhsTy->as_native_type()->get_subtype();
 		}
 		if (lhsTy->is_integer() || lhsTy->is_unsigned_integer() || lhsTy->is_float()) {
 			rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
@@ -89,12 +89,12 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		}
 	};
 	auto lhsValueType = lhsType->is_reference() ? lhsType->as_reference()->get_subtype() : lhsType;
-	if (lhsValueType->is_ctype()) {
-		lhsValueType = lhsValueType->as_ctype()->get_subtype();
+	if (lhsValueType->is_native_type()) {
+		lhsValueType = lhsValueType->as_native_type()->get_subtype();
 	}
 	auto rhsValueType = rhsType->is_reference() ? rhsType->as_reference()->get_subtype() : rhsType;
-	if (rhsValueType->is_ctype()) {
-		rhsValueType = rhsValueType->as_ctype()->get_subtype();
+	if (rhsValueType->is_native_type()) {
+		rhsValueType = rhsValueType->as_native_type()->get_subtype();
 	}
 	if (lhsValueType->is_bool() && rhsValueType->is_bool()) {
 		referenceHandler();
@@ -122,7 +122,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		referenceHandler();
 		SHOW("Integer binary operation: " << operator_to_string(op))
 		if (lhsType->is_same(rhsType) ||
-			(!lhsType->is_ctype() && !rhsType->is_ctype() && lhsValueType->is_same(rhsValueType))) {
+			(!lhsType->is_native_type() && !rhsType->is_native_type() && lhsValueType->is_same(rhsValueType))) {
 			SHOW("Operand types match")
 			llvm::Value* llRes	 = nullptr;
 			ir::Type*	 resType = lhsType;
@@ -241,7 +241,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		SHOW("Unsigned integer binary operation")
 		referenceHandler();
 		if (lhsType->is_same(rhsType) ||
-			(!lhsType->is_ctype() && !rhsType->is_ctype() && lhsValueType->is_same(rhsValueType))) {
+			(!lhsType->is_native_type() && !rhsType->is_native_type() && lhsValueType->is_same(rhsValueType))) {
 			llvm::Value* llRes	 = nullptr;
 			ir::Type*	 resType = lhsType;
 			// NOLINTNEXTLINE(clang-diagnostic-switch)
@@ -358,7 +358,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		SHOW("Float binary operation")
 		referenceHandler();
 		if (lhsType->is_same(rhsType) ||
-			(!lhsType->is_ctype() && !rhsType->is_ctype() && lhsValueType->is_same(rhsValueType))) {
+			(!lhsType->is_native_type() && !rhsType->is_native_type() && lhsValueType->is_same(rhsValueType))) {
 			llvm::Value* llRes	 = nullptr;
 			ir::Type*	 resType = lhsType;
 			// NOLINTNEXTLINE(clang-diagnostic-switch)

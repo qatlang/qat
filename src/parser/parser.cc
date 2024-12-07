@@ -1070,7 +1070,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				cacheTy = ast::SelfType::create(token.type == TokenType::selfWord, RangeAt(i));
 				break;
 			}
-			case TokenType::cType: {
+			case TokenType::nativeType: {
 				auto start = i;
 				if (ValueAt(i) == "cPtr") {
 					if (is_next(TokenType::genericTypeStart, i)) {
@@ -1105,11 +1105,11 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						add_error("Expected ] after this to end the type", RangeSpan(start, i));
 					}
 				} else {
-					auto cTypeKind = ir::native_type_kind_from_string(ValueAt(i));
-					if (cTypeKind.has_value()) {
-						cacheTy = ast::NativeType::create(cTypeKind.value(), RangeAt(i));
+					auto nativeKind = ir::native_type_kind_from_string(ValueAt(i));
+					if (nativeKind.has_value()) {
+						cacheTy = ast::NativeType::create(nativeKind.value(), RangeAt(i));
 					} else {
-						add_error("Invalid cType", RangeAt(i));
+						add_error("Invalid native type", RangeAt(i));
 					}
 				}
 				break;

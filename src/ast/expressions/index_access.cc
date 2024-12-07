@@ -82,7 +82,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		if (ind->get_ir_type()->is_reference()) {
 			indType = indType->as_reference()->get_subtype();
 		}
-		if (indType->is_unsigned_integer() || (indType->is_ctype() && indType->as_ctype()->is_usize())) {
+		if (indType->is_unsigned_integer() || (indType->is_native_type() && indType->as_native_type()->is_usize())) {
 			if (inst->get_ir_type()->is_reference() &&
 				(inst->get_ir_type()->as_reference()->get_subtype()->is_mark() &&
 				 !inst->get_ir_type()->as_reference()->get_subtype()->as_mark()->is_slice())) {
@@ -177,8 +177,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				indType = ind->get_ir_type();
 			}
 		}
-		if (!ind->get_ir_type()->is_ctype() ||
-			(ind->get_ir_type()->is_ctype() && !ind->get_ir_type()->as_ctype()->is_usize())) {
+		if (!ind->get_ir_type()->is_native_type() ||
+			(ind->get_ir_type()->is_native_type() && !ind->get_ir_type()->as_native_type()->is_usize())) {
 			ctx->Error(ctx->color(ind->get_ir_type()->to_string()) +
 						   " is an invalid type for the index of string slice. The index should be of type " +
 						   ctx->color("usize"),
@@ -272,7 +272,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 									   ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
 				false);
 		}
-	} else if (instType->is_ctype() && instType->as_ctype()->is_cstring()) {
+	} else if (instType->is_native_type() && instType->as_native_type()->is_cstring()) {
 		ind->load_ghost_reference(ctx->irCtx->builder);
 		inst->load_ghost_reference(ctx->irCtx->builder);
 		auto* instVal = inst->get_llvm();

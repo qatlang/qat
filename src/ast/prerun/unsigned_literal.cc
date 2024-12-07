@@ -4,7 +4,7 @@ namespace qat::ast {
 
 ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred() && !inferredType->is_unsigned_integer() &&
-		(inferredType->is_ctype() && !inferredType->as_ctype()->get_subtype()->is_unsigned_integer())) {
+		(inferredType->is_native_type() && !inferredType->as_native_type()->get_subtype()->is_unsigned_integer())) {
 		ctx->Error("The inferred type of this expression is " + inferredType->to_string() +
 					   " which is not an unsigned integer type",
 				   fileRange);

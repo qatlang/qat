@@ -8,8 +8,8 @@ namespace qat::ast {
 ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 	auto* fnVal	   = fnExpr->emit(ctx);
 	auto fnValType = fnVal->is_reference() ? fnVal->get_ir_type()->as_reference()->get_subtype() : fnVal->get_ir_type();
-	if (fnValType->is_ctype()) {
-		fnValType = fnValType->as_ctype()->get_subtype();
+	if (fnValType->is_native_type()) {
+		fnValType = fnValType->as_native_type()->get_subtype();
 	}
 	if (fnVal->is_prerun_value() && fnValType->is_function()) {
 		// Is prerun function

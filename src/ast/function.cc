@@ -208,7 +208,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	SHOW("Variability setting complete")
 	auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
 	if (isMainFn) {
-		if (not(retTy->is_ctype() && retTy->as_ctype()->get_c_type_kind() == ir::NativeTypeKind::Int)) {
+		if (not(retTy->is_native_type() && retTy->as_native_type()->get_c_type_kind() == ir::NativeTypeKind::Int)) {
 			irCtx->Error(irCtx->color("main") + " function expects to have a given type of " + irCtx->color("int"),
 						 fileRange);
 		}

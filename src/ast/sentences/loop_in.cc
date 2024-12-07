@@ -58,7 +58,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 																 : candExp->get_ir_type();
 	auto const isTyArray	= candType->is_array();
 	auto const isTySlice	= candType->is_mark() && candType->as_mark()->is_slice();
-	auto const isTyCString	= candType->is_ctype() && candType->as_ctype()->is_cstring();
+	auto const isTyCString	= candType->is_native_type() && candType->as_native_type()->is_cstring();
 	auto const isTyStrSlice = candType->is_string_slice();
 	auto const isTyVec		= candType->is_vector();
 	if (candExp->get_ir_type()->is_reference()) {

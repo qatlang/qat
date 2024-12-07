@@ -36,13 +36,14 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			 }
 		};
 		auto valType = val->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
-		if (valType->is_ctype()) {
-			valType = valType->as_ctype()->get_subtype();
+		if (valType->is_native_type()) {
+			valType = valType->as_native_type()->get_subtype();
 		}
 		if (valType->is_mark()) {
-			if (destTy->is_mark() || (destTy->is_ctype() && destTy->as_ctype()->is_c_ptr())) {
+			if (destTy->is_mark() || (destTy->is_native_type() && destTy->as_native_type()->is_c_ptr())) {
 				loadRef();
-				auto targetTy = destTy->is_ctype() ? destTy->as_ctype()->get_subtype()->as_mark() : destTy->as_mark();
+				auto targetTy =
+					destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_mark() : destTy->as_mark();
 				if (!valType->as_mark()->get_owner().is_same(targetTy->get_owner()) &&
 					!targetTy->get_owner().is_of_anonymous()) {
 					ctx->Error(
@@ -115,8 +116,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 					return ir::Value::get(
 						ctx->irCtx->builder.CreatePointerCast(val->get_llvm(), destTy->get_llvm_type()), destTy, false);
 				}
-			} else if (destTy->is_ctype() &&
-					   (destTy->as_ctype()->is_intptr() || destTy->as_ctype()->is_intptr_unsigned())) {
+			} else if (destTy->is_native_type() &&
+					   (destTy->as_native_type()->is_intptr() || destTy->as_native_type()->is_intptr_unsigned())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateBitCast(
 										  valType->as_mark()->is_slice()
@@ -129,8 +130,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						   fileRange);
 			}
 		} else if (valType->is_string_slice()) {
-			auto destValTy = destTy->is_ctype() ? destTy->as_ctype()->get_subtype() : destTy;
-			if (destTy->is_ctype() && destTy->as_ctype()->is_cstring()) {
+			auto destValTy = destTy->is_native_type() ? destTy->as_native_type()->get_subtype() : destTy;
+			if (destTy->is_native_type() && destTy->as_native_type()->is_cstring()) {
 				if (val->is_prerun_value()) {
 					return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), destTy);
 				} else {
@@ -139,14 +140,17 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				}
 			} else if (destValTy->is_mark() &&
 					   (destValTy->as_mark()->get_subtype()->is_unsigned_integer() ||
-						(destValTy->as_mark()->get_subtype()->is_ctype() &&
-						 destValTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
+						(destValTy->as_mark()->get_subtype()->is_native_type() && destValTy->as_mark()
+																					  ->get_subtype()
+																					  ->as_native_type()
+																					  ->get_subtype()
+																					  ->is_unsigned_integer())) &&
 					   destValTy->as_mark()->get_owner().is_of_anonymous() &&
 					   (destValTy->as_mark()->get_subtype()->is_unsigned_integer()
 							? (destValTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
 							: (destValTy->as_mark()
 								   ->get_subtype()
-								   ->as_ctype()
+								   ->as_native_type()
 								   ->get_subtype()
 								   ->as_unsigned_integer()
 								   ->get_bitwidth() == 8u)) &&
@@ -164,12 +168,13 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						   fileRange);
 			}
 		} else if (valType->is_integer()) {
-			if (destTy->is_integer() || (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_integer())) {
+			if (destTy->is_integer() ||
+				(destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_integer())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true),
 									  destTy, val->is_variable());
 			} else if (destTy->is_unsigned_integer() ||
-					   (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
+					   (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 				loadRef();
 				ctx->irCtx->Warning("Conversion from signed integer to unsigned integers can be lossy", fileRange);
 				if (valType->as_integer()->get_bitwidth() == destTy->as_unsigned_integer()->get_bitwidth()) {
@@ -181,7 +186,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true), destTy,
 						false);
 				}
-			} else if (destTy->is_float() || (destTy->is_ctype() && destTy->as_ctype()->is_float())) {
+			} else if (destTy->is_float() || (destTy->is_native_type() && destTy->as_native_type()->is_float())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateSIToFP(val->get_llvm(), destTy->get_llvm_type()),
 									  destTy, false);
@@ -192,12 +197,12 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 		} else if (valType->is_unsigned_integer()) {
 			if (destTy->is_unsigned_integer() ||
-				(destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
+				(destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 				loadRef();
 				return ir::Value::get(
 					ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), false), destTy, false);
 			} else if (destTy->is_integer() ||
-					   (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_integer())) {
+					   (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_integer())) {
 				loadRef();
 				ctx->irCtx->Warning("Conversion from unsigned integer to signed integers can be lossy", fileRange);
 				if (typ->as_unsigned_integer()->get_bitwidth() == destTy->as_integer()->get_bitwidth()) {
@@ -207,7 +212,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true), destTy,
 						false);
 				}
-			} else if (destTy->is_float() || (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_float())) {
+			} else if (destTy->is_float() ||
+					   (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_float())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateUIToFP(val->get_llvm(), destTy->get_llvm_type()),
 									  destTy, false);
@@ -217,17 +223,18 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						   fileRange);
 			}
 		} else if (valType->is_float()) {
-			if (destTy->is_float() || (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_float())) {
+			if (destTy->is_float() ||
+				(destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_float())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateFPCast(val->get_llvm(), destTy->get_llvm_type()),
 									  destTy, false);
 			} else if (destTy->is_integer() ||
-					   (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_integer())) {
+					   (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_integer())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateFPToSI(val->get_llvm(), destTy->get_llvm_type()),
 									  destTy, false);
 			} else if (destTy->is_unsigned_integer() ||
-					   (destTy->is_ctype() && destTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
+					   (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateFPToUI(val->get_llvm(), destTy->get_llvm_type()),
 									  destTy, false);

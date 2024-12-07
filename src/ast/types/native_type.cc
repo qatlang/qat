@@ -137,7 +137,7 @@ Maybe<usize> NativeType::getTypeSizeInBits(EmitCtx* ctx) const {
 Json NativeType::to_json() const {
 	return Json()
 		._("typeKind", "nativeType")
-		._("cTypeKind", ir::native_type_kind_to_string(nativeKind))
+		._("nativeKind", ir::native_type_kind_to_string(nativeKind))
 		._("fileRange", fileRange);
 }
 

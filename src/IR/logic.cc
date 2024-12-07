@@ -155,7 +155,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}));
 			}
-		} else if (valTy->is_ctype() && valTy->as_ctype()->is_cstring()) {
+		} else if (valTy->is_native_type() && valTy->as_native_type()->is_cstring()) {
 			formatString += "%s";
 			if (val->is_reference() || val->is_ghost_reference()) {
 				val->load_ghost_reference(ctx->irCtx->builder);
@@ -165,12 +165,14 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				}
 			}
 			printVals.push_back(val->get_llvm());
-		} else if (valTy->is_integer() || (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_integer())) {
+		} else if (valTy->is_integer() ||
+				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_integer())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
-				auto intTy = valTy->is_integer() ? valTy->as_integer() : valTy->as_ctype()->get_subtype()->as_integer();
+				auto intTy =
+					valTy->is_integer() ? valTy->as_integer() : valTy->as_native_type()->get_subtype()->as_integer();
 				// auto strVal =
 				//     int_to_std_string(true, ctx, ir::Value::get(val->get_llvm(), intTy, false),
 				//     valRange);
@@ -193,13 +195,14 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(intVal);
 			}
 		} else if (valTy->is_unsigned_integer() ||
-				   (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
+				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
-				auto uintTy = valTy->is_unsigned_integer() ? valTy->as_unsigned_integer()
-														   : valTy->as_ctype()->get_subtype()->as_unsigned_integer();
+				auto uintTy = valTy->is_unsigned_integer()
+								  ? valTy->as_unsigned_integer()
+								  : valTy->as_native_type()->get_subtype()->as_unsigned_integer();
 				// auto strVal =
 				//     int_to_std_string(false, ctx, ir::Value::get(val->get_llvm(), uintTy, false),
 				//     valRange);
@@ -222,12 +225,14 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				formatString += "%u";
 				printVals.push_back(intVal);
 			}
-		} else if (valTy->is_float() || (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_float())) {
+		} else if (valTy->is_float() ||
+				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_float())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
-				auto floatTy = valTy->is_float() ? valTy->as_float() : valTy->as_ctype()->get_subtype()->as_float();
+				auto floatTy =
+					valTy->is_float() ? valTy->as_float() : valTy->as_native_type()->get_subtype()->as_float();
 				llvm::Value* floatVal = nullptr;
 				if (val->is_ghost_reference() || val->is_reference()) {
 					if (val->is_reference()) {
@@ -243,7 +248,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				formatString += "%u";
 				printVals.push_back(floatVal);
 			}
-		} else if (valTy->is_mark() || (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_mark())) {
+		} else if (valTy->is_mark() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_mark())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;

@@ -41,10 +41,10 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 	auto* originalLimitTy = countTy;
 	limit->load_ghost_reference(ctx->irCtx->builder);
 	if (countTy->is_unsigned_integer() || countTy->is_integer() ||
-		(countTy->is_ctype() && (countTy->as_ctype()->get_subtype()->is_integer() ||
-								 countTy->as_ctype()->get_subtype()->is_unsigned_integer()))) {
-		if (countTy->is_ctype()) {
-			countTy = countTy->as_ctype()->get_subtype();
+		(countTy->is_native_type() && (countTy->as_native_type()->get_subtype()->is_integer() ||
+									   countTy->as_native_type()->get_subtype()->is_unsigned_integer()))) {
+		if (countTy->is_native_type()) {
+			countTy = countTy->as_native_type()->get_subtype();
 		}
 		auto* llCount = limit->get_llvm();
 		if (limit->get_ir_type()->is_reference()) {

@@ -16,7 +16,7 @@ void VectorType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> 
 ir::Type* VectorType::emit(EmitCtx* ctx) {
 	SHOW("Scalable has value " << scalable.has_value())
 	auto subTy		 = subType->emit(ctx);
-	auto usableSubTy = subTy->is_ctype() ? subTy->as_ctype()->get_subtype() : subTy;
+	auto usableSubTy = subTy->is_native_type() ? subTy->as_native_type()->get_subtype() : subTy;
 	if (usableSubTy->is_integer() || usableSubTy->is_unsigned_integer() || usableSubTy->is_float()) {
 		if (count->has_type_inferrance()) {
 			count->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));

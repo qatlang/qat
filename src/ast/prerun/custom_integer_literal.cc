@@ -79,9 +79,9 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 
 	Maybe<ir::Type*> suffixType;
 	if (suffix.has_value()) {
-		auto cTypeKind = ir::native_type_kind_from_string(suffix.value().value);
-		if (cTypeKind.has_value()) {
-			suffixType = ir::NativeType::get_from_kind(cTypeKind.value(), ctx->irCtx);
+		auto nativeKind = ir::native_type_kind_from_string(suffix.value().value);
+		if (nativeKind.has_value()) {
+			suffixType = ir::NativeType::get_from_kind(nativeKind.value(), ctx->irCtx);
 		} else {
 			ctx->Error("Invalid suffix for custom integer literal: " + ctx->color(suffix.value().value),
 					   suffix.value().range);
@@ -97,13 +97,14 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 			if (isUnsigned.has_value()) {
 				if (isUnsigned.value() &&
 					(inferredType->is_integer() ||
-					 (inferredType->is_ctype() && inferredType->as_ctype()->get_subtype()->is_integer()))) {
+					 (inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_integer()))) {
 					ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 								   " which is not an unsigned integer type",
 							   fileRange);
-				} else if (!isUnsigned.value() && (inferredType->is_unsigned_integer() ||
-												   (inferredType->is_ctype() &&
-													inferredType->as_ctype()->get_subtype()->is_unsigned_integer()))) {
+				} else if (!isUnsigned.value() &&
+						   (inferredType->is_unsigned_integer() ||
+							(inferredType->is_native_type() &&
+							 inferredType->as_native_type()->get_subtype()->is_unsigned_integer()))) {
 					ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 								   " which is not a signed integer type",
 							   fileRange);

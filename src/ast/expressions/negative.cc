@@ -20,7 +20,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 			}
 		}
 	};
-	if (valTy->is_integer() || (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_integer())) {
+	if (valTy->is_integer() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_integer())) {
 		typeCheck(valTy);
 		if (irVal->is_prerun_value()) {
 			return ir::PrerunValue::get(llvm::ConstantExpr::getNeg(irVal->get_llvm_constant()), valTy);
@@ -32,7 +32,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 			}
 			return ir::Value::get(ctx->irCtx->builder.CreateNeg(irVal->get_llvm()), valTy, false);
 		}
-	} else if (valTy->is_float() || (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_float())) {
+	} else if (valTy->is_float() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_float())) {
 		typeCheck(valTy);
 		if (irVal->is_prerun_value()) {
 			return ir::PrerunValue::get(
@@ -48,7 +48,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 				valTy, false);
 		}
 	} else if (valTy->is_unsigned_integer() ||
-			   (valTy->is_ctype() && valTy->as_ctype()->get_subtype()->is_unsigned_integer())) {
+			   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 		ctx->Error("The value of this expression is of the unsigned integer type " + ctx->color(valTy->to_string()) +
 					   " and cannot use the " + ctx->color("unary -") + " operator",
 				   fileRange);

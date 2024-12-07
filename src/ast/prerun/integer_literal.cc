@@ -6,9 +6,10 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred() &&
 		(!inferredType->is_integer() && !inferredType->is_unsigned_integer() &&
 		 (!bits.has_value() && !inferredType->is_float()) &&
-		 (!bits.has_value() && inferredType->is_ctype() && !inferredType->as_ctype()->get_subtype()->is_float()) &&
-		 (inferredType->is_ctype() && !(inferredType->as_ctype()->get_subtype()->is_unsigned_integer() ||
-										inferredType->as_ctype()->get_subtype()->is_integer())))) {
+		 (!bits.has_value() && inferredType->is_native_type() &&
+		  !inferredType->as_native_type()->get_subtype()->is_float()) &&
+		 (inferredType->is_native_type() && !(inferredType->as_native_type()->get_subtype()->is_unsigned_integer() ||
+											  inferredType->as_native_type()->get_subtype()->is_integer())))) {
 		if (bits.has_value()) {
 			ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 						   ". The only supported types for this literal are signed & unsigned integers",
@@ -20,9 +21,10 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 				fileRange);
 		}
 	}
-	ir::Type* resTy = is_type_inferred()
-						  ? (inferredType->is_ctype() ? inferredType->as_ctype()->get_subtype() : inferredType)
-						  : ir::IntegerType::get(32, ctx->irCtx);
+	ir::Type* resTy =
+		is_type_inferred()
+			? (inferredType->is_native_type() ? inferredType->as_native_type()->get_subtype() : inferredType)
+			: ir::IntegerType::get(32, ctx->irCtx);
 	if (bits.has_value() && !ctx->mod->has_integer_bitwidth(bits.value().first)) {
 		ctx->Error("The custom integer bitwidth " + ctx->color(std::to_string(bits.value().first)) +
 					   " is not brought into the current module",

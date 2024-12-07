@@ -28,7 +28,7 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 											   countRes->get_llvm()),
 				countRes->get_ir_type()->as_reference()->get_subtype(), false);
 		}
-		if (!countRes->get_ir_type()->is_ctype() || !countRes->get_ir_type()->as_ctype()->is_usize()) {
+		if (!countRes->get_ir_type()->is_native_type() || !countRes->get_ir_type()->as_native_type()->is_usize()) {
 			ctx->Error("The number of instances to allocate should be of " +
 						   ir::NativeType::get_usize(ctx->irCtx)->to_string() + " type",
 					   count->fileRange);
@@ -203,7 +203,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 										   countVal->get_llvm()),
 			countVal->get_ir_type()->as_reference()->get_subtype(), false);
 	}
-	if (countVal->get_ir_type()->is_ctype() && countVal->get_ir_type()->as_ctype()->is_usize()) {
+	if (countVal->get_ir_type()->is_native_type() && countVal->get_ir_type()->as_native_type()->is_usize()) {
 		auto  reallocName = ctx->mod->link_internal_dependency(ir::InternalDependency::realloc, ctx->irCtx, fileRange);
 		auto* reallocFn	  = ctx->mod->get_llvm_module()->getFunction(reallocName);
 		auto* ptrRes	  = ctx->irCtx->builder.CreatePointerCast(

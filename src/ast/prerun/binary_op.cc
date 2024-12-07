@@ -32,8 +32,8 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 		lhsEmit	   = lhs->emit(ctx);
 		auto lhsTy = lhsEmit->get_ir_type()->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype()
 															: lhsEmit->get_ir_type();
-		if (lhsTy->is_ctype()) {
-			lhsTy = lhsTy->as_ctype()->get_subtype();
+		if (lhsTy->is_native_type()) {
+			lhsTy = lhsTy->as_native_type()->get_subtype();
 		}
 		if (lhsTy->is_integer() || lhsTy->is_unsigned_integer() || lhsTy->is_float()) {
 			rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
@@ -45,8 +45,8 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 	}
 	auto lhsType  = lhsEmit->get_ir_type();
 	auto rhsType  = rhsEmit->get_ir_type();
-	auto lhsValTy = lhsType->is_ctype() ? lhsType->as_ctype()->get_subtype() : lhsType;
-	auto rhsValTy = rhsType->is_ctype() ? rhsType->as_ctype()->get_subtype() : rhsType;
+	auto lhsValTy = lhsType->is_native_type() ? lhsType->as_native_type()->get_subtype() : lhsType;
+	auto rhsValTy = rhsType->is_native_type() ? rhsType->as_native_type()->get_subtype() : rhsType;
 	if (lhsValTy->is_integer()) {
 		if (lhsType->is_same(rhsType)) {
 			auto			lhsConst = lhsEmit->get_llvm_constant();

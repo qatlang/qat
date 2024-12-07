@@ -96,7 +96,7 @@ enum class TokenType {
 	region,
 	range,
 	is,
-	cType,
+	nativeType,
 	result,
 	pre,
 	Not,

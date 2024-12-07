@@ -164,7 +164,7 @@ bool Type::is_same(Type* other) {
 			case TypeKind::Float: {
 				return (((FloatType*)this)->get_float_kind() == ((FloatType*)other)->get_float_kind());
 			}
-			case TypeKind::cType: {
+			case TypeKind::nativeType: {
 				auto* thisVal  = (NativeType*)this;
 				auto* otherVal = (NativeType*)other;
 				return thisVal->get_c_type_kind() == otherVal->get_c_type_kind() &&
@@ -402,26 +402,26 @@ UnsignedType* Type::as_unsigned_integer() const {
 }
 
 bool Type::is_underlying_type_integer() const {
-	return is_integer() || (is_ctype() && as_ctype()->get_subtype()->is_integer());
+	return is_integer() || (is_native_type() && as_native_type()->get_subtype()->is_integer());
 }
 
 IntegerType* Type::get_underlying_integer_type() const {
 	if (is_integer()) {
 		return as_integer();
 	} else {
-		return as_ctype()->get_subtype()->as_integer();
+		return as_native_type()->get_subtype()->as_integer();
 	}
 }
 
 bool Type::is_underlying_type_unsigned() const {
-	return is_unsigned_integer() || (is_ctype() && as_ctype()->get_subtype()->is_unsigned_integer());
+	return is_unsigned_integer() || (is_native_type() && as_native_type()->get_subtype()->is_unsigned_integer());
 }
 
 UnsignedType* Type::get_underlying_unsigned_type() const {
 	if (is_unsigned_integer()) {
 		return as_unsigned_integer();
 	} else {
-		return as_ctype()->get_subtype()->as_unsigned_integer();
+		return as_native_type()->get_subtype()->as_unsigned_integer();
 	}
 }
 
@@ -569,16 +569,16 @@ StringSliceType* Type::as_string_slice() const {
 			   : (is_opaque() ? as_opaque()->get_subtype()->as_string_slice() : (StringSliceType*)this);
 }
 
-bool Type::is_ctype() const {
-	return ((type_kind() == TypeKind::cType) ||
-			(is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_ctype()) ||
-			(type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_ctype()));
+bool Type::is_native_type() const {
+	return ((type_kind() == TypeKind::nativeType) ||
+			(is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_native_type()) ||
+			(type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_native_type()));
 }
 
-NativeType* Type::as_ctype() const {
+NativeType* Type::as_native_type() const {
 	return (type_kind() == TypeKind::definition)
-			   ? ((DefinitionType*)this)->get_subtype()->as_ctype()
-			   : (is_opaque() ? as_opaque()->get_subtype()->as_ctype() : (NativeType*)this);
+			   ? ((DefinitionType*)this)->get_subtype()->as_native_type()
+			   : (is_opaque() ? as_opaque()->get_subtype()->as_native_type() : (NativeType*)this);
 }
 
 bool Type::is_future() const {

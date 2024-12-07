@@ -18,15 +18,15 @@ ir::PrerunValue* NullMark::emit(EmitCtx* ctx) {
 		}
 	}
 	ir::Type* finalTy = theType;
-	if (theType->is_mark() || (theType->is_ctype() && theType->as_ctype()->get_subtype()->is_mark())) {
-		if (theType->is_ctype() ? theType->as_ctype()->get_subtype()->as_mark()->is_non_nullable()
-								: theType->as_mark()->is_non_nullable()) {
+	if (theType->is_mark() || (theType->is_native_type() && theType->as_native_type()->get_subtype()->is_mark())) {
+		if (theType->is_native_type() ? theType->as_native_type()->get_subtype()->as_mark()->is_non_nullable()
+									  : theType->as_mark()->is_non_nullable()) {
 			ctx->Error("The inferred type is " + ctx->color(theType->to_string()) +
 						   " which is not a nullable mark type",
 					   fileRange);
 		}
-		if (theType->is_ctype()) {
-			finalTy = theType->as_ctype()->get_subtype();
+		if (theType->is_native_type()) {
+			finalTy = theType->as_native_type()->get_subtype();
 		}
 	} else {
 		ctx->Error("The inferred type for null is " + ctx->color(theType->to_string()) + " which is not a mark type",

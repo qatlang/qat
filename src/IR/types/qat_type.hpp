@@ -161,8 +161,8 @@ class Type : public Uniq {
 	useit bool		 is_typed() const;
 	useit TypedType* as_typed() const;
 
-	useit bool		  is_ctype() const;
-	useit NativeType* as_ctype() const;
+	useit bool		  is_native_type() const;
+	useit NativeType* as_native_type() const;
 
 	useit bool		  is_result() const;
 	useit ResultType* as_result() const;

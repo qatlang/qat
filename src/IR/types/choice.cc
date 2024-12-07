@@ -71,9 +71,9 @@ Mod* ChoiceType::get_module() const { return parent; }
 
 bool ChoiceType::has_negative_values() const {
 	return (!areValuesUnsigned) ||
-		   (providedType.has_value() &&
-			(providedType.value()->is_integer() ||
-			 (providedType.value()->is_ctype() && providedType.value()->as_ctype()->get_subtype()->is_integer())));
+		   (providedType.has_value() && (providedType.value()->is_integer() ||
+										 (providedType.value()->is_native_type() &&
+										  providedType.value()->as_native_type()->get_subtype()->is_integer())));
 }
 
 bool ChoiceType::has_custom_value() const { return values.has_value(); }

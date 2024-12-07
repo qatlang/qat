@@ -37,9 +37,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 	if (providedIntegerTy) {
 		providedType = providedIntegerTy.value()->emit(EmitCtx::get(irCtx, mod));
 		if (!providedType.value()->is_integer() && !providedType.value()->is_unsigned_integer() &&
-			!(providedType.value()->is_ctype() &&
-			  (providedType.value()->as_ctype()->get_subtype()->is_unsigned_integer() ||
-			   providedType.value()->as_ctype()->get_subtype()->is_integer()))) {
+			!(providedType.value()->is_native_type() &&
+			  (providedType.value()->as_native_type()->get_subtype()->is_unsigned_integer() ||
+			   providedType.value()->as_native_type()->get_subtype()->is_integer()))) {
 			irCtx->Error("Choice types can only have an integer or unsigned integer as its underlying type",
 						 providedIntegerTy.value()->fileRange);
 		}
@@ -58,15 +58,15 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			auto iVal	= fields.at(i).second.value()->emit(EmitCtx::get(irCtx, mod));
 			auto iValTy = iVal->get_ir_type();
 			if (!iValTy->is_integer() && !iValTy->is_unsigned_integer() &&
-				!(iValTy->is_ctype() && (iValTy->as_ctype()->get_subtype()->is_unsigned_integer() ||
-										 iValTy->as_ctype()->get_subtype()->is_integer()))) {
+				!(iValTy->is_native_type() && (iValTy->as_native_type()->get_subtype()->is_unsigned_integer() ||
+											   iValTy->as_native_type()->get_subtype()->is_integer()))) {
 				irCtx->Error(
 					"The value for a variant of this choice type should be of integer or unsigned integer type. Got an expression of type " +
 						irCtx->color(iValTy->to_string()),
 					fields.at(i).second.value()->fileRange);
 			}
-			if (iValTy->is_ctype()) {
-				iValTy = iValTy->as_ctype()->get_subtype();
+			if (iValTy->is_native_type()) {
+				iValTy = iValTy->as_native_type()->get_subtype();
 			}
 			if (providedType.has_value() && !iVal->get_ir_type()->is_same(providedType.value())) {
 				irCtx->Error("The provided value of the variant of this choice type has type " +
@@ -75,9 +75,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 								 irCtx->color(providedType.value()->to_string()),
 							 fields.at(i).second.value()->fileRange);
 			} else if (!iVal->get_ir_type()->is_integer() && !iVal->get_ir_type()->is_unsigned_integer() &&
-					   !(iVal->get_ir_type()->is_ctype() &&
-						 (iVal->get_ir_type()->as_ctype()->get_subtype()->is_unsigned_integer() ||
-						  iVal->get_ir_type()->as_ctype()->get_subtype()->is_integer()))) {
+					   !(iVal->get_ir_type()->is_native_type() &&
+						 (iVal->get_ir_type()->as_native_type()->get_subtype()->is_unsigned_integer() ||
+						  iVal->get_ir_type()->as_native_type()->get_subtype()->is_integer()))) {
 				irCtx->Error("Value for variant for choice type should either be a signed or unsigned integer type",
 							 fields.at(i).second.value()->fileRange);
 			}

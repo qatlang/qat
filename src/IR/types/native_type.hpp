@@ -128,7 +128,7 @@ class NativeType : public Type {
 	useit bool is_trivially_copyable() const final { return true; }
 	useit bool is_trivially_movable() const final { return true; }
 
-	TypeKind type_kind() const final { return TypeKind::cType; }
+	TypeKind type_kind() const final { return TypeKind::nativeType; }
 	String	 to_string() const final;
 };
 

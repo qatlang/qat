@@ -13,10 +13,10 @@ void PrerunTo::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> de
 ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 	auto val		  = value->emit(ctx);
 	auto usableTarget = targetType->emit(ctx);
-	auto target		  = usableTarget->is_ctype() ? usableTarget->as_ctype()->get_subtype() : usableTarget;
+	auto target		  = usableTarget->is_native_type() ? usableTarget->as_native_type()->get_subtype() : usableTarget;
 	auto valTy		  = val->get_ir_type();
-	if (valTy->is_ctype()) {
-		valTy = valTy->as_ctype()->get_subtype();
+	if (valTy->is_native_type()) {
+		valTy = valTy->as_native_type()->get_subtype();
 	}
 	if (valTy->is_same(target)) {
 		return val;
@@ -73,17 +73,17 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 										usableTarget);
 		}
 	} else if (valTy->is_string_slice()) {
-		if (usableTarget->is_ctype() && usableTarget->as_ctype()->is_cstring()) {
+		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_cstring()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
 		} else if (valTy->is_mark() &&
 				   (valTy->as_mark()->get_subtype()->is_unsigned_integer() ||
-					(valTy->as_mark()->get_subtype()->is_ctype() &&
-					 valTy->as_mark()->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer())) &&
+					(valTy->as_mark()->get_subtype()->is_native_type() &&
+					 valTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned_integer())) &&
 				   (valTy->as_mark()->get_subtype()->is_unsigned_integer()
 						? (valTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
 						: (valTy->as_mark()
 							   ->get_subtype()
-							   ->as_ctype()
+							   ->as_native_type()
 							   ->get_subtype()
 							   ->as_unsigned_integer()
 							   ->get_bitwidth() == 8u)) &&

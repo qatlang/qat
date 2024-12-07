@@ -87,30 +87,30 @@ ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression
 		return ir::PrerunValue::get(
 			llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 								   (typed->get_subtype()->is_unsigned_integer() ||
-									(typed->get_subtype()->is_ctype() &&
-									 typed->get_subtype()->as_ctype()->get_subtype()->is_unsigned_integer()))
+									(typed->get_subtype()->is_native_type() &&
+									 typed->get_subtype()->as_native_type()->get_subtype()->is_unsigned_integer()))
 									   ? 1u
 									   : 0u),
 			ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_any_signed_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-			llvm::ConstantInt::get(
-				llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-				(typed->get_subtype()->is_integer() ||
-				 (typed->get_subtype()->is_ctype() && typed->get_subtype()->as_ctype()->get_subtype()->is_integer()))
-					? 1u
-					: 0u),
+			llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+								   (typed->get_subtype()->is_integer() ||
+									(typed->get_subtype()->is_native_type() &&
+									 typed->get_subtype()->as_native_type()->get_subtype()->is_integer()))
+									   ? 1u
+									   : 0u),
 			ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_any_float_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-			llvm::ConstantInt::get(
-				llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-				(typed->get_subtype()->is_float() ||
-				 (typed->get_subtype()->is_ctype() && typed->get_subtype()->as_ctype()->get_subtype()->is_float()))
-					? 1u
-					: 0u),
+			llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+								   (typed->get_subtype()->is_float() ||
+									(typed->get_subtype()->is_native_type() &&
+									 typed->get_subtype()->as_native_type()->get_subtype()->is_float()))
+									   ? 1u
+									   : 0u),
 			ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_unsigned_int_type") {
 		zeroArgCheck();
